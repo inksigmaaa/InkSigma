@@ -19,7 +19,7 @@ export default function ConditionalLayout({ children }) {
   return (
     <>
       <Header />
-      <main className="min-h-screen">
+      <main className="">
         {children}
       </main>
       <Footer />
