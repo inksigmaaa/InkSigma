@@ -7,8 +7,9 @@ import Footer from "@/components/Footer"
 export default function ConditionalLayout({ children }) {
   const pathname = usePathname()
   const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/forgot-password"
+  const isDashboardPage = pathname?.startsWith("/dashboard")
 
-  if (isAuthPage) {
+  if (isAuthPage || isDashboardPage) {
     return (
       <div className="min-h-screen">
         {children}
