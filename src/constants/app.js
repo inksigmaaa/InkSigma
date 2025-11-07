@@ -14,7 +14,7 @@ export const LOGOS = {
 export const HERO_CONFIG = {
   title: {
     italic: 'Write',
-    bold: 'something every day'
+    bold: ' something every day'
   },
   subtitle: 'Designed for you to write passionately. Write and Grow together.',
   ctaText: 'Start Writing for FREE',

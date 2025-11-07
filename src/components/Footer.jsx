@@ -5,7 +5,7 @@ import { APP_CONFIG, LOGOS, FOOTER_LINKS, SOCIAL_LINKS } from "@/constants"
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-50 border-t">
+    <footer className="bg-gray-50">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
@@ -72,7 +72,7 @@ export default function Footer() {
             </Link>
           </div>
         </div>
-        <div className="border-t mt-12 pt-8">
+        <div className="mt-12 pt-8">
           <p className="text-center text-gray-500 text-sm">
             {APP_CONFIG.copyright.split('Zemuria')[0]}
             <Link href="#" className="text-blue-600 hover:text-blue-800">
