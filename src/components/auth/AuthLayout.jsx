@@ -11,7 +11,7 @@ import { LOGOS } from "@/constants/app"
  */
 export default function AuthLayout({ children, title }) {
   return (
-    <div className="bg-gray-50 flex flex-col items-center justify-center px-4 min-h-screen">
+    <div className="bg-white flex flex-col items-center justify-center px-4 min-h-screen mt-16">
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="text-center">
@@ -25,7 +25,7 @@ export default function AuthLayout({ children, title }) {
         </div>
 
         {/* Form Container */}
-        <div className="bg-white rounded-lg shadow-sm p-8 space-y-6">
+        <div className="bg-white rounded-lg p-8 space-y-6">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
           </div>

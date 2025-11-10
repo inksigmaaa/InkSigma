@@ -13,7 +13,7 @@ export default function GoogleAuthButton({ text, onClick }) {
       type="button"
       variant="outline"
       onClick={onClick}
-      className="w-full border-gray-300 text-white hover:bg-gray-50 rounded-md py-3 flex items-center justify-center space-x-2"
+      className="w-full border-gray-300 text-black hover:bg-gray-50 rounded-md py-3 flex items-center justify-center space-x-2"
     >
       <GoogleIcon />
       <span>{text}</span>
