@@ -20,7 +20,7 @@ export const MAIN_NAVIGATION = [
   {
     id: 'bugs-requests',
     label: 'Bugs/Feature Requests',
-    href: '/bugs-feature-requests',
+    href: 'https://inksigma.canny.io/',
     type: 'link'
   }
 ]
@@ -29,7 +29,7 @@ export const FOOTER_LINKS = {
   quickLinks: [
     { label: 'Home', href: '/' },
     { label: 'Features', href: '/features' },
-    { label: 'Bugs/Feature Requests', href: '/bugs-feature-requests' }
+    { label: 'Bugs/Feature Requests', href: 'https://inksigma.canny.io/' }
   ],
   company: [
     { label: 'Terms & Conditions', href: '/terms' },

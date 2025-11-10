@@ -13,7 +13,6 @@ export default function MagicLinkPage() {
   const handleSubmit = (e) => {
     e.preventDefault()
     console.log('Magic link sent to:', email)
-    // Add your magic link logic here
   }
 
   return (
