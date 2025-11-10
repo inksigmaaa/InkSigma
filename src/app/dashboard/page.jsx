@@ -1,8 +1,34 @@
+"use client"
+
+import { useSession } from "@/lib/auth-client"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import DashboardSidebar from "@/components/DashboardSidebar"
 import { ChevronRight, AlertCircle } from "lucide-react"
 
 export default function DashboardPage() {
+  const { data: session, isPending } = useSession()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.push("/login")
+    }
+  }, [session, isPending, router])
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardNavbar />
