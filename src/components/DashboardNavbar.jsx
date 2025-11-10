@@ -13,7 +13,7 @@ import {
 
 export default function DashboardNavbar() {
   return (
-    <nav className="border-b bg-white sticky top-0 z-50">
+    <nav className="border-b bg-white sticky top-0 z-50 mt-6">
       <div className="flex h-14 md:h-16 items-center justify-between px-4 md:px-6">
         {/* Logo */}
         <div className="flex items-center">
@@ -38,13 +38,8 @@ export default function DashboardNavbar() {
               <ChevronDown className="h-3 w-3 md:h-4 md:w-4 text-gray-500" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 md:w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Billing</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">Log out</DropdownMenuItem>
+              <DropdownMenuItem>Profile Settings</DropdownMenuItem>
+              <DropdownMenuItem>Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
