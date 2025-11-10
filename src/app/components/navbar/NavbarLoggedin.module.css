@@ -94,11 +94,14 @@
 @media (max-width: 768px) {
     .mainContainer {
         padding: 0 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
     }
 
     .navContainer {
         padding: 12px 16px;
         height: 70px;
+        min-width: fit-content;
     }
 
     .logo img {

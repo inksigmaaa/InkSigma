@@ -1,6 +1,6 @@
 /* Verify Container - Positioned next to sidebar */
 .verifyContainer {
-    position: fixed;
+    position: relative;
     left: 50%;
     transform: translateX(-50%);
     top: 128px;
