@@ -13,7 +13,7 @@ export default function FeaturesSection() {
             Features
           </h2>
         </div>
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-0 sm:gap-20 max-w-6xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-20 max-w-6xl mx-auto">
           <div className="space-y-8">
             {leftColumnFeatures.map((feature) => (
               <FeatureItem
