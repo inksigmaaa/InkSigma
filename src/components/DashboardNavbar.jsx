@@ -32,7 +32,7 @@ export default function DashboardNavbar() {
       .slice(0, 2)
   }
   return (
-    <nav className="border-b bg-white sticky top-0 z-50">
+    <nav className="border-b bg-white sticky top-0 z-50 mt-6">
       <div className="flex h-14 md:h-16 items-center justify-between px-4 md:px-6">
         {/* Logo */}
         <div className="flex items-center">
