@@ -59,7 +59,7 @@ export default function SignupPage() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: "/",
+        callbackURL: "/dashboard",
       })
     } catch (err) {
       setError("Failed to sign up with Google")
