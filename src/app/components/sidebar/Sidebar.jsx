@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import styles from './Sidebar.module.css'
 
 export default function Sidebar() {
@@ -7,12 +8,12 @@ export default function Sidebar() {
                 <div className={styles.sidebarContainer}>
                     <div className={styles.profile}>
                         <img src="/images/icons/profileuser.svg" alt="profileImg" className={styles.profileImg} />
-                        <a href="/view_site/layout" target="_blank" rel="noopener noreferrer"><button className={styles.viewtext}>view site</button></a>
+                        <Link href="/"><button className={styles.viewtext}>view site</button></Link>
                     </div>
                     <div className={styles.mySpace}>
                         <div className={styles.spaceIcon}>
                             <img src="/images/icons/myspace.svg" alt="my space logo" className={styles.sideLogo} />
-                            <a href="/dashboard"><p className={styles.spaceButton}>My Space</p></a>
+                            <Link href="/dashboard"><p className={styles.spaceButton}>My Space</p></Link>
                         </div>
                     </div>
                     <div className={styles.publicationContainer}>
@@ -60,13 +61,13 @@ export default function Sidebar() {
                         <div className={styles.member}>
                             <div className={styles.pubIcon}>
                                 <img src="/images/icons/Schedule.svg" alt="scheduleicon" className={styles.sideLogo} />
-                                <p className={styles.pubText}>Schedule</p>
+                                <Link href="/schedule"><p className={styles.pubText}>Schedule</p></Link>
                             </div>
                         </div>
                         <div className={styles.settings}>
                             <div className={styles.pubIcon}>
                                 <img src="/images/icons/Review.svg" alt="reviewicon" className={styles.sideLogo} />
-                                <p className={styles.pubText}>Review</p>
+                                <Link href="/review"><p className={styles.pubText}>Review</p></Link>
                             </div>
                         </div>
 
@@ -76,19 +77,19 @@ export default function Sidebar() {
                         <div className={styles.home}>
                             <div className={styles.pubIcon}>
                                 <img src="/images/icons/all_articles.svg" alt="myblogsicon" className={styles.sideLogo} />
-                                <p className={styles.pubText}>My Blogs</p>
+                                <a href="/my-blogs"><p className={styles.pubText}>My Blogs</p></a>
                             </div>
                         </div>
                         <div className={styles.domain}>
                             <div className={styles.pubIcon}>
                                 <img src="/images/icons/Publish.svg" alt="drafticon" className={styles.sideLogo} />
-                                <p className={styles.pubText}>Draft</p>
+                                <a href="/draft"><p className={styles.pubText}>Draft</p></a>
                             </div>
                         </div>
                         <div className={styles.member}>
                             <div className={styles.pubIcon}>
                                 <img src="/images/icons/Schedule.svg" alt="trashicon" className={styles.sideLogo} />
-                                <p className={styles.pubText}>Trash</p>
+                                <a href="/trash"><p className={styles.pubText}>Trash</p></a>
                             </div>
                         </div>
 
