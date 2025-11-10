@@ -10,8 +10,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useSession, signOut } from "@/lib/auth-client"
+import { useRouter } from "next/navigation"
 
 export default function DashboardNavbar() {
+  const { data: session } = useSession()
+  const router = useRouter()
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push("/")
+  }
+
+  const getInitials = (name) => {
+    if (!name) return "U"
+    return name
+      .split(" ")
+      .map(n => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+  }
   return (
     <nav className="border-b bg-white sticky top-0 z-50 mt-6">
       <div className="flex h-14 md:h-16 items-center justify-between px-4 md:px-6">
@@ -31,15 +50,31 @@ export default function DashboardNavbar() {
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1 md:gap-2 rounded-lg hover:bg-gray-100 p-1 md:p-2 transition-colors focus:outline-none">
               <Avatar className="h-8 w-8 md:h-9 md:w-9">
-                <AvatarImage src="/api/placeholder/40/40" alt="Grace Mathew" />
-                <AvatarFallback className="bg-purple-100 text-purple-600 text-xs md:text-sm">GM</AvatarFallback>
+                <AvatarImage src={session?.user?.image} alt={session?.user?.name} />
+                <AvatarFallback className="bg-purple-100 text-purple-600 text-xs md:text-sm">
+                  {getInitials(session?.user?.name)}
+                </AvatarFallback>
               </Avatar>
-              <span className="hidden sm:inline text-xs md:text-sm font-medium text-gray-700">Grace Mathew</span>
+              <span className="hidden sm:inline text-xs md:text-sm font-medium text-gray-700">
+                {session?.user?.name || "User"}
+              </span>
               <ChevronDown className="h-3 w-3 md:h-4 md:w-4 text-gray-500" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 md:w-56">
-              <DropdownMenuItem>Profile Settings</DropdownMenuItem>
-              <DropdownMenuItem>Logout</DropdownMenuItem>
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">{session?.user?.name}</p>
+                  <p className="text-xs text-gray-500">{session?.user?.email}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>Profile</DropdownMenuItem>
+              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuItem>Billing</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-red-600" onClick={handleSignOut}>
+                Log out
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
