@@ -8,8 +8,9 @@ import { LOGOS } from "@/constants/app"
  * @param {Object} props - Component props
  * @param {React.ReactNode} props.children - Form content
  * @param {string} props.title - Page title
+ * @param {string} props.titleClassName - Custom className for title
  */
-export default function AuthLayout({ children, title }) {
+export default function AuthLayout({ children, title, titleClassName }) {
   return (
     <div className="bg-white flex flex-col items-center justify-center px-4 min-h-screen mt-16">
       <div className="w-full max-w-md space-y-8">
@@ -27,7 +28,7 @@ export default function AuthLayout({ children, title }) {
         {/* Form Container */}
         <div className="bg-white rounded-lg p-8 space-y-6">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+            <h1 className={titleClassName || "text-2xl font-bold text-gray-900"}>{title}</h1>
           </div>
 
           {children}

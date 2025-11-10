@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,6 +12,7 @@ import GoogleAuthButton from "@/components/auth/GoogleAuthButton"
 import { APP_CONFIG } from "@/constants/app"
 
 export default function LoginPage() {
+  const router = useRouter()
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -33,7 +35,7 @@ export default function LoginPage() {
   }
 
   const handleMagicLink = () => {
-    console.log('Magic link login clicked')
+    router.push('/magic-link')
   }
 
   return (

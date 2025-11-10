@@ -6,7 +6,7 @@ import Footer from "@/components/Footer"
 
 export default function ConditionalLayout({ children }) {
   const pathname = usePathname()
-  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/forgot-password"
+  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/forgot-password" || pathname === "/magic-link"
   const isDashboardPage = pathname?.startsWith("/dashboard")
   const isSchedulePage = pathname === "/schedule"
   const isReviewPage = pathname === "/review"
