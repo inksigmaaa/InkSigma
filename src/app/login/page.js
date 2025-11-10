@@ -67,8 +67,7 @@ export default function LoginPage() {
   }
 
   const handleMagicLink = () => {
-    console.log('Magic link login clicked')
-    // TODO: Implement magic link functionality
+    router.push('/magic-link')
   }
 
   return (

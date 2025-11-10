@@ -34,3 +34,42 @@ body {
   color: var(--foreground);
   font-family: var(--font-public-sans), sans-serif;
 }
+
+/* ContentEditable placeholder */
+[contenteditable][data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: #d1d5db;
+  pointer-events: none;
+}
+
+/* ContentEditable list styling */
+[contenteditable] ul {
+  list-style-type: disc;
+  padding-left: 2rem;
+  margin: 1rem 0;
+}
+
+[contenteditable] ol {
+  list-style-type: decimal;
+  padding-left: 2rem;
+  margin: 1rem 0;
+}
+
+[contenteditable] li {
+  margin: 0.5rem 0;
+}
+
+[contenteditable] blockquote {
+  border-left: 4px solid #e5e5e5;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #737373;
+}
+
+[contenteditable] pre {
+  background-color: #f5f5f5;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
