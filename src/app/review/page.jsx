@@ -11,6 +11,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { AlertCircle, Clock } from "lucide-react"
+import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
+import Sidebar from "../components/sidebar/Sidebar"
 
 export default function ReviewPage() {
   const [selectedPosts, setSelectedPosts] = useState([])
@@ -49,9 +51,13 @@ export default function ReviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Verification Alert - Full Width */}
-      <div className="bg-purple-50 border-b border-purple-200 px-6 py-4">
+    <>
+      <NavbarLoggedin />
+      <div className="flex">
+        <Sidebar />
+        <div className="flex-1 min-h-screen bg-gray-50">
+          {/* Verification Alert - Full Width */}
+          <div className="bg-purple-50 border-b border-purple-200 px-6 py-4">
         <div className="max-w-[800px] mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-purple-700">
             <AlertCircle className="h-5 w-5 flex-shrink-0" />
@@ -182,6 +188,8 @@ export default function ReviewPage() {
           ))}
         </div>
       </div>
-    </div>
+        </div>
+      </div>
+    </>
   )
 }
