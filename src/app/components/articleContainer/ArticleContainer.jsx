@@ -1,7 +1,7 @@
 import styles from './ArticleContainer.module.css'
 import ArticleDropdown from '../articleDropdown/ArticleDropdown'
 
-export default function ArticleContainer({ status, title, description, categories, postedTime, onRestore, onDelete }) {
+export default function ArticleContainer({ id, status, title, description, categories, postedTime, onRestore, onDelete, isSelected, onSelect }) {
     const statusConfig = {
         published: { bg: '#D5F2D4', color: '#267F24', text: 'Published' },
         draft: { bg: '#FFEADB', color: '#A34200', text: 'Draft' },
@@ -76,7 +76,12 @@ export default function ArticleContainer({ status, title, description, categorie
 
             <div className={styles.content}>
                 <div className={styles.leftSection}>
-                    <input type="checkbox" className={styles.checkbox} />
+                    <input 
+                        type="checkbox" 
+                        className={styles.checkbox}
+                        checked={isSelected || false}
+                        onChange={(e) => onSelect && onSelect(id, e.target.checked)}
+                    />
                     <div className={styles.textContent}>
                         <h3 className={styles.title}>{title}</h3>
                         <p className={styles.description}>{description}</p>

@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import styles from "../components/articles/Articles.module.css"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
 import ArticleContainer from "../components/articleContainer/ArticleContainer"
+import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function MyBlogsPage() {
+  const { articles, moveToTrash } = useArticles()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategories, setSelectedCategories] = useState([])
@@ -21,6 +23,15 @@ export default function MyBlogsPage() {
     "Politics", "Psychology", "Relationships", "Romance", "Science",
     "Space", "Sports", "Startups & Companies", "Technology", "Travel"
   ]
+
+  const myArticles = useMemo(() => {
+    return articles.filter(article => {
+      if (selectedCategories.length > 0) {
+        return article.categories.some(cat => selectedCategories.includes(cat))
+      }
+      return true
+    })
+  }, [articles, selectedCategories])
 
   const filteredCategories = categories.filter(cat =>
     cat.toLowerCase().includes(searchTerm.toLowerCase())
@@ -92,41 +103,24 @@ export default function MyBlogsPage() {
           </div>
 
           <div className={styles.articlesList}>
-            <ArticleContainer
-              status="draft"
-              title="Title of the Blog will be in this area"
-              description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
-              categories={["Sports", "Humour", "History"]}
-              postedTime="FRI | 15 NOV, 2024"
-            />
-            <ArticleContainer
-              status="review"
-              title="Title of the Blog will be in this area"
-              description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
-              categories={["Sports", "Humour", "History"]}
-              postedTime="FRI | 15 NOV, 2024"
-            />
-            <ArticleContainer
-              status="published"
-              title="Title of the Blog will be in this area"
-              description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
-              categories={["Sports", "Humour", "History"]}
-              postedTime="FRI | 15 NOV, 2024"
-            />
-            <ArticleContainer
-              status="unpublished"
-              title="Title of the Blog will be in this area"
-              description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
-              categories={["Sports", "Humour", "History"]}
-              postedTime="FRI | 15 NOV, 2024"
-            />
-            <ArticleContainer
-              status="trash"
-              title="Title of the Blog will be in this area"
-              description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
-              categories={["Sports", "Humour", "History"]}
-              postedTime="FRI | 15 NOV, 2024"
-            />
+            {myArticles.length === 0 ? (
+              <div className={styles.emptyState}>
+                <p className={styles.emptyStateText}>No Articles yet</p>
+              </div>
+            ) : (
+              myArticles.map((article) => (
+                <ArticleContainer
+                  key={article.id}
+                  id={article.id}
+                  status={article.status}
+                  title={article.title}
+                  description={article.description}
+                  categories={article.categories}
+                  postedTime={article.postedTime}
+                  onDelete={() => moveToTrash(article.id)}
+                />
+              ))
+            )}
           </div>
         </div>
       </div>
