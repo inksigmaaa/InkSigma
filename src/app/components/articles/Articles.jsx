@@ -34,6 +34,40 @@ export default function Articles() {
     return (
         <div className={styles.articlesContainer}>
             <div className={styles.articlesContent}>
+                {/* Mobile header - visible only below 768px */}
+                <div className={styles.mobileHeader}>
+                    <h1 className={styles.mobileTitle}>All Articles</h1>
+                    <div className={styles.mobileControls}>
+                        <button className={styles.createArticleButton}>
+                            + Create Article
+                        </button>
+                        <div className={styles.dropdownWrapper}>
+                            <button className={styles.categoryButton} onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
+                                Category
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className={styles.chevron}>
+                                    <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            </button>
+                            {isDropdownOpen && (
+                                <div className={styles.dropdown}>
+                                    <div className={styles.dropdownHeader}>
+                                        <input type="text" placeholder="Search Category..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={styles.searchInput} />
+                                        <button className={styles.applyButton} onClick={() => setIsDropdownOpen(false)}>Apply</button>
+                                    </div>
+                                    <div className={styles.categoriesList}>
+                                        {filteredCategories.map((category) => (
+                                            <label key={category} className={styles.categoryItem}>
+                                                <input type="checkbox" checked={selectedCategories.includes(category)} onChange={() => handleCategoryToggle(category)} className={styles.categoryCheckbox} />
+                                                <span className={styles.categoryLabel}>{category}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
                 <div className={styles.header}>
                     <div className={styles.titleRow}>
                         <h1 className={styles.title}>All Articles</h1>
