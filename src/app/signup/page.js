@@ -2,38 +2,78 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import AuthLayout from "@/components/auth/AuthLayout"
 import PasswordField from "@/components/auth/PasswordField"
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton"
+import { signUp, signIn } from "@/lib/auth-client"
 
 export default function SignupPage() {
+  const router = useRouter()
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: ""
   })
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
   const handleInputChange = (field) => (e) => {
     setFormData(prev => ({
       ...prev,
       [field]: e.target.value
     }))
+    setError("")
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log('Signup form submitted:', formData)
+    setLoading(true)
+    setError("")
+
+    try {
+      const result = await signUp.email({
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+      })
+
+      if (result.error) {
+        setError(result.error.message || "Failed to sign up")
+        return
+      }
+
+      router.push("/")
+    } catch (err) {
+      setError(err.message || "An unexpected error occurred")
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleGoogleSignup = () => {
-    console.log('Google signup clicked')
+  const handleGoogleSignup = async () => {
+    try {
+      await signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      })
+    } catch (err) {
+      setError("Failed to sign up with Google")
+      console.error(err)
+    }
   }
 
   return (
     <AuthLayout title="Welcome, Sign up here!">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="name" className="text-gray-700">
@@ -70,11 +110,12 @@ export default function SignupPage() {
           value={formData.password}
           onChange={handleInputChange('password')}
         />
-        <Button 
+        <Button
           type="submit"
-          className="w-full bg-black text-white hover:bg-gray-800 rounded-md py-3"
+          disabled={loading}
+          className="w-full bg-black text-white hover:bg-gray-800 rounded-md py-3 disabled:opacity-50"
         >
-          Sign Up
+          {loading ? "Signing up..." : "Sign Up"}
         </Button>
       </form>
       <div className="text-center text-sm text-gray-600">
@@ -86,7 +127,7 @@ export default function SignupPage() {
       <div className="text-center text-gray-400">
         or
       </div>
-      <GoogleAuthButton 
+      <GoogleAuthButton
         text="Signup With Google"
         onClick={handleGoogleSignup}
       />

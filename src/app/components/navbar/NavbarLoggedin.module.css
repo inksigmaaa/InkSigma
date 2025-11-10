@@ -1,0 +1,129 @@
+/* Main container - centers navbar in viewport */
+.mainContainer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    background: #FFFFFF;
+    padding: 20px 20px;
+    z-index: 50;
+}
+
+/* Navbar container - fixed width on desktop */
+.navContainer {
+    width: 100%;
+    max-width: 1034px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 85px;
+    padding: 16px 24px;
+    background: #FFFFFF;
+    box-shadow: 0px 4px 25px 0px #00000012;
+    border-radius: 8px;
+}
+
+/* Logo section */
+.logo {
+    display: flex;
+    align-items: center;
+}
+
+.logo img {
+    height: 32px;
+    width: auto;
+}
+
+/* Profile section - right side */
+.profileSection {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Notification icon */
+.notification {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.notification img {
+    width: 24px;
+    height: 24px;
+}
+
+/* User profile section */
+.userProfile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.userProfileImg {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Profile name with dropdown */
+.profileName {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.down {
+    display: flex;
+    align-items: center;
+}
+
+.down img {
+    width: 16px;
+    height: 16px;
+}
+
+/* Mobile responsive - hide name on small screens */
+@media (max-width: 768px) {
+    .mainContainer {
+        padding: 0 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+    .navContainer {
+        padding: 12px 16px;
+        height: 70px;
+        min-width: fit-content;
+    }
+
+    .logo img {
+        height: 28px;
+    }
+
+    /* Hide profile name on mobile */
+    .profileName {
+        display: none;
+    }
+
+    .profileSection {
+        gap: 12px;
+    }
+
+    .userProfileImg {
+        width: 36px;
+        height: 36px;
+    }
+
+    .notification img {
+        width: 22px;
+        height: 22px;
+    }
+}

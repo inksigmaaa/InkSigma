@@ -10,6 +10,7 @@ import AuthLayout from "@/components/auth/AuthLayout"
 import PasswordField from "@/components/auth/PasswordField"
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton"
 import { APP_CONFIG } from "@/constants/app"
+import { signIn } from "@/lib/auth-client"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -17,21 +18,52 @@ export default function LoginPage() {
     email: "",
     password: ""
   })
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
   const handleInputChange = (field) => (e) => {
     setFormData(prev => ({
       ...prev,
       [field]: e.target.value
     }))
+    setError("")
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log('Login form submitted:', formData)
+    setLoading(true)
+    setError("")
+
+    try {
+      const result = await signIn.email({
+        email: formData.email,
+        password: formData.password,
+      })
+
+      if (result.error) {
+        setError(result.error.message || "Invalid email or password")
+        return
+      }
+
+      router.push("/")
+    } catch (err) {
+      setError(err.message || "An unexpected error occurred")
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleGoogleLogin = () => {
-    console.log('Google login clicked')
+  const handleGoogleLogin = async () => {
+    try {
+      await signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      })
+    } catch (err) {
+      setError("Failed to login with Google")
+      console.error(err)
+    }
   }
 
   const handleMagicLink = () => {
@@ -40,6 +72,11 @@ export default function LoginPage() {
 
   return (
     <AuthLayout title="Login here!">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="email" className="text-gray-700">
@@ -63,20 +100,21 @@ export default function LoginPage() {
           onChange={handleInputChange('password')}
         />
         <div className="text-right">
-          <Link 
-            href="/forgot-password" 
+          <Link
+            href="/forgot-password"
             className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
           >
             Forgot Password?
           </Link>
         </div>
-        <Button 
+        <Button
           type="submit"
-          className="w-full bg-black text-white hover:bg-gray-800 rounded-md py-3"
+          disabled={loading}
+          className="w-full bg-black text-white hover:bg-gray-800 rounded-md py-3 disabled:opacity-50"
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </Button>
-        <Button 
+        <Button
           type="button"
           variant="outline"
           onClick={handleMagicLink}
@@ -87,8 +125,8 @@ export default function LoginPage() {
       </form>
       <div className="text-center text-sm text-gray-600">
         New to {APP_CONFIG.name}?{" "}
-        <Link 
-          href="/signup" 
+        <Link
+          href="/signup"
           className="text-gray-900 underline hover:text-gray-700 transition-colors"
         >
           Create a Account
@@ -97,7 +135,7 @@ export default function LoginPage() {
       <div className="text-center text-gray-400">
         or
       </div>
-      <GoogleAuthButton 
+      <GoogleAuthButton
         text="Login With Google"
         onClick={handleGoogleLogin}
       />
