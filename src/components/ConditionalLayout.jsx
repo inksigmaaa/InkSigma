@@ -8,8 +8,9 @@ export default function ConditionalLayout({ children }) {
   const pathname = usePathname()
   const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/forgot-password"
   const isDashboardPage = pathname?.startsWith("/dashboard")
+  const isPostsPage = pathname?.startsWith("/posts")
 
-  if (isAuthPage || isDashboardPage) {
+  if (isAuthPage || isDashboardPage || isPostsPage) {
     return (
       <div className="min-h-screen">
         {children}
