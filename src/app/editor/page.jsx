@@ -30,6 +30,8 @@ import {
   Calendar,
   Check
 } from "lucide-react"
+import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
+import Sidebar from "../components/sidebar/Sidebar"
 
 export default function EditorPage() {
   const [title, setTitle] = useState("")
@@ -97,8 +99,12 @@ export default function EditorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
+    <>
+      <NavbarLoggedin />
+      <div className="flex">
+        <Sidebar />
+        <div className="flex-1 min-h-screen bg-white">
+          <div className="max-w-5xl mx-auto p-6 space-y-6">
         {/* Status Badge */}
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
@@ -405,12 +411,12 @@ export default function EditorPage() {
           }}
         />
 
-        {/* Spacer for fixed footer */}
-        <div className="h-20"></div>
-      </div>
+            {/* Spacer for fixed footer */}
+            <div className="h-20"></div>
+          </div>
 
-      {/* Fixed Footer */}
-      <div className="bottom-0 left-0 right-0 bg-white border-t py-3">
+          {/* Fixed Footer */}
+          <div className="bottom-0 left-0 right-0 bg-white border-t py-3">
         <div className="max-w-5xl mx-auto px-6">
           {/* Character/Word Count - Top Right */}
           <div className="flex justify-end mb-2">
@@ -457,7 +463,9 @@ export default function EditorPage() {
             </Button>
           </div>
         </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
