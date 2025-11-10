@@ -42,7 +42,7 @@
     content: '';
     width: 8px;
     height: 8px;
-    background: #8B5CF6;
+    background: currentColor;
     border-radius: 50%;
 }
 
