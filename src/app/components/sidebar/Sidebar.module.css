@@ -168,6 +168,15 @@
     color: #6B7280;
 }
 
+.pubIcon a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.pubIcon a:hover {
+    color: inherit;
+}
+
 /* Active state */
 .home.active,
 .domain.active,

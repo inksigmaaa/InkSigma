@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import styles from './Sidebar.module.css'
 
 export default function Sidebar() {
@@ -7,12 +8,12 @@ export default function Sidebar() {
                 <div className={styles.sidebarContainer}>
                     <div className={styles.profile}>
                         <img src="/images/icons/profileuser.svg" alt="profileImg" className={styles.profileImg} />
-                        <a href="/"><button className={styles.viewtext}>view site</button></a>
+                        <Link href="/"><button className={styles.viewtext}>view site</button></Link>
                     </div>
                     <div className={styles.mySpace}>
                         <div className={styles.spaceIcon}>
                             <img src="/images/icons/myspace.svg" alt="my space logo" className={styles.sideLogo} />
-                            <a href="/dashboard"><p className={styles.spaceButton}>My Space</p></a>
+                            <Link href="/dashboard"><p className={styles.spaceButton}>My Space</p></Link>
                         </div>
                     </div>
                     <div className={styles.publicationContainer}>
@@ -60,13 +61,13 @@ export default function Sidebar() {
                         <div className={styles.member}>
                             <div className={styles.pubIcon}>
                                 <img src="/images/icons/Schedule.svg" alt="scheduleicon" className={styles.sideLogo} />
-                                <p className={styles.pubText}>Schedule</p>
+                                <Link href="/schedule"><p className={styles.pubText}>Schedule</p></Link>
                             </div>
                         </div>
                         <div className={styles.settings}>
                             <div className={styles.pubIcon}>
                                 <img src="/images/icons/Review.svg" alt="reviewicon" className={styles.sideLogo} />
-                                <p className={styles.pubText}>Review</p>
+                                <Link href="/review"><p className={styles.pubText}>Review</p></Link>
                             </div>
                         </div>
 
