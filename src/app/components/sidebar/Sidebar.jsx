@@ -7,7 +7,7 @@ export default function Sidebar() {
                 <div className={styles.sidebarContainer}>
                     <div className={styles.profile}>
                         <img src="/images/icons/profileuser.svg" alt="profileImg" className={styles.profileImg} />
-                        <a href="/"><button className={styles.viewtext}>view site</button></a>
+                        <a href="/view_site/layout" target="_blank" rel="noopener noreferrer"><button className={styles.viewtext}>view site</button></a>
                     </div>
                     <div className={styles.mySpace}>
                         <div className={styles.spaceIcon}>
