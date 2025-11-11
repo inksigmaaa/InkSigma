@@ -3,50 +3,33 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
-export default function CommentSection() {
+export default function CommentSection({ blogId }) {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyContent, setReplyContent] = useState('');
   const [expandedReplies, setExpandedReplies] = useState({});
   const [currentTime, setCurrentTime] = useState(Date.now());
+  const [loading, setLoading] = useState(true);
 
-  // Load comments from localStorage on mount
+  // Fetch comments from database
   useEffect(() => {
-    const savedComments = localStorage.getItem('blogComments');
-    if (savedComments) {
-      setComments(JSON.parse(savedComments));
-    } else {
-      // Set default comments with fixed timestamps
-      const defaultComments = [
-        {
-          id: 1,
-          author: 'Rajeswari P',
-          avatar: '/images/avatar.jpg',
-          content: 'hi',
-          createdAt: Date.now(),
-          replies: [
-            {
-              id: 2,
-              author: 'Rajeswari P',
-              avatar: '/images/avatar.jpg',
-              content: 'hello',
-              createdAt: Date.now(),
-            },
-          ],
-        },
-      ];
-      setComments(defaultComments);
-      localStorage.setItem('blogComments', JSON.stringify(defaultComments));
+    async function fetchComments() {
+      if (!blogId) return;
+      
+      try {
+        const response = await fetch(`/api/comments?blogId=${blogId}`);
+        const data = await response.json();
+        setComments(data);
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+      } finally {
+        setLoading(false);
+      }
     }
-  }, []);
 
-  // Save comments to localStorage whenever they change
-  useEffect(() => {
-    if (comments.length > 0) {
-      localStorage.setItem('blogComments', JSON.stringify(comments));
-    }
-  }, [comments]);
+    fetchComments();
+  }, [blogId]);
 
   // Update current time every second for real-time updates
   useEffect(() => {
@@ -83,63 +66,116 @@ export default function CommentSection() {
     return `${years} years ago`;
   };
 
-  const handleSubmitComment = () => {
-    if (newComment.trim() === '') return;
+  const handleSubmitComment = async () => {
+    if (newComment.trim() === '' || !blogId) return;
 
-    const comment = {
-      id: Date.now(),
-      author: 'Guest User',
-      avatar: '/images/avatar.jpg',
-      content: newComment,
-      createdAt: Date.now(),
-      replies: [],
-    };
+    try {
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: newComment,
+          blogId: blogId,
+          authorId: 'guest-user', // Replace with actual user ID from auth
+        }),
+      });
 
-    setComments([...comments, comment]);
-    setNewComment('');
-  };
-
-  const handleSubmitReply = (commentId) => {
-    if (replyContent.trim() === '') return;
-
-    const reply = {
-      id: Date.now(),
-      author: 'Guest User',
-      avatar: '/images/avatar.jpg',
-      content: replyContent,
-      createdAt: Date.now(),
-    };
-
-    setComments(
-      comments.map((comment) =>
-        comment.id === commentId
-          ? { ...comment, replies: [...comment.replies, reply] }
-          : comment
-      )
-    );
-
-    setReplyContent('');
-    setReplyingTo(null);
-  };
-
-  const handleDeleteComment = (commentId) => {
-    if (confirm('Are you sure you want to delete this comment?')) {
-      setComments(comments.filter((comment) => comment.id !== commentId));
+      if (response.ok) {
+        const newCommentData = await response.json();
+        setComments([
+          {
+            ...newCommentData,
+            author: { name: 'Guest User', avatar: '/images/avatar.jpg' },
+            replies: [],
+          },
+          ...comments,
+        ]);
+        setNewComment('');
+      }
+    } catch (error) {
+      console.error('Error submitting comment:', error);
     }
   };
 
-  const handleDeleteReply = (commentId, replyId) => {
-    if (confirm('Are you sure you want to delete this reply?')) {
-      setComments(
-        comments.map((comment) =>
-          comment.id === commentId
-            ? {
-              ...comment,
-              replies: comment.replies.filter((reply) => reply.id !== replyId),
-            }
-            : comment
-        )
-      );
+  const handleSubmitReply = async (commentId) => {
+    if (replyContent.trim() === '' || !blogId) return;
+
+    try {
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: replyContent,
+          blogId: blogId,
+          authorId: 'guest-user', // Replace with actual user ID from auth
+          parentId: commentId.toString(),
+        }),
+      });
+
+      if (response.ok) {
+        const newReply = await response.json();
+        setComments(
+          comments.map((comment) =>
+            comment.id === commentId
+              ? {
+                  ...comment,
+                  replies: [
+                    ...comment.replies,
+                    {
+                      ...newReply,
+                      author: { name: 'Guest User', avatar: '/images/avatar.jpg' },
+                    },
+                  ],
+                }
+              : comment
+          )
+        );
+        setReplyContent('');
+        setReplyingTo(null);
+      }
+    } catch (error) {
+      console.error('Error submitting reply:', error);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return;
+
+    try {
+      const response = await fetch(`/api/comments/${commentId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setComments(comments.filter((comment) => comment.id !== commentId));
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+    }
+  };
+
+  const handleDeleteReply = async (commentId, replyId) => {
+    if (!confirm('Are you sure you want to delete this reply?')) return;
+
+    try {
+      const response = await fetch(`/api/comments/${replyId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setComments(
+          comments.map((comment) =>
+            comment.id === commentId
+              ? {
+                  ...comment,
+                  replies: comment.replies.filter((reply) => reply.id !== replyId),
+                }
+              : comment
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error deleting reply:', error);
     }
   };
 
@@ -149,6 +185,10 @@ export default function CommentSection() {
       [commentId]: !prev[commentId],
     }));
   };
+
+  if (loading) {
+    return <div className="py-8 text-gray-500">Loading comments...</div>;
+  }
 
   return (
     <div>
@@ -196,10 +236,10 @@ export default function CommentSection() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="font-medium text-gray-900">
-                      {comment.author}
+                      {comment.author?.name || 'Anonymous'}
                     </span>
                     <span className="text-sm text-gray-500">
-                      {getRelativeTime(comment.createdAt)}
+                      {getRelativeTime(new Date(comment.createdAt).getTime())}
                     </span>
                   </div>
                   <p className="text-gray-700 mb-3">{comment.content}</p>
@@ -292,7 +332,7 @@ export default function CommentSection() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="font-medium text-gray-900 text-sm">
-                                {reply.author}
+                                {reply.author?.name || 'Anonymous'}
                               </span>
                               <Image
                                 src="/svg/Orginal Author.svg"
@@ -301,7 +341,7 @@ export default function CommentSection() {
                                 height={16}
                               />
                               <span className="text-xs text-gray-400">
-                                {getRelativeTime(reply.createdAt)}
+                                {getRelativeTime(new Date(reply.createdAt).getTime())}
                               </span>
                             </div>
                             <p className="text-gray-700 text-sm mb-2">

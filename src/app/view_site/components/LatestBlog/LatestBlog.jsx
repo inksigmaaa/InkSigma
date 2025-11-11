@@ -3,23 +3,31 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import ShareMenu from '../ShareMenu/ShareMenu';
+import mockData from '@/data/mockBlogs.json';
 
 export default function LatestBlog() {
-  const latestBlog = {
-    id: 1,
-    author: {
-      name: 'Gugan',
-      avatar: '/images/avatar.jpg', // You can replace with actual avatar
-    },
-    date: {
-      day: 'THU',
-      date: '08 NOV, 2025',
-    },
-    title: 'Naresh',
-    description: 'ehehehhfgjryjyjhmh...',
-    image: '/images/blog-1.jpg', // You can replace with actual blog image
-    slug: 'naresh',
+  const latestBlog = mockData.blogs[0]; // Get the first blog as latest
+
+  if (!latestBlog) {
+    return (
+      <section className="max-w-[70%] mx-auto py-12">
+        <h1 className="text-4xl font-bold mb-8 text-black">Latest Blog</h1>
+        <p className="text-gray-500">No blogs available yet.</p>
+      </section>
+    );
+  }
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    return {
+      day: days[date.getDay()],
+      date: `${String(date.getDate()).padStart(2, '0')} ${months[date.getMonth()]}, ${date.getFullYear()}`,
+    };
   };
+
+  const dateFormatted = formatDate(latestBlog.createdAt);
 
   return (
     <section className="max-w-[70%] mx-auto py-12">
@@ -30,15 +38,16 @@ export default function LatestBlog() {
         {/* Author Info */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden">
-            {/* Avatar placeholder */}
-            <div className="w-full h-full bg-gray-400"></div>
+            {latestBlog.author?.avatar && (
+              <Image src={latestBlog.author.avatar} alt={latestBlog.author.name} width={40} height={40} />
+            )}
           </div>
-          <span className="text-gray-900 font-medium">{latestBlog.author.name}</span>
+          <span className="text-gray-900 font-medium">{latestBlog.author?.name || 'Anonymous'}</span>
         </div>
 
         {/* Date */}
         <div className="text-right">
-          <div className="text-gray-700 text-sm font-medium">{latestBlog.date.day} | {latestBlog.date.date}</div>
+          <div className="text-gray-700 text-sm font-medium">{dateFormatted.day} | {dateFormatted.date}</div>
         </div>
       </div>
 
@@ -51,17 +60,17 @@ export default function LatestBlog() {
           />
         </div>
         
-        <Link href="/view_site/blog" className="absolute inset-0 rounded-2xl overflow-hidden cursor-pointer block">
+        <Link href={`/view_site/blog/${latestBlog.slug}`} className="absolute inset-0 rounded-2xl overflow-hidden cursor-pointer block">
 
         {/* Background Image */}
-        <div className="absolute inset-0 bg-gradient-to-br from-yellow-300 to-yellow-400">
-          {/* You can replace this with actual image */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-48 h-64 bg-black/20 rounded-lg mx-auto mb-4"></div>
-              <div className="w-32 h-32 bg-white rounded-full mx-auto"></div>
-            </div>
-          </div>
+        <div className="absolute inset-0">
+          <Image 
+            src={latestBlog.thumbnail} 
+            alt={latestBlog.title}
+            fill
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
         </div>
 
         {/* Bottom Section - Title, Description and Read Button */}

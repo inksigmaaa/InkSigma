@@ -27,7 +27,7 @@ export default function ShareButtons({ title, url, slug, description }) {
   };
 
   return (
-    <div className="fixed right-60 top-1/5 flex flex-col gap-2 z-50">
+    <div className="fixed  flex flex-col gap-2 z-50 pt-20 px-10">
       {/* Share to WhatsApp */}
       <button
         onClick={shareOnWhatsApp}
