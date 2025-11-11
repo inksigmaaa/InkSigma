@@ -1,4 +1,4 @@
-/* Article Card */
+/* ===== ARTICLE CARD ===== */
 .articleCard {
     position: relative;
     background: white;
@@ -8,7 +8,7 @@
     margin-bottom: 16px;
 }
 
-/* Status Badge */
+/* ===== STATUS BADGE ===== */
 .statusBadge {
     position: absolute;
     top: 0;
@@ -22,13 +22,12 @@
     font-weight: 400;
     font-size: 12px;
     line-height: 150%;
-    letter-spacing: 0%;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-/* Mobile Dropdown */
+/* ===== MOBILE DROPDOWN ===== */
 .mobileDropdown {
     position: absolute;
     top: 8px;
@@ -36,17 +35,7 @@
     display: none;
 }
 
-@media (max-width: 768px) {
-    .mobileDropdown {
-        display: block;
-    }
-    
-    .actions {
-        display: none;
-    }
-}
-
-/* Content Layout */
+/* ===== CONTENT LAYOUT ===== */
 .content {
     display: flex;
     justify-content: space-between;
@@ -74,34 +63,26 @@
     flex: 1;
 }
 
-/* Tablet Status and Actions Container */
-.tabletStatusActions {
-    display: none;
-}
-
-/* Title */
+/* ===== TEXT CONTENT ===== */
 .title {
     font-family: 'Public Sans', sans-serif;
     font-weight: 600;
     font-size: 14px;
     line-height: 100%;
-    letter-spacing: 0%;
     color: #000000;
     margin: 0 0 8px 0;
 }
 
-/* Description */
 .description {
     font-family: 'Public Sans', sans-serif;
     font-weight: 400;
     font-size: 14px;
     line-height: 150%;
-    letter-spacing: 0%;
     color: #A4A4A4;
     margin: 0 0 12px 0;
 }
 
-/* Footer */
+/* ===== FOOTER ===== */
 .footer {
     display: flex;
     justify-content: flex-start;
@@ -115,6 +96,7 @@
     flex-shrink: 0;
 }
 
+/* Categories */
 .categories {
     display: flex;
     gap: 8px;
@@ -136,6 +118,7 @@
     align-items: center;
 }
 
+/* Posted Time */
 .posted {
     display: flex;
     align-items: center;
@@ -147,12 +130,11 @@
     font-weight: 400;
     font-size: 14px;
     line-height: 150%;
-    letter-spacing: 0%;
     color: #A4A4A4;
     white-space: nowrap;
 }
 
-/* Actions */
+/* ===== ACTIONS ===== */
 .actions {
     display: flex;
     gap: 8px;
@@ -170,12 +152,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
-}
-
-.actionButton:hover {
-    background: #F9FAFB;
-    border-color: #D1D5DB;
+    transition: all 0.2s ease;
 }
 
 .actionIcon {
@@ -183,7 +160,20 @@
     height: 24px;
 }
 
-/* Tablet and Desktop responsive (above 768px) */
+/* ===== TABLET STATUS AND ACTIONS ===== */
+.tabletStatusActions {
+    display: none;
+}
+
+/* ===== DESKTOP HOVER EFFECTS ===== */
+@media (min-width: 769px) {
+    .actionButton:hover {
+        background: #F9FAFB;
+        border-color: #D1D5DB;
+    }
+}
+
+/* ===== TABLET AND DESKTOP LAYOUT ===== */
 @media (min-width: 769px) {
     .articleCard {
         padding-right: 200px;
@@ -245,7 +235,7 @@
     }
 }
 
-/* Mobile responsive */
+/* ===== MOBILE RESPONSIVE ===== */
 @media (max-width: 768px) {
     .articleCard {
         padding-top: 50px;

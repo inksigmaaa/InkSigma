@@ -1,4 +1,4 @@
-/* Articles Container */
+/* ===== LAYOUT ===== */
 .articlesContainer {
     position: absolute;
     left: 50%;
@@ -14,6 +14,7 @@
     margin-left: 185px;
 }
 
+/* ===== HEADER ===== */
 .header {
     display: flex;
     flex-direction: column;
@@ -30,7 +31,6 @@
     font-weight: 700;
     font-size: 16px;
     line-height: 24px;
-    letter-spacing: 0%;
     color: #1F2937;
     margin: 0;
     display: flex;
@@ -46,6 +46,7 @@
     border-radius: 50%;
 }
 
+/* ===== CONTROLS ===== */
 .controlsRow {
     display: flex;
     align-items: center;
@@ -59,12 +60,11 @@
     gap: 16px;
 }
 
-.actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.rightSection {
+    position: relative;
 }
 
+/* Select All */
 .selectAllLabel {
     display: flex;
     align-items: center;
@@ -84,10 +84,10 @@
     font-weight: 700;
     font-size: 16px;
     line-height: 24px;
-    letter-spacing: 0%;
     color: #6B7280;
 }
 
+/* Icon Buttons */
 .iconButton {
     width: 32px;
     height: 32px;
@@ -99,12 +99,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
 }
 
-.iconButton:hover {
-    background: #F9FAFB;
-    border-color: #D1D5DB;
+.iconButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .icon {
@@ -112,10 +112,7 @@
     height: 24px;
 }
 
-.rightSection {
-    position: relative;
-}
-
+/* ===== CATEGORY DROPDOWN ===== */
 .dropdownWrapper {
     position: relative;
 }
@@ -125,7 +122,6 @@
     font-weight: 400;
     font-size: 14px;
     line-height: 150%;
-    letter-spacing: 0%;
     color: #6B7280;
     background: white;
     border: 1px solid #D1D5DB;
@@ -135,13 +131,9 @@
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: border-color 0.2s ease;
     min-width: 180px;
     justify-content: space-between;
-}
-
-.categoryButton:hover {
-    border-color: #8B5CF6;
 }
 
 .chevron {
@@ -155,7 +147,7 @@
     background: white;
     border: 1px solid #E5E7EB;
     border-radius: 12px;
-    box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     width: 320px;
     height: 256px;
     display: flex;
@@ -181,6 +173,7 @@
     border-radius: 8px;
     background: #F9FAFB;
     outline: none;
+    transition: all 0.2s ease;
 }
 
 .searchInput:focus {
@@ -203,14 +196,11 @@
     border-radius: 8px;
     padding: 10px 24px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s ease;
     white-space: nowrap;
 }
 
-.applyButton:hover {
-    background: #DDD6FE;
-}
-
+/* Categories List */
 .categoriesList {
     padding: 12px;
     overflow-y: auto;
@@ -241,11 +231,7 @@
     padding: 10px 12px;
     cursor: pointer;
     border-radius: 6px;
-    transition: background 0.2s;
-}
-
-.categoryItem:hover {
-    background: #F9FAFB;
+    transition: background 0.2s ease;
 }
 
 .categoryCheckbox {
@@ -264,12 +250,66 @@
     color: #4B5563;
 }
 
-/* Articles List */
+/* ===== ARTICLES LIST ===== */
 .articlesList {
     margin-top: 24px;
 }
 
-/* Mobile responsive */
+/* ===== EMPTY STATE ===== */
+.emptyState {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    padding: 80px 40px;
+    background: repeating-linear-gradient(
+        135deg,
+        transparent,
+        transparent 10px,
+        #E5E7EB 10px,
+        #E5E7EB 11px
+    );
+}
+
+.emptyStateText {
+    font-family: 'Public Sans', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    color: #9CA3AF;
+    text-align: center;
+    background: white;
+    padding: 12px 24px;
+    position: relative;
+    z-index: 1;
+}
+
+/* ===== DESKTOP HOVER EFFECTS ===== */
+@media (min-width: 769px) {
+    .iconButton:hover {
+        background: #F9FAFB;
+        border-color: #D1D5DB;
+    }
+
+    .iconButton:disabled:hover {
+        background: #FFFFFF;
+        border-color: #EAEAEA;
+    }
+
+    .categoryButton:hover {
+        border-color: #8B5CF6;
+    }
+
+    .applyButton:hover {
+        background: #DDD6FE;
+    }
+
+    .categoryItem:hover {
+        background: #F9FAFB;
+    }
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
 @media (max-width: 768px) {
     .articlesContent {
         margin-left: 0;
@@ -308,42 +348,4 @@
     .dropdown {
         width: 280px;
     }
-}
-/* Empty State */
-.emptyState {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 200px;
-    padding: 80px 40px;
-    background: repeating-linear-gradient(
-        135deg,
-        transparent,
-        transparent 10px,
-        #E5E7EB 10px,
-        #E5E7EB 11px
-    );
-}
-
-.emptyStateText {
-    font-family: 'Public Sans', sans-serif;
-    font-weight: 400;
-    font-size: 16px;
-    line-height: 24px;
-    color: #9CA3AF;
-    text-align: center;
-    background: white;
-    padding: 12px 24px;
-    position: relative;
-    z-index: 1;
-}
-
-.iconButton:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.iconButton:disabled:hover {
-    background: #FFFFFF;
-    border-color: #EAEAEA;
 }
