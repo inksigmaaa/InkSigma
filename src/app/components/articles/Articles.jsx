@@ -15,11 +15,15 @@ const categories = [
     "Space", "Sports", "Startups & Companies", "Technology", "Travel"
 ]
 
-export default function Articles() {
+export default function Articles(props) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategories, setSelectedCategories] = useState([])
     const [selectAll, setSelectAll] = useState(false)
+
+    // Filter articles based on status if filterStatus prop is provided
+    const filterStatus = props.filterStatus || null
+    const showCreateButton = props.showCreateButton !== false // default true
 
     const filteredCategories = categories.filter(cat =>
         cat.toLowerCase().includes(searchTerm.toLowerCase())
@@ -36,11 +40,13 @@ export default function Articles() {
             <div className={styles.articlesContent}>
                 {/* Mobile header - visible only below 768px */}
                 <div className={styles.mobileHeader}>
-                    <h1 className={styles.mobileTitle}>All Articles</h1>
+                    <h1 className={styles.mobileTitle}>{props.title || "All Articles"}</h1>
                     <div className={styles.mobileControls}>
-                        <button className={styles.createArticleButton}>
-                            + Create Article
-                        </button>
+                        {showCreateButton && (
+                            <button className={styles.createArticleButton}>
+                                + Create Article
+                            </button>
+                        )}
                         <div className={styles.dropdownWrapper}>
                             <button className={styles.categoryButton} onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
                                 Category
@@ -70,7 +76,7 @@ export default function Articles() {
 
                 <div className={styles.header}>
                     <div className={styles.titleRow}>
-                        <h1 className={styles.title}>All Articles</h1>
+                        <h1 className={styles.title}>{props.title || "All Articles"}</h1>
                     </div>
                     <div className={styles.controlsRow}>
                         <div className={styles.leftSection}>
@@ -118,27 +124,34 @@ export default function Articles() {
                 </div>
 
                 <div className={styles.articlesList}>
-                    <ArticleContainer
-                        status="published"
-                        title="Title of the Blog will be in this area"
-                        description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
-                        categories={["Sports", "Humour", "History"]}
-                        postedTime="Posted 2 mins ago"
-                    />
-                    <ArticleContainer
-                        status="draft"
-                        title="Title of the Blog will be in this area"
-                        description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
-                        categories={["Sports", "Humour", "History"]}
-                        postedTime="Posted 2 mins ago"
-                    />
-                    <ArticleContainer
-                        status="scheduled"
-                        title="Title of the Blog will be in this area"
-                        description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
-                        categories={["Sports", "Humour", "History"]}
-                        postedTime="Posted 2 mins ago"
-                    />
+                    {/* Sample articles - filter by status if filterStatus prop is provided */}
+                    {(!filterStatus || filterStatus === "published") && (
+                        <ArticleContainer
+                            status="published"
+                            title="Title of the Blog will be in this area"
+                            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
+                            categories={["Sports", "Humour", "History"]}
+                            postedTime="Posted 2 mins ago"
+                        />
+                    )}
+                    {(!filterStatus || filterStatus === "draft") && (
+                        <ArticleContainer
+                            status="draft"
+                            title="Title of the Blog will be in this area"
+                            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
+                            categories={["Sports", "Humour", "History"]}
+                            postedTime="Posted 2 mins ago"
+                        />
+                    )}
+                    {(!filterStatus || filterStatus === "scheduled") && (
+                        <ArticleContainer
+                            status="scheduled"
+                            title="Title of the Blog will be in this area"
+                            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
+                            categories={["Sports", "Humour", "History"]}
+                            postedTime="Posted 2 mins ago"
+                        />
+                    )}
                 </div>
             </div>
         </div>

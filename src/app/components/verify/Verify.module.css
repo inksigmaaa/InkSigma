@@ -69,6 +69,10 @@
 
 /* Mobile responsive */
 @media (max-width: 768px) {
+    .verifyContainer {
+        top: 90px;
+    }
+
     .verifyBox {
         margin-left: 0;
         flex-direction: column;

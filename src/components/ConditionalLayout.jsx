@@ -6,14 +6,16 @@ import Footer from "@/components/Footer"
 
 export default function ConditionalLayout({ children }) {
   const pathname = usePathname()
-  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/forgot-password" || pathname === "/magic-link"
+  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/forgot-password" || pathname === "/reset-password" || pathname === "/magic-link"
   const isDashboardPage = pathname?.startsWith("/dashboard")
   const isSchedulePage = pathname === "/schedule"
   const isReviewPage = pathname === "/review"
   const isEditorPage = pathname === "/editor"
   const isPostsPage = pathname === "/posts"
+  const isPublishedPage = pathname === "/published"
+  const isCommentsPage = pathname === "/comments"
 
-  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage) {
+  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isPublishedPage || isCommentsPage) {
     return (
       <div className="min-h-screen">
         {children}

@@ -276,6 +276,10 @@
 
 /* Mobile responsive */
 @media (max-width: 768px) {
+    .articlesContainer {
+        top: 200px;
+    }
+
     .articlesContent {
         margin-left: 0;
     }
@@ -284,14 +288,16 @@
     .mobileHeader {
         display: flex;
         flex-direction: column;
+        justify-content: space-between;
         gap: 16px;
         margin-bottom: 24px;
+        padding:0 8px;
     }
 
     .mobileTitle {
         font-family: 'Public Sans', sans-serif;
         font-weight: 700;
-        font-size: 24px;
+        font-size: 18px;
         line-height: 32px;
         color: #1F2937;
         margin: 0;
@@ -314,6 +320,11 @@
         align-items: center;
         justify-content: space-between;
         gap: 16px;
+    }
+
+    /* When only category dropdown is shown */
+    .mobileControls:has(.dropdownWrapper:only-child) {
+        justify-content: flex-end;
     }
 
     .createArticleButton {
@@ -386,7 +397,7 @@
     }
 
     .mobileTitle {
-        font-size: 20px;
+        font-size: 18px;
         line-height: 28px;
     }
 }
