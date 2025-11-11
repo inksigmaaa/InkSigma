@@ -13,8 +13,11 @@ export default function ConditionalLayout({ children }) {
   const isEditorPage = pathname === "/editor"
   const isPostsPage = pathname === "/posts"
   const isViewSitePage = pathname?.startsWith("/view_site")
+  const isMyBlogsPage = pathname === "/my-blogs"
+  const isDraftPage = pathname === "/draft"
+  const isTrashPage = pathname === "/trash"
 
-  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isViewSitePage) {
+  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isViewSitePage || isMyBlogsPage || isDraftPage || isTrashPage) {
     return (
       <div className="min-h-screen">
         {children}
