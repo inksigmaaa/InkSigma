@@ -91,6 +91,10 @@
     flex-wrap: nowrap;
 }
 
+.footer .categories {
+    align-items: center;
+}
+
 .footer .posted {
     margin-left: auto;
     flex-shrink: 0;
@@ -173,13 +177,13 @@
     }
 }
 
-/* ===== TABLET AND DESKTOP LAYOUT ===== */
-@media (min-width: 769px) {
+/* ===== TABLET LAYOUT (769px - 1024px) ===== */
+@media (min-width: 769px) and (max-width: 1024px) {
     .articleCard {
         padding-right: 200px;
     }
 
-    .articleCard > .statusBadge {
+    .articleCard>.statusBadge {
         display: none;
     }
 
@@ -228,32 +232,94 @@
 
     .footer {
         flex-wrap: nowrap;
+        align-items: center;
     }
 
     .footer .posted {
         display: flex;
+    }
+
+    .categories .categoryTag:first-child {
+        display: flex;
+        align-items: center;
+    }
+}
+
+/* ===== DESKTOP LAYOUT (1025px+) ===== */
+@media (min-width: 1025px) {
+    .articleCard {
+        padding-top: 40px;
+        padding-right: 16px;
+    }
+
+    .articleCard>.statusBadge {
+        display: flex;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: auto;
+        min-width: 88px;
+        height: 26px;
+        padding: 4px 16px;
+        border-top-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+
+    .content {
+        margin-top: 0;
+        align-items: flex-start;
+    }
+
+    .content .actions {
+        display: flex;
+        position: absolute;
+        right: 16px;
+        top: 16px;
+        gap: 8px;
+    }
+
+    .tabletStatusActions {
+        display: none;
+    }
+
+    .footer {
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+
+    .footer .posted {
+        display: flex;
+    }
+
+    .categories .categoryTag:first-child {
+        display: flex;
+        align-items: center;
     }
 }
 
 /* ===== MOBILE RESPONSIVE ===== */
 @media (max-width: 768px) {
     .articleCard {
-        padding-top: 50px;
+        padding-top: 40px;
     }
 
-    .articleCard > .statusBadge {
+    .articleCard>.statusBadge {
         display: flex;
         position: absolute;
-        top: 12px;
-        left: 12px;
+        top: 0;
+        left: 0;
         width: auto;
-        height: auto;
-        padding: 6px 16px;
-        border-radius: 4px;
+        min-width: 88px;
+        height: 26px;
+        padding: 4px 16px;
+        border-top-left-radius: 8px;
+        border-bottom-right-radius: 8px;
     }
 
     .mobileDropdown {
         display: block;
+        top: 8px;
+        right: 8px;
     }
 
     .tabletStatusActions {
