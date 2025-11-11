@@ -34,15 +34,15 @@ export default function ScrollToTop() {
       {isVisible && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-8 right-8 w-12 h-12 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center  transition-all z-50"
+          className="hidden lg:flex fixed bottom-4 right-4 md:bottom-8 md:right-8 w-10 h-10 md:w-12 md:h-12 bg-white border-2 border-gray-200 rounded-full items-center justify-center transition-all z-50 shadow-lg"
           aria-label="Scroll to top"
         >
           <Image 
             src="/svg/arrow-right.svg" 
             alt="Scroll to top"
-            width={20}
-            height={20}
-            className="text-gray-200 -rotate-90"
+            width={16}
+            height={16}
+            className="text-gray-200 -rotate-90 md:w-5 md:h-5"
           />
         </button>
       )}

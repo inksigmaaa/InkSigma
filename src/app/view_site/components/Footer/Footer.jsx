@@ -1,23 +1,32 @@
 export default function Footer() {
+  const currentYear = new Date().getFullYear();
+  
   return (
-    <footer className="bg-gray-50 border-t border-gray-200 pt-16 pb-6">
-      <div className="max-w-[100%]">
+    <footer className="bg-white border-t border-gray-200 pt-10 md:pt-12 pb-2 lg:pb-8 px-4 md:px-6">
+      <div className="max-w-3xl mx-auto">
+        {/* Copyright at top */}
+        <div className="text-center mb-8 md:mb-10">
+          <p className="text-base md:text-lg text-gray-300">
+            © {currentYear} Joshhh blogs
+          </p>
+        </div>
+        
         {/* Call to Action Section */}
-        <div className="text-center mb-12">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+        <div className="text-center mb-8 md:mb-10">
+          <h2 className="text-xl md:text-3xl font-semibold text-gray-900 mb-5 md:mb-6 px-2 leading-tight">
             Eager to delve into the art of blog writing?
           </h2>
           <a
             href="/write"
-            className="inline-block px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
+            className="inline-block px-10 py-3.5 md:px-12 md:py-4 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors text-base md:text-lg font-medium"
           >
             Start Writing
           </a>
         </div>
 
         {/* Made with Inksigma */}
-        <div className="text-center mb-8">
-          <p className="text-sm text-gray-500">
+        <div className="text-center mb-6 md:mb-8">
+          <p className="text-base md:text-lg text-gray-300">
             Made with{' '}
             <a
               href="https://inksigma.com"
@@ -31,40 +40,50 @@ export default function Footer() {
         </div>
 
         {/* Footer Links */}
-        <div className="flex items-center justify-around text-sm text-gray-500 border-y border-gray-200 py-6">
-          <div className="flex items-center gap-6">
-            <a href="/terms" className="hover:text-gray-700 transition-colors">
+        <div className="text-center mb-6 md:mb-8">
+          <div className="flex items-center justify-center gap-3 md:gap-4 text-sm md:text-base text-gray-300 flex-wrap px-4">
+            <a 
+              href="https://inksigma.com" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-gray-500 transition-colors"
+            >
+              Inksigma Website
+            </a>
+            <span className="text-gray-300">•</span>
+            <a href="/terms" className="hover:text-gray-500 transition-colors">
               Terms and Conditions
             </a>
             <span className="text-gray-300">•</span>
-            <a href="/privacy" className="hover:text-gray-700 transition-colors">
+            <a href="/privacy" className="hover:text-gray-500 transition-colors">
               Privacy Policy
             </a>
           </div>
+        </div>
 
-          <div>
-            <p>
-              Copyright © 2024 designed & developed by{' '}
-              <a
-                href="https://inksigma.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-purple-600 hover:text-purple-700"
-              >
-                Inksigma
-              </a>
-              , a{' '}
-              <a
-                href="https://zemuria.inc"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-purple-600 hover:text-purple-700"
-              >
-                Zemuria Inc
-              </a>
-              . brand
-            </p>
-          </div>
+        {/* Copyright Bottom */}
+        <div className="text-center border-t border-gray-200 pt-5 md:pt-6 px-4">
+          <p className="text-sm md:text-base text-gray-300 leading-relaxed">
+            Copyright © {currentYear} designed & developed by{' '}
+            <a
+              href="https://inksigma.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-purple-600 hover:text-purple-700"
+            >
+              Inksigma
+            </a>
+            , a{' '}
+            <a
+              href="https://zemuria.inc"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-purple-600 hover:text-purple-700"
+            >
+              Zemuria Inc
+            </a>
+            . brand
+          </p>
         </div>
       </div>
     </footer>

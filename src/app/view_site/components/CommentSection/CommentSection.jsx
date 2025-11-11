@@ -20,9 +20,17 @@ export default function CommentSection({ blogId }) {
       try {
         const response = await fetch(`/api/comments?blogId=${blogId}`);
         const data = await response.json();
-        setComments(data);
+        
+        // Ensure data is an array before setting
+        if (Array.isArray(data)) {
+          setComments(data);
+        } else {
+          console.error('Comments data is not an array:', data);
+          setComments([]);
+        }
       } catch (error) {
         console.error('Error fetching comments:', error);
+        setComments([]);
       } finally {
         setLoading(false);
       }
@@ -191,33 +199,30 @@ export default function CommentSection({ blogId }) {
   }
 
   return (
-    <div className="pt-12">
+    <div className="pt-8 md:pt-12">
       {/* New Comment Section */}
-      <div className="my-12 border-t-2">
-        <h2 className="text-2xl font-bold text-black my-12">
-          Share your thoughts on the article
+      <div className="my-6 md:my-12 border-t border-gray-200 pt-6 md:pt-8">
+        <h2 className="text-lg md:text-2xl font-bold text-black mb-6 md:mb-8">
+          How useful was this blog?
         </h2>
 
-        <div className="flex gap-4 mb-6">
-          <div className="w-10 h-10 rounded-full bg-gray-300 flex-shrink-0"></div>
-          <div className="flex-1">
+        <div className="flex gap-3 md:gap-4 mb-6">
+          <div className="w-10 h-10 md:w-10 md:h-10 rounded-full bg-gray-200 flex-shrink-0"></div>
+          <div className="flex-1 min-w-0">
             <textarea
-              placeholder="Enter your comments"
+              placeholder="Enter your comment"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              className="w-full min-h-[120px] p-4 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 resize-none text-black"
+              className="w-full min-h-[120px] md:min-h-[140px] p-4 md:p-4 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 resize-none text-black text-sm md:text-base placeholder:text-gray-400"
               maxLength={1000}
             />
-            <div className="flex flex-col  justify-end items-end mt-2 ">
-              <span className="text-sm text-gray-500 ">
-                {newComment.length}/1000
-              </span>
+            <div className="flex justify-end items-center mt-3">
               <button
                 onClick={handleSubmitComment}
-                className=" py-2 text-purple-800 hover: font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2 text-purple-600 hover:text-purple-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
                 disabled={newComment.trim() === ''}
               >
-                Submit comment
+                Add Comment
               </button>
             </div>
           </div>
@@ -225,47 +230,45 @@ export default function CommentSection({ blogId }) {
       </div>
 
       {/* Discussion Section */}
-      <div>
-        <h3 className="text-xl font-bold text-black mb-6">Discussion</h3>
+      <div className="mt-8 md:mt-12">
+        <h3 className="text-lg md:text-xl font-bold text-black mb-4 md:mb-6">
+          Discussions ({Array.isArray(comments) ? comments.length : 0})
+        </h3>
 
-        <div className="space-y-6">
-          {comments.map((comment) => (
-            <div key={comment.id} className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="flex gap-4">
-                <div className="w-10 h-10 rounded-full bg-gray-300 flex-shrink-0"></div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="font-medium text-gray-900">
-                      {comment.author?.name || 'Anonymous'}
+        <div className="space-y-4 md:space-y-6">
+          {Array.isArray(comments) && comments.length > 0 ? comments.map((comment) => (
+            <div key={comment.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 md:p-6">
+              <div className="flex gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-10 md:h-10 rounded-full bg-gray-300 flex-shrink-0"></div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className="font-semibold text-gray-900 text-sm md:text-base">
+                      {comment.author?.name || 'Guest'}
                     </span>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-xs md:text-sm text-gray-400">
                       {getRelativeTime(new Date(comment.createdAt).getTime())}
                     </span>
                   </div>
-                  <p className="text-gray-700 mb-3">{comment.content}</p>
-                  <div className="flex gap-4 text-sm">
+                  <p className="text-gray-600 mb-3 text-sm md:text-base break-words">{comment.content}</p>
+                  <div className="flex gap-3 text-sm items-center">
                     <button
                       onClick={() => setReplyingTo(comment.id)}
-                      className="text-gray-400 hover:text-gray-600 flex items-center gap-1.5"
+                      className="text-gray-400 hover:text-gray-600 flex items-center gap-1 text-xs md:text-sm"
                     >
-                      <Image
-                        src="/svg/reply_icon.svg"
-                        alt="Delete"
-                        width={60}
-                        height={60}
-                      />
-
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M9 10h6M9 14h6M9 18h6"/>
+                        <path d="M3 20l1.3-3.9A9 9 0 1 1 7.9 19.7L3 20z"/>
+                      </svg>
+                      Reply
                     </button>
                     <button
                       onClick={() => handleDeleteComment(comment.id)}
-
+                      className="text-gray-400 hover:text-red-600 flex items-center gap-1 text-xs md:text-sm"
                     >
-                      <Image
-                        src="/svg/delete_btn_icon.svg"
-                        alt="Delete"
-                        width={60}
-                        height={60}
-                      />
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
+                      Delete
                     </button>
                   </div>
 
@@ -275,29 +278,26 @@ export default function CommentSection({ blogId }) {
                       onClick={() => toggleReplies(comment.id)}
                       className="mt-4 flex items-center gap-2 text-sm font-semibold text-gray-900 hover:text-gray-700"
                     >
-                      Replies({comment.replies.length})
-                      <span className={`transform transition-transform ${expandedReplies[comment.id] ? 'rotate-270' : 'rotate-90'}`}>
-                        <Image
-                          src="/svg/arrow-right.svg"
-                          alt="reply drop down arrow"
-                          width={20}
-                          height={20}
-                        />
+                      Replies
+                      <span className={`transform transition-transform ${expandedReplies[comment.id] ? 'rotate-180' : 'rotate-0'}`}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M19 9l-7 7-7-7"/>
+                        </svg>
                       </span>
                     </button>
                   )}
 
                   {/* Reply Form */}
                   {replyingTo === comment.id && (
-                    <div className="mt-4">
+                    <div className="mt-4 bg-white rounded-lg p-3 md:p-4">
                       <div className="flex gap-3">
                         <div className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0"></div>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <textarea
                             placeholder="Write a reply..."
                             value={replyContent}
                             onChange={(e) => setReplyContent(e.target.value)}
-                            className="w-full min-h-[80px] p-3 text-black border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 resize-none text-sm"
+                            className="w-full min-h-[80px] p-3 text-black border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 resize-none text-sm placeholder:text-gray-400"
                             maxLength={1000}
                           />
                           <div className="flex justify-end gap-2 mt-2">
@@ -306,13 +306,13 @@ export default function CommentSection({ blogId }) {
                                 setReplyingTo(null);
                                 setReplyContent('');
                               }}
-                              className="px-4 py-1 text-sm text-gray-600 hover:text-gray-800"
+                              className="px-4 py-1.5 text-sm text-gray-600 hover:text-gray-800"
                             >
                               Cancel
                             </button>
                             <button
                               onClick={() => handleSubmitReply(comment.id)}
-                              className="px-4 py-1 text-sm text-purple-600 hover:text-purple-700 font-medium disabled:opacity-50"
+                              className="px-4 py-1.5 text-sm text-purple-600 hover:text-purple-700 font-medium disabled:opacity-50"
                               disabled={replyContent.trim() === ''}
                             >
                               Reply
@@ -325,42 +325,22 @@ export default function CommentSection({ blogId }) {
 
                   {/* Replies - Collapsible */}
                   {comment.replies.length > 0 && expandedReplies[comment.id] && (
-                    <div className="mt-4 space-y-4 pl-4 border-gray-200">
+                    <div className="mt-4 space-y-3 pl-3 md:pl-6 border-l-2 border-gray-200">
                       {comment.replies.map((reply) => (
-                        <div key={reply.id} className="flex gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0"></div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-gray-900 text-sm">
-                                {reply.author?.name || 'Anonymous'}
+                        <div key={reply.id} className="flex gap-3 bg-white p-3 rounded-lg">
+                          <div className="w-9 h-9 rounded-full bg-gray-300 flex-shrink-0"></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <span className="font-semibold text-gray-900 text-sm">
+                                {reply.author?.name || 'Jemmy'}
                               </span>
-                              <Image
-                                src="/svg/Orginal Author.svg"
-                                alt="Original Author"
-                                width={16}
-                                height={16}
-                              />
                               <span className="text-xs text-gray-400">
                                 {getRelativeTime(new Date(reply.createdAt).getTime())}
                               </span>
                             </div>
-                            <p className="text-gray-700 text-sm mb-2">
+                            <p className="text-gray-600 text-sm mb-2 break-words">
                               {reply.content}
                             </p>
-                            <button
-                              onClick={() =>
-                                handleDeleteReply(comment.id, reply.id)
-                              }
-
-                            >
-                              <Image
-                                src="/svg/delete_btn_icon.svg"
-                                alt="Delete"
-                                width={60}
-                                height={60}
-                              />
-
-                            </button>
                           </div>
                         </div>
                       ))}
@@ -369,10 +349,14 @@ export default function CommentSection({ blogId }) {
                 </div>
               </div>
             </div>
-          ))}
+          )) : (
+            <p className="text-gray-500 text-center py-8">
+              {loading ? 'Loading comments...' : 'No comments yet. Be the first to share your thoughts!'}
+            </p>
+          )}
         </div>
 
-        {comments.length === 0 && (
+        {false && (
           <p className="text-gray-500 text-center py-8">
             No comments yet. Be the first to share your thoughts!
           </p>
