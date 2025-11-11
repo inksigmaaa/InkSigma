@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,7 @@ import AuthLayout from "@/components/auth/AuthLayout"
 import { ArrowLeft, CheckCircle2, Eye, EyeOff } from "lucide-react"
 import { resetPassword } from "@/lib/auth-client"
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [password, setPassword] = useState("")
@@ -168,5 +168,19 @@ export default function ResetPasswordPage() {
                 </Link>
             </div>
         </AuthLayout>
+    )
+}
+
+export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={
+            <AuthLayout title="Reset Password">
+                <div className="space-y-6">
+                    <div className="text-center text-gray-500">Loading...</div>
+                </div>
+            </AuthLayout>
+        }>
+            <ResetPasswordForm />
+        </Suspense>
     )
 }
