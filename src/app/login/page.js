@@ -45,7 +45,7 @@ export default function LoginPage() {
         return
       }
 
-      router.push("/")
+      router.push("/dashboard")
     } catch (err) {
       setError(err.message || "An unexpected error occurred")
       console.error(err)

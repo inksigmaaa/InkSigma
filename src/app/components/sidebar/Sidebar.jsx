@@ -77,19 +77,19 @@ export default function Sidebar() {
                         <div className={styles.home}>
                             <div className={styles.pubIcon}>
                                 <img src="/images/icons/all_articles.svg" alt="myblogsicon" className={styles.sideLogo} />
-                                <p className={styles.pubText}>My Blogs</p>
+                                <a href="/my-blogs"><p className={styles.pubText}>My Blogs</p></a>
                             </div>
                         </div>
                         <div className={styles.domain}>
                             <div className={styles.pubIcon}>
                                 <img src="/images/icons/Publish.svg" alt="drafticon" className={styles.sideLogo} />
-                                <p className={styles.pubText}>Draft</p>
+                                <a href="/draft"><p className={styles.pubText}>Draft</p></a>
                             </div>
                         </div>
                         <div className={styles.member}>
                             <div className={styles.pubIcon}>
                                 <img src="/images/icons/Schedule.svg" alt="trashicon" className={styles.sideLogo} />
-                                <p className={styles.pubText}>Trash</p>
+                                <a href="/trash"><p className={styles.pubText}>Trash</p></a>
                             </div>
                         </div>
 
