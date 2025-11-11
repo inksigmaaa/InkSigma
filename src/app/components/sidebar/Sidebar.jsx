@@ -1,7 +1,11 @@
+"use client"
+
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import styles from './Sidebar.module.css'
 
 export default function Sidebar() {
+    const pathname = usePathname()
     return (
         <>
             <div className={styles.sideContainer}>
@@ -24,12 +28,14 @@ export default function Sidebar() {
                                 <p className={styles.pubText}>Home</p>
                             </div>
                         </div>
-                        <div className={styles.domain}>
-                            <div className={styles.pubIcon}>
-                                <img src="/images/icons/domain.svg" alt="domainicon" className={styles.sideLogo} />
-                                <p className={styles.pubText}>Domain</p>
+                        <Link href="/domain">
+                            <div className={`${styles.domain} ${pathname === '/domain' ? styles.active : ''}`}>
+                                <div className={styles.pubIcon}>
+                                    <img src="/images/icons/domain.svg" alt="domainicon" className={styles.sideLogo} />
+                                    <p className={styles.pubText}>Domain</p>
+                                </div>
                             </div>
-                        </div>
+                        </Link>
                         <div className={styles.member}>
                             <div className={styles.pubIcon}>
                                 <img src="/images/icons/Member.svg" alt="membericon" className={styles.sideLogo} />
