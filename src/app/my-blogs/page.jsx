@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import styles from "../components/articles/Articles.module.css"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
+import Verify from "../components/verify/Verify"
 import ArticleContainer from "../components/articleContainer/ArticleContainer"
 import { useArticles } from "@/contexts/ArticlesContext"
 
@@ -47,6 +48,7 @@ export default function MyBlogsPage() {
     <>
       <NavbarLoggedin />
       <Sidebar />
+      <Verify />
       <div className={styles.articlesContainer}>
         <div className={styles.articlesContent}>
           <div className={styles.header}>
