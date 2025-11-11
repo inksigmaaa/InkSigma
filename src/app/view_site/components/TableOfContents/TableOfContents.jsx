@@ -64,11 +64,7 @@ export default function TableOfContents() {
   }
 
   return (
-    <div className="w-64 sticky top-24 h-fit ">
-      {/* Go to homepage button */}
-      <div className="mb-8">
-      </div>
-
+    <div className="w-64 sticky top-44 h-fit">
       {/* Table of Contents - Only show if there are sections */}
       {sections.length > 0 && (
         <div>

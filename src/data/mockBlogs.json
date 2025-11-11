@@ -7,7 +7,7 @@
       "description": "Learn how to use React Hooks to build modern, functional components with state management and side effects.",
       "category": "Technology",
       "thumbnail": "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=400&fit=crop",
-      "content": "<p>React Hooks have revolutionized the way we write React components...</p>",
+      "content": "<h2>Introduction to React Hooks</h2><p>React Hooks have revolutionized the way we write React components. Introduced in React 16.8, hooks allow you to use state and other React features without writing a class component.</p><h2>Why Use Hooks?</h2><p>Hooks solve many problems that developers faced with class components:</p><ul><li>Complex components become hard to understand</li><li>Reusing stateful logic between components is difficult</li><li>Classes confuse both people and machines</li></ul><h2>The Most Common Hooks</h2><h3>useState</h3><p>The useState hook lets you add state to functional components. Here's a simple example:</p><pre><code>const [count, setCount] = useState(0);</code></pre><h3>useEffect</h3><p>The useEffect hook lets you perform side effects in functional components. It serves the same purpose as componentDidMount, componentDidUpdate, and componentWillUnmount combined.</p><pre><code>useEffect(() => {\n  document.title = `You clicked ${count} times`;\n}, [count]);</code></pre><h2>Best Practices</h2><p>When working with hooks, always follow these rules:</p><ol><li>Only call hooks at the top level</li><li>Only call hooks from React functions</li><li>Use the ESLint plugin to enforce these rules</li></ol><h2>Conclusion</h2><p>React Hooks provide a more direct API to the React concepts you already know. They give you the power to write cleaner, more maintainable code.</p>",
       "author": {
         "id": 1,
         "name": "Sarah Johnson",
@@ -30,7 +30,7 @@
       "description": "Discover the power of CSS Grid and how it can transform your web layouts with ease and flexibility.",
       "category": "Design",
       "thumbnail": "https://images.unsplash.com/photo-1507721999472-8ed4421c4af2?w=800&h=400&fit=crop",
-      "content": "<p>CSS Grid is a powerful layout system that allows you to create complex layouts...</p>",
+      "content": "<h2>What is CSS Grid?</h2><p>CSS Grid is a powerful layout system that allows you to create complex layouts with ease. Unlike Flexbox, which is one-dimensional, Grid is two-dimensional, meaning it can handle both columns and rows simultaneously.</p><h2>Getting Started with Grid</h2><p>To create a grid container, simply set display: grid on an element:</p><pre><code>.container {\n  display: grid;\n  grid-template-columns: repeat(3, 1fr);\n  gap: 20px;\n}</code></pre><h2>Key Concepts</h2><h3>Grid Template Areas</h3><p>One of the most powerful features of CSS Grid is the ability to name grid areas and place items using those names:</p><pre><code>.container {\n  grid-template-areas:\n    'header header header'\n    'sidebar main main'\n    'footer footer footer';\n}</code></pre><h3>Auto-fit and Auto-fill</h3><p>These keywords allow you to create responsive grids without media queries:</p><pre><code>grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));</code></pre><h2>Real-World Examples</h2><p>CSS Grid excels at creating magazine-style layouts, card grids, and complex dashboard interfaces. The ability to overlap items and create asymmetric layouts makes it incredibly versatile.</p><h2>Browser Support</h2><p>CSS Grid is now supported in all modern browsers, making it safe to use in production. For older browsers, you can provide fallbacks using feature queries.</p>",
       "author": {
         "id": 2,
         "name": "Michael Chen",
@@ -53,7 +53,7 @@
       "description": "Essential tips and patterns for writing clean, maintainable, and scalable Node.js applications in 2024.",
       "category": "Technology",
       "thumbnail": "https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=800&h=400&fit=crop",
-      "content": "<p>Building scalable Node.js applications requires following best practices...</p>",
+      "content": "<h2>Building Scalable Node.js Applications</h2><p>Building scalable Node.js applications requires following best practices and understanding the platform's strengths and limitations. In this comprehensive guide, we'll explore the essential patterns and techniques.</p><h2>Project Structure</h2><p>A well-organized project structure is crucial for maintainability:</p><pre><code>src/\n  ├── controllers/\n  ├── models/\n  ├── routes/\n  ├── middleware/\n  ├── services/\n  └── utils/</code></pre><h2>Error Handling</h2><p>Proper error handling is critical in Node.js applications. Always use try-catch blocks for async operations and implement a global error handler:</p><pre><code>app.use((err, req, res, next) => {\n  console.error(err.stack);\n  res.status(500).send('Something broke!');\n});</code></pre><h2>Environment Variables</h2><p>Never hardcode sensitive information. Use environment variables and the dotenv package to manage configuration:</p><pre><code>require('dotenv').config();\nconst dbUrl = process.env.DATABASE_URL;</code></pre><h2>Security Best Practices</h2><ul><li>Use helmet.js to set security headers</li><li>Implement rate limiting to prevent abuse</li><li>Validate and sanitize all user input</li><li>Keep dependencies up to date</li><li>Use HTTPS in production</li></ul><h2>Performance Optimization</h2><p>Optimize your Node.js applications by implementing caching, using clustering, and monitoring performance metrics. Consider using Redis for session storage and caching frequently accessed data.</p><h2>Testing</h2><p>Write comprehensive tests using frameworks like Jest or Mocha. Aim for high code coverage and include unit, integration, and end-to-end tests.</p>",
       "author": {
         "id": 3,
         "name": "Emily Rodriguez",
@@ -76,7 +76,7 @@
       "description": "Explore practical mindfulness techniques that can help you reduce stress and live more intentionally.",
       "category": "Lifestyle",
       "thumbnail": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&h=400&fit=crop",
-      "content": "<p>Mindfulness is the practice of being present in the moment...</p>",
+      "content": "<h2>Understanding Mindfulness</h2><p>Mindfulness is the practice of being present in the moment, fully engaged with whatever you're doing, free from distraction or judgment. It's a simple concept, but it can be challenging to maintain in our fast-paced world.</p><h2>The Benefits of Mindfulness</h2><p>Research has shown that regular mindfulness practice can lead to:</p><ul><li>Reduced stress and anxiety</li><li>Improved focus and concentration</li><li>Better emotional regulation</li><li>Enhanced self-awareness</li><li>Improved sleep quality</li><li>Lower blood pressure</li></ul><h2>Simple Mindfulness Exercises</h2><h3>Mindful Breathing</h3><p>Take five minutes to focus solely on your breath. Notice the sensation of air entering and leaving your nostrils. When your mind wanders, gently bring it back to your breath.</p><h3>Body Scan Meditation</h3><p>Lie down and mentally scan your body from head to toe, noticing any sensations, tension, or discomfort without trying to change anything.</p><h3>Mindful Walking</h3><p>Take a walk and pay attention to the sensation of your feet touching the ground, the movement of your body, and the sights and sounds around you.</p><h2>Incorporating Mindfulness into Daily Life</h2><p>You don't need to meditate for hours to benefit from mindfulness. Try these simple practices:</p><ol><li>Eat one meal a day without distractions</li><li>Take three mindful breaths before checking your phone</li><li>Practice gratitude by noting three things you're thankful for each day</li><li>Listen actively in conversations without planning your response</li></ol><h2>Overcoming Common Challenges</h2><p>Many people struggle with mindfulness at first. Remember that it's called a practice for a reason. Be patient with yourself and start small.</p>",
       "author": {
         "id": 4,
         "name": "David Thompson",
@@ -99,7 +99,7 @@
       "description": "Deep dive into TypeScript's advanced type system including generics, conditional types, and mapped types.",
       "category": "Technology",
       "thumbnail": "https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=800&h=400&fit=crop",
-      "content": "<p>TypeScript's type system is incredibly powerful and flexible...</p>",
+      "content": "<h2>Advanced TypeScript Types</h2><p>TypeScript's type system is incredibly powerful and flexible, offering features that go far beyond basic type annotations. Let's explore some advanced concepts that will take your TypeScript skills to the next level.</p><h2>Generics</h2><p>Generics allow you to write reusable code that works with multiple types:</p><pre><code>function identity<T>(arg: T): T {\n  return arg;\n}\n\nconst result = identity<string>('hello');</code></pre><h2>Conditional Types</h2><p>Conditional types allow you to create types that depend on other types:</p><pre><code>type IsString<T> = T extends string ? true : false;\n\ntype A = IsString<string>; // true\ntype B = IsString<number>; // false</code></pre><h2>Mapped Types</h2><p>Mapped types let you transform existing types into new ones:</p><pre><code>type Readonly<T> = {\n  readonly [P in keyof T]: T[P];\n};</code></pre><h2>Utility Types</h2><p>TypeScript provides several built-in utility types:</p><ul><li><strong>Partial&lt;T&gt;</strong> - Makes all properties optional</li><li><strong>Required&lt;T&gt;</strong> - Makes all properties required</li><li><strong>Pick&lt;T, K&gt;</strong> - Picks specific properties</li><li><strong>Omit&lt;T, K&gt;</strong> - Omits specific properties</li><li><strong>Record&lt;K, T&gt;</strong> - Creates an object type with specific keys</li></ul><h2>Template Literal Types</h2><p>Create types based on string manipulation:</p><pre><code>type EventName<T extends string> = `on${Capitalize<T>}`;\ntype ClickEvent = EventName<'click'>; // 'onClick'</code></pre><h2>Best Practices</h2><p>When working with advanced types, keep these tips in mind:</p><ol><li>Don't over-engineer your types</li><li>Use type inference when possible</li><li>Document complex types with comments</li><li>Test your types with type assertions</li></ol>",
       "author": {
         "id": 5,
         "name": "Jessica Park",
@@ -122,7 +122,7 @@
       "description": "Simple steps you can take today to reduce your environmental impact and live more sustainably.",
       "category": "Lifestyle",
       "thumbnail": "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&h=400&fit=crop",
-      "content": "<p>Sustainable living doesn't have to be complicated or expensive...</p>",
+      "content": "<h2>Starting Your Sustainability Journey</h2><p>Sustainable living doesn't have to be complicated or expensive. Small changes in your daily habits can make a significant impact on the environment. This guide will help you get started with practical, achievable steps.</p><h2>Reduce Your Waste</h2><h3>The 5 R's</h3><ul><li><strong>Refuse</strong> - Say no to single-use plastics and unnecessary items</li><li><strong>Reduce</strong> - Buy less and choose quality over quantity</li><li><strong>Reuse</strong> - Find new purposes for items before discarding</li><li><strong>Recycle</strong> - Properly sort and recycle materials</li><li><strong>Rot</strong> - Compost organic waste</li></ul><h2>Sustainable Shopping</h2><p>Make conscious choices when shopping:</p><ul><li>Bring reusable bags and containers</li><li>Buy local and seasonal produce</li><li>Choose products with minimal packaging</li><li>Support ethical and sustainable brands</li><li>Buy second-hand when possible</li></ul><h2>Energy Conservation</h2><p>Reduce your energy consumption with these simple steps:</p><ol><li>Switch to LED bulbs</li><li>Unplug devices when not in use</li><li>Use a programmable thermostat</li><li>Air dry clothes when possible</li><li>Insulate your home properly</li></ol><h2>Water Conservation</h2><p>Water is a precious resource. Here's how to use it wisely:</p><ul><li>Fix leaky faucets promptly</li><li>Install low-flow showerheads</li><li>Collect rainwater for plants</li><li>Run dishwashers and washing machines only when full</li></ul><h2>Sustainable Transportation</h2><p>Consider these alternatives to reduce your carbon footprint:</p><ul><li>Walk or bike for short distances</li><li>Use public transportation</li><li>Carpool when possible</li><li>Consider an electric or hybrid vehicle</li></ul><h2>Making It Stick</h2><p>Remember, sustainability is a journey, not a destination. Start with one or two changes and gradually incorporate more as they become habits.</p>",
       "author": {
         "id": 6,
         "name": "Alex Martinez",
@@ -145,7 +145,7 @@
       "description": "Learn how to containerize your applications and deploy them at scale using Docker and Kubernetes.",
       "category": "Technology",
       "thumbnail": "https://images.unsplash.com/photo-1605745341112-85968b19335b?w=800&h=400&fit=crop",
-      "content": "<p>Container orchestration has become essential for modern application deployment...</p>",
+      "content": "<h2>Introduction to Containerization</h2><p>Container orchestration has become essential for modern application deployment. Docker and Kubernetes have revolutionized how we build, ship, and run applications at scale.</p><h2>Understanding Docker</h2><p>Docker allows you to package applications with all their dependencies into standardized units called containers.</p><h3>Creating a Dockerfile</h3><pre><code>FROM node:18-alpine\nWORKDIR /app\nCOPY package*.json ./\nRUN npm install\nCOPY . .\nEXPOSE 3000\nCMD [\"npm\", \"start\"]</code></pre><h2>Docker Best Practices</h2><ul><li>Use official base images</li><li>Minimize layer count</li><li>Use .dockerignore files</li><li>Don't run containers as root</li><li>Use multi-stage builds for smaller images</li></ul><h2>Introduction to Kubernetes</h2><p>Kubernetes (K8s) is an open-source container orchestration platform that automates deployment, scaling, and management of containerized applications.</p><h2>Key Kubernetes Concepts</h2><h3>Pods</h3><p>The smallest deployable unit in Kubernetes, containing one or more containers.</p><h3>Services</h3><p>An abstraction that defines a logical set of Pods and a policy to access them.</p><h3>Deployments</h3><p>Manages the desired state of your application, handling updates and rollbacks.</p><h2>Sample Kubernetes Deployment</h2><pre><code>apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: my-app\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: my-app\n  template:\n    metadata:\n      labels:\n        app: my-app\n    spec:\n      containers:\n      - name: my-app\n        image: my-app:1.0\n        ports:\n        - containerPort: 3000</code></pre><h2>Monitoring and Logging</h2><p>Implement proper monitoring using tools like Prometheus and Grafana. Use centralized logging with the ELK stack or similar solutions.</p><h2>Security Considerations</h2><ul><li>Use private registries for images</li><li>Scan images for vulnerabilities</li><li>Implement network policies</li><li>Use secrets management</li><li>Enable RBAC (Role-Based Access Control)</li></ul>",
       "author": {
         "id": 7,
         "name": "Robert Kim",
@@ -168,7 +168,7 @@
       "description": "Master the art of composition with these proven techniques that will instantly improve your photography.",
       "category": "Creative",
       "thumbnail": "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=800&h=400&fit=crop",
-      "content": "<p>Great photography is all about composition and how you frame your subject...</p>",
+      "content": "<h2>The Art of Composition</h2><p>Great photography is all about composition and how you frame your subject. These ten essential tips will help you create more compelling and visually striking images.</p><h2>1. Rule of Thirds</h2><p>Divide your frame into a 3x3 grid and place important elements along these lines or at their intersections. This creates more dynamic and interesting compositions than centering your subject.</p><h2>2. Leading Lines</h2><p>Use natural or man-made lines to guide the viewer's eye through your image. Roads, rivers, fences, and architectural elements all make excellent leading lines.</p><h2>3. Framing</h2><p>Use elements in your scene to create a natural frame around your subject. Doorways, windows, tree branches, and archways work wonderfully for this technique.</p><h2>4. Negative Space</h2><p>Don't be afraid of empty space in your compositions. Negative space can emphasize your subject and create a sense of calm or isolation.</p><h2>5. Symmetry and Patterns</h2><p>Look for symmetrical scenes and repeating patterns. Breaking the pattern with a contrasting element can create even more interest.</p><h2>6. Depth and Layers</h2><p>Create depth by including foreground, middle ground, and background elements. This gives your images a three-dimensional quality.</p><h2>7. Golden Hour Lighting</h2><p>Shoot during the golden hour (shortly after sunrise or before sunset) for warm, soft, directional light that enhances any composition.</p><h2>8. Change Your Perspective</h2><p>Don't always shoot from eye level. Get low, climb high, or try unusual angles to create unique perspectives.</p><h2>9. Fill the Frame</h2><p>Sometimes the best approach is to get close and fill the entire frame with your subject, eliminating distractions.</p><h2>10. Break the Rules</h2><p>Once you understand these composition guidelines, don't be afraid to break them intentionally for creative effect.</p><h2>Practice Makes Perfect</h2><p>The key to mastering composition is practice. Take your camera everywhere and experiment with these techniques until they become second nature.</p>",
       "author": {
         "id": 8,
         "name": "Sophia Williams",
@@ -191,7 +191,7 @@
       "description": "Start your machine learning journey with this beginner-friendly guide covering essential concepts and algorithms.",
       "category": "Technology",
       "thumbnail": "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=800&h=400&fit=crop",
-      "content": "<p>Machine learning is transforming industries and creating new possibilities...</p>",
+      "content": "<h2>What is Machine Learning?</h2><p>Machine learning is transforming industries and creating new possibilities. It's a subset of artificial intelligence that enables computers to learn from data without being explicitly programmed.</p><h2>Types of Machine Learning</h2><h3>Supervised Learning</h3><p>The algorithm learns from labeled training data. Common applications include:</p><ul><li>Image classification</li><li>Spam detection</li><li>Price prediction</li><li>Medical diagnosis</li></ul><h3>Unsupervised Learning</h3><p>The algorithm finds patterns in unlabeled data:</p><ul><li>Customer segmentation</li><li>Anomaly detection</li><li>Recommendation systems</li></ul><h3>Reinforcement Learning</h3><p>The algorithm learns through trial and error, receiving rewards or penalties for actions.</p><h2>Essential Algorithms</h2><h3>Linear Regression</h3><p>A simple algorithm for predicting continuous values:</p><pre><code>from sklearn.linear_model import LinearRegression\n\nmodel = LinearRegression()\nmodel.fit(X_train, y_train)\npredictions = model.predict(X_test)</code></pre><h3>Decision Trees</h3><p>Tree-like models that make decisions based on feature values.</p><h3>Neural Networks</h3><p>Inspired by the human brain, these models can learn complex patterns in data.</p><h2>The ML Workflow</h2><ol><li><strong>Data Collection</strong> - Gather relevant data</li><li><strong>Data Preprocessing</strong> - Clean and prepare data</li><li><strong>Feature Engineering</strong> - Select and create relevant features</li><li><strong>Model Selection</strong> - Choose appropriate algorithms</li><li><strong>Training</strong> - Train the model on data</li><li><strong>Evaluation</strong> - Test model performance</li><li><strong>Deployment</strong> - Put the model into production</li></ol><h2>Common Pitfalls</h2><ul><li><strong>Overfitting</strong> - Model performs well on training data but poorly on new data</li><li><strong>Underfitting</strong> - Model is too simple to capture patterns</li><li><strong>Data Leakage</strong> - Training data contains information about the target</li><li><strong>Bias in Data</strong> - Training data doesn't represent real-world scenarios</li></ul><h2>Getting Started</h2><p>Begin your ML journey with Python and these essential libraries:</p><ul><li>NumPy for numerical computing</li><li>Pandas for data manipulation</li><li>Scikit-learn for ML algorithms</li><li>TensorFlow or PyTorch for deep learning</li></ul>",
       "author": {
         "id": 9,
         "name": "Daniel Lee",
@@ -214,7 +214,7 @@
       "description": "Save time and eat healthier with these easy meal prep recipes and strategies for the busy workweek.",
       "category": "Lifestyle",
       "thumbnail": "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&h=400&fit=crop",
-      "content": "<p>Meal prepping is a game-changer for maintaining a healthy diet...</p>",
+      "content": "<h2>Why Meal Prep?</h2><p>Meal prepping is a game-changer for maintaining a healthy diet while managing a busy schedule. It saves time, money, and helps you make better food choices throughout the week.</p><h2>Getting Started</h2><h3>Essential Equipment</h3><ul><li>Glass or BPA-free plastic containers</li><li>Sharp knives and cutting boards</li><li>Sheet pans for roasting</li><li>Slow cooker or Instant Pot</li><li>Food scale for portion control</li></ul><h2>Meal Prep Strategies</h2><h3>Batch Cooking</h3><p>Cook large quantities of staples like grains, proteins, and roasted vegetables that can be mixed and matched throughout the week.</p><h3>Individual Meals</h3><p>Prepare complete meals in individual containers, ready to grab and go.</p><h3>Ingredient Prep</h3><p>Wash, chop, and portion ingredients so cooking during the week is faster.</p><h2>Healthy Meal Prep Ideas</h2><h3>Breakfast Options</h3><ul><li>Overnight oats with berries and nuts</li><li>Egg muffins with vegetables</li><li>Greek yogurt parfaits</li><li>Chia seed pudding</li></ul><h3>Lunch Ideas</h3><ul><li>Buddha bowls with quinoa, roasted vegetables, and tahini</li><li>Mason jar salads with dressing on the bottom</li><li>Chicken and vegetable stir-fry</li><li>Turkey and hummus wraps</li></ul><h3>Dinner Options</h3><ul><li>Baked salmon with sweet potato and broccoli</li><li>Slow cooker chicken chili</li><li>Turkey meatballs with zucchini noodles</li><li>Vegetarian curry with chickpeas</li></ul><h2>Sample Weekly Meal Prep</h2><h3>Sunday Prep Session (2-3 hours)</h3><ol><li>Cook 2 cups of quinoa and 2 cups of brown rice</li><li>Grill 4 chicken breasts</li><li>Roast a large tray of mixed vegetables</li><li>Hard boil a dozen eggs</li><li>Prepare overnight oats for the week</li><li>Chop vegetables for snacks</li></ol><h2>Storage Tips</h2><ul><li>Most prepped meals last 3-4 days in the refrigerator</li><li>Freeze meals you won't eat within 4 days</li><li>Keep dressings and sauces separate until ready to eat</li><li>Label containers with dates</li></ul><h2>Staying Motivated</h2><p>Start small with just a few meals per week. As you get comfortable, gradually increase your meal prep. Remember, even prepping one or two meals is better than none!</p>",
       "author": {
         "id": 10,
         "name": "Olivia Brown",
@@ -229,6 +229,144 @@
       "readTime": 6,
       "tags": ["Nutrition", "Meal Prep", "Health"],
       "status": "published"
+    },
+    {
+      "id": 11,
+      "slug": "digital-marketing-strategies-2024",
+      "title": "Digital Marketing Strategies That Actually Work in 2024",
+      "description": "Discover the most effective digital marketing tactics to grow your business and reach your target audience.",
+      "category": "Business",
+      "thumbnail": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=400&fit=crop",
+      "content": "<h2>The Digital Marketing Landscape</h2><p>Digital marketing continues to evolve rapidly. To stay competitive, businesses must adapt their strategies to meet changing consumer behaviors and platform algorithms.</p><h2>Content Marketing</h2><p>Quality content remains king. Focus on creating valuable, engaging content that solves your audience's problems:</p><ul><li>Blog posts and articles</li><li>Video content</li><li>Podcasts</li><li>Infographics</li><li>Case studies</li></ul><h2>Social Media Marketing</h2><h3>Platform-Specific Strategies</h3><p><strong>Instagram:</strong> Focus on Reels and Stories for maximum reach. Use relevant hashtags and engage with your community.</p><p><strong>LinkedIn:</strong> Share thought leadership content and engage in professional discussions.</p><p><strong>TikTok:</strong> Create authentic, entertaining short-form videos that showcase your brand personality.</p><h2>Email Marketing</h2><p>Email marketing still delivers the highest ROI. Best practices include:</p><ol><li>Segment your audience</li><li>Personalize your messages</li><li>Optimize for mobile</li><li>A/B test subject lines</li><li>Provide clear calls-to-action</li></ol><h2>SEO Optimization</h2><p>Search engine optimization is crucial for organic visibility:</p><ul><li>Conduct keyword research</li><li>Optimize on-page elements</li><li>Build quality backlinks</li><li>Improve site speed</li><li>Create mobile-friendly experiences</li></ul><h2>Paid Advertising</h2><p>Strategic paid campaigns can accelerate growth. Consider:</p><ul><li>Google Ads for search intent</li><li>Facebook/Instagram Ads for targeting</li><li>LinkedIn Ads for B2B</li><li>Retargeting campaigns</li></ul><h2>Analytics and Measurement</h2><p>Track these key metrics to measure success:</p><ul><li>Website traffic and engagement</li><li>Conversion rates</li><li>Customer acquisition cost</li><li>Return on ad spend</li><li>Customer lifetime value</li></ul>",
+      "author": {
+        "id": 11,
+        "name": "Marcus Johnson",
+        "avatar": "https://i.pravatar.cc/150?img=17",
+        "bio": "Digital marketing strategist and growth hacker"
+      },
+      "createdAt": "2024-10-29T09:30:00Z",
+      "updatedAt": "2024-10-29T09:30:00Z",
+      "views": 1560,
+      "likes": 118,
+      "comments": 16,
+      "readTime": 11,
+      "tags": ["Marketing", "Digital Marketing", "SEO", "Social Media"],
+      "status": "published"
+    },
+    {
+      "id": 12,
+      "slug": "interior-design-small-spaces",
+      "title": "Interior Design Tips for Small Spaces",
+      "description": "Transform your small apartment or room into a stylish and functional living space with these expert design tips.",
+      "category": "Design",
+      "thumbnail": "https://images.unsplash.com/photo-1556912173-46c336c7fd55?w=800&h=400&fit=crop",
+      "content": "<h2>Making the Most of Small Spaces</h2><p>Living in a small space doesn't mean sacrificing style or functionality. With smart design choices, you can create a home that feels spacious, organized, and beautiful.</p><h2>Color and Light</h2><h3>Choose Light Colors</h3><p>Light colors reflect light and make spaces feel larger. Consider:</p><ul><li>White or off-white walls</li><li>Light-colored furniture</li><li>Pale wood tones</li><li>Soft pastels for accents</li></ul><h3>Maximize Natural Light</h3><p>Keep windows unobstructed and use sheer curtains. Add mirrors strategically to reflect light and create the illusion of more space.</p><h2>Furniture Selection</h2><h3>Multi-Functional Pieces</h3><ul><li>Sofa beds for guest sleeping</li><li>Ottoman with storage</li><li>Fold-down desks</li><li>Nesting tables</li><li>Murphy beds</li></ul><h3>Scale Appropriately</h3><p>Choose furniture that fits the scale of your room. Oversized pieces can overwhelm a small space.</p><h2>Storage Solutions</h2><p>Clever storage is essential in small spaces:</p><ul><li>Use vertical space with tall shelving</li><li>Install floating shelves</li><li>Use under-bed storage</li><li>Add hooks and pegboards</li><li>Utilize door backs</li></ul><h2>Visual Tricks</h2><h3>Create Zones</h3><p>Use rugs, lighting, and furniture arrangement to define different areas within an open space.</p><h3>Vertical Lines</h3><p>Draw the eye upward with vertical elements like tall plants, floor-to-ceiling curtains, or vertical artwork.</p><h2>Declutter Regularly</h2><p>In small spaces, clutter is magnified. Adopt a minimalist mindset and regularly purge items you don't need or use.</p><h2>Personal Touches</h2><p>Don't forget to add personality with:</p><ul><li>Artwork and photos</li><li>Plants and greenery</li><li>Textiles and textures</li><li>Decorative objects (in moderation)</li></ul>",
+      "author": {
+        "id": 12,
+        "name": "Isabella Martinez",
+        "avatar": "https://i.pravatar.cc/150?img=18",
+        "bio": "Interior designer specializing in small space solutions"
+      },
+      "createdAt": "2024-10-28T14:15:00Z",
+      "updatedAt": "2024-10-28T14:15:00Z",
+      "views": 2890,
+      "likes": 234,
+      "comments": 31,
+      "readTime": 9,
+      "tags": ["Interior Design", "Home Decor", "Small Spaces"],
+      "status": "published"
+    },
+    {
+      "id": 13,
+      "slug": "personal-finance-budgeting-guide",
+      "title": "Personal Finance 101: A Complete Budgeting Guide",
+      "description": "Take control of your finances with this comprehensive guide to budgeting, saving, and building wealth.",
+      "category": "Business",
+      "thumbnail": "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=800&h=400&fit=crop",
+      "content": "<h2>Why Budgeting Matters</h2><p>A budget is your roadmap to financial success. It helps you understand where your money goes and empowers you to make informed financial decisions.</p><h2>The 50/30/20 Rule</h2><p>A simple budgeting framework:</p><ul><li><strong>50% Needs</strong> - Housing, utilities, groceries, transportation</li><li><strong>30% Wants</strong> - Entertainment, dining out, hobbies</li><li><strong>20% Savings</strong> - Emergency fund, retirement, debt payoff</li></ul><h2>Creating Your Budget</h2><h3>Step 1: Track Your Income</h3><p>Calculate your total monthly take-home pay from all sources.</p><h3>Step 2: List Your Expenses</h3><p>Track everything you spend for a month. Categorize expenses as fixed (rent, insurance) or variable (groceries, entertainment).</p><h3>Step 3: Set Goals</h3><p>Define short-term and long-term financial goals:</p><ul><li>Emergency fund (3-6 months expenses)</li><li>Debt payoff</li><li>Retirement savings</li><li>Major purchases</li></ul><h3>Step 4: Make Adjustments</h3><p>If expenses exceed income, look for areas to cut back.</p><h2>Saving Strategies</h2><h3>Pay Yourself First</h3><p>Automate transfers to savings accounts as soon as you get paid.</p><h3>The Envelope Method</h3><p>Allocate cash to different spending categories in physical envelopes.</p><h3>Challenge Yourself</h3><p>Try a no-spend week or month to reset your spending habits.</p><h2>Managing Debt</h2><h3>Debt Snowball Method</h3><p>Pay off smallest debts first for psychological wins.</p><h3>Debt Avalanche Method</h3><p>Pay off highest interest debts first to save money.</p><h2>Building Wealth</h2><p>Once you have a solid budget and emergency fund:</p><ol><li>Maximize employer 401(k) match</li><li>Open a Roth IRA</li><li>Invest in low-cost index funds</li><li>Consider real estate</li><li>Continuously educate yourself</li></ol><h2>Common Budgeting Mistakes</h2><ul><li>Being too restrictive</li><li>Not accounting for irregular expenses</li><li>Forgetting to budget for fun</li><li>Not reviewing and adjusting regularly</li></ul><h2>Tools and Apps</h2><p>Consider using budgeting apps like Mint, YNAB (You Need A Budget), or Personal Capital to automate tracking and gain insights.</p>",
+      "author": {
+        "id": 13,
+        "name": "James Wilson",
+        "avatar": "https://i.pravatar.cc/150?img=19",
+        "bio": "Certified financial planner and money coach"
+      },
+      "createdAt": "2024-10-27T10:00:00Z",
+      "updatedAt": "2024-10-27T10:00:00Z",
+      "views": 3450,
+      "likes": 287,
+      "comments": 42,
+      "readTime": 13,
+      "tags": ["Finance", "Budgeting", "Money Management", "Investing"],
+      "status": "published"
+    },
+    {
+      "id": 14,
+      "slug": "yoga-beginners-guide",
+      "title": "Yoga for Beginners: Your Journey to Wellness",
+      "description": "Start your yoga practice with confidence using this beginner-friendly guide to poses, breathing, and mindfulness.",
+      "category": "Lifestyle",
+      "thumbnail": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&h=400&fit=crop",
+      "content": "<h2>What is Yoga?</h2><p>Yoga is an ancient practice that combines physical postures, breathing techniques, and meditation to promote overall health and well-being.</p><h2>Benefits of Yoga</h2><ul><li>Increased flexibility and strength</li><li>Better posture and balance</li><li>Reduced stress and anxiety</li><li>Improved sleep quality</li><li>Enhanced body awareness</li><li>Better breathing</li></ul><h2>Getting Started</h2><h3>What You Need</h3><ul><li>Yoga mat</li><li>Comfortable, stretchy clothing</li><li>Water bottle</li><li>Optional: blocks, strap, bolster</li></ul><h3>Finding the Right Style</h3><p><strong>Hatha:</strong> Gentle, great for beginners</p><p><strong>Vinyasa:</strong> Flowing, more dynamic</p><p><strong>Yin:</strong> Slow-paced, deep stretching</p><p><strong>Restorative:</strong> Relaxing, stress-relief focused</p><h2>Essential Poses for Beginners</h2><h3>Mountain Pose (Tadasana)</h3><p>The foundation of all standing poses. Stand tall with feet together, arms at sides, weight evenly distributed.</p><h3>Downward-Facing Dog (Adho Mukha Svanasana)</h3><p>A fundamental pose that stretches the entire body. Form an inverted V-shape with your body.</p><h3>Child's Pose (Balasana)</h3><p>A resting pose. Kneel and sit back on your heels, extending arms forward.</p><h3>Cat-Cow Pose (Marjaryasana-Bitilasana)</h3><p>Warms up the spine. Alternate between arching and rounding your back on hands and knees.</p><h3>Warrior I (Virabhadrasana I)</h3><p>Builds strength and stability. Step one foot back, bend front knee, raise arms overhead.</p><h2>Breathing Techniques</h2><h3>Ujjayi Breath</h3><p>Ocean-sounding breath that helps maintain focus and rhythm during practice.</p><h3>Three-Part Breath</h3><p>Deep breathing that fills the belly, ribs, and chest sequentially.</p><h2>Creating a Home Practice</h2><ol><li>Start with 10-15 minutes daily</li><li>Choose a quiet, comfortable space</li><li>Practice at the same time each day</li><li>Use online videos or apps for guidance</li><li>Listen to your body</li></ol><h2>Common Mistakes to Avoid</h2><ul><li>Comparing yourself to others</li><li>Pushing too hard too fast</li><li>Holding your breath</li><li>Skipping the warm-up</li><li>Ignoring proper alignment</li></ul><h2>Beyond the Mat</h2><p>Yoga is more than physical exercise. Incorporate its principles into daily life through mindfulness, compassion, and intentional living.</p>",
+      "author": {
+        "id": 14,
+        "name": "Priya Sharma",
+        "avatar": "https://i.pravatar.cc/150?img=20",
+        "bio": "Certified yoga instructor and wellness coach"
+      },
+      "createdAt": "2024-10-26T08:45:00Z",
+      "updatedAt": "2024-10-26T08:45:00Z",
+      "views": 2670,
+      "likes": 201,
+      "comments": 28,
+      "readTime": 10,
+      "tags": ["Yoga", "Fitness", "Wellness", "Mindfulness"],
+      "status": "published"
+    },
+    {
+      "id": 15,
+      "slug": "cybersecurity-best-practices",
+      "title": "Cybersecurity Best Practices for Everyone",
+      "description": "Protect yourself online with these essential cybersecurity tips and practices for individuals and businesses.",
+      "category": "Technology",
+      "thumbnail": "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&h=400&fit=crop",
+      "content": "<h2>Why Cybersecurity Matters</h2><p>In our increasingly digital world, cybersecurity is no longer optional. Whether you're an individual or running a business, protecting your digital assets is crucial.</p><h2>Password Security</h2><h3>Creating Strong Passwords</h3><ul><li>Use at least 12 characters</li><li>Mix uppercase, lowercase, numbers, and symbols</li><li>Avoid personal information</li><li>Use unique passwords for each account</li><li>Consider using passphrases</li></ul><h3>Password Managers</h3><p>Use a reputable password manager like 1Password, LastPass, or Bitwarden to generate and store complex passwords securely.</p><h2>Two-Factor Authentication (2FA)</h2><p>Enable 2FA on all accounts that support it. Prefer authenticator apps over SMS when possible:</p><ul><li>Google Authenticator</li><li>Authy</li><li>Microsoft Authenticator</li></ul><h2>Email Security</h2><h3>Recognizing Phishing</h3><p>Watch for these red flags:</p><ul><li>Urgent or threatening language</li><li>Suspicious sender addresses</li><li>Unexpected attachments</li><li>Requests for personal information</li><li>Poor grammar and spelling</li></ul><h3>Best Practices</h3><ul><li>Verify sender identity before clicking links</li><li>Hover over links to see actual URLs</li><li>Don't download unexpected attachments</li><li>Use email filtering and spam protection</li></ul><h2>Device Security</h2><h3>Keep Software Updated</h3><p>Regular updates patch security vulnerabilities. Enable automatic updates for:</p><ul><li>Operating systems</li><li>Applications</li><li>Antivirus software</li><li>Browsers</li></ul><h3>Use Antivirus Software</h3><p>Install reputable antivirus software and keep it updated.</p><h2>Network Security</h2><h3>Secure Your Wi-Fi</h3><ul><li>Change default router password</li><li>Use WPA3 encryption</li><li>Hide your SSID</li><li>Create a guest network</li></ul><h3>Use VPNs</h3><p>When using public Wi-Fi, always connect through a VPN to encrypt your traffic.</p><h2>Data Backup</h2><p>Follow the 3-2-1 rule:</p><ul><li>3 copies of your data</li><li>2 different storage types</li><li>1 copy offsite</li></ul><h2>Social Media Privacy</h2><ul><li>Review privacy settings regularly</li><li>Limit personal information shared publicly</li><li>Be cautious about location sharing</li><li>Think before you post</li></ul><h2>For Businesses</h2><h3>Additional Measures</h3><ul><li>Implement employee security training</li><li>Use endpoint protection</li><li>Conduct regular security audits</li><li>Have an incident response plan</li><li>Encrypt sensitive data</li><li>Implement access controls</li></ul><h2>Staying Informed</h2><p>Cybersecurity threats evolve constantly. Stay informed about new threats and best practices through reputable security blogs and news sources.</p>",
+      "author": {
+        "id": 15,
+        "name": "Alex Chen",
+        "avatar": "https://i.pravatar.cc/150?img=21",
+        "bio": "Cybersecurity expert and ethical hacker"
+      },
+      "createdAt": "2024-10-25T11:20:00Z",
+      "updatedAt": "2024-10-25T11:20:00Z",
+      "views": 1780,
+      "likes": 145,
+      "comments": 19,
+      "readTime": 12,
+      "tags": ["Cybersecurity", "Privacy", "Technology", "Security"],
+      "status": "published"
+    },
+    {
+      "id": 16,
+      "slug": "watercolor-painting-techniques",
+      "title": "Watercolor Painting Techniques for Beginners",
+      "description": "Learn essential watercolor techniques and tips to create beautiful paintings, even if you've never picked up a brush.",
+      "category": "Creative",
+      "thumbnail": "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&h=400&fit=crop",
+      "content": "<h2>Getting Started with Watercolors</h2><p>Watercolor painting is a beautiful and expressive medium that's perfect for beginners. Its fluid nature allows for spontaneity and happy accidents that often lead to stunning results.</p><h2>Essential Supplies</h2><h3>Paints</h3><p>Start with a basic set of 12-24 colors. Student-grade paints are fine for beginners, but invest in artist-grade as you progress.</p><h3>Brushes</h3><p>You'll need:</p><ul><li>Round brushes (sizes 4, 8, 12)</li><li>Flat brush (1 inch)</li><li>Detail brush (size 0 or 00)</li></ul><h3>Paper</h3><p>Use watercolor paper (140lb/300gsm minimum). Cold-pressed is most versatile for beginners.</p><h3>Other Supplies</h3><ul><li>Palette for mixing</li><li>Two water containers</li><li>Paper towels or cloth</li><li>Masking tape</li><li>Pencil and eraser</li></ul><h2>Basic Techniques</h2><h3>Wet-on-Wet</h3><p>Apply wet paint to wet paper for soft, blended effects. Perfect for skies and backgrounds.</p><h3>Wet-on-Dry</h3><p>Apply wet paint to dry paper for more control and defined edges.</p><h3>Dry Brush</h3><p>Use a relatively dry brush with concentrated paint for texture and detail.</p><h3>Lifting</h3><p>Remove paint while wet using a clean, damp brush or paper towel to create highlights.</p><h3>Glazing</h3><p>Layer transparent washes of color over dried paint to build depth and complexity.</p><h2>Color Mixing</h2><h3>Primary Colors</h3><p>Start with red, yellow, and blue. Learn to mix these to create all other colors.</p><h3>Color Temperature</h3><p>Understand warm (reds, oranges, yellows) and cool (blues, greens, purples) colors.</p><h3>Value</h3><p>Control the lightness or darkness by adjusting water-to-paint ratio.</p><h2>Common Mistakes</h2><ul><li>Using too little water</li><li>Overworking the paint</li><li>Not letting layers dry completely</li><li>Using cheap paper</li><li>Being afraid to make mistakes</li></ul><h2>Practice Exercises</h2><h3>Color Swatches</h3><p>Create a chart of your colors at different dilutions.</p><h3>Gradient Washes</h3><p>Practice creating smooth transitions from dark to light.</p><h3>Simple Shapes</h3><p>Paint basic shapes like circles, squares, and triangles to practice control.</p><h2>Finding Inspiration</h2><ul><li>Nature and landscapes</li><li>Still life arrangements</li><li>Photographs</li><li>Other artists' work</li><li>Abstract experimentation</li></ul><h2>Developing Your Style</h2><p>Don't worry about finding your style immediately. Paint regularly, experiment with different subjects and techniques, and your unique voice will emerge naturally.</p>",
+      "author": {
+        "id": 16,
+        "name": "Emma Thompson",
+        "avatar": "https://i.pravatar.cc/150?img=22",
+        "bio": "Watercolor artist and art instructor"
+      },
+      "createdAt": "2024-10-24T13:30:00Z",
+      "updatedAt": "2024-10-24T13:30:00Z",
+      "views": 2340,
+      "likes": 198,
+      "comments": 25,
+      "readTime": 11,
+      "tags": ["Watercolor", "Painting", "Art", "Creative"],
+      "status": "published"
     }
   ],
   "categories": [
@@ -237,28 +375,35 @@
       "name": "Technology",
       "slug": "technology",
       "description": "Articles about programming, web development, and tech trends",
-      "count": 5
+      "count": 6
     },
     {
       "id": 2,
       "name": "Lifestyle",
       "slug": "lifestyle",
       "description": "Tips and insights for better living",
-      "count": 3
+      "count": 4
     },
     {
       "id": 3,
       "name": "Design",
       "slug": "design",
       "description": "UI/UX design, web design, and creative inspiration",
-      "count": 1
+      "count": 2
     },
     {
       "id": 4,
       "name": "Creative",
       "slug": "creative",
       "description": "Photography, art, and creative pursuits",
-      "count": 1
+      "count": 2
+    },
+    {
+      "id": 5,
+      "name": "Business",
+      "slug": "business",
+      "description": "Marketing, finance, and business strategies",
+      "count": 2
     }
   ]
 }

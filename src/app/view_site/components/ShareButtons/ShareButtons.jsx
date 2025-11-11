@@ -37,8 +37,8 @@ export default function ShareButtons({ title, url, slug, description }) {
         <Image 
           src="/svg/whatsapp.svg" 
           alt="WhatsApp"
-          width={40}
-          height={40}
+          width={34}
+          height={34}
         />
       </button>
 
@@ -51,8 +51,8 @@ export default function ShareButtons({ title, url, slug, description }) {
         <Image 
           src="/svg/x-twitter.svg" 
           alt="Twitter"
-          width={40}
-          height={40}
+          width={34}
+          height={34}
         />
       </button>
 
@@ -65,8 +65,8 @@ export default function ShareButtons({ title, url, slug, description }) {
         <Image 
           src="/svg/linkedin.svg" 
           alt="LinkedIn"
-          width={40}
-          height={40}
+          width={34}
+          height={34}
         />
       </button>
 
@@ -79,8 +79,8 @@ export default function ShareButtons({ title, url, slug, description }) {
         <Image 
           src="/svg/facebook.svg" 
           alt="Facebook"
-          width={40}
-          height={40}
+          width={34}
+          height={34}
         />
       </button>
     </div>

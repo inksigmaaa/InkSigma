@@ -54,15 +54,15 @@ export default function BlogDetailPage() {
     <div className="min-h-screen bg-white flex flex-col">
       <ViewSiteHeader userName={blog.author.name} userAvatar={blog.author.avatar} />
 
-      <section className="flex-grow flex max-w-[1400px] mx-auto  px-6 gap-8">
+      <section className="flex-grow flex max-w-[1400px] ml-[10%]  px-6 gap-8">
         {/* Table of Contents - Left Sidebar */}
-        <aside className="hidden lg:block flex-shrink-0 pt-20">
+        <aside className="hidden lg:block flex-shrink-0 pt-20 space-y-0">
           <BackToHomeButton />
           <TableOfContents />
         </aside>
 
         {/* Main Content */}
-        <div className="flex-1 max-w-[900px] pb-12 pt-20">
+        <div className="flex-1 max-w-[900px] pb-12 pt-20 pl-12 border-l-2">
           {/* Blog Title */}
           <h1 className="text-5xl font-bold text-black mb-4">{blog.title}</h1>
 
@@ -70,7 +70,7 @@ export default function BlogDetailPage() {
           <p className="text-xl text-gray-600 mb-8">{blog.description}</p>
 
           {/* Author and Date */}
-          <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-8 py-4 px-2 border-y border-gray-200">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden">
                 {blog.author?.avatar && (

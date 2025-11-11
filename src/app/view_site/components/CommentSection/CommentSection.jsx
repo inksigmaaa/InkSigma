@@ -191,10 +191,10 @@ export default function CommentSection({ blogId }) {
   }
 
   return (
-    <div>
+    <div className="pt-12">
       {/* New Comment Section */}
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold text-black mb-6">
+      <div className="my-12 border-t-2">
+        <h2 className="text-2xl font-bold text-black my-12">
           Share your thoughts on the article
         </h2>
 
