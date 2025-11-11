@@ -14,6 +14,7 @@ export default function ConditionalLayout({ children }) {
   const isPostsPage = pathname === "/posts"
   const isPublishedPage = pathname === "/published"
   const isCommentsPage = pathname === "/comments"
+  
 
   if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isPublishedPage || isCommentsPage) {
     return (
