@@ -104,20 +104,22 @@
 /* Footer */
 .footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     gap: 16px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .footer .posted {
     margin-left: auto;
+    flex-shrink: 0;
 }
 
 .categories {
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
 }
 
 .categoryTag {
@@ -181,14 +183,19 @@
     height: 24px;
 }
 
-/* Tablet responsive (768px - 1024px) */
-@media (min-width: 769px) and (max-width: 1024px) {
+/* Tablet and Desktop responsive (above 768px) */
+@media (min-width: 769px) {
+    .articleCard {
+        padding-right: 200px;
+    }
+
     .articleCard > .statusBadge {
         display: none;
     }
 
     .content {
         margin-top: 0;
+        align-items: flex-start;
     }
 
     .content .actions {
@@ -198,15 +205,30 @@
     .tabletStatusActions {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        margin-bottom: 12px;
-        margin-top: 8px;
+        gap: 12px;
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
     }
 
     .tabletStatusActions .statusBadge {
         position: static;
         width: auto;
         border-radius: 4px;
+        padding: 4px 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    .tabletStatusActions .statusBadge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        background: currentColor;
+        border-radius: 50%;
     }
 
     .tabletStatusActions .actions {
@@ -214,24 +236,73 @@
         gap: 8px;
     }
 
+    .footer {
+        flex-wrap: nowrap;
+    }
+
     .footer .posted {
-        display: none;
+        display: flex;
     }
 }
 
 /* Mobile responsive */
 @media (max-width: 768px) {
+    .articleCard {
+        padding-top: 50px;
+    }
+
+    .articleCard > .statusBadge {
+        display: flex;
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        width: auto;
+        height: auto;
+        padding: 6px 16px;
+        border-radius: 4px;
+    }
+
+    .mobileDropdown {
+        display: block;
+    }
+
+    .tabletStatusActions {
+        display: none;
+    }
+
     .content {
         flex-direction: column;
+        margin-top: 0;
+    }
+
+    .leftSection {
+        width: 100%;
+    }
+
+    .checkbox {
+        display: none;
+    }
+
+    .textContent {
+        width: 100%;
     }
 
     .actions {
-        width: 100%;
-        justify-content: flex-end;
+        display: none;
     }
 
     .footer {
         flex-direction: column;
         align-items: flex-start;
+        gap: 12px;
+    }
+
+    .footer .posted {
+        display: flex;
+        margin-left: 0;
+    }
+
+    .categories {
+        width: 100%;
     }
 }

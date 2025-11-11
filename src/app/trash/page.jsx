@@ -134,17 +134,17 @@ export default function TrashPage() {
                   />
                   <span className={styles.selectAllText}>Select all</span>
                 </label>
-                <button 
-                  className={styles.iconButton} 
-                  title="Restore" 
+                <button
+                  className={styles.iconButton}
+                  title="Restore"
                   onClick={handleBulkRestore}
                   disabled={selectedArticles.length === 0}
                 >
                   <img src="/images/icons/restore.svg" alt="restore" className={styles.icon} />
                 </button>
-                <button 
-                  className={styles.iconButton} 
-                  title="Delete" 
+                <button
+                  className={styles.iconButton}
+                  title="Delete"
                   onClick={handleBulkDelete}
                   disabled={selectedArticles.length === 0}
                 >
@@ -202,7 +202,7 @@ export default function TrashPage() {
           <div className={styles.articlesList}>
             {trashedArticles.length === 0 ? (
               <div className={styles.emptyState}>
-                <p className={styles.emptyStateText}>No Articles in Trash</p>
+                <p className={styles.emptyStateText}>No Articles Trashed yet</p>
               </div>
             ) : (
               trashedArticles.map((article) => (
@@ -233,7 +233,7 @@ export default function TrashPage() {
         }}
         onConfirm={confirmDelete}
         title="Are you sure you want to delete?"
-        message={singleArticleAction 
+        message={singleArticleAction
           ? "This will permanently delete this article and cannot be restored"
           : `This will permanently delete ${selectedArticles.length} article(s) and cannot be restored`
         }
@@ -249,7 +249,7 @@ export default function TrashPage() {
         }}
         onConfirm={confirmRestore}
         title="Are you sure you want to Restore?"
-        message={singleArticleAction 
+        message={singleArticleAction
           ? "This article will be restored to drafts"
           : `${selectedArticles.length} article(s) will be restored to drafts`
         }

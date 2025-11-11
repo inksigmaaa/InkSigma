@@ -276,30 +276,53 @@
     }
 
     .header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .leftSection {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
         gap: 12px;
     }
 
+    .titleRow {
+        flex: 0 0 auto;
+    }
+
+    .controlsRow {
+        flex: 0 0 auto;
+        gap: 0;
+    }
+
+    .leftSection {
+        display: none;
+    }
+
+    .rightSection {
+        width: auto;
+    }
+
+    .categoryButton {
+        min-width: 140px;
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+
     .dropdown {
-        right: auto;
-        left: 0;
         width: 280px;
     }
 }
-/* Empt
-y State */
+/* Empty State */
 .emptyState {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 300px;
-    padding: 40px 20px;
+    min-height: 200px;
+    padding: 80px 40px;
+    background: repeating-linear-gradient(
+        135deg,
+        transparent,
+        transparent 10px,
+        #E5E7EB 10px,
+        #E5E7EB 11px
+    );
 }
 
 .emptyStateText {
@@ -309,6 +332,10 @@ y State */
     line-height: 24px;
     color: #9CA3AF;
     text-align: center;
+    background: white;
+    padding: 12px 24px;
+    position: relative;
+    z-index: 1;
 }
 
 .iconButton:disabled {

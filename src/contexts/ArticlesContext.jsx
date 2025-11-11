@@ -4,6 +4,25 @@ import { createContext, useContext, useState } from 'react'
 
 const ArticlesContext = createContext()
 
+// Helper function to format date
+const formatDate = (date) => {
+  const day = date.getDate()
+  const month = date.toLocaleString('en-US', { month: 'short' })
+  const year = date.getFullYear()
+  
+  const suffix = (day) => {
+    if (day > 3 && day < 21) return 'th'
+    switch (day % 10) {
+      case 1: return 'st'
+      case 2: return 'nd'
+      case 3: return 'rd'
+      default: return 'th'
+    }
+  }
+  
+  return `Posted on ${day}${suffix(day)} ${month}, ${year}`
+}
+
 export function ArticlesProvider({ children }) {
   const [articles, setArticles] = useState([
     {
@@ -12,8 +31,8 @@ export function ArticlesProvider({ children }) {
       title: 'Title of the Blog will be in this area',
       description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...',
       categories: ['Sports', 'Humour', 'History'],
-      postedTime: 'Posted 2 mins ago',
-      createdAt: new Date('2024-11-15')
+      createdAt: new Date('2023-02-02'),
+      get postedTime() { return formatDate(this.createdAt) }
     },
     {
       id: 2,
@@ -21,8 +40,8 @@ export function ArticlesProvider({ children }) {
       title: 'Title of the Blog will be in this area',
       description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...',
       categories: ['Sports', 'Humour', 'History'],
-      postedTime: 'FRI | 15 NOV, 2024',
-      createdAt: new Date('2024-11-15')
+      createdAt: new Date('2024-11-15'),
+      get postedTime() { return formatDate(this.createdAt) }
     },
     {
       id: 3,
@@ -30,8 +49,8 @@ export function ArticlesProvider({ children }) {
       title: 'Title of the Blog will be in this area',
       description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...',
       categories: ['Sports', 'Humour', 'History'],
-      postedTime: 'FRI | 15 NOV, 2024',
-      createdAt: new Date('2024-11-15')
+      createdAt: new Date('2024-11-15'),
+      get postedTime() { return formatDate(this.createdAt) }
     }
   ])
 
