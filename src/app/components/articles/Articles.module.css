@@ -156,7 +156,7 @@
 }
 
 .dropdownHeader {
-    padding: 16px;
+    padding: 10px;
     display: flex;
     gap: 12px;
     border-bottom: 1px solid #E5E7EB;
@@ -340,12 +340,74 @@
     }
 
     .categoryButton {
-        min-width: 140px;
-        font-size: 13px;
-        padding: 8px 12px;
+        min-width: 120px;
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+
+    .categoryButton .chevron {
+        width: 14px;
+        height: 14px;
     }
 
     .dropdown {
-        width: 280px;
+        width: 260px;
+        height: 220px;
+    }
+
+    .dropdownHeader {
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .searchInput {
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+
+    .applyButton {
+        font-size: 12px;
+        padding: 8px 16px;
+    }
+
+    .categoriesList {
+        padding: 8px;
+    }
+
+    .categoryItem {
+        padding: 8px 10px;
+    }
+
+    .categoryCheckbox {
+        width: 18px;
+        height: 18px;
+    }
+
+    .categoryLabel {
+        font-size: 13px;
+    }
+}
+
+/* ===== EXTRA SMALL MOBILE ===== */
+@media (max-width: 480px) {
+    .categoryButton {
+        min-width: 100px;
+        font-size: 11px;
+        padding: 5px 8px;
+    }
+
+    .dropdown {
+        width: 240px;
+        height: 200px;
+    }
+
+    .searchInput {
+        font-size: 11px;
+        padding: 6px 8px;
+    }
+
+    .applyButton {
+        font-size: 11px;
+        padding: 6px 12px;
     }
 }
