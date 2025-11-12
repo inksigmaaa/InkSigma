@@ -7,6 +7,7 @@ import Sidebar from "../components/sidebar/Sidebar"
 import Verify from "../components/verify/Verify"
 import ArticleContainer from "../components/articleContainer/ArticleContainer"
 import { useArticles } from "@/contexts/ArticlesContext"
+import { ChevronDownIcon } from "@/components/icons/SvgIcons"
 
 export default function MyBlogsPage() {
   const { articles, moveToTrash } = useArticles()
@@ -63,9 +64,7 @@ export default function MyBlogsPage() {
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   >
                     Choose Category
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className={styles.chevron}>
-                      <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <ChevronDownIcon className={styles.chevron} />
                   </button>
                   {isDropdownOpen && (
                     <div className={styles.dropdown}>
