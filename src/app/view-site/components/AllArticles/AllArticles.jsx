@@ -1,10 +1,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import ShareMenu from '../ShareMenu/ShareMenu';
-import mockData from '@/data/mockBlogs.json';
 
 export default function AllArticles() {
-  const articles = mockData.blogs.slice(1); // Skip the first blog (it's shown as latest)
+  const articles = [];
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

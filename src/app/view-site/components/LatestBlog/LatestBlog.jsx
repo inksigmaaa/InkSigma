@@ -3,10 +3,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import ShareMenu from '../ShareMenu/ShareMenu';
-import mockData from '@/data/mockBlogs.json';
 
 export default function LatestBlog() {
-  const latestBlog = mockData.blogs[0]; // Get the first blog as latest
+  const latestBlog = null;
 
   if (!latestBlog) {
     return (

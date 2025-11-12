@@ -13,14 +13,13 @@ import BackToHomeButton from '../../components/BackToHomeButton/BackToHomeButton
 import ScrollToTop from '../../components/ScrollToTop/ScrollToTop';
 import MobileBottomNav from '../../components/MobileBottomNav/MobileBottomNav';
 import ClockIcon from '../../components/icons/ClockIcon';
-import mockData from '@/data/mockBlogs.json';
 
 export default function BlogDetailPage() {
   const params = useParams();
   const slug = params.slug;
   const [sections, setSections] = useState([]);
 
-  const blog = mockData.blogs.find(b => b.slug === slug);
+  const blog = null;
 
   useEffect(() => {
     // Extract all h2 headings from the article content for mobile TOC
