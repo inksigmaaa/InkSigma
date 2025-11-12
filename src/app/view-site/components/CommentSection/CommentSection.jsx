@@ -275,12 +275,14 @@ export default function CommentSection({ blogId }) {
                       className="text-gray-400 hover:text-gray-600 flex items-center gap-1 text-xs md:text-sm"
                     >
                       <Image src="/svg/reply_icon.svg" alt="Reply" width={59} height={20} className="w-auto h-4" />
+                      <span>Reply</span>
                     </button>
                     <button
                       onClick={() => handleDeleteComment(comment.id)}
                       className="text-gray-400 hover:text-red-600 flex items-center gap-1 text-xs md:text-sm"
                     >
                       <Image src="/svg/delete_btn_icon.svg" alt="Delete" width={69} height={22} className="w-auto h-4" />
+                      <span>Delete</span>
                     </button>
                   </div>
 
