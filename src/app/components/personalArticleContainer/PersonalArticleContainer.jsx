@@ -1,5 +1,5 @@
 import styles from './PersonalArticleContainer.module.css'
-import ArticleDropdown from '../articleDropdown/ArticleDropdown'
+import ArticleDropdown from '../articleDropdown/ArticleDropdown.jsx'
 
 export default function PersonalArticleContainer({ id, status, title, description, categories, postedTime, onRestore, onDelete, isSelected, onSelect }) {
     const statusConfig = {

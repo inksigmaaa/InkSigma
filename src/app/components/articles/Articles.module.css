@@ -14,7 +14,11 @@
     margin-left: 185px;
 }
 
-/* ===== HEADER ===== */
+/* Mobile Header - hidden on desktop */
+.mobileHeader {
+    display: none;
+}
+
 .header {
     display: flex;
     flex-direction: column;
@@ -309,105 +313,183 @@
 
 /* ===== MOBILE RESPONSIVE ===== */
 @media (max-width: 768px) {
+    .articlesContainer {
+        top: 200px;
+    }
+
     .articlesContent {
         margin-left: 0;
     }
 
-    .header {
-        flex-direction: row;
+    /* Show mobile header */
+    .mobileHeader {
+        display: flex;
+        flex-direction: column;
         justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding:0 8px;
+    }
+
+    .mobileTitle {
+        font-family: 'Public Sans', sans-serif;
+        font-weight: 700;
+        font-size: 18px;
+        line-height: 32px;
+        color: #1F2937;
+        margin: 0;
+        display: flex;
         align-items: center;
         gap: 12px;
     }
 
+    .mobileTitle::before {
+        content: '';
+        width: 12px;
+        height: 12px;
+        background: #8B5CF6;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .mobileControls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    /* When only category dropdown is shown */
+    .mobileControls:has(.dropdownWrapper:only-child) {
+        justify-content: flex-end;
+    }
+
+    .createArticleButton {
+        font-family: 'Public Sans', sans-serif;
+        font-weight: 600;
+        font-size: 16px;
+        line-height: 24px;
+        color: #FFFFFF;
+        background: #000000;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 24px;
+        cursor: pointer;
+        transition: background 0.2s;
+        white-space: nowrap;
+    }
+
+    .createArticleButton:hover {
+        background: #1F2937;
+    }
+
+    .createArticleButton:active {
+        background: #374151;
+    }
+
+    /* Hide desktop title row and controls */
     .titleRow {
-        flex: 0 0 auto;
+        display: none;
     }
 
     .controlsRow {
-        flex: 1 1 auto;
-        gap: 0;
-        justify-content: flex-end;
+        display: none;
+    }
+
+    .header {
+        display: none;
     }
 
     .leftSection {
         display: none;
     }
 
-    .rightSection {
-        width: auto;
-        margin-left: auto;
-    }
+}
 
-    .categoryButton {
-        min-width: 120px;
-        font-size: 12px;
-        padding: 6px 10px;
-    }
-
-    .categoryButton .chevron {
-        width: 14px;
-        height: 14px;
-    }
-
-    .dropdown {
-        width: 260px;
-        height: 220px;
-    }
-
-    .dropdownHeader {
-        padding: 12px;
-        gap: 8px;
-    }
-
-    .searchInput {
-        font-size: 12px;
-        padding: 8px 10px;
-    }
-
-    .applyButton {
-        font-size: 12px;
-        padding: 8px 16px;
-    }
-
-    .categoriesList {
-        padding: 8px;
-    }
-
-    .categoryItem {
-        padding: 8px 10px;
-    }
-
-    .categoryCheckbox {
-        width: 18px;
-        height: 18px;
-    }
-
-    .categoryLabel {
-        font-size: 13px;
+@media (max-width: 640px) {
+    .leftSection {
+        display: none;
     }
 }
 
-/* ===== EXTRA SMALL MOBILE ===== */
-@media (max-width: 480px) {
+/* Small mobile screens - prevent button overflow */
+@media (max-width: 425px) {
+    .articlesContainer {
+        padding: 0 16px;
+    }
+
+    .mobileControls {
+        gap: 12px;
+    }
+
+    .createArticleButton {
+        font-size: 14px;
+        padding: 10px 16px;
+    }
+
     .categoryButton {
+        font-size: 14px;
+        padding: 10px 12px;
+        min-width: 120px;
+    }
+
+    .mobileTitle {
+        font-size: 18px;
+        line-height: 28px;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 375px) {
+    .articlesContainer {
+        padding: 0 12px;
+    }
+
+    .mobileControls {
+        gap: 8px;
+    }
+
+    .createArticleButton {
+        font-size: 13px;
+        padding: 10px 14px;
+    }
+
+    .categoryButton {
+        font-size: 13px;
+        padding: 10px 10px;
+        min-width: 110px;
+    }
+}
+
+/* Minimum 360px screens */
+@media (max-width: 360px) {
+    .articlesContainer {
+        padding: 0 10px;
+    }
+
+    .mobileControls {
+        gap: 8px;
+    }
+
+    .createArticleButton {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+
+    .categoryButton {
+        font-size: 12px;
+        padding: 8px 10px;
         min-width: 100px;
-        font-size: 11px;
-        padding: 5px 8px;
     }
 
-    .dropdown {
-        width: 240px;
-        height: 200px;
+    .mobileTitle {
+        font-size: 18px;
+        line-height: 24px;
+        gap: 8px;
     }
 
-    .searchInput {
-        font-size: 11px;
-        padding: 6px 8px;
-    }
-
-    .applyButton {
-        font-size: 11px;
-        padding: 6px 12px;
+    .mobileTitle::before {
+        width: 10px;
+        height: 10px;
     }
 }
