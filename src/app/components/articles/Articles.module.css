@@ -262,13 +262,11 @@
     justify-content: center;
     min-height: 200px;
     padding: 80px 40px;
-    background: repeating-linear-gradient(
-        135deg,
-        transparent,
-        transparent 10px,
-        #E5E7EB 10px,
-        #E5E7EB 11px
-    );
+    background: repeating-linear-gradient(135deg,
+            transparent,
+            transparent 10px,
+            #E5E7EB 10px,
+            #E5E7EB 11px);
 }
 
 .emptyStateText {
@@ -327,8 +325,9 @@
     }
 
     .controlsRow {
-        flex: 0 0 auto;
+        flex: 1 1 auto;
         gap: 0;
+        justify-content: flex-end;
     }
 
     .leftSection {
@@ -337,6 +336,7 @@
 
     .rightSection {
         width: auto;
+        margin-left: auto;
     }
 
     .categoryButton {
