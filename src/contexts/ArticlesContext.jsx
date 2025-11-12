@@ -9,7 +9,7 @@ const formatDate = (date) => {
   const day = date.getDate()
   const month = date.toLocaleString('en-US', { month: 'short' })
   const year = date.getFullYear()
-  
+
   const suffix = (day) => {
     if (day > 3 && day < 21) return 'th'
     switch (day % 10) {
@@ -19,8 +19,8 @@ const formatDate = (date) => {
       default: return 'th'
     }
   }
-  
-  return `Posted on ${day}${suffix(day)} ${month}, ${year}`
+
+  return `${day}${suffix(day)} ${month}, ${year}`
 }
 
 export function ArticlesProvider({ children }) {
@@ -55,13 +55,13 @@ export function ArticlesProvider({ children }) {
   ])
 
   const moveToTrash = (id) => {
-    setArticles(prev => prev.map(article => 
+    setArticles(prev => prev.map(article =>
       article.id === id ? { ...article, status: 'trash' } : article
     ))
   }
 
   const restoreFromTrash = (id) => {
-    setArticles(prev => prev.map(article => 
+    setArticles(prev => prev.map(article =>
       article.id === id ? { ...article, status: 'draft' } : article
     ))
   }
@@ -71,25 +71,25 @@ export function ArticlesProvider({ children }) {
   }
 
   const publishArticle = (id) => {
-    setArticles(prev => prev.map(article => 
+    setArticles(prev => prev.map(article =>
       article.id === id ? { ...article, status: 'published' } : article
     ))
   }
 
   const unpublishArticle = (id) => {
-    setArticles(prev => prev.map(article => 
+    setArticles(prev => prev.map(article =>
       article.id === id ? { ...article, status: 'unpublished' } : article
     ))
   }
 
   const bulkMoveToTrash = (ids) => {
-    setArticles(prev => prev.map(article => 
+    setArticles(prev => prev.map(article =>
       ids.includes(article.id) ? { ...article, status: 'trash' } : article
     ))
   }
 
   const bulkRestore = (ids) => {
-    setArticles(prev => prev.map(article => 
+    setArticles(prev => prev.map(article =>
       ids.includes(article.id) ? { ...article, status: 'draft' } : article
     ))
   }
@@ -99,7 +99,7 @@ export function ArticlesProvider({ children }) {
   }
 
   const bulkPublish = (ids) => {
-    setArticles(prev => prev.map(article => 
+    setArticles(prev => prev.map(article =>
       ids.includes(article.id) ? { ...article, status: 'published' } : article
     ))
   }
