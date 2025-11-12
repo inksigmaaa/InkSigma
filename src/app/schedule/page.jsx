@@ -177,12 +177,7 @@ export default function SchedulePage() {
                       <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
                         <Edit className="h-5 w-5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
-                        <Send className="h-5 w-5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
-                        <Copy className="h-5 w-5" />
-                      </Button>
+                      
                       <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
                         <Trash2 className="h-5 w-5" />
                       </Button>

@@ -91,7 +91,7 @@ export default function ReviewPage() {
                       onCheckedChange={(checked) => handleSelectPost(post.id, checked)}
                     />
                     
-                    <div className="flex-1">
+                    <div className="flex-1 mt-[-5px]">
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 mb-1">
