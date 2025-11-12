@@ -11,8 +11,8 @@ export default function ViewSitePage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <ViewSiteHeader 
-        userName={latestBlog.author.name} 
-        userAvatar={latestBlog.author.avatar} 
+        userName={latestBlog?.author?.name || 'Guest'} 
+        userAvatar={latestBlog?.author?.avatar || null} 
       />
       <div className="flex-grow">
         <LatestBlog />

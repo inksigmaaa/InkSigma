@@ -99,9 +99,15 @@ export default function CommentSection({ blogId }) {
           ...comments,
         ]);
         setNewComment('');
+        alert('Comment added successfully!');
+      } else {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        alert(`Failed to add comment: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error submitting comment:', error);
+      alert('Failed to add comment. Please try again.');
     }
   };
 
@@ -155,10 +161,21 @@ export default function CommentSection({ blogId }) {
       });
 
       if (response.ok) {
-        setComments(comments.filter((comment) => comment.id !== commentId));
+        // Refetch comments to ensure UI is in sync
+        const refreshResponse = await fetch(`/api/comments?blogId=${blogId}`);
+        const data = await refreshResponse.json();
+        if (Array.isArray(data)) {
+          setComments(data);
+        }
+        alert('Comment deleted successfully!');
+      } else {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        alert(`Failed to delete comment: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error deleting comment:', error);
+      alert('Failed to delete comment. Please try again.');
     }
   };
 
@@ -171,19 +188,21 @@ export default function CommentSection({ blogId }) {
       });
 
       if (response.ok) {
-        setComments(
-          comments.map((comment) =>
-            comment.id === commentId
-              ? {
-                  ...comment,
-                  replies: comment.replies.filter((reply) => reply.id !== replyId),
-                }
-              : comment
-          )
-        );
+        // Refetch comments to ensure UI is in sync
+        const refreshResponse = await fetch(`/api/comments?blogId=${blogId}`);
+        const data = await refreshResponse.json();
+        if (Array.isArray(data)) {
+          setComments(data);
+        }
+        alert('Reply deleted successfully!');
+      } else {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        alert(`Failed to delete reply: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error deleting reply:', error);
+      alert('Failed to delete reply. Please try again.');
     }
   };
 
@@ -255,20 +274,13 @@ export default function CommentSection({ blogId }) {
                       onClick={() => setReplyingTo(comment.id)}
                       className="text-gray-400 hover:text-gray-600 flex items-center gap-1 text-xs md:text-sm"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M9 10h6M9 14h6M9 18h6"/>
-                        <path d="M3 20l1.3-3.9A9 9 0 1 1 7.9 19.7L3 20z"/>
-                      </svg>
-                      Reply
+                      <Image src="/svg/reply_icon.svg" alt="Reply" width={59} height={20} className="w-auto h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteComment(comment.id)}
                       className="text-gray-400 hover:text-red-600 flex items-center gap-1 text-xs md:text-sm"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                      </svg>
-                      Delete
+                      <Image src="/svg/delete_btn_icon.svg" alt="Delete" width={69} height={22} className="w-auto h-4" />
                     </button>
                   </div>
 
