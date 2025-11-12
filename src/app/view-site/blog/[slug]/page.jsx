@@ -1,7 +1,3 @@
-'use client';
-
-import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ViewSiteHeader from '../../components/Header/Header';
@@ -14,30 +10,10 @@ import ScrollToTop from '../../components/ScrollToTop/ScrollToTop';
 import MobileBottomNav from '../../components/MobileBottomNav/MobileBottomNav';
 import ClockIcon from '../../components/icons/ClockIcon';
 
-export default function BlogDetailPage() {
-  const params = useParams();
-  const slug = params.slug;
-  const [sections, setSections] = useState([]);
+export default function BlogDetailPage({ params }) {
+  const { slug } = params;
 
   const blog = null;
-
-  useEffect(() => {
-    // Extract all h2 headings from the article content for mobile TOC
-    const article = document.querySelector('article');
-    if (article) {
-      const headings = article.querySelectorAll('h2');
-      const extractedSections = Array.from(headings).map((heading, index) => {
-        if (!heading.id) {
-          heading.id = `section-${index + 1}`;
-        }
-        return {
-          id: heading.id,
-          title: heading.textContent,
-        };
-      });
-      setSections(extractedSections);
-    }
-  }, [blog]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -171,7 +147,7 @@ export default function BlogDetailPage() {
         slug={blog.slug}
         url={currentUrl}
         description={blog.description}
-        sections={sections}
+        sections={[]}
       />
     </div>
   );
