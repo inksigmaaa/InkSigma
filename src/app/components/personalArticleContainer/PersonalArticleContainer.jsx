@@ -20,7 +20,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
             </div>
 
             <div className={styles.mobileDropdown}>
-                <ArticleDropdown 
+                <ArticleDropdown
                     status={status}
                     onEdit={() => console.log('Edit')}
                     onDelete={onDelete}
@@ -76,8 +76,8 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
 
             <div className={styles.content}>
                 <div className={styles.leftSection}>
-                    <input 
-                        type="checkbox" 
+                    <input
+                        type="checkbox"
                         className={styles.checkbox}
                         checked={isSelected || false}
                         onChange={(e) => onSelect && onSelect(id, e.target.checked)}

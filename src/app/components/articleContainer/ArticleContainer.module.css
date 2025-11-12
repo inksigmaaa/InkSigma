@@ -85,7 +85,7 @@
 /* ===== FOOTER ===== */
 .footer {
     display: flex;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: center;
     gap: 16px;
     flex-wrap: nowrap;

@@ -7,7 +7,7 @@
     width: 100%;
     max-width: 1034px;
     z-index: 20;
-    padding: 0 20px;
+    padding: 0 40px;
 }
 
 .articlesContent {
@@ -257,7 +257,10 @@
 
 /* ===== ARTICLES LIST ===== */
 .articlesList {
-    margin-top: 16px;
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 /* ===== EMPTY STATE ===== */
