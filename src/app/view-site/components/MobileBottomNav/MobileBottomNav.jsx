@@ -2,6 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import CopyIcon from '../icons/CopyIcon';
+import ShareIcon from '../icons/ShareIcon';
+import ArrowUpIcon from '../icons/ArrowUpIcon';
+import CloseIcon from '../icons/CloseIcon';
 
 export default function MobileBottomNav({ title, url, slug, description, sections = [] }) {
   const [showTOC, setShowTOC] = useState(false);
@@ -130,10 +134,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
             className="flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-gray-700 my-3 flex-1"
             aria-label="Copy link"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <rect x="8" y="8" width="12" height="12" rx="2" ry="2"/>
-              <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>
-            </svg>
+            <CopyIcon />
           </button>
 
           {/* Share Button */}
@@ -142,12 +143,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
             className="flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-gray-700 my-3 flex-1"
             aria-label="Share"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="18" cy="5" r="3"/>
-              <circle cx="6" cy="12" r="3"/>
-              <circle cx="18" cy="19" r="3"/>
-              <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/>
-            </svg>
+            <ShareIcon />
           </button>
 
           {/* Table of Contents Button */}
@@ -165,9 +161,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
             className="flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-gray-700 my-3 flex-1"
             aria-label="Scroll to top"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M12 19V5M5 12l7-7 7 7"/>
-            </svg>
+            <ArrowUpIcon />
           </button>
         </div>
       </div>
@@ -184,9 +178,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
                 className="text-gray-400 hover:text-gray-600 transition-colors"
                 aria-label="Close"
               >
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
+                <CloseIcon width={28} height={28} />
               </button>
             </div>
             
@@ -224,9 +216,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
                 className="text-gray-500 hover:text-gray-700"
                 aria-label="Close"
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
+                <CloseIcon />
               </button>
             </div>
             <div className="px-6 py-6 grid grid-cols-4 gap-6">

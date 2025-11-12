@@ -12,7 +12,7 @@ export default function ConditionalLayout({ children }) {
   const isReviewPage = pathname === "/review"
   const isEditorPage = pathname === "/editor"
   const isPostsPage = pathname === "/posts"
-  const isViewSitePage = pathname?.startsWith("/view_site")
+  const isViewSitePage = pathname?.startsWith("/view-site")
   const isMyBlogsPage = pathname === "/my-blogs"
   const isDraftPage = pathname === "/draft"
   const isTrashPage = pathname === "/trash"

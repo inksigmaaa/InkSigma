@@ -12,6 +12,7 @@ import TableOfContents from '../../components/TableOfContents/TableOfContents';
 import BackToHomeButton from '../../components/BackToHomeButton/BackToHomeButton';
 import ScrollToTop from '../../components/ScrollToTop/ScrollToTop';
 import MobileBottomNav from '../../components/MobileBottomNav/MobileBottomNav';
+import ClockIcon from '../../components/icons/ClockIcon';
 import mockData from '@/data/mockBlogs.json';
 
 export default function BlogDetailPage() {
@@ -64,7 +65,7 @@ export default function BlogDetailPage() {
   const currentUrl =
     typeof window !== 'undefined'
       ? window.location.href
-      : `http://localhost:3000/view_site/blog/${slug}`;
+      : `http://localhost:3000/view-site/blog/${slug}`;
 
   if (!blog) {
     return (
@@ -72,7 +73,7 @@ export default function BlogDetailPage() {
         <ViewSiteHeader userName="Guest" userAvatar={null} />
         <div className="flex-grow max-w-[800px] mx-auto px-6 py-12">
           <h1 className="text-4xl font-bold text-black mb-4">Blog not found</h1>
-          <Link href="/view_site" className="text-purple-600 hover:text-purple-700">
+          <Link href="/view-site" className="text-purple-600 hover:text-purple-700">
             Back to home
           </Link>
         </div>
@@ -87,15 +88,16 @@ export default function BlogDetailPage() {
     <div className="min-h-screen bg-white flex flex-col">
       <ViewSiteHeader userName={blog.author.name} userAvatar={blog.author.avatar} />
 
-      <section className="flex-grow flex max-w-[1400px] lg:ml-[10%] px-4 md:px-6 gap-8 overflow-x-hidden">
-        {/* Table of Contents - Left Sidebar */}
-        <aside className="hidden lg:block flex-shrink-0 pt-20 space-y-0">
-          <BackToHomeButton />
-          <TableOfContents />
-        </aside>
+      <section className="flex-grow flex  justify-center w-full px-4 md:px-6">
+        <div className="flex max-w-[1400px] w-full justify-center gap-8">
+          {/* Table of Contents - Left Sidebar */}
+          <aside className="hidden lg:block flex-shrink-0 pt-20 space-y-0 w-[200px]">
+            <BackToHomeButton />
+            <TableOfContents />
+          </aside>
 
-        {/* Main Content */}
-        <div className="flex-1 max-w-[900px] pb-20 md:pb-12 pt-6 md:pt-20 lg:pl-12 lg:border-l-2 min-w-0">
+          {/* Main Content */}
+          <div className="flex-1 max-w-[800px] pb-20 md:pb-12 pt-6 md:pt-20 lg:pl-12 lg:border-l-2 min-w-0">
           {/* Blog Title */}
           <h1 className="text-2xl leading-tight md:text-5xl font-bold text-black mb-4 md:mb-4 break-words">{blog.title}</h1>
 
@@ -122,10 +124,7 @@ export default function BlogDetailPage() {
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-gray-400 flex-shrink-0">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="md:w-4 md:h-4 flex-shrink-0">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-              </svg>
+              <ClockIcon className="md:w-4 md:h-4 flex-shrink-0" />
               <span className="text-xs md:text-sm whitespace-nowrap">
                 Created on {dateFormatted.fullDate || dateFormatted.date}
               </span>
@@ -152,16 +151,16 @@ export default function BlogDetailPage() {
           <CommentSection blogId={blog.id} />
         </div>
 
-        {/* Share Buttons - Fixed on right side (Desktop only) */}
-        <div className="hidden lg:block">
-          <ShareButtons
-            title={blog.title}
-            slug={blog.slug}
-            url={currentUrl}
-            description={blog.description}
-          />
+          {/* Share Buttons - Fixed on right side (Desktop only) */}
+          <div className="hidden lg:block flex-shrink-0 w-[100px]">
+            <ShareButtons
+              title={blog.title}
+              slug={blog.slug}
+              url={currentUrl}
+              description={blog.description}
+            />
+          </div>
         </div>
-
       </section>
 
       <Footer />

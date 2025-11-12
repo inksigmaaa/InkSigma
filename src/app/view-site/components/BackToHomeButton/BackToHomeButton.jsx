@@ -5,7 +5,7 @@ export default function BackToHomeButton() {
   return (
     <div className="sticky mbky top-28 mb-8">
       <Link
-        href="/view_site"
+        href="/view-site"
         className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors"
       >
         <Image

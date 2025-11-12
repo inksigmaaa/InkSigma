@@ -1,5 +1,3 @@
-'use client';
-
 import Image from 'next/image';
 import Link from 'next/link';
 import ShareMenu from '../ShareMenu/ShareMenu';
@@ -57,7 +55,7 @@ export default function AllArticles() {
                 />
               </div>
 
-              <Link href={`/view_site/blog/${article.slug}`} className="absolute inset-0 rounded-xl md:rounded-2xl overflow-hidden cursor-pointer block">
+              <Link href={`/view-site/blog/${article.slug}`} className="absolute inset-0 rounded-xl md:rounded-2xl overflow-hidden cursor-pointer block">
                 {/* Background Image */}
                 <Image 
                   src={article.thumbnail} 
@@ -82,7 +80,7 @@ export default function AllArticles() {
             </div>
 
             {/* Read Article Button */}
-            <Link href={`/view_site/blog/${article.slug}`} className="flex items-center justify-center md:justify-start gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors w-full md:w-fit mt-4 md:mt-10 text-sm md:text-base">
+            <Link href={`/view-site/blog/${article.slug}`} className="flex items-center justify-center md:justify-start gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors w-full md:w-fit mt-4 md:mt-10 text-sm md:text-base">
               Read Article
               <Image 
                 src="/svg/arrow-right.svg" 

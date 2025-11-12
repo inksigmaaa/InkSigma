@@ -27,11 +27,11 @@ export default function ShareButtons({ title, url, slug, description }) {
   };
 
   return (
-    <div className="fixed  flex flex-col gap-2 z-50 pt-20 px-10">
+    <div className="sticky top-24 flex flex-col gap-2 z-10 pt-4">
       {/* Share to WhatsApp */}
       <button
         onClick={shareOnWhatsApp}
-        className="w-12 h-12 flex items-center justify-center"
+        className="w-12 h-12 flex items-center justify-center hover:scale-110 transition-transform"
         aria-label="Share on WhatsApp"
       >
         <Image 
@@ -45,7 +45,7 @@ export default function ShareButtons({ title, url, slug, description }) {
       {/* Share to Twitter */}
       <button
         onClick={shareOnTwitter}
-        className="w-12 h-12 flex items-center justify-center"
+        className="w-12 h-12 flex items-center justify-center hover:scale-110 transition-transform"
         aria-label="Share on Twitter"
       >
         <Image 
@@ -59,7 +59,7 @@ export default function ShareButtons({ title, url, slug, description }) {
       {/* Share to LinkedIn */}
       <button
         onClick={shareOnLinkedIn}
-        className="w-12 h-12 flex items-center justify-center"
+        className="w-12 h-12 flex items-center justify-center hover:scale-110 transition-transform"
         aria-label="Share on LinkedIn"
       >
         <Image 
@@ -73,7 +73,7 @@ export default function ShareButtons({ title, url, slug, description }) {
       {/* Share to Facebook */}
       <button
         onClick={shareOnFacebook}
-        className="w-12 h-12 flex items-center justify-center"
+        className="w-12 h-12 flex items-center justify-center hover:scale-110 transition-transform"
         aria-label="Share on Facebook"
       >
         <Image 

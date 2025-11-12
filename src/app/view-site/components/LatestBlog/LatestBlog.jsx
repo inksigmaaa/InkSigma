@@ -62,7 +62,7 @@ export default function LatestBlog() {
           />
         </div>
         
-        <Link href={`/view_site/blog/${latestBlog.slug}`} className="absolute inset-0 rounded-xl md:rounded-2xl overflow-hidden cursor-pointer block">
+        <Link href={`/view-site/blog/${latestBlog.slug}`} className="absolute inset-0 rounded-xl md:rounded-2xl overflow-hidden cursor-pointer block">
 
         {/* Background Image */}
         <div className="absolute inset-0">
