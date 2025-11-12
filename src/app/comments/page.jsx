@@ -1,15 +1,15 @@
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
-import Articles from "../components/articles/Articles";
+import CommentsComponent from "../components/comments/Comments";
 
-export default function Posts() {
+export default function CommentsPage() {
     return (
         <>
             <NavbarLoggedin />
             <Sidebar />
             <Verify />
-            <Articles title={"All Articles"} />
+            <CommentsComponent />
         </>
     )
 }

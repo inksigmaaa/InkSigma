@@ -3,13 +3,17 @@ import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
 import Articles from "../components/articles/Articles";
 
-export default function Posts() {
+export default function Published() {
     return (
         <>
             <NavbarLoggedin />
             <Sidebar />
             <Verify />
-            <Articles title={"All Articles"} />
+            <Articles
+                title="Published"
+                filterStatus="published"
+                showCreateButton={false}
+            />
         </>
     )
 }
