@@ -85,7 +85,10 @@ export default function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <button className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap ml-4">
+                  <button 
+                    onClick={() => router.push("/posts")}
+                    className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap ml-4"
+                  >
                     Go to Publication
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
@@ -109,7 +112,10 @@ export default function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <button className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap ml-4">
+                  <button 
+                    onClick={() => router.push("/posts")}
+                    className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap ml-4"
+                  >
                     Go to Publication
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
