@@ -9,6 +9,7 @@ import ArticleContainer from "../components/articleContainer/ArticleContainer"
 import ConfirmModal from "../components/confirmModal/ConfirmModal"
 import { useArticles } from "@/contexts/ArticlesContext"
 import { ChevronDownIcon } from "@/components/icons/SvgIcons"
+import { Button } from "@/components/ui/button"
 
 export default function TrashPage() {
   const { articles, restoreFromTrash, deleteArticle, bulkRestore, bulkDelete } = useArticles()
@@ -137,32 +138,35 @@ export default function TrashPage() {
                   />
                   <span className={styles.selectAllText}>Select all</span>
                 </label>
-                <button
-                  className={styles.iconButton}
+                <Button
+                  variant="ghost"
+                  size="icon"
                   title="Restore"
                   onClick={handleBulkRestore}
                   disabled={selectedArticles.length === 0}
                 >
                   <img src="/images/icons/restore.svg" alt="restore" className={styles.icon} />
-                </button>
-                <button
-                  className={styles.iconButton}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   title="Delete"
                   onClick={handleBulkDelete}
                   disabled={selectedArticles.length === 0}
                 >
                   <img src="/images/icons/trash1.svg" alt="delete" className={styles.icon} />
-                </button>
+                </Button>
               </div>
               <div className={styles.rightSection}>
                 <div className={styles.dropdownWrapper}>
-                  <button
+                  <Button
+                    variant="outline"
                     className={styles.categoryButton}
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   >
                     Choose Category
                     <ChevronDownIcon className={styles.chevron} />
-                  </button>
+                  </Button>
                   {isDropdownOpen && (
                     <div className={styles.dropdown}>
                       <div className={styles.dropdownHeader}>
@@ -173,12 +177,12 @@ export default function TrashPage() {
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className={styles.searchInput}
                         />
-                        <button
+                        <Button
                           className={styles.applyButton}
                           onClick={() => setIsDropdownOpen(false)}
                         >
                           Apply
-                        </button>
+                        </Button>
                       </div>
                       <div className={styles.categoriesList}>
                         {filteredCategories.map((category) => (

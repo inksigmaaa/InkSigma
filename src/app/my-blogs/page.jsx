@@ -8,6 +8,7 @@ import Verify from "../components/verify/Verify"
 import ArticleContainer from "../components/articleContainer/ArticleContainer"
 import { useArticles } from "@/contexts/ArticlesContext"
 import { ChevronDownIcon } from "@/components/icons/SvgIcons"
+import { Button } from "@/components/ui/button"
 
 export default function MyBlogsPage() {
   const { articles, moveToTrash } = useArticles()
@@ -59,13 +60,14 @@ export default function MyBlogsPage() {
               </div>
               <div className={styles.rightSection}>
                 <div className={styles.dropdownWrapper}>
-                  <button
+                  <Button
+                    variant="outline"
                     className={styles.categoryButton}
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   >
                     Choose Category
                     <ChevronDownIcon className={styles.chevron} />
-                  </button>
+                  </Button>
                   {isDropdownOpen && (
                     <div className={styles.dropdown}>
                       <div className={styles.dropdownHeader}>
@@ -76,12 +78,12 @@ export default function MyBlogsPage() {
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className={styles.searchInput}
                         />
-                        <button
+                        <Button
                           className={styles.applyButton}
                           onClick={() => setIsDropdownOpen(false)}
                         >
                           Apply
-                        </button>
+                        </Button>
                       </div>
                       <div className={styles.categoriesList}>
                         {filteredCategories.map((category) => (
