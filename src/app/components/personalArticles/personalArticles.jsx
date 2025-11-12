@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import styles from './personalArticles.module.css'
-import ArticleContainer from '../articleContainer/ArticleContainer'
+import PersonalArticleContainer from '../personalArticleContainer/PersonalArticleContainer'
 import { ChevronDownIcon } from "@/components/icons/SvgIcons"
 import { Button } from "@/components/ui/button"
 
@@ -128,7 +128,7 @@ export default function PersonalArticles({
                         </div>
                     ) : (
                         articles.map((article) => (
-                            <ArticleContainer
+                            <PersonalArticleContainer
                                 key={article.id}
                                 id={article.id}
                                 status={article.status}

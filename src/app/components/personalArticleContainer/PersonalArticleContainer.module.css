@@ -1,0 +1,164 @@
+.articleCard {
+    background: white;
+    border: 1px solid #E5E5E5;
+    border-radius: 8px;
+    padding: 16px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.statusBadge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    width: fit-content;
+}
+
+.mobileDropdown {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+}
+
+.tabletStatusActions {
+    display: none;
+}
+
+.content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.leftSection {
+    display: flex;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.checkbox {
+    margin-top: 4px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.textContent {
+    flex: 1;
+    min-width: 0;
+}
+
+.title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #171717;
+    margin: 0 0 8px 0;
+    word-wrap: break-word;
+}
+
+.description {
+    font-size: 14px;
+    color: #737373;
+    margin: 0 0 12px 0;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.categoryTag {
+    background: #F5F5F5;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    color: #525252;
+}
+
+.posted {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.postedText {
+    font-size: 12px;
+    color: #A4A4A4;
+}
+
+.actions {
+    display: none;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.actionButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.actionButton:hover {
+    background-color: #F5F5F5;
+}
+
+.actionButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.actionIcon {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+/* Tablet and up */
+@media (min-width: 768px) {
+    .mobileDropdown {
+        display: none;
+    }
+
+    .tabletStatusActions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .tabletStatusActions .actions {
+        display: flex;
+    }
+
+    .content .actions {
+        display: none;
+    }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+    .tabletStatusActions {
+        display: none;
+    }
+
+    .content .actions {
+        display: flex;
+    }
+}
