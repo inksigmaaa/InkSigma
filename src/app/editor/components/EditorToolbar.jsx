@@ -47,7 +47,7 @@ export function EditorToolbar({
   }
 
   return (
-    <div className="flex items-center gap-2 md:gap-4 py-3 border-b border-gray-200 overflow-x-auto">
+    <div className="flex items-center md:gap-2 py-3 border-b border-gray-200 overflow-x-auto scrollbar-hide">
       {/* Font Selector */}
       <div className="relative flex items-center gap-1.5 shrink-0">
         <span className="text-sm md:text-base font-normal text-gray-700 w-[80px] md:w-[100px] truncate">{font}</span>
