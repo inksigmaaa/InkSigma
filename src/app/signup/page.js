@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +13,9 @@ import { signUp, signIn } from "@/lib/auth-client"
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get("redirect") || "/dashboard"
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -46,7 +49,7 @@ export default function SignupPage() {
         return
       }
 
-      router.push("/")
+      router.push(redirectTo)
     } catch (err) {
       setError(err.message || "An unexpected error occurred")
       console.error(err)
@@ -59,7 +62,7 @@ export default function SignupPage() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: "/",
+        callbackURL: redirectTo,
       })
     } catch (err) {
       setError("Failed to sign up with Google")

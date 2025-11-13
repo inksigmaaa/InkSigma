@@ -1,9 +1,29 @@
+"use client";
+
 export default function Sidebar() {
   return (
     <>
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .mobile-sidebar-scroll::-webkit-scrollbar {
+            height: 4px;
+          }
+          .mobile-sidebar-scroll::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .mobile-sidebar-scroll::-webkit-scrollbar-thumb {
+            background: #8b5cf6;
+            border-radius: 2px;
+          }
+          .mobile-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+            background: #7c3aed;
+          }
+        }
+      `}</style>
       {/* SIDE CONTAINER / WRAPPER */}
       <div
         className="
+          mobile-sidebar-scroll
           fixed left-1/2 -translate-x-1/2 top-[112px]
           w-full max-w-[1034px] h-[612px]
           bg-transparent z-30 px-5
@@ -54,7 +74,7 @@ export default function Sidebar() {
               "
             />
 
-            <a href="/">
+            <a href="/viewsite">
               <button
                 className="
                   bg-violet-500 text-white
@@ -94,27 +114,27 @@ export default function Sidebar() {
             {
               title: "PUBLICATION",
               items: [
-                ["home.svg", "Home"],
-                ["domain.svg", "Domain"],
-                ["Member.svg", "Members"],
-                ["setings.svg", "Settings"],
+                ["home.svg", "Home", "/home"],
+                ["domain.svg", "Domain", "/domain"],
+                ["Member.svg", "Members", "/members"],
+                ["setings.svg", "Settings", "/settings"],
               ]
             },
             {
               title: "ARTICLES",
               items: [
-                ["all_articles.svg", "All Articles"],
-                ["Publish.svg", "Published"],
-                ["Schedule.svg", "Schedule"],
-                ["Review.svg", "Review"],
+                ["all_articles.svg", "All Articles", "/posts"],
+                ["Publish.svg", "Published", "/published"],
+                ["Schedule.svg", "Schedule", "/scheduled"],
+                ["Review.svg", "Review", "/review"],
               ]
             },
             {
               title: "PERSONAL",
               items: [
-                ["all_articles.svg", "My Blogs"],
-                ["Publish.svg", "Draft"],
-                ["Schedule.svg", "Trash"],
+                ["all_articles.svg", "My Blogs", "/my blogs"],
+                ["Publish.svg", "Draft", "/drafts"],
+                ["Schedule.svg", "Trash", "/trash"],
               ]
             }
           ].map((section, idx) => (
@@ -137,9 +157,10 @@ export default function Sidebar() {
               </h1>
 
               {/* SECTION ITEMS */}
-              {section.items.map(([icon, label]) => (
-                <div
+              {section.items.map(([icon, label, href]) => (
+                <a
                   key={label}
+                  href={href}
                   className="
                     flex items-center px-2 py-[5px]
                     rounded-md cursor-pointer
@@ -164,7 +185,7 @@ export default function Sidebar() {
                       {label}
                     </p>
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           ))}
