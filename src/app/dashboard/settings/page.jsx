@@ -3,8 +3,8 @@
 import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import DashboardNavbar from "@/components/DashboardNavbar"
-import DashboardSidebar from "@/components/DashboardSidebar"
+import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
+import DashboardSimpleSidebar from "../../components/sidebar/DashboardSimpleSidebar"
 
 export default function SettingsPage() {
   const { data: session, isPending } = useSession()
@@ -31,25 +31,15 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      {/* Header Container */}
-      <div className="max-w-[1200px] mx-auto bg-white rounded-lg mb-4 shadow-sm">
-        <DashboardNavbar />
-      </div>
-
-      {/* Main Layout with Sidebar and Content */}
-      <div className="max-w-[1200px] mx-auto flex gap-4">
-        {/* Sidebar Container */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <DashboardSidebar />
-        </div>
-
-        {/* Content Area */}
-        <main className="flex-1 bg-white rounded-lg shadow-sm px-16 py-10">
+    <>
+      <NavbarLoggedin />
+      <DashboardSimpleSidebar />
+      <div className="min-h-screen bg-white p-8 pt-32 pl-64">
+        <main className="max-w-[1200px] mx-auto">
           <div className="flex flex-col items-center">
             <h1 
-              className="text-center font-bold text-gray-900 mb-8 whitespace-nowrap"
-              style={{ width: '119px', height: '28px', fontSize: '14px', lineHeight: '28px' }}
+              className="text-center font-bold text-gray-900 mb-8"
+              style={{ fontSize: '18px', lineHeight: '28px' }}
             >
               Profile Settings
             </h1>
@@ -230,6 +220,6 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
