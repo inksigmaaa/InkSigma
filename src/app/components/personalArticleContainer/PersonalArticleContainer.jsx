@@ -13,7 +13,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
     const config = statusConfig[status] || statusConfig.published
 
     return (
-        <div className="relative bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow max-md:pt-10 max-md:p-4">
+        <div className="relative bg-white border border-gray-200 rounded-lg p-5 max-md:pt-10 max-md:p-4">
             <div 
                 className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center max-md:flex max-md:min-w-[88px] max-md:w-auto" 
                 style={{ background: config.bg, color: config.color }}
