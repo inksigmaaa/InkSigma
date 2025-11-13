@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
+import VisitSiteButton from "@/components/VisitSiteButton"
+import FeedbackButton from "@/components/FeedbackButton"
 
 export default function ConditionalLayout({ children }) {
   const pathname = usePathname()
@@ -12,14 +14,23 @@ export default function ConditionalLayout({ children }) {
   const isReviewPage = pathname === "/review"
   const isEditorPage = pathname === "/editor"
   const isPostsPage = pathname === "/posts"
-  const isPublishedPage = pathname === "/published"
-  const isCommentsPage = pathname === "/comments"
-  
+  const isMyBlogsPage = pathname === "/my-blogs"
+  const isDraftPage = pathname === "/draft"
+  const isTrashPage = pathname === "/trash"
 
-  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isPublishedPage || isCommentsPage) {
+  // Show mobile buttons on all pages except auth pages
+  const showMobileButtons = !isAuthPage
+
+  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isDraftPage || isTrashPage) {
     return (
       <div className="min-h-screen">
         {children}
+        {showMobileButtons && (
+          <>
+            <VisitSiteButton />
+            <FeedbackButton />
+          </>
+        )}
       </div>
     )
   }
@@ -31,6 +42,8 @@ export default function ConditionalLayout({ children }) {
         {children}
       </main>
       <Footer />
+      <VisitSiteButton />
+      <FeedbackButton />
     </>
   )
 }
