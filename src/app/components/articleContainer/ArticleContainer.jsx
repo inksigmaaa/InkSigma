@@ -70,7 +70,8 @@ export default function ArticleContainer({ status, title, description, categorie
                                 <img src="/images/icons/clip.svg" className="w-4 h-4" /> Send to draft
                             </DropdownMenuItem>
                             <DropdownMenuItem className="gap-2 text-sm">
-                                <img src="/images/icons/statistics.svg" className="w-4 h-4" /> Statistics
+                                <img src="/images/icons/statistics.svg" className="w-4 h-4" /> 
+                                Statistics
                             </DropdownMenuItem>
                             <DropdownMenuItem className="gap-2 text-sm">
                                 <img src="/images/icons/edit.svg" className="w-4 h-4" /> Edit

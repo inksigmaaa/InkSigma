@@ -17,11 +17,12 @@ export default function ConditionalLayout({ children }) {
   const isMyBlogsPage = pathname === "/my-blogs"
   const isDraftPage = pathname === "/draft"
   const isTrashPage = pathname === "/trash"
+  const isUnpublishedPage = pathname === "/unpublished"
 
   // Show mobile buttons on all pages except auth pages
   const showMobileButtons = !isAuthPage
 
-  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isDraftPage || isTrashPage) {
+  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isDraftPage || isTrashPage || isUnpublishedPage) {
     return (
       <div className="min-h-screen">
         {children}
