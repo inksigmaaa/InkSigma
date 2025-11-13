@@ -1,3 +1,5 @@
+import { FileClock } from 'lucide-react';
+
 export default function Sidebar() {
   // Route mapping for navigation
   const getRoute = (label) => {
@@ -168,13 +170,22 @@ export default function Sidebar() {
                     "
                   >
                     <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                      <img
-                        src={`/images/icons/${icon}`}
-                        className="
-                          w-5 h-5 opacity-60 flex-shrink-0
-                          max-md:w-6 max-md:h-6
-                        "
-                      />
+                      {label === "Unpublished" ? (
+                        <FileClock
+                          className="
+                            w-5 h-5 opacity-60 flex-shrink-0
+                            max-md:w-6 max-md:h-6 text-gray-500
+                          "
+                        />
+                      ) : (
+                        <img
+                          src={`/images/icons/${icon}`}
+                          className="
+                            w-5 h-5 opacity-60 flex-shrink-0
+                            max-md:w-6 max-md:h-6
+                          "
+                        />
+                      )}
                       <p
                         className="
                           text-[13px] font-normal leading-[150%] text-gray-500 m-0
