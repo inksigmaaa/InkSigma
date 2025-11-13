@@ -66,7 +66,7 @@ export default function SchedulePage() {
       <Sidebar />
       <Verify />
       
-      <div className="absolute left-1/2 -translate-x-1/2 top-[200px] w-full max-w-[1034px] z-20 px-5">
+      <div className="absolute left-1/2 -translate-x-1/2 top-[220px] w-full max-w-[1034px] z-20 px-5">
         <div className="ml-0 md:ml-[185px]">
           <div className="space-y-6">
 
@@ -177,12 +177,7 @@ export default function SchedulePage() {
                       <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
                         <Edit className="h-5 w-5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
-                        <Send className="h-5 w-5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
-                        <Copy className="h-5 w-5" />
-                      </Button>
+                      
                       <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600">
                         <Trash2 className="h-5 w-5" />
                       </Button>

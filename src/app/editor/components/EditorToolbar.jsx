@@ -47,10 +47,10 @@ export function EditorToolbar({
   }
 
   return (
-    <div className="flex items-center gap-4 py-3 border-b border-gray-200">
+    <div className="flex items-center md:gap-2 py-3 border-b border-gray-200 overflow-x-auto scrollbar-hide">
       {/* Font Selector */}
-      <div className="relative flex items-center gap-1.5">
-        <span className="text-base font-normal text-gray-700 w-[100px] truncate">{font}</span>
+      <div className="relative flex items-center gap-1.5 shrink-0">
+        <span className="text-sm md:text-base font-normal text-gray-700 w-[80px] md:w-[100px] truncate">{font}</span>
         <div className="flex flex-col -space-y-1">
           <button onClick={cycleFontUp} className="hover:bg-gray-100 rounded p-0.5">
             <ChevronUp className="h-3 w-3 text-gray-600" />
@@ -61,11 +61,11 @@ export function EditorToolbar({
         </div>
       </div>
 
-      <div className="h-6 w-px bg-gray-300"></div>
+      <div className="h-6 w-px bg-gray-300 shrink-0"></div>
 
       {/* Heading Selector */}
-      <div className="flex items-center gap-2 dropdown-container">
-        <img src="/editor-icons/P.svg" alt="P" />
+      <div className="flex items-center gap-1.5 md:gap-2 dropdown-container shrink-0">
+        <img src="/editor-icons/P.svg" alt="P" className="w-5 h-5" />
         <div className="relative">
           <button
             className="flex items-center hover:bg-gray-100 rounded px-1"
@@ -75,7 +75,7 @@ export function EditorToolbar({
               setShowHeadingMenu(!showHeadingMenu)
             }}
           >
-            <img src="/editor-icons/H.svg" alt="H" />
+            <img src="/editor-icons/H.svg" alt="H" className="w-5 h-5" />
             <ChevronDown className="h-3 w-3 text-gray-600 ml-0.5" />
           </button>
           {showHeadingMenu && (
@@ -98,28 +98,28 @@ export function EditorToolbar({
         </div>
       </div>
 
-      <div className="h-6 w-px bg-gray-300"></div>
+      <div className="h-6 w-px bg-gray-300 shrink-0"></div>
 
       {/* Format Buttons */}
-      <button onClick={() => applyFormat('bold')} className="p-2 hover:bg-gray-100 rounded" title="Bold">
-        <img src="/editor-icons/B.svg" alt="Bold" />
+      <button onClick={() => applyFormat('bold')} className="p-1.5 md:p-2 hover:bg-gray-100 rounded shrink-0" title="Bold">
+        <img src="/editor-icons/B.svg" alt="Bold" className="w-5 h-5" />
       </button>
-      <button onClick={() => applyFormat('italic')} className="p-2 hover:bg-gray-100 rounded" title="Italic">
-        <img src="/editor-icons/italic.svg" alt="Italic" />
+      <button onClick={() => applyFormat('italic')} className="p-1.5 md:p-2 hover:bg-gray-100 rounded shrink-0" title="Italic">
+        <img src="/editor-icons/italic.svg" alt="Italic" className="w-5 h-5" />
       </button>
-      <button onClick={() => applyFormat('underline')} className="p-2 hover:bg-gray-100 rounded" title="Underline">
-        <img src="/editor-icons/underline.svg" alt="Underline" />
+      <button onClick={() => applyFormat('underline')} className="p-1.5 md:p-2 hover:bg-gray-100 rounded shrink-0" title="Underline">
+        <img src="/editor-icons/underline.svg" alt="Underline" className="w-5 h-5" />
       </button>
-      <button onClick={() => applyFormat('strikeThrough')} className="p-2 hover:bg-gray-100 rounded" title="Strikethrough">
-        <img src="/editor-icons/strike.svg" alt="Strikethrough" />
+      <button onClick={() => applyFormat('strikeThrough')} className="p-1.5 md:p-2 hover:bg-gray-100 rounded shrink-0" title="Strikethrough">
+        <img src="/editor-icons/strike.svg" alt="Strikethrough" className="w-5 h-5" />
       </button>
 
-      <div className="h-6 w-px bg-gray-300"></div>
+      <div className="h-6 w-px bg-gray-300 shrink-0"></div>
 
       {/* List Button with Dropdown */}
-      <div className="relative dropdown-container">
+      <div className="relative dropdown-container shrink-0">
         <button 
-          className="p-2 hover:bg-gray-100 rounded flex items-center gap-0.5"
+          className="p-1.5 md:p-2 hover:bg-gray-100 rounded flex items-center gap-0.5"
           onMouseDown={(e) => {
             e.preventDefault()
             if (!showListMenu) closeAllDropdowns()
@@ -127,7 +127,7 @@ export function EditorToolbar({
           }}
           title="Lists"
         >
-          <img src="/editor-icons/list.svg" alt="Lists" />
+          <img src="/editor-icons/list.svg" alt="Lists" className="w-5 h-5" />
           <ChevronDown className="h-3 w-3 text-gray-700" />
         </button>
         {showListMenu && (
@@ -159,9 +159,9 @@ export function EditorToolbar({
       </div>
 
       {/* Align Button with Dropdown */}
-      <div className="relative dropdown-container">
+      <div className="relative dropdown-container shrink-0">
         <button 
-          className="p-2 hover:bg-gray-100 rounded flex items-center gap-0.5"
+          className="p-1.5 md:p-2 hover:bg-gray-100 rounded flex items-center gap-0.5"
           onMouseDown={(e) => {
             e.preventDefault()
             if (!showAlignMenu) closeAllDropdowns()
@@ -169,7 +169,7 @@ export function EditorToolbar({
           }}
           title="Alignment"
         >
-          <img src="/editor-icons/Paragraph.svg" alt="Alignment" />
+          <img src="/editor-icons/Paragraph.svg" alt="Alignment" className="w-5 h-5" />
           <ChevronDown className="h-3 w-3 text-gray-700" />
         </button>
         {showAlignMenu && (
@@ -222,18 +222,18 @@ export function EditorToolbar({
         )}
       </div>
 
-      <div className="h-6 w-px bg-gray-300"></div>
+      <div className="h-6 w-px bg-gray-300 shrink-0"></div>
 
       {/* Insert Buttons */}
-      <div className="relative">
+      <div className="relative shrink-0">
         <button 
-          className="p-2 hover:bg-gray-100 rounded"
+          className="p-1.5 md:p-2 hover:bg-gray-100 rounded"
           onClick={onInsertImage}
           onMouseEnter={() => setShowImageTooltip(true)}
           onMouseLeave={() => setShowImageTooltip(false)}
           title="Insert Image"
         >
-          <img src="/editor-icons/image.svg" alt="Image" />
+          <img src="/editor-icons/image.svg" alt="Image" className="w-5 h-5" />
         </button>
         {showImageTooltip && (
           <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-gray-800 text-white text-xs px-3 py-1.5 rounded whitespace-nowrap z-10">
@@ -242,34 +242,34 @@ export function EditorToolbar({
         )}
       </div>
       <button 
-        className="p-2 hover:bg-gray-100 rounded"
+        className="p-1.5 md:p-2 hover:bg-gray-100 rounded shrink-0"
         onClick={() => applyFormat('formatBlock', '<pre>')}
         title="Code Block"
       >
-        <img src="/editor-icons/block.svg" alt="Code Block" />
+        <img src="/editor-icons/block.svg" alt="Code Block" className="w-5 h-5" />
       </button>
       <button 
-        className="p-2 hover:bg-gray-100 rounded"
+        className="p-1.5 md:p-2 hover:bg-gray-100 rounded shrink-0"
         onClick={() => applyFormat('formatBlock', '<blockquote>')}
         title="Quote"
       >
-        <img src="/editor-icons/''.svg" alt="Quote" />
+        <img src="/editor-icons/''.svg" alt="Quote" className="w-5 h-5" />
       </button>
-      <div className="relative dropdown-container">
+      <div className="relative dropdown-container shrink-0">
         <button 
-          className="p-2 hover:bg-gray-100 rounded"
+          className="p-1.5 md:p-2 hover:bg-gray-100 rounded"
           onClick={onInsertLink}
           title="Insert Link"
         >
-          <img src="/editor-icons/link.svg" alt="Link" />
+          <img src="/editor-icons/link.svg" alt="Link" className="w-5 h-5" />
         </button>
       </div>
 
-      <div className="h-6 w-px bg-gray-300"></div>
+      <div className="h-6 w-px bg-gray-300 shrink-0 hidden md:block"></div>
 
-      <div className="relative dropdown-container">
+      <div className="relative dropdown-container shrink-0 hidden md:block">
         <button 
-          className="text-sm text-gray-600 px-2 hover:text-gray-800"
+          className="text-xs md:text-sm text-gray-600 px-2 hover:text-gray-800 whitespace-nowrap"
           onClick={() => {
             if (!showAdvancedOptions) closeAllDropdowns()
             setShowAdvancedOptions(!showAdvancedOptions)

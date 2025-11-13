@@ -128,23 +128,22 @@ export default function EditorPage() {
       />
 
       <div className="min-h-screen bg-[#fafafa]">
-        <div className="flex justify-center gap-4">
-          {/* Go Back Button */}
-          <div className="pt-6 pl-6">
-            <Button 
-              variant="ghost" 
-              onClick={() => router.push('/schedule')}
-              className="text-gray-500 hover:text-gray-700 px-2 gap-1"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Go Back
-            </Button>
-          </div>
+        {/* Go Back Button - Full Width on Mobile/Tablet */}
+        <div className="px-4 md:px-6 pt-6 pb-4 border-b border-gray-200 bg-white md:bg-transparent md:border-0">
+          <Button 
+            variant="ghost" 
+            onClick={() => router.push('/schedule')}
+            className="text-gray-500 hover:text-gray-700 px-2 gap-1"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Go Back
+          </Button>
+        </div>
 
-          {/* Main Editor Container */}
-          <div className="flex-1 max-w-5xl p-6 space-y-6">
+        {/* Main Editor Container */}
+        <div className="w-full max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-6">
             {/* Status Badge */}
-            <div className="flex items-center gap-2">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200">
               <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
               <span className="text-gray-500 text-sm">Drafts</span>
             </div>
@@ -156,7 +155,7 @@ export default function EditorPage() {
                 placeholder="Title of the Blog..."
                 value={editorState.title}
                 onChange={(e) => editorState.setTitle(e.target.value)}
-                className="text-4xl font-bold border-0 px-0 focus-visible:ring-0 focus:outline-none placeholder:text-gray-300 bg-transparent outline-none shadow-none"
+                className="text-3xl md:text-4xl font-bold border-0 px-0 focus-visible:ring-0 focus:outline-none placeholder:text-gray-300 bg-transparent outline-none shadow-none"
                 style={{ 
                   border: 'none', 
                   outline: 'none', 
@@ -182,7 +181,7 @@ export default function EditorPage() {
             </div>
 
             {/* Category and Thumbnail */}
-            <div className="flex items-center gap-4 py-4 border-b border-gray-200">
+            <div className="flex flex-wrap items-center gap-3 md:gap-4 py-4 border-y border-gray-200">
               <Select value={editorState.category} onValueChange={editorState.setCategory}>
                 <SelectTrigger className="w-[140px] bg-white">
                   <SelectValue placeholder="Category" />
@@ -201,7 +200,8 @@ export default function EditorPage() {
                 onClick={() => thumbnailImage.setShowImageModal(true)}
               >
                 <ImageIcon className="h-4 w-4" />
-                Thumbnail Image
+                <span className="hidden sm:inline">Thumbnail Image</span>
+                <span className="sm:hidden">Thumbnail</span>
               </Button>
 
               <div className="ml-auto flex items-center gap-2 text-green-600">
@@ -255,7 +255,7 @@ export default function EditorPage() {
               ref={editorState.editorRef}
               contentEditable
               onInput={editorState.updateCounts}
-              className="min-h-[400px] w-full border-0 focus:outline-none text-gray-700 prose max-w-none bg-transparent"
+              className="min-h-[300px] md:min-h-[400px] w-full border-0 focus:outline-none text-gray-700 prose max-w-none bg-transparent text-base md:text-lg"
               data-placeholder="Start writing..."
               style={{
                 fontFamily: editorState.font
@@ -273,26 +273,26 @@ export default function EditorPage() {
                 </div>
               </div>
 
-              {/* Publish Controls - Centered */}
-              <div className="flex items-center justify-center gap-3">
+              {/* Publish Controls - Centered on Desktop, Stacked on Mobile/Tablet */}
+              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-center gap-3">
                 <Button 
                   onClick={handlePublish}
-                  className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg"
+                  className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg w-full md:w-auto"
                 >
                   Publish Now
                   <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
                 </Button>
 
                 {/* Schedule Group */}
-                <div className="flex items-center gap-0 rounded-lg overflow-hidden">
+                <div className="flex items-center gap-0 rounded-lg overflow-hidden w-full md:w-auto">
                   {/* White background section */}
-                  <div className="flex items-center gap-3 bg-white px-4 border border-gray-200 rounded-l-lg">
+                  <div className="flex items-center gap-2 md:gap-3 bg-white px-3 md:px-4 border border-gray-200 rounded-l-lg flex-1 md:flex-initial">
                     <Input
                       type="text"
                       value={editorState.publishDate}
                       onChange={(e) => editorState.setPublishDate(e.target.value)}
                       placeholder="dd-mm-yyyy"
-                      className="w-[130px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                      className="w-[100px] md:w-[130px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
                       style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                     />
                     <Input
@@ -300,7 +300,7 @@ export default function EditorPage() {
                       value={editorState.publishTime}
                       onChange={(e) => editorState.setPublishTime(e.target.value)}
                       placeholder="--:--"
-                      className="w-[60px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                      className="w-[50px] md:w-[60px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
                       style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                     />
                     <Calendar className="h-5 w-5 text-gray-700" />
@@ -309,15 +309,14 @@ export default function EditorPage() {
                   {/* Gray background button */}
                   <button 
                     onClick={handleSchedule}
-                    className="bg-gray-200 text-gray-400 text-sm font-medium px-6 py-2.5 rounded-r-lg border border-l-0 border-gray-200"
+                    className="bg-gray-200 text-gray-400 text-sm font-medium px-4 md:px-6 py-2.5 rounded-r-lg border border-l-0 border-gray-200"
                   >
                     Schedule
                   </button>
                 </div>
               </div>
             </div>
-          </div>
-        </div>      
+        </div>
       </div>
     </>
   )

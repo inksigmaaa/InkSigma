@@ -4,7 +4,7 @@ import { ROADMAP_DATA } from "@/constants/roadmap"
 export default function RoadmapSection() {
   return (
     <section id="roadmap" className="py-16 bg-white">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-3">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Roadmap
