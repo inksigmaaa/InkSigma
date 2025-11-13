@@ -43,7 +43,8 @@ export default function PersonalArticles({
             <div className="ml-[185px] max-md:ml-0">
                 {/* Title Row */}
                 <div className="flex items-center justify-between gap-4 mb-4">
-                    <h1 className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-800 m-0 flex items-center gap-2 before:content-[''] before:w-2 before:h-2 before:rounded-full" style={titleColor ? { color: titleColor } : undefined}>
+                    <h1 className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-800 m-0 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: titleColor || '#8B5CF6' }}></span>
                         {title}
                     </h1>
                     {/* Category dropdown shows on mobile or when no actions */}

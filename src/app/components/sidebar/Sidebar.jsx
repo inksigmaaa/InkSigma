@@ -1,6 +1,25 @@
 "use client";
 
 export default function Sidebar() {
+  // Route mapping for navigation
+  const getRoute = (label) => {
+    const routes = {
+      "Home": "/dashboard",
+      "Domain": "/dashboard",
+      "Members": "/dashboard",
+      "Settings": "/dashboard/settings",
+      "All Articles": "/posts",
+      "Published": "/published",
+      "Unpublished": "/unpublished",
+      "Schedule": "/schedule",
+      "Review": "/review",
+      "My Blogs": "/my-blogs",
+      "Draft": "/draft",
+      "Trash": "/trash",
+    };
+    return routes[label] || "/dashboard";
+  };
+
   return (
     <>
       {/* SIDE CONTAINER / WRAPPER */}
@@ -47,10 +66,11 @@ export default function Sidebar() {
             {
               title: "ARTICLES",
               items: [
-                ["all_articles.svg", "All Articles", "/posts"],
-                ["Publish.svg", "Published", "/published"],
-                ["Schedule.svg", "Schedule", "/scheduled"],
-                ["Review.svg", "Review", "/review"],
+                ["all_articles.svg", "All Articles"],
+                ["Publish.svg", "Published"],
+                ["Publish.svg", "Unpublished"],
+                ["Schedule.svg", "Schedule"],
+                ["Review.svg", "Review"],
               ]
             },
             {
@@ -69,13 +89,33 @@ export default function Sidebar() {
               </h1>
 
               {/* SECTION ITEMS */}
-              {section.items.map(([icon, label, href]) => (
-                <a key={label} href={href} className="flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0">
-                  <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                    <img src={`/images/icons/${icon}`} className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6" />
-                    <p className="text-[13px] font-normal leading-[150%] text-gray-500 m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap">
-                      {label}
-                    </p>
+              {section.items.map(([icon, label]) => (
+                <a key={label} href={getRoute(label)}>
+                  <div
+                    className="
+                      flex items-center px-2 py-[5px]
+                      rounded-md cursor-pointer
+                      hover:bg-gray-100
+                      max-md:px-3 max-md:py-1 max-md:flex-shrink-0
+                    "
+                  >
+                    <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+                      <img
+                        src={`/images/icons/${icon}`}
+                        className="
+                          w-5 h-5 opacity-60 flex-shrink-0
+                          max-md:w-6 max-md:h-6
+                        "
+                      />
+                      <p
+                        className="
+                          text-[13px] font-normal leading-[150%] text-gray-500 m-0
+                          max-md:text-[11px] max-md:text-center whitespace-nowrap
+                        "
+                      >
+                        {label}
+                      </p>
+                    </div>
                   </div>
                 </a>
               ))}

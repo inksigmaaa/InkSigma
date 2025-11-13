@@ -87,20 +87,39 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     <div className="flex-1 min-w-0 max-md:w-full">
                         <h3 className="font-['Public_Sans'] font-semibold text-base leading-[140%] text-black m-0 mb-2 max-md:text-sm">{title}</h3>
                         <p className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-[#A4A4A4] m-0 mb-4 max-md:mb-3">{description}</p>
-                        <div className="flex justify-start items-center gap-4 flex-wrap max-md:flex-col max-md:items-start max-md:gap-2">
-                            <div className="flex gap-2 flex-wrap shrink-0 items-center">
-                                {categories.map((cat, index) => (
-                                    <span key={index} className="h-7 px-3 py-1 bg-[#F4F4F4] rounded-md font-['Public_Sans'] font-normal text-xs leading-[150%] text-gray-600 inline-flex items-center">{cat}</span>
-                                ))}
+                        {status === 'unpublished' ? (
+                            <div className="flex justify-between items-center gap-4 flex-wrap">
+                                <div className="flex gap-2 flex-wrap shrink-0 items-center">
+                                    {categories.map((cat, index) => (
+                                        <span key={index} className="h-7 px-3 py-1 bg-[#F4F4F4] rounded-md font-['Public_Sans'] font-normal text-xs leading-[150%] text-gray-600 inline-flex items-center">{cat}</span>
+                                    ))}
+                                </div>
+                                {postedTime && (
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                            <circle cx="8" cy="8" r="7" stroke="#A4A4A4" strokeWidth="1.5" />
+                                            <path d="M8 4V8L11 10" stroke="#A4A4A4" strokeWidth="1.5" strokeLinecap="round" />
+                                        </svg>
+                                        <span className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-[#A4A4A4] whitespace-nowrap">{postedTime}</span>
+                                    </div>
+                                )}
                             </div>
-                            <div className="flex items-center gap-1.5 shrink-0 max-md:ml-0">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                    <circle cx="8" cy="8" r="7" stroke="#A4A4A4" strokeWidth="1.5" />
-                                    <path d="M8 4V8L11 10" stroke="#A4A4A4" strokeWidth="1.5" strokeLinecap="round" />
-                                </svg>
-                                <span className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-[#A4A4A4] whitespace-nowrap">{postedTime}</span>
+                        ) : (
+                            <div className="flex justify-start items-center gap-4 flex-wrap max-md:flex-col max-md:items-start max-md:gap-2">
+                                <div className="flex gap-2 flex-wrap shrink-0 items-center">
+                                    {categories.map((cat, index) => (
+                                        <span key={index} className="h-7 px-3 py-1 bg-[#F4F4F4] rounded-md font-['Public_Sans'] font-normal text-xs leading-[150%] text-gray-600 inline-flex items-center">{cat}</span>
+                                    ))}
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0 max-md:ml-0">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                        <circle cx="8" cy="8" r="7" stroke="#A4A4A4" strokeWidth="1.5" />
+                                        <path d="M8 4V8L11 10" stroke="#A4A4A4" strokeWidth="1.5" strokeLinecap="round" />
+                                    </svg>
+                                    <span className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-[#A4A4A4] whitespace-nowrap">{postedTime}</span>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 
