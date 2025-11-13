@@ -89,19 +89,27 @@ export default function Members() {
                             <div key={index}>
                                 <div className="flex items-center justify-between py-6 max-[767px]:py-4">
                                     {/* Profile Section - Left */}
-                                    <div className="flex items-center gap-4 w-1/3 max-[767px]:gap-2">
+                                    <div className="flex items-center gap-4 w-1/3 max-[767px]:gap-2 max-[639px]:flex-1">
                                         <img
                                             src="/images/icons/profileuser.svg"
                                             alt={member.name}
-                                            className="w-12 h-12 rounded-full object-cover max-[767px]:w-10 max-[767px]:h-10"
+                                            className="w-12 h-12 rounded-full object-cover max-[767px]:w-10 max-[767px]:h-10 flex-shrink-0"
                                         />
-                                        <p className="text-base font-semibold text-gray-900 max-[767px]:text-sm">
-                                            {member.name}
-                                        </p>
+                                        <div className="min-w-0">
+                                            <p className="text-base font-semibold text-gray-900 max-[767px]:text-sm">
+                                                {member.name}
+                                            </p>
+                                            {/* Mobile: Show role below name */}
+                                            {member.role && (
+                                                <p className="hidden max-[639px]:block text-sm text-gray-500 mt-1">
+                                                    {member.role}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
 
-                                    {/* Role/Status - Middle */}
-                                    <div className="w-1/3 flex justify-center">
+                                    {/* Role/Status - Middle (Desktop/Tablet only) */}
+                                    <div className="w-1/3 flex justify-center max-[639px]:hidden">
                                         {member.role && (
                                             <span className="text-sm text-gray-500 max-[767px]:text-xs">
                                                 {member.role}
@@ -119,20 +127,39 @@ export default function Members() {
                                         )}
                                     </div>
 
-                                    {/* Action Buttons - Right */}
-                                    <div className="w-1/3 flex items-center justify-end gap-3 max-[767px]:gap-2">
+                                    {/* Status - Mobile only (centered) */}
+                                    <div className="hidden max-[639px]:flex justify-center items-center flex-1 flex-shrink-0">
                                         {member.status === "Pending" && (
-                                            <button className="px-6 py-1.5 text-sm font-medium text-[#06AD2B] border-2 border-[#D5F2D4] rounded-md hover:bg-green-50 transition-colors max-[767px]:px-4 max-[767px]:py-1 max-[767px]:text-xs">
+                                            <span className="px-2 py-0 text-xs font-medium text-[#72D770] border-2 border-[#D5F2D4] rounded-full">
+                                                Pending
+                                            </span>
+                                        )}
+                                        {member.status === "Expired" && (
+                                            <span className="px-2 py-0 text-xs font-medium text-gray-400 border-2 border-gray-400 rounded-full">
+                                                Expired
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Action Buttons - Right */}
+                                    <div className="w-1/3 flex items-center justify-end gap-3 max-[767px]:gap-2 max-[639px]:w-auto max-[639px]:flex-shrink-0">
+                                        {member.status === "Pending" && (
+                                            <button className="px-6 py-1.5 text-sm font-medium text-[#06AD2B] border-2 border-[#D5F2D4] rounded-md hover:bg-green-50 transition-colors max-[767px]:px-4 max-[767px]:py-1 max-[767px]:text-xs max-[639px]:px-3 max-[639px]:whitespace-nowrap">
                                                 Resend
                                             </button>
                                         )}
                                         {member.status === "Expired" && (
-                                            <button className="px-6 py-1.5 text-sm font-medium text-[#06AD2B] border-2 border-[#D5F2D4] rounded-md hover:bg-green-50 transition-colors max-[767px]:px-4 max-[767px]:py-1 max-[767px]:text-xs">
+                                            <button className="px-6 py-1.5 text-sm font-medium text-[#06AD2B] border-2 border-[#D5F2D4] rounded-md hover:bg-green-50 transition-colors max-[767px]:px-4 max-[767px]:py-1 max-[767px]:text-xs max-[639px]:px-3 max-[639px]:whitespace-nowrap">
                                                 Re-invite
                                             </button>
                                         )}
-                                        <button className="px-6 py-2 text-sm font-medium text-red-500 bg-red-50 rounded-md hover:bg-red-100 transition-colors max-[767px]:px-4 max-[767px]:py-1.5 max-[767px]:text-xs">
+                                        {/* Desktop/Tablet: Remove button with text */}
+                                        <button className="px-6 py-2 text-sm font-medium text-red-500 bg-red-50 rounded-md hover:bg-red-100 transition-colors max-[767px]:px-4 max-[767px]:py-1.5 max-[767px]:text-xs max-[639px]:hidden flex-shrink-0">
                                             Remove
+                                        </button>
+                                        {/* Mobile: Delete icon only */}
+                                        <button className="hidden max-[639px]:flex items-center justify-center w-[32px] h-[32px] border border-[#FFD6D6] rounded hover:bg-red-50 transition-colors flex-shrink-0">
+                                            <img src="/images/icons/memberdelete.svg" alt="Delete" className="w-5 h-5" />
                                         </button>
                                     </div>
                                 </div>
