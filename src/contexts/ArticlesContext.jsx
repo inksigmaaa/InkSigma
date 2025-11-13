@@ -51,6 +51,51 @@ export function ArticlesProvider({ children }) {
       categories: ['Sports', 'Humour', 'History'],
       createdAt: new Date('2024-11-15'),
       get postedTime() { return formatDate(this.createdAt) }
+    },
+    {
+      id: 4,
+      status: 'trash',
+      title: 'Deleted Article About Technology Trends',
+      description: 'This article was moved to trash and can be restored or permanently deleted...',
+      categories: ['Technology', 'Innovation'],
+      createdAt: new Date('2024-10-20'),
+      get postedTime() { return formatDate(this.createdAt) }
+    },
+    {
+      id: 5,
+      status: 'trash',
+      title: 'Old Marketing Strategy Post',
+      description: 'An outdated marketing article that needs to be reviewed before permanent deletion...',
+      categories: ['Marketing', 'Business'],
+      createdAt: new Date('2024-09-15'),
+      get postedTime() { return formatDate(this.createdAt) }
+    },
+    {
+      id: 6,
+      status: 'trash',
+      title: 'Draft About Climate Change',
+      description: 'Incomplete draft about environmental issues, moved to trash for cleanup...',
+      categories: ['Environment', 'Science'],
+      createdAt: new Date('2024-11-01'),
+      get postedTime() { return formatDate(this.createdAt) }
+    },
+    {
+      id: 7,
+      status: 'trash',
+      title: 'Travel Guide to Europe',
+      description: 'Travel article that was replaced with updated version, ready for deletion...',
+      categories: ['Travel', 'Lifestyle'],
+      createdAt: new Date('2024-08-10'),
+      get postedTime() { return formatDate(this.createdAt) }
+    },
+    {
+      id: 8,
+      status: 'trash',
+      title: 'Recipe Collection for Summer',
+      description: 'Seasonal recipes that are no longer relevant, can be permanently removed...',
+      categories: ['Food', 'Cooking'],
+      createdAt: new Date('2024-07-25'),
+      get postedTime() { return formatDate(this.createdAt) }
     }
   ])
 

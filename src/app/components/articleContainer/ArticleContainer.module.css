@@ -267,3 +267,119 @@
 
 }
 
+
+/* ===== DELETE POPUP ===== */
+.deleteOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.deletePopup {
+    background: white;
+    border-radius: 24px;
+    padding: 60px 80px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    text-align: center;
+}
+
+.deleteTitle {
+    font-family: 'Public Sans', sans-serif;
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 1.4;
+    color: #EF4444;
+    margin: 0 0 24px 0;
+}
+
+.deleteDescription {
+    font-family: 'Public Sans', sans-serif;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 1.6;
+    color: #C4C4C4;
+    margin: 0 0 48px 0;
+}
+
+.deleteActions {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+}
+
+.closeButton {
+    padding: 16px 48px;
+    background: #F3F4F6;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Public Sans', sans-serif;
+    font-weight: 500;
+    font-size: 18px;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 160px;
+}
+
+.closeButton:hover {
+    background: #E5E7EB;
+}
+
+.deleteButton {
+    padding: 16px 48px;
+    background: #000000;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Public Sans', sans-serif;
+    font-weight: 500;
+    font-size: 18px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 200px;
+}
+
+.deleteButton:hover {
+    background: #1F2937;
+}
+
+/* Mobile responsive for delete popup */
+@media (max-width: 768px) {
+    .deletePopup {
+        padding: 40px 24px;
+        border-radius: 16px;
+    }
+
+    .deleteTitle {
+        font-size: 24px;
+        margin-bottom: 16px;
+    }
+
+    .deleteDescription {
+        font-size: 16px;
+        margin-bottom: 32px;
+    }
+
+    .deleteActions {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .closeButton,
+    .deleteButton {
+        width: 100%;
+        min-width: unset;
+        padding: 14px 24px;
+        font-size: 16px;
+    }
+}

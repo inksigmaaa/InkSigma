@@ -100,7 +100,7 @@
     background: #FFFFFF;
     border: 1px solid #EAEAEA;
     border-radius: 8px;
-    padding: 8px;
+    padding: 4px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -114,8 +114,8 @@
 }
 
 .icon {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
 }
 
 /* ===== CATEGORY DROPDOWN ===== */
@@ -132,7 +132,8 @@
     background: white;
     border: 1px solid #D1D5DB;
     border-radius: 8px;
-    padding: 10px 16px;
+    padding: 4px 16px;
+    height: 32px;
     display: flex;
     align-items: center;
     gap: 8px;

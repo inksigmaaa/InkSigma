@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 export default function ArticleContainer({ status, title, description, categories, postedTime }) {
     const [menuOpen, setMenuOpen] = useState(false);
+    const [showDeletePopup, setShowDeletePopup] = useState(false);
     const statusConfig = {
         published: { bg: '#D5F2D4', color: '#267F24', text: 'Published' },
         draft: { bg: '#FFEADB', color: '#A34200', text: 'Draft' },
@@ -63,6 +64,7 @@ export default function ArticleContainer({ status, title, description, categorie
                         <button
                             className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
                             title="Delete"
+                            onClick={() => setShowDeletePopup(true)}
                         >
 
                             <img src="/images/icons/trash1.svg" alt="delete" className={styles.actionIcon} />
@@ -84,7 +86,7 @@ export default function ArticleContainer({ status, title, description, categorie
                                 <button className={styles.menuItem}>
                                     <img src="/images/icons/edit.svg" alt="" /><p>Edit</p>
                                 </button>
-                                <button className={styles.menuItem}>
+                                <button className={styles.menuItem} onClick={() => setShowDeletePopup(true)}>
                                     <img src="/images/icons/trash3.svg" alt="" /><p>Move to Trash</p>
                                 </button>
                             </div>
@@ -107,6 +109,35 @@ export default function ArticleContainer({ status, title, description, categorie
                     <span className={styles.postedText}>{postedTime}</span>
                 </div>
             </div>
+
+            {showDeletePopup && (
+                <div className={styles.deleteOverlay} onClick={() => setShowDeletePopup(false)}>
+                    <div className={styles.deletePopup} onClick={(e) => e.stopPropagation()}>
+                        <h2 className={styles.deleteTitle}>Are you sure you want to delete?</h2>
+                        <p className={styles.deleteDescription}>
+                            This will permanently delete this article and cannot be restored
+                        </p>
+                        <div className={styles.deleteActions}>
+                            <button
+                                className={styles.closeButton}
+                                onClick={() => setShowDeletePopup(false)}
+                            >
+                                Close
+                            </button>
+                            <button
+                                className={styles.deleteButton}
+                                onClick={() => {
+                                    // Add your delete logic here
+                                    console.log('Deleting article...');
+                                    setShowDeletePopup(false);
+                                }}
+                            >
+                                Delete permanelty
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
