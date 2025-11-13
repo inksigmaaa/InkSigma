@@ -1,9 +1,22 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import ShareMenu from '../ShareMenu/ShareMenu';
+import mockData from '../../mockData.json';
 
-export default function AllArticles() {
-  const articles = [];
+export default function AllArticles({ searchQuery = '' }) {
+  const articles = mockData.blogs;
+
+  // Filter articles based on search query
+  const filteredArticles = articles.filter((article) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      article.title.toLowerCase().includes(query) ||
+      article.description.toLowerCase().includes(query) ||
+      article.category.toLowerCase().includes(query) ||
+      article.author?.name.toLowerCase().includes(query)
+    );
+  });
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -17,13 +30,17 @@ export default function AllArticles() {
 
   return (
     <section className="w-full max-w-[90%] md:max-w-[70%] mx-auto py-6 md:py-12 px-4 md:px-0">
-      <h2 className="text-2xl md:text-4xl font-bold mb-6 md:mb-8 text-black">All Blog</h2>
+      <h2 className="text-2xl md:text-4xl font-bold mb-6 md:mb-8 text-black">
+        All Blog {searchQuery && `(${filteredArticles.length} results)`}
+      </h2>
       
-      {articles.length === 0 ? (
-        <p className="text-gray-500">No articles available yet.</p>
+      {filteredArticles.length === 0 ? (
+        <p className="text-gray-500">
+          {searchQuery ? `No articles found for "${searchQuery}"` : 'No articles available yet.'}
+        </p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-20 md:mb-40 pb-10">
-          {articles.map((article) => {
+          {filteredArticles.map((article) => {
             const dateFormatted = formatDate(article.createdAt);
             return (
               <div key={article.id} className="flex flex-col">
@@ -32,7 +49,7 @@ export default function AllArticles() {
                   <div className="flex items-center gap-2 md:gap-3">
                     <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
                       {article.author?.avatar && (
-                        <Image src={article.author.avatar} alt={article.author.name} width={40} height={40} />
+                        <Image src={article.author.avatar} alt={article.author.name} width={40} height={40} unoptimized />
                       )}
                     </div>
                     <span className="text-gray-800 font-medium text-sm md:text-base">{article.author?.name || 'Anonymous'}</span>
@@ -61,6 +78,7 @@ export default function AllArticles() {
                   alt={article.title}
                   fill
                   className="object-cover"
+                  unoptimized
                 />
               </Link>
             </div>

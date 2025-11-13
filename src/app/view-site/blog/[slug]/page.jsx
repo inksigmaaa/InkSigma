@@ -1,5 +1,8 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
+import { use } from 'react';
 import ViewSiteHeader from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import ShareButtons from '../../components/ShareButtons/ShareButtons';
@@ -9,11 +12,12 @@ import BackToHomeButton from '../../components/BackToHomeButton/BackToHomeButton
 import ScrollToTop from '../../components/ScrollToTop/ScrollToTop';
 import MobileBottomNav from '../../components/MobileBottomNav/MobileBottomNav';
 import ClockIcon from '../../components/icons/ClockIcon';
+import mockData from '../../mockData.json';
 
 export default function BlogDetailPage({ params }) {
-  const { slug } = params;
+  const { slug } = use(params);
 
-  const blog = null;
+  const blog = mockData.blogs.find(b => b.slug === slug) || null;
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -91,7 +95,7 @@ export default function BlogDetailPage({ params }) {
             <div className="flex items-center gap-2 md:gap-3 min-w-0">
               <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
                 {blog.author?.avatar && (
-                  <Image src={blog.author.avatar} alt={blog.author.name} width={40} height={40} />
+                  <Image src={blog.author.avatar} alt={blog.author.name} width={40} height={40} unoptimized />
                 )}
               </div>
               <span className="text-gray-800 font-medium text-sm md:text-base truncate">
@@ -113,6 +117,7 @@ export default function BlogDetailPage({ params }) {
               alt={blog.title}
               fill
               className="object-cover"
+              unoptimized
             />
           </div>
 

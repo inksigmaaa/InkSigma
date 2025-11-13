@@ -3,9 +3,18 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import ShareMenu from '../ShareMenu/ShareMenu';
+import mockData from '../../mockData.json';
 
-export default function LatestBlog() {
-  const latestBlog = null;
+export default function LatestBlog({ searchQuery = '' }) {
+  // Get the latest blog (first one in the array, sorted by date)
+  const latestBlog = mockData.blogs.length > 0 
+    ? mockData.blogs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
+    : null;
+
+  // Hide latest blog section if there's a search query
+  if (searchQuery) {
+    return null;
+  }
 
   if (!latestBlog) {
     return (
@@ -30,6 +39,29 @@ export default function LatestBlog() {
 
   return (
     <section className="w-full max-w-[90%] md:max-w-[70%] mx-auto py-6 md:py-12 px-4 md:px-0">
+      {/* Start Writing Button */}
+      <div className="mb-6 md:mb-8">
+        <a
+          href="/write"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-lg text-sm hover:bg-gray-800 transition-colors font-medium"
+        >
+          <svg 
+            className="w-4 h-4" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" 
+            />
+          </svg>
+          Start Writing
+        </a>
+      </div>
+
       <h1 className="text-2xl md:text-4xl font-bold mb-6 md:mb-8 text-black">Latest Blog</h1>
       
       {/* Author and Date - Outside Container */}
@@ -38,7 +70,7 @@ export default function LatestBlog() {
         <div className="flex items-center gap-2 md:gap-3">
           <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
             {latestBlog.author?.avatar && (
-              <Image src={latestBlog.author.avatar} alt={latestBlog.author.name} width={40} height={40} />
+              <Image src={latestBlog.author.avatar} alt={latestBlog.author.name} width={40} height={40} unoptimized />
             )}
           </div>
           <span className="text-gray-900 font-medium text-sm md:text-base">{latestBlog.author?.name || 'Anonymous'}</span>
@@ -52,7 +84,7 @@ export default function LatestBlog() {
         </div>
       </div>
 
-      <div className="relative w-full h-[300px] md:h-[500px] rounded-xl md:rounded-2xl group">
+      <div className="relative w-full h-[400px] md:h-[700px] rounded-xl md:rounded-2xl group">
         {/* Share Button - Top Right */}
         <div className="absolute top-3 right-3 md:top-4 md:right-4 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-50">
           <ShareMenu 
@@ -70,6 +102,7 @@ export default function LatestBlog() {
             alt={latestBlog.title}
             fill
             className="object-cover"
+            unoptimized
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
         </div>

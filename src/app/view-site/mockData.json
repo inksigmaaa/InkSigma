@@ -1,0 +1,88 @@
+{
+  "blogs": [
+    {
+      "id": 1,
+      "slug": "getting-started-with-nextjs",
+      "title": "Getting Started with Next.js: A Comprehensive Guide",
+      "description": "Learn how to build modern web applications with Next.js, the React framework for production.",
+      "content": "<h2>Introduction to Next.js</h2><p>Next.js is a powerful React framework that enables you to build server-side rendered and statically generated web applications with ease. In this guide, we'll explore the fundamentals of Next.js and how to get started.</p><h2>Why Choose Next.js?</h2><p>Next.js offers several advantages over traditional React applications:</p><ul><li>Server-side rendering for better SEO</li><li>Static site generation for improved performance</li><li>Built-in routing system</li><li>API routes for backend functionality</li></ul><h2>Setting Up Your First Project</h2><p>To create a new Next.js project, simply run the following command in your terminal:</p><pre><code>npx create-next-app@latest my-app</code></pre><h2>Conclusion</h2><p>Next.js is an excellent choice for building modern web applications. With its powerful features and excellent developer experience, you'll be building production-ready apps in no time.</p>",
+      "thumbnail": "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop",
+      "category": "Web Development",
+      "author": {
+        "name": "John Doe",
+        "avatar": "https://i.pravatar.cc/150?img=12"
+      },
+      "createdAt": "2024-11-10T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "slug": "mastering-tailwind-css",
+      "title": "Mastering Tailwind CSS: Tips and Tricks",
+      "description": "Discover advanced techniques and best practices for using Tailwind CSS in your projects.",
+      "content": "<h2>What is Tailwind CSS?</h2><p>Tailwind CSS is a utility-first CSS framework that allows you to build custom designs without leaving your HTML.</p><h2>Key Benefits</h2><p>Tailwind CSS provides numerous benefits for modern web development:</p><ul><li>Rapid prototyping with utility classes</li><li>Consistent design system</li><li>Smaller CSS bundle sizes</li><li>Easy customization</li></ul><h2>Advanced Techniques</h2><p>Learn how to leverage Tailwind's advanced features like custom plugins, JIT mode, and responsive design patterns.</p><h2>Best Practices</h2><p>Follow these best practices to get the most out of Tailwind CSS in your projects.</p>",
+      "thumbnail": "https://images.unsplash.com/photo-1507721999472-8ed4421c4af2?w=800&h=600&fit=crop",
+      "category": "CSS",
+      "author": {
+        "name": "Jane Smith",
+        "avatar": "https://i.pravatar.cc/150?img=45"
+      },
+      "createdAt": "2024-11-08T14:30:00Z"
+    },
+    {
+      "id": 3,
+      "slug": "react-hooks-explained",
+      "title": "React Hooks Explained: useState, useEffect, and More",
+      "description": "A deep dive into React Hooks and how they revolutionize state management in functional components.",
+      "content": "<h2>Introduction to React Hooks</h2><p>React Hooks were introduced in React 16.8 and have changed the way we write React components forever.</p><h2>useState Hook</h2><p>The useState hook allows you to add state to functional components. Here's how it works:</p><pre><code>const [count, setCount] = useState(0);</code></pre><h2>useEffect Hook</h2><p>The useEffect hook lets you perform side effects in functional components. It's similar to componentDidMount and componentDidUpdate combined.</p><h2>Custom Hooks</h2><p>Learn how to create your own custom hooks to reuse stateful logic across components.</p>",
+      "thumbnail": "https://images.unsplash.com/photo-1633356122102-3fe601e05bd2?w=800&h=600&fit=crop",
+      "category": "React",
+      "author": {
+        "name": "Mike Johnson",
+        "avatar": "https://i.pravatar.cc/150?img=33"
+      },
+      "createdAt": "2024-11-05T09:15:00Z"
+    },
+    {
+      "id": 4,
+      "slug": "javascript-async-await",
+      "title": "Understanding Async/Await in JavaScript",
+      "description": "Master asynchronous JavaScript with async/await syntax and learn how to handle promises effectively.",
+      "content": "<h2>What is Async/Await?</h2><p>Async/await is a modern way to handle asynchronous operations in JavaScript, making your code cleaner and easier to read.</p><h2>The Basics</h2><p>The async keyword is used to declare an asynchronous function, while await pauses the execution until a promise is resolved.</p><pre><code>async function fetchData() {\n  const response = await fetch('/api/data');\n  const data = await response.json();\n  return data;\n}</code></pre><h2>Error Handling</h2><p>Learn how to properly handle errors in async functions using try/catch blocks.</p><h2>Best Practices</h2><p>Discover the best practices for using async/await in your JavaScript applications.</p>",
+      "thumbnail": "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop",
+      "category": "JavaScript",
+      "author": {
+        "name": "Sarah Williams",
+        "avatar": "https://i.pravatar.cc/150?img=47"
+      },
+      "createdAt": "2024-11-03T16:45:00Z"
+    },
+    {
+      "id": 5,
+      "slug": "web-performance-optimization",
+      "title": "Web Performance Optimization: Best Practices",
+      "description": "Learn essential techniques to optimize your website performance and improve user experience.",
+      "content": "<h2>Why Performance Matters</h2><p>Website performance directly impacts user experience, SEO rankings, and conversion rates.</p><h2>Key Optimization Techniques</h2><ul><li>Minimize HTTP requests</li><li>Optimize images and assets</li><li>Implement lazy loading</li><li>Use CDN for static assets</li><li>Enable compression</li></ul><h2>Measuring Performance</h2><p>Learn how to use tools like Lighthouse, WebPageTest, and Chrome DevTools to measure and improve your site's performance.</p><h2>Advanced Strategies</h2><p>Explore advanced techniques like code splitting, tree shaking, and service workers for optimal performance.</p>",
+      "thumbnail": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop",
+      "category": "Performance",
+      "author": {
+        "name": "David Brown",
+        "avatar": "https://i.pravatar.cc/150?img=68"
+      },
+      "createdAt": "2024-11-01T11:20:00Z"
+    },
+    {
+      "id": 6,
+      "slug": "responsive-design-principles",
+      "title": "Responsive Design Principles for Modern Web",
+      "description": "Explore the fundamental principles of responsive web design and mobile-first development.",
+      "content": "<h2>Introduction to Responsive Design</h2><p>Responsive web design ensures your website looks great and functions well on all devices, from mobile phones to desktop computers.</p><h2>Mobile-First Approach</h2><p>Learn why starting with mobile design and progressively enhancing for larger screens is the best approach.</p><h2>Flexible Layouts</h2><p>Discover how to create flexible layouts using CSS Grid, Flexbox, and relative units.</p><h2>Media Queries</h2><p>Master the use of media queries to adapt your design to different screen sizes and orientations.</p><pre><code>@media (min-width: 768px) {\n  .container {\n    max-width: 720px;\n  }\n}</code></pre>",
+      "thumbnail": "https://images.unsplash.com/photo-1559028012-481c04fa702d?w=800&h=600&fit=crop",
+      "category": "Design",
+      "author": {
+        "name": "Emily Davis",
+        "avatar": "https://i.pravatar.cc/150?img=20"
+      },
+      "createdAt": "2024-10-28T13:00:00Z"
+    }
+  ]
+}
