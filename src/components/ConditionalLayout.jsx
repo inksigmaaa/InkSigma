@@ -3,35 +3,30 @@
 import { usePathname } from "next/navigation"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
-import VisitSiteButton from "@/components/VisitSiteButton"
-import FeedbackButton from "@/components/FeedbackButton"
 
 export default function ConditionalLayout({ children }) {
   const pathname = usePathname()
   const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/forgot-password" || pathname === "/reset-password" || pathname === "/magic-link"
   const isDashboardPage = pathname?.startsWith("/dashboard")
-  const isSchedulePage = pathname === "/schedule"
+  const isSchedulePage = pathname === "/schedule" || pathname === "/scheduled"
   const isReviewPage = pathname === "/review"
   const isEditorPage = pathname === "/editor"
   const isPostsPage = pathname === "/posts"
-  const isMyBlogsPage = pathname === "/my-blogs"
+  const isPublishedPage = pathname === "/published"
+  const isCommentsPage = pathname === "/comments"
+  const isDraftsPage = pathname === "/drafts"
+  const isMyBlogsPage = pathname === "/myblogs"
   const isDraftPage = pathname === "/draft"
   const isTrashPage = pathname === "/trash"
   const isUnpublishedPage = pathname === "/unpublished"
+  const isMembersPage = pathname === "/members"
 
-  // Show mobile buttons on all pages except auth pages
-  const showMobileButtons = !isAuthPage
 
-  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isDraftPage || isTrashPage || isUnpublishedPage) {
+
+  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isDraftPage || isTrashPage || isUnpublishedPage || isMembersPage) {
     return (
       <div className="min-h-screen">
         {children}
-        {showMobileButtons && (
-          <>
-            <VisitSiteButton />
-            <FeedbackButton />
-          </>
-        )}
       </div>
     )
   }
@@ -43,8 +38,6 @@ export default function ConditionalLayout({ children }) {
         {children}
       </main>
       <Footer />
-      <VisitSiteButton />
-      <FeedbackButton />
     </>
   )
 }
