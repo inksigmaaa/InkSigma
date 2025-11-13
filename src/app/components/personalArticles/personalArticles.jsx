@@ -46,54 +46,53 @@ export default function PersonalArticles({
                     <h1 className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-800 m-0 flex items-center gap-2 before:content-[''] before:w-2 before:h-2 before:rounded-full" style={titleColor ? { color: titleColor } : undefined}>
                         {title}
                     </h1>
-                    {!showActions && (
-                        <div className="relative">
-                            <Button
-                                variant="outline"
-                                className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-500 bg-white border border-gray-300 rounded-lg px-4 py-1 h-8 flex items-center gap-2 cursor-pointer min-w-[180px] justify-between max-md:min-w-[120px] max-md:text-xs max-md:px-2.5 max-[480px]:min-w-[100px] max-[480px]:text-[11px] max-[480px]:px-2"
-                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            >
-                                Choose Category
-                                <ChevronDownIcon className="shrink-0 max-md:w-3.5 max-md:h-3.5" />
-                            </Button>
-                            {isDropdownOpen && (
-                                <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100] max-md:w-[260px] max-md:h-[220px] max-[480px]:w-60 max-[480px]:h-[200px]">
-                                    <div className="p-2.5 flex gap-3 border-b border-gray-200 max-md:p-3 max-md:gap-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Search Category..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="flex-1 font-['Public_Sans'] font-normal text-sm leading-[150%] px-3.5 py-2.5 border border-gray-200 rounded-lg bg-gray-50 outline-none focus:border-purple-600 focus:bg-white placeholder:text-gray-400 max-md:text-xs max-md:px-2.5 max-md:py-2 max-[480px]:text-[11px] max-[480px]:px-2 max-[480px]:py-1.5"
-                                        />
-                                        <Button
-                                            className="font-['Public_Sans'] font-medium text-sm leading-[150%] bg-purple-100 text-purple-600 border-none rounded-lg px-6 py-2.5 cursor-pointer whitespace-nowrap hover:bg-purple-200 max-md:text-xs max-md:px-4 max-md:py-2 max-[480px]:text-[11px] max-[480px]:px-3 max-[480px]:py-1.5"
-                                            onClick={() => setIsDropdownOpen(false)}
-                                        >
-                                            Apply
-                                        </Button>
-                                    </div>
-                                    <div className="p-3 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-50 hover:scrollbar-thumb-gray-400 max-md:p-2">
-                                        {filteredCategories.map((category) => (
-                                            <label key={category} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer rounded-md hover:bg-gray-50 max-md:px-2.5 max-md:py-2">
-                                                <input
-                                                    type="checkbox"
-                                                    className="w-5 h-5 cursor-pointer accent-purple-600 shrink-0 max-md:w-[18px] max-md:h-[18px]"
-                                                />
-                                                <span className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-600 max-md:text-[13px]">{category}</span>
-                                            </label>
-                                        ))}
-                                    </div>
+                    {/* Category dropdown shows on mobile or when no actions */}
+                    <div className={`relative ${showActions ? 'md:hidden' : ''}`}>
+                        <Button
+                            variant="outline"
+                            className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-500 bg-white border border-gray-300 rounded-lg px-4 py-1 h-8 flex items-center gap-2 cursor-pointer min-w-[180px] justify-between max-md:min-w-[120px] max-md:text-xs max-md:px-2.5 max-[480px]:min-w-[100px] max-[480px]:text-[11px] max-[480px]:px-2"
+                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                        >
+                            Choose Category
+                            <ChevronDownIcon className="shrink-0 max-md:w-3.5 max-md:h-3.5" />
+                        </Button>
+                        {isDropdownOpen && (
+                            <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100] max-md:w-[260px] max-md:h-[220px] max-[480px]:w-60 max-[480px]:h-[200px]">
+                                <div className="p-2.5 flex gap-3 border-b border-gray-200 max-md:p-3 max-md:gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Search Category..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="flex-1 font-['Public_Sans'] font-normal text-sm leading-[150%] px-3.5 py-2.5 border border-gray-200 rounded-lg bg-gray-50 outline-none focus:border-purple-600 focus:bg-white placeholder:text-gray-400 max-md:text-xs max-md:px-2.5 max-md:py-2 max-[480px]:text-[11px] max-[480px]:px-2 max-[480px]:py-1.5"
+                                    />
+                                    <Button
+                                        className="font-['Public_Sans'] font-medium text-sm leading-[150%] bg-purple-100 text-purple-600 border-none rounded-lg px-6 py-2.5 cursor-pointer whitespace-nowrap hover:bg-purple-200 max-md:text-xs max-md:px-4 max-md:py-2 max-[480px]:text-[11px] max-[480px]:px-3 max-[480px]:py-1.5"
+                                        onClick={() => setIsDropdownOpen(false)}
+                                    >
+                                        Apply
+                                    </Button>
                                 </div>
-                            )}
-                        </div>
-                    )}
+                                <div className="p-3 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-50 hover:scrollbar-thumb-gray-400 max-md:p-2">
+                                    {filteredCategories.map((category) => (
+                                        <label key={category} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer rounded-md hover:bg-gray-50 max-md:px-2.5 max-md:py-2">
+                                            <input
+                                                type="checkbox"
+                                                className="w-5 h-5 cursor-pointer accent-purple-600 shrink-0 max-md:w-[18px] max-md:h-[18px]"
+                                            />
+                                            <span className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-600 max-md:text-[13px]">{category}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Controls Row - Only shown when showActions is true (Draft/Trash pages) */}
+                {/* Controls Row - Only shown on desktop/tablet when showActions is true (Draft/Trash pages) */}
                 {showActions && (
-                    <div className="flex items-center justify-between gap-4 mb-4">
-                        <div className="flex items-center gap-4 max-md:hidden">
+                    <div className="flex items-center justify-between gap-4 mb-4 max-md:hidden">
+                        <div className="flex items-center gap-4">
                             {showSelectAll && (
                                 <label className="flex items-center gap-2 cursor-pointer w-[123px] h-8 bg-[#F8F8F8] rounded px-3 py-2">
                                     <input
@@ -121,37 +120,37 @@ export default function PersonalArticles({
                         <div className="relative">
                             <Button
                                 variant="outline"
-                                className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-500 bg-white border border-gray-300 rounded-lg px-4 py-1 h-8 flex items-center gap-2 cursor-pointer min-w-[180px] justify-between max-md:min-w-[120px] max-md:text-xs max-md:px-2.5 max-[480px]:min-w-[100px] max-[480px]:text-[11px] max-[480px]:px-2"
+                                className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-500 bg-white border border-gray-300 rounded-lg px-4 py-1 h-8 flex items-center gap-2 cursor-pointer min-w-[180px] justify-between"
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                             >
                                 Choose Category
-                                <ChevronDownIcon className="shrink-0 max-md:w-3.5 max-md:h-3.5" />
+                                <ChevronDownIcon className="shrink-0" />
                             </Button>
                             {isDropdownOpen && (
-                                <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100] max-md:w-[260px] max-md:h-[220px] max-[480px]:w-60 max-[480px]:h-[200px]">
-                                    <div className="p-2.5 flex gap-3 border-b border-gray-200 max-md:p-3 max-md:gap-2">
+                                <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100]">
+                                    <div className="p-2.5 flex gap-3 border-b border-gray-200">
                                         <input
                                             type="text"
                                             placeholder="Search Category..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="flex-1 font-['Public_Sans'] font-normal text-sm leading-[150%] px-3.5 py-2.5 border border-gray-200 rounded-lg bg-gray-50 outline-none focus:border-purple-600 focus:bg-white placeholder:text-gray-400 max-md:text-xs max-md:px-2.5 max-md:py-2 max-[480px]:text-[11px] max-[480px]:px-2 max-[480px]:py-1.5"
+                                            className="flex-1 font-['Public_Sans'] font-normal text-sm leading-[150%] px-3.5 py-2.5 border border-gray-200 rounded-lg bg-gray-50 outline-none focus:border-purple-600 focus:bg-white placeholder:text-gray-400"
                                         />
                                         <Button
-                                            className="font-['Public_Sans'] font-medium text-sm leading-[150%] bg-purple-100 text-purple-600 border-none rounded-lg px-6 py-2.5 cursor-pointer whitespace-nowrap hover:bg-purple-200 max-md:text-xs max-md:px-4 max-md:py-2 max-[480px]:text-[11px] max-[480px]:px-3 max-[480px]:py-1.5"
+                                            className="font-['Public_Sans'] font-medium text-sm leading-[150%] bg-purple-100 text-purple-600 border-none rounded-lg px-6 py-2.5 cursor-pointer whitespace-nowrap hover:bg-purple-200"
                                             onClick={() => setIsDropdownOpen(false)}
                                         >
                                             Apply
                                         </Button>
                                     </div>
-                                    <div className="p-3 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-50 hover:scrollbar-thumb-gray-400 max-md:p-2">
+                                    <div className="p-3 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-50 hover:scrollbar-thumb-gray-400">
                                         {filteredCategories.map((category) => (
-                                            <label key={category} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer rounded-md hover:bg-gray-50 max-md:px-2.5 max-md:py-2">
+                                            <label key={category} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer rounded-md hover:bg-gray-50">
                                                 <input
                                                     type="checkbox"
-                                                    className="w-5 h-5 cursor-pointer accent-purple-600 shrink-0 max-md:w-[18px] max-md:h-[18px]"
+                                                    className="w-5 h-5 cursor-pointer accent-purple-600 shrink-0"
                                                 />
-                                                <span className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-600 max-md:text-[13px]">{category}</span>
+                                                <span className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-600">{category}</span>
                                             </label>
                                         ))}
                                     </div>
