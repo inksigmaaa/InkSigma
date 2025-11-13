@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
-import { ArrowRight } from "lucide-react"
 import { HERO_CONFIG } from "@/constants/app"
+import { ArrowRight } from "lucide-react"
 
 export default function HeroSection() {
   return (
