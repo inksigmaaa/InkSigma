@@ -73,3 +73,23 @@ body {
   overflow-x: auto;
   margin: 1rem 0;
 }
+
+/* Mobile sidebar scrollbar */
+@media (max-width: 768px) {
+  .mobile-sidebar-scroll::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .mobile-sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .mobile-sidebar-scroll::-webkit-scrollbar-thumb {
+    background: #8b5cf6;
+    border-radius: 2px;
+  }
+
+  .mobile-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: #7c3aed;
+  }
+}

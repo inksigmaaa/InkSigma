@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,7 @@ import PasswordField from "@/components/auth/PasswordField"
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton"
 import { signUp, signIn } from "@/lib/auth-client"
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect") || "/dashboard"
@@ -135,5 +135,13 @@ export default function SignupPage() {
         onClick={handleGoogleSignup}
       />
     </AuthLayout>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-lg">Loading...</div></div>}>
+      <SignupForm />
+    </Suspense>
   )
 }
