@@ -70,10 +70,10 @@ export default function Sidebar() {
             {
               title: "PUBLICATION",
               items: [
-                ["home.svg", "Home"],
-                ["domain.svg", "Domain"],
-                ["Member.svg", "Members"],
-                ["setings.svg", "Settings"],
+                ["home.svg", "Home", "/home"],
+                ["domain.svg", "Domain", "/domain"],
+                ["Member.svg", "Members", "/members"],
+                ["setings.svg", "Settings", "/settings"],
               ]
             },
             {
@@ -89,9 +89,9 @@ export default function Sidebar() {
             {
               title: "PERSONAL",
               items: [
-                ["all_articles.svg", "My Blogs"],
-                ["Publish.svg", "Draft"],
-                ["Schedule.svg", "Trash"],
+                ["all_articles.svg", "My Blogs", "/my blogs"],
+                ["Publish.svg", "Draft", "/drafts"],
+                ["Schedule.svg", "Trash", "/trash"],
               ]
             }
           ].map((section, idx) => (
@@ -134,7 +134,6 @@ export default function Sidebar() {
               ))}
             </div>
           ))}
-
         </div>
       </div>
     </>
