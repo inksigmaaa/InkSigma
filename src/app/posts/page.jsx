@@ -9,7 +9,7 @@ export default function Posts() {
             <NavbarLoggedin />
             <Sidebar />
             <Verify />
-            <Articles />
+            <Articles title={"All Articles"} />
         </>
     )
 }

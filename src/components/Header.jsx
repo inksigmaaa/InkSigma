@@ -30,7 +30,7 @@ export default function Header() {
 
   return (
     <header className="w-full bg-white">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between max-w-[1100px]">
         {/* Mobile Menu Button - Left Side */}
         <button
           className="md:hidden p-2"

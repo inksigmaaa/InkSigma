@@ -3,9 +3,17 @@ import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const Checkbox = React.forwardRef(({ className, checked, onCheckedChange, ...props }, ref) => {
+  const inputRef = React.useRef(null)
+  
   const handleChange = (e) => {
     if (onCheckedChange) {
       onCheckedChange(e.target.checked)
+    }
+  }
+
+  const handleDivClick = () => {
+    if (inputRef.current) {
+      inputRef.current.click()
     }
   }
 
@@ -13,13 +21,21 @@ const Checkbox = React.forwardRef(({ className, checked, onCheckedChange, ...pro
     <div className="relative inline-flex items-center">
       <input
         type="checkbox"
-        ref={ref}
+        ref={(node) => {
+          inputRef.current = node
+          if (typeof ref === 'function') {
+            ref(node)
+          } else if (ref) {
+            ref.current = node
+          }
+        }}
         checked={checked}
         onChange={handleChange}
         className="sr-only peer"
         {...props}
       />
       <div
+        onClick={handleDivClick}
         className={cn(
           "h-4 w-4 shrink-0 rounded-sm border border-gray-300 bg-white cursor-pointer",
           "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2",

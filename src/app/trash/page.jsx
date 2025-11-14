@@ -1,19 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import styles from "../components/articles/Articles.module.css"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
 import ArticleContainer from "../components/articleContainer/ArticleContainer"
-import ConfirmModal from "../components/confirmModal/ConfirmModal"
+import Verify from "../components/verify/Verify"
 
 export default function TrashPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategories, setSelectedCategories] = useState([])
   const [selectAll, setSelectAll] = useState(false)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [showRestoreModal, setShowRestoreModal] = useState(false)
 
   const categories = [
     "Agriculture", "Art & Illustration", "Business", "Climate & Environment",
@@ -40,87 +37,89 @@ export default function TrashPage() {
     <>
       <NavbarLoggedin />
       <Sidebar />
-      <div className={styles.articlesContainer}>
-        <div className={styles.articlesContent}>
-          <div className={styles.header}>
-            <div className={styles.titleRow}>
-              <h1 className={styles.title} style={{ color: '#EF4444' }}>Trash</h1>
+      <Verify />
+      <div className="absolute left-1/2 -translate-x-1/2 top-[215px] w-full max-w-[1034px] z-20 px-5">
+        <div className="ml-0 md:ml-[185px]">
+          <div className="flex items-center mb-4">
+            <h1 className="m-0 font-bold text-base leading-6 text-red-500 flex items-center gap-2">
+              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+              Trash
+            </h1>
+          </div>
+
+          <div className="flex items-center justify-between gap-5 mb-6">
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectAll}
+                  onChange={() => setSelectAll(!selectAll)}
+                  className="w-[18px] h-[18px] cursor-pointer accent-violet-500"
+                />
+                <span className="font-bold text-base leading-6 text-gray-500">Select all</span>
+              </label>
+              <button title="Restore" className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300">
+                <img src="/images/icons/restore.svg" alt="restore" className="w-5 h-5" />
+              </button>
+              <button title="Delete" className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300">
+                <img src="/images/icons/trash1.svg" alt="delete" className="w-5 h-5" />
+              </button>
             </div>
-            <div className={styles.controlsRow}>
-              <div className={styles.leftSection}>
-                <label className={styles.selectAllLabel}>
-                  <input
-                    type="checkbox"
-                    checked={selectAll}
-                    onChange={() => setSelectAll(!selectAll)}
-                    className={styles.checkbox}
-                  />
-                  <span className={styles.selectAllText}>Select all</span>
-                </label>
-                <button className={styles.iconButton} title="Restore" onClick={() => setShowRestoreModal(true)}>
-                  <img src="/images/icons/restore.svg" alt="restore" className={styles.icon} />
-                </button>
-                <button className={styles.iconButton} title="Delete" onClick={() => setShowDeleteModal(true)}>
-                  <img src="/images/icons/trash1.svg" alt="delete" className={styles.icon} />
-                </button>
-              </div>
-              <div className={styles.rightSection}>
-                <div className={styles.dropdownWrapper}>
-                  <button
-                    className={styles.categoryButton}
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  >
-                    Choose Category
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className={styles.chevron}>
-                      <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                  {isDropdownOpen && (
-                    <div className={styles.dropdown}>
-                      <div className={styles.dropdownHeader}>
+
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="min-w-[180px] flex items-center justify-between gap-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg px-4 py-2 cursor-pointer transition hover:border-violet-500"
+              >
+                Choose Category
+                <svg width="16" height="16" viewBox="0 0 16 16" className="shrink-0">
+                  <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100]">
+                  <div className="p-4 flex gap-3 border-b border-gray-200">
+                    <input
+                      type="text"
+                      placeholder="Search Category..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 outline-none focus:border-violet-500 focus:bg-white placeholder:text-gray-400"
+                    />
+                    <button
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="text-sm font-medium bg-violet-100 text-violet-600 rounded-lg px-6 py-2 whitespace-nowrap transition-colors hover:bg-violet-200"
+                    >
+                      Apply
+                    </button>
+                  </div>
+
+                  <div className="p-3 overflow-y-auto flex-1">
+                    {filteredCategories.map((category) => (
+                      <label key={category} className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50">
                         <input
-                          type="text"
-                          placeholder="Search Category..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className={styles.searchInput}
+                          type="checkbox"
+                          checked={selectedCategories.includes(category)}
+                          onChange={() => handleCategoryToggle(category)}
+                          className="w-5 h-5 cursor-pointer accent-violet-500 shrink-0"
                         />
-                        <button
-                          className={styles.applyButton}
-                          onClick={() => setIsDropdownOpen(false)}
-                        >
-                          Apply
-                        </button>
-                      </div>
-                      <div className={styles.categoriesList}>
-                        {filteredCategories.map((category) => (
-                          <label key={category} className={styles.categoryItem}>
-                            <input
-                              type="checkbox"
-                              checked={selectedCategories.includes(category)}
-                              onChange={() => handleCategoryToggle(category)}
-                              className={styles.categoryCheckbox}
-                            />
-                            <span className={styles.categoryLabel}>{category}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                        <span className="text-sm text-gray-600">{category}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
-          <div className={styles.articlesList}>
+          <div className="mt-6 space-y-4 pb-[85px]">
             <ArticleContainer
               status="trash"
               title="Title of the Blog will be in this area"
               description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
               categories={["Sports", "Humour", "History"]}
               postedTime="Posted 2 mins ago"
-              onRestore={() => setShowRestoreModal(true)}
-              onDelete={() => setShowDeleteModal(true)}
             />
             <ArticleContainer
               status="trash"
@@ -128,8 +127,6 @@ export default function TrashPage() {
               description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
               categories={["Sports", "Humour", "History"]}
               postedTime="Posted 2 mins ago"
-              onRestore={() => setShowRestoreModal(true)}
-              onDelete={() => setShowDeleteModal(true)}
             />
             <ArticleContainer
               status="trash"
@@ -137,39 +134,10 @@ export default function TrashPage() {
               description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
               categories={["Sports", "Humour", "History"]}
               postedTime="Posted 2 mins ago"
-              onRestore={() => setShowRestoreModal(true)}
-              onDelete={() => setShowDeleteModal(true)}
             />
           </div>
         </div>
       </div>
-
-      <ConfirmModal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        onConfirm={() => {
-          // Handle delete logic here
-          console.log('Delete confirmed')
-          setShowDeleteModal(false)
-        }}
-        title="Are you sure you want to delete?"
-        message="This will permanently delete this article and cannot be restored"
-        confirmText="Delete permanelty"
-        confirmStyle="danger"
-      />
-
-      <ConfirmModal
-        isOpen={showRestoreModal}
-        onClose={() => setShowRestoreModal(false)}
-        onConfirm={() => {
-          // Handle restore logic here
-          console.log('Restore confirmed')
-          setShowRestoreModal(false)
-        }}
-        title="Are you sure you want to Restore?"
-        confirmText="Restore"
-        confirmStyle="normal"
-      />
     </>
   )
 }
