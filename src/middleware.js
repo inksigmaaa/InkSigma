@@ -9,6 +9,11 @@ const publicRoutes = [
     "/magic-link",
 ];
 
+// Routes that should be accessible without authentication
+const publicPaths = [
+    "/view-site",
+];
+
 export async function middleware(request) {
     const { pathname } = request.nextUrl;
 
@@ -25,12 +30,13 @@ export async function middleware(request) {
 
     // Check if route is public
     const isPublicRoute = publicRoutes.includes(pathname);
+    const isPublicPath = publicPaths.some(path => pathname.startsWith(path));
 
     // Get session token
     const sessionToken = request.cookies.get("better-auth.session_token");
 
     // If accessing protected route without session, redirect to login
-    if (!isPublicRoute && !sessionToken) {
+    if (!isPublicRoute && !isPublicPath && !sessionToken) {
         const loginUrl = new URL("/login", request.url);
         loginUrl.searchParams.set("redirect", pathname);
         return NextResponse.redirect(loginUrl);
