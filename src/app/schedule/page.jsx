@@ -113,7 +113,7 @@ export default function SchedulePage() {
               </div>
 
               <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-[200px] border-gray-300">
+                <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Choose Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -127,90 +127,69 @@ export default function SchedulePage() {
             {/* Posts List */}
             <div className="space-y-4">
               {posts.map((post) => (
-                <div key={post.id} className="bg-white border border-gray-200 rounded-lg px-6 pb-6 pt-10 relative">
-                  {/* Scheduled badge - positioned absolutely */}
-                  <div className="absolute top-[-1px] left-[-16px] w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center max-md:flex max-md:min-w-[88px] max-md:w-auto">
-                    <div className="bg-blue-100 text-blue-600 text-xs font-medium px-3 py-1 rounded">
+                <div key={post.id} className="bg-white rounded-lg shadow-sm p-4 md:p-6 relative">
+                  {/* Three-dot menu for mobile - positioned absolutely */}
+                  <Button variant="ghost" size="icon" className="md:hidden text-gray-400 absolute top-4 right-4">
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+
+                  {/* Scheduled badge */}
+                  <div className="mb-4">
+                    <div className="bg-cyan-100 text-cyan-700 text-xs font-medium px-3 py-1 rounded inline-block">
                       Scheduled
                     </div>
                   </div>
 
-                  {/* Three-dot menu for mobile - positioned absolutely */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="md:hidden text-gray-400 absolute top-4 right-4">
-                        <MoreVertical className="h-5 w-5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuItem className="gap-3 py-3 cursor-pointer">
-                        <TrendingUp className="h-5 w-5 text-gray-600" />
-                        <span className="text-base text-gray-700">Statics</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="gap-3 py-3 cursor-pointer">
-                        <Edit className="h-5 w-5 text-gray-600" />
-                        <span className="text-base text-gray-700">Edit</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="gap-3 py-3 cursor-pointer">
-                        <Trash2 className="h-5 w-5 text-gray-600" />
-                        <span className="text-base text-gray-700">Move to Trash</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
                   {/* Desktop Layout */}
-                  <div className="hidden md:block">
-                    <div className="flex items-start gap-4">
-                      <Checkbox
-                        checked={selectedPosts.includes(post.id)}
-                        onCheckedChange={(checked) => handleSelectPost(post.id, checked)}
-                        className="mt-1"
-                      />
+                  <div className="hidden md:flex items-start gap-4 mt-0">
+                    <Checkbox
+                      checked={selectedPosts.includes(post.id)}
+                      onCheckedChange={(checked) => handleSelectPost(post.id, checked)}
+                    />
 
-                      <div className="flex-1">
-                        <h3 className="text-base font-semibold text-gray-900 mb-2">
-                          {post.title}
-                        </h3>
-                        <p className="text-gray-400 text-sm mb-4 leading-relaxed">
-                          {post.excerpt}
-                        </p>
+                    <div className="flex-1 -mt-4">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        {post.title}
+                      </h3>
+                      <p className="text-gray-500 text-sm mb-4">
+                        {post.excerpt}
+                      </p>
 
+                      <div className="flex items-center justify-between">
+                        <div className="flex gap-2 flex-wrap">
+                          {post.tags.map((tag, index) => (
+                            <span
+                              key={index}
+                              className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
 
-                      </div>
-
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 h-9 w-9">
-                          <TrendingUp className="h-5 w-5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 h-9 w-9">
-                          <Edit className="h-5 w-5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 h-9 w-9">
-                          <Trash2 className="h-5 w-5" />
-                        </Button>
+                        <div className="flex items-center gap-2 text-gray-400 text-sm">
+                          <Clock className="h-4 w-4" />
+                          <span>Posted {post.postedTime}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex gap-2 flex-wrap">
-                        {post.tags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="bg-gray-100 text-gray-500 text-xs px-3 py-1.5 rounded"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
 
-                      <div className="flex items-center gap-2 text-gray-400 text-sm whitespace-nowrap">
-                        <Clock className="h-4 w-4" />
-                        <span>{post.postedTime}</span>
-                      </div>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 h-9 w-9">
+                        <TrendingUp className="h-5 w-5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 h-9 w-9">
+                        <Edit className="h-5 w-5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 h-9 w-9">
+                        <Trash2 className="h-5 w-5" />
+                      </Button>
                     </div>
                   </div>
 
                   {/* Mobile Layout */}
                   <div className="md:hidden pr-8">
+
                     <h3 className="text-base font-semibold text-gray-900 mb-2">
                       {post.title}
                     </h3>
