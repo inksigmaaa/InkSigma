@@ -60,7 +60,7 @@ export default function Sidebar() {
                 ["home.svg", "Home", "/home"],
                 ["domain.svg", "Domain", "/domain"],
                 ["Member.svg", "Members", "/members"],
-                ["setings.svg", "Settings", "/settings"],
+                ["solar_settings-lineat.svg", "Settings", "/settings"],
               ]
             },
             {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import ArticleContainer from '../articleContainer/ArticleContainer'
 
 const categories = [
@@ -19,6 +19,7 @@ export default function Articles(props) {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategories, setSelectedCategories] = useState([])
     const [selectAll, setSelectAll] = useState(false)
+    const dropdownRef = useRef(null)
 
     const filterStatus = props.filterStatus || null
     const showCreateButton = props.showCreateButton !== false
@@ -34,6 +35,18 @@ export default function Articles(props) {
                 : [...prev, category]
         )
     }
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsDropdownOpen(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
 
     return (
         <div className="absolute left-1/2 -translate-x-1/2 top-[215px] w-full max-w-[1034px] z-20 px-5">
@@ -144,7 +157,7 @@ export default function Articles(props) {
                             ))}
                         </div>
 
-                        <div className="relative">
+                        <div className="relative" ref={dropdownRef}>
                             <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 className="min-w-[180px] flex items-center justify-between gap-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg px-4 py-2 cursor-pointer transition hover:border-violet-500"
