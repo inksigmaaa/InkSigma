@@ -4,9 +4,9 @@ export default function Sidebar() {
   // Route mapping for navigation
   const getRoute = (label) => {
     const routes = {
-      "Home": "/dashboard",
-      "Domain": "/dashboard",
-      "Members": "/dashboard",
+      "Home": "/home",
+      "Domain": "/domain",
+      "Members": "/members",
       "Settings": "/dashboard/settings",
       "All Articles": "/posts",
       "Published": "/published",
