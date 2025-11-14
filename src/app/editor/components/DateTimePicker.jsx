@@ -22,7 +22,6 @@ export function DateTimePicker({ isOpen, onClose, onDateTimeSelect, selectedDate
   const currentMonth = currentDate.getMonth()
   const currentYear = currentDate.getFullYear()
 
-  // Get first day of the month and number of days
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay()
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
   const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate()
