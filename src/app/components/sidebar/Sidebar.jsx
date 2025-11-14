@@ -6,7 +6,7 @@ export default function Sidebar() {
     const routes = {
       "Home": "/dashboard",
       "Domain": "/dashboard",
-      "Members": "/dashboard",
+      "Members": "/members",
       "Settings": "/dashboard/settings",
       "All Articles": "/posts",
       "Published": "/published",
