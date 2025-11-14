@@ -34,130 +34,90 @@ export default function SettingsPage() {
     <>
       <NavbarLoggedin />
       <DashboardSimpleSidebar />
-      <div className="min-h-screen bg-white p-8 pt-32 pl-64">
-        <main className="max-w-[1200px] mx-auto">
-          <div className="flex flex-col items-center">
-            <h1 
-              className="text-center font-bold text-gray-900 mb-8"
-              style={{ fontSize: '18px', lineHeight: '28px' }}
-            >
-              Profile Settings
-            </h1>
-            
-            {/* Profile Image */}
-            <div className="flex flex-col items-center">
-              <div 
-                style={{ 
-                  width: '100px', 
-                  height: '100px', 
-                  opacity: 1, 
-                  borderRadius: '52px',
-                  overflow: 'hidden'
-                }}
-              >
-                <img 
-                  src={session?.user?.image || "/icons/nib.svg"} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover"
-                />
+      <div className="min-h-screen bg-white flex justify-center p-8 pt-32 pl-64" style={{ position: 'relative', zIndex: 10 }}>
+        <div style={{ width: '800px', minHeight: '927px' }} className="space-y-8">
+          <h1 className="text-lg font-bold text-gray-900 text-center">Publication Settings</h1>
+          
+          {/* Logo Upload */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-6 mb-3">
+              <div className="w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white">
+                <img src="/icons/inksigma-logo.svg" alt="Logo" className="w-16 h-16" />
               </div>
-              
-              {/* Change/Remove buttons */}
-              <div className="flex gap-4 mt-4">
-                <button className="text-purple-500 hover:text-purple-600 text-sm font-medium">
-                  Change
-                </button>
-                <button className="text-gray-400 hover:text-gray-600 text-sm font-medium">
-                  Remove
-                </button>
+              <div className="flex flex-col gap-3">
+                <button className="text-purple-500 text-sm hover:text-purple-600">Change Logo</button>
+                <button className="text-gray-400 text-sm hover:text-gray-600">Remove</button>
               </div>
             </div>
+            <p className="text-xs text-gray-400 bg-gray-50 p-2 rounded">Optimal Resolution: 400 px X 400 px</p>
+          </div>
 
-            {/* Profile Form */}
-            <div className="w-full max-w-[258.5px] mt-12 space-y-8">
-              {/* Profile Name */}
-              <div>
-                <label className="block text-black font-bold text-base mb-2">
-                  Profile Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter your Profile name"
-                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
-                />
+          {/* Favicon Upload */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-6 mb-3">
+              <div className="w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white">
+                <img src="/icons/inksigma-logo.svg" alt="Favicon" className="w-16 h-16" />
               </div>
+              <div className="flex flex-col gap-3">
+                <button className="text-purple-500 text-sm hover:text-purple-600">Change Favicon</button>
+                <button className="text-gray-400 text-sm hover:text-gray-600">Remove</button>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 bg-gray-50 p-2 rounded">Optimal Resolution: 32 px X 32 px</p>
+          </div>
 
-              {/* Username */}
-              <div>
-                <label className="block text-black font-bold text-base mb-2">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter your username"
-                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
-                />
+          {/* Meta OG Upload */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-6 mb-3">
+              <div className="w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white">
+                <img src="/icons/inksigma-logo.svg" alt="Meta OG" className="w-16 h-16" />
               </div>
+              <div className="flex flex-col gap-3">
+                <button className="text-purple-500 text-sm hover:text-purple-600">Change Meta OG</button>
+                <button className="text-gray-400 text-sm hover:text-gray-600">Remove</button>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 bg-gray-50 p-2 rounded">Optimal Resolution: 630 px X 1200 px</p>
+          </div>
 
-              {/* Email ID */}
-              <div>
-                <label className="block text-black font-bold text-base mb-2">
-                  Email ID
-                </label>
-                <input
-                  type="email"
-                  placeholder="Enter your Email ID"
-                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
-                />
-              </div>
+          {/* Publication Name */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">Publication Name</label>
+            <input
+              type="text"
+              placeholder="Publication name"
+              className="w-full border-b border-gray-300 py-2 text-sm focus:outline-none focus:border-purple-500"
+            />
+          </div>
 
-              {/* Bio */}
-              <div>
-                <label className="block text-black font-bold text-base mb-2">
-                  Bio
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Write your bio"
-                    maxLength={120}
-                    className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
-                  />
-                  <span className="absolute right-0 bottom-2 text-xs text-gray-400">12/120</span>
-                </div>
-              </div>
+          {/* Publication Description */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">Publication Description</label>
+            <textarea
+              placeholder="Write publication Description"
+              rows={3}
+              className="w-full border-b border-gray-300 py-2 text-sm focus:outline-none focus:border-purple-500 resize-none"
+            />
+          </div>
 
-              {/* Reset Account Password */}
-              <div className="flex justify-center mt-8">
-                <button 
-                  className="text-gray-500 hover:text-gray-700 border-b border-gray-500 text-sm"
-                  style={{ width: '162px', height: '16px' }}
-                  onClick={() => setShowResetModal(true)}
-                >
-                  Reset Account Password
-                </button>
-              </div>
-
-              {/* Save Button */}
-              <div className="flex justify-center mt-8 mb-20">
-                <button 
-                  className="bg-black text-white hover:bg-gray-800 transition-colors"
-                  style={{ 
-                    width: '259px', 
-                    height: '32px', 
-                    paddingTop: '8px', 
-                    paddingRight: '109px', 
-                    paddingBottom: '8px', 
-                    paddingLeft: '109px', 
-                    borderRadius: '4px' 
-                  }}
-                >
-                  Save
-                </button>
-              </div>
+          {/* Subdomain */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">Subdomain name</label>
+            <div className="flex items-center gap-2 border-b border-gray-300 pb-2">
+              <input
+                type="text"
+                placeholder="Graceblog"
+                className="flex-1 text-sm focus:outline-none"
+              />
+              <span className="text-sm text-gray-600">.inksigma.com</span>
             </div>
           </div>
-        </main>
+
+          {/* Save Button */}
+          <button className="w-full bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors">
+            Save
+          </button>
+        </div>
       </div>
 
       {/* Reset Password Modal */}
