@@ -1,0 +1,45 @@
+/* Feedback Button - Mobile Only */
+.feedbackButton {
+    position: fixed;
+    bottom: 80px;
+    left: 16px;
+    width: 48px;
+    height: 48px;
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.feedbackButton:hover {
+    background: #8B5CF6;
+    border-color: #8B5CF6;
+    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.3);
+}
+
+.feedbackButton svg {
+    width: 20px;
+    height: 20px;
+}
+
+.feedbackButton svg path {
+    stroke: #6B7280;
+    transition: stroke 0.3s ease;
+}
+
+.feedbackButton:hover svg path {
+    stroke: white;
+}
+
+/* Hide on desktop */
+@media (min-width: 769px) {
+    .feedbackButton {
+        display: none;
+    }
+}

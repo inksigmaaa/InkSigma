@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
-import { ArrowRight } from "lucide-react"
 import { HERO_CONFIG } from "@/constants/app"
+import { ArrowRight } from "lucide-react"
 
 export default function HeroSection() {
   return (
@@ -12,7 +12,7 @@ export default function HeroSection() {
         backgroundPosition: 'right'
       }}
     >
-      <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+      <div className="relative z-10 text-center px-3 max-w-4xl mx-auto">
         <h1 className="mb-6">
           <span className="font-[family-name:var(--font-allison)] text-[96px] font-normal text-black">{HERO_CONFIG.title.italic}</span>
           <span className="text-[48px] font-extrabold leading-[68px]" style={{ color: '#2E2E2E', wordSpacing: '12px' }}>{HERO_CONFIG.title.bold}</span>

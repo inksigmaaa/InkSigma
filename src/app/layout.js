@@ -1,6 +1,7 @@
 import { Public_Sans, Allison } from "next/font/google";
 import "./globals.css";
 import ConditionalLayout from "@/components/ConditionalLayout";
+import { ArticlesProvider } from "@/contexts/ArticlesContext";
 
 const publicSans = Public_Sans({
   variable: "--font-public-sans",
@@ -24,9 +25,11 @@ export default function RootLayout({ children }) {
       <body
         className={`${publicSans.variable} ${allison.variable} antialiased`}
       >
-        <ConditionalLayout>
-          {children}
-        </ConditionalLayout>
+        <ArticlesProvider>
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
+        </ArticlesProvider>
       </body>
     </html>
   );

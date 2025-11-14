@@ -1,8 +1,7 @@
 export const FEATURES_DATA = [
   {
     id: 'unlimited-articles',
-    title: 'Write as much as you can.',
-    subtitle: 'Unlimited blog articles',
+    title: 'Write as much as you can - Unlimited blog articles (exclusive only for first 500 signups)',
     icon: '/images/icons/tick.svg'
   },
   {
@@ -33,8 +32,8 @@ export const FEATURES_DATA = [
     icon: '/images/icons/tick.svg'
   },
   {
-    id: 'rich-editor',
-    title: 'Rich Text Editor',
+    id: 'personal-website',
+    title: 'Personal website',
     icon: '/images/icons/tick.svg'
   },
   {

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,8 +12,11 @@ import GoogleAuthButton from "@/components/auth/GoogleAuthButton"
 import { APP_CONFIG } from "@/constants/app"
 import { signIn } from "@/lib/auth-client"
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get("redirect") || "/dashboard"
+
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -45,7 +48,7 @@ export default function LoginPage() {
         return
       }
 
-      router.push("/dashboard")
+      router.push(redirectTo)
     } catch (err) {
       setError(err.message || "An unexpected error occurred")
       console.error(err)
@@ -58,7 +61,7 @@ export default function LoginPage() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: "/dashboard",
+        callbackURL: redirectTo,
       })
     } catch (err) {
       setError("Failed to login with Google")
@@ -140,5 +143,13 @@ export default function LoginPage() {
         onClick={handleGoogleLogin}
       />
     </AuthLayout>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-lg">Loading...</div></div>}>
+      <LoginForm />
+    </Suspense>
   )
 }

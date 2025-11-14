@@ -57,7 +57,7 @@ export default function ReviewPage() {
       <Sidebar />
       <Verify />
       
-      <div className="absolute left-1/2 -translate-x-1/2 top-[200px] w-full max-w-[1034px] z-20 px-5">
+      <div className="absolute left-1/2 -translate-x-1/2 top-[220px] w-full max-w-[1034px] z-20 px-5">
         <div className="ml-0 md:ml-[185px]">
           <div className="space-y-6">
             {/* Header */}
@@ -91,7 +91,7 @@ export default function ReviewPage() {
                       onCheckedChange={(checked) => handleSelectPost(post.id, checked)}
                     />
                     
-                    <div className="flex-1">
+                    <div className="flex-1 mt-[-5px]">
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 mb-1">
@@ -140,21 +140,31 @@ export default function ReviewPage() {
                   {/* Mobile Layout */}
                   <div className="md:hidden">
                     <div className="flex items-start justify-between mb-4">
-                      <div>
+                      <div className="flex-1">
                         <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                          {post.author}
+                          {post.title}
                         </h3>
                         <p className="text-gray-400 text-sm underline">
-                          {post.title}
+                          {post.author}
                         </p>
                       </div>
                       
-                      <Button 
-                        variant="outline" 
-                        className="bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
-                      >
-                        Draft
-                      </Button>
+                      <div className="flex gap-2 ml-4">
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700 h-12 w-12"
+                        >
+                          ✕
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700 h-12 w-12"
+                        >
+                          ✓
+                        </Button>
+                      </div>
                     </div>
                     
                     <div className="flex gap-2 flex-wrap mb-4">
