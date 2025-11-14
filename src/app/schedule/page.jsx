@@ -111,7 +111,7 @@ export default function SchedulePage() {
                   <Trash2 className="h-5 w-5" />
                 </Button>
               </div>
-              
+
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Choose Category" />
@@ -142,11 +142,11 @@ export default function SchedulePage() {
 
                   {/* Desktop Layout */}
                   <div className="hidden md:flex items-start gap-4 mt-0">
-                    <Checkbox 
+                    <Checkbox
                       checked={selectedPosts.includes(post.id)}
                       onCheckedChange={(checked) => handleSelectPost(post.id, checked)}
                     />
-                    
+
                     <div className="flex-1 -mt-4">
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">
                         {post.title}
@@ -154,11 +154,11 @@ export default function SchedulePage() {
                       <p className="text-gray-500 text-sm mb-4">
                         {post.excerpt}
                       </p>
-                      
+
                       <div className="flex items-center justify-between">
                         <div className="flex gap-2 flex-wrap">
                           {post.tags.map((tag, index) => (
-                            <span 
+                            <span
                               key={index}
                               className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded"
                             >
@@ -166,7 +166,7 @@ export default function SchedulePage() {
                             </span>
                           ))}
                         </div>
-                        
+
                         <div className="flex items-center gap-2 text-gray-400 text-sm">
                           <Clock className="h-4 w-4" />
                           <span>Posted {post.postedTime}</span>
