@@ -19,7 +19,7 @@ export default function DomainPage() {
     <>
       <NavbarLoggedin />
       <Sidebar />
-      
+
       <div className="w-full min-h-screen md:absolute md:left-1/2 md:-translate-x-1/2 md:top-[200px] md:max-w-[1034px] z-20 px-5 md:px-5 pt-24 md:pt-0 pb-24 md:pb-0">
         <div className="ml-0 md:ml-[185px]">
           <div className="flex flex-col md:pl-10 pb-8 md:pb-20">
@@ -61,7 +61,7 @@ export default function DomainPage() {
                   onChange={(e) => setCustomDomain(e.target.value)}
                   className="w-full bg-gray-50 border-gray-300"
                 />
-                <Button 
+                <Button
                   onClick={handleSaveChanges}
                   className="bg-black text-white hover:bg-gray-800 w-full md:w-auto px-8 text-sm h-10"
                 >
@@ -73,50 +73,50 @@ export default function DomainPage() {
             {/* Instructions Section */}
             <div className="space-y-4 w-full max-w-[100%] px-4 md:px-0">
               <h2 className="text-base md:text-lg font-bold text-gray-900">Custom Domain Integration Instructions</h2>
-              
+
               <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
                 <p>
                   <span className="font-semibold">1.</span> Enter the correct domain name that you have bought/own in the domain field
                 </p>
-                
+
                 <p className="text-gray-600 pl-4 md:pl-4">
                   Now to connect your existing website to your new domain, please do the following steps :
                 </p>
-                
+
                 <p>
                   <span className="font-semibold">2.</span> Copy the IP Address that's given there by clicking the copy button
                 </p>
-                
+
                 <p>
                   <span className="font-semibold">3.</span> Open your domain's <span className="font-semibold">DNS</span> (Domain Name System) Management in your domain provider -like GoDaddy, Cloudflare, Bluehost, Hostgator, etc.
                 </p>
-                
+
                 <p>
                   <span className="font-semibold">4.</span> If there's an existing A record in your domain- please click edit and remove the existing IP Address and paste the NEW copied IP Address in the respective IP/IPv4 address field
                 </p>
-                
+
                 <p className="text-gray-600 pl-4 md:pl-4">(or)</p>
-                
+
                 <p className="font-semibold">
                   If there is no existing A record, you can create your own A record by doing the following steps
                 </p>
-                
+
                 <p>
                   <span className="font-semibold">Step 1:</span> Click Add Record in your DNS
                 </p>
-                
+
                 {/* Instructional Image - Different for mobile and desktop/tablet */}
                 <div className="my-6 bg-white rounded-lg border border-gray-200 p-4 md:p-6">
                   {/* Mobile Image - Only for small screens (phones) */}
-                  <img 
-                    src="/images/Domain/DomainMobile.jpg" 
-                    alt="DNS Configuration Steps showing steps 1-5 for adding A record" 
+                  <img
+                    src="/images/Domain/DomainMobile.jpg"
+                    alt="DNS Configuration Steps showing steps 1-5 for adding A record"
                     className="w-full h-auto block sm:hidden"
                   />
                   {/* Desktop/Tablet Image - For tablets and larger */}
-                  <img 
-                    src="/images/Domain/Imageeess.jpg" 
-                    alt="DNS Configuration Steps showing steps 1-5 for adding A record" 
+                  <img
+                    src="/images/Domain/Imageeess.jpg"
+                    alt="DNS Configuration Steps showing steps 1-5 for adding A record"
                     className="w-full h-auto hidden sm:block"
                   />
                 </div>
@@ -152,7 +152,7 @@ export default function DomainPage() {
                 {/* Query/Support Section */}
                 <div className="mt-8 space-y-4">
                   <h3 className="font-semibold text-gray-900">Query/Support:</h3>
-                  
+
                   <p>
                     Your website should be reflected within less than 15 minutes which is our maximum waiting time. In case, you are facing trouble or if you have messed up at any of the steps including entering the wrong email address,
                   </p>
