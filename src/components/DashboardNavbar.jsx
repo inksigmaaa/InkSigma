@@ -22,10 +22,6 @@ export default function DashboardNavbar() {
     router.push("/")
   }
 
-  const handleProfileSettings = () => {
-    router.push("/profile-settings")
-  }
-
   const getInitials = (name) => {
     if (!name) return "U"
     return name
@@ -36,7 +32,7 @@ export default function DashboardNavbar() {
       .slice(0, 2)
   }
   return (
-    <nav className="border-b bg-white sticky top-0 z-50 mt-6 shadow-md">
+    <nav className="border-b bg-white sticky top-0 z-50 mt-6">
       <div className="flex h-14 md:h-16 items-center justify-between px-4 md:px-6">
         {/* Logo */}
         <div className="flex items-center">
@@ -72,10 +68,12 @@ export default function DashboardNavbar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleProfileSettings}>Profile Settings</DropdownMenuItem>
+              <DropdownMenuItem>Profile</DropdownMenuItem>
+              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuItem>Billing</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-black" onClick={handleSignOut}>
-                Logout
+              <DropdownMenuItem className="text-red-600" onClick={handleSignOut}>
+                Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

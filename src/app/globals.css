@@ -33,6 +33,11 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-public-sans), sans-serif;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 /* ContentEditable placeholder */
@@ -72,4 +77,24 @@ body {
   border-radius: 0.5rem;
   overflow-x: auto;
   margin: 1rem 0;
+}
+
+/* Mobile sidebar scrollbar */
+@media (max-width: 768px) {
+  .mobile-sidebar-scroll::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .mobile-sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .mobile-sidebar-scroll::-webkit-scrollbar-thumb {
+    background: #8b5cf6;
+    border-radius: 2px;
+  }
+
+  .mobile-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: #7c3aed;
+  }
 }
