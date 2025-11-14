@@ -72,7 +72,7 @@ export default function EditorPage() {
   return (
     <div className="min-h-screen bg-[#fafafa]">
       {/* Go Back Button - Full Width on Mobile/Tablet */}
-      <div className="px-4 md:px-6 pt-6 pb-4 border-b border-gray-200 bg-white md:bg-transparent md:border-0">
+      <div className="px-4 md:px-6 pt-6 pb-4 border-b border-gray-200 md:bg-transparent md:border-0">
         <Button 
           variant="ghost" 
           onClick={() => router.push('/schedule')}
@@ -167,26 +167,26 @@ export default function EditorPage() {
             </div>
           </div>
 
-          {/* Publish Controls - Centered on Desktop, Stacked on Mobile/Tablet */}
+          {/* Publish Controls - Mobile: Single row, Desktop: Centered */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-center gap-3">
-            <Button 
-              onClick={handlePublish}
-              className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg w-full md:w-auto"
-            >
-              Publish Now
-              <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
-            </Button>
+            {/* Mobile Layout - Single Row */}
+            <div className="flex md:hidden items-center gap-2 w-full">
+              {/* Publish Button */}
+              <Button 
+                onClick={handlePublish}
+                className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium"
+              >
+                Publish
+              </Button>
 
-            {/* Schedule Group */}
-            <div className="flex items-center gap-0 rounded-lg overflow-hidden w-full md:w-auto">
-              {/* White background section */}
-              <div className="flex items-center gap-2 md:gap-3 bg-white px-3 md:px-4 border border-gray-200 rounded-l-lg flex-1 md:flex-initial">
+              {/* Date/Time/Calendar Group - White Container */}
+              <div className="flex items-center gap-2 bg-white px-3 border border-gray-200 rounded-lg flex-1">
                 <Input
                   type="text"
                   value={publishDate}
                   onChange={(e) => setPublishDate(e.target.value)}
                   placeholder="dd-mm-yyyy"
-                  className="w-[100px] md:w-[130px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                  className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
                   style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                 />
                 <Input
@@ -194,24 +194,72 @@ export default function EditorPage() {
                   value={publishTime}
                   onChange={(e) => setPublishTime(e.target.value)}
                   placeholder="--:--"
-                  className="w-[50px] md:w-[60px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                  className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
                   style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                 />
                 <button
                   onClick={() => setIsDateTimePickerOpen(true)}
                   className="p-1 hover:bg-gray-100 rounded-md transition-colors"
                 >
-                  <Calendar className="h-5 w-5 text-gray-700" />
+                  <Calendar className="h-4 w-4 text-gray-700" />
                 </button>
               </div>
-              
-              {/* Gray background button */}
+
+              {/* Schedule Button */}
               <button 
                 onClick={handleSchedule}
-                className="bg-gray-200 text-gray-400 text-sm font-medium px-4 md:px-6 py-2.5 rounded-r-lg border border-l-0 border-gray-200"
+                className="bg-gray-200 text-gray-400 text-sm font-medium px-4 py-2.5 rounded-lg"
               >
                 Schedule
               </button>
+            </div>
+
+            {/* Desktop Layout - Original Design */}
+            <div className="hidden md:flex items-center justify-center gap-3">
+              <Button 
+                onClick={handlePublish}
+                className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg"
+              >
+                Publish Now
+                <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
+              </Button>
+
+              {/* Schedule Group */}
+              <div className="flex items-center gap-0 rounded-lg overflow-hidden">
+                {/* White background section */}
+                <div className="flex items-center gap-3 bg-white px-4 border border-gray-200 rounded-l-lg">
+                  <Input
+                    type="text"
+                    value={publishDate}
+                    onChange={(e) => setPublishDate(e.target.value)}
+                    placeholder="dd-mm-yyyy"
+                    className="w-[130px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                    style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                  />
+                  <Input
+                    type="text"
+                    value={publishTime}
+                    onChange={(e) => setPublishTime(e.target.value)}
+                    placeholder="--:--"
+                    className="w-[60px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                    style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                  />
+                  <button
+                    onClick={() => setIsDateTimePickerOpen(true)}
+                    className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                  >
+                    <Calendar className="h-5 w-5 text-gray-700" />
+                  </button>
+                </div>
+                
+                {/* Gray background button */}
+                <button 
+                  onClick={handleSchedule}
+                  className="bg-gray-200 text-gray-400 text-sm font-medium px-6 py-2.5 rounded-r-lg border border-l-0 border-gray-200"
+                >
+                  Schedule
+                </button>
+              </div>
             </div>
           </div>
         </div>

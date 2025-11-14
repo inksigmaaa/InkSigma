@@ -80,7 +80,7 @@ export default function SchedulePage() {
                 <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
                 <h1 className="text-base font-bold text-gray-800">Scheduled</h1>
               </div>
-
+              
               {/* Category Select - Mobile */}
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger className="w-[140px] md:hidden">
@@ -100,10 +100,14 @@ export default function SchedulePage() {
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id="select-all"
-                    checked={selectedPosts.length === posts.length}
+                    checked={selectedPosts.length === posts.length && posts.length > 0}
                     onCheckedChange={handleSelectAll}
                   />
-                  <label htmlFor="select-all" className="text-sm text-gray-600 cursor-pointer">
+                  <label 
+                    htmlFor="select-all" 
+                    className="text-sm text-gray-600 cursor-pointer"
+                    onClick={() => handleSelectAll(!(selectedPosts.length === posts.length && posts.length > 0))}
+                  >
                     Select all
                   </label>
                 </div>
