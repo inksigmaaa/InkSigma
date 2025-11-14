@@ -7,7 +7,7 @@ export default function Sidebar() {
       "Home": "/dashboard",
       "Domain": "/dashboard",
       "Members": "/dashboard",
-      "Settings": "/dashboard/settings",
+      "Settings": "/posts/settings",
       "All Articles": "/posts",
       "Published": "/published",
       "Unpublished": "/unpublished",
