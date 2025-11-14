@@ -6,8 +6,8 @@ export default function Sidebar() {
     const routes = {
       "Home": "/dashboard",
       "Domain": "/dashboard",
-      "Members": "/members",
-      "Settings": "/dashboard/settings",
+      "Members": "/dashboard",
+      "Settings": "/posts/settings",
       "All Articles": "/posts",
       "Published": "/published",
       "Unpublished": "/unpublished",
@@ -33,7 +33,7 @@ export default function Sidebar() {
               alt="profileImg"
               className="w-[34px] h-[34px] rounded-full object-cover border-2 border-violet-500 flex-shrink-0"
             />
-            <a href="/viewsite">
+            <a href="/view-site" target="_blank" rel="noopener noreferrer">
               <button className="bg-violet-500 text-white px-[10px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:bg-violet-600">
                 View Site
               </button>
