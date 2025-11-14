@@ -198,6 +198,8 @@ body {
   font-size: smaller;
 }
 
+
+
 /* Tiptap Editor Focus Styling */
 .ProseMirror.ProseMirror-focused {
   outline: none;
