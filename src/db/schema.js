@@ -79,3 +79,16 @@ export const comment = pgTable("comment", {
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
+
+export const publication = pgTable("publication", {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    subdomain: text("subdomain").notNull().unique(),
+    description: text("description"),
+    image: text("image"),
+    userId: text("userId")
+        .notNull()
+        .references(() => user.id),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
