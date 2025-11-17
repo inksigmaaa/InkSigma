@@ -14,6 +14,7 @@ export default function ConditionalLayout({ children }) {
   const isReviewPage = pathname === "/review"
   const isEditorPage = pathname === "/editor"
   const isPostsPage = pathname === "/posts"
+  const isPostsSettingsPage = pathname === "/posts/settings"
   const isMyBlogsPage = pathname === "/my-blogs"
   const isDraftPage = pathname === "/draft"
   const isTrashPage = pathname === "/trash"
@@ -24,6 +25,9 @@ export default function ConditionalLayout({ children }) {
   const isCreatePublicationPage = pathname === "/create-publication"
   const isDomain = pathname === "/domain"
   const isViewSitePage = pathname?.startsWith("/view-site")
+  const isprofilesettings = pathname === "/profile-settings"
+  const ishome = pathname === "/home"
+  const ismembers = pathname === "/posts/members"
 
   // Show mobile buttons on all pages except auth pages and create-publication page
   const showMobileButtons = !isAuthPage && !isCreatePublicationPage

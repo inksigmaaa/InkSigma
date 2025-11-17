@@ -21,11 +21,11 @@ export default function DashboardSidebar() {
 
                     {/* SETTINGS */}
                     <div className="flex flex-col gap-[3px] max-md:flex-row max-md:gap-2 max-md:p-0">
-                        <a href="/dashboard/settings">
+                        <a href="/profile-settings">
                             <div className="flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0">
                                 <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
                                     <img
-                                        src="/images/icons/setings.svg"
+                                        src="/icons/settings.svg"
                                         className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6"
                                     />
                                     <p className="text-[13px] font-normal leading-[150%] text-gray-500 m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap">

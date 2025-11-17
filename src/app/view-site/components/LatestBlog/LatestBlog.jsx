@@ -42,7 +42,7 @@ export default function LatestBlog({ searchQuery = '' }) {
       {/* Start Writing Button */}
       <div className="mb-6 md:mb-8">
         <a
-          href="/write"
+          href="/editor"
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-lg text-sm hover:bg-gray-800 transition-colors font-medium"
         >
           <svg
@@ -84,7 +84,7 @@ export default function LatestBlog({ searchQuery = '' }) {
         </div>
       </div>
 
-      <div className="relative w-full h-[400px] md:h-[700px] rounded-xl md:rounded-2xl group">
+      <div className="relative w-full h-[400px] md:h-[600px] rounded-xl md:rounded-2xl group">
         {/* Share Button - Top Right */}
         <div className="absolute top-3 right-3 md:top-4 md:right-4 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-50">
           <ShareMenu
