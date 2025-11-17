@@ -5,8 +5,6 @@ import Link from 'next/link';
 import { use } from 'react';
 import ViewSiteHeader from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
-import ShareButtons from '../../components/ShareButtons/ShareButtons';
-import CommentSection from '../../components/CommentSection/CommentSection';
 import TableOfContents from '../../components/TableOfContents/TableOfContents';
 import BackToHomeButton from '../../components/BackToHomeButton/BackToHomeButton';
 import ScrollToTop from '../../components/ScrollToTop/ScrollToTop';
@@ -128,9 +126,6 @@ export default function BlogDetailPage({ params }) {
             className="prose prose-sm md:prose-lg max-w-none prose-headings:font-bold prose-headings:text-black prose-p:text-gray-700 prose-p:leading-relaxed break-words"
             dangerouslySetInnerHTML={{ __html: blog.content }}
           />
-
-          {/* Comment and Discussion Section */}
-          <CommentSection blogId={blog.id} />
         </div>
         </div>
       </section>
