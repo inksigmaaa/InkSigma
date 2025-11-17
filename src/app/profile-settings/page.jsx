@@ -3,8 +3,8 @@
 import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import DashboardNavbar from "@/components/DashboardNavbar"
-import DashboardSidebar from "@/components/DashboardSidebar"
+import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
+import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
 
 export default function ProfileSettingsPage() {
   const { data: session, isPending } = useSession()
@@ -31,28 +31,14 @@ export default function ProfileSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      {/* Header Container */}
-      <div className="max-w-[1200px] mx-auto bg-white rounded-lg mb-4 shadow-sm">
-        <DashboardNavbar />
-      </div>
-
-      {/* Main Layout with Sidebar and Content */}
-      <div className="max-w-[1200px] mx-auto flex gap-4">
-        {/* Sidebar Container */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <DashboardSidebar />
-        </div>
-
-        {/* Content Area */}
-        <main className="flex-1 bg-white rounded-lg shadow-sm px-16 py-10">
+    <>
+      <NavbarLoggedin />
+      <DashboardSimpleSidebar />
+      <div className="min-h-screen bg-white flex justify-center p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 md:pl-64 pb-24 md:pb-8">
+        <div className="w-full max-w-[800px] min-h-[927px] space-y-8">
+          <h1 className="text-lg font-bold text-gray-900 text-center">Profile Settings</h1>
+          
           <div className="flex flex-col items-center">
-            <h1 
-              className="text-center font-bold text-gray-900 mb-8 whitespace-nowrap"
-              style={{ width: '119px', height: '28px', fontSize: '14px', lineHeight: '28px' }}
-            >
-              Profile Settings
-            </h1>
             
             {/* Profile Image */}
             <div className="flex flex-col items-center">
@@ -149,7 +135,7 @@ export default function ProfileSettingsPage() {
               </div>
 
               {/* Save Button */}
-              <div className="flex justify-center mt-8 mb-20">
+              <div className="flex justify-center mt-8">
                 <button 
                   className="bg-black text-white hover:bg-gray-800 transition-colors"
                   style={{ 
@@ -167,7 +153,7 @@ export default function ProfileSettingsPage() {
               </div>
             </div>
           </div>
-        </main>
+        </div>
       </div>
 
       {/* Reset Password Modal */}
@@ -230,6 +216,6 @@ export default function ProfileSettingsPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }

@@ -13,16 +13,7 @@ export default function MembersPage() {
     <>
       <NavbarLoggedin />
       <MemberSidebar />
-      <div style={{
-        position: 'absolute',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        top: '200px',
-        width: '100%',
-        maxWidth: '1034px',
-        zIndex: 10,
-        padding: '0 20px'
-      }}>
+      <div className="absolute left-1/2 -translate-x-1/2 top-[140px] md:top-[200px] w-full max-w-[1034px] z-10 px-5 mb-20 md:mb-0">
         <div className="ml-0 md:ml-[230px]">
           <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 md:mb-8">Members</h1>
 
