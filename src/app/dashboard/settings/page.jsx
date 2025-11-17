@@ -4,7 +4,7 @@ import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
-import DashboardSimpleSidebar from "../../components/sidebar/DashboardSimpleSidebar"
+import Sidebar from "../../components/sidebar/Sidebar"
 
 export default function SettingsPage() {
   const { data: session, isPending } = useSession()
@@ -33,9 +33,9 @@ export default function SettingsPage() {
   return (
     <>
       <NavbarLoggedin />
-      <DashboardSimpleSidebar />
+      <Sidebar />
       <div className="min-h-screen bg-white flex justify-center p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 md:pl-64 mb-20 md:mb-0">
-        <div className="w-[273px] h-[927px] space-y-6">
+        <div className="w-[400px] h-[1100px] space-y-8">
           <h1 className="text-lg font-bold text-gray-900 text-center">Publication Settings</h1>
           
           {/* Logo Upload */}
