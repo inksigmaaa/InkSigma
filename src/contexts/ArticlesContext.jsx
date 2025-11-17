@@ -24,6 +24,8 @@ const formatDate = (date) => {
 }
 
 export function ArticlesProvider({ children }) {
+  const today = new Date()
+  
   const [articles, setArticles] = useState([
     {
       id: 1,
@@ -31,7 +33,7 @@ export function ArticlesProvider({ children }) {
       title: 'Title of the Blog will be in this area',
       description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...',
       categories: ['Sports', 'Humour', 'History'],
-      createdAt: new Date('2023-02-02'),
+      createdAt: today,
       get postedTime() { return formatDate(this.createdAt) }
     },
     {
@@ -40,7 +42,7 @@ export function ArticlesProvider({ children }) {
       title: 'Title of the Blog will be in this area',
       description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...',
       categories: ['Sports', 'Humour', 'History'],
-      createdAt: new Date('2024-11-15'),
+      createdAt: today,
       get postedTime() { return formatDate(this.createdAt) }
     },
     {
@@ -49,7 +51,7 @@ export function ArticlesProvider({ children }) {
       title: 'Title of the Blog will be in this area',
       description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...',
       categories: ['Sports', 'Humour', 'History'],
-      createdAt: new Date('2024-11-15'),
+      createdAt: today,
       get postedTime() { return formatDate(this.createdAt) }
     },
     {
@@ -58,7 +60,7 @@ export function ArticlesProvider({ children }) {
       title: 'Deleted Article About Technology Trends',
       description: 'This article was moved to trash and can be restored or permanently deleted...',
       categories: ['Technology', 'Innovation'],
-      createdAt: new Date('2024-10-20'),
+      createdAt: today,
       get postedTime() { return formatDate(this.createdAt) }
     },
     {
@@ -67,7 +69,7 @@ export function ArticlesProvider({ children }) {
       title: 'Old Marketing Strategy Post',
       description: 'An outdated marketing article that needs to be reviewed before permanent deletion...',
       categories: ['Marketing', 'Business'],
-      createdAt: new Date('2024-09-15'),
+      createdAt: today,
       get postedTime() { return formatDate(this.createdAt) }
     },
     {
@@ -76,7 +78,7 @@ export function ArticlesProvider({ children }) {
       title: 'Draft About Climate Change',
       description: 'Incomplete draft about environmental issues, moved to trash for cleanup...',
       categories: ['Environment', 'Science'],
-      createdAt: new Date('2024-11-01'),
+      createdAt: today,
       get postedTime() { return formatDate(this.createdAt) }
     },
     {
@@ -85,7 +87,7 @@ export function ArticlesProvider({ children }) {
       title: 'Travel Guide to Europe',
       description: 'Travel article that was replaced with updated version, ready for deletion...',
       categories: ['Travel', 'Lifestyle'],
-      createdAt: new Date('2024-08-10'),
+      createdAt: today,
       get postedTime() { return formatDate(this.createdAt) }
     },
     {
@@ -94,7 +96,7 @@ export function ArticlesProvider({ children }) {
       title: 'Recipe Collection for Summer',
       description: 'Seasonal recipes that are no longer relevant, can be permanently removed...',
       categories: ['Food', 'Cooking'],
-      createdAt: new Date('2024-07-25'),
+      createdAt: today,
       get postedTime() { return formatDate(this.createdAt) }
     }
   ])
