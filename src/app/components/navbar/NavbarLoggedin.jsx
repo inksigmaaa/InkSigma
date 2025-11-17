@@ -8,7 +8,7 @@ export default function NavbarLoggedin() {
     const [open, setOpen] = useState(false);
     const wrapperRef = useRef(null);
     const router = useRouter();
-    const { data: session } = useSession();
+    const { data: session, isPending } = useSession();
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -27,7 +27,26 @@ export default function NavbarLoggedin() {
         router.push("/login");
     };
 
-    const userImage = session?.user?.image || "/images/icons/profileuser.svg";
+    // Cache user image to prevent flashing
+    const [cachedUserImage, setCachedUserImage] = useState(null);
+    
+    useEffect(() => {
+        // Get cached image from localStorage on mount
+        const cached = localStorage.getItem('userImage');
+        if (cached) {
+            setCachedUserImage(cached);
+        }
+    }, []);
+
+    useEffect(() => {
+        // Update cache when session loads
+        if (session?.user?.image) {
+            setCachedUserImage(session.user.image);
+            localStorage.setItem('userImage', session.user.image);
+        }
+    }, [session?.user?.image]);
+
+    const userImage = cachedUserImage || "/images/icons/profileuser.svg";
     const userName = session?.user?.name || "User";
 
     return (
