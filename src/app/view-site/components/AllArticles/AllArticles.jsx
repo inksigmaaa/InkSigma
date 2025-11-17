@@ -3,19 +3,29 @@ import Link from 'next/link';
 import ShareMenu from '../ShareMenu/ShareMenu';
 import mockData from '../../mockData.json';
 
-export default function AllArticles({ searchQuery = '' }) {
+export default function AllArticles({ searchQuery = '', selectedCategory = '' }) {
   const articles = mockData.blogs;
 
-  // Filter articles based on search query
+  // Filter articles based on search query and selected category
   const filteredArticles = articles.filter((article) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      article.title.toLowerCase().includes(query) ||
-      article.description.toLowerCase().includes(query) ||
-      article.category.toLowerCase().includes(query) ||
-      article.author?.name.toLowerCase().includes(query)
-    );
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = (
+        article.title.toLowerCase().includes(query) ||
+        article.description.toLowerCase().includes(query) ||
+        article.category.toLowerCase().includes(query) ||
+        article.author?.name.toLowerCase().includes(query)
+      );
+      if (!matchesSearch) return false;
+    }
+    
+    // Filter by selected category
+    if (selectedCategory && article.category !== selectedCategory) {
+      return false;
+    }
+    
+    return true;
   });
 
   const formatDate = (dateString) => {
@@ -43,7 +53,7 @@ export default function AllArticles({ searchQuery = '' }) {
           {filteredArticles.map((article) => {
             const dateFormatted = formatDate(article.createdAt);
             return (
-              <div key={article.id} className="flex flex-col">
+              <div key={article.id} className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5 flex flex-col">
                 {/* Author and Date */}
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                   <div className="flex items-center gap-2 md:gap-3">
@@ -52,7 +62,18 @@ export default function AllArticles({ searchQuery = '' }) {
                         <Image src={article.author.avatar} alt={article.author.name} width={40} height={40} unoptimized />
                       )}
                     </div>
-                    <span className="text-gray-800 font-medium text-sm md:text-base">{article.author?.name || 'Anonymous'}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-800 font-medium text-sm md:text-base">{article.author?.name || 'Anonymous'}</span>
+                      {article.author?.role && (
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] md:text-xs font-medium border ${
+                          article.author.role === 'ADMIN' 
+                            ? 'bg-purple-50 text-purple-600 border-purple-200' 
+                            : 'bg-purple-50 text-purple-600 border-purple-200'
+                        }`}>
+                          {article.author.role}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="text-right">
                     <div className="text-gray-700 text-xs md:text-sm font-medium whitespace-nowrap">
@@ -71,7 +92,7 @@ export default function AllArticles({ searchQuery = '' }) {
                 />
               </div>
 
-              <Link href={`/view-site/blog/${article.slug}`} className="absolute inset-0 rounded-xl md:rounded-2xl overflow-hidden cursor-pointer block">
+              <Link href={`/view-site/blog/${article.slug}`} className="absolute inset-0 rounded-md md:rounded-md overflow-hidden cursor-pointer block">
                 {/* Background Image */}
                 <Image 
                   src={article.thumbnail} 
@@ -83,29 +104,18 @@ export default function AllArticles({ searchQuery = '' }) {
               </Link>
             </div>
 
-            {/* Title and Description */}
-            <div className="mb-3 md:mb-4">
+            {/* Title and Description - Flex grow to push category down */}
+            <div className="flex-grow mb-3 md:mb-4">
               <h3 className="text-lg md:text-xl font-bold mb-1 md:mb-2 text-black line-clamp-2">{article.title}</h3>
               <p className="text-gray-700 text-xs md:text-sm line-clamp-2">{article.description}</p>
             </div>
 
-            {/* Category */}
-            <div className="flex flex-wrap gap-2 mb-3 md:mb-4">
+            {/* Category - Always at bottom */}
+            <div className="flex flex-wrap gap-2 mt-auto">
               <span className="px-3 py-1.5 md:px-4 md:py-2 bg-white text-gray-700 border border-gray-300 rounded-md text-xs md:text-sm hover:bg-gray-50 transition-colors cursor-pointer">
                 {article.category}
               </span>
             </div>
-
-            {/* Read Article Button */}
-            <Link href={`/view-site/blog/${article.slug}`} className="flex items-center justify-center md:justify-start gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors w-full md:w-fit mt-4 md:mt-10 text-sm md:text-base">
-              Read Article
-              <Image 
-                src="/svg/arrow-right.svg" 
-                alt="Arrow"
-                width={16}
-                height={16}
-              />
-            </Link>
           </div>
             );
           })}

@@ -4,7 +4,7 @@ import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
-import DashboardSimpleSidebar from "../../components/sidebar/DashboardSimpleSidebar"
+import Sidebar from "../../components/sidebar/Sidebar"
 
 export default function SettingsPage() {
   const { data: session, isPending } = useSession()
@@ -33,9 +33,9 @@ export default function SettingsPage() {
   return (
     <>
       <NavbarLoggedin />
-      <DashboardSimpleSidebar />
-      <div className="min-h-screen bg-white flex justify-center p-8 pt-32 pl-64" style={{ position: 'relative', zIndex: 10 }}>
-        <div style={{ width: '800px', minHeight: '927px' }} className="space-y-8">
+      <Sidebar />
+      <div className="min-h-screen bg-white flex justify-center p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 md:pl-64 mb-20 md:mb-0">
+        <div className="w-[400px] h-[1100px] space-y-8">
           <h1 className="text-lg font-bold text-gray-900 text-center">Publication Settings</h1>
           
           {/* Logo Upload */}
@@ -114,7 +114,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Save Button */}
-          <button className="w-full bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors">
+          <button className="w-full bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors mb-6">
             Save
           </button>
         </div>
