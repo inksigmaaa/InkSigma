@@ -21,10 +21,11 @@ export default function ConditionalLayout({ children }) {
   const isPublished = pathname === "/published"
   const isUnpublishedPage = pathname === "/unpublished"
   const isMembersPage = pathname === "/members"
+  const isAuthorReview = pathname === "/author-review"
+  const isViewSitePage = pathname?.startsWith("/view-site")
   const isHome = pathname === "/home"
   const isCreatePublicationPage = pathname === "/create-publication"
   const isDomain = pathname === "/domain"
-  const isViewSitePage = pathname?.startsWith("/view-site")
   const isprofilesettings = pathname === "/profile-settings"
   const ishome = pathname === "/home"
   const ismembers = pathname === "/posts/members"
