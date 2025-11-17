@@ -35,7 +35,7 @@ export default function SettingsPage() {
       <NavbarLoggedin />
       <DashboardSimpleSidebar />
       <div className="min-h-screen bg-white flex justify-center p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 md:pl-64 mb-20 md:mb-0">
-        <div className="w-[273px] h-[927px] space-y-6">
+        <div className="w-[400px] h-[1100px] space-y-8">
           <h1 className="text-lg font-bold text-gray-900 text-center">Publication Settings</h1>
           
           {/* Logo Upload */}

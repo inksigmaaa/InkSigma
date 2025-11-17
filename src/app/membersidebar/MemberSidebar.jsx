@@ -1,7 +1,7 @@
 export default function MemberSidebar() {
   const getRoute = (label) => {
     const routes = {
-      "Home": "/posts",
+      "Home": "/home",
       "Members": "/posts/members",
       "Published": "/published",
       "Review": "/review",
