@@ -34,11 +34,7 @@ export default function ConditionalLayout({ children }) {
   const showMobileButtons = !isAuthPage && !isCreatePublicationPage
 
 
-<<<<<<< HEAD
-  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isMembersPage || isViewSitePage || ismembers || ishome || isprofilesettings) {
-=======
-  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isMembersPage || isViewSitePage || ismembers || isDomain) {
->>>>>>> 9bd6b970ea85d2a9632364157ccf2e4dfa768c8e
+  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isMembersPage || isViewSitePage || ismembers || ishome || isprofilesettings || isDomain) {
     return (
       <div className="min-h-screen">
         {children}

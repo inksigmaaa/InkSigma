@@ -47,30 +47,40 @@ export default function Members() {
                                 placeholder="Enter the Email"
                                 className="flex-1 px-0 py-2 border-0 border-b border-gray-300 text-sm focus:outline-none focus:border-gray-900 focus:ring-0 placeholder:text-gray-400 max-[767px]:text-xs"
                             />
-                            <select
-                                value={role}
-                                onChange={(e) => setRole(e.target.value)}
-                                className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent cursor-pointer min-w-[160px] max-[767px]:min-w-[120px] max-[767px]:px-3 max-[767px]:py-1.5 max-[767px]:text-xs"
-                            >
-                                <option value="Select Role">Select Role</option>
-                                <option value="Editor">Editor</option>
-                                <option value="Author">Author</option>
-                            </select>
+                            <div className="relative min-w-[130px] max-[767px]:min-w-[120px]">
+                                <select
+                                    value={role}
+                                    onChange={(e) => setRole(e.target.value)}
+                                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md text-sm text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent cursor-pointer appearance-none max-[767px]:px-3 max-[767px]:py-1.5 max-[767px]:text-xs"
+                                >
+                                    <option value="Select Role">Select Role</option>
+                                    <option value="Editor">Editor</option>
+                                    <option value="Author">Author</option>
+                                </select>
+                                <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
                             <button className="px-6 py-2 bg-violet-600 text-white rounded-md text-sm font-medium hover:bg-violet-700 transition-colors whitespace-nowrap max-[767px]:px-4 max-[767px]:py-1.5 max-[767px]:text-xs">
                                 Send Invite
                             </button>
                         </div>
                         {/* Mobile: Dropdown and Button side by side */}
                         <div className="hidden max-[639px]:flex gap-3">
-                            <select
-                                value={role}
-                                onChange={(e) => setRole(e.target.value)}
-                                className="flex-1 px-4 py-3 border border-gray-300 rounded-md text-sm text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent cursor-pointer"
-                            >
-                                <option value="Select Role">Select Role</option>
-                                <option value="Editor">Editor</option>
-                                <option value="Author">Author</option>
-                            </select>
+                            <div className="flex-1 relative">
+                                <select
+                                    value={role}
+                                    onChange={(e) => setRole(e.target.value)}
+                                    className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-md text-sm text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent cursor-pointer appearance-none"
+                                >
+                                    <option value="Select Role">Select Role</option>
+                                    <option value="Editor">Editor</option>
+                                    <option value="Author">Author</option>
+                                </select>
+                                <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
                             <button className="flex-1 py-3 bg-violet-600 text-white rounded-md text-base font-medium hover:bg-violet-700 transition-colors">
                                 Send Invite
                             </button>
