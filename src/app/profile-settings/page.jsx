@@ -11,12 +11,29 @@ export default function ProfileSettingsPage() {
   const router = useRouter()
   const [showResetModal, setShowResetModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [cachedUserImage, setCachedUserImage] = useState(null)
 
   useEffect(() => {
     if (!isPending && !session) {
       router.push("/login")
     }
   }, [session, isPending, router])
+
+  useEffect(() => {
+    // Get cached image from localStorage on mount
+    const cached = localStorage.getItem('userImage');
+    if (cached) {
+      setCachedUserImage(cached);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Update cache when session loads
+    if (session?.user?.image) {
+      setCachedUserImage(session.user.image);
+      localStorage.setItem('userImage', session.user.image);
+    }
+  }, [session?.user?.image]);
 
   if (isPending) {
     return (
@@ -52,7 +69,7 @@ export default function ProfileSettingsPage() {
                 }}
               >
                 <img 
-                  src={session?.user?.image || "/icons/nib.svg"} 
+                  src={cachedUserImage || "/icons/nib.svg"} 
                   alt="Profile" 
                   className="w-full h-full object-cover"
                 />
