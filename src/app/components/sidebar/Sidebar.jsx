@@ -42,7 +42,7 @@ export default function Sidebar() {
               className="w-[34px] h-[34px] rounded-full object-cover border-2 border-violet-500 flex-shrink-0"
             />
 
-            <a href="/">
+            <a href="/view-site" target="_blank" rel="noopener noreferrer">
               <button
                 className="bg-violet-500 text-white px-[10px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:bg-violet-600"
               >
@@ -73,7 +73,7 @@ export default function Sidebar() {
                 ["home.svg", "Home", "/home"],
                 ["domain.svg", "Domain", "/domain"],
                 ["Member.svg", "Members", "/members"],
-                ["setings.svg", "Settings", "/settings"],
+                ["settings.svg", "Settings", "/settings"],
               ]
             },
             {
@@ -119,7 +119,7 @@ export default function Sidebar() {
                         />
                       ) : (
                         <img
-                          src={`/images/icons/${icon}`}
+                          src={label === "Settings" ? `/icons/${icon}` : `/images/icons/${icon}`}
                           className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6"
                         />
                       )}

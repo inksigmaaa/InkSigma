@@ -137,14 +137,10 @@ export default function ProfileSettingsPage() {
               {/* Save Button */}
               <div className="flex justify-center mt-8">
                 <button 
-                  className="bg-black text-white hover:bg-gray-800 transition-colors"
+                  className="bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center"
                   style={{ 
                     width: '259px', 
                     height: '32px', 
-                    paddingTop: '8px', 
-                    paddingRight: '109px', 
-                    paddingBottom: '8px', 
-                    paddingLeft: '109px', 
                     borderRadius: '4px' 
                   }}
                 >

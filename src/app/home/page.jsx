@@ -5,9 +5,30 @@ import Sidebar from "../components/sidebar/Sidebar"
 import BlogStatsComponent from "../components/BlogStatsComponent/BlogStatsComponent"
 import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 
 export default function HomePage() {
   const router = useRouter()
+  const [publication, setPublication] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchPublication = async () => {
+      try {
+        const response = await fetch("/api/publication/get")
+        if (response.ok) {
+          const data = await response.json()
+          setPublication(data.publication)
+        }
+      } catch (error) {
+        console.error("Error fetching publication:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPublication()
+  }, [])
 
   const handleStartWriting = () => {
     router.push("/editor")
@@ -15,6 +36,10 @@ export default function HomePage() {
 
   const handleVisitSite = () => {
     window.open("/view-site", "_blank")
+  }
+
+  const handleEditPublication = () => {
+    router.push("/dashboard/settings")
   }
 
   // Sample articles data
@@ -62,17 +87,26 @@ export default function HomePage() {
           {/* Publication Header */}
           <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3">
             <div className="flex items-start gap-4 max-md:gap-3">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14">
-                <img src="/icons/nib.svg" alt="publication" className="w-10 h-10 opacity-40 max-md:w-8 max-md:h-8" />
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
+                {publication?.image ? (
+                  <img src={publication.image} alt={publication.name} className="w-full h-full object-cover" />
+                ) : (
+                  <img src="/icons/nib.svg" alt="publication" className="w-10 h-10 opacity-40 max-md:w-8 max-md:h-8" />
+                )}
               </div>
               <div className="flex-1">
-                <h1 className="text-lg font-semibold text-gray-900 mb-1 max-md:text-base max-md:font-bold">Publication Name</h1>
+                <h1 className="text-lg font-semibold text-gray-900 mb-1 max-md:text-base max-md:font-bold">
+                  {loading ? "Loading..." : publication?.name || "Publication Name"}
+                </h1>
                 <p className="text-sm text-gray-400 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-1">
-                  Lorem ipsum dolor sit amet, sectetur...
+                  {publication?.description || `${publication?.subdomain || "subdomain"}.inksigma.com`}
                 </p>
               </div>
             </div>
-            <button className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 border border-gray-200 rounded-md transition-colors max-md:px-3 max-md:py-1.5 max-md:text-xs flex-shrink-0 max-md:rounded-lg">
+            <button 
+              onClick={handleEditPublication}
+              className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 border border-gray-200 rounded-md transition-colors max-md:px-3 max-md:py-1.5 max-md:text-xs flex-shrink-0 max-md:rounded-lg"
+            >
               Edit
             </button>
           </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useState, useMemo } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
 import Verify from "../components/verify/Verify"
@@ -9,6 +9,7 @@ import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function MyBlogsPage() {
   const { articles, moveToTrash } = useArticles()
+  const [selectedArticles, setSelectedArticles] = useState([])
 
   const myArticles = useMemo(() => {
     return articles.map(article => ({
@@ -16,6 +17,14 @@ export default function MyBlogsPage() {
       onDelete: () => moveToTrash(article.id)
     }))
   }, [articles, moveToTrash])
+
+  const handleArticleSelect = (id, checked) => {
+    if (checked) {
+      setSelectedArticles(prev => [...prev, id])
+    } else {
+      setSelectedArticles(prev => prev.filter(articleId => articleId !== id))
+    }
+  }
 
   return (
     <>
@@ -29,7 +38,8 @@ export default function MyBlogsPage() {
         emptyMessage="No Articles yet"
         showSelectAll={false}
         showActions={false}
-        selectedArticles={[]}
+        selectedArticles={selectedArticles}
+        onArticleSelect={handleArticleSelect}
       />
     </>
   )
