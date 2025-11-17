@@ -35,7 +35,7 @@ export default function SettingsPage() {
       <NavbarLoggedin />
       <DashboardSimpleSidebar />
       <div className="min-h-screen bg-white flex justify-center p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 md:pl-64 mb-20 md:mb-0">
-        <div className="w-full max-w-[800px] min-h-[927px] space-y-8">
+        <div className="w-[273px] h-[927px] space-y-6">
           <h1 className="text-lg font-bold text-gray-900 text-center">Publication Settings</h1>
           
           {/* Logo Upload */}
@@ -114,7 +114,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Save Button */}
-          <button className="w-full bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors">
+          <button className="w-full bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors mb-6">
             Save
           </button>
         </div>
