@@ -15,7 +15,7 @@ export default function ArticleContainer({ status, title, description, categorie
     const config = statusConfig[status] || statusConfig.published
 
     return (
-        <div className="relative bg-white border border-gray-200 rounded-lg p-4 mb-4 transition-shadow hover:shadow-md">
+        <div className="relative bg-white border border-gray-200 rounded-lg p-4 mb-4">
 
             {/* status badge */}
             <div

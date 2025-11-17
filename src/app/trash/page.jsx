@@ -3,14 +3,50 @@
 import { useState } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
-import ArticleContainer from "../components/articleContainer/ArticleContainer"
+import PersonalArticleContainer from "../components/personalArticleContainer/PersonalArticleContainer"
 import Verify from "../components/verify/Verify"
+import ConfirmModal from "../components/confirmModal/ConfirmModal"
+import { Button } from "@/components/ui/button"
 
 export default function TrashPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategories, setSelectedCategories] = useState([])
-  const [selectAll, setSelectAll] = useState(false)
+  const [selectedArticles, setSelectedArticles] = useState([])
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showRestoreModal, setShowRestoreModal] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState(null) // 'bulk' or specific article id
+
+  // Helper function to format date
+  const formatDate = (date) => {
+    const day = date.getDate()
+    const month = date.toLocaleString('en-US', { month: 'short' })
+    const year = date.getFullYear()
+
+    const suffix = (day) => {
+      if (day > 3 && day < 21) return 'th'
+      switch (day % 10) {
+        case 1: return 'st'
+        case 2: return 'nd'
+        case 3: return 'rd'
+        default: return 'th'
+      }
+    }
+
+    return `${day}${suffix(day)} ${month}, ${year}`
+  }
+
+  const today = new Date()
+  const todayFormatted = formatDate(today)
+
+  // Mock articles for demo - using state so we can delete them
+  const [articles, setArticles] = useState([
+    { id: "1", title: "Title of the Blog will be in this area", description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...", categories: ["Sports", "Humour", "History"], postedTime: todayFormatted },
+    { id: "2", title: "Title of the Blog will be in this area", description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...", categories: ["Sports", "Humour", "History"], postedTime: todayFormatted },
+    { id: "3", title: "Title of the Blog will be in this area", description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...", categories: ["Sports", "Humour", "History"], postedTime: todayFormatted }
+  ])
+
+  const selectAll = selectedArticles.length === articles.length && articles.length > 0
 
   const categories = [
     "Agriculture", "Art & Illustration", "Business", "Climate & Environment",
@@ -33,6 +69,68 @@ export default function TrashPage() {
     )
   }
 
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedArticles([])
+    } else {
+      setSelectedArticles(articles.map(a => a.id))
+    }
+  }
+
+  const handleArticleSelect = (id, checked) => {
+    if (checked) {
+      setSelectedArticles(prev => [...prev, id])
+    } else {
+      setSelectedArticles(prev => prev.filter(articleId => articleId !== id))
+    }
+  }
+
+  const handleBulkDelete = () => {
+    if (selectedArticles.length > 0) {
+      setDeleteTarget('bulk')
+      setShowDeleteModal(true)
+    }
+  }
+
+  const handleBulkRestore = () => {
+    if (selectedArticles.length > 0) {
+      setShowRestoreModal(true)
+    }
+  }
+
+  const handleIndividualDelete = (id) => {
+    setDeleteTarget(id)
+    setShowDeleteModal(true)
+  }
+
+  const handleIndividualRestore = (id) => {
+    console.log('Restore article:', id)
+    // Remove from trash (in real app, this would call an API)
+    setArticles(prev => prev.filter(article => article.id !== id))
+  }
+
+  const confirmDelete = () => {
+    if (deleteTarget === 'bulk') {
+      // Delete all selected articles
+      setArticles(prev => prev.filter(article => !selectedArticles.includes(article.id)))
+      setSelectedArticles([])
+    } else {
+      // Delete single article
+      setArticles(prev => prev.filter(article => article.id !== deleteTarget))
+      setSelectedArticles(prev => prev.filter(id => id !== deleteTarget))
+    }
+    setShowDeleteModal(false)
+    setDeleteTarget(null)
+  }
+
+  const confirmRestore = () => {
+    console.log('Restore articles:', selectedArticles)
+    // Remove restored articles from trash
+    setArticles(prev => prev.filter(article => !selectedArticles.includes(article.id)))
+    setSelectedArticles([])
+    setShowRestoreModal(false)
+  }
+
   return (
     <>
       <NavbarLoggedin />
@@ -49,21 +147,33 @@ export default function TrashPage() {
 
           <div className="flex items-center justify-between gap-5 mb-6">
             <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer w-[123px] h-8 bg-[#F8F8F8] rounded px-3 py-2">
                 <input
                   type="checkbox"
                   checked={selectAll}
-                  onChange={() => setSelectAll(!selectAll)}
-                  className="w-[18px] h-[18px] cursor-pointer accent-violet-500"
+                  onChange={handleSelectAll}
+                  className="w-[18px] h-[18px] cursor-pointer accent-purple-600"
                 />
-                <span className="font-bold text-base leading-6 text-gray-500">Select all</span>
+                <span className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-500">Select all</span>
               </label>
-              <button title="Restore" className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300">
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Restore"
+                disabled={selectedArticles.length === 0}
+                onClick={handleBulkRestore}
+              >
                 <img src="/images/icons/restore.svg" alt="restore" className="w-5 h-5" />
-              </button>
-              <button title="Delete" className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300">
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Delete"
+                disabled={selectedArticles.length === 0}
+                onClick={handleBulkDelete}
+              >
                 <img src="/images/icons/trash1.svg" alt="delete" className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
 
             <div className="relative">
@@ -114,30 +224,55 @@ export default function TrashPage() {
           </div>
 
           <div className="mt-6 space-y-4 pb-[85px]">
-            <ArticleContainer
-              status="trash"
-              title="Title of the Blog will be in this area"
-              description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
-              categories={["Sports", "Humour", "History"]}
-              postedTime="Posted 2 mins ago"
-            />
-            <ArticleContainer
-              status="trash"
-              title="Title of the Blog will be in this area"
-              description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
-              categories={["Sports", "Humour", "History"]}
-              postedTime="Posted 2 mins ago"
-            />
-            <ArticleContainer
-              status="trash"
-              title="Title of the Blog will be in this area"
-              description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
-              categories={["Sports", "Humour", "History"]}
-              postedTime="Posted 2 mins ago"
-            />
+            {articles.length === 0 ? (
+              <div className="flex items-center justify-center min-h-[200px] py-20 px-10 bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)]">
+                <p className="font-['Public_Sans'] font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">No trash articles yet</p>
+              </div>
+            ) : (
+              articles.map((article) => (
+                <PersonalArticleContainer
+                  key={article.id}
+                  id={article.id}
+                  status="trash"
+                  title={article.title}
+                  description={article.description}
+                  categories={article.categories}
+                  postedTime={article.postedTime}
+                  isSelected={selectedArticles.includes(article.id)}
+                  onSelect={handleArticleSelect}
+                  onRestore={() => handleIndividualRestore(article.id)}
+                  onDelete={() => handleIndividualDelete(article.id)}
+                />
+              ))
+            )}
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false)
+          setDeleteTarget(null)
+        }}
+        onConfirm={confirmDelete}
+        title="Delete permanently?"
+        message={deleteTarget === 'bulk' 
+          ? `${selectedArticles.length} article(s) will be permanently deleted` 
+          : "This article will be permanently deleted"}
+        confirmText="Delete permanently"
+        confirmStyle="danger"
+      />
+
+      <ConfirmModal
+        isOpen={showRestoreModal}
+        onClose={() => setShowRestoreModal(false)}
+        onConfirm={confirmRestore}
+        title="Restore articles?"
+        message={`${selectedArticles.length} article(s) will be restored`}
+        confirmText="Restore"
+        confirmStyle="normal"
+      />
     </>
   )
 }
