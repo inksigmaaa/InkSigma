@@ -6,6 +6,7 @@ import { useEffect } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSidebar from "../components/sidebar/DashboardSidebar"
 import { ChevronRight, AlertCircle } from "lucide-react"
+import Link from "next/link"
 
 export default function DashboardPage() {
   const { data: session, isPending } = useSession()

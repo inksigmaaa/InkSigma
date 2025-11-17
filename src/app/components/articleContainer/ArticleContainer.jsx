@@ -5,7 +5,7 @@ import {
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
 
-export default function ArticleContainer({ status, title, description, categories, postedTime }) {
+export default function ArticleContainer({ id, status, title, description, categories, postedTime, isSelected, onSelect }) {
     const statusConfig = {
         published: { bg: '#D5F2D4', color: '#267F24', text: 'Published' },
         draft: { bg: '#FFEADB', color: '#A34200', text: 'Draft' },
@@ -15,7 +15,7 @@ export default function ArticleContainer({ status, title, description, categorie
     const config = statusConfig[status] || statusConfig.published
 
     return (
-        <div className="relative bg-white border border-gray-200 rounded-lg p-4 mb-4 transition-shadow hover:shadow-md">
+        <div className="relative bg-white border border-gray-200 rounded-lg p-4 mb-4">
 
             {/* status badge */}
             <div
@@ -31,7 +31,12 @@ export default function ArticleContainer({ status, title, description, categorie
 
                     {/* left side */}
                     <div className="flex gap-3 flex-1">
-                        <input type="checkbox" className="w-5 h-5 mt-1 cursor-pointer accent-violet-500 shrink-0" />
+                        <input 
+                            type="checkbox" 
+                            checked={isSelected || false}
+                            onChange={(e) => onSelect && onSelect(id, e.target.checked)}
+                            className="w-5 h-5 mt-1 cursor-pointer accent-violet-500 shrink-0" 
+                        />
 
                         <div className="flex-1">
                             <h3 className="font-semibold text-sm leading-none text-black mb-2 mt-2">{title}</h3>
@@ -42,7 +47,7 @@ export default function ArticleContainer({ status, title, description, categorie
                     {/* desktop actions */}
                     <div className="hidden md:flex gap-2 shrink-0">
                         {[
-                            { icon: "/images/icons/restore.svg", label: "Stats" },
+                            { icon: "/images/icons/stats1.svg", label: "Stats" },
                             { icon: "/images/icons/share.svg", label: "Edit" },
                             { icon: "/images/icons/copy.svg", label: "Copy" },
                             { icon: "/images/icons/trash1.svg", label: "Delete" },

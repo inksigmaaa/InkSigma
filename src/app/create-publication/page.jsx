@@ -14,12 +14,32 @@ export default function CreatePublication() {
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  const handleStartWriting = () => {
+  const handleStartWriting = async () => {
     if (!publicationName.trim() || !subdomain.trim()) {
       setShowErrors(true);
-    } else {
-      // Handle form submission
-      console.log("Form submitted");
+      return;
+    }
+
+    // Just redirect to home with any values
+    try {
+      await fetch("/api/publication/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: publicationName,
+          subdomain: subdomain,
+          image: uploadedImage,
+        }),
+      });
+
+      // Redirect to home page
+      window.location.href = "/home";
+    } catch (error) {
+      console.error("Error creating publication:", error);
+      // Still redirect even on error
+      window.location.href = "/home";
     }
   };
 
@@ -251,7 +271,7 @@ export default function CreatePublication() {
                     color: '#A30000'
                   }}
                 >
-                  This Domain name is already in use!
+                  Please fill in all required fields!
                 </p>
               </div>
             </div>
@@ -307,15 +327,6 @@ export default function CreatePublication() {
                   .inksigma.com
                 </span>
               </div>
-
-              {/* Grey Helper Text Below Subdomain */}
-              {showErrors && (
-                <div className="mt-4 bg-[#F4F4F4] rounded px-4 py-1.5 text-center">
-                  <p className="text-[12px] text-[#808080] leading-[150%] font-normal" style={{ fontFamily: 'Public Sans' }}>
-                    You can modify it later, so don't worry
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* Start Writing Button */}
