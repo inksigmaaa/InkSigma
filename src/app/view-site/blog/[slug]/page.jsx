@@ -2,11 +2,9 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { use } from 'react';
+import { use, useEffect } from 'react';
 import ViewSiteHeader from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
-import ShareButtons from '../../components/ShareButtons/ShareButtons';
-import CommentSection from '../../components/CommentSection/CommentSection';
 import TableOfContents from '../../components/TableOfContents/TableOfContents';
 import BackToHomeButton from '../../components/BackToHomeButton/BackToHomeButton';
 import ScrollToTop from '../../components/ScrollToTop/ScrollToTop';
@@ -18,6 +16,11 @@ export default function BlogDetailPage({ params }) {
   const { slug } = use(params);
 
   const blog = mockData.blogs.find(b => b.slug === slug) || null;
+
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [slug]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -65,20 +68,22 @@ export default function BlogDetailPage({ params }) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <ViewSiteHeader userName={blog.author.name} userAvatar={blog.author.avatar} />
+      <ViewSiteHeader userName="Your Publication Name" userAvatar={null} />
 
-      <section className="flex-grow flex  justify-center w-full px-4 md:px-6">
-        <div className="flex max-w-[1400px] w-full justify-center gap-8">
-          {/* Table of Contents - Left Sidebar */}
-          <aside className="hidden lg:block flex-shrink-0 pt-20 space-y-0 w-[200px]">
-            <BackToHomeButton />
-            <TableOfContents />
+      <section className="flex-grow flex justify-center w-full px-4 md:px-6 pt-20 md:pt-24">
+        <div className="flex max-w-[1400px] w-full ml-12 gap-8">
+          {/* Left Sidebar - Back Button and Table of Contents */}
+          <aside className="hidden lg:block flex-shrink-0 pt-20 w-[300px]">
+            <div className="sticky flex item-start top-28">
+              <BackToHomeButton />
+              <TableOfContents />
+            </div>
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1 max-w-[800px] pb-20 md:pb-12 pt-6 md:pt-20 lg:pl-12 lg:border-l-2 min-w-0">
+          <div className="flex-1 max-w-[800px] pb-40 max-md:pb-12 pt-6 md:pt-20 lg:pl-12 lg:border-l-2 min-w-0">
           {/* Blog Title */}
-          <h1 className="text-2xl leading-tight md:text-5xl font-bold text-black mb-4 md:mb-4 break-words">{blog.title}</h1>
+          <h1 className="text-2xl leading-tight md:text-3xl font-bold text-black mb-4 md:mb-4 break-words">{blog.title}</h1>
 
           {/* Blog Description */}
           <p className="text-sm leading-relaxed md:text-xl text-gray-500 mb-6 md:mb-8 break-words">{blog.description}</p>
@@ -126,20 +131,7 @@ export default function BlogDetailPage({ params }) {
             className="prose prose-sm md:prose-lg max-w-none prose-headings:font-bold prose-headings:text-black prose-p:text-gray-700 prose-p:leading-relaxed break-words"
             dangerouslySetInnerHTML={{ __html: blog.content }}
           />
-
-          {/* Comment and Discussion Section */}
-          <CommentSection blogId={blog.id} />
         </div>
-
-          {/* Share Buttons - Fixed on right side (Desktop only) */}
-          <div className="hidden lg:block flex-shrink-0 w-[100px]">
-            <ShareButtons
-              title={blog.title}
-              slug={blog.slug}
-              url={currentUrl}
-              description={blog.description}
-            />
-          </div>
         </div>
       </section>
 

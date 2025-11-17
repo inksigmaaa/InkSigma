@@ -1,12 +1,20 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function BackToHomeButton() {
+  const handleClick = () => {
+    // Scroll to top when navigating back
+    window.scrollTo(0, 0);
+  };
+
   return (
-    <div className="sticky mbky top-28 mb-8">
+    <div>
       <Link
         href="/view-site"
-        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors"
+        onClick={handleClick}
+        className="inline-flex items-center gap-2 w-[100px] my-1 text-gray-700 text-sm hover:text-black transition-colors"
       >
         <Image
           src="/svg/arrow-right.svg"
@@ -15,7 +23,7 @@ export default function BackToHomeButton() {
           height={16}
           className="rotate-180"
         />
-        <span>Go to homepage</span>
+        <span>Go Back</span>
       </Link>
     </div>
   );

@@ -62,9 +62,10 @@ export default function LatestBlog({ searchQuery = '' }) {
         </a>
       </div>
 
-      <h1 className="text-2xl md:text-4xl font-bold mb-6 md:mb-8 text-black">Latest Blog</h1>
-
-      {/* Author and Date - Outside Container */}
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-4xl font-bold text-black">Latest Blog</h1>
+        <div className="w-full h-px bg-gray-200 mt-4"></div>
+      </div>
       <div className="flex items-center justify-between mb-4">
         {/* Author Info */}
         <div className="flex items-center gap-2 md:gap-3">
@@ -107,12 +108,18 @@ export default function LatestBlog({ searchQuery = '' }) {
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
           </div>
 
-          {/* Bottom Section - Title, Description and Read Button */}
+          {/* Bottom Section - Title, Description, Category and Read Button */}
           <div className="absolute bottom-0 left-0 right-0 flex flex-col md:flex-row md:items-end md:justify-between p-4 md:p-6 gap-3 md:gap-0">
-            {/* Left - Title and Description */}
+            {/* Left - Title, Description and Category */}
             <div className="flex-1">
               <h2 className="text-xl md:text-3xl font-bold mb-1 md:mb-2 text-white drop-shadow-lg line-clamp-2">{latestBlog.title}</h2>
-              <p className="text-white text-sm md:text-base drop-shadow-md line-clamp-2 md:line-clamp-none">{latestBlog.description}</p>
+              <p className="text-white text-sm md:text-base drop-shadow-md line-clamp-2 md:line-clamp-none mb-3">{latestBlog.description}</p>
+              {/* Category */}
+              <div className="flex flex-wrap gap-2">
+                <span className="px-3 py-1.5 bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-md text-xs md:text-sm font-medium">
+                  {latestBlog.category}
+                </span>
+              </div>
             </div>
 
             {/* Right - Read Article Button */}
