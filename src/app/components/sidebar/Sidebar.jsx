@@ -91,7 +91,7 @@ export default function Sidebar() {
               items: [
                 ["all_articles.svg", "My Blogs", "/my blogs"],
                 ["Publish.svg", "Draft", "/drafts"],
-                ["Schedule.svg", "Trash", "/trash"],
+                ["trash1.svg", "Trash", "/trash"],
               ]
             }
           ].map((section, idx) => (

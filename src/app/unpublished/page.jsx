@@ -1,11 +1,14 @@
 "use client"
 
+import { useState } from "react";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
 import PersonalArticles from "../components/personalArticles/personalArticles";
 
 export default function Unpublished() {
+  const [selectedArticles, setSelectedArticles] = useState([]);
+
   const articles = [
     {
       id: 1,
@@ -23,7 +26,15 @@ export default function Unpublished() {
       categories: ["Technology", "Business"],
       postedTime: "Posted 5 mins ago",
     }
-  ]
+  ];
+
+  const handleArticleSelect = (id, isSelected) => {
+    setSelectedArticles(prev => 
+      isSelected 
+        ? [...prev, id]
+        : prev.filter(articleId => articleId !== id)
+    );
+  };
 
   return (
     <>
@@ -35,6 +46,8 @@ export default function Unpublished() {
         titleColor="#D97706"
         articles={articles}
         emptyMessage="No unpublished articles yet"
+        selectedArticles={selectedArticles}
+        onArticleSelect={handleArticleSelect}
       />
     </>
   )
