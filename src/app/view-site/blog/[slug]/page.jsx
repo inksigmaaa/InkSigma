@@ -65,18 +65,18 @@ export default function BlogDetailPage({ params }) {
     <div className="min-h-screen bg-white flex flex-col">
       <ViewSiteHeader userName="Your Publication Name" userAvatar={null} />
 
-      <section className="flex-grow flex  justify-center w-full px-4 md:px-6">
+      <section className="flex-grow flex justify-center w-full px-4 md:px-6 pt-20 md:pt-24">
         <div className="flex max-w-[1400px] w-full ml-12 gap-8">
           {/* Left Sidebar - Back Button and Table of Contents */}
           <aside className="hidden lg:block flex-shrink-0 pt-20 w-[300px]">
-            <div className="sticky flex item-start top-20">
+            <div className="sticky flex item-start top-28">
               <BackToHomeButton />
               <TableOfContents />
             </div>
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1 max-w-[800px] pb-20 md:pb-12 pt-6 md:pt-20 lg:pl-12 lg:border-l-2 min-w-0">
+          <div className="flex-1 max-w-[800px] pb-40 max-md:pb-12 pt-6 md:pt-20 lg:pl-12 lg:border-l-2 min-w-0">
           {/* Blog Title */}
           <h1 className="text-2xl leading-tight md:text-3xl font-bold text-black mb-4 md:mb-4 break-words">{blog.title}</h1>
 

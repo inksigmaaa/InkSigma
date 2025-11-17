@@ -27,7 +27,7 @@ export default function TableOfContents() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 100;
+      const scrollPosition = window.scrollY + 150; // Account for fixed header
 
       // Find the current section based on scroll position
       for (let i = sections.length - 1; i >= 0; i--) {
@@ -50,7 +50,9 @@ export default function TableOfContents() {
   const scrollToSection = (id) => {
     const element = document.getElementById(id);
     if (element) {
-      const offset = 80;
+      const headerHeight = 120; // Fixed header height
+      const extraSpace = 40; // Additional space for better visibility
+      const offset = headerHeight + extraSpace;
       const elementPosition = element.offsetTop - offset;
       window.scrollTo({
         top: elementPosition,
