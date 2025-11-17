@@ -61,7 +61,6 @@ export default function NavbarLoggedin() {
 
                 {/* Profile Section */}
                 <div className="flex items-center gap-4 max-md:gap-3">
-
                     {/* Notification */}
                     <div className="flex items-center cursor-pointer">
                         <img

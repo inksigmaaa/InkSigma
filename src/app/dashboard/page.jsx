@@ -4,7 +4,7 @@ import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
-import DashboardSidebar from "../components/sidebar/DashboardSidebar"
+import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
 import { ChevronRight, AlertCircle } from "lucide-react"
 import Link from "next/link"
 
@@ -33,7 +33,7 @@ export default function DashboardPage() {
   return (
     <>
       <NavbarLoggedin />
-      <DashboardSidebar />
+      <DashboardSimpleSidebar />
       <main className="flex-1 bg-white px-4 sm:px-8 md:px-16 py-10 mt-[120px] md:mt-[120px] mb-20 md:mb-0">
         <div className="max-w-[600px] mx-auto space-y-8">
           {/* Welcome Banner */}
@@ -42,7 +42,7 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-500 leading-relaxed mb-4 px-4">
               Generate a publication and embark on crafting numerous articles showcasing your innovative ideas, thereby disseminating them to the global audience.
             </p>
-            <button 
+            <button
               onClick={() => router.push('/profile-settings')}
               className="text-purple-500 hover:text-purple-600 text-xs flex items-center gap-1 mx-auto"
             >
@@ -78,7 +78,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => router.push('/home')}
                   className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
                 >
@@ -105,7 +105,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => router.push('/home')}
                   className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
                 >
