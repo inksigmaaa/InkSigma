@@ -41,7 +41,10 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-500 leading-relaxed mb-4 px-4">
               Generate a publication and embark on crafting numerous articles showcasing your innovative ideas, thereby disseminating them to the global audience.
             </p>
-            <button className="text-purple-500 hover:text-purple-600 text-xs flex items-center gap-1 mx-auto">
+            <button 
+              onClick={() => router.push('/profile-settings')}
+              className="text-purple-500 hover:text-purple-600 text-xs flex items-center gap-1 mx-auto"
+            >
               Complete your profile
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
@@ -74,7 +77,10 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <button className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start">
+                <button 
+                  onClick={() => router.push('/home')}
+                  className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
+                >
                   Go to Publication
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
@@ -98,7 +104,10 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <button className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start">
+                <button 
+                  onClick={() => router.push('/home')}
+                  className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
+                >
                   Go to Publication
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>

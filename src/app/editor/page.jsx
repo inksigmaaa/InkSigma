@@ -4,13 +4,9 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { CategoryDropdown } from "./components/CategoryDropdown"
+import { ThumbnailModal } from "./components/ThumbnailModal"
+import { DateTimePicker } from "./components/DateTimePicker"
 import { 
   Image as ImageIcon,
   Calendar,
@@ -25,12 +21,15 @@ export default function EditorPage() {
   // State management
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState('')
+  const [selectedCategories, setSelectedCategories] = useState([])
   const [publishDate, setPublishDate] = useState('')
   const [publishTime, setPublishTime] = useState('')
   const [charCount, setCharCount] = useState(0)
   const [wordCount, setWordCount] = useState(0)
   const [editorContent, setEditorContent] = useState('')
+  const [isThumbnailModalOpen, setIsThumbnailModalOpen] = useState(false)
+  const [thumbnailImage, setThumbnailImage] = useState(null)
+  const [isDateTimePickerOpen, setIsDateTimePickerOpen] = useState(false)
 
   const handleEditorUpdate = ({ html, charCount: chars, wordCount: words }) => {
     setEditorContent(html)
@@ -43,7 +42,7 @@ export default function EditorPage() {
       title, 
       description, 
       content: editorContent, 
-      category, 
+      categories: selectedCategories, 
       publishDate, 
       publishTime 
     })
@@ -54,10 +53,20 @@ export default function EditorPage() {
       title, 
       description, 
       content: editorContent, 
-      category, 
+      categories: selectedCategories, 
       publishDate, 
       publishTime 
     })
+  }
+
+  const handleThumbnailAdd = (imageData) => {
+    setThumbnailImage(imageData)
+    console.log("Thumbnail added:", imageData)
+  }
+
+  const handleDateTimeSelect = (date, time) => {
+    setPublishDate(date)
+    setPublishTime(time)
   }
 
   return (
@@ -116,26 +125,23 @@ export default function EditorPage() {
 
         {/* Category and Thumbnail */}
         <div className="flex flex-wrap items-center gap-3 md:gap-4 py-4 border-y border-gray-200">
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="w-[140px] bg-white">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="sports">Sports</SelectItem>
-              <SelectItem value="technology">Technology</SelectItem>
-              <SelectItem value="lifestyle">Lifestyle</SelectItem>
-              <SelectItem value="business">Business</SelectItem>
-            </SelectContent>
-          </Select>
+          <CategoryDropdown 
+            selectedCategories={selectedCategories}
+            onCategoriesChange={setSelectedCategories}
+          />
 
           <Button 
             variant="outline" 
             className="gap-2 bg-white" 
-            onClick={() => alert('Thumbnail upload coming soon!')}
+            onClick={() => setIsThumbnailModalOpen(true)}
           >
             <ImageIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Thumbnail Image</span>
-            <span className="sm:hidden">Thumbnail</span>
+            <span className="hidden sm:inline">
+              {thumbnailImage ? 'Change Thumbnail' : 'Thumbnail Image'}
+            </span>
+            <span className="sm:hidden">
+              {thumbnailImage ? 'Change' : 'Thumbnail'}
+            </span>
           </Button>
 
           <div className="ml-auto flex items-center gap-2 text-green-600">
@@ -191,7 +197,12 @@ export default function EditorPage() {
                   className="w-[50px] md:w-[60px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
                   style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                 />
-                <Calendar className="h-5 w-5 text-gray-700" />
+                <button
+                  onClick={() => setIsDateTimePickerOpen(true)}
+                  className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  <Calendar className="h-5 w-5 text-gray-700" />
+                </button>
               </div>
               
               {/* Gray background button */}
@@ -205,6 +216,22 @@ export default function EditorPage() {
           </div>
         </div>
       </div>
+
+      {/* Thumbnail Modal */}
+      <ThumbnailModal
+        isOpen={isThumbnailModalOpen}
+        onClose={() => setIsThumbnailModalOpen(false)}
+        onImageAdd={handleThumbnailAdd}
+      />
+
+      {/* Date Time Picker */}
+      <DateTimePicker
+        isOpen={isDateTimePickerOpen}
+        onClose={() => setIsDateTimePickerOpen(false)}
+        onDateTimeSelect={handleDateTimeSelect}
+        selectedDate={publishDate}
+        selectedTime={publishTime}
+      />
     </div>
   )
 }
