@@ -17,8 +17,8 @@ export default function Footer() {
             Eager to delve into the art of blog writing?
           </h2>
           <a
-            href="/write"
-            className="inline-block px-10 py-3.5 md:px-12 md:py-4 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors text-base md:text-lg font-medium"
+            href="/editor"
+            className="inline-block px-6 py-3 md:px-8 md:py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors text-base md:text-lg font-medium"
           >
             Start Writing
           </a>

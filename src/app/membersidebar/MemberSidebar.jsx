@@ -63,7 +63,7 @@ export default function MemberSidebar() {
               "
             />
 
-            <a href="/">
+            <a href="/view-site" target="_blank" rel="noopener noreferrer">
               <button
                 className="
                   bg-violet-500 text-white

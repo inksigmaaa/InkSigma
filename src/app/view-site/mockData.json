@@ -10,7 +10,8 @@
       "category": "Web Development",
       "author": {
         "name": "John Doe",
-        "avatar": "https://i.pravatar.cc/150?img=12"
+        "avatar": "https://i.pravatar.cc/150?img=12",
+        "role": "ADMIN"
       },
       "createdAt": "2024-11-10T10:00:00Z"
     },
@@ -24,7 +25,8 @@
       "category": "CSS",
       "author": {
         "name": "Jane Smith",
-        "avatar": "https://i.pravatar.cc/150?img=45"
+        "avatar": "https://i.pravatar.cc/150?img=45",
+        "role": "AUTHOR"
       },
       "createdAt": "2024-11-08T14:30:00Z"
     },
@@ -38,7 +40,8 @@
       "category": "React",
       "author": {
         "name": "Mike Johnson",
-        "avatar": "https://i.pravatar.cc/150?img=33"
+        "avatar": "https://i.pravatar.cc/150?img=33",
+        "role": "ADMIN"
       },
       "createdAt": "2024-11-05T09:15:00Z"
     },
@@ -52,7 +55,8 @@
       "category": "JavaScript",
       "author": {
         "name": "Sarah Williams",
-        "avatar": "https://i.pravatar.cc/150?img=47"
+        "avatar": "https://i.pravatar.cc/150?img=47",
+        "role": "AUTHOR"
       },
       "createdAt": "2024-11-03T16:45:00Z"
     },
@@ -66,7 +70,8 @@
       "category": "Performance",
       "author": {
         "name": "David Brown",
-        "avatar": "https://i.pravatar.cc/150?img=68"
+        "avatar": "https://i.pravatar.cc/150?img=68",
+        "role": "ADMIN"
       },
       "createdAt": "2024-11-01T11:20:00Z"
     },
@@ -80,7 +85,8 @@
       "category": "Design",
       "author": {
         "name": "Emily Davis",
-        "avatar": "https://i.pravatar.cc/150?img=20"
+        "avatar": "https://i.pravatar.cc/150?img=20",
+        "role": "AUTHOR"
       },
       "createdAt": "2024-10-28T13:00:00Z"
     }

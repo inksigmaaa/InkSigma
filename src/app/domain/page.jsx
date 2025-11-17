@@ -28,7 +28,25 @@ export default function DomainPage() {
               <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Custom Domain Integration</h1>
               <p className="text-sm text-gray-600 px-4 md:px-0">
                 Connect your custom domain you already own with Inksigma.{" "}
-                <a href="#" className="text-black font-semibold underline">Read instructions</a>
+                <a 
+                  href="#instructions" 
+                  onClick={(e) => {
+                    e.preventDefault()
+                    const element = document.getElementById('instructions')
+                    if (element) {
+                      const offset = 120 // Adjust for navbar height
+                      const elementPosition = element.getBoundingClientRect().top
+                      const offsetPosition = elementPosition + window.pageYOffset - offset
+                      window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                      })
+                    }
+                  }}
+                  className="text-black font-semibold underline cursor-pointer"
+                >
+                  Read instructions
+                </a>
               </p>
             </div>
 
@@ -71,7 +89,7 @@ export default function DomainPage() {
             </div>
 
             {/* Instructions Section */}
-            <div className="space-y-4 w-full max-w-[100%] px-4 md:px-0">
+            <div id="instructions" className="space-y-4 w-full max-w-[100%] px-4 md:px-0">
               <h2 className="text-base md:text-lg font-bold text-gray-900">Custom Domain Integration Instructions</h2>
 
               <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
