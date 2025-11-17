@@ -47,7 +47,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                     {/* desktop actions */}
                     <div className="hidden md:flex gap-2 shrink-0">
                         {[
-                            { icon: "/images/icons/restore.svg", label: "Stats" },
+                            { icon: "/images/icons/stats1.svg", label: "Stats" },
                             { icon: "/images/icons/share.svg", label: "Edit" },
                             { icon: "/images/icons/copy.svg", label: "Copy" },
                             { icon: "/images/icons/trash1.svg", label: "Delete" },
