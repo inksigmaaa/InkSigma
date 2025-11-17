@@ -6,6 +6,7 @@ import { useEffect } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSidebar from "../components/sidebar/DashboardSidebar"
 import { ChevronRight, AlertCircle } from "lucide-react"
+import Link from "next/link"
 
 export default function DashboardPage() {
   const { data: session, isPending } = useSession()
@@ -74,10 +75,12 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
+                <Link href="/home">
                 <button className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap ml-4">
                   Go to Publication
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
+                </Link>
               </div>
             </div>
           </section>

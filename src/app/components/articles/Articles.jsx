@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import ArticleContainer from '../articleContainer/ArticleContainer'
 
 const categories = [
@@ -19,9 +19,18 @@ export default function Articles(props) {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategories, setSelectedCategories] = useState([])
     const [selectAll, setSelectAll] = useState(false)
+    const [selectedArticles, setSelectedArticles] = useState(new Set())
+    const mobileDropdownRef = useRef(null)
+    const desktopDropdownRef = useRef(null)
 
     const filterStatus = props.filterStatus || null
     const showCreateButton = props.showCreateButton !== false
+
+    // Create article IDs for the articles that should be displayed
+    const articleIds = []
+    if (!filterStatus || filterStatus === "published") articleIds.push("published-1")
+    if (!filterStatus || filterStatus === "draft") articleIds.push("draft-1")
+    if (!filterStatus || filterStatus === "scheduled") articleIds.push("scheduled-1")
 
     const filteredCategories = categories.filter(cat =>
         cat.toLowerCase().includes(searchTerm.toLowerCase())
@@ -34,6 +43,62 @@ export default function Articles(props) {
                 : [...prev, category]
         )
     }
+
+    const handleSelectAll = () => {
+        if (selectAll) {
+            // Deselect all
+            setSelectedArticles(new Set())
+            setSelectAll(false)
+        } else {
+            // Select all visible articles
+            setSelectedArticles(new Set(articleIds))
+            setSelectAll(true)
+        }
+    }
+
+    const handleArticleSelect = (articleId, isSelected) => {
+        const newSelected = new Set(selectedArticles)
+        if (isSelected) {
+            newSelected.add(articleId)
+        } else {
+            newSelected.delete(articleId)
+        }
+        setSelectedArticles(newSelected)
+    }
+
+    // Update selectAll state based on individual selections
+    useEffect(() => {
+        const allSelected = articleIds.length > 0 && articleIds.every(id => selectedArticles.has(id))
+        setSelectAll(allSelected)
+    }, [selectedArticles, articleIds.length])
+
+    // Check if any articles are selected
+    const hasSelectedArticles = selectedArticles.size > 0
+
+    // Handle click outside to close dropdown
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            const mobileDropdown = mobileDropdownRef.current
+            const desktopDropdown = desktopDropdownRef.current
+            
+            if (mobileDropdown && mobileDropdown.contains(event.target)) {
+                return
+            }
+            if (desktopDropdown && desktopDropdown.contains(event.target)) {
+                return
+            }
+            
+            setIsDropdownOpen(false)
+        }
+
+        if (isDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside)
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [isDropdownOpen])
 
     return (
         <div className="absolute left-1/2 -translate-x-1/2 top-[215px] w-full max-w-[1034px] z-20 px-5">
@@ -55,7 +120,7 @@ export default function Articles(props) {
                             </button>
                         )}
 
-                        <div className="relative">
+                        <div className="relative" ref={mobileDropdownRef}>
                             <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 className="min-w-[180px] flex items-center justify-between gap-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg px-4 py-2 cursor-pointer transition hover:border-violet-500 max-[410px]:min-w-[120px] max-[410px]:text-xs max-[410px]:px-3 max-[410px]:py-2 max-[360px]:min-w-[100px] max-[360px]:px-2.5 max-[360px]:py-1.5"
@@ -121,7 +186,7 @@ export default function Articles(props) {
                                 <input
                                     type="checkbox"
                                     checked={selectAll}
-                                    onChange={() => setSelectAll(!selectAll)}
+                                    onChange={handleSelectAll}
                                     className="w-[18px] h-[18px] cursor-pointer accent-violet-500"
                                 />
                                 <span className="font-bold text-base leading-6 text-gray-500">
@@ -137,14 +202,23 @@ export default function Articles(props) {
                                 <button
                                     key={btn.label}
                                     title={btn.label}
-                                    className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
+                                    disabled={!hasSelectedArticles}
+                                    className={`w-8 h-8 border rounded-lg p-2 flex items-center justify-center transition ${
+                                        hasSelectedArticles
+                                            ? "bg-white border-gray-200 cursor-pointer hover:bg-gray-50 hover:border-gray-300"
+                                            : "bg-gray-100 border-gray-200 cursor-not-allowed opacity-50"
+                                    }`}
                                 >
-                                    <img src={btn.icon} alt={btn.label} className="w-5 h-5" />
+                                    <img 
+                                        src={btn.icon} 
+                                        alt={btn.label} 
+                                        className={`w-5 h-5 ${!hasSelectedArticles ? "opacity-50" : ""}`} 
+                                    />
                                 </button>
                             ))}
                         </div>
 
-                        <div className="relative">
+                        <div className="relative" ref={desktopDropdownRef}>
                             <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 className="min-w-[180px] flex items-center justify-between gap-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg px-4 py-2 cursor-pointer transition hover:border-violet-500"
@@ -198,31 +272,40 @@ export default function Articles(props) {
                 <div className="mt-6 space-y-4 pb-[85px]">
                     {(!filterStatus || filterStatus === "published") && (
                         <ArticleContainer
+                            id="published-1"
                             status="published"
                             title="Title of the Blog will be in this area"
                             description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
                             categories={["Sports", "Humour", "History"]}
                             postedTime="Posted 2 mins ago"
+                            isSelected={selectedArticles.has("published-1")}
+                            onSelect={handleArticleSelect}
                         />
                     )}
 
                     {(!filterStatus || filterStatus === "draft") && (
                         <ArticleContainer
+                            id="draft-1"
                             status="draft"
                             title="Title of the Blog will be in this area"
                             description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
                             categories={["Sports", "Humour", "History"]}
                             postedTime="Posted 2 mins ago"
+                            isSelected={selectedArticles.has("draft-1")}
+                            onSelect={handleArticleSelect}
                         />
                     )}
 
                     {(!filterStatus || filterStatus === "scheduled") && (
                         <ArticleContainer
+                            id="scheduled-1"
                             status="scheduled"
                             title="Title of the Blog will be in this area"
                             description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
                             categories={["Sports", "Humour", "History"]}
                             postedTime="Posted 2 mins ago"
+                            isSelected={selectedArticles.has("scheduled-1")}
+                            onSelect={handleArticleSelect}
                         />
                     )}
                 </div>

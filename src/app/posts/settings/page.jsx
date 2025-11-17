@@ -58,28 +58,28 @@ export default function PublicationSettingsPage() {
             <input
               type="text"
               placeholder="Publication name"
-              className="w-full border border-gray-300 rounded-md px-4 py-2 text-sm focus:outline-none focus:border-purple-500"
+              className="w-full border-b border-gray-300 py-2 text-sm focus:outline-none focus:border-purple-500"
             />
           </div>
 
           {/* Publication Description */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-2">Publication Description</label>
-            <textarea
-              placeholder="Write publication description"
-              rows={3}
-              className="w-full border border-gray-300 rounded-md px-4 py-2 text-sm focus:outline-none focus:border-purple-500"
+            <input
+              type="text"
+              placeholder="Write publication Description"
+              className="w-full border-b border-gray-300 py-2 text-sm focus:outline-none focus:border-purple-500"
             />
           </div>
 
           {/* Subdomain */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-2">Subdomain name</label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 border-b border-gray-300 pb-2">
               <input
                 type="text"
-                placeholder="yoursublog"
-                className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-sm focus:outline-none focus:border-purple-500"
+                placeholder="Graceblog"
+                className="flex-1 text-sm focus:outline-none"
               />
               <span className="text-sm text-gray-600">.inksigma.com</span>
             </div>

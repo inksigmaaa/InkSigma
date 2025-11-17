@@ -36,6 +36,9 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
   const [showImageTooltip, setShowImageTooltip] = useState(false)
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [showLineSpacing, setShowLineSpacing] = useState(false)
+  const [showLinkPopup, setShowLinkPopup] = useState(false)
+  const [linkUrl, setLinkUrl] = useState('')
+  const [linkText, setLinkText] = useState('')
   const [currentFont, setCurrentFont] = useState('Roboto')
   const [isMounted, setIsMounted] = useState(false)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
@@ -43,11 +46,13 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
   const [alignButtonRef, setAlignButtonRef] = useState(null)
   const [headingButtonRef, setHeadingButtonRef] = useState(null)
   const [advancedButtonRef, setAdvancedButtonRef] = useState(null)
+  const [linkButtonRef, setLinkButtonRef] = useState(null)
   const [dropdownPositions, setDropdownPositions] = useState({
     heading: { top: 0, left: 0 },
     list: { top: 0, left: 0 },
     align: { top: 0, left: 0 },
-    advanced: { top: 0, left: 0 }
+    advanced: { top: 0, left: 0 },
+    link: { top: 0, left: 0 }
   })
 
   useEffect(() => {
@@ -178,11 +183,39 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
   }
 
   const insertLink = () => {
-    const url = window.prompt('Enter link URL:')
-    if (url) {
-      const text = window.prompt('Enter link text:') || url
-      editor?.chain().focus().setLink({ href: url }).insertContent(text).run()
+    // Get selected text if any
+    const { from, to } = editor.state.selection
+    const selectedText = editor.state.doc.textBetween(from, to, '')
+    
+    setLinkText(selectedText)
+    setLinkUrl('')
+    setShowLinkPopup(true)
+  }
+
+  const handleLinkSubmit = () => {
+    if (linkUrl.trim()) {
+      const { from, to } = editor.state.selection
+      const selectedText = editor.state.doc.textBetween(from, to, '')
+      
+      if (selectedText) {
+        // If text is selected, just add the link to it
+        editor?.chain().focus().setLink({ href: linkUrl.trim() }).run()
+      } else {
+        // If no text is selected, insert new text with link
+        const textToInsert = linkText.trim() || linkUrl.trim()
+        editor?.chain().focus().insertContent(`<a href="${linkUrl.trim()}">${textToInsert}</a>`).run()
+      }
     }
+    
+    setShowLinkPopup(false)
+    setLinkUrl('')
+    setLinkText('')
+  }
+
+  const handleLinkCancel = () => {
+    setShowLinkPopup(false)
+    setLinkUrl('')
+    setLinkText('')
   }
 
   const closeAllDropdowns = () => {
@@ -192,6 +225,7 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
     setShowAdvancedOptions(false)
     setShowColorPicker(false)
     setShowLineSpacing(false)
+    setShowLinkPopup(false)
   }
 
   const setTextColor = (color) => {
@@ -290,22 +324,36 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
       newPositions.advanced = { top: rect.bottom + 4, left: rect.right - 300 }
     }
     
+    if (linkButtonRef) {
+      const rect = linkButtonRef.getBoundingClientRect()
+      newPositions.link = { top: rect.bottom + 4, left: rect.left }
+    }
+    
     setDropdownPositions(newPositions)
   }
 
   // Update positions when dropdowns are shown
   useEffect(() => {
-    if (showHeadingMenu || showListMenu || showAlignMenu || showAdvancedOptions) {
+    if (showHeadingMenu || showListMenu || showAlignMenu || showAdvancedOptions || showLinkPopup) {
       updateDropdownPositions()
     }
-  }, [showHeadingMenu, showListMenu, showAlignMenu, showAdvancedOptions, headingButtonRef, listButtonRef, alignButtonRef, advancedButtonRef])
+  }, [showHeadingMenu, showListMenu, showAlignMenu, showAdvancedOptions, showLinkPopup, headingButtonRef, listButtonRef, alignButtonRef, advancedButtonRef, linkButtonRef])
 
   // Close dropdowns when clicking outside or scrolling
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest('.dropdown-container') && 
-          !event.target.closest('.color-picker') && 
-          !event.target.closest('.line-spacing-picker')) {
+      // Check if any dropdown is open
+      const isAnyDropdownOpen = showHeadingMenu || showListMenu || showAlignMenu || showAdvancedOptions || showColorPicker || showLineSpacing || showLinkPopup
+      
+      if (!isAnyDropdownOpen) return
+      
+      // Check if click is inside any dropdown
+      const isInsideDropdown = event.target.closest('.dropdown-container') || 
+                              event.target.closest('.color-picker') || 
+                              event.target.closest('.line-spacing-picker') ||
+                              event.target.closest('.link-popup')
+      
+      if (!isInsideDropdown) {
         closeAllDropdowns()
       }
     }
@@ -333,6 +381,7 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
 
     // Add event listeners to all possible scroll sources
     document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('click', handleClickOutside)
     
     // Window scroll events
     window.addEventListener('scroll', handleScroll, { passive: true, capture: true })
@@ -351,6 +400,7 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
     
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('click', handleClickOutside)
       window.removeEventListener('scroll', handleScroll, { capture: true })
       window.removeEventListener('wheel', handleWheel)
       window.removeEventListener('touchmove', handleTouchMove)
@@ -366,6 +416,35 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
       }
     }
   }, [])
+
+  // Specific handler for link popup click outside
+  useEffect(() => {
+    if (!showLinkPopup) return
+
+    const handleLinkPopupClickOutside = (event) => {
+      const linkPopupElement = document.querySelector('.link-popup')
+      const linkButtonElement = linkButtonRef
+      
+      if (linkPopupElement && !linkPopupElement.contains(event.target) && 
+          linkButtonElement && !linkButtonElement.contains(event.target)) {
+        setShowLinkPopup(false)
+        setLinkUrl('')
+        setLinkText('')
+      }
+    }
+
+    // Add a small delay to prevent immediate closing
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleLinkPopupClickOutside)
+      document.addEventListener('click', handleLinkPopupClickOutside)
+    }, 100)
+
+    return () => {
+      clearTimeout(timeoutId)
+      document.removeEventListener('mousedown', handleLinkPopupClickOutside)
+      document.removeEventListener('click', handleLinkPopupClickOutside)
+    }
+  }, [showLinkPopup, linkButtonRef])
 
   if (!isMounted || !editor) {
     return (
@@ -647,13 +726,89 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
         >
           <img src="/editor-icons/''.svg" alt="Quote" className="w-5 h-5" />
         </button>
-        <button 
-          className="p-1.5 md:p-2 hover:bg-gray-100 rounded shrink-0"
-          onClick={insertLink}
-          title="Insert Link"
-        >
-          <img src="/editor-icons/link.svg" alt="Link" className="w-5 h-5" />
-        </button>
+        <div className="relative dropdown-container shrink-0">
+          <button 
+            ref={setLinkButtonRef}
+            className="p-1.5 md:p-2 hover:bg-gray-100 rounded"
+            onClick={insertLink}
+            title="Insert Link"
+          >
+            <img src="/editor-icons/link.svg" alt="Link" className="w-5 h-5" />
+          </button>
+          {showLinkPopup && linkButtonRef && isMounted && createPortal(
+            <div 
+              className="link-popup fixed bg-white border rounded-md shadow-xl p-4 min-w-[300px] border-gray-300"
+              style={{
+                zIndex: 9999,
+                top: `${dropdownPositions.link.top}px`,
+                left: `${dropdownPositions.link.left}px`,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Link URL
+                  </label>
+                  <input
+                    type="url"
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    placeholder="https://example.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleLinkSubmit()
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault()
+                        handleLinkCancel()
+                      }
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Link Text (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={linkText}
+                    onChange={(e) => setLinkText(e.target.value)}
+                    placeholder="Link text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleLinkSubmit()
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault()
+                        handleLinkCancel()
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    onClick={handleLinkCancel}
+                    className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleLinkSubmit}
+                    disabled={!linkUrl.trim()}
+                    className="px-3 py-1.5 text-sm bg-black text-white rounded hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Insert Link
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
+        </div>
 
         <div className="h-6 w-px bg-gray-300 shrink-0 hidden md:block"></div>
 

@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
+import VisitSiteButton from "@/components/VisitSiteButton"
+import FeedbackButton from "@/components/FeedbackButton"
 
 export default function ConditionalLayout({ children }) {
   const pathname = usePathname()
@@ -11,7 +13,7 @@ export default function ConditionalLayout({ children }) {
   const isSchedulePage = pathname === "/schedule"
   const isReviewPage = pathname === "/review"
   const isEditorPage = pathname === "/editor"
-  const isPostsPage = pathname?.startsWith("/posts")
+  const isPostsPage = pathname === "/posts"
   const isMyBlogsPage = pathname === "/my-blogs"
   const isDraftPage = pathname === "/draft"
   const isTrashPage = pathname === "/trash"
@@ -20,13 +22,24 @@ export default function ConditionalLayout({ children }) {
   const isMembersPage = pathname === "/members"
   const isAuthorReview = pathname === "/author-review"
   const isViewSitePage = pathname?.startsWith("/view-site")
+  const isCreatePublicationPage = pathname === "/create-publication"
+  const isProfileSettings = pathname === "/profile-settings"
+  const isdomain = pathname === "/domain"
+
+  // Show mobile buttons on all pages except auth pages and create-publication page
+  const showMobileButtons = !isAuthPage && !isCreatePublicationPage
 
 
-
-  if (isAuthPage || isDashboardPage ||isAuthorReview|| isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage ||isPublished|| isDraftPage || isTrashPage || isUnpublishedPage || isMembersPage || isViewSitePage) {
+  if (isAuthPage || isDashboardPage ||isAuthorReview||isdomain||isProfileSettings|| isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage ||isPublished|| isDraftPage || isTrashPage || isUnpublishedPage || isMembersPage || isViewSitePage) {
     return (
       <div className="min-h-screen">
         {children}
+        {showMobileButtons && (
+          <>
+            <VisitSiteButton />
+            <FeedbackButton />
+          </>
+        )}
       </div>
     )
   }
@@ -38,6 +51,8 @@ export default function ConditionalLayout({ children }) {
         {children}
       </main>
       <Footer />
+      <VisitSiteButton />
+      <FeedbackButton />
     </>
   )
 }
