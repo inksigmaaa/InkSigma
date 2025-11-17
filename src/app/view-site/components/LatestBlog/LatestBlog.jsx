@@ -62,9 +62,10 @@ export default function LatestBlog({ searchQuery = '' }) {
         </a>
       </div>
 
-      <h1 className="text-2xl md:text-4xl font-bold mb-6 md:mb-8 text-black">Latest Blog</h1>
-
-      {/* Author and Date - Outside Container */}
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-4xl font-bold text-black">Latest Blog</h1>
+        <div className="w-full h-px bg-gray-200 mt-4"></div>
+      </div>
       <div className="flex items-center justify-between mb-4">
         {/* Author Info */}
         <div className="flex items-center gap-2 md:gap-3">
