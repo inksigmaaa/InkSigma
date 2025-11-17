@@ -64,7 +64,7 @@ export default function TableOfContents() {
   }
 
   return (
-    <div className="w-64 sticky top-44 h-fit">
+    <div className="w-100 sticky h-fit">
       {/* Table of Contents - Only show if there are sections */}
       {sections.length > 0 && (
         <div>
