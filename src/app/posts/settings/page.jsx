@@ -1,7 +1,77 @@
+"use client"
+
+import { useState } from "react"
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import Sidebar from "../../components/sidebar/Sidebar"
 
 export default function PublicationSettingsPage() {
+  const [logo, setLogo] = useState("/icons/inksigma-logo.svg")
+  const [favicon, setFavicon] = useState("/icons/inksigma-logo.svg")
+  const [metaOg, setMetaOg] = useState("/icons/inksigma-logo.svg")
+
+  const handleLogoChange = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = (e) => {
+      const file = e.target.files[0]
+      if (file) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          setLogo(event.target.result)
+        }
+        reader.readAsDataURL(file)
+      }
+    }
+    input.click()
+  }
+
+  const handleFaviconChange = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = (e) => {
+      const file = e.target.files[0]
+      if (file) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          setFavicon(event.target.result)
+        }
+        reader.readAsDataURL(file)
+      }
+    }
+    input.click()
+  }
+
+  const handleMetaOgChange = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = (e) => {
+      const file = e.target.files[0]
+      if (file) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          setMetaOg(event.target.result)
+        }
+        reader.readAsDataURL(file)
+      }
+    }
+    input.click()
+  }
+
+  const handleLogoRemove = () => {
+    setLogo("/icons/inksigma-logo.svg")
+  }
+
+  const handleFaviconRemove = () => {
+    setFavicon("/icons/inksigma-logo.svg")
+  }
+
+  const handleMetaOgRemove = () => {
+    setMetaOg("/icons/inksigma-logo.svg")
+  }
+
   return (
     <>
       <NavbarLoggedin />
@@ -13,12 +83,12 @@ export default function PublicationSettingsPage() {
           {/* Logo Upload */}
           <div className="border border-gray-200 rounded-lg p-3 sm:p-4">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-3">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white flex-shrink-0">
-                <img src="/icons/inksigma-logo.svg" alt="Logo" className="w-14 h-14 sm:w-16 sm:h-16" />
+              <div className="w-20 h-20 sm:w-24 sm:h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white flex-shrink-0 overflow-hidden">
+                <img src={logo} alt="Logo" className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-row sm:flex-col gap-4 sm:gap-3 w-full sm:w-auto justify-center sm:justify-start">
-                <button className="text-purple-500 text-xs sm:text-sm hover:text-purple-600">Change Logo</button>
-                <button className="text-gray-400 text-xs sm:text-sm hover:text-gray-600">Remove</button>
+                <button onClick={handleLogoChange} className="text-purple-500 text-xs sm:text-sm hover:text-purple-600">Change Logo</button>
+                <button onClick={handleLogoRemove} className="text-gray-400 text-xs sm:text-sm hover:text-gray-600">Remove</button>
               </div>
             </div>
             <p className="text-xs text-gray-400 bg-gray-50 p-2 rounded text-center sm:text-left">Optimal Resolution: 400 px X 400 px</p>
@@ -27,12 +97,12 @@ export default function PublicationSettingsPage() {
           {/* Favicon Upload */}
           <div className="border border-gray-200 rounded-lg p-3 sm:p-4">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-3">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white flex-shrink-0">
-                <img src="/icons/inksigma-logo.svg" alt="Favicon" className="w-14 h-14 sm:w-16 sm:h-16" />
+              <div className="w-20 h-20 sm:w-24 sm:h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white flex-shrink-0 overflow-hidden">
+                <img src={favicon} alt="Favicon" className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-row sm:flex-col gap-4 sm:gap-3 w-full sm:w-auto justify-center sm:justify-start">
-                <button className="text-purple-500 text-xs sm:text-sm hover:text-purple-600">Change Favicon</button>
-                <button className="text-gray-400 text-xs sm:text-sm hover:text-gray-600">Remove</button>
+                <button onClick={handleFaviconChange} className="text-purple-500 text-xs sm:text-sm hover:text-purple-600">Change Favicon</button>
+                <button onClick={handleFaviconRemove} className="text-gray-400 text-xs sm:text-sm hover:text-gray-600">Remove</button>
               </div>
             </div>
             <p className="text-xs text-gray-400 bg-gray-50 p-2 rounded text-center sm:text-left">Optimal Resolution: 32 px X 32 px</p>
@@ -41,12 +111,12 @@ export default function PublicationSettingsPage() {
           {/* Meta OG Upload */}
           <div className="border border-gray-200 rounded-lg p-3 sm:p-4">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-3">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white flex-shrink-0">
-                <img src="/icons/inksigma-logo.svg" alt="Meta OG" className="w-14 h-14 sm:w-16 sm:h-16" />
+              <div className="w-20 h-20 sm:w-24 sm:h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white flex-shrink-0 overflow-hidden">
+                <img src={metaOg} alt="Meta OG" className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-row sm:flex-col gap-4 sm:gap-3 w-full sm:w-auto justify-center sm:justify-start">
-                <button className="text-purple-500 text-xs sm:text-sm hover:text-purple-600">Change Meta OG</button>
-                <button className="text-gray-400 text-xs sm:text-sm hover:text-gray-600">Remove</button>
+                <button onClick={handleMetaOgChange} className="text-purple-500 text-xs sm:text-sm hover:text-purple-600">Change Meta OG</button>
+                <button onClick={handleMetaOgRemove} className="text-gray-400 text-xs sm:text-sm hover:text-gray-600">Remove</button>
               </div>
             </div>
             <p className="text-xs text-gray-400 bg-gray-50 p-2 rounded text-center sm:text-left">Optimal Resolution: 630 px X 1200 px</p>
