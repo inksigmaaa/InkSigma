@@ -6,7 +6,7 @@ import { useEffect } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
 import { ChevronRight, AlertCircle } from "lucide-react"
-import Link from "next/link"
+
 
 export default function DashboardPage() {
   const { data: session, isPending } = useSession()
@@ -34,8 +34,8 @@ export default function DashboardPage() {
     <>
       <NavbarLoggedin />
       <DashboardSimpleSidebar />
-      <main className="flex-1 bg-white px-4 sm:px-8 md:px-16 py-10 mt-[120px] md:mt-[120px] mb-20 md:mb-0">
-        <div className="max-w-[600px] mx-auto space-y-8">
+      <main className="flex-1 bg-white px-4 sm:px-8 py-6 sm:py-10 mt-[120px] md:mt-[120px] pb-24 md:pb-0 md:ml-[165px]">
+        <div className="max-w-[600px] mx-auto space-y-6 sm:space-y-8">
           {/* Welcome Banner */}
           <div className="text-center">
             <h1 className="text-base sm:text-lg font-bold text-gray-900 mb-3">Welcome to InkSigma</h1>

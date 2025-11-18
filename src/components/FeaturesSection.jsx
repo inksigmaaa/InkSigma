@@ -6,7 +6,7 @@ export default function FeaturesSection() {
   const rightColumn = FEATURES_DATA.slice(3)
 
   return (
-    <section className="py-16 px-3 bg-white">
+    <section id="features" className="py-16 px-3 bg-white">
       <div className="max-w-6xl mx-auto">
         <h2 className="text-5xl font-bold text-center text-gray-900 mb-16">
           Features
