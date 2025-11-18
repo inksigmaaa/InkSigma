@@ -1,7 +1,12 @@
+'use client';
+
 import { FileClock } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function Sidebar() {
+  const pathname = usePathname();
+
   // Route mapping for navigation
   const getRoute = (label) => {
     const routes = {
@@ -19,6 +24,12 @@ export default function Sidebar() {
       "Trash": "/trash",
     };
     return routes[label] || "/dashboard";
+  };
+
+  // Check if the current route is active
+  const isActive = (label) => {
+    const route = getRoute(label);
+    return pathname === route;
   };
 
   return (
@@ -55,11 +66,11 @@ export default function Sidebar() {
           {/* MY SPACE */}
           <div className="pb-2 border-b border-gray-200 max-md:pb-0 max-md:border-none max-md:flex-shrink-0">
             <div
-              className="flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1"
+              className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${pathname === '/dashboard' ? '' : 'hover:bg-gray-100'}`}
             >
               <img src="/images/icons/myspace.svg" className="w-6 h-6 max-md:w-6 max-md:h-6" />
               <Link href="/dashboard">
-                <p className="text-[14px] font-normal leading-[150%] text-gray-700 max-md:text-[11px] max-md:text-center">
+                <p className={`text-[14px] leading-[150%] max-md:text-[11px] max-md:text-center ${pathname === '/dashboard' ? 'font-bold text-black' : 'font-normal text-gray-700'}`}>
                   My Space
                 </p>
               </Link>
@@ -111,21 +122,21 @@ export default function Sidebar() {
               {section.items.map(([icon, label]) => (
                 <Link key={label} href={getRoute(label)}>
                   <div
-                    className="flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0"
+                    className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isActive(label) ? '' : 'hover:bg-gray-100'}`}
                   >
                     <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
                       {label === "Unpublished" ? (
                         <FileClock
-                          className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6 text-gray-500"
+                          className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${isActive(label) ? 'opacity-100 text-black' : 'opacity-60 text-gray-500'}`}
                         />
                       ) : (
                         <img
                           src={label === "Settings" ? `/icons/${icon}` : `/images/icons/${icon}`}
-                          className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6"
+                          className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${isActive(label) ? 'opacity-100' : 'opacity-60'}`}
                         />
                       )}
                       <p
-                        className="text-[13px] font-normal leading-[150%] text-gray-500 m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap"
+                        className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${isActive(label) ? 'font-bold text-black' : 'font-normal text-gray-500'}`}
                       >
                         {label}
                       </p>

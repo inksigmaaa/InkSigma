@@ -1,18 +1,19 @@
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 export default function BackToHomeButton() {
-  const handleClick = () => {
-    // Scroll to top when navigating back
-    window.scrollTo(0, 0);
+  const router = useRouter();
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    router.back();
   };
 
   return (
     <div>
-      <Link
-        href="/view-site"
+      <button
         onClick={handleClick}
         className="inline-flex items-center gap-2 w-[100px] my-1 text-gray-700 text-sm hover:text-black transition-colors"
       >
@@ -24,7 +25,7 @@ export default function BackToHomeButton() {
           className="rotate-180"
         />
         <span>Go Back</span>
-      </Link>
+      </button>
     </div>
   );
 }

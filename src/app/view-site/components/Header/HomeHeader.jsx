@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 export default function HomeHeader({ userName = 'The Nature Blog', userAvatar = null, searchQuery = '', onSearchChange }) {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 py-4 md:py-5 px-4 md:px-6">
+    <header className="fixed top-0 left-0 right-0 z-[100] bg-white border-b border-gray-200 py-4 md:py-5 px-4 md:px-6">
       <div className="max-w-[90%] md:max-w-[70%] mx-auto">
         {/* Single Row - Logo, Blog Name on left, Search on right */}
         <div className="flex items-center justify-between gap-4">

@@ -1,13 +1,13 @@
- "use client"
+"use client"
 
-import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
-import Sidebar from "../components/sidebar/Sidebar"
-import BlogStatsComponent from "../components/BlogStatsComponent/BlogStatsComponent"
+import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
+import MemberSidebar from "../../membersidebar/MemberSidebar"
+import BlogStatsComponent from "../../components/BlogStatsComponent/BlogStatsComponent"
 import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 
-export default function HomePage() {
+export default function PostsHomePage() {
   const router = useRouter()
   const [publication, setPublication] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -39,7 +39,7 @@ export default function HomePage() {
   }
 
   const handleEditPublication = () => {
-    router.push("/dashboard/settings")
+    router.push("/posts/settings")
   }
 
   // Sample articles data
@@ -77,7 +77,7 @@ export default function HomePage() {
   return (
     <>
       <NavbarLoggedin />
-      <Sidebar />
+      <MemberSidebar key="member-sidebar" />
       
       {/* Main Content */}
       <div className="pt-[112px] min-h-screen max-md:pt-[90px]">
@@ -142,11 +142,7 @@ export default function HomePage() {
             
             <div className="grid grid-cols-2 gap-6 max-md:grid-cols-1 max-md:gap-4">
               {articles.map((article) => (
-                <div 
-                  key={article.id} 
-                  className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5 cursor-pointer"
-                  onClick={() => router.push(`/home/preview/${article.id}`)}
-                >
+                <div key={article.id} className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5">
                   <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4">
                     <img 
                       src={article.thumbnail} 
@@ -165,13 +161,7 @@ export default function HomePage() {
                       <span className="text-sm text-gray-400 bg-gray-50 px-4 py-2 rounded-lg">
                         {article.category}
                       </span>
-                      <button 
-                        className="text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/editor?id=${article.id}`);
-                        }}
-                      >
+                      <button className="text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition-colors">
                         <Pencil className="w-5 h-5" />
                       </button>
                     </div>
