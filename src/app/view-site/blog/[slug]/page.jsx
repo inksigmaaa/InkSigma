@@ -17,9 +17,10 @@ export default function BlogDetailPage({ params }) {
 
   const blog = mockData.blogs.find(b => b.slug === slug) || null;
 
-  // Scroll to top when page loads
+  // Scroll to top when blog page loads
   useEffect(() => {
-    window.scrollTo(0, 0);
+    // Always scroll to top when opening a blog post
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [slug]);
 
   const formatDate = (dateString) => {
