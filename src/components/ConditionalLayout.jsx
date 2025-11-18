@@ -29,8 +29,9 @@ export default function ConditionalLayout({ children }) {
   const isHome = pathname === "/home"
   const ismembers = pathname === "/posts/members"
 
-  // Show mobile buttons on all pages except auth pages and create-publication page
-  const showMobileButtons = !isAuthPage && !isCreatePublicationPage
+  // Show mobile buttons on all pages except auth pages, create-publication, profile-settings, dashboard, and landing page
+  const isLandingPage = pathname === "/"
+  const showMobileButtons = !isAuthPage && !isCreatePublicationPage && !isprofilesettings && !isDashboardPage && !isLandingPage
 
 
   if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isDomain) {
@@ -54,8 +55,12 @@ export default function ConditionalLayout({ children }) {
         {children}
       </main>
       <Footer />
-      <VisitSiteButton />
-      <FeedbackButton />
+      {!isLandingPage && (
+        <>
+          <VisitSiteButton />
+          <FeedbackButton />
+        </>
+      )}
     </>
   )
 }
