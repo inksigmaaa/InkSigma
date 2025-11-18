@@ -23,10 +23,10 @@ export default function MembersPage() {
   }
 
   const members = [
-    { id: 1, name: "Special Batista", role: "Author", image: "/images/icons/profileuser.svg", canExit: true },
-    { id: 2, name: "John Cena", role: "Editor", image: "/images/icons/profileuser.svg", canExit: false },
-    { id: 3, name: "The Rock", role: "Editor", image: "/images/icons/profileuser.svg", canExit: false },
-    { id: 4, name: "Randy Ortan", role: "Editor", image: "/images/icons/profileuser.svg", canExit: false },
+    { id: 1, name: "Special Batista", role: "Author", canExit: true, image: "/images/icons/profileuser.svg" },
+    { id: 2, name: "John Cena", role: "Editor", canExit: false, image: "/images/icons/profileuser.svg" },
+    { id: 3, name: "The Rock", role: "Editor", canExit: false, image: "/images/icons/profileuser.svg" },
+    { id: 4, name: "Randy Ortan", role: "Editor", canExit: false, image: "/images/icons/profileuser.svg" },
   ]
 
   return (
@@ -37,12 +37,9 @@ export default function MembersPage() {
         <div className="ml-0 md:ml-[230px]">
           <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 md:mb-8">Members</h1>
 
-          <div className="space-y-3 md:space-y-4">
+          <div className="space-y-0">
             {members.map((member) => (
-              <div
-                key={member.id}
-                className="grid grid-cols-3 items-center py-4 border-b border-gray-200 gap-4"
-              >
+              <div key={member.id} className="grid grid-cols-3 items-center py-4 border-b border-gray-200 gap-4">
                 {/* Left Column - Profile */}
                 <div className="flex items-center gap-3">
                   <img
@@ -79,7 +76,7 @@ export default function MembersPage() {
 
       {/* Exit Confirmation Modal */}
       {showExitModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200]">
           <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
             <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">
               Do you want to leave this publication?

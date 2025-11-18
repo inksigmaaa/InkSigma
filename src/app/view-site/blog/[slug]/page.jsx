@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { use } from 'react';
+import { use, useEffect } from 'react';
 import ViewSiteHeader from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import TableOfContents from '../../components/TableOfContents/TableOfContents';
@@ -16,6 +16,11 @@ export default function BlogDetailPage({ params }) {
   const { slug } = use(params);
 
   const blog = mockData.blogs.find(b => b.slug === slug) || null;
+
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [slug]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

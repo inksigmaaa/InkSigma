@@ -15,7 +15,7 @@ export default function DashboardSimpleSidebar() {
                     <div className={styles.settings} style={{ borderTop: 'none', borderBottom: 'none' }}>
                         <div className={styles.pubIcon}>
                             <img src="/icons/settings.svg" alt="settingsicon" className={styles.sideLogo} />
-                            <Link href="/dashboard/settings"><p className={styles.pubText}>Settings</p></Link>
+                            <Link href="/profile-settings"><p className={styles.pubText}>Settings</p></Link>
                         </div>
                     </div>
                 </div>
