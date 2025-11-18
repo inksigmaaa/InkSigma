@@ -142,7 +142,11 @@ export default function HomePage() {
             
             <div className="grid grid-cols-2 gap-6 max-md:grid-cols-1 max-md:gap-4">
               {articles.map((article) => (
-                <div key={article.id} className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5">
+                <div 
+                  key={article.id} 
+                  className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5 cursor-pointer"
+                  onClick={() => router.push(`/home/preview/${article.id}`)}
+                >
                   <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4">
                     <img 
                       src={article.thumbnail} 
@@ -161,7 +165,13 @@ export default function HomePage() {
                       <span className="text-sm text-gray-400 bg-gray-50 px-4 py-2 rounded-lg">
                         {article.category}
                       </span>
-                      <button className="text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition-colors">
+                      <button 
+                        className="text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/editor?id=${article.id}`);
+                        }}
+                      >
                         <Pencil className="w-5 h-5" />
                       </button>
                     </div>
