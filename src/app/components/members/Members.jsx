@@ -106,7 +106,7 @@ export default function Members() {
                                             className="w-12 h-12 rounded-full object-cover max-[767px]:w-10 max-[767px]:h-10 flex-shrink-0"
                                         />
                                         <div className="min-w-0">
-                                            <p className="text-base font-semibold text-gray-900 max-[767px]:text-sm">
+                                            <p className="text-sm font-semibold text-gray-900 max-[767px]:text-sm">
                                                 {member.name}
                                             </p>
                                             {/* Mobile: Show role below name */}
