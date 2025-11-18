@@ -6,8 +6,8 @@ export default function PublicationSettingsPage() {
     <>
       <NavbarLoggedin />
       <Sidebar />
-      <div className="min-h-screen bg-white flex justify-center p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 md:pl-64 mb-20 md:mb-0">
-        <div className="w-full max-w-[800px] md:max-w-[273px] min-h-[927px] space-y-8">
+      <div className="min-h-screen bg-white p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 mb-20 md:mb-0">
+        <div className="w-full max-w-[800px] md:max-w-[273px] min-h-[927px] space-y-8 mx-auto md:ml-[calc(50%+82.5px)] md:-translate-x-1/2">
           <h1 className="text-base sm:text-lg font-bold text-gray-900 text-center">Publication Settings</h1>
 
           {/* Logo Upload */}
