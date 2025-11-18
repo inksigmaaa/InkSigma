@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import HomeHeader from './components/Header/HomeHeader';
 import LatestBlog from './components/LatestBlog/LatestBlog';
 import AllArticles from './components/AllArticles/AllArticles';
@@ -11,13 +12,31 @@ import mockData from './mockData.json';
 export default function ViewSitePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const router = useRouter();
 
   // Get unique categories from blogs, limit to 3
   const categories = [...new Set(mockData.blogs.map(blog => blog.category))].slice(0, 3);
 
-  // Scroll to top when page loads
+  // Restore scroll position when returning from blog
   useEffect(() => {
-    window.scrollTo(0, 0);
+    const savedPosition = sessionStorage.getItem('viewSiteScrollPosition');
+    if (savedPosition) {
+      // Restore to saved position instantly
+      window.scrollTo({ top: parseInt(savedPosition, 10), behavior: 'instant' });
+    }
+
+    // Save scroll position when navigating away
+    const handleBeforeUnload = () => {
+      sessionStorage.setItem('viewSiteScrollPosition', window.scrollY.toString());
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      // Save position when component unmounts (navigating to blog)
+      sessionStorage.setItem('viewSiteScrollPosition', window.scrollY.toString());
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   return (
