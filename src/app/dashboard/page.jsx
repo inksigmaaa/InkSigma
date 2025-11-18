@@ -121,13 +121,6 @@ export default function DashboardPage() {
             <p className="text-gray-400 text-xs">Multiple Publication coming soon!</p>
           </section>
         </div>
-
-        {/* Send Feedback Button */}
-        <div className="fixed bottom-8 left-8">
-          <button className="text-xs text-gray-500 hover:text-gray-700 px-4 py-2 rounded-md border border-gray-200 bg-white">
-            Send Feedback
-          </button>
-        </div>
       </main>
     </>
   )

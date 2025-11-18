@@ -40,13 +40,13 @@ export default function NavbarLoggedin() {
 
     useEffect(() => {
         // Update cache when session loads
-        if (session?.user?.image) {
-            setCachedUserImage(session.user.image);
-            localStorage.setItem('userImage', session.user.image);
+        if (session?.user?.avatar) {
+            setCachedUserImage(session.user.avatar);
+            localStorage.setItem('userImage', session.user.avatar);
         }
-    }, [session?.user?.image]);
+    }, [session?.user?.avatar]);
 
-    const userImage = cachedUserImage || "/images/icons/profileuser.svg";
+    const userImage = session?.user?.avatar || cachedUserImage || "/images/icons/profileuser.svg";
     const userName = session?.user?.name || "User";
 
     return (

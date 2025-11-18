@@ -110,8 +110,14 @@ export default function ReviewArticles({ title = "Review" }) {
               className="min-w-[180px] flex items-center justify-between gap-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg px-4 py-2 cursor-pointer transition hover:border-violet-500 max-[410px]:min-w-[120px] max-[410px]:text-xs max-[410px]:px-3 max-[410px]:py-2 max-[360px]:min-w-[100px] max-[360px]:px-2.5 max-[360px]:py-1.5"
             >
               Category
-              <svg width="16" height="16" viewBox="0 0 16 16" className="shrink-0 max-[410px]:w-3.5 max-[410px]:h-3.5">
-                <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <svg 
+                width="16" 
+                height="16" 
+                viewBox="0 0 16 16" 
+                fill="none"
+                className={`shrink-0 max-[410px]:w-3.5 max-[410px]:h-3.5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+              >
+                <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
               </svg>
             </button>
 
@@ -184,8 +190,14 @@ export default function ReviewArticles({ title = "Review" }) {
                 className="min-w-[180px] flex items-center justify-between gap-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg px-4 py-2 cursor-pointer transition hover:border-violet-500"
               >
                 Choose Category
-                <svg width="16" height="16" viewBox="0 0 16 16" className="shrink-0">
-                  <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <svg 
+                  width="16" 
+                  height="16" 
+                  viewBox="0 0 16 16" 
+                  fill="none"
+                  className={`shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                >
+                  <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                 </svg>
               </button>
 

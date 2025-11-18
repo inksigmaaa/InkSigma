@@ -55,7 +55,7 @@ export default function PersonalArticles({
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                         >
                             Choose Category
-                            <ChevronDownIcon className="shrink-0 max-md:w-3.5 max-md:h-3.5" />
+                            <ChevronDownIcon className={`shrink-0 max-md:w-3.5 max-md:h-3.5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                         </Button>
                         {isDropdownOpen && (
                             <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100] max-md:w-[260px] max-md:h-[220px] max-[480px]:w-60 max-[480px]:h-[200px]">
@@ -95,7 +95,7 @@ export default function PersonalArticles({
                     <div className="flex items-center justify-between gap-4 mb-4 max-md:hidden">
                         <div className="flex items-center gap-4">
                             {showSelectAll && (
-                                <label className="flex items-center gap-2 cursor-pointer w-[123px] h-8 bg-[#F8F8F8] rounded px-3 py-2">
+                                <label className="flex items-center gap-2 cursor-pointer w-[123px] h-10 bg-[#F8F8F8] rounded px-3 py-4">
                                     <input
                                         type="checkbox"
                                         checked={selectAll}
@@ -125,7 +125,7 @@ export default function PersonalArticles({
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                             >
                                 Choose Category
-                                <ChevronDownIcon className="shrink-0" />
+                                <ChevronDownIcon className={`shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                             </Button>
                             {isDropdownOpen && (
                                 <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100]">

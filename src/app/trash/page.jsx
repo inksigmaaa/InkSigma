@@ -182,8 +182,14 @@ export default function TrashPage() {
                 className="min-w-[180px] flex items-center justify-between gap-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg px-4 py-2 cursor-pointer transition hover:border-violet-500"
               >
                 Choose Category
-                <svg width="16" height="16" viewBox="0 0 16 16" className="shrink-0">
-                  <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  className={`shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                >
+                  <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                 </svg>
               </button>
 
@@ -257,8 +263,8 @@ export default function TrashPage() {
         }}
         onConfirm={confirmDelete}
         title="Delete permanently?"
-        message={deleteTarget === 'bulk' 
-          ? `${selectedArticles.length} article(s) will be permanently deleted` 
+        message={deleteTarget === 'bulk'
+          ? `${selectedArticles.length} article(s) will be permanently deleted`
           : "This article will be permanently deleted"}
         confirmText="Delete permanently"
         confirmStyle="danger"

@@ -1,7 +1,7 @@
 import * as React from "react"
-import { ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+// Custom Select component with line-style arrow
 const SelectContext = React.createContext()
 
 const Select = ({ children, value, onValueChange }) => {
@@ -48,7 +48,15 @@ const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) 
       {...props}
     >
       {children}
-      <ChevronDown className="h-4 w-4 opacity-50" />
+      <svg 
+        width="16" 
+        height="16" 
+        viewBox="0 0 16 16" 
+        fill="none"
+        className={cn("shrink-0 transition-transform duration-200", isOpen && "rotate-180")}
+      >
+        <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </svg>
     </button>
   )
 })
