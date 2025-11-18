@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,10 +53,11 @@ export default function SchedulePostCard({
       {/* Desktop Layout */}
       <div className="hidden md:block">
         <div className="flex items-start gap-4">
-          <Checkbox
+          <input
+            type="checkbox"
             checked={isSelected}
-            onCheckedChange={(checked) => onSelectPost(post.id, checked)}
-            className="mt-1"
+            onChange={(e) => onSelectPost(post.id, e.target.checked)}
+            className="w-[18px] h-[18px] cursor-pointer accent-purple-600 mt-1 shrink-0"
           />
 
           <div className="flex-1">

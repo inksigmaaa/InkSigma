@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { 
   Select,
   SelectContent,
@@ -43,6 +42,14 @@ export default function ReviewPage() {
     }
   ]
 
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedPosts(posts.map(p => p.id))
+    } else {
+      setSelectedPosts([])
+    }
+  }
+
   const handleSelectPost = (postId, checked) => {
     if (checked) {
       setSelectedPosts([...selectedPosts, postId])
@@ -67,9 +74,36 @@ export default function ReviewPage() {
                 <h1 className="text-base font-bold text-gray-800">Review</h1>
               </div>
               
-              {/* Category Select */}
+              {/* Category Select - Mobile only */}
               <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-[140px] md:w-[180px]">
+                <SelectTrigger className="w-[140px] md:hidden">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sports">Sports</SelectItem>
+                  <SelectItem value="humour">Humour</SelectItem>
+                  <SelectItem value="history">History</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Controls Row - Desktop only */}
+            <div className="hidden md:flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer w-[123px] h-10 bg-[#F8F8F8] rounded px-3 py-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedPosts.length === posts.length && posts.length > 0}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="w-[18px] h-[18px] cursor-pointer accent-purple-600"
+                  />
+                  <span className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-500">Select all</span>
+                </label>
+              </div>
+              
+              {/* Category Select - Desktop */}
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -86,9 +120,11 @@ export default function ReviewPage() {
                 <div key={post.id} className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
                   {/* Desktop Layout */}
                   <div className="hidden md:flex items-start gap-4">
-                    <Checkbox 
+                    <input
+                      type="checkbox"
                       checked={selectedPosts.includes(post.id)}
-                      onCheckedChange={(checked) => handleSelectPost(post.id, checked)}
+                      onChange={(e) => handleSelectPost(post.id, e.target.checked)}
+                      className="w-[18px] h-[18px] cursor-pointer accent-purple-600 mt-1 shrink-0"
                     />
                     
                     <div className="flex-1 mt-[-5px]">

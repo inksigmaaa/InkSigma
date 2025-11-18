@@ -48,6 +48,7 @@ export default function NavbarLoggedin() {
 
     const userImage = session?.user?.avatar || cachedUserImage || "/images/icons/profileuser.svg";
     const userName = session?.user?.name || "User";
+    const userEmail = session?.user?.email || "";
 
     return (
         <div className="fixed top-0 left-0 w-full flex justify-center bg-white p-5 z-[100]">
@@ -97,6 +98,12 @@ export default function NavbarLoggedin() {
                                 onClick={(e) => e.stopPropagation()}
                                 className="absolute top-[50px] right-0 w-[200px] bg-white shadow-[0_4px_24px_rgb(0,0,0,0.1)] border border-[#EDEDED] rounded-lg flex flex-col gap-1 p-2 z-[99999] max-md:fixed max-md:top-[80px] max-md:right-5 max-md:w-[180px] max-md:shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
                             >
+                                {/* User Info Section */}
+                                <div className="px-2 py-2 border-b border-[#EDEDED]">
+                                    <p className="text-[13px] font-medium text-[#333]">{userName}</p>
+                                    <p className="text-[11px] text-[#b0b0b0] truncate">{userEmail}</p>
+                                </div>
+
                                 <a href="/profile-settings"
                                     className="px-2 py-1 rounded text-[12px] font-normal text-[#b0b0b0] hover:text-black">
                                     Profile Settings

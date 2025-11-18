@@ -147,7 +147,7 @@ export default function TrashPage() {
 
           <div className="flex items-center justify-between gap-5 mb-6">
             <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer w-[123px] h-8 bg-[#F8F8F8] rounded px-3 py-2">
+              <label className="flex items-center gap-2 cursor-pointer w-[123px] h-8 bg-[#F8F8F8] rounded px-3 py-4">
                 <input
                   type="checkbox"
                   checked={selectAll}
