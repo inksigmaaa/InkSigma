@@ -40,7 +40,7 @@ const Checkbox = React.forwardRef(({ className, checked, onCheckedChange, ...pro
           "h-4 w-4 shrink-0 rounded-sm border border-gray-300 bg-white cursor-pointer",
           "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2",
           "peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
-          "peer-checked:bg-black peer-checked:border-black",
+          "peer-checked:bg-violet-500 peer-checked:border-violet-500",
           "flex items-center justify-center",
           className
         )}

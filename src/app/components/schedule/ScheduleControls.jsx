@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Trash2 } from "lucide-react"
+import Image from "next/image"
 
 export default function ScheduleControls({ 
   selectedPosts, 
@@ -24,6 +24,7 @@ export default function ScheduleControls({
             id="select-all"
             checked={selectedPosts.length === totalPosts}
             onCheckedChange={onSelectAll}
+            className="peer-checked:bg-violet-600 peer-checked:border-violet-600"
           />
           <label htmlFor="select-all" className="text-sm text-gray-600 cursor-pointer">
             Select all
@@ -35,7 +36,7 @@ export default function ScheduleControls({
           className={`${selectedPosts.length === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600'}`}
           disabled={selectedPosts.length === 0}
         >
-          <Trash2 className="h-5 w-5" />
+          <Image src="/svg/delete.svg" alt="Delete" width={20} height={20} />
         </Button>
       </div>
 

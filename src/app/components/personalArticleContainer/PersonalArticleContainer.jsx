@@ -1,6 +1,12 @@
 import ArticleDropdown from '../articleDropdown/ArticleDropdown.jsx'
+import { useRouter } from 'next/navigation'
 
 export default function PersonalArticleContainer({ id, status, title, description, categories, postedTime, onRestore, onDelete, isSelected, onSelect }) {
+    const router = useRouter()
+
+    const handleEdit = () => {
+        router.push(`/editor?status=${status}&id=${id}`)
+    }
     const statusConfig = {
         published: { bg: '#D5F2D4', color: '#267F24', text: 'Published' },
         draft: { bg: '#FFEADB', color: '#A34200', text: 'Draft' },
@@ -24,7 +30,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
             <div className="absolute top-2 right-2 hidden max-md:block">
                 <ArticleDropdown
                     status={status}
-                    onEdit={() => console.log('Edit')}
+                    onEdit={handleEdit}
                     onDelete={onDelete}
                     onRestore={onRestore}
                 />
@@ -50,7 +56,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                         </>
                     ) : status === 'draft' ? (
                         <>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit">
+                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
                                 <img src="/images/icons/share.svg" alt="edit" className="w-6 h-6" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
@@ -65,7 +71,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                         </>
                     ) : (
                         <>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit">
+                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
                                 <img src="/images/icons/share.svg" alt="edit" className="w-6 h-6" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Copy">
@@ -107,7 +113,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                             </>
                         ) : status === 'draft' ? (
                             <>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit">
+                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
                                     <img src="/images/icons/share.svg" alt="edit" className="w-5 h-5" />
                                 </button>
                                 <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={onDelete}>
@@ -122,7 +128,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                             </>
                         ) : (
                             <>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit">
+                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
                                     <img src="/images/icons/share.svg" alt="edit" className="w-5 h-5" />
                                 </button>
                                 <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Copy">

@@ -1,5 +1,10 @@
+import { Suspense } from "react"
 import EditorPageClient from "./components/EditorPageClient"
 
 export default function EditorPage() {
-  return <EditorPageClient />
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <EditorPageClient />
+    </Suspense>
+  )
 }

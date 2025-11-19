@@ -169,7 +169,7 @@ export default function HomePage() {
                         className="text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
-                          router.push(`/editor?id=${article.id}`);
+                          router.push(`/editor?status=published&id=${article.id}`);
                         }}
                       >
                         <Pencil className="w-5 h-5" />
