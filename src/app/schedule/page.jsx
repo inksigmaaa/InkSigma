@@ -21,6 +21,7 @@ export default function SchedulePage() {
       postedTime: "Posted 2 mins ago"
     }
   ]
+
   return (
     <>
       <NavbarLoggedin />

@@ -250,7 +250,8 @@ export default function ReviewArticles({ title = "Review" }) {
                 <Checkbox 
                   checked={selectedPosts.includes(post.id)}
                   onCheckedChange={(checked) => handleSelectPost(post.id, checked)}
-                />                
+                />
+                
                 <div className="flex-1 mt-[-5px]">
                   <div className="flex items-start justify-between mb-4">
                     <div>

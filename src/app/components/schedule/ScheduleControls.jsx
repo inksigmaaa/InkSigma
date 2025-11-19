@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -6,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Trash2 } from "lucide-react"
+import Image from "next/image"
 
 export default function ScheduleControls({ 
   selectedPosts, 
@@ -17,24 +18,25 @@ export default function ScheduleControls({
 }) {
   return (
     <div className="hidden md:flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2 cursor-pointer w-[123px] h-10 bg-[#F8F8F8] rounded px-3 py-4">
-          <input
-            type="checkbox"
-            checked={selectedPosts.length === totalPosts && totalPosts > 0}
-            onChange={(e) => onSelectAll(e.target.checked)}
-            className="w-[18px] h-[18px] cursor-pointer accent-purple-600"
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="select-all"
+            checked={selectedPosts.length === totalPosts}
+            onCheckedChange={onSelectAll}
+            className="peer-checked:bg-violet-600 peer-checked:border-violet-600"
           />
-          <span className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-500">Select all</span>
-        </label>
+          <label htmlFor="select-all" className="text-sm text-gray-600 cursor-pointer">
+            Select all
+          </label>
+        </div>
         <Button 
           variant="ghost" 
           size="icon" 
-          title="Delete"
           className={`${selectedPosts.length === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600'}`}
           disabled={selectedPosts.length === 0}
         >
-          <Trash2 className="h-5 w-5" />
+          <Image src="/svg/delete.svg" alt="Delete" width={20} height={20} />
         </Button>
       </div>
 
