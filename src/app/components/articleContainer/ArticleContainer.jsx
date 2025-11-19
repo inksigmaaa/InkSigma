@@ -4,8 +4,14 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
+import { useRouter } from 'next/navigation'
 
 export default function ArticleContainer({ id, status, title, description, categories, postedTime, isSelected, onSelect }) {
+    const router = useRouter()
+
+    const handleEdit = () => {
+        router.push(`/editor?status=${status}&id=${id}`)
+    }
     const statusConfig = {
         published: { bg: '#D5F2D4', color: '#267F24', text: 'Published' },
         draft: { bg: '#FFEADB', color: '#A34200', text: 'Draft' },
@@ -47,15 +53,16 @@ export default function ArticleContainer({ id, status, title, description, categ
                     {/* desktop actions */}
                     <div className="hidden md:flex gap-2 shrink-0">
                         {[
-                            { icon: "/images/icons/stats1.svg", label: "Stats" },
-                            { icon: "/images/icons/share.svg", label: "Edit" },
-                            { icon: "/images/icons/copy.svg", label: "Copy" },
-                            { icon: "/images/icons/trash1.svg", label: "Delete" },
+                            { icon: "/images/icons/stats1.svg", label: "Stats", onClick: null },
+                            { icon: "/images/icons/share.svg", label: "Edit", onClick: handleEdit },
+                            { icon: "/images/icons/copy.svg", label: "Copy", onClick: null },
+                            { icon: "/images/icons/trash1.svg", label: "Delete", onClick: null },
                         ].map((btn, index) => (
                             <button
                                 key={index}
                                 className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
                                 title={btn.label}
+                                onClick={btn.onClick}
                             >
                                 <img src={btn.icon} alt={btn.label} className="w-5 h-5" />
                             </button>
@@ -78,7 +85,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 <img src="/images/icons/statistics.svg" className="w-4 h-4" /> 
                                 Statistics
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2 text-sm">
+                            <DropdownMenuItem className="gap-2 text-sm" onClick={handleEdit}>
                                 <img src="/images/icons/edit.svg" className="w-4 h-4" /> Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem className="gap-2 text-sm text-red-500">
