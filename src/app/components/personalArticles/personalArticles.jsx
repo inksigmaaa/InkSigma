@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import PersonalArticleContainer from '../personalArticleContainer/PersonalArticleContainer'
 import { ChevronDownIcon } from "@/components/icons/SvgIcons"
 import { Button } from "@/components/ui/button"
@@ -31,12 +31,30 @@ export default function PersonalArticles({
 }) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
+    const dropdownRef = useRef(null)
 
     const filteredCategories = categories.filter(cat =>
         cat.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
     const selectAll = showSelectAll && selectedArticles.length === articles.length && articles.length > 0
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsDropdownOpen(false)
+            }
+        }
+
+        if (isDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside)
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [isDropdownOpen])
 
     return (
         <div className="absolute left-1/2 -translate-x-1/2 top-[200px] w-full max-w-[1034px] z-20 px-5 max-md:top-[260px]">
@@ -48,7 +66,7 @@ export default function PersonalArticles({
                         {title}
                     </h1>
                     {/* Category dropdown shows on mobile or when no actions */}
-                    <div className={`relative ${showActions ? 'md:hidden' : ''}`}>
+                    <div ref={dropdownRef} className={`relative ${showActions ? 'md:hidden' : ''}`}>
                         <Button
                             variant="outline"
                             className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-500 bg-white border border-gray-300 rounded-lg px-4 py-1 h-8 flex items-center gap-2 cursor-pointer min-w-[180px] justify-between max-md:min-w-[120px] max-md:text-xs max-md:px-2.5 max-[480px]:min-w-[100px] max-[480px]:text-[11px] max-[480px]:px-2"
@@ -118,7 +136,7 @@ export default function PersonalArticles({
                                 </Button>
                             ))}
                         </div>
-                        <div className="relative">
+                        <div ref={dropdownRef} className="relative">
                             <Button
                                 variant="outline"
                                 className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-500 bg-white border border-gray-300 rounded-lg px-4 py-1 h-8 flex items-center gap-2 cursor-pointer min-w-[180px] justify-between"
