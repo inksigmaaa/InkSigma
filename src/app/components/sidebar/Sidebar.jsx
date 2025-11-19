@@ -46,7 +46,7 @@ export default function Sidebar() {
 
           {/* PROFILE */}
           <div
-            className="flex items-center justify-between gap-1 pb-[10px] border-b border-gray-200 max-md:hidden"
+            className="flex items-center gap-2 pb-[10px] border-b border-gray-200 max-md:hidden"
           >
             <img
               src="/images/icons/profileuser.svg"
@@ -56,7 +56,7 @@ export default function Sidebar() {
 
             <a href="/view-site" target="_blank" rel="noopener noreferrer">
               <button
-                className="bg-violet-500 text-white px-[10px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:bg-violet-600"
+                className="w-full bg-violet-500 text-white px-[16px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:bg-violet-600"
               >
                 view site
               </button>
