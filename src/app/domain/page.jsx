@@ -20,11 +20,11 @@ export default function DomainPage() {
       <NavbarLoggedin />
       <Sidebar />
 
-      <div className="w-full min-h-screen md:absolute md:left-1/2 md:-translate-x-1/2 md:top-[200px] md:max-w-[1034px] z-20 px-5 md:px-5 pt-24 md:pt-0 pb-24 md:pb-0">
-        <div className="ml-0 md:ml-[185px]">
-          <div className="flex flex-col md:pl-10 pb-8 md:pb-20">
+      <div className="w-full min-h-screen md:absolute md:left-1/2 md:-translate-x-1/2 md:top-[120px] md:max-w-[1034px] z-20 px-5 md:px-5 pt-24 md:pt-0 pb-24 md:pb-0">
+        <div className="ml-0 md:ml-[165px] md:border-r md:border-gray-200">
+          <div className="flex flex-col max-md:pl-10 max-md:pr-10 pb-8 md:pb-20">
             {/* Header */}
-            <div className="text-center mb-6 md:mb-6 mt-0 md:mt-0">
+            <div className="text-center mt-10 mb-6 max-md:mb-6  max-md:mt-0">
               <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Custom Domain Integration</h1>
               <p className="text-sm text-gray-600 px-4 md:px-0">
                 Connect your custom domain you already own with Inksigma.{" "}
@@ -88,8 +88,11 @@ export default function DomainPage() {
               </div>
             </div>
 
+            {/* Divider Line */}
+            <div className="border-t border-gray-200 mb-8 md:mb-12"></div>
+
             {/* Instructions Section */}
-            <div id="instructions" className="space-y-4 w-full max-w-[100%] px-4 md:px-0">
+            <div id="instructions" className="space-y-4 w-full px-10 max-w-[100%]  max-md:px-0">
               <h2 className="text-base md:text-lg font-bold text-gray-900">Custom Domain Integration Instructions</h2>
 
               <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
