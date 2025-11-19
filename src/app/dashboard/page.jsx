@@ -106,7 +106,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => router.push('/posts/members')}
+                  onClick={() => router.push('/posts/home')}
                   className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
                 >
                   Go to Publication

@@ -1,7 +1,7 @@
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
-import Sidebar from "../components/sidebar/Sidebar"
 import Verify from "../components/verify/Verify"
 import ReviewPageClient from "../components/review/ReviewPageClient"
+import MemberSidebar from "../membersidebar/MemberSidebar"
 
 export default function AuthorReviewPage() {
   // This could come from props, API call, or database in a real app
@@ -17,7 +17,7 @@ export default function AuthorReviewPage() {
   return (
     <>
       <NavbarLoggedin />
-      <Sidebar />
+      <MemberSidebar />
       <Verify />
       <ReviewPageClient article={article} />
     </>

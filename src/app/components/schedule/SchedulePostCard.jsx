@@ -7,18 +7,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  Trash2,
-  TrendingUp,
-  Edit,
   Clock,
   MoreVertical
 } from "lucide-react"
+import Image from "next/image"
+import { useRouter } from 'next/navigation'
 
 export default function SchedulePostCard({ 
   post, 
   isSelected, 
   onSelectPost 
 }) {
+  const router = useRouter()
+
+  const handleEdit = () => {
+    router.push(`/editor?status=scheduled&id=${post.id}`)
+  }
   return (
     <div className="bg-white border border-gray-200 rounded-lg px-6 pb-6 pt-10 relative">
       {/* Scheduled badge - positioned absolutely */}
@@ -37,15 +41,15 @@ export default function SchedulePostCard({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem className="gap-3 py-3 cursor-pointer">
-            <TrendingUp className="h-5 w-5 text-gray-600" />
+            <Image src="/svg/stats.svg" alt="Stats" width={20} height={20} className="text-gray-600" />
             <span className="text-base text-gray-700">Statics</span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="gap-3 py-3 cursor-pointer">
-            <Edit className="h-5 w-5 text-gray-600" />
+          <DropdownMenuItem className="gap-3 py-3 cursor-pointer" onClick={handleEdit}>
+            <Image src="/svg/edit.svg" alt="Edit" width={20} height={20} className="text-gray-600" />
             <span className="text-base text-gray-700">Edit</span>
           </DropdownMenuItem>
           <DropdownMenuItem className="gap-3 py-3 cursor-pointer">
-            <Trash2 className="h-5 w-5 text-gray-600" />
+            <Image src="/svg/delete.svg" alt="Delete" width={20} height={20} className="text-gray-600" />
             <span className="text-base text-gray-700">Move to Trash</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -57,7 +61,7 @@ export default function SchedulePostCard({
           <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => onSelectPost(post.id, checked)}
-            className="mt-1"
+            className="mt-1 peer-checked:bg-violet-600 peer-checked:border-violet-600"
           />
 
           <div className="flex-1">
@@ -71,13 +75,13 @@ export default function SchedulePostCard({
 
           <div className="flex gap-1">
             <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 h-9 w-9">
-              <TrendingUp className="h-5 w-5" />
+              <Image src="/svg/stats.svg" alt="Stats" width={24} height={24} />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 h-9 w-9" onClick={handleEdit}>
+              <Image src="/svg/edit.svg" alt="Edit" width={16} height={16} />
             </Button>
             <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 h-9 w-9">
-              <Edit className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 h-9 w-9">
-              <Trash2 className="h-5 w-5" />
+              <Image src="/svg/delete.svg" alt="Delete" width={16} height={16} />
             </Button>
           </div>
         </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CategoryDropdown } from "./CategoryDropdown"
@@ -11,12 +11,17 @@ import {
   Image as ImageIcon,
   Calendar,
   ChevronLeft,
+  FileText,
 } from "lucide-react"
 
 import { TiptapEditor } from "./TiptapEditor"
 
 export default function EditorPageClient() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  
+  // Get status from URL parameters
+  const articleStatus = searchParams.get('status')
   
   // State management
   const [title, setTitle] = useState('')
@@ -59,6 +64,37 @@ export default function EditorPageClient() {
     })
   }
 
+  const handleUpdate = () => {
+    console.log("Updating:", { 
+      title, 
+      description, 
+      content: editorContent, 
+      categories: selectedCategories, 
+      publishDate, 
+      publishTime 
+    })
+  }
+
+  const handleRevertToDraft = () => {
+    console.log("Reverting to draft:", { 
+      title, 
+      description, 
+      content: editorContent, 
+      categories: selectedCategories 
+    })
+  }
+
+  const handleReschedule = () => {
+    console.log("Rescheduling:", { 
+      title, 
+      description, 
+      content: editorContent, 
+      categories: selectedCategories, 
+      publishDate, 
+      publishTime 
+    })
+  }
+
   const handleThumbnailAdd = (imageData) => {
     setThumbnailImage(imageData)
     console.log("Thumbnail added:", imageData)
@@ -69,13 +105,28 @@ export default function EditorPageClient() {
     setPublishTime(time)
   }
 
+  // Status badge configuration
+  const getStatusConfig = () => {
+    switch (articleStatus) {
+      case 'published':
+        return { color: 'bg-green-400', text: 'Published' }
+      case 'scheduled':
+        return { color: 'bg-blue-400', text: 'Scheduled' }
+      case 'draft':
+      default:
+        return { color: 'bg-orange-400', text: 'Drafts' }
+    }
+  }
+
+  const statusConfig = getStatusConfig()
+
   return (
     <div className="min-h-screen bg-[#fafafa]">
       {/* Go Back Button - Full Width on Mobile/Tablet */}
       <div className="px-4 md:px-6 pt-6 pb-4 border-b border-gray-200 md:bg-transparent md:border-0">
         <Button 
           variant="ghost" 
-          onClick={() => router.push('/schedule')}
+          onClick={() => router.push('/home')}
           className="text-gray-500 hover:text-gray-700 px-2 gap-1"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -87,8 +138,8 @@ export default function EditorPageClient() {
       <div className="w-full max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-6">
         {/* Status Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200">
-          <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-          <span className="text-gray-500 text-sm">Drafts</span>
+          <div className={`w-2 h-2 ${statusConfig.color} rounded-full`}></div>
+          <span className="text-gray-500 text-sm">{statusConfig.text}</span>
         </div>
 
         {/* Title */}
@@ -171,95 +222,234 @@ export default function EditorPageClient() {
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-center gap-3">
             {/* Mobile Layout - Single Row */}
             <div className="flex md:hidden items-center gap-2 w-full">
-              {/* Publish Button */}
-              <Button 
-                onClick={handlePublish}
-                className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium"
-              >
-                Publish
-              </Button>
+              {articleStatus === 'published' ? (
+                <>
+                  {/* Update Button */}
+                  <Button 
+                    onClick={handleUpdate}
+                    className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium"
+                  >
+                    Update
+                  </Button>
 
-              {/* Date/Time/Calendar Group - White Container */}
-              <div className="flex items-center gap-2 bg-white px-3 border border-gray-200 rounded-lg flex-1">
-                <Input
-                  type="text"
-                  value={publishDate}
-                  onChange={(e) => setPublishDate(e.target.value)}
-                  placeholder="dd-mm-yyyy"
-                  className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
-                  style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
-                />
-                <Input
-                  type="text"
-                  value={publishTime}
-                  onChange={(e) => setPublishTime(e.target.value)}
-                  placeholder="--:--"
-                  className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
-                  style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
-                />
-                <button
-                  onClick={() => setIsDateTimePickerOpen(true)}
-                  className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-                >
-                  <Calendar className="h-4 w-4 text-gray-700" />
-                </button>
-              </div>
+                  {/* Revert to Draft Button */}
+                  <Button 
+                    onClick={handleRevertToDraft}
+                    variant="outline"
+                    className="bg-gray-100 text-gray-500 hover:bg-gray-200 px-4 py-2.5 rounded-lg text-sm font-medium gap-2 flex-1"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Revert to Draft
+                  </Button>
+                </>
+              ) : articleStatus === 'scheduled' ? (
+                <>
+                  {/* Publish Now Button */}
+                  <Button 
+                    onClick={handlePublish}
+                    className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium"
+                  >
+                    Publish Now
+                  </Button>
 
-              {/* Schedule Button */}
-              <button 
-                onClick={handleSchedule}
-                className="bg-gray-200 text-gray-400 text-sm font-medium px-4 py-2.5 rounded-lg"
-              >
-                Schedule
-              </button>
+                  {/* Date/Time/Calendar Group - White Container */}
+                  <div className="flex items-center gap-2 bg-white px-3 border border-gray-200 rounded-lg flex-1">
+                    <Input
+                      type="text"
+                      value={publishDate}
+                      onChange={(e) => setPublishDate(e.target.value)}
+                      placeholder="dd-mm-yyyy"
+                      className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                      style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                    />
+                    <Input
+                      type="text"
+                      value={publishTime}
+                      onChange={(e) => setPublishTime(e.target.value)}
+                      placeholder="--:--"
+                      className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
+                      style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                    />
+                    <button
+                      onClick={() => setIsDateTimePickerOpen(true)}
+                      className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                    >
+                      <Calendar className="h-4 w-4 text-gray-700" />
+                    </button>
+                  </div>
+
+                  {/* Reschedule Button */}
+                  <button 
+                    onClick={handleReschedule}
+                    className="bg-gray-200 text-gray-400 text-sm font-medium px-4 py-2.5 rounded-lg"
+                  >
+                    Reschedule
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* Publish Button */}
+                  <Button 
+                    onClick={handlePublish}
+                    className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium"
+                  >
+                    Publish
+                  </Button>
+
+                  {/* Date/Time/Calendar Group - White Container */}
+                  <div className="flex items-center gap-2 bg-white px-3 border border-gray-200 rounded-lg flex-1">
+                    <Input
+                      type="text"
+                      value={publishDate}
+                      onChange={(e) => setPublishDate(e.target.value)}
+                      placeholder="dd-mm-yyyy"
+                      className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                      style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                    />
+                    <Input
+                      type="text"
+                      value={publishTime}
+                      onChange={(e) => setPublishTime(e.target.value)}
+                      placeholder="--:--"
+                      className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
+                      style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                    />
+                    <button
+                      onClick={() => setIsDateTimePickerOpen(true)}
+                      className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                    >
+                      <Calendar className="h-4 w-4 text-gray-700" />
+                    </button>
+                  </div>
+
+                  {/* Schedule Button */}
+                  <button 
+                    onClick={handleSchedule}
+                    className="bg-gray-200 text-gray-400 text-sm font-medium px-4 py-2.5 rounded-lg"
+                  >
+                    Schedule
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Desktop Layout - Original Design */}
             <div className="hidden md:flex items-center justify-center gap-3">
-              <Button 
-                onClick={handlePublish}
-                className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg"
-              >
-                Publish Now
-                <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
-              </Button>
-
-              {/* Schedule Group */}
-              <div className="flex items-center gap-0 rounded-lg overflow-hidden">
-                {/* White background section */}
-                <div className="flex items-center gap-3 bg-white px-4 border border-gray-200 rounded-l-lg">
-                  <Input
-                    type="text"
-                    value={publishDate}
-                    onChange={(e) => setPublishDate(e.target.value)}
-                    placeholder="dd-mm-yyyy"
-                    className="w-[130px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
-                    style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
-                  />
-                  <Input
-                    type="text"
-                    value={publishTime}
-                    onChange={(e) => setPublishTime(e.target.value)}
-                    placeholder="--:--"
-                    className="w-[60px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
-                    style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
-                  />
-                  <button
-                    onClick={() => setIsDateTimePickerOpen(true)}
-                    className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+              {articleStatus === 'published' ? (
+                <>
+                  {/* Update Button */}
+                  <Button 
+                    onClick={handleUpdate}
+                    className="bg-black text-white hover:bg-gray-800 px-6 rounded-lg"
                   >
-                    <Calendar className="h-5 w-5 text-gray-700" />
-                  </button>
-                </div>
-                
-                {/* Gray background button */}
-                <button 
-                  onClick={handleSchedule}
-                  className="bg-gray-200 text-gray-400 text-sm font-medium px-6 py-2.5 rounded-r-lg border border-l-0 border-gray-200"
-                >
-                  Schedule
-                </button>
-              </div>
+                    Update
+                  </Button>
+
+                  {/* Revert to Draft Button */}
+                  <Button 
+                    onClick={handleRevertToDraft}
+                    variant="outline"
+                    className="bg-gray-100 text-gray-500 hover:bg-gray-200 px-6 rounded-lg gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Revert to Draft
+                  </Button>
+                </>
+              ) : articleStatus === 'scheduled' ? (
+                <>
+                  <Button 
+                    onClick={handlePublish}
+                    className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg"
+                  >
+                    Publish Now
+                    <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
+                  </Button>
+
+                  {/* Reschedule Group */}
+                  <div className="flex items-center gap-0 rounded-lg overflow-hidden">
+                    {/* White background section */}
+                    <div className="flex items-center gap-3 bg-white px-4 border border-gray-200 rounded-l-lg">
+                      <Input
+                        type="text"
+                        value={publishDate}
+                        onChange={(e) => setPublishDate(e.target.value)}
+                        placeholder="dd-mm-yyyy"
+                        className="w-[130px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                        style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                      />
+                      <Input
+                        type="text"
+                        value={publishTime}
+                        onChange={(e) => setPublishTime(e.target.value)}
+                        placeholder="--:--"
+                        className="w-[60px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                        style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                      />
+                      <button
+                        onClick={() => setIsDateTimePickerOpen(true)}
+                        className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                      >
+                        <Calendar className="h-5 w-5 text-gray-700" />
+                      </button>
+                    </div>
+                    
+                    {/* Gray background button */}
+                    <button 
+                      onClick={handleReschedule}
+                      className="bg-gray-200 text-gray-400 text-sm font-medium px-6 py-2.5 rounded-r-lg border border-l-0 border-gray-200"
+                    >
+                      Reschedule
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    onClick={handlePublish}
+                    className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg"
+                  >
+                    Publish Now
+                    <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
+                  </Button>
+
+                  {/* Schedule Group */}
+                  <div className="flex items-center gap-0 rounded-lg overflow-hidden">
+                    {/* White background section */}
+                    <div className="flex items-center gap-3 bg-white px-4 border border-gray-200 rounded-l-lg">
+                      <Input
+                        type="text"
+                        value={publishDate}
+                        onChange={(e) => setPublishDate(e.target.value)}
+                        placeholder="dd-mm-yyyy"
+                        className="w-[130px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                        style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                      />
+                      <Input
+                        type="text"
+                        value={publishTime}
+                        onChange={(e) => setPublishTime(e.target.value)}
+                        placeholder="--:--"
+                        className="w-[60px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                        style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                      />
+                      <button
+                        onClick={() => setIsDateTimePickerOpen(true)}
+                        className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                      >
+                        <Calendar className="h-5 w-5 text-gray-700" />
+                      </button>
+                    </div>
+                    
+                    {/* Gray background button */}
+                    <button 
+                      onClick={handleSchedule}
+                      className="bg-gray-200 text-gray-400 text-sm font-medium px-6 py-2.5 rounded-r-lg border border-l-0 border-gray-200"
+                    >
+                      Schedule
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
