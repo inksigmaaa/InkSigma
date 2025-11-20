@@ -67,8 +67,8 @@ export default function MemberSidebar() {
             <Link href={getRoute("Home")}>
               <div className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${pathname === '/posts/home' ? 'bg-gray-100' : ''}`}>
                 <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/home.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/home' ? 'opacity-100' : 'opacity-60'}`} />
-                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/home' ? 'font-semibold text-gray-900' : 'font-normal text-gray-400'}`}>
+                  <img src="/images/icons/home.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/home' ? 'opacity-100 brightness-0' : 'opacity-60'}`} />
+                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/home' ? 'font-bold text-black' : 'font-normal text-gray-400'}`}>
                     Home
                   </p>
                 </div>
@@ -79,8 +79,8 @@ export default function MemberSidebar() {
             <Link href={getRoute("Members")}>
               <div className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${pathname === '/posts/members' ? 'bg-gray-100' : ''}`}>
                 <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/Member.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/members' ? 'opacity-100' : 'opacity-60'}`} />
-                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/members' ? 'font-semibold text-gray-900' : 'font-normal text-gray-400'}`}>
+                  <img src="/images/icons/Member.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/members' ? 'opacity-100 brightness-0' : 'opacity-60'}`} />
+                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/members' ? 'font-bold text-black' : 'font-normal text-gray-400'}`}>
                     Members
                   </p>
                 </div>
@@ -98,8 +98,8 @@ export default function MemberSidebar() {
             <Link href={getRoute("Published")}>
               <div className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${pathname === '/posts/published' ? 'bg-gray-100' : ''}`}>
                 <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/Publish.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/published' ? 'opacity-100' : 'opacity-60'}`} />
-                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/published' ? 'font-semibold text-gray-900' : 'font-normal text-gray-400'}`}>
+                  <img src="/images/icons/Publish.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/published' ? 'opacity-100 brightness-0' : 'opacity-60'}`} />
+                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/published' ? 'font-bold text-black' : 'font-normal text-gray-400'}`}>
                     Published
                   </p>
                 </div>
@@ -110,8 +110,8 @@ export default function MemberSidebar() {
             <Link href={getRoute("Review")}>
               <div className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${pathname === '/author-review' ? 'bg-gray-100' : ''}`}>
                 <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/Review.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/author-review' ? 'opacity-100' : 'opacity-60'}`} />
-                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/author-review' ? 'font-semibold text-gray-900' : 'font-normal text-gray-400'}`}>
+                  <img src="/images/icons/Review.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/author-review' ? 'opacity-100 brightness-0' : 'opacity-60'}`} />
+                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/author-review' ? 'font-bold text-black' : 'font-normal text-gray-400'}`}>
                     Review
                   </p>
                 </div>
@@ -129,8 +129,8 @@ export default function MemberSidebar() {
             <Link href={getRoute("My Blogs")}>
               <div className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${pathname === '/posts/my-blogs' ? 'bg-gray-100' : ''}`}>
                 <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/all_articles.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/my-blogs' ? 'opacity-100' : 'opacity-60'}`} />
-                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/my-blogs' ? 'font-semibold text-gray-900' : 'font-normal text-gray-400'}`}>
+                  <img src="/images/icons/all_articles.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/my-blogs' ? 'opacity-100 brightness-0' : 'opacity-60'}`} />
+                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/my-blogs' ? 'font-bold text-black' : 'font-normal text-gray-400'}`}>
                     My Blogs
                   </p>
                 </div>
