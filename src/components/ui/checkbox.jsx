@@ -46,7 +46,7 @@ const Checkbox = React.forwardRef(({ className, checked, onCheckedChange, ...pro
         )}
         style={{ width: '16px', height: '16px' }}
       >
-        {checked && <Check className="h-3 w-3 text-white" />}
+        {checked && <Check className="h-3 w-3 text-white stroke-[3]" />}
       </div>
     </div>
   )

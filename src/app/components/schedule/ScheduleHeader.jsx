@@ -10,16 +10,16 @@ export default function ScheduleHeader({ category, onCategoryChange }) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
-        <h1 className="text-base font-bold text-gray-800">Scheduled</h1>
+        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+        <h1 className="text-lg font-semibold text-gray-900">Scheduled</h1>
       </div>
 
-      {/* Category Select - Mobile */}
+      {/* Category Select - Mobile Only */}
       <Select value={category} onValueChange={onCategoryChange}>
         <SelectTrigger 
-          className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 md:hidden whitespace-nowrap"
+          className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:hidden whitespace-nowrap"
           style={{
-            minWidth: '163px',
+            minWidth: '120px',
             height: '32px',
             borderRadius: '4px',
             borderWidth: '1px',
@@ -37,6 +37,8 @@ export default function ScheduleHeader({ category, onCategoryChange }) {
           <SelectValue placeholder="Category" />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="climate">Climate & Environment</SelectItem>
+          <SelectItem value="finance">Finance & Economics</SelectItem>
           <SelectItem value="sports">Sports</SelectItem>
           <SelectItem value="humour">Humour</SelectItem>
           <SelectItem value="history">History</SelectItem>

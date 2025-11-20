@@ -4,13 +4,14 @@ import { useState } from 'react'
 
 export default function Comments() {
     const [selectAll, setSelectAll] = useState(false)
+    const showVerifyBanner = false
 
     const model = {
         count: 23,
     }
 
     return (
-        <div className="absolute left-1/2 -translate-x-1/2 top-[200px] w-full max-w-[1034px] z-20 px-5">
+        <div className={`absolute left-1/2 -translate-x-1/2 ${showVerifyBanner ? 'top-[215px]' : 'top-[160px]'} w-full max-w-[1034px] z-20 px-5 max-md:top-[120px]`}>
 
             <div className="ml-0 md:ml-[185px]">
 
