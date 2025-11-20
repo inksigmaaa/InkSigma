@@ -89,8 +89,8 @@ export default function Verify() {
 
   // For other pages with sidebar layout, use fixed positioning
   return (
-    <div className="fixed left-1/2 -translate-x-1/2 top-[112px] w-full max-w-[1034px] z-[60] px-5 max-md:top-[90px]">
-      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 max-md:mx-0">
+    <div className="fixed left-1/2 -translate-x-1/2 top-[128px] w-full max-w-[1034px] z-[25] px-5 max-md:top-[110px]">
+      <div className="ml-[185px] bg-purple-50 border border-purple-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 max-md:ml-0">
         <div className="flex items-center gap-3">
           <AlertCircle className="w-4 h-4 text-purple-500 flex-shrink-0" />
           <p className="text-xs text-purple-900">Your Account hasn't been verified yet.</p>

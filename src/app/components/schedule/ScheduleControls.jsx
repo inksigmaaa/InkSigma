@@ -5,7 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import Image from "next/image"
+import { Trash2 } from "lucide-react"
 
 export default function ScheduleControls({ 
   selectedPosts, 
@@ -15,21 +15,17 @@ export default function ScheduleControls({
   onCategoryChange 
 }) {
   return (
-    <div className="hidden md:flex items-center justify-between">
+    <div className="hidden sm:flex items-center justify-between">
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
             id="select-all"
-            checked={selectedPosts.length === totalPosts}
+            checked={selectedPosts.length === totalPosts && totalPosts > 0}
             onChange={(e) => onSelectAll(e.target.checked)}
-            className="cursor-pointer accent-violet-600"
+            className="w-4 h-4 rounded border-gray-300 text-white bg-white checked:bg-violet-600 checked:border-violet-600 focus:ring-violet-500 focus:ring-2 focus:ring-offset-2"
             style={{
-              width: '16px',
-              height: '16px',
-              borderRadius: '4px',
-              borderWidth: '1px',
-              opacity: 1
+              accentColor: '#7c3aed'
             }}
           />
           <label htmlFor="select-all" className="text-sm text-gray-600 cursor-pointer">
@@ -37,43 +33,28 @@ export default function ScheduleControls({
           </label>
         </div>
         <button
-          title="Delete"
+          title="Delete selected"
           disabled={selectedPosts.length === 0}
-          className={`w-8 h-8 border rounded-lg p-2 flex items-center justify-center transition ${
+          className={`w-8 h-8 border rounded flex items-center justify-center transition ${
             selectedPosts.length > 0
-              ? "bg-white border-gray-200 cursor-pointer hover:bg-gray-50 hover:border-gray-300"
-              : "bg-gray-100 border-gray-200 cursor-not-allowed opacity-50"
+              ? "bg-white border-gray-300 cursor-pointer hover:bg-gray-50"
+              : "bg-gray-50 border-gray-200 cursor-not-allowed opacity-50"
           }`}
         >
-          <Image src="/svg/delete.svg" alt="Delete" width={20} height={20} className={selectedPosts.length === 0 ? "opacity-50" : ""} />
+          <Trash2 className={`h-4 w-4 ${selectedPosts.length === 0 ? "text-gray-300" : "text-gray-600"}`} />
         </button>
       </div>
 
       <Select value={category} onValueChange={onCategoryChange}>
-        <SelectTrigger 
-          className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 whitespace-nowrap"
-          style={{
-            minWidth: '163px',
-            height: '32px',
-            borderRadius: '4px',
-            borderWidth: '1px',
-            opacity: 1,
-            gap: '10px',
-            padding: '6px 16px',
-            fontFamily: 'Public Sans',
-            fontWeight: 400,
-            fontSize: '14px',
-            lineHeight: '150%',
-            letterSpacing: '0%',
-            color: '#6B7280'
-          }}
-        >
+        <SelectTrigger className="w-[180px] text-gray-600">
           <SelectValue placeholder="Choose Category" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="sports">Sports</SelectItem>
           <SelectItem value="humour">Humour</SelectItem>
           <SelectItem value="history">History</SelectItem>
+          <SelectItem value="technology">Technology</SelectItem>
+          <SelectItem value="business">Business</SelectItem>
         </SelectContent>
       </Select>
     </div>
