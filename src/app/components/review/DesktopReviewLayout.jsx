@@ -9,16 +9,19 @@ export default function DesktopReviewLayout({
   onRevertToDraft 
 }) {
   return (
-    <div className="hidden md:flex items-start justify-between">
+    <div className="hidden md:flex items-start justify-between gap-6">
       <ReviewHeader 
         article={article}
         isSelected={isSelected}
         onSelectionChange={onSelectionChange}
       />
 
-      {/* Right side - Button and Date */}
-      <div className="flex flex-col items-end gap-8 ml-6">
-        <ReviewActions onRevertToDraft={onRevertToDraft} />
+      {/* Right side - Avatar, Button and Date */}
+      <div className="flex flex-col items-end gap-4 flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <ReviewActions onRevertToDraft={onRevertToDraft} />
+          
+        </div>
         <ReviewMeta date={article.date} />
       </div>
     </div>

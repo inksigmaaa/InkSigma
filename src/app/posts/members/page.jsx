@@ -120,7 +120,7 @@ export default function MembersPage() {
                       Exit
                     </button>
                   ) : (
-                    <span className="text-gray-400 text-xl">-</span>
+                    <span className="text-gray-400 text-xl mr-4">-</span>
                   )}
                 </div>
               </div>
