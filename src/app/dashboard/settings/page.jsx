@@ -152,6 +152,8 @@ export default function SettingsPage() {
             <input
               type="text"
               placeholder="Publication name"
+              minLength={2}
+              maxLength={50}
               className="w-full border-b border-gray-300 py-2 text-sm focus:outline-none focus:border-purple-500"
             />
           </div>
@@ -162,6 +164,7 @@ export default function SettingsPage() {
             <textarea
               placeholder="Write publication Description"
               rows={1}
+              maxLength={200}
               className="w-full border-b border-gray-300 py-2 text-sm focus:outline-none focus:border-purple-500 resize-none"
             />
           </div>
@@ -173,6 +176,8 @@ export default function SettingsPage() {
               <input
                 type="text"
                 placeholder="Graceblog"
+                minLength={3}
+                maxLength={63}
                 className="flex-1 text-sm focus:outline-none"
               />
               <span className="text-sm text-gray-600">.inksigma.com</span>

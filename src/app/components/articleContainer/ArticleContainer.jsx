@@ -54,8 +54,8 @@ export default function ArticleContainer({ id, status, title, description, categ
 
                     {/* left side */}
                     <div className="flex gap-3 flex-1">
-                        <input 
-                            type="checkbox" 
+                        <input
+                            type="checkbox"
                             checked={isSelected || false}
                             onChange={(e) => onSelect && onSelect(id, e.target.checked)}
                             className="mt-1 cursor-pointer accent-violet-500 shrink-0"
@@ -107,7 +107,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 <img src="/images/icons/clip.svg" className="w-4 h-4" /> Send to draft
                             </DropdownMenuItem>
                             <DropdownMenuItem className="gap-2 text-sm" onClick={handleStatsClick}>
-                                <img src="/images/icons/statistics.svg" className="w-4 h-4" /> 
+                                <img src="/images/icons/statistics.svg" className="w-4 h-4" />
                                 Statistics
                             </DropdownMenuItem>
                             <DropdownMenuItem className="gap-2 text-sm" onClick={handleEdit}>
@@ -144,9 +144,9 @@ export default function ArticleContainer({ id, status, title, description, categ
             </div>
 
             {/* Stats Popup */}
-            <StatsPopup 
-                isOpen={showStats} 
-                onClose={() => setShowStats(false)} 
+            <StatsPopup
+                isOpen={showStats}
+                onClose={() => setShowStats(false)}
                 position={statsPosition}
             />
         </div>

@@ -106,6 +106,8 @@ function SignupForm() {
             placeholder="Enter your Email"
             value={formData.email}
             onChange={handleInputChange('email')}
+            minLength={5}
+            maxLength={254}
             className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-gray-900"
             required
           />
@@ -116,6 +118,8 @@ function SignupForm() {
           placeholder="Create your password"
           value={formData.password}
           onChange={handleInputChange('password')}
+          minLength={12}
+          maxLength={128}
         />
         <Button
           type="submit"
