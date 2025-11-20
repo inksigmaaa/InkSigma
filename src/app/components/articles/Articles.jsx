@@ -221,7 +221,7 @@ export default function Articles(props) {
 
                     <div className="flex items-center justify-between gap-5">
                         <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2 cursor-pointer">
+                            <label className="flex items-center gap-2 cursor-pointer w-[123px] h-8 bg-[#F8F8F8] rounded px-3 py-2">
                                 <input
                                     type="checkbox"
                                     checked={selectAll}
@@ -241,9 +241,9 @@ export default function Articles(props) {
                             </label>
 
                             {[
-                                { icon: "/images/icons/copy.svg", label: "Copy" },
+                                { icon: "/images/icons/draft1.svg", label: "Copy" },
                                 { icon: "/images/icons/share.svg", label: "Send" },
-                                { icon: "/images/icons/trash1.svg", label: "Delete" },
+                                { icon: "/images/icons/trash2.svg", label: "Delete" },
                             ].map((btn) => (
                                 <button
                                     key={btn.label}
@@ -335,7 +335,8 @@ export default function Articles(props) {
                                                     type="checkbox"
                                                     checked={selectedCategories.includes(category)}
                                                     onChange={() => handleCategoryToggle(category)}
-                                                    className="w-5 h-5 cursor-pointer accent-violet-500 shrink-0"
+                                                    className="cursor-pointer accent-violet-500 shrink-0"
+                                                    style={{ width: '16px', height: '16px' }}
                                                 />
                                                 <span className="text-sm text-gray-600">{category}</span>
                                             </label>

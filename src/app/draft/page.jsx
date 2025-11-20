@@ -66,13 +66,13 @@ export default function DraftPage() {
   const actionButtons = [
     {
       title: "Publish",
-      icon: "/images/icons/Publish.svg",
+      icon: "/images/icons/share.svg",
       onClick: handleBulkPublish,
       disabled: selectedArticles.length === 0
     },
     {
       title: "Delete",
-      icon: "/images/icons/trash1.svg",
+      icon: "/images/icons/trash2.svg",
       onClick: handleBulkDelete,
       disabled: selectedArticles.length === 0
     }

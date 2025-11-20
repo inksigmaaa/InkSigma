@@ -51,7 +51,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                                 <img src="/images/icons/restore.svg" alt="restore" className="w-6 h-6" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete Permanently" onClick={onDelete}>
-                                <img src="/images/icons/trash1.svg" alt="delete" className="w-6 h-6" />
+                                <img src="/images/icons/trash2.svg" alt="delete" className="w-6 h-6" />
                             </button>
                         </>
                     ) : status === 'draft' ? (
@@ -60,7 +60,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                                 <img src="/images/icons/share.svg" alt="edit" className="w-6 h-6" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
-                                <img src="/images/icons/trash1.svg" alt="delete" className="w-6 h-6" />
+                                <img src="/images/icons/trash2.svg" alt="delete" className="w-6 h-6" />
                             </button>
                         </>
                     ) : status === 'review' ? (
@@ -89,7 +89,8 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     <div className="flex gap-3 flex-1">
                         <input
                             type="checkbox"
-                            className="w-5 h-5 mt-1 cursor-pointer accent-purple-500 shrink-0 max-md:hidden"
+                            className="mt-1 cursor-pointer accent-purple-500 shrink-0 max-md:hidden"
+                            style={{ width: '16px', height: '16px' }}
                             checked={isSelected || false}
                             onChange={(e) => onSelect && onSelect(id, e.target.checked)}
                         />
@@ -108,7 +109,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                                     <img src="/images/icons/restore.svg" alt="restore" className="w-5 h-5" />
                                 </button>
                                 <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete Permanently" onClick={onDelete}>
-                                    <img src="/images/icons/trash1.svg" alt="delete" className="w-5 h-5" />
+                                    <img src="/images/icons/trash2.svg" alt="delete" className="w-5 h-5" />
                                 </button>
                             </>
                         ) : status === 'draft' ? (
@@ -117,7 +118,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                                     <img src="/images/icons/share.svg" alt="edit" className="w-5 h-5" />
                                 </button>
                                 <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={onDelete}>
-                                    <img src="/images/icons/trash1.svg" alt="delete" className="w-5 h-5" />
+                                    <img src="/images/icons/trash2.svg" alt="delete" className="w-5 h-5" />
                                 </button>
                             </>
                         ) : status === 'review' ? (
