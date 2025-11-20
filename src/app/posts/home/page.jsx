@@ -39,7 +39,7 @@ export default function PostsHomePage() {
   }
 
   const handleEditPublication = () => {
-    router.push("/posts/settings")
+    router.push("/dashboard/settings")
   }
 
   // Sample articles data

@@ -87,8 +87,29 @@ export default function PersonalArticles({
                                 padding: '6px 16px'
                             }}
                         >
-                            Category
-                            <ChevronDownIcon className={`shrink-0 max-md:w-3.5 max-md:h-3.5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                            <span
+                                style={{
+                                    fontFamily: 'Public Sans',
+                                    fontWeight: 400,
+                                    fontSize: '14px',
+                                    lineHeight: '150%',
+                                    letterSpacing: '0%',
+                                    color: '#6B7280'
+                                }}
+                            >
+                                Choose Category
+                            </span>
+                            <ChevronDownIcon
+                                className="transition-transform max-md:w-3.5 max-md:h-3.5 flex-shrink-0"
+                                style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    strokeWidth: '1.4px',
+                                    opacity: 1,
+                                    color: '#9CA3AF',
+                                    transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+                                }}
+                            />
                         </button>
                         {isDropdownOpen && (
                             <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100] max-md:w-[260px] max-md:h-[220px] max-[480px]:w-60 max-[480px]:h-[200px]">

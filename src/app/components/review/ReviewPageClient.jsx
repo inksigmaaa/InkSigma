@@ -5,12 +5,20 @@ import { ConfirmationModal } from "@/components/ui/confirmation-modal"
 import ReviewCard from "./ReviewCard"
 import { useVerifyBanner } from "@/hooks/useVerifyBanner"
 
-export default function ReviewPageClient({ article }) {
-  const [isSelected, setIsSelected] = useState(false)
+export default function ReviewPageClient({ articles }) {
+  const [selectedArticles, setSelectedArticles] = useState({})
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState("all")
   
   // Check if verify banner should be shown
   const showVerifyBanner = useVerifyBanner()
+
+  const handleSelectionChange = (articleId, isSelected) => {
+    setSelectedArticles(prev => ({
+      ...prev,
+      [articleId]: isSelected
+    }))
+  }
 
   const handleRevertToDraft = () => {
     setShowConfirmModal(true)
