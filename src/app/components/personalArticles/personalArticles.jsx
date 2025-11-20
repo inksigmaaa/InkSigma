@@ -133,7 +133,8 @@ export default function PersonalArticles({
                                         <label key={category} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer rounded-md hover:bg-gray-50 max-md:px-2.5 max-md:py-2">
                                             <input
                                                 type="checkbox"
-                                                className="w-5 h-5 cursor-pointer accent-purple-600 shrink-0 max-md:w-[18px] max-md:h-[18px]"
+                                                className="cursor-pointer accent-purple-600 shrink-0"
+                                                style={{ width: '16px', height: '16px' }}
                                             />
                                             <span className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-600 max-md:text-[13px]">{category}</span>
                                         </label>
@@ -245,7 +246,8 @@ export default function PersonalArticles({
                                             <label key={category} className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50">
                                                 <input
                                                     type="checkbox"
-                                                    className="w-5 h-5 cursor-pointer accent-violet-500 shrink-0"
+                                                    className="cursor-pointer accent-violet-500 shrink-0"
+                                                    style={{ width: '16px', height: '16px' }}
                                                 />
                                                 <span className="text-sm text-gray-600">{category}</span>
                                             </label>

@@ -68,7 +68,7 @@ export default function Sidebar() {
             <div
               className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${pathname === '/dashboard' ? '' : 'hover:bg-gray-100'}`}
             >
-              <img src="/images/icons/myspace.svg" className="w-6 h-6 max-md:w-6 max-md:h-6" />
+              <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 ${pathname === '/dashboard' ? 'brightness-0' : ''}`} />
               <Link href="/dashboard">
                 <p className={`text-[14px] leading-[150%] max-md:text-[11px] max-md:text-center ${pathname === '/dashboard' ? 'font-bold text-black' : 'font-normal text-gray-700'}`}>
                   My Space
@@ -101,9 +101,9 @@ export default function Sidebar() {
             {
               title: "PERSONAL",
               items: [
-                ["all_articles.svg", "My Blogs", "/my blogs"],
-                ["Publish.svg", "Draft", "/drafts"],
-                ["trash1.svg", "Trash", "/trash"],
+                ["myblogs.svg", "My Blogs", "/my blogs"],
+                ["Draft.svg", "Draft", "/drafts"],
+                ["trash.svg", "Trash", "/trash"],
               ]
             }
           ].map((section, idx) => (
@@ -127,12 +127,14 @@ export default function Sidebar() {
                     <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
                       {label === "Unpublished" ? (
                         <FileClock
-                          className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${isActive(label) ? 'opacity-100 text-black' : 'opacity-60 text-gray-500'}`}
+                          className="w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6"
+                          style={{ color: isActive(label) ? '#000000' : '#B0B0B0' }}
+                          strokeWidth={isActive(label) ? 2.5 : 2}
                         />
                       ) : (
                         <img
                           src={label === "Settings" ? `/icons/${icon}` : `/images/icons/${icon}`}
-                          className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${isActive(label) ? 'opacity-100' : 'opacity-60'}`}
+                          className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${isActive(label) ? 'opacity-100 brightness-0' : 'opacity-60'}`}
                         />
                       )}
                       <p

@@ -58,7 +58,8 @@ export default function ArticleContainer({ id, status, title, description, categ
                             type="checkbox" 
                             checked={isSelected || false}
                             onChange={(e) => onSelect && onSelect(id, e.target.checked)}
-                            className="w-5 h-5 mt-1 cursor-pointer accent-violet-500 shrink-0" 
+                            className="mt-1 cursor-pointer accent-violet-500 shrink-0"
+                            style={{ width: '16px', height: '16px' }}
                         />
 
                         <div className="flex-1">
@@ -80,7 +81,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                         {[
                             { icon: "/images/icons/share.svg", label: "Edit", onClick: handleEdit },
                             { icon: "/images/icons/copy.svg", label: "Copy", onClick: null },
-                            { icon: "/images/icons/trash1.svg", label: "Delete", onClick: null },
+                            { icon: "/images/icons/trash2.svg", label: "Delete", onClick: null },
                         ].map((btn, index) => (
                             <button
                                 key={index}

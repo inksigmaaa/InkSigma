@@ -149,7 +149,8 @@ export default function ReviewArticles({ title = "Review" }) {
                         type="checkbox"
                         checked={selectedCategories.includes(category)}
                         onChange={() => handleCategoryToggle(category)}
-                        className="w-5 h-5 cursor-pointer accent-violet-500 shrink-0 max-[410px]:w-4 max-[410px]:h-4"
+                        className="cursor-pointer accent-violet-500 shrink-0"
+                        style={{ width: '16px', height: '16px' }}
                       />
                       <span className="text-sm text-gray-600 max-[410px]:text-xs">{category}</span>
                     </label>
@@ -236,7 +237,8 @@ export default function ReviewArticles({ title = "Review" }) {
                           type="checkbox"
                           checked={selectedCategories.includes(category)}
                           onChange={() => handleCategoryToggle(category)}
-                          className="w-5 h-5 cursor-pointer accent-violet-500 shrink-0"
+                          className="cursor-pointer accent-violet-500 shrink-0"
+                          style={{ width: '16px', height: '16px' }}
                         />
                         <span className="text-sm text-gray-600">{category}</span>
                       </label>
