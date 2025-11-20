@@ -113,7 +113,7 @@ export default function Articles(props) {
             <div className="ml-0 md:ml-[185px]">
 
                 {/* Mobile header */}
-                <div className="flex flex-col justify-between gap-4 mb-6 px-2 md:hidden">
+                <div className="flex flex-col justify-between gap-4 mb-6 px-2 md:hidden max-md:mt-3">
                     <h1 className="font-bold text-lg leading-8 text-gray-800 m-0 flex items-center gap-3">
                         <span className="w-3 h-3 bg-violet-500 rounded-full shrink-0"></span>
                         {props.title || "All Articles"}

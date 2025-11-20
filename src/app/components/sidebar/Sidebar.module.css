@@ -209,6 +209,7 @@
 @media (max-width: 1024px) {
     .sidebarContainer {
         width: 165px;
+        justify-content: center;
     }
 }
 
@@ -238,6 +239,7 @@
         height: 70px;
         padding: 8px 16px;
         flex-direction: row;
+        justify-content: center;
         gap: 8px;
         border-right: none;
         overflow: visible;
