@@ -72,7 +72,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                     <div className="hidden md:flex gap-2 shrink-0">
                         <button
                             ref={statsButtonRef}
-                            className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
+                            className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-1 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
                             title="Stats"
                             onClick={handleStatsClick}
                         >
