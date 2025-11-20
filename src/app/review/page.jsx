@@ -73,8 +73,25 @@ export default function ReviewPage() {
               
               {/* Category Select */}
               <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-[140px] md:w-[180px]">
-                  <SelectValue placeholder="Category" />
+                <SelectTrigger 
+                  className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 whitespace-nowrap"
+                  style={{
+                    minWidth: '163px',
+                    height: '32px',
+                    borderRadius: '4px',
+                    borderWidth: '1px',
+                    opacity: 1,
+                    gap: '10px',
+                    padding: '6px 16px',
+                    fontFamily: 'Public Sans',
+                    fontWeight: 400,
+                    fontSize: '14px',
+                    lineHeight: '150%',
+                    letterSpacing: '0%',
+                    color: '#6B7280'
+                  }}
+                >
+                  <SelectValue placeholder="Choose Category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="sports">Sports</SelectItem>

@@ -6,7 +6,6 @@ import Sidebar from "../components/sidebar/Sidebar"
 import PersonalArticleContainer from "../components/personalArticleContainer/PersonalArticleContainer"
 import Verify from "../components/verify/Verify"
 import ConfirmModal from "../components/confirmModal/ConfirmModal"
-import { Button } from "@/components/ui/button"
 import { useVerifyBanner } from "@/hooks/useVerifyBanner"
 
 export default function TrashPage() {
@@ -17,7 +16,7 @@ export default function TrashPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showRestoreModal, setShowRestoreModal] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null) // 'bulk' or specific article id
-  
+
   // Check if verify banner should be shown
   const showVerifyBanner = useVerifyBanner()
 
@@ -143,7 +142,7 @@ export default function TrashPage() {
       <div className={`absolute left-1/2 -translate-x-1/2 ${showVerifyBanner ? 'top-[215px]' : 'top-[160px]'} w-full max-w-[1034px] z-20 px-5`}>
         <div className="ml-0 md:ml-[185px]">
           <div className="flex items-center mb-4">
-            <h1 className="m-0 font-bold text-base leading-6 text-red-500 flex items-center gap-2">
+            <h1 className="m-0 font-bold text-base leading-6 text-black-500 flex items-center gap-2">
               <span className="w-2 h-2 bg-red-500 rounded-full"></span>
               Trash
             </h1>
@@ -156,42 +155,79 @@ export default function TrashPage() {
                   type="checkbox"
                   checked={selectAll}
                   onChange={handleSelectAll}
-                  className="w-[18px] h-[18px] cursor-pointer accent-purple-600"
+                  className="cursor-pointer accent-purple-600"
+                  style={{
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '4px',
+                    borderWidth: '1px',
+                    opacity: 1
+                  }}
                 />
                 <span className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-500">Select all</span>
               </label>
-              <Button
-                variant="ghost"
-                size="icon"
+              <button
                 title="Restore"
                 disabled={selectedArticles.length === 0}
                 onClick={handleBulkRestore}
+                className={`w-8 h-8 border rounded-lg p-2 flex items-center justify-center transition ${selectedArticles.length > 0
+                  ? "bg-white border-gray-200 cursor-pointer hover:bg-gray-50 hover:border-gray-300"
+                  : "bg-gray-100 border-gray-200 cursor-not-allowed opacity-50"
+                  }`}
               >
-                <img src="/images/icons/restore.svg" alt="restore" className="w-5 h-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
+                <img src="/images/icons/restore.svg" alt="restore" className={`w-5 h-5 ${selectedArticles.length === 0 ? "opacity-50" : ""}`} />
+              </button>
+              <button
                 title="Delete"
                 disabled={selectedArticles.length === 0}
                 onClick={handleBulkDelete}
+                className={`w-8 h-8 border rounded-lg p-2 flex items-center justify-center transition ${selectedArticles.length > 0
+                  ? "bg-white border-gray-200 cursor-pointer hover:bg-gray-50 hover:border-gray-300"
+                  : "bg-gray-100 border-gray-200 cursor-not-allowed opacity-50"
+                  }`}
               >
-                <img src="/images/icons/trash1.svg" alt="delete" className="w-5 h-5" />
-              </Button>
+                <img src="/images/icons/trash1.svg" alt="delete" className={`w-5 h-5 ${selectedArticles.length === 0 ? "opacity-50" : ""}`} />
+              </button>
             </div>
 
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="min-w-[180px] flex items-center justify-between gap-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg px-4 py-2 cursor-pointer transition hover:border-violet-500"
+                className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 whitespace-nowrap"
+                style={{
+                  minWidth: '163px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  borderWidth: '1px',
+                  opacity: 1,
+                  gap: '10px',
+                  padding: '6px 16px'
+                }}
               >
-                Choose Category
+                <span
+                  style={{
+                    fontFamily: 'Public Sans',
+                    fontWeight: 400,
+                    fontSize: '14px',
+                    lineHeight: '150%',
+                    letterSpacing: '0%',
+                    color: '#6B7280'
+                  }}
+                >
+                  Choose Category
+                </span>
                 <svg
                   width="16"
                   height="16"
                   viewBox="0 0 16 16"
                   fill="none"
-                  className={`shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                  className="transition-transform flex-shrink-0"
+                  style={{
+                    strokeWidth: '1.4px',
+                    opacity: 1,
+                    color: '#9CA3AF',
+                    transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+                  }}
                 >
                   <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                 </svg>

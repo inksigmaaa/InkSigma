@@ -33,7 +33,14 @@ export default function Comments() {
                                     type="checkbox"
                                     checked={selectAll}
                                     onChange={() => setSelectAll(!selectAll)}
-                                    className="w-[18px] h-[18px] cursor-pointer accent-violet-500"
+                                    className="cursor-pointer accent-violet-500"
+                                    style={{
+                                        width: '16px',
+                                        height: '16px',
+                                        borderRadius: '4px',
+                                        borderWidth: '1px',
+                                        opacity: 1
+                                    }}
                                 />
                                 <span className="font-bold text-sm text-gray-500">Select all</span>
                             </label>

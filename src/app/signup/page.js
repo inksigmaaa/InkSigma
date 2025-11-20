@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import AuthLayout from "@/components/auth/AuthLayout"
 import PasswordField from "@/components/auth/PasswordField"
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton"
-import { signUp, signIn } from "@/lib/auth-client"
+import { signUp, signIn, signOut } from "@/lib/auth-client"
 
 function SignupForm() {
   const router = useRouter()
@@ -49,7 +49,11 @@ function SignupForm() {
         return
       }
 
-      router.push(redirectTo)
+      // Sign out the user after successful signup
+      await signOut()
+
+      // Redirect to login page
+      router.push('/login')
     } catch (err) {
       setError(err.message || "An unexpected error occurred")
       console.error(err)

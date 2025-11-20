@@ -33,7 +33,7 @@ export default function PersonalArticles({
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const dropdownRef = useRef(null)
-    
+
     // Check if verify banner should be shown
     const showVerifyBanner = useVerifyBanner()
 
@@ -75,14 +75,43 @@ export default function PersonalArticles({
                     </h1>
                     {/* Category dropdown shows on mobile or when no actions */}
                     <div ref={dropdownRef} className={`relative ${showActions ? 'md:hidden' : ''}`}>
-                        <Button
-                            variant="outline"
-                            className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-500 bg-white border border-gray-300 rounded-lg px-4 py-1 h-8 flex items-center gap-2 cursor-pointer min-w-[180px] justify-between max-md:min-w-[120px] max-md:text-xs max-md:px-2.5 max-[480px]:min-w-[100px] max-[480px]:text-[11px] max-[480px]:px-2"
+                        <button
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                            className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 max-md:min-w-[120px] max-md:text-xs max-md:px-2.5 max-[480px]:min-w-[100px] max-[480px]:text-[11px] max-[480px]:px-2 whitespace-nowrap"
+                            style={{
+                                minWidth: '163px',
+                                height: '32px',
+                                borderRadius: '4px',
+                                borderWidth: '1px',
+                                opacity: 1,
+                                gap: '10px',
+                                padding: '6px 16px'
+                            }}
                         >
-                            Choose Category
-                            <ChevronDownIcon className={`shrink-0 max-md:w-3.5 max-md:h-3.5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                        </Button>
+                            <span
+                                style={{
+                                    fontFamily: 'Public Sans',
+                                    fontWeight: 400,
+                                    fontSize: '14px',
+                                    lineHeight: '150%',
+                                    letterSpacing: '0%',
+                                    color: '#6B7280'
+                                }}
+                            >
+                                Choose Category
+                            </span>
+                            <ChevronDownIcon
+                                className="transition-transform max-md:w-3.5 max-md:h-3.5 flex-shrink-0"
+                                style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    strokeWidth: '1.4px',
+                                    opacity: 1,
+                                    color: '#9CA3AF',
+                                    transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+                                }}
+                            />
+                        </button>
                         {isDropdownOpen && (
                             <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100] max-md:w-[260px] max-md:h-[220px] max-[480px]:w-60 max-[480px]:h-[200px]">
                                 <div className="p-2.5 flex gap-3 border-b border-gray-200 max-md:p-3 max-md:gap-2">
@@ -118,66 +147,108 @@ export default function PersonalArticles({
 
                 {/* Controls Row - Only shown on desktop/tablet when showActions is true (Draft/Trash pages) */}
                 {showActions && (
-                    <div className="flex items-center justify-between gap-4 mb-4 max-md:hidden">
+                    <div className="flex items-center justify-between gap-5 mb-6 max-md:hidden">
                         <div className="flex items-center gap-4">
                             {showSelectAll && (
-                                <label className="flex items-center gap-2 cursor-pointer w-[123px] h-10 bg-[#F8F8F8] rounded px-3 py-4">
+                                <label className="flex items-center gap-2 cursor-pointer w-[123px] h-8 bg-[#F8F8F8] rounded px-3 py-2">
                                     <input
                                         type="checkbox"
                                         checked={selectAll}
                                         onChange={(e) => onSelectAll?.(e.target.checked)}
-                                        className="w-[18px] h-[18px] cursor-pointer accent-purple-600"
+                                        className="cursor-pointer accent-purple-600"
+                                        style={{
+                                            width: '16px',
+                                            height: '16px',
+                                            borderRadius: '4px',
+                                            borderWidth: '1px',
+                                            opacity: 1
+                                        }}
                                     />
                                     <span className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-500">Select all</span>
                                 </label>
                             )}
                             {actionButtons.map((button, index) => (
-                                <Button
+                                <button
                                     key={index}
-                                    variant="ghost"
-                                    size="icon"
                                     title={button.title}
                                     onClick={button.onClick}
                                     disabled={button.disabled}
+                                    className={`w-8 h-8 border rounded-lg p-2 flex items-center justify-center transition ${!button.disabled
+                                        ? "bg-white border-gray-200 cursor-pointer hover:bg-gray-50 hover:border-gray-300"
+                                        : "bg-gray-100 border-gray-200 cursor-not-allowed opacity-50"
+                                        }`}
                                 >
-                                    <img src={button.icon} alt={button.title} className="w-5 h-5" />
-                                </Button>
+                                    <img src={button.icon} alt={button.title} className={`w-5 h-5 ${button.disabled ? "opacity-50" : ""}`} />
+                                </button>
                             ))}
                         </div>
                         <div ref={dropdownRef} className="relative">
-                            <Button
-                                variant="outline"
-                                className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-500 bg-white border border-gray-300 rounded-lg px-4 py-1 h-8 flex items-center gap-2 cursor-pointer min-w-[180px] justify-between"
+                            <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 whitespace-nowrap"
+                                style={{
+                                    minWidth: '163px',
+                                    height: '32px',
+                                    borderRadius: '4px',
+                                    borderWidth: '1px',
+                                    opacity: 1,
+                                    gap: '10px',
+                                    padding: '6px 16px'
+                                }}
                             >
-                                Choose Category
-                                <ChevronDownIcon className={`shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                            </Button>
+                                <span
+                                    style={{
+                                        fontFamily: 'Public Sans',
+                                        fontWeight: 400,
+                                        fontSize: '14px',
+                                        lineHeight: '150%',
+                                        letterSpacing: '0%',
+                                        color: '#6B7280'
+                                    }}
+                                >
+                                    Choose Category
+                                </span>
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 16 16"
+                                    fill="none"
+                                    className="transition-transform flex-shrink-0"
+                                    style={{
+                                        strokeWidth: '1.4px',
+                                        opacity: 1,
+                                        color: '#9CA3AF',
+                                        transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+                                    }}
+                                >
+                                    <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                                </svg>
+                            </button>
                             {isDropdownOpen && (
                                 <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100]">
-                                    <div className="p-2.5 flex gap-3 border-b border-gray-200">
+                                    <div className="p-4 flex gap-3 border-b border-gray-200">
                                         <input
                                             type="text"
                                             placeholder="Search Category..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="flex-1 font-['Public_Sans'] font-normal text-sm leading-[150%] px-3.5 py-2.5 border border-gray-200 rounded-lg bg-gray-50 outline-none focus:border-purple-600 focus:bg-white placeholder:text-gray-400"
+                                            className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 outline-none focus:border-violet-500 focus:bg-white placeholder:text-gray-400"
                                         />
-                                        <Button
-                                            className="font-['Public_Sans'] font-medium text-sm leading-[150%] bg-purple-100 text-purple-600 border-none rounded-lg px-6 py-2.5 cursor-pointer whitespace-nowrap hover:bg-purple-200"
+                                        <button
                                             onClick={() => setIsDropdownOpen(false)}
+                                            className="text-sm font-medium bg-violet-100 text-violet-600 rounded-lg px-6 py-2 whitespace-nowrap transition-colors hover:bg-violet-200"
                                         >
                                             Apply
-                                        </Button>
+                                        </button>
                                     </div>
-                                    <div className="p-3 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-50 hover:scrollbar-thumb-gray-400">
+                                    <div className="p-3 overflow-y-auto flex-1">
                                         {filteredCategories.map((category) => (
-                                            <label key={category} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer rounded-md hover:bg-gray-50">
+                                            <label key={category} className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50">
                                                 <input
                                                     type="checkbox"
-                                                    className="w-5 h-5 cursor-pointer accent-purple-600 shrink-0"
+                                                    className="w-5 h-5 cursor-pointer accent-violet-500 shrink-0"
                                                 />
-                                                <span className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-600">{category}</span>
+                                                <span className="text-sm text-gray-600">{category}</span>
                                             </label>
                                         ))}
                                     </div>

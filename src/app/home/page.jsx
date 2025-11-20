@@ -196,7 +196,7 @@ export default function HomePage() {
         onClick={handleVisitSite}
         className="hidden max-md:flex fixed bottom-20 right-4 bg-purple-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors shadow-lg z-50"
       >
-        Visit site
+        View site
       </button>
     </>
   )

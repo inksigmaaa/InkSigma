@@ -13,6 +13,7 @@ export default function ProfileSettingsPage() {
   const router = useRouter()
   const [showResetModal, setShowResetModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [bio, setBio] = useState("")
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -40,27 +41,27 @@ export default function ProfileSettingsPage() {
       <div className="min-h-screen bg-white flex justify-center p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 md:pl-64 pb-24 md:pb-8">
         <div className="w-full max-w-[800px] min-h-[927px] space-y-8">
           <h1 className="text-lg font-bold text-gray-900 text-center">Profile Settings</h1>
-          
+
           <div className="flex flex-col items-center">
-            
+
             {/* Profile Image */}
             <div className="flex flex-col items-center">
-              <div 
-                style={{ 
-                  width: '100px', 
-                  height: '100px', 
-                  opacity: 1, 
+              <div
+                style={{
+                  width: '100px',
+                  height: '100px',
+                  opacity: 1,
                   borderRadius: '52px',
                   overflow: 'hidden'
                 }}
               >
-                <UserAvatar 
-                  user={session?.user} 
+                <UserAvatar
+                  user={session?.user}
                   size="xl"
                   className="w-full h-full"
                 />
               </div>
-              
+
               {/* Change/Remove buttons */}
               <div className="flex gap-4 mt-4">
                 <button className="text-purple-500 hover:text-purple-600 text-sm font-medium">
@@ -81,6 +82,7 @@ export default function ProfileSettingsPage() {
                 </label>
                 <input
                   type="text"
+                  maxLength={32}
                   placeholder="Enter your Profile name"
                   className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
                 />
@@ -93,6 +95,7 @@ export default function ProfileSettingsPage() {
                 </label>
                 <input
                   type="text"
+                  maxLength={20}
                   placeholder="Enter your username"
                   className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
                 />
@@ -105,6 +108,7 @@ export default function ProfileSettingsPage() {
                 </label>
                 <input
                   type="email"
+                  maxLength={32}
                   placeholder="Enter your Email ID"
                   className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
                 />
@@ -120,15 +124,17 @@ export default function ProfileSettingsPage() {
                     type="text"
                     placeholder="Write your bio"
                     maxLength={120}
-                    className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    className="w-full border-b border-gray-300 py-2 pr-12 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
                   />
-                  <span className="absolute right-0 bottom-2 text-xs text-gray-400">12/120</span>
+                  <span className="absolute right-0 bottom-2 text-xs text-gray-400">{bio.length}/120</span>
                 </div>
               </div>
 
               {/* Reset Account Password */}
               <div className="flex justify-center mt-8">
-                <button 
+                <button
                   className="text-gray-500 hover:text-gray-700 border-b border-gray-500 text-sm"
                   style={{ width: '162px', height: '16px' }}
                   onClick={() => setShowResetModal(true)}
@@ -139,12 +145,12 @@ export default function ProfileSettingsPage() {
 
               {/* Save Button */}
               <div className="flex justify-center mt-8">
-                <button 
+                <button
                   className="bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center"
-                  style={{ 
-                    width: '259px', 
-                    height: '32px', 
-                    borderRadius: '4px' 
+                  style={{
+                    width: '259px',
+                    height: '32px',
+                    borderRadius: '4px'
                   }}
                 >
                   Save
