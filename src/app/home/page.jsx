@@ -88,7 +88,7 @@ export default function HomePage() {
       {/* Main Content */}
       <div className="pt-[112px] min-h-screen max-md:pt-[90px]">
         <div className="max-w-[1034px] mx-auto px-5 max-md:p-0">
-          <div className={`ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0 ${showVerifyBanner ? 'mt-[55px]' : ''}`}>
+          <div className={`ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0 ${showVerifyBanner ? 'mt-[55px] max-md:mt-[130px]' : ''}`}>
           
           {/* Publication Header */}
           <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3 max-md:mt-4">

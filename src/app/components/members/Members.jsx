@@ -19,9 +19,10 @@ export default function Members() {
 
     // Dynamic top position based on verify banner visibility
     const topPosition = showVerifyBanner ? 'top-[215px]' : 'top-[160px]';
+    const mobileTopPosition = showVerifyBanner ? 'max-md:top-[220px]' : 'max-md:top-[120px]';
 
     return (
-        <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} w-full max-w-[1034px] z-20 px-5 pb-20 max-md:top-[120px] max-[767px]:px-4.5 max-md:pb-32`}>
+        <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5 pb-20 max-[767px]:px-4.5 max-md:pb-32`}>
             <div className="ml-[185px] max-[767px]:ml-0">
                 {/* Add Member Section */}
                 <div className="mb-8 max-[767px]:mb-6">
