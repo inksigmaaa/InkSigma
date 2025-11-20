@@ -5,35 +5,20 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
+import Verify from "../components/verify/Verify"
+import UserAvatar from "@/components/ui/UserAvatar"
 
 export default function ProfileSettingsPage() {
   const { data: session, isPending } = useSession()
   const router = useRouter()
   const [showResetModal, setShowResetModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [cachedUserImage, setCachedUserImage] = useState(null)
 
   useEffect(() => {
     if (!isPending && !session) {
       router.push("/login")
     }
   }, [session, isPending, router])
-
-  useEffect(() => {
-    // Get cached image from localStorage on mount
-    const cached = localStorage.getItem('userImage');
-    if (cached) {
-      setCachedUserImage(cached);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Update cache when session loads
-    if (session?.user?.image) {
-      setCachedUserImage(session.user.image);
-      localStorage.setItem('userImage', session.user.image);
-    }
-  }, [session?.user?.image]);
 
   if (isPending) {
     return (
@@ -51,6 +36,7 @@ export default function ProfileSettingsPage() {
     <>
       <NavbarLoggedin />
       <DashboardSimpleSidebar />
+      <Verify />
       <div className="min-h-screen bg-white flex justify-center p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 md:pl-64 pb-24 md:pb-8">
         <div className="w-full max-w-[800px] min-h-[927px] space-y-8">
           <h1 className="text-lg font-bold text-gray-900 text-center">Profile Settings</h1>
@@ -68,10 +54,10 @@ export default function ProfileSettingsPage() {
                   overflow: 'hidden'
                 }}
               >
-                <img 
-                  src={cachedUserImage || "/icons/nib.svg"} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover"
+                <UserAvatar 
+                  user={session?.user} 
+                  size="xl"
+                  className="w-full h-full"
                 />
               </div>
               

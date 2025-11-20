@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { CategoryDropdown } from "./CategoryDropdown"
 import { ThumbnailModal } from "./ThumbnailModal"
 import { DateTimePicker } from "./DateTimePicker"
+import Verify from "../../components/verify/Verify"
 import { 
   Image as ImageIcon,
   Calendar,
@@ -122,6 +123,9 @@ export default function EditorPageClient() {
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
+      {/* Verification Banner */}
+      <Verify />
+      
       {/* Go Back Button - Full Width on Mobile/Tablet */}
       <div className="px-4 md:px-6 pt-6 pb-4 border-b border-gray-200 md:bg-transparent md:border-0">
         <Button 
