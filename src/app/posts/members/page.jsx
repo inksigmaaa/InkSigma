@@ -2,7 +2,9 @@
 
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import MemberSidebar from "../../membersidebar/MemberSidebar"
+import Verify from "../../components/verify/Verify"
 import { useState } from "react"
+import { useVerifyBanner } from "@/hooks/useVerifyBanner"
 
 export default function MembersPage() {
   const [showExitModal, setShowExitModal] = useState(false)
@@ -10,6 +12,9 @@ export default function MembersPage() {
   const [selectedMember, setSelectedMember] = useState(null)
   const [email, setEmail] = useState("")
   const [emailError, setEmailError] = useState("")
+  
+  // Check if verify banner should be shown
+  const showVerifyBanner = useVerifyBanner()
 
   const handleExitClick = (member) => {
     setSelectedMember(member)
@@ -82,7 +87,8 @@ export default function MembersPage() {
     <>
       <NavbarLoggedin />
       <MemberSidebar />
-      <div className="absolute left-1/2 -translate-x-1/2 top-[140px] md:top-[200px] w-full max-w-[1034px] z-10 px-5 pb-32 md:pb-0">
+      <Verify />
+      <div className={`absolute left-1/2 -translate-x-1/2 ${showVerifyBanner ? 'top-[215px]' : 'top-[160px]'} w-full max-w-[1034px] z-10 px-5 pb-32 md:pb-0`}>
         <div className="ml-0 md:ml-[230px]">
           <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 md:mb-8">Members</h1>
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
+import Verify from "../components/verify/Verify"
 import { ChevronRight, AlertCircle } from "lucide-react"
 
 
@@ -51,16 +52,8 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Verification Alert */}
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-4 h-4 text-purple-500 flex-shrink-0" />
-              <p className="text-xs text-purple-900">Your Account hasn't been verified yet.</p>
-            </div>
-            <button className="bg-purple-500 hover:bg-purple-600 text-white px-5 py-2 rounded-md text-xs transition-colors whitespace-nowrap w-full sm:w-auto">
-              Verify your Account
-            </button>
-          </div>
+          {/* Verification Alert - Only shows for unverified email/password users */}
+          <Verify />
 
           {/* Your Publication Section */}
           <section>
