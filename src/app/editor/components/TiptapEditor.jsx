@@ -36,9 +36,6 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
   const [showImageTooltip, setShowImageTooltip] = useState(false)
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [showLineSpacing, setShowLineSpacing] = useState(false)
-  const [showLinkPopup, setShowLinkPopup] = useState(false)
-  const [linkUrl, setLinkUrl] = useState('')
-  const [linkText, setLinkText] = useState('')
   const [currentFont, setCurrentFont] = useState('Roboto')
   const [isMounted, setIsMounted] = useState(false)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
@@ -46,13 +43,11 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
   const [alignButtonRef, setAlignButtonRef] = useState(null)
   const [headingButtonRef, setHeadingButtonRef] = useState(null)
   const [advancedButtonRef, setAdvancedButtonRef] = useState(null)
-  const [linkButtonRef, setLinkButtonRef] = useState(null)
   const [dropdownPositions, setDropdownPositions] = useState({
     heading: { top: 0, left: 0 },
     list: { top: 0, left: 0 },
     align: { top: 0, left: 0 },
-    advanced: { top: 0, left: 0 },
-    link: { top: 0, left: 0 }
+    advanced: { top: 0, left: 0 }
   })
 
   useEffect(() => {
@@ -225,7 +220,6 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
     setShowAdvancedOptions(false)
     setShowColorPicker(false)
     setShowLineSpacing(false)
-    setShowLinkPopup(false)
   }
 
   const setTextColor = (color) => {
@@ -324,36 +318,22 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
       newPositions.advanced = { top: rect.bottom + 4, left: rect.right - 300 }
     }
     
-    if (linkButtonRef) {
-      const rect = linkButtonRef.getBoundingClientRect()
-      newPositions.link = { top: rect.bottom + 4, left: rect.left }
-    }
-    
     setDropdownPositions(newPositions)
   }
 
   // Update positions when dropdowns are shown
   useEffect(() => {
-    if (showHeadingMenu || showListMenu || showAlignMenu || showAdvancedOptions || showLinkPopup) {
+    if (showHeadingMenu || showListMenu || showAlignMenu || showAdvancedOptions) {
       updateDropdownPositions()
     }
-  }, [showHeadingMenu, showListMenu, showAlignMenu, showAdvancedOptions, showLinkPopup, headingButtonRef, listButtonRef, alignButtonRef, advancedButtonRef, linkButtonRef])
+  }, [showHeadingMenu, showListMenu, showAlignMenu, showAdvancedOptions, headingButtonRef, listButtonRef, alignButtonRef, advancedButtonRef])
 
   // Close dropdowns when clicking outside or scrolling
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Check if any dropdown is open
-      const isAnyDropdownOpen = showHeadingMenu || showListMenu || showAlignMenu || showAdvancedOptions || showColorPicker || showLineSpacing || showLinkPopup
-      
-      if (!isAnyDropdownOpen) return
-      
-      // Check if click is inside any dropdown
-      const isInsideDropdown = event.target.closest('.dropdown-container') || 
-                              event.target.closest('.color-picker') || 
-                              event.target.closest('.line-spacing-picker') ||
-                              event.target.closest('.link-popup')
-      
-      if (!isInsideDropdown) {
+      if (!event.target.closest('.dropdown-container') && 
+          !event.target.closest('.color-picker') && 
+          !event.target.closest('.line-spacing-picker')) {
         closeAllDropdowns()
       }
     }
@@ -381,7 +361,6 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
 
     // Add event listeners to all possible scroll sources
     document.addEventListener('mousedown', handleClickOutside)
-    document.addEventListener('click', handleClickOutside)
     
     // Window scroll events
     window.addEventListener('scroll', handleScroll, { passive: true, capture: true })
@@ -400,7 +379,6 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
     
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
-      document.removeEventListener('click', handleClickOutside)
       window.removeEventListener('scroll', handleScroll, { capture: true })
       window.removeEventListener('wheel', handleWheel)
       window.removeEventListener('touchmove', handleTouchMove)

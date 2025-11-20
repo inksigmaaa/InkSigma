@@ -67,43 +67,15 @@ export function CategoryDropdown({ selectedCategories = [], onCategoriesChange }
       {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        style={{
-          width: '163px',
-          height: '32px',
-          borderRadius: '4px',
-          borderWidth: '1px',
-          opacity: 1,
-          gap: '10px',
-          padding: '6px 16px'
-        }}
+        className="flex items-center justify-between w-[140px] px-3 py-2 bg-white border border-gray-200 rounded-md text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
       >
-        <span 
-          style={{
-            fontFamily: 'Public Sans',
-            fontWeight: 400,
-            fontSize: '14px',
-            lineHeight: '150%',
-            letterSpacing: '0%',
-            color: '#374151'
-          }}
-        >
+        <span className="text-gray-700">
           {selectedCategories.length > 0 
             ? `${selectedCategories.length} selected`
             : "Category"
           }
         </span>
-        <ChevronDown 
-          className="transition-transform"
-          style={{
-            width: '9px',
-            height: '4.5px',
-            strokeWidth: '1.4px',
-            opacity: 1,
-            color: '#9CA3AF',
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)'
-          }}
-        />
+        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown Content */}

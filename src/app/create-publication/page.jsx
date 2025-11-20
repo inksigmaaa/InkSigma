@@ -285,7 +285,6 @@ export default function CreatePublication() {
                 type="text"
                 placeholder="Enter your Publication Name"
                 value={publicationName}
-                maxLength={32}
                 onChange={(e) => setPublicationName(e.target.value)}
                 className="w-full px-0 py-2 border-0 border-b text-[14px] text-[#333] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#7C3AED] transition-colors bg-transparent"
                 style={{
@@ -304,7 +303,6 @@ export default function CreatePublication() {
                   placeholder="Subdomain name"
                   value={subdomain}
                   onChange={(e) => setSubdomain(e.target.value)}
-                  maxLength={20}
                   className="w-full px-0 py-2 pr-[130px] border-0 border-b text-[14px] text-[#333] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#7C3AED] transition-colors bg-transparent"
                   style={{
                     borderBottomWidth: '1.5px',

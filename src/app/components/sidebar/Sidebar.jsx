@@ -1,8 +1,4 @@
-'use client';
-
 import { FileClock } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -41,12 +37,12 @@ export default function Sidebar() {
 
         {/* SIDEBAR CONTAINER */}
         <div
-          className="relative w-[165px] h-[612px] bg-white border-r border-gray-200 p-[14px] pr-[10px] flex flex-col gap-[10px] overflow-hidden pointer-events-auto max-md:w-auto max-md:min-w-max max-md:h-[70px] max-md:px-4 max-md:py-2 max-md:flex-row max-md:gap-2 max-md:border-r-0 max-md:overflow-visible "
+          className="relative w-[165px] h-[612px] bg-white border-r border-gray-200 p-[14px] pr-[10px] flex flex-col gap-[10px] overflow-hidden pointer-events-auto max-md:w-auto max-md:min-w-max max-md:h-[70px] max-md:px-4 max-md:py-2 max-md:flex-row max-md:gap-2 max-md:border-r-0 max-md:overflow-visible"
         >
 
           {/* PROFILE */}
           <div
-            className="flex items-center gap-2 pb-[10px] border-b border-gray-200 max-md:hidden"
+            className="flex items-center justify-between gap-1 pb-[10px] border-b border-gray-200 max-md:hidden"
           >
             <img
               src="/images/icons/profileuser.svg"
@@ -54,11 +50,11 @@ export default function Sidebar() {
               className="w-[34px] h-[34px] rounded-full object-cover border-2 border-violet-500 flex-shrink-0"
             />
 
-            <a href="/view-site" target="_blank" rel="noopener noreferrer">
+            <a href="/">
               <button
-                className="w-full bg-violet-500 text-white px-[16px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:bg-violet-600"
+                className="bg-violet-500 text-white px-[10px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:bg-violet-600"
               >
-                View Site
+                view site
               </button>
             </a>
           </div>
@@ -66,7 +62,7 @@ export default function Sidebar() {
           {/* MY SPACE */}
           <div className="pb-2 border-b border-gray-200 max-md:pb-0 max-md:border-none max-md:flex-shrink-0">
             <div
-              className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${pathname === '/dashboard' ? '' : 'hover:bg-gray-100'}`}
+              className="flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1"
             >
               <img src="/images/icons/myspace.svg" className="w-6 h-6 max-md:w-6 max-md:h-6" />
               <Link href="/dashboard">
@@ -120,23 +116,23 @@ export default function Sidebar() {
 
               {/* SECTION ITEMS */}
               {section.items.map(([icon, label]) => (
-                <Link key={label} href={getRoute(label)}>
+                <a key={label} href={getRoute(label)}>
                   <div
-                    className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isActive(label) ? '' : 'hover:bg-gray-100'}`}
+                    className="flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0"
                   >
                     <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
                       {label === "Unpublished" ? (
                         <FileClock
-                          className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${isActive(label) ? 'opacity-100 text-black' : 'opacity-60 text-gray-500'}`}
+                          className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6 text-gray-500"
                         />
                       ) : (
                         <img
-                          src={label === "Settings" ? `/icons/${icon}` : `/images/icons/${icon}`}
-                          className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${isActive(label) ? 'opacity-100' : 'opacity-60'}`}
+                          src={`/images/icons/${icon}`}
+                          className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6"
                         />
                       )}
                       <p
-                        className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${isActive(label) ? 'font-bold text-black' : 'font-normal text-gray-500'}`}
+                        className="text-[13px] font-normal leading-[150%] text-gray-500 m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap"
                       >
                         {label}
                       </p>

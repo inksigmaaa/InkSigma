@@ -2,20 +2,15 @@
 
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
-import Verify from "../components/verify/Verify"
 import BlogStatsComponent from "../components/BlogStatsComponent/BlogStatsComponent"
 import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { useVerifyBanner } from "@/hooks/useVerifyBanner"
 
 export default function HomePage() {
   const router = useRouter()
   const [publication, setPublication] = useState(null)
   const [loading, setLoading] = useState(true)
-  
-  // Check if verify banner should be shown
-  const showVerifyBanner = useVerifyBanner()
 
   useEffect(() => {
     const fetchPublication = async () => {
@@ -41,10 +36,6 @@ export default function HomePage() {
 
   const handleVisitSite = () => {
     window.open("/view-site", "_blank")
-  }
-
-  const handleEditPublication = () => {
-    router.push("/dashboard/settings")
   }
 
   // Sample articles data
@@ -83,15 +74,14 @@ export default function HomePage() {
     <>
       <NavbarLoggedin />
       <Sidebar />
-      <Verify />
       
       {/* Main Content */}
       <div className="pt-[112px] min-h-screen max-md:pt-[90px]">
         <div className="max-w-[1034px] mx-auto px-5 max-md:p-0">
-          <div className={`ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0 ${showVerifyBanner ? 'mt-[55px]' : ''}`}>
+          <div className="ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0">
           
           {/* Publication Header */}
-          <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
+          <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3">
             <div className="flex items-start gap-4 max-md:gap-3">
               <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
                 {publication?.image ? (
@@ -109,10 +99,7 @@ export default function HomePage() {
                 </p>
               </div>
             </div>
-            <button 
-              onClick={handleEditPublication}
-              className="text-sm text-gray-600 bg-[#f4f4f4] hover:text-gray-900 px-4 py-2 border border-gray-200 rounded-md transition-colors max-md:px-3 max-md:py-1.5 max-md:text-xs flex-shrink-0 max-md:rounded-lg"
-            >
+            <button className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 border border-gray-200 rounded-md transition-colors max-md:px-3 max-md:py-1.5 max-md:text-xs flex-shrink-0 max-md:rounded-lg">
               Edit
             </button>
           </div>
@@ -148,11 +135,7 @@ export default function HomePage() {
             
             <div className="grid grid-cols-2 gap-6 max-md:grid-cols-1 max-md:gap-4">
               {articles.map((article) => (
-                <div 
-                  key={article.id} 
-                  className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5 cursor-pointer"
-                  onClick={() => router.push(`/home/preview/${article.id}`)}
-                >
+                <div key={article.id} className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5">
                   <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4">
                     <img 
                       src={article.thumbnail} 
@@ -171,13 +154,7 @@ export default function HomePage() {
                       <span className="text-sm text-gray-400 bg-gray-50 px-4 py-2 rounded-lg">
                         {article.category}
                       </span>
-                      <button 
-                        className="text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/editor?status=published&id=${article.id}`);
-                        }}
-                      >
+                      <button className="text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition-colors">
                         <Pencil className="w-5 h-5" />
                       </button>
                     </div>
@@ -196,7 +173,7 @@ export default function HomePage() {
         onClick={handleVisitSite}
         className="hidden max-md:flex fixed bottom-20 right-4 bg-purple-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors shadow-lg z-50"
       >
-        View site
+        Visit site
       </button>
     </>
   )

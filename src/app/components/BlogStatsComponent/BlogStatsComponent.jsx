@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 
 const BlogStatsComponent = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('Monthly')
@@ -10,10 +10,6 @@ const BlogStatsComponent = () => {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [currentDate, setCurrentDate] = useState(new Date())
-  
-  const periodMenuRef = useRef(null)
-  const datePickerRef = useRef(null)
-  const calendarRef = useRef(null)
   
   const today = new Date()
   const periods = ['Today', 'Weekly', 'Monthly', 'Yearly', 'Custom Date']
@@ -90,61 +86,10 @@ const BlogStatsComponent = () => {
 
   const days = getDaysInMonth(currentDate)
 
-  // Close period menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (periodMenuRef.current && !periodMenuRef.current.contains(event.target)) {
-        setShowPeriodMenu(false)
-      }
-    }
-
-    if (showPeriodMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showPeriodMenu])
-
-  // Close date picker when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
-        setShowDatePicker(false)
-      }
-    }
-
-    if (showDatePicker && !showCalendar) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showDatePicker, showCalendar])
-
-  // Close calendar when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
-        setShowCalendar(null)
-      }
-    }
-
-    if (showCalendar) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showCalendar])
-
   return (
     <div className="w-full">
       {/* Period Selector */}
-      <div ref={periodMenuRef} className="mb-8 relative -mt-10 max-lg:hidden">
+      <div className="mb-8 relative -mt-10 max-lg:hidden">
         <button
           onClick={() => setShowPeriodMenu(!showPeriodMenu)}
           className="flex items-center gap-2 text-gray-900 font-medium text-sm bg-white px-3 py-1.5 rounded hover:bg-gray-50 transition-colors border border-gray-200"
@@ -179,7 +124,7 @@ const BlogStatsComponent = () => {
         {/* Date Picker Modal */}
         {showDatePicker && !showCalendar && (
           <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-            <div ref={datePickerRef} className="bg-white rounded-2xl p-8 shadow-xl w-96">
+            <div className="bg-white rounded-2xl p-8 shadow-xl w-96">
               <div className="grid grid-cols-2 gap-6 mb-6">
                 <div>
                   <label 
@@ -231,7 +176,7 @@ const BlogStatsComponent = () => {
         {/* Calendar Popup */}
         {showCalendar && (
           <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-            <div ref={calendarRef} className="bg-white rounded-xl shadow-2xl p-6 w-auto">
+            <div className="bg-white rounded-xl shadow-2xl p-6 w-auto">
               <div className="border-4 border-blue-400 rounded-lg p-4">
                 {/* Calendar Header */}
                 <div className="flex items-center justify-between mb-4 px-2">

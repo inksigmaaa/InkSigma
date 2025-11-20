@@ -14,14 +14,15 @@ export default function ConditionalLayout({ children }) {
   const isReviewPage = pathname === "/review"
   const isEditorPage = pathname === "/editor"
   const isPostsPage = pathname === "/posts"
-  const isPostsSettingsPage = pathname === "/posts/settings"
   const isMyBlogsPage = pathname === "/my-blogs"
   const isDraftPage = pathname === "/draft"
   const isTrashPage = pathname === "/trash"
   const isPublished = pathname === "/published"
   const isUnpublishedPage = pathname === "/unpublished"
   const isMembersPage = pathname === "/members"
-  const isAuthorReview = pathname === "/author-review"
+  const isHome = pathname === "/home"
+  const isCreatePublicationPage = pathname === "/create-publication"
+  const isDomain = pathname === "/domain"
   const isViewSitePage = pathname?.startsWith("/view-site")
   const isCreatePublicationPage = pathname === "/create-publication"
   const isDomain = pathname === "/domain"
@@ -38,12 +39,12 @@ export default function ConditionalLayout({ children }) {
   const ispostsmembers = pathname === "/posts/home"
   const ispostspublished = pathname === "/posts/published"
 
-  // Show mobile buttons on all pages except auth pages, create-publication page, preview page, dashboard page, and profile settings page
-  const showMobileButtons = !isAuthPage && !isCreatePublicationPage && !isPreview && !isDashboardPage && !isprofilesettings && !isPostsSettingsPage
+  // Show mobile buttons on all pages except auth pages and create-publication page
+  const showMobileButtons = !isAuthPage && !isCreatePublicationPage
 
   
 
-  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished) {
+  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isMembersPage || isViewSitePage) {
     return (
       <div className="min-h-screen">
         {children}
@@ -64,12 +65,8 @@ export default function ConditionalLayout({ children }) {
         {children}
       </main>
       <Footer />
-      {!isLandingPage && (
-        <>
-          <VisitSiteButton />
-          <FeedbackButton />
-        </>
-      )}
+      <VisitSiteButton />
+      <FeedbackButton />
     </>
   )
 }
