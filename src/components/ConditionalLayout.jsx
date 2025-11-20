@@ -31,15 +31,19 @@ export default function ConditionalLayout({ children }) {
   const ispostMyblogs = pathname === "/posts/my-blogs"
   const isPosthome = pathname === "/posts/home"
   const ispostPublished = pathname === "/posts/published"
+  const isMembersDashboard = pathname === "/dashboard/members"
   const isPreview = pathname?.startsWith("/home/preview")
   const isLandingPage = pathname === "/"
+  const isblog = pathname === "/posts/my-blogs"
+  const ispostsmembers = pathname === "/posts/home"
+  const ispostspublished = pathname === "/posts/published"
 
-  // Show mobile buttons on all pages except auth pages, create-publication page, and preview page
-  const showMobileButtons = !isAuthPage && !isCreatePublicationPage && !isPreview
+  // Show mobile buttons on all pages except auth pages, create-publication page, preview page, dashboard page, and profile settings page
+  const showMobileButtons = !isAuthPage && !isCreatePublicationPage && !isPreview && !isDashboardPage && !isprofilesettings && !isPostsSettingsPage
 
   
 
-  if (isAuthPage || isDashboardPage ||isPosthome|| isSchedulePage ||ispostMyblogs||ispostPublished|| isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isDomain || isPreview) {
+  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished) {
     return (
       <div className="min-h-screen">
         {children}

@@ -91,7 +91,7 @@ export default function HomePage() {
           <div className={`ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0 ${showVerifyBanner ? 'mt-[55px]' : ''}`}>
           
           {/* Publication Header */}
-          <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3">
+          <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
             <div className="flex items-start gap-4 max-md:gap-3">
               <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
                 {publication?.image ? (
@@ -111,7 +111,7 @@ export default function HomePage() {
             </div>
             <button 
               onClick={handleEditPublication}
-              className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 border border-gray-200 rounded-md transition-colors max-md:px-3 max-md:py-1.5 max-md:text-xs flex-shrink-0 max-md:rounded-lg"
+              className="text-sm text-gray-600 bg-[#f4f4f4] hover:text-gray-900 px-4 py-2 border border-gray-200 rounded-md transition-colors max-md:px-3 max-md:py-1.5 max-md:text-xs flex-shrink-0 max-md:rounded-lg"
             >
               Edit
             </button>
@@ -196,7 +196,7 @@ export default function HomePage() {
         onClick={handleVisitSite}
         className="hidden max-md:flex fixed bottom-20 right-4 bg-purple-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors shadow-lg z-50"
       >
-        Visit site
+        View site
       </button>
     </>
   )

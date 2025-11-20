@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react'
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -12,6 +13,7 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from 'next/navigation'
+import StatsPopup from '../articleContainer/StatsPopup'
 
 export default function SchedulePostCard({ 
   post, 
@@ -19,9 +21,24 @@ export default function SchedulePostCard({
   onSelectPost 
 }) {
   const router = useRouter()
+  const [showStats, setShowStats] = useState(false)
+  const [statsPosition, setStatsPosition] = useState({ top: 0, left: 0 })
+  const statsButtonRef = useRef(null)
 
   const handleEdit = () => {
     router.push(`/editor?status=scheduled&id=${post.id}`)
+  }
+
+  const handleStatsClick = (e) => {
+    e.stopPropagation()
+    if (statsButtonRef.current) {
+      const rect = statsButtonRef.current.getBoundingClientRect()
+      setStatsPosition({
+        top: rect.top - 68,
+        left: rect.right
+      })
+    }
+    setShowStats(!showStats)
   }
   return (
     <div className="bg-white border border-gray-200 rounded-lg px-6 pb-6 pt-10 relative">
@@ -40,7 +57,7 @@ export default function SchedulePostCard({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem className="gap-3 py-3 cursor-pointer">
+          <DropdownMenuItem className="gap-3 py-3 cursor-pointer" onClick={handleStatsClick}>
             <Image src="/svg/stats.svg" alt="Stats" width={20} height={20} className="text-gray-600" />
             <span className="text-base text-gray-700">Statics</span>
           </DropdownMenuItem>
@@ -74,7 +91,13 @@ export default function SchedulePostCard({
           </div>
 
           <div className="flex gap-1">
-            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 h-9 w-9">
+            <Button 
+              ref={statsButtonRef}
+              variant="ghost" 
+              size="icon" 
+              className="text-gray-400 hover:text-gray-600 h-9 w-9"
+              onClick={handleStatsClick}
+            >
               <Image src="/svg/stats.svg" alt="Stats" width={24} height={24} />
             </Button>
             <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-600 h-9 w-9" onClick={handleEdit}>
@@ -129,6 +152,13 @@ export default function SchedulePostCard({
           <span>{post.postedTime}</span>
         </div>
       </div>
+
+      {/* Stats Popup */}
+      <StatsPopup 
+        isOpen={showStats} 
+        onClose={() => setShowStats(false)} 
+        position={statsPosition}
+      />
     </div>
   )
 }

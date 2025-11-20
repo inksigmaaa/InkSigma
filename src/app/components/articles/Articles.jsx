@@ -113,7 +113,7 @@ export default function Articles(props) {
             <div className="ml-0 md:ml-[185px]">
 
                 {/* Mobile header */}
-                <div className="flex flex-col justify-between gap-4 mb-6 px-2 md:hidden">
+                <div className="flex flex-col justify-between gap-4 mb-6 px-2 md:hidden max-md:mt-3">
                     <h1 className="font-bold text-lg leading-8 text-gray-800 m-0 flex items-center gap-3">
                         <span className="w-3 h-3 bg-violet-500 rounded-full shrink-0"></span>
                         {props.title || "All Articles"}
@@ -130,15 +130,41 @@ export default function Articles(props) {
                         <div className="relative" ref={mobileDropdownRef}>
                             <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="min-w-[180px] flex items-center justify-between gap-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg px-4 py-2 cursor-pointer transition hover:border-violet-500 max-[410px]:min-w-[120px] max-[410px]:text-xs max-[410px]:px-3 max-[410px]:py-2 max-[360px]:min-w-[100px] max-[360px]:px-2.5 max-[360px]:py-1.5"
+                                className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 max-[410px]:min-w-[120px] max-[410px]:text-xs max-[410px]:px-3 max-[410px]:py-2 max-[360px]:min-w-[100px] max-[360px]:px-2.5 max-[360px]:py-1.5 whitespace-nowrap"
+                                style={{
+                                    minWidth: '163px',
+                                    height: '32px',
+                                    borderRadius: '4px',
+                                    borderWidth: '1px',
+                                    opacity: 1,
+                                    gap: '10px',
+                                    padding: '6px 16px'
+                                }}
                             >
-                                Category
+                                <span
+                                    style={{
+                                        fontFamily: 'Public Sans',
+                                        fontWeight: 400,
+                                        fontSize: '14px',
+                                        lineHeight: '150%',
+                                        letterSpacing: '0%',
+                                        color: '#6B7280'
+                                    }}
+                                >
+                                    Category
+                                </span>
                                 <svg 
                                     width="16" 
                                     height="16" 
                                     viewBox="0 0 16 16" 
                                     fill="none"
-                                    className={`shrink-0 max-[410px]:w-3.5 max-[410px]:h-3.5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                                    className="transition-transform max-[410px]:w-3.5 max-[410px]:h-3.5 flex-shrink-0"
+                                    style={{
+                                        strokeWidth: '1.4px',
+                                        opacity: 1,
+                                        color: '#9CA3AF',
+                                        transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+                                    }}
                                 >
                                     <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                                 </svg>
@@ -200,7 +226,14 @@ export default function Articles(props) {
                                     type="checkbox"
                                     checked={selectAll}
                                     onChange={handleSelectAll}
-                                    className="w-[18px] h-[18px] cursor-pointer accent-violet-500"
+                                    className="cursor-pointer accent-violet-500"
+                                    style={{
+                                        width: '16px',
+                                        height: '16px',
+                                        borderRadius: '4px',
+                                        borderWidth: '1px',
+                                        opacity: 1
+                                    }}
                                 />
                                 <span className="font-bold text-base leading-6 text-gray-500">
                                     Select all
@@ -234,15 +267,41 @@ export default function Articles(props) {
                         <div className="relative" ref={desktopDropdownRef}>
                             <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="min-w-[180px] flex items-center justify-between gap-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg px-4 py-2 cursor-pointer transition hover:border-violet-500"
+                                className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 whitespace-nowrap"
+                                style={{
+                                    minWidth: '163px',
+                                    height: '32px',
+                                    borderRadius: '4px',
+                                    borderWidth: '1px',
+                                    opacity: 1,
+                                    gap: '10px',
+                                    padding: '6px 16px'
+                                }}
                             >
-                                Choose Category
+                                <span
+                                    style={{
+                                        fontFamily: 'Public Sans',
+                                        fontWeight: 400,
+                                        fontSize: '14px',
+                                        lineHeight: '150%',
+                                        letterSpacing: '0%',
+                                        color: '#6B7280'
+                                    }}
+                                >
+                                    Choose Category
+                                </span>
                                 <svg 
                                     width="16" 
                                     height="16" 
                                     viewBox="0 0 16 16" 
                                     fill="none"
-                                    className={`shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                                    className="transition-transform flex-shrink-0"
+                                    style={{
+                                        strokeWidth: '1.4px',
+                                        opacity: 1,
+                                        color: '#9CA3AF',
+                                        transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+                                    }}
                                 >
                                     <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                                 </svg>

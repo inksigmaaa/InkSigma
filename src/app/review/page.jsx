@@ -14,46 +14,45 @@ import { Clock } from "lucide-react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
 import Verify from "../components/verify/Verify"
-import { useVerifyBanner } from "@/hooks/useVerifyBanner"
 
 export default function ReviewPage() {
   const [selectedPosts, setSelectedPosts] = useState([])
   const [category, setCategory] = useState("")
-  
-  // Check if verify banner should be shown
-  const showVerifyBanner = useVerifyBanner()
 
-  const posts = [
+  const articles = [
     {
       id: 1,
+      status: "review",
       title: "Journey Beyond",
-      author: "Mocas Nicota",
-      tags: ["Sports", "Humour", "History"],
-      date: "FRI | 15 NOV, 2024"
+      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
+      categories: ["Sports", "Humour", "History"],
+      postedTime: "FRI | 15 NOV, 2024",
     },
     {
       id: 2,
+      status: "review",
       title: "Wanderlust Diaries",
-      author: "John Cena",
-      tags: ["Sports", "Humour", "History"],
-      date: "FRI | 15 NOV, 2024"
+      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
+      categories: ["Sports", "Humour", "History"],
+      postedTime: "FRI | 15 NOV, 2024",
     },
     {
       id: 3,
+      status: "review",
       title: "Globe Trotter",
-      author: "Randy Ortan",
-      tags: ["Sports", "Humour", "History"],
-      date: "FRI | 15 NOV, 2024"
+      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
+      categories: ["Sports", "Humour", "History"],
+      postedTime: "FRI | 15 NOV, 2024",
     }
-  ]
+  ];
 
-  const handleSelectPost = (postId, checked) => {
-    if (checked) {
-      setSelectedPosts([...selectedPosts, postId])
-    } else {
-      setSelectedPosts(selectedPosts.filter(id => id !== postId))
-    }
-  }
+  const handleArticleSelect = (id, isSelected) => {
+    setSelectedArticles(prev => 
+      isSelected 
+        ? [...prev, id]
+        : prev.filter(articleId => articleId !== id)
+    );
+  };
 
   return (
     <>
@@ -61,7 +60,7 @@ export default function ReviewPage() {
       <Sidebar />
       <Verify />
       
-      <div className={`absolute left-1/2 -translate-x-1/2 ${showVerifyBanner ? 'top-[220px]' : 'top-[160px]'} w-full max-w-[1034px] z-20 px-5`}>
+      <div className="absolute left-1/2 -translate-x-1/2 top-[220px] w-full max-w-[1034px] z-20 px-5">
         <div className="ml-0 md:ml-[185px]">
           <div className="space-y-6">
             {/* Header */}

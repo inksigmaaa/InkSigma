@@ -72,17 +72,14 @@ export default function ArticleDropdown({ status, onEdit, onDelete, onRestore })
                   Edit
                 </button>
                 <button className="flex items-center gap-4 px-4 py-3 font-['Public_Sans'] font-normal text-base leading-[150%] text-gray-700 bg-white border-none w-full text-left cursor-pointer hover:bg-gray-50 transition-colors rounded-lg" onClick={() => handleAction(onRestore || (() => console.log('Restore')))}>
-                  <svg width="24" height="24" viewBox="0 0 18 18" fill="none" className="shrink-0">
-                    <path d="M3 9C3 7.4087 3.63214 5.88258 4.75736 4.75736C5.88258 3.63214 7.4087 3 9 3C10.5913 3 12.1174 3.63214 13.2426 4.75736C14.3679 5.88258 15 7.4087 15 9C15 10.5913 14.3679 12.1174 13.2426 13.2426C12.1174 14.3679 10.5913 15 9 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M3 12L3 9L6 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <img src="/images/icons/restore.svg" alt="restore" className="shrink-0" width="24" height="24" />
                   Restore
                 </button>
                 <button className="flex items-center gap-4 px-4 py-3 font-['Public_Sans'] font-normal text-base leading-[150%] text-gray-700 bg-white border-none w-full text-left cursor-pointer hover:bg-gray-50 transition-colors rounded-lg" onClick={() => handleAction(onDelete || (() => console.log('Delete Permanently')))}>
                   <svg width="24" height="24" viewBox="0 0 18 18" fill="none" className="shrink-0">
                     <path d="M3 5H15M7 8V13M11 8V13M4 5L5 15C5 15.5304 5.21071 16.0391 5.58579 16.4142C5.96086 16.7893 6.46957 17 7 17H11C11.5304 17 12.0391 16.7893 12.4142 16.4142C12.7893 16.0391 13 15.5304 13 15L14 5M6 5V3C6 2.73478 6.10536 2.48043 6.29289 2.29289C6.48043 2.10536 6.73478 2 7 2H11C11.2652 2 11.5196 2.10536 11.7071 2.29289C11.8946 2.48043 12 2.73478 12 3V5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                  Move to Trash
+                  Delete
                 </button>
               </>
             )}
