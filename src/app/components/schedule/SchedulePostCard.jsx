@@ -8,11 +8,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   Clock,
-  MoreVertical,
-  ExternalLink,
-  Edit3,
-  Trash2
+  MoreVertical
 } from "lucide-react"
+import Image from "next/image"
 import { useRouter } from 'next/navigation'
 
 export default function SchedulePostCard({ 
@@ -63,7 +61,7 @@ export default function SchedulePostCard({
               size="icon" 
               className="text-gray-400 hover:text-gray-600 h-8 w-8"
             >
-              <ExternalLink className="h-4 w-4" />
+              <Image src="/svg/stats.svg" alt="Stats" width={20} height={20} />
             </Button>
             <Button 
               variant="ghost" 
@@ -71,14 +69,14 @@ export default function SchedulePostCard({
               className="text-gray-400 hover:text-gray-600 h-8 w-8"
               onClick={handleEdit}
             >
-              <Edit3 className="h-4 w-4" />
+              <Image src="/svg/edit.svg" alt="Edit" width={16} height={16} />
             </Button>
             <Button 
               variant="ghost" 
               size="icon" 
               className="text-gray-400 hover:text-gray-600 h-8 w-8"
             >
-              <Trash2 className="h-4 w-4" />
+              <Image src="/svg/delete.svg" alt="Delete" width={16} height={16} />
             </Button>
           </div>
         </div>
@@ -140,7 +138,7 @@ export default function SchedulePostCard({
                 size="icon" 
                 className="text-gray-400 hover:text-gray-600 h-8 w-8"
               >
-                <ExternalLink className="h-4 w-4" />
+                <Image src="/svg/stats.svg" alt="Stats" width={16} height={16} />
               </Button>
               <Button 
                 variant="ghost" 
@@ -148,14 +146,14 @@ export default function SchedulePostCard({
                 className="text-gray-400 hover:text-gray-600 h-8 w-8"
                 onClick={handleEdit}
               >
-                <Edit3 className="h-4 w-4" />
+                <Image src="/svg/edit.svg" alt="Edit" width={16} height={16} />
               </Button>
               <Button 
                 variant="ghost" 
                 size="icon" 
                 className="text-gray-400 hover:text-gray-600 h-8 w-8"
               >
-                <Trash2 className="h-4 w-4" />
+                <Image src="/svg/delete.svg" alt="Delete" width={16} height={16} />
               </Button>
             </div>
           </div>
@@ -173,15 +171,15 @@ export default function SchedulePostCard({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem className="gap-3 py-3 cursor-pointer">
-              <ExternalLink className="h-4 w-4" />
-              <span className="text-base text-gray-700">View</span>
+              <Image src="/svg/stats.svg" alt="Stats" width={16} height={16} />
+              <span className="text-base text-gray-700">Statistics</span>
             </DropdownMenuItem>
             <DropdownMenuItem className="gap-3 py-3 cursor-pointer" onClick={handleEdit}>
-              <Edit3 className="h-4 w-4" />
+              <Image src="/svg/edit.svg" alt="Edit" width={16} height={16} />
               <span className="text-base text-gray-700">Edit</span>
             </DropdownMenuItem>
             <DropdownMenuItem className="gap-3 py-3 cursor-pointer">
-              <Trash2 className="h-4 w-4" />
+              <Image src="/svg/delete.svg" alt="Delete" width={16} height={16} />
               <span className="text-base text-gray-700">Move to Trash</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
