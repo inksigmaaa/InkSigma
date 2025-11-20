@@ -58,7 +58,7 @@ export default function Sidebar() {
               <button
                 className="w-full bg-violet-500 text-white px-[16px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:bg-violet-600"
               >
-                view site
+                View Site
               </button>
             </a>
           </div>

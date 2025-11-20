@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -96,7 +96,7 @@ export default function ReviewArticles({ title = "Review" }) {
   return (
     <div className="absolute left-1/2 -translate-x-1/2 top-[215px] w-full max-w-[1034px] z-20 px-5">
       <div className="ml-0 md:ml-[185px]">
-        
+
         {/* Mobile header */}
         <div className="flex flex-col justify-between gap-4 mb-6 px-2 md:hidden">
           <h1 className="font-bold text-lg leading-8 text-gray-800 m-0 flex items-center gap-3">
@@ -110,10 +110,10 @@ export default function ReviewArticles({ title = "Review" }) {
               className="min-w-[180px] flex items-center justify-between gap-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg px-4 py-2 cursor-pointer transition hover:border-violet-500 max-[410px]:min-w-[120px] max-[410px]:text-xs max-[410px]:px-3 max-[410px]:py-2 max-[360px]:min-w-[100px] max-[360px]:px-2.5 max-[360px]:py-1.5"
             >
               Category
-              <svg 
-                width="16" 
-                height="16" 
-                viewBox="0 0 16 16" 
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
                 fill="none"
                 className={`shrink-0 max-[410px]:w-3.5 max-[410px]:h-3.5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
               >
@@ -176,7 +176,14 @@ export default function ReviewArticles({ title = "Review" }) {
                   type="checkbox"
                   checked={selectedPosts.length === posts.length && posts.length > 0}
                   onChange={(e) => handleSelectAll(e.target.checked)}
-                  className="w-[18px] h-[18px] cursor-pointer accent-violet-500"
+                  className="cursor-pointer accent-violet-500"
+                  style={{
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '4px',
+                    borderWidth: '1px',
+                    opacity: 1
+                  }}
                 />
                 <span className="font-bold text-base leading-6 text-gray-500">
                   Select all
@@ -190,10 +197,10 @@ export default function ReviewArticles({ title = "Review" }) {
                 className="min-w-[180px] flex items-center justify-between gap-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg px-4 py-2 cursor-pointer transition hover:border-violet-500"
               >
                 Choose Category
-                <svg 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 16 16" 
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
                   fill="none"
                   className={`shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
                 >
@@ -247,11 +254,11 @@ export default function ReviewArticles({ title = "Review" }) {
             <div key={post.id} className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
               {/* Desktop Layout */}
               <div className="hidden md:flex items-start gap-4">
-                <Checkbox 
+                <Checkbox
                   checked={selectedPosts.includes(post.id)}
                   onCheckedChange={(checked) => handleSelectPost(post.id, checked)}
                 />
-                
+
                 <div className="flex-1 mt-[-5px]">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -263,15 +270,15 @@ export default function ReviewArticles({ title = "Review" }) {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700"
                         onClick={() => handleReject(post.id)}
                       >
                         Reject
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700"
                         onClick={() => handleAccept(post.id)}
                       >
@@ -279,11 +286,11 @@ export default function ReviewArticles({ title = "Review" }) {
                       </Button>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex gap-2 flex-wrap">
                       {post.tags.map((tag, index) => (
-                        <span 
+                        <span
                           key={index}
                           className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded"
                         >
@@ -291,7 +298,7 @@ export default function ReviewArticles({ title = "Review" }) {
                         </span>
                       ))}
                     </div>
-                    
+
                     <div className="flex items-center gap-2 text-gray-400 text-sm">
                       <Clock className="h-4 w-4" />
                       <span>{post.date}</span>
@@ -311,18 +318,18 @@ export default function ReviewArticles({ title = "Review" }) {
                       {post.author}
                     </p>
                   </div>
-                  
+
                   <div className="flex gap-2 ml-4">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="icon"
                       className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700 h-12 w-12"
                       onClick={() => handleReject(post.id)}
                     >
                       ✕
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="icon"
                       className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700 h-12 w-12"
                       onClick={() => handleAccept(post.id)}
@@ -331,10 +338,10 @@ export default function ReviewArticles({ title = "Review" }) {
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="flex gap-2 flex-wrap mb-4">
                   {post.tags.map((tag, index) => (
-                    <span 
+                    <span
                       key={index}
                       className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded"
                     >
@@ -342,7 +349,7 @@ export default function ReviewArticles({ title = "Review" }) {
                     </span>
                   ))}
                 </div>
-                
+
                 <div className="flex items-center gap-2 text-gray-400 text-sm">
                   <Clock className="h-4 w-4" />
                   <span>{post.date}</span>
