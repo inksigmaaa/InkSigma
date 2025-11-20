@@ -34,8 +34,8 @@ export default function SchedulePostCard({
     if (statsButtonRef.current) {
       const rect = statsButtonRef.current.getBoundingClientRect()
       setStatsPosition({
-        top: rect.top - 72, // Position above button with gap
-        left: rect.left + (rect.width / 2) + 130 // Center align with offset
+        top: rect.top - 68,
+        left: rect.right
       })
     }
     setShowStats(!showStats)
