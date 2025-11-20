@@ -22,7 +22,7 @@ export default function Members() {
     const mobileTopPosition = showVerifyBanner ? 'max-[767px]:top-[230px]' : 'max-[767px]:top-[175px]';
 
     return (
-        <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} w-full max-w-[1034px] z-20 px-5 pb-20 ${mobileTopPosition} max-[767px]:px-4.5`}>
+        <div className="absolute left-1/2 -translate-x-1/2 top-[215px] w-full max-w-[1034px] z-20 px-5 pb-20 max-[767px]:top-[230px] max-[767px]:px-4.5 max-md:pb-32">
             <div className="ml-[185px] max-[767px]:ml-0">
                 {/* Add Member Section */}
                 <div className="mb-8 max-[767px]:mb-6">

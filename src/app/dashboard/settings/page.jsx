@@ -161,7 +161,7 @@ export default function SettingsPage() {
             <label className="block text-sm font-semibold text-gray-900 mb-2">Publication Description</label>
             <textarea
               placeholder="Write publication Description"
-              rows={3}
+              rows={1}
               className="w-full border-b border-gray-300 py-2 text-sm focus:outline-none focus:border-purple-500 resize-none"
             />
           </div>
