@@ -45,8 +45,7 @@ export default function StatsPopup({ isOpen, onClose, position }) {
             className="fixed z-50 bg-white shadow-[0_10px_40px_rgba(0,0,0,0.15)]"
             style={{
                 top: `${position.top}px`,
-                left: `${position.left}px`,
-                transform: 'translateX(-100%)',
+                left: `${position.left - 268}px`,
                 width: '260px',
                 height: '60px',
                 borderRadius: '8px',

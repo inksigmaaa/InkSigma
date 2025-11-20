@@ -1,9 +1,15 @@
+'use client';
+
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ShareMenu from '../ShareMenu/ShareMenu';
+import StatsPopup from '@/app/components/articleContainer/StatsPopup';
 import mockData from '../../mockData.json';
 
 export default function AllArticles({ searchQuery = '', selectedCategory = '' }) {
+  const [openPopupId, setOpenPopupId] = useState(null);
+  const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
   const articles = mockData.blogs;
 
   // Filter articles based on search query and selected category
@@ -111,11 +117,37 @@ export default function AllArticles({ searchQuery = '', selectedCategory = '' })
             </div>
 
             {/* Category - Always at bottom */}
-            <div className="flex flex-wrap gap-2 mt-auto">
+            <div className="flex flex-wrap gap-2 mt-auto items-center">
               <span className="px-3 py-1.5 md:px-4 md:py-2 bg-white text-gray-700 border border-gray-300 rounded-md text-xs md:text-sm hover:bg-gray-50 transition-colors cursor-pointer">
                 {article.category}
               </span>
+              
+              {/* Stats Button */}
+              <button 
+                title="Stats"
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setPopupPosition({
+                    top: rect.top + rect.height / 2,
+                    left: rect.left
+                  });
+                  setOpenPopupId(openPopupId === article.id ? null : article.id);
+                }}
+                className="ml-auto p-2 hover:bg-gray-100 rounded-md transition-colors"
+                aria-label="View stats"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </button>
             </div>
+
+            {/* Stats Popup */}
+            <StatsPopup 
+              isOpen={openPopupId === article.id}
+              onClose={() => setOpenPopupId(null)}
+              position={popupPosition}
+            />
           </div>
             );
           })}

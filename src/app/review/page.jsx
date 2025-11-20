@@ -19,40 +19,37 @@ export default function ReviewPage() {
   const [selectedPosts, setSelectedPosts] = useState([])
   const [category, setCategory] = useState("")
 
-  const articles = [
+  const posts = [
     {
       id: 1,
-      status: "review",
       title: "Journey Beyond",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      categories: ["Sports", "Humour", "History"],
-      postedTime: "FRI | 15 NOV, 2024",
+      author: "John Doe",
+      tags: ["Sports", "Humour", "History"],
+      date: "FRI | 15 NOV, 2024",
     },
     {
       id: 2,
-      status: "review",
       title: "Wanderlust Diaries",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      categories: ["Sports", "Humour", "History"],
-      postedTime: "FRI | 15 NOV, 2024",
+      author: "Jane Smith",
+      tags: ["Travel", "Adventure"],
+      date: "THU | 14 NOV, 2024",
     },
     {
       id: 3,
-      status: "review",
       title: "Globe Trotter",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      categories: ["Sports", "Humour", "History"],
-      postedTime: "FRI | 15 NOV, 2024",
+      author: "Mike Johnson",
+      tags: ["Travel", "Photography"],
+      date: "WED | 13 NOV, 2024",
     }
-  ];
+  ]
 
-  const handleArticleSelect = (id, isSelected) => {
-    setSelectedArticles(prev => 
-      isSelected 
+  const handleSelectPost = (id, checked) => {
+    setSelectedPosts(prev => 
+      checked 
         ? [...prev, id]
-        : prev.filter(articleId => articleId !== id)
-    );
-  };
+        : prev.filter(postId => postId !== id)
+    )
+  }
 
   return (
     <>
