@@ -303,6 +303,7 @@ export default function CreatePublication() {
                   placeholder="Subdomain name"
                   value={subdomain}
                   onChange={(e) => setSubdomain(e.target.value)}
+                  maxLength={20}
                   className="w-full px-0 py-2 pr-[130px] border-0 border-b text-[14px] text-[#333] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#7C3AED] transition-colors bg-transparent"
                   style={{
                     borderBottomWidth: '1.5px',

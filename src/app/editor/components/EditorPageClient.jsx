@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { CategoryDropdown } from "./CategoryDropdown"
 import { ThumbnailModal } from "./ThumbnailModal"
 import { DateTimePicker } from "./DateTimePicker"
+import Verify from "../../components/verify/Verify"
 import { 
   Image as ImageIcon,
   Calendar,
@@ -121,7 +122,10 @@ export default function EditorPageClient() {
   const statusConfig = getStatusConfig()
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
+    <div className="min-h-screen bg-[#fafafa] flex flex-col">
+      {/* Verification Banner */}
+      <Verify />
+      
       {/* Go Back Button - Full Width on Mobile/Tablet */}
       <div className="px-4 md:px-6 pt-6 pb-4 border-b border-gray-200 md:bg-transparent md:border-0">
         <Button 
@@ -134,8 +138,8 @@ export default function EditorPageClient() {
         </Button>
       </div>
 
-      {/* Main Editor Container */}
-      <div className="w-full max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-6">
+      {/* Main Editor Container - Flex grow to take available space */}
+      <div className="flex-1 w-full max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-6 pb-32">
         {/* Status Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200">
           <div className={`w-2 h-2 ${statusConfig.color} rounded-full`}></div>
@@ -206,9 +210,11 @@ export default function EditorPageClient() {
           onUpdate={handleEditorUpdate}
           initialContent=""
         />
+      </div>
 
-        {/* Character/Word Count and Publish Controls */}
-        <div className="space-y-4 pt-6">
+      {/* Character/Word Count and Publish Controls - Fixed at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#fafafa] border-t border-gray-200" style={{zIndex:999}}>
+        <div className="w-full max-w-5xl mx-auto px-4 md:px-6 py-4 space-y-4">
           {/* Character/Word Count - Right Aligned */}
           <div className="flex justify-end">
             <div className="text-sm text-gray-400">

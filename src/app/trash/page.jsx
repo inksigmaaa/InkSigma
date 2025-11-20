@@ -7,6 +7,7 @@ import PersonalArticleContainer from "../components/personalArticleContainer/Per
 import Verify from "../components/verify/Verify"
 import ConfirmModal from "../components/confirmModal/ConfirmModal"
 import { Button } from "@/components/ui/button"
+import { useVerifyBanner } from "@/hooks/useVerifyBanner"
 
 export default function TrashPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -16,6 +17,9 @@ export default function TrashPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showRestoreModal, setShowRestoreModal] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null) // 'bulk' or specific article id
+  
+  // Check if verify banner should be shown
+  const showVerifyBanner = useVerifyBanner()
 
   // Helper function to format date
   const formatDate = (date) => {
@@ -136,7 +140,7 @@ export default function TrashPage() {
       <NavbarLoggedin />
       <Sidebar />
       <Verify />
-      <div className="absolute left-1/2 -translate-x-1/2 top-[215px] w-full max-w-[1034px] z-20 px-5">
+      <div className={`absolute left-1/2 -translate-x-1/2 ${showVerifyBanner ? 'top-[215px]' : 'top-[160px]'} w-full max-w-[1034px] z-20 px-5`}>
         <div className="ml-0 md:ml-[185px]">
           <div className="flex items-center mb-4">
             <h1 className="m-0 font-bold text-base leading-6 text-red-500 flex items-center gap-2">

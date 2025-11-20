@@ -3,10 +3,14 @@
 import { useState } from "react"
 import { ConfirmationModal } from "@/components/ui/confirmation-modal"
 import ReviewCard from "./ReviewCard"
+import { useVerifyBanner } from "@/hooks/useVerifyBanner"
 
 export default function ReviewPageClient({ article }) {
   const [isSelected, setIsSelected] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  
+  // Check if verify banner should be shown
+  const showVerifyBanner = useVerifyBanner()
 
   const handleRevertToDraft = () => {
     setShowConfirmModal(true)
@@ -25,7 +29,7 @@ export default function ReviewPageClient({ article }) {
 
   return (
     <>
-      <div className="absolute left-1/2 -translate-x-1/2 top-[220px] w-full max-w-[1034px] z-20 px-5">
+      <div className={`absolute left-1/2 -translate-x-1/2 ${showVerifyBanner ? 'top-[220px]' : 'top-[160px]'} w-full max-w-[1034px] z-20 px-5`}>
         <div className="ml-0 md:ml-[185px]">
           <ReviewCard 
             article={article}

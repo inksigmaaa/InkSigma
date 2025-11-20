@@ -2,15 +2,20 @@
 
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
+import Verify from "../components/verify/Verify"
 import BlogStatsComponent from "../components/BlogStatsComponent/BlogStatsComponent"
 import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
+import { useVerifyBanner } from "@/hooks/useVerifyBanner"
 
 export default function HomePage() {
   const router = useRouter()
   const [publication, setPublication] = useState(null)
   const [loading, setLoading] = useState(true)
+  
+  // Check if verify banner should be shown
+  const showVerifyBanner = useVerifyBanner()
 
   useEffect(() => {
     const fetchPublication = async () => {
@@ -78,11 +83,12 @@ export default function HomePage() {
     <>
       <NavbarLoggedin />
       <Sidebar />
+      <Verify />
       
       {/* Main Content */}
       <div className="pt-[112px] min-h-screen max-md:pt-[90px]">
         <div className="max-w-[1034px] mx-auto px-5 max-md:p-0">
-          <div className="ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0">
+          <div className={`ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0 ${showVerifyBanner ? 'mt-[55px]' : ''}`}>
           
           {/* Publication Header */}
           <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3">

@@ -28,6 +28,9 @@ export default function ConditionalLayout({ children }) {
   const isprofilesettings = pathname === "/profile-settings"
   const isHome = pathname === "/home"
   const ismembers = pathname === "/posts/members"
+  const ispostMyblogs = pathname === "/posts/my-blogs"
+  const isPosthome = pathname === "/posts/home"
+  const ispostPublished = pathname === "/posts/published"
   const isPreview = pathname?.startsWith("/home/preview")
   const isLandingPage = pathname === "/"
 
@@ -36,7 +39,7 @@ export default function ConditionalLayout({ children }) {
 
   
 
-  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isDomain || isPreview) {
+  if (isAuthPage || isDashboardPage ||isPosthome|| isSchedulePage ||ispostMyblogs||ispostPublished|| isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isDomain || isPreview) {
     return (
       <div className="min-h-screen">
         {children}

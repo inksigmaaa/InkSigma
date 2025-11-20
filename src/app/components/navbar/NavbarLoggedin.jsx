@@ -3,6 +3,8 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { useSession } from "@/lib/auth-client";
+import UserAvatar from "@/components/ui/UserAvatar";
+import { handleLogout } from "@/utils/auth";
 
 export default function NavbarLoggedin() {
     const [open, setOpen] = useState(false);
@@ -27,31 +29,8 @@ export default function NavbarLoggedin() {
         return () => document.removeEventListener("click", handleClickOutside);
     }, []);
 
-    const handleLogout = async () => {
-        await authClient.signOut();
-        router.push("/login");
-    };
 
-    // Cache user image to prevent flashing
-    const [cachedUserImage, setCachedUserImage] = useState(null);
-    
-    useEffect(() => {
-        // Get cached image from localStorage on mount
-        const cached = localStorage.getItem('userImage');
-        if (cached) {
-            setCachedUserImage(cached);
-        }
-    }, []);
 
-    useEffect(() => {
-        // Update cache when session loads
-        if (session?.user?.avatar) {
-            setCachedUserImage(session.user.avatar);
-            localStorage.setItem('userImage', session.user.avatar);
-        }
-    }, [session?.user?.avatar]);
-
-    const userImage = session?.user?.avatar || cachedUserImage || "/images/icons/profileuser.svg";
     const userName = session?.user?.name || "User";
 
     // Sample notification data - replace with real data from your API
@@ -176,10 +155,10 @@ export default function NavbarLoggedin() {
                             className="flex items-center gap-3 cursor-pointer"
                             onClick={() => setOpen((prev) => !prev)}
                         >
-                            <img
-                                src={userImage}
-                                alt="usericon"
-                                className="w-10 h-10 rounded-full object-cover max-md:w-9 max-md:h-9"
+                            <UserAvatar 
+                                user={session?.user} 
+                                size="md"
+                                className="max-md:w-9 max-md:h-9"
                             />
 
                             {/* Hide name on mobile */}
