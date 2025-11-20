@@ -24,7 +24,7 @@ export default function DomainPage() {
         <div className="ml-0 md:ml-[165px] md:border-r md:border-gray-200">
           <div className="flex flex-col max-md:pl-10 max-md:pr-10 pb-8 md:pb-20">
             {/* Header */}
-            <div className="text-center mt-10 mb-6 max-md:mb-6  max-md:mt-0">
+            <div className="text-center mt-10 mb-6 max-md:mb-6  max-md:mt-8">
               <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Custom Domain Integration</h1>
               <p className="text-sm text-gray-600 px-4 md:px-0">
                 Connect your custom domain you already own with Inksigma.{" "}

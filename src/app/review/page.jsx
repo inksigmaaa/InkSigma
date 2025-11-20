@@ -14,45 +14,41 @@ import { Clock } from "lucide-react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
 import Verify from "../components/verify/Verify"
-import { useVerifyBanner } from "@/hooks/useVerifyBanner"
 
 export default function ReviewPage() {
   const [selectedPosts, setSelectedPosts] = useState([])
   const [category, setCategory] = useState("")
-  
-  // Check if verify banner should be shown
-  const showVerifyBanner = useVerifyBanner()
 
   const posts = [
     {
       id: 1,
       title: "Journey Beyond",
-      author: "Mocas Nicota",
+      author: "John Doe",
       tags: ["Sports", "Humour", "History"],
-      date: "FRI | 15 NOV, 2024"
+      date: "FRI | 15 NOV, 2024",
     },
     {
       id: 2,
       title: "Wanderlust Diaries",
-      author: "John Cena",
-      tags: ["Sports", "Humour", "History"],
-      date: "FRI | 15 NOV, 2024"
+      author: "Jane Smith",
+      tags: ["Travel", "Adventure"],
+      date: "THU | 14 NOV, 2024",
     },
     {
       id: 3,
       title: "Globe Trotter",
-      author: "Randy Ortan",
-      tags: ["Sports", "Humour", "History"],
-      date: "FRI | 15 NOV, 2024"
+      author: "Mike Johnson",
+      tags: ["Travel", "Photography"],
+      date: "WED | 13 NOV, 2024",
     }
   ]
 
-  const handleSelectPost = (postId, checked) => {
-    if (checked) {
-      setSelectedPosts([...selectedPosts, postId])
-    } else {
-      setSelectedPosts(selectedPosts.filter(id => id !== postId))
-    }
+  const handleSelectPost = (id, checked) => {
+    setSelectedPosts(prev => 
+      checked 
+        ? [...prev, id]
+        : prev.filter(postId => postId !== id)
+    )
   }
 
   return (
@@ -61,7 +57,7 @@ export default function ReviewPage() {
       <Sidebar />
       <Verify />
       
-      <div className={`absolute left-1/2 -translate-x-1/2 ${showVerifyBanner ? 'top-[220px]' : 'top-[160px]'} w-full max-w-[1034px] z-20 px-5`}>
+      <div className="absolute left-1/2 -translate-x-1/2 top-[220px] w-full max-w-[1034px] z-20 px-5">
         <div className="ml-0 md:ml-[185px]">
           <div className="space-y-6">
             {/* Header */}

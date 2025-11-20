@@ -65,7 +65,7 @@ export default function PersonalArticles({
     const mobileTopPosition = showVerifyBanner ? 'max-md:top-[260px]' : 'max-md:top-[220px]';
 
     return (
-        <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} w-full max-w-[1034px] z-20 px-5 ${mobileTopPosition}`}>
+        <div className="absolute left-1/2 -translate-x-1/2 top-[200px] w-full max-w-[1034px] z-20 px-5 max-md:top-[230px]">
             <div className="ml-[185px] max-md:ml-0">
                 {/* Title Row */}
                 <div className="flex items-center justify-between gap-4 mb-4">
