@@ -39,12 +39,15 @@ export default function ReviewPageClient({ articles }) {
     <>
       <div className={`absolute left-1/2 -translate-x-1/2 ${showVerifyBanner ? 'top-[215px]' : 'top-[160px]'} w-full max-w-[1034px] z-20 px-5 max-md:top-[120px]`}>
         <div className="ml-0 md:ml-[185px]">
-          <ReviewCard 
-            article={article}
-            isSelected={isSelected}
-            onSelectionChange={setIsSelected}
-            onRevertToDraft={handleRevertToDraft}
-          />
+          {articles && articles.map((article) => (
+            <ReviewCard 
+              key={article.id}
+              article={article}
+              isSelected={selectedArticles[article.id] || false}
+              onSelectionChange={(isSelected) => handleSelectionChange(article.id, isSelected)}
+              onRevertToDraft={handleRevertToDraft}
+            />
+          ))}
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 export default function Comments() {
     const [selectAll, setSelectAll] = useState(false)
+    const showVerifyBanner = false
 
     const model = {
         count: 23,
