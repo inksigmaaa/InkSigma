@@ -22,7 +22,7 @@
     padding: 14px 10px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
     overflow: hidden;
     pointer-events: auto;
 }
