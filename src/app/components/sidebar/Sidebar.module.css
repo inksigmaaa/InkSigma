@@ -209,7 +209,6 @@
 @media (max-width: 1024px) {
     .sidebarContainer {
         width: 165px;
-        justify-content: center;
     }
 }
 

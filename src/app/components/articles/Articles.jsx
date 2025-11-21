@@ -106,9 +106,10 @@ export default function Articles(props) {
 
     // Dynamic top position based on verify banner visibility
     const topPosition = showVerifyBanner ? 'top-[215px]' : 'top-[160px]';
+    const mobileTopPosition = showVerifyBanner ? 'max-md:top-[220px]' : 'max-md:top-[120px]';
 
     return (
-        <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} w-full max-w-[1034px] z-20 px-5`}>
+        <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
 
             <div className="ml-0 md:ml-[185px]">
 
