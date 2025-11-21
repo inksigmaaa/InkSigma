@@ -38,8 +38,8 @@ export default function ConditionalLayout({ children }) {
   const ispostsmembers = pathname === "/posts/home"
   const ispostspublished = pathname === "/posts/published"
 
-  // Show mobile buttons on all pages except auth pages, create-publication page, preview page, dashboard page, and profile settings page
-  const showMobileButtons = !isAuthPage && !isCreatePublicationPage && !isPreview && !isDashboardPage && !isprofilesettings && !isPostsSettingsPage
+  // Show mobile buttons on all pages except auth pages, create-publication page, preview page, dashboard page, profile settings page, and editor page
+  const showMobileButtons = !isAuthPage && !isCreatePublicationPage && !isPreview && !isDashboardPage && !isprofilesettings && !isPostsSettingsPage && !isEditorPage
 
 
 
