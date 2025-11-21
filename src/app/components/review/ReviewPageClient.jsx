@@ -35,14 +35,14 @@ export default function ReviewPageClient({ articles }) {
     setShowConfirmModal(false)
   }
 
-  // Dynamic top position based on verify banner visibility
-  const topPosition = showVerifyBanner ? 'top-[215px]' : 'top-[160px]';
-  const mobileTopPosition = showVerifyBanner ? 'max-md:top-[220px]' : 'max-md:top-[120px]';
+  // Dynamic top position based on verify banner visibility (added 60px for Review header)
+  const topPosition = showVerifyBanner ? 'top-[235px]' : 'top-[180px]';
+  const mobileTopPosition = showVerifyBanner ? 'max-md:top-[240px]' : 'max-md:top-[140px]';
 
   return (
     <>
       <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
-        <div className="ml-0 md:ml-[185px]">
+        <div className="ml-0 md:ml-[185px] space-y-4">
           {articles && articles.map((article) => (
             <ReviewCard 
               key={article.id}

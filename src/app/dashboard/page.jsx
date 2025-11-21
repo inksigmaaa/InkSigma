@@ -6,7 +6,7 @@ import { useEffect } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
 import Verify from "../components/verify/Verify"
-import { ChevronRight, AlertCircle } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 
 
 export default function DashboardPage() {
@@ -19,15 +19,7 @@ export default function DashboardPage() {
     }
   }, [session, isPending, router])
 
-  if (isPending) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    )
-  }
-
-  if (!session) {
+  if (!session && !isPending) {
     return null
   }
 

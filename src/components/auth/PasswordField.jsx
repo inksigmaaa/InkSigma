@@ -13,13 +13,17 @@ import { Eye, EyeOff } from "lucide-react"
  * @param {string} props.placeholder - Input placeholder
  * @param {string} props.value - Input value
  * @param {Function} props.onChange - Change handler
+ * @param {number} props.minLength - Minimum length
+ * @param {number} props.maxLength - Maximum length
  */
 export default function PasswordField({ 
   id, 
   label, 
   placeholder, 
   value, 
-  onChange 
+  onChange,
+  minLength,
+  maxLength
 }) {
   const [showPassword, setShowPassword] = useState(false)
 
@@ -35,6 +39,8 @@ export default function PasswordField({
           placeholder={placeholder}
           value={value}
           onChange={onChange}
+          minLength={minLength}
+          maxLength={maxLength}
           className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 pr-12 focus-visible:ring-0 focus-visible:border-gray-900"
         />
         <button
