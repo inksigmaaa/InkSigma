@@ -23,7 +23,7 @@ export default function ScheduleControls({
             id="select-all"
             checked={selectedPosts.length === totalPosts && totalPosts > 0}
             onChange={(e) => onSelectAll(e.target.checked)}
-            className="w-4 h-4 rounded border-gray-300 text-white bg-white checked:bg-violet-600 checked:border-violet-600 focus:ring-violet-500 focus:ring-2 focus:ring-offset-2"
+            className="w-4 h-4 rounded border-gray-300 text-white bg-white checked:bg-violet-600 checked:border-violet-600 focus:outline-none focus:ring-0"
             style={{
               accentColor: '#7c3aed'
             }}

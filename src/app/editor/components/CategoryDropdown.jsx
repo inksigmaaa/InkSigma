@@ -48,19 +48,7 @@ export function CategoryDropdown({ selectedCategories = [], onCategoriesChange }
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Prevent body scroll when dropdown is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
 
-    // Cleanup function to restore scroll when component unmounts
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen])
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -96,9 +84,9 @@ export function CategoryDropdown({ selectedCategories = [], onCategoriesChange }
         <ChevronDown 
           className="transition-transform"
           style={{
-            width: '9px',
-            height: '4.5px',
-            strokeWidth: '1.4px',
+            width: '16px',
+            height: '16px',
+            strokeWidth: '1.5px',
             opacity: 1,
             color: '#9CA3AF',
             transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)'
