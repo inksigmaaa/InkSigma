@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { CategoryDropdown } from "./CategoryDropdown"
 import { ThumbnailModal } from "./ThumbnailModal"
 import { DateTimePicker } from "./DateTimePicker"
-import Verify from "../../components/verify/Verify"
+
 import { 
   Image as ImageIcon,
   Calendar,
@@ -36,6 +36,7 @@ export default function EditorPageClient() {
   const [isThumbnailModalOpen, setIsThumbnailModalOpen] = useState(false)
   const [thumbnailImage, setThumbnailImage] = useState(null)
   const [isDateTimePickerOpen, setIsDateTimePickerOpen] = useState(false)
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
 
   const handleEditorUpdate = ({ html, charCount: chars, wordCount: words }) => {
     setEditorContent(html)
@@ -122,10 +123,7 @@ export default function EditorPageClient() {
   const statusConfig = getStatusConfig()
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col">
-      {/* Verification Banner */}
-      <Verify />
-      
+    <div className="min-h-screen bg-[#fff] flex flex-col">
       {/* Go Back Button - Full Width on Mobile/Tablet */}
       <div className="px-4 md:px-6 pt-6 pb-4 border-b border-gray-200 md:bg-transparent md:border-0">
         <Button 
@@ -209,11 +207,12 @@ export default function EditorPageClient() {
         <TiptapEditor 
           onUpdate={handleEditorUpdate}
           initialContent=""
+          onImageModalToggle={setIsImageModalOpen}
         />
       </div>
 
       {/* Character/Word Count and Publish Controls - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#fafafa] border-t border-gray-200" style={{zIndex:999}}>
+      <div className={`fixed bottom-0 left-0 right-0 bg-[#fff] border-t border-gray-200 ${(isThumbnailModalOpen || isImageModalOpen) ? 'hidden' : ''}`} style={{zIndex:999}}>
         <div className="w-full max-w-5xl mx-auto px-4 md:px-6 py-4 space-y-4">
           {/* Character/Word Count - Right Aligned */}
           <div className="flex justify-end">
