@@ -13,13 +13,106 @@ export default function ProfileSettingsPage() {
   const router = useRouter()
   const [showResetModal, setShowResetModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [showUpdateMessage, setShowUpdateMessage] = useState(false)
   const [bio, setBio] = useState("")
+  const [profileName, setProfileName] = useState("")
+  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Debug: Log when showUpdateMessage changes
+  useEffect(() => {
+    console.log('showUpdateMessage changed to:', showUpdateMessage)
+  }, [showUpdateMessage])
+
+  // Generate random 4 characters for username
+  const generateRandomSuffix = () => {
+    const chars = 'abcdefghijklmnopqrstuvwxyz'
+    let result = ''
+    for (let i = 0; i < 4; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return result
+  }
 
   useEffect(() => {
     if (!isPending && !session) {
       router.push("/login")
     }
+
+    // Set default values when session is available
+    if (session?.user) {
+      setEmail(session.user.email || "")
+      setProfileName(session.user.name || "")
+      setBio(session.user.bio || "")
+
+      // Use existing username or generate new one
+      if (session.user.username) {
+        setUsername(session.user.username)
+      } else if (session.user.name) {
+        // Generate username from first name + random 4 chars only if no username exists
+        const firstName = session.user.name.split(' ')[0].toLowerCase()
+        const randomSuffix = generateRandomSuffix()
+        setUsername(firstName + randomSuffix)
+      }
+    }
   }, [session, isPending, router])
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true)
+
+      console.log('=== SAVING PROFILE ===')
+      console.log('Profile Name:', profileName)
+      console.log('Username:', username)
+      console.log('Bio:', bio)
+
+      const payload = {
+        name: profileName,
+        username: username,
+        bio: bio,
+      }
+
+      console.log('Payload:', payload)
+
+      const response = await fetch('/api/user/update-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      console.log('Response status:', response.status)
+
+      const data = await response.json()
+      console.log('Response data:', data)
+
+      if (!response.ok) {
+        console.error('Update failed:', data)
+        throw new Error(data.error || 'Failed to update profile')
+      }
+
+      console.log('✅ Update successful! Showing message...')
+
+      // Show success message
+      setShowUpdateMessage(true)
+
+      // Refresh the router to update session data
+      router.refresh()
+
+      // Hide message after 2 seconds
+      setTimeout(() => {
+        console.log('Hiding message...')
+        setShowUpdateMessage(false)
+      }, 2000)
+    } catch (error) {
+      console.error('Error saving profile:', error)
+      alert('Failed to save profile. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   if (isPending) {
     return (
@@ -85,7 +178,9 @@ export default function ProfileSettingsPage() {
                   minLength={3}
                   maxLength={32}
                   placeholder="Enter your Profile name"
-                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
+                  value={profileName}
+                  onChange={(e) => setProfileName(e.target.value)}
+                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-500"
                 />
               </div>
 
@@ -99,7 +194,9 @@ export default function ProfileSettingsPage() {
                   minLength={3}
                   maxLength={20}
                   placeholder="Enter your username"
-                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-500"
                 />
               </div>
 
@@ -113,7 +210,10 @@ export default function ProfileSettingsPage() {
                   minLength={5}
                   maxLength={254}
                   placeholder="Enter your Email ID"
-                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
+                  value={email}
+                  readOnly
+                  disabled
+                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-500 placeholder-gray-300 focus:outline-none cursor-not-allowed bg-gray-50"
                 />
               </div>
 
@@ -129,7 +229,7 @@ export default function ProfileSettingsPage() {
                     maxLength={200}
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    className="w-full border-b border-gray-300 py-2 pr-12 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
+                    className="w-full border-b border-gray-300 py-2 pr-12 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-500"
                   />
                   <span className="absolute right-0 bottom-2 text-xs text-gray-400">{bio.length}/200</span>
                 </div>
@@ -146,17 +246,50 @@ export default function ProfileSettingsPage() {
                 </button>
               </div>
 
-              {/* Save Button */}
-              <div className="flex justify-center mt-8">
+              {/* Settings Updated Message */}
+              {showUpdateMessage && (
+                <div className="flex justify-center" style={{ marginTop: '32px', marginBottom: '8px' }}>
+                  <div
+                    className="bg-green-100 text-green-800 text-center font-medium flex items-center justify-center"
+                    style={{
+                      width: '259px',
+                      height: '32px',
+                      borderRadius: '4px',
+                      opacity: 1,
+                      gap: '10px',
+                      fontSize: '14px',
+                      textWrap: 'nowrap',
+                      paddingTop: '8px',
+                      paddingRight: '109px',
+                      paddingBottom: '8px',
+                      paddingLeft: '109px'
+                    }}
+                  >
+                    Settings Updated
+                  </div>
+                </div>
+              )}
+
+              {/* Update Button */}
+              <div className="flex justify-center" style={{ marginTop: showUpdateMessage ? '0' : '32px' }}>
                 <button
-                  className="bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     width: '259px',
                     height: '32px',
-                    borderRadius: '4px'
+                    borderRadius: '4px',
+                    opacity: 1,
+                    gap: '10px',
+                    fontSize: '14px',
+                    paddingTop: '8px',
+                    paddingRight: '109px',
+                    paddingBottom: '8px',
+                    paddingLeft: '109px'
                   }}
                 >
-                  Save
+                  {isSaving ? 'Update' : 'Update'}
                 </button>
               </div>
             </div>
@@ -195,7 +328,7 @@ export default function ProfileSettingsPage() {
         </div>
       )}
 
-      {/* Success Modal */}
+      {/* Success Modal - Password Reset */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 relative">
