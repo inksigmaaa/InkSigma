@@ -35,9 +35,9 @@ export default function ReviewPageClient({ articles }) {
     setShowConfirmModal(false)
   }
 
-  // Dynamic top position based on verify banner visibility (added 60px for Review header)
-  const topPosition = showVerifyBanner ? 'top-[235px]' : 'top-[180px]';
-  const mobileTopPosition = showVerifyBanner ? 'max-md:top-[240px]' : 'max-md:top-[140px]';
+  // Dynamic top position based on verify banner visibility (Review header + spacing)
+  const topPosition = showVerifyBanner ? 'top-[270px]' : 'top-[200px]';
+  const mobileTopPosition = showVerifyBanner ? 'max-md:top-[250px]' : 'max-md:top-[170px]';
 
   return (
     <>

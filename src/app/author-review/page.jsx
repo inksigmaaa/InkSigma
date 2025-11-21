@@ -5,6 +5,7 @@ import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Verify from "../components/verify/Verify"
 import ReviewPageClient from "../components/review/ReviewPageClient"
 import MemberSidebar from "../membersidebar/MemberSidebar"
+import { useVerifyBanner } from "@/hooks/useVerifyBanner"
 
 const categories = [
   "Agriculture", "Art & Illustration", "Business", "Climate & Environment",
@@ -22,6 +23,9 @@ export default function AuthorReviewPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategories, setSelectedCategories] = useState([])
   const dropdownRef = useRef(null)
+  
+  // Check if verify banner should be shown
+  const showVerifyBanner = useVerifyBanner()
   // This could come from props, API call, or database in a real app
   const articles = [
     {
@@ -80,6 +84,11 @@ export default function AuthorReviewPage() {
     }
   }, [isDropdownOpen])
 
+  // Dynamic top position for Review header based on verify banner visibility
+  // Verify banner is at top-[128px] with ~70px height, so header should be at ~205px
+  const headerTopPosition = showVerifyBanner ? 'top-[205px]' : 'top-[120px]'
+  const mobileHeaderTopPosition = showVerifyBanner ? 'max-md:top-[185px]' : 'max-md:top-[120px]'
+
   return (
     <>
       <NavbarLoggedin />
@@ -87,7 +96,7 @@ export default function AuthorReviewPage() {
       <Verify />
       
       {/* Review Header */}
-      <div className="fixed top-[120px] left-0 right-0 bg-white">
+      <div className={`fixed ${headerTopPosition} ${mobileHeaderTopPosition} left-0 right-0 bg-white `}>
         <div className="max-w-[1034px] mx-auto px-5">
           <div className="ml-0 md:ml-[185px] py-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
