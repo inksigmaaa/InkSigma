@@ -8,29 +8,11 @@ import PersonalArticles from "../components/personalArticles/personalArticles";
 
 export default function Unpublished() {
   const [selectedArticles, setSelectedArticles] = useState([]);
-
-  const articles = [
-    {
-      id: 1,
-      status: "unpublished",
-      title: "Title of the Blog will be in this area",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      categories: ["Sports", "Humour", "History"],
-      postedTime: "Posted 2 mins ago",
-    },
-    {
-      id: 2,
-      status: "unpublished",
-      title: "Another Blog Title Example",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      categories: ["Technology", "Business"],
-      postedTime: "Posted 5 mins ago",
-    }
-  ];
+  const articles = [];
 
   const handleArticleSelect = (id, isSelected) => {
-    setSelectedArticles(prev => 
-      isSelected 
+    setSelectedArticles(prev =>
+      isSelected
         ? [...prev, id]
         : prev.filter(articleId => articleId !== id)
     );
@@ -57,17 +39,17 @@ export default function Unpublished() {
   const hasSelectedArticles = selectedArticles.length > 0;
 
   const actionButtons = [
-    { 
-      icon: "/images/icons/draft1.svg", 
-      title: "Copy", 
+    {
+      icon: "/images/icons/draft1.svg",
+      title: "Copy",
       onClick: handleCopy,
-      disabled: !hasSelectedArticles 
+      disabled: !hasSelectedArticles
     },
-    { 
-      icon: "/images/icons/trash2.svg", 
-      title: "Delete", 
+    {
+      icon: "/images/icons/trash2.svg",
+      title: "Delete",
       onClick: handleDelete,
-      disabled: !hasSelectedArticles 
+      disabled: !hasSelectedArticles
     },
   ];
 

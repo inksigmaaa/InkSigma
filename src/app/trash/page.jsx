@@ -12,61 +12,7 @@ export default function TrashPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showRestoreModal, setShowRestoreModal] = useState(false)
 
-  // Helper function to format date
-  const formatDate = (date) => {
-    const day = date.getDate()
-    const month = date.toLocaleString('en-US', { month: 'short' })
-    const year = date.getFullYear()
-
-    const suffix = (day) => {
-      if (day > 3 && day < 21) return 'th'
-      switch (day % 10) {
-        case 1: return 'st'
-        case 2: return 'nd'
-        case 3: return 'rd'
-        default: return 'th'
-      }
-    }
-
-    return `${day}${suffix(day)} ${month}, ${year}`
-  }
-
-  const today = new Date()
-  const todayFormatted = formatDate(today)
-
-  // Mock articles for demo - using state so we can delete them
-  const [articles, setArticles] = useState([
-    { 
-      id: "1", 
-      status: "trash",
-      title: "Title of the Blog will be in this area", 
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...", 
-      categories: ["Sports", "Humour", "History"], 
-      postedTime: todayFormatted,
-      onDelete: () => handleIndividualDelete("1"),
-      onRestore: () => handleIndividualRestore("1")
-    },
-    { 
-      id: "2", 
-      status: "trash",
-      title: "Title of the Blog will be in this area", 
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...", 
-      categories: ["Sports", "Humour", "History"], 
-      postedTime: todayFormatted,
-      onDelete: () => handleIndividualDelete("2"),
-      onRestore: () => handleIndividualRestore("2")
-    },
-    { 
-      id: "3", 
-      status: "trash",
-      title: "Title of the Blog will be in this area", 
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...", 
-      categories: ["Sports", "Humour", "History"], 
-      postedTime: todayFormatted,
-      onDelete: () => handleIndividualDelete("3"),
-      onRestore: () => handleIndividualRestore("3")
-    }
-  ])
+  const [articles, setArticles] = useState([])
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -97,16 +43,21 @@ export default function TrashPage() {
   }
 
   const handleIndividualDelete = (id) => {
-    // For individual delete, set selected to just this article
     setSelectedArticles([id])
     setShowDeleteModal(true)
   }
 
   const handleIndividualRestore = (id) => {
     console.log('Restore article:', id)
-    // Remove from trash (in real app, this would call an API)
     setArticles(prev => prev.filter(article => article.id !== id))
   }
+
+  // Add handlers to articles
+  const articlesWithHandlers = articles.map(article => ({
+    ...article,
+    onDelete: () => handleIndividualDelete(article.id),
+    onRestore: () => handleIndividualRestore(article.id)
+  }))
 
   const confirmDelete = () => {
     // Delete selected articles
@@ -146,7 +97,7 @@ export default function TrashPage() {
       <PersonalArticles
         title="Trash"
         titleColor="#EF4444"
-        articles={articles}
+        articles={articlesWithHandlers}
         emptyMessage="No trash articles yet"
         showSelectAll={true}
         showActions={true}
