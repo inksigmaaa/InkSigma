@@ -130,7 +130,6 @@ export default function ProfileSettingsPage() {
     <>
       <NavbarLoggedin />
       <DashboardSimpleSidebar />
-      <Verify />
       <div className="min-h-screen bg-white flex justify-center p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 md:pl-64 pb-24 md:pb-8">
         <div className="w-full max-w-[800px] min-h-[927px] space-y-8">
           <h1 className="text-lg font-bold text-gray-900 text-center">Profile Settings</h1>
