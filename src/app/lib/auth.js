@@ -11,6 +11,18 @@ export const auth = betterAuth({
     }) : undefined,
     baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
     secret: process.env.BETTER_AUTH_SECRET || "default-secret-for-build-only",
+    user: {
+        additionalFields: {
+            username: {
+                type: "string",
+                required: false,
+            },
+            bio: {
+                type: "string",
+                required: false,
+            },
+        },
+    },
     emailAndPassword: {
         enabled: true,
     },
