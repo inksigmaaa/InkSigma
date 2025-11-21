@@ -78,7 +78,7 @@ export default function Published() {
             <Verify />
             <PersonalArticles
                 title="Published"
-                titleColor="#8B5CF6"
+                titleColor="#267F24"
                 articles={articles}
                 emptyMessage="No published articles yet"
                 showSelectAll={true}
