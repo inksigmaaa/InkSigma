@@ -8,7 +8,7 @@ export default function ReviewCard({
   onRevertToDraft 
 }) {
   return (
-    <div className="bg-white rounded-lg p-6 border border-gray-200 hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow">
       <DesktopReviewLayout 
         article={article}
         isSelected={isSelected}
