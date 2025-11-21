@@ -4,7 +4,6 @@ import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
 import SchedulePageClient from "../components/schedule/SchedulePageClient";
-
 export default function SchedulePage() {
   // Mock data matching the image design
   const posts = [
