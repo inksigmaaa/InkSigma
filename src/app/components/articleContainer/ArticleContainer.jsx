@@ -54,11 +54,12 @@ export default function ArticleContainer({ id, status, title, description, categ
 
                     {/* left side */}
                     <div className="flex gap-3 flex-1">
-                        <input 
-                            type="checkbox" 
+                        <input
+                            type="checkbox"
                             checked={isSelected || false}
                             onChange={(e) => onSelect && onSelect(id, e.target.checked)}
-                            className="w-5 h-5 mt-1 cursor-pointer accent-violet-500 shrink-0" 
+                            className="mt-1 cursor-pointer accent-violet-500 shrink-0"
+                            style={{ width: '16px', height: '16px' }}
                         />
 
                         <div className="flex-1">
@@ -71,7 +72,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                     <div className="hidden md:flex gap-2 shrink-0">
                         <button
                             ref={statsButtonRef}
-                            className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
+                            className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-1 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
                             title="Stats"
                             onClick={handleStatsClick}
                         >
@@ -80,7 +81,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                         {[
                             { icon: "/images/icons/share.svg", label: "Edit", onClick: handleEdit },
                             { icon: "/images/icons/copy.svg", label: "Copy", onClick: null },
-                            { icon: "/images/icons/trash1.svg", label: "Delete", onClick: null },
+                            { icon: "/images/icons/trash2.svg", label: "Delete", onClick: null },
                         ].map((btn, index) => (
                             <button
                                 key={index}
@@ -106,7 +107,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 <img src="/images/icons/clip.svg" className="w-4 h-4" /> Send to draft
                             </DropdownMenuItem>
                             <DropdownMenuItem className="gap-2 text-sm" onClick={handleStatsClick}>
-                                <img src="/images/icons/statistics.svg" className="w-4 h-4" /> 
+                                <img src="/images/icons/statistics.svg" className="w-4 h-4" />
                                 Statistics
                             </DropdownMenuItem>
                             <DropdownMenuItem className="gap-2 text-sm" onClick={handleEdit}>
@@ -143,9 +144,9 @@ export default function ArticleContainer({ id, status, title, description, categ
             </div>
 
             {/* Stats Popup */}
-            <StatsPopup 
-                isOpen={showStats} 
-                onClose={() => setShowStats(false)} 
+            <StatsPopup
+                isOpen={showStats}
+                onClose={() => setShowStats(false)}
                 position={statsPosition}
             />
         </div>

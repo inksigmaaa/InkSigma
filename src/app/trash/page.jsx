@@ -132,7 +132,7 @@ export default function TrashPage() {
     },
     {
       title: "Delete",
-      icon: "/images/icons/trash1.svg",
+      icon: "/images/icons/trash2.svg",
       onClick: handleBulkDelete,
       disabled: selectedArticles.length === 0
     }

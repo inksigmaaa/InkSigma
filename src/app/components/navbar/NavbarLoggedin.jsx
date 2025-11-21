@@ -101,16 +101,16 @@ export default function NavbarLoggedin() {
                         {notificationOpen && (
                             <div
                                 onClick={(e) => e.stopPropagation()}
-                                className="absolute top-[35px] right-0 w-[400px] max-h-[500px] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.15)] border border-[#E5E5E5] rounded-xl overflow-hidden z-[99999] max-md:fixed max-md:top-[80px] max-md:right-5 max-md:w-[350px] max-md:shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
+                                className="absolute top-[35px] right-0 w-[400px] max-h-[500px] bg-white shadow-[0_8px_32px_rgba(0,0,0,0.15)] border border-[#E5E5E5] rounded-xl overflow-hidden z-[99999] max-md:fixed max-md:top-[80px] max-md:left-4 max-md:right-4 max-md:w-auto max-md:shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
                             >
                                 {/* Header */}
-                                <div className="flex items-center justify-between p-4 border-b border-[#F0F0F0]">
-                                    <h3 className="text-[18px] font-semibold text-[#333]">Notification</h3>
+                                <div className="flex items-center justify-between p-4 border-b border-[#F0F0F0] max-md:p-3">
+                                    <h3 className="text-[18px] font-semibold text-[#333] max-md:text-[16px]">Notification</h3>
                                     <button 
                                         onClick={() => setNotificationOpen(false)}
                                         className="text-[#999] hover:text-[#333] transition-colors"
                                     >
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="max-md:w-5 max-md:h-5">
                                             <line x1="18" y1="6" x2="6" y2="18"></line>
                                             <line x1="6" y1="6" x2="18" y2="18"></line>
                                         </svg>
@@ -118,26 +118,26 @@ export default function NavbarLoggedin() {
                                 </div>
 
                                 {/* Notifications List */}
-                                <div className="max-h-[400px] overflow-y-auto scrollbar-hide"
+                                <div className="max-h-[400px] overflow-y-auto scrollbar-hide max-md:max-h-[60vh]"
                                      style={{
                                          scrollbarWidth: 'none', /* Firefox */
                                          msOverflowStyle: 'none'  /* Internet Explorer 10+ */
                                      }}>
                                     {notifications.map((notification) => (
-                                        <div key={notification.id} className="flex items-start gap-3 p-4 hover:bg-[#F8F9FA] transition-colors border-b border-[#F0F0F0] last:border-b-0">
+                                        <div key={notification.id} className="flex items-start gap-3 p-4 hover:bg-[#F8F9FA] transition-colors border-b border-[#F0F0F0] last:border-b-0 max-md:p-3 max-md:gap-2.5">
                                             <img 
                                                 src={notification.avatar} 
                                                 alt="avatar" 
-                                                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                                                className="w-10 h-10 rounded-full object-cover flex-shrink-0 max-md:w-9 max-md:h-9"
                                             />
                                             <div className="flex-1 min-w-0">
-                                                <h4 className="text-[14px] font-semibold text-[#333] mb-1">
+                                                <h4 className="text-[14px] font-semibold text-[#333] mb-1 max-md:text-[13px]">
                                                     {notification.title}
                                                 </h4>
-                                                <p className="text-[13px] text-[#666] mb-2 leading-relaxed">
+                                                <p className="text-[13px] text-[#666] mb-2 leading-relaxed max-md:text-[12px] max-md:mb-1.5">
                                                     {notification.message}
                                                 </p>
-                                                <div className="flex items-center text-[12px] text-[#999]">
+                                                <div className="flex items-center text-[12px] text-[#999] max-md:text-[11px]">
                                                     <span className="w-1 h-1 bg-[#999] rounded-full mr-2"></span>
                                                     {notification.time}
                                                 </div>

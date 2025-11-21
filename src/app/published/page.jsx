@@ -36,6 +36,41 @@ export default function Published() {
         );
     };
 
+    const handleSelectAll = (checked) => {
+        if (checked) {
+            setSelectedArticles(articles.map(article => article.id));
+        } else {
+            setSelectedArticles([]);
+        }
+    };
+
+    const handleCopy = () => {
+        console.log("Copy articles:", selectedArticles);
+        // Add copy logic here
+    };
+
+    const handleDelete = () => {
+        console.log("Delete articles:", selectedArticles);
+        // Add delete logic here
+    };
+
+    const hasSelectedArticles = selectedArticles.length > 0;
+
+    const actionButtons = [
+        { 
+            icon: "/images/icons/draft1.svg", 
+            title: "Copy", 
+            onClick: handleCopy,
+            disabled: !hasSelectedArticles 
+        },
+        { 
+            icon: "/images/icons/trash2.svg", 
+            title: "Delete", 
+            onClick: handleDelete,
+            disabled: !hasSelectedArticles 
+        },
+    ];
+
     return (
         <>
             <NavbarLoggedin />
@@ -43,10 +78,14 @@ export default function Published() {
             <Verify />
             <PersonalArticles
                 title="Published"
-                titleColor="#8B5CF6"
+                titleColor="#267F24"
                 articles={articles}
                 emptyMessage="No published articles yet"
+                showSelectAll={true}
+                showActions={true}
+                actionButtons={actionButtons}
                 selectedArticles={selectedArticles}
+                onSelectAll={handleSelectAll}
                 onArticleSelect={handleArticleSelect}
             />
         </>

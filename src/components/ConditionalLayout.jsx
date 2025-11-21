@@ -41,7 +41,7 @@ export default function ConditionalLayout({ children }) {
   // Show mobile buttons on all pages except auth pages, create-publication page, preview page, dashboard page, profile settings page, and editor page
   const showMobileButtons = !isAuthPage && !isCreatePublicationPage && !isPreview && !isDashboardPage && !isprofilesettings && !isPostsSettingsPage && !isEditorPage
 
-  
+
 
   if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished) {
     return (

@@ -50,7 +50,7 @@ export default function Comments() {
                                 title="Delete"
                                 className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
                             >
-                                <img src="/images/icons/trash1.svg" alt="delete" className="w-5 h-5" />
+                                <img src="/icons/trash.svg" alt="delete" className="w-5 h-5" />
                             </button>
 
                         </div>
@@ -60,7 +60,7 @@ export default function Comments() {
 <div className="border border-[#EDEDED] p-6 rounded-lg w-full max-w-[800px] md:p-6 p-4">
 
   <div className="flex items-start gap-3">
-    <input type="checkbox" className="mt-1 accent-violet-500 cursor-pointer" />
+    <input type="checkbox" className="mt-1 accent-violet-500 cursor-pointer" style={{ width: '16px', height: '16px' }} />
 
     <div className="flex flex-col gap-4 -mt-1">
 
