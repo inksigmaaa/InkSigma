@@ -82,6 +82,7 @@ export default function ProfileSettingsPage() {
                 </label>
                 <input
                   type="text"
+                  minLength={3}
                   maxLength={32}
                   placeholder="Enter your Profile name"
                   className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
@@ -95,6 +96,7 @@ export default function ProfileSettingsPage() {
                 </label>
                 <input
                   type="text"
+                  minLength={3}
                   maxLength={20}
                   placeholder="Enter your username"
                   className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
@@ -108,7 +110,8 @@ export default function ProfileSettingsPage() {
                 </label>
                 <input
                   type="email"
-                  maxLength={32}
+                  minLength={5}
+                  maxLength={254}
                   placeholder="Enter your Email ID"
                   className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
                 />
@@ -123,12 +126,12 @@ export default function ProfileSettingsPage() {
                   <input
                     type="text"
                     placeholder="Write your bio"
-                    maxLength={120}
+                    maxLength={200}
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     className="w-full border-b border-gray-300 py-2 pr-12 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
                   />
-                  <span className="absolute right-0 bottom-2 text-xs text-gray-400">{bio.length}/120</span>
+                  <span className="absolute right-0 bottom-2 text-xs text-gray-400">{bio.length}/200</span>
                 </div>
               </div>
 

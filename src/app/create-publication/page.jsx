@@ -20,6 +20,17 @@ export default function CreatePublication() {
       return;
     }
 
+    // Validate lengths
+    if (publicationName.length < 2 || publicationName.length > 50) {
+      setShowErrors(true);
+      return;
+    }
+
+    if (subdomain.length < 3 || subdomain.length > 63) {
+      setShowErrors(true);
+      return;
+    }
+
     // Just redirect to home with any values
     try {
       await fetch("/api/publication/create", {
@@ -285,7 +296,8 @@ export default function CreatePublication() {
                 type="text"
                 placeholder="Enter your Publication Name"
                 value={publicationName}
-                maxLength={32}
+                minLength={2}
+                maxLength={50}
                 onChange={(e) => setPublicationName(e.target.value)}
                 className="w-full px-0 py-2 border-0 border-b text-[14px] text-[#333] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#7C3AED] transition-colors bg-transparent"
                 style={{
@@ -304,7 +316,8 @@ export default function CreatePublication() {
                   placeholder="Subdomain name"
                   value={subdomain}
                   onChange={(e) => setSubdomain(e.target.value)}
-                  maxLength={20}
+                  minLength={3}
+                  maxLength={63}
                   className="w-full px-0 py-2 pr-[130px] border-0 border-b text-[14px] text-[#333] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#7C3AED] transition-colors bg-transparent"
                   style={{
                     borderBottomWidth: '1.5px',

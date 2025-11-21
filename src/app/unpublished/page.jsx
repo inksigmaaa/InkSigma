@@ -36,6 +36,41 @@ export default function Unpublished() {
     );
   };
 
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedArticles(articles.map(article => article.id));
+    } else {
+      setSelectedArticles([]);
+    }
+  };
+
+  const handleCopy = () => {
+    console.log("Copy articles:", selectedArticles);
+    // Add copy logic here
+  };
+
+  const handleDelete = () => {
+    console.log("Delete articles:", selectedArticles);
+    // Add delete logic here
+  };
+
+  const hasSelectedArticles = selectedArticles.length > 0;
+
+  const actionButtons = [
+    { 
+      icon: "/images/icons/draft1.svg", 
+      title: "Copy", 
+      onClick: handleCopy,
+      disabled: !hasSelectedArticles 
+    },
+    { 
+      icon: "/images/icons/trash2.svg", 
+      title: "Delete", 
+      onClick: handleDelete,
+      disabled: !hasSelectedArticles 
+    },
+  ];
+
   return (
     <>
       <NavbarLoggedin />
@@ -46,7 +81,11 @@ export default function Unpublished() {
         titleColor="#D97706"
         articles={articles}
         emptyMessage="No unpublished articles yet"
+        showSelectAll={true}
+        showActions={true}
+        actionButtons={actionButtons}
         selectedArticles={selectedArticles}
+        onSelectAll={handleSelectAll}
         onArticleSelect={handleArticleSelect}
       />
     </>
