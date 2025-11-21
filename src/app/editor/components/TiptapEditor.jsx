@@ -28,7 +28,7 @@ import {
 } from "lucide-react"
 import { ImageModal } from './ImageModal'
 
-export function TiptapEditor({ onUpdate, initialContent = '' }) {
+export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle }) {
   const [showHeadingMenu, setShowHeadingMenu] = useState(false)
   const [showListMenu, setShowListMenu] = useState(false)
   const [showAlignMenu, setShowAlignMenu] = useState(false)
@@ -161,6 +161,7 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
 
   const insertImage = () => {
     setIsImageModalOpen(true)
+    onImageModalToggle?.(true)
   }
 
   const handleImageAdd = (imageData) => {
@@ -494,7 +495,13 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
 
         {/* Heading Selector */}
         <div className="flex items-center gap-1.5 md:gap-2 dropdown-container shrink-0 relative">
-          <img src="/editor-icons/P.svg" alt="P" className="w-5 h-5" />
+          <button 
+            onClick={() => editor?.chain().focus().setParagraph().run()} 
+            className={`p-1 hover:bg-gray-100 rounded ${editor?.isActive('paragraph') ? 'bg-gray-200' : ''}`}
+            title="Paragraph"
+          >
+            <img src="/editor-icons/P.svg" alt="P" className="w-5 h-5" />
+          </button>
           <div className="relative">
             <button
               ref={setHeadingButtonRef}
@@ -505,7 +512,7 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
                 setShowHeadingMenu(!showHeadingMenu)
               }}
             >
-              <img src="/editor-icons/H.svg" alt="H" className="w-5 h-5" />
+              <img src="/editor-icons/H.svg" alt="H" className="w-8 h-8" />
               <ChevronDown className="h-3 w-3 text-gray-600 ml-0.5" />
             </button>
             {showHeadingMenu && headingButtonRef && isMounted && createPortal(
@@ -517,7 +524,7 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
                   left: `${dropdownPositions.heading.left}px`,
                 }}
               >
-                {['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].map((heading) => (
+                {['H1', 'H2', 'H3', 'H4', 'H5', 'H6'].map((heading) => (
                   <button
                     key={heading}
                     className="flex items-center px-4 py-2 hover:bg-gray-100 w-full text-left text-sm font-medium"
@@ -993,7 +1000,10 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
       {/* Image Modal */}
       <ImageModal
         isOpen={isImageModalOpen}
-        onClose={() => setIsImageModalOpen(false)}
+        onClose={() => {
+          setIsImageModalOpen(false)
+          onImageModalToggle?.(false)
+        }}
         onImageAdd={handleImageAdd}
       />
     </div>
