@@ -114,6 +114,10 @@ export default function EditorPageClient() {
         return { color: 'bg-green-400', text: 'Published' }
       case 'scheduled':
         return { color: 'bg-blue-400', text: 'Scheduled' }
+      case 'trash':
+        return { color: 'bg-red-400', text: 'Trash' }
+      case 'review':
+        return { color: 'bg-orange-400', text: 'Draft' }
       case 'draft':
       default:
         return { color: 'bg-orange-400', text: 'Drafts' }
@@ -227,7 +231,27 @@ export default function EditorPageClient() {
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-center gap-3">
             {/* Mobile Layout - Single Row */}
             <div className="flex md:hidden items-center gap-2 w-full">
-              {articleStatus === 'published' ? (
+              {articleStatus === 'trash' ? (
+                <>
+                  {/* Revert to Draft Button */}
+                  <Button 
+                    onClick={handleRevertToDraft}
+                    className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
+                  >
+                    Revert to draft
+                  </Button>
+                </>
+              ) : articleStatus === 'review' ? (
+                <>
+                  {/* Send for Review Button */}
+                  <Button 
+                    onClick={handlePublish}
+                    className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
+                  >
+                    Send for Review
+                  </Button>
+                </>
+              ) : articleStatus === 'published' ? (
                 <>
                   {/* Update Button */}
                   <Button 
@@ -340,7 +364,27 @@ export default function EditorPageClient() {
 
             {/* Desktop Layout - Original Design */}
             <div className="hidden md:flex items-center justify-center gap-3">
-              {articleStatus === 'published' ? (
+              {articleStatus === 'trash' ? (
+                <>
+                  {/* Revert to Draft Button */}
+                  <Button 
+                    onClick={handleRevertToDraft}
+                    className="bg-black text-white hover:bg-gray-800 px-6 rounded-lg"
+                  >
+                    Revert to draft
+                  </Button>
+                </>
+              ) : articleStatus === 'review' ? (
+                <>
+                  {/* Send for Review Button */}
+                  <Button 
+                    onClick={handlePublish}
+                    className="bg-black text-white hover:bg-gray-800 px-6 rounded-lg"
+                  >
+                    Send for Review
+                  </Button>
+                </>
+              ) : articleStatus === 'published' ? (
                 <>
                   {/* Update Button */}
                   <Button 
