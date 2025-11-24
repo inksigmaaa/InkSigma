@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { usePublicationMeta } from '@/hooks/usePublicationMeta';
 import HomeHeader from './components/Header/HomeHeader';
 import LatestBlog from './components/LatestBlog/LatestBlog';
 import AllArticles from './components/AllArticles/AllArticles';
@@ -9,10 +10,17 @@ import Footer from './components/Footer/Footer';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 import mockData from './mockData.json';
 
-export default function ViewSitePage() {
+function ViewSiteContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Get subdomain from URL params (set by middleware)
+  const subdomain = searchParams.get('subdomain');
+  
+  // Fetch publication data and update meta tags
+  const { publication, loading } = usePublicationMeta(subdomain);
 
   // Get unique categories from blogs, limit to 3
   const categories = [...new Set(mockData.blogs.map(blog => blog.category))].slice(0, 3);
@@ -42,8 +50,8 @@ export default function ViewSitePage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <HomeHeader 
-        userName="Your Publication Name" 
-        userAvatar={null}
+        userName={publication?.name || "Your Publication Name"} 
+        userAvatar={publication?.logoUrl ? `http://localhost:3001${publication.logoUrl}` : null}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
@@ -54,5 +62,13 @@ export default function ViewSitePage() {
       <Footer />
       <ScrollToTop />
     </div>
+  );
+}
+
+export default function ViewSitePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>}>
+      <ViewSiteContent />
+    </Suspense>
   );
 }

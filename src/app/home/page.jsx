@@ -94,7 +94,13 @@ export default function HomePage() {
           <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
             <div className="flex items-start gap-4 max-md:gap-3">
               <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
-                {publication?.image ? (
+                {publication?.logoUrl ? (
+                  <img 
+                    src={`http://localhost:3001${publication.logoUrl}`} 
+                    alt={publication.name} 
+                    className="w-full h-full object-cover" 
+                  />
+                ) : publication?.image ? (
                   <img src={publication.image} alt={publication.name} className="w-full h-full object-cover" />
                 ) : (
                   <img src="/icons/nib.svg" alt="publication" className="w-10 h-10 opacity-40 max-md:w-8 max-md:h-8" />

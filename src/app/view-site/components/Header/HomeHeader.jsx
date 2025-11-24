@@ -1,7 +1,5 @@
 'use client';
 
-import Image from 'next/image';
-
 export default function HomeHeader({ userName = 'The Nature Blog', userAvatar = null, searchQuery = '', onSearchChange }) {
   return (
     <header className="fixed top-0 left-0 right-0 z-[100] bg-white border-b border-gray-200 py-4 md:py-5 px-4 md:px-6">
@@ -13,20 +11,16 @@ export default function HomeHeader({ userName = 'The Nature Blog', userAvatar = 
             {/* Logo/Avatar */}
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
               {userAvatar ? (
-                <Image 
+                <img 
                   src={userAvatar} 
                   alt={userName}
-                  width={48}
-                  height={48}
-                  className="object-cover"
+                  className="w-full h-full object-cover"
                 />
               ) : (
-                <Image 
+                <img 
                   src="/svg/logo.svg" 
                   alt="Logo"
-                  width={48}
-                  height={48}
-                  className="object-cover"
+                  className="w-full h-full object-cover"
                 />
               )}
             </div>
