@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { CategoryDropdown } from "./CategoryDropdown"
 import { ThumbnailModal } from "./ThumbnailModal"
 import { DateTimePicker } from "./DateTimePicker"
-import Verify from "../../components/verify/Verify"
+
 import { 
   Image as ImageIcon,
   Calendar,
@@ -36,6 +36,7 @@ export default function EditorPageClient() {
   const [isThumbnailModalOpen, setIsThumbnailModalOpen] = useState(false)
   const [thumbnailImage, setThumbnailImage] = useState(null)
   const [isDateTimePickerOpen, setIsDateTimePickerOpen] = useState(false)
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
 
   const handleEditorUpdate = ({ html, charCount: chars, wordCount: words }) => {
     setEditorContent(html)
@@ -113,6 +114,10 @@ export default function EditorPageClient() {
         return { color: 'bg-green-400', text: 'Published' }
       case 'scheduled':
         return { color: 'bg-blue-400', text: 'Scheduled' }
+      case 'trash':
+        return { color: 'bg-red-400', text: 'Trash' }
+      case 'review':
+        return { color: 'bg-orange-400', text: 'Draft' }
       case 'draft':
       default:
         return { color: 'bg-orange-400', text: 'Drafts' }
@@ -122,10 +127,7 @@ export default function EditorPageClient() {
   const statusConfig = getStatusConfig()
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col">
-      {/* Verification Banner */}
-      <Verify />
-      
+    <div className="min-h-screen bg-[#fff] flex flex-col">
       {/* Go Back Button - Full Width on Mobile/Tablet */}
       <div className="px-4 md:px-6 pt-6 pb-4 border-b border-gray-200 md:bg-transparent md:border-0">
         <Button 
@@ -209,11 +211,12 @@ export default function EditorPageClient() {
         <TiptapEditor 
           onUpdate={handleEditorUpdate}
           initialContent=""
+          onImageModalToggle={setIsImageModalOpen}
         />
       </div>
 
       {/* Character/Word Count and Publish Controls - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#fafafa] border-t border-gray-200" style={{zIndex:999}}>
+      <div className={`fixed bottom-0 left-0 right-0 bg-[#fff] border-t border-gray-200 ${(isThumbnailModalOpen || isImageModalOpen) ? 'hidden' : ''}`} style={{zIndex:999}}>
         <div className="w-full max-w-5xl mx-auto px-4 md:px-6 py-4 space-y-4">
           {/* Character/Word Count - Right Aligned */}
           <div className="flex justify-end">
@@ -228,7 +231,27 @@ export default function EditorPageClient() {
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-center gap-3">
             {/* Mobile Layout - Single Row */}
             <div className="flex md:hidden items-center gap-2 w-full">
-              {articleStatus === 'published' ? (
+              {articleStatus === 'trash' ? (
+                <>
+                  {/* Revert to Draft Button */}
+                  <Button 
+                    onClick={handleRevertToDraft}
+                    className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
+                  >
+                    Revert to draft
+                  </Button>
+                </>
+              ) : articleStatus === 'review' ? (
+                <>
+                  {/* Send for Review Button */}
+                  <Button 
+                    onClick={handlePublish}
+                    className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
+                  >
+                    Send for Review
+                  </Button>
+                </>
+              ) : articleStatus === 'published' ? (
                 <>
                   {/* Update Button */}
                   <Button 
@@ -341,7 +364,27 @@ export default function EditorPageClient() {
 
             {/* Desktop Layout - Original Design */}
             <div className="hidden md:flex items-center justify-center gap-3">
-              {articleStatus === 'published' ? (
+              {articleStatus === 'trash' ? (
+                <>
+                  {/* Revert to Draft Button */}
+                  <Button 
+                    onClick={handleRevertToDraft}
+                    className="bg-black text-white hover:bg-gray-800 px-6 rounded-lg"
+                  >
+                    Revert to draft
+                  </Button>
+                </>
+              ) : articleStatus === 'review' ? (
+                <>
+                  {/* Send for Review Button */}
+                  <Button 
+                    onClick={handlePublish}
+                    className="bg-black text-white hover:bg-gray-800 px-6 rounded-lg"
+                  >
+                    Send for Review
+                  </Button>
+                </>
+              ) : articleStatus === 'published' ? (
                 <>
                   {/* Update Button */}
                   <Button 

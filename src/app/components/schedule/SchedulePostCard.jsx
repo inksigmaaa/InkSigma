@@ -100,9 +100,16 @@ export default function SchedulePostCard({
             </div>
       </div>
 
-      {/* Tablet Layout - no checkboxes, but with action buttons */}
+      {/* Tablet Layout - with checkboxes and right-aligned badge/actions */}
       <div className="hidden sm:block lg:hidden">
-        <div className="flex items-start gap-4 mt-2">
+        <div className="flex items-center gap-4 mt-2">
+          {/* Checkbox */}
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(checked) => onSelectPost(post.id, checked)}
+            className="mt-1"
+          />
+
           {/* Content */}
           <div className="flex-1">
             <h3 className="text-base font-semibold text-gray-900 mb-2">
@@ -112,22 +119,20 @@ export default function SchedulePostCard({
               {post.excerpt}
             </p>
 
-            {/* Tags and timestamp row */}
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2 flex-wrap">
-                {post.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="bg-gray-100 text-gray-500 text-xs px-3 py-1 rounded"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+            {/* Tags */}
+            <div className="flex gap-2 flex-wrap">
+              {post.tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="bg-gray-100 text-gray-500 text-xs px-3 py-1 rounded"
+                >
+                  {tag}
+                </span>
+              ))}
             </div>
           </div>
 
-          {/* Scheduled badge and action buttons */}
+          {/* Right-aligned Scheduled badge and action buttons */}
           <div className="flex items-center gap-2">
             <div className="bg-blue-100 text-blue-600 text-xs font-medium px-3 py-1 rounded">
               Scheduled

@@ -3,9 +3,28 @@
 import { FileClock } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [publication, setPublication] = useState(null);
+
+  // Fetch publication data
+  useEffect(() => {
+    const fetchPublication = async () => {
+      try {
+        const response = await fetch("/api/publication/get");
+        if (response.ok) {
+          const data = await response.json();
+          setPublication(data.publication);
+        }
+      } catch (error) {
+        console.error("Error fetching publication:", error);
+      }
+    };
+
+    fetchPublication();
+  }, []);
 
   // Route mapping for navigation
   const getRoute = (label) => {
@@ -48,11 +67,21 @@ export default function Sidebar() {
           <div
             className="flex items-center gap-2 pb-[10px] border-b border-gray-200 max-md:hidden"
           >
-            <img
-              src="/images/icons/profileuser.svg"
-              alt="profileImg"
-              className="w-[34px] h-[34px] rounded-full object-cover border-2 border-violet-500 flex-shrink-0"
-            />
+            <div className="w-[34px] h-[34px] rounded-full overflow-hidden border-2 border-violet-500 flex-shrink-0 bg-gray-100 flex items-center justify-center">
+              {publication?.logoUrl ? (
+                <img
+                  src={`http://localhost:3001${publication.logoUrl}`}
+                  alt={publication.name || "Publication"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <img
+                  src="/images/icons/profileuser.svg"
+                  alt="profileImg"
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
 
             <a href="/view-site" target="_blank" rel="noopener noreferrer">
               <button

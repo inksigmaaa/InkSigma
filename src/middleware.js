@@ -22,6 +22,54 @@ const skipPublicationCheck = [
 
 export async function middleware(request) {
     const { pathname } = request.nextUrl;
+    const hostname = request.headers.get("host") || "";
+    
+    // Check if this is a subdomain request
+    // Support: subdomain.inksigma.com, subdomain.inksigma.local, subdomain.lvh.me
+    const isSubdomain = (
+        (hostname.includes(".inksigma.com") || 
+         hostname.includes(".inksigma.local") || 
+         hostname.includes(".lvh.me")) 
+        && !hostname.startsWith("www.")
+        && !hostname.startsWith("localhost")
+    );
+    
+    // If it's a subdomain request, handle it immediately (skip auth checks)
+    if (isSubdomain) {
+        const subdomain = hostname.split(".")[0];
+        
+        // For root path, rewrite to view-site but keep subdomain URL
+        if (pathname === "/") {
+            const url = request.nextUrl.clone();
+            url.pathname = "/view-site";
+            url.searchParams.set("subdomain", subdomain);
+            return NextResponse.rewrite(url);
+        }
+        
+        // For blog paths, rewrite to view-site/blog but keep subdomain URL
+        if (pathname.startsWith("/blog/")) {
+            const url = request.nextUrl.clone();
+            url.pathname = `/view-site${pathname}`;
+            url.searchParams.set("subdomain", subdomain);
+            return NextResponse.rewrite(url);
+        }
+        
+        // For API routes on subdomain, allow them through
+        if (pathname.startsWith("/api")) {
+            return NextResponse.next();
+        }
+        
+        // For other paths on subdomain, rewrite to view-site
+        if (!pathname.startsWith("/_next")) {
+            const url = request.nextUrl.clone();
+            url.pathname = `/view-site${pathname}`;
+            url.searchParams.set("subdomain", subdomain);
+            return NextResponse.rewrite(url);
+        }
+        
+        // For _next assets, let them through
+        return NextResponse.next();
+    }
 
     // Skip middleware for API routes, static files, and public assets
     if (

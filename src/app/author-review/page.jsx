@@ -26,6 +26,7 @@ export default function AuthorReviewPage() {
   
   // Check if verify banner should be shown
   const showVerifyBanner = useVerifyBanner()
+  
   // This could come from props, API call, or database in a real app
   const articles = [
     {
