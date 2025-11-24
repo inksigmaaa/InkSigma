@@ -1,7 +1,7 @@
 /**
  * Authentication service
  */
-import { post, get } from './api'
+import axios from '@/utils/axios';
 
 export const authService = {
   /**
@@ -10,7 +10,8 @@ export const authService = {
    * @returns {Promise} - User data and token
    */
   login: async (credentials) => {
-    return post('/auth/login', credentials)
+    const response = await axios.post('/auth/login', credentials);
+    return response.data;
   },
 
   /**
@@ -19,7 +20,8 @@ export const authService = {
    * @returns {Promise} - User data and token
    */
   register: async (userData) => {
-    return post('/auth/register', userData)
+    const response = await axios.post('/auth/register', userData);
+    return response.data;
   },
 
   /**
@@ -27,43 +29,17 @@ export const authService = {
    * @returns {Promise}
    */
   logout: async () => {
-    return post('/auth/logout')
+    const response = await axios.post('/auth/logout');
+    return response.data;
   },
 
   /**
-   * Request password reset
-   * @param {string} email - User email
-   * @returns {Promise}
+   * Get current session
+   * @returns {Promise} - Session and user data
    */
-  forgotPassword: async (email) => {
-    return post('/auth/forgot-password', { email })
-  },
-
-  /**
-   * Reset password with token
-   * @param {string} token - Reset token
-   * @param {string} newPassword - New password
-   * @returns {Promise}
-   */
-  resetPassword: async (token, newPassword) => {
-    return post('/auth/reset-password', { token, newPassword })
-  },
-
-  /**
-   * Verify magic link token
-   * @param {string} token - Magic link token
-   * @returns {Promise}
-   */
-  verifyMagicLink: async (token) => {
-    return post('/auth/verify-magic-link', { token })
-  },
-
-  /**
-   * Get current user
-   * @returns {Promise} - User data
-   */
-  getCurrentUser: async () => {
-    return get('/auth/me')
+  getSession: async () => {
+    const response = await axios.get('/auth/session');
+    return response.data;
   },
 
   /**
@@ -71,6 +47,16 @@ export const authService = {
    * @returns {Promise} - New token
    */
   refreshToken: async () => {
-    return post('/auth/refresh')
+    const response = await axios.post('/auth/refresh');
+    return response.data;
+  },
+
+  /**
+   * Delete all sessions (logout from all devices)
+   * @returns {Promise}
+   */
+  deleteAllSessions: async () => {
+    const response = await axios.delete('/auth/sessions');
+    return response.data;
   }
 }

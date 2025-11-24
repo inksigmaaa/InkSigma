@@ -1,12 +1,17 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env.local') });
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true, // Allow cookies
+}));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -19,7 +24,10 @@ app.get('/health', (req, res) => {
 });
 
 // Routes
+const authRoutes = require('./routes/authRoutes');
 const publicationRoutes = require('./routes/publicationRoutes');
+
+app.use('/api/auth', authRoutes);
 app.use('/api', publicationRoutes);
 
 // Error handler
