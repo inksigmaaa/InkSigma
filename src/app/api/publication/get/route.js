@@ -1,30 +1,31 @@
-import { auth } from "@/app/lib/auth";
-import { db } from "@/db";
-import { publication } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 
 export async function GET() {
     try {
-        const session = await auth.api.getSession({
-            headers: await headers(),
-        });
+        const cookieStore = await cookies();
+        const sessionToken = cookieStore.get("better-auth.session_token")?.value;
 
-        if (!session) {
+        if (!sessionToken) {
             return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const userPublications = await db
-            .select()
-            .from(publication)
-            .where(eq(publication.userId, session.user.id))
-            .limit(1);
+        // Call the backend to get publication
+        const backendUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3001";
+        const response = await fetch(`${backendUrl}/api/publication`, {
+            headers: {
+                Cookie: `better-auth.session_token=${sessionToken}`,
+            },
+        });
 
-        if (userPublications.length === 0) {
-            return Response.json({ error: "No publication found" }, { status: 404 });
+        if (!response.ok) {
+            if (response.status === 404) {
+                return Response.json({ error: "No publication found" }, { status: 404 });
+            }
+            return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        return Response.json({ publication: userPublications[0] });
+        const data = await response.json();
+        return Response.json(data);
     } catch (error) {
         console.error("Error fetching publication:", error);
         return Response.json({ error: "Internal server error" }, { status: 500 });

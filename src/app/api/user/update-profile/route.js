@@ -1,15 +1,11 @@
-import { auth } from "@/app/lib/auth";
-import { db } from "@/db";
-import { user } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { cookies } from "next/headers";
 
 export async function POST(request) {
   try {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get("better-auth.session_token")?.value;
 
-    if (!session) {
+    if (!sessionToken) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -18,29 +14,24 @@ export async function POST(request) {
 
     console.log('Updating profile with:', { name, username, bio });
 
-    // Build update object
-    const updateData = {
-      name: name || session.user.name,
-      username: username || null,
-      bio: bio || null,
-      updatedAt: new Date(),
-    };
-
-    console.log('Update data:', updateData);
-
-    // Update user in database
-    const result = await db
-      .update(user)
-      .set(updateData)
-      .where(eq(user.id, session.user.id))
-      .returning();
-
-    console.log('Update result:', result);
-
-    return Response.json({ 
-      success: true,
-      message: "Profile updated successfully" 
+    // Call the backend to update user profile
+    const backendUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3001";
+    const response = await fetch(`${backendUrl}/api/user/update-profile`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: `better-auth.session_token=${sessionToken}`,
+      },
+      body: JSON.stringify({ name, username, bio }),
     });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return Response.json(errorData, { status: response.status });
+    }
+
+    const data = await response.json();
+    return Response.json(data);
   } catch (error) {
     console.error("Error updating profile:", error);
     return Response.json(

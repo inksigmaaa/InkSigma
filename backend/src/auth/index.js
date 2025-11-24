@@ -1,16 +1,35 @@
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "@/db";
+import { db } from "../db/index.js";
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const auth = betterAuth({
-    database: db ? drizzleAdapter(db, {
+    database: drizzleAdapter(db, {
         provider: "pg",
-    }) : undefined,
-    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
-    secret: process.env.BETTER_AUTH_SECRET || "default-secret-for-build-only",
+    }),
+    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3001",
+    secret: process.env.BETTER_AUTH_SECRET || "default-secret-for-development",
+    trustedOrigins: [
+        process.env.FRONTEND_URL || "http://localhost:3000",
+        "http://localhost:3000",
+        "http://localhost:3001",
+    ],
+    redirects: {
+        signIn: process.env.FRONTEND_URL || "http://localhost:3000/dashboard",
+        signUp: process.env.FRONTEND_URL || "http://localhost:3000/dashboard",
+        signOut: process.env.FRONTEND_URL || "http://localhost:3000/login",
+        error: process.env.FRONTEND_URL || "http://localhost:3000/login",
+    },
     user: {
         additionalFields: {
             username: {
@@ -52,9 +71,9 @@ export const auth = betterAuth({
                         </div>
                     `
                 });
-                console.log('✅ Email sent successfully:', result);
+                console.log('Email sent successfully:', result);
             } catch (error) {
-                console.error('❌ Failed to send verification email:', error);
+                console.error('Failed to send verification email:', error);
                 throw error;
             }
         },
@@ -65,7 +84,7 @@ export const auth = betterAuth({
             try {
                 console.log('🔗 Sending magic link to:', email);
                 const result = await resend.emails.send({
-                    from: "InkSigma <onboarding@resend.dev>", // Use Resend's test domain
+                    from: "InkSigma <onboarding@resend.dev>",
                     to: email,
                     subject: "Your Magic Link - InkSigma",
                     html: `
@@ -83,9 +102,9 @@ export const auth = betterAuth({
                         </div>
                     `
                 });
-                console.log('✅ Magic link sent successfully:', result);
+                console.log('Magic link sent successfully:', result);
             } catch (error) {
-                console.error('❌ Failed to send magic link:', error);
+                console.error('Failed to send magic link:', error);
                 throw error;
             }
         },

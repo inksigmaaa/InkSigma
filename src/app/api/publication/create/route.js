@@ -1,16 +1,11 @@
-import { auth } from "@/app/lib/auth";
-import { db } from "@/db";
-import { publication } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 
 export async function POST(request) {
     try {
-        const session = await auth.api.getSession({
-            headers: await headers(),
-        });
+        const cookieStore = await cookies();
+        const sessionToken = cookieStore.get("better-auth.session_token")?.value;
 
-        if (!session) {
+        if (!sessionToken) {
             return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -21,32 +16,24 @@ export async function POST(request) {
             return Response.json({ error: "Name and subdomain are required" }, { status: 400 });
         }
 
-        // Check if subdomain already exists
-        const existingPublication = await db
-            .select()
-            .from(publication)
-            .where(eq(publication.subdomain, subdomain))
-            .limit(1);
+        // Call the backend to create publication
+        const backendUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3001";
+        const response = await fetch(`${backendUrl}/api/publication`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Cookie: `better-auth.session_token=${sessionToken}`,
+            },
+            body: JSON.stringify({ name, subdomain, image }),
+        });
 
-        if (existingPublication.length > 0) {
-            return Response.json({ error: "This subdomain is already in use" }, { status: 409 });
+        if (!response.ok) {
+            const errorData = await response.json();
+            return Response.json(errorData, { status: response.status });
         }
 
-        // Create publication
-        const newPublication = await db
-            .insert(publication)
-            .values({
-                name,
-                subdomain,
-                image: image || null,
-                userId: session.user.id,
-            })
-            .returning();
-
-        return Response.json({ 
-            success: true, 
-            publication: newPublication[0] 
-        }, { status: 201 });
+        const data = await response.json();
+        return Response.json(data, { status: 201 });
     } catch (error) {
         console.error("Error creating publication:", error);
         return Response.json({ error: "Internal server error" }, { status: 500 });

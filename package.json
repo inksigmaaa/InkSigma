@@ -11,10 +11,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "migrate:users": "node src/scripts/migrate-existing-users.js",
-    "add:dummy": "node scripts/add-dummy-publication.mjs",
-    "backend": "cd backend && npm start",
-    "backend:dev": "cd backend && npm run dev",
-    "backend:install": "cd backend && npm install"
+    "add:dummy": "node scripts/add-dummy-publication.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
