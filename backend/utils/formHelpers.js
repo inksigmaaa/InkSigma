@@ -1,68 +1,50 @@
-import { VALIDATION_RULES } from '@/constants'
-
 /**
- * Creates a generic input change handler for form state
- * @param {Function} setFormData - State setter function
- * @param {string} field - Field name to update
- * @returns {Function} - Event handler function
+ * Backend form validation utilities
  */
-export const createInputHandler = (setFormData, field) => (e) => {
-  const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value
-  setFormData(prev => ({
-    ...prev,
-    [field]: value
-  }))
-}
 
-/**
- * Creates a handler for multiple fields at once
- * @param {Function} setFormData - State setter function
- * @returns {Function} - Event handler function
- */
-export const createMultiFieldHandler = (setFormData) => (e) => {
-  const { name, value, type, checked } = e.target
-  setFormData(prev => ({
-    ...prev,
-    [name]: type === 'checkbox' ? checked : value
-  }))
-}
+// Validation constants
+const VALIDATION_RULES = {
+  EMAIL_REGEX: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  PASSWORD_MIN_LENGTH: 8,
+  PASSWORD_REGEX: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+};
 
 /**
  * Validates email format
  * @param {string} email - Email to validate
  * @returns {boolean} - Whether email is valid
  */
-export const isValidEmail = (email) => {
-  if (!email) return false
-  return VALIDATION_RULES.EMAIL_REGEX.test(email.trim())
-}
+const isValidEmail = (email) => {
+  if (!email) return false;
+  return VALIDATION_RULES.EMAIL_REGEX.test(email.trim());
+};
 
 /**
  * Validates password strength
  * @param {string} password - Password to validate
  * @returns {Object} - Validation result with isValid and message
  */
-export const validatePassword = (password) => {
+const validatePassword = (password) => {
   if (!password) {
-    return { isValid: false, message: 'Password is required' }
+    return { isValid: false, message: 'Password is required' };
   }
   
   if (password.length < VALIDATION_RULES.PASSWORD_MIN_LENGTH) {
     return { 
       isValid: false, 
       message: `Password must be at least ${VALIDATION_RULES.PASSWORD_MIN_LENGTH} characters long` 
-    }
+    };
   }
   
   if (!VALIDATION_RULES.PASSWORD_REGEX.test(password)) {
     return { 
       isValid: false, 
       message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' 
-    }
+    };
   }
   
-  return { isValid: true, message: 'Password is strong' }
-}
+  return { isValid: true, message: 'Password is strong' };
+};
 
 /**
  * Validates a single field based on rules
@@ -127,37 +109,47 @@ const validateField = (field, value, rule) => {
  * @param {Object} rules - Validation rules
  * @returns {Object} - Validation errors
  */
-export const validateForm = (formData, rules) => {
-  const errors = {}
+const validateForm = (formData, rules) => {
+  const errors = {};
   
   Object.keys(rules).forEach(field => {
-    const value = formData[field]
-    const rule = rules[field]
-    const error = validateField(field, value, rule)
+    const value = formData[field];
+    const rule = rules[field];
+    const error = validateField(field, value, rule);
     
     if (error) {
-      errors[field] = error
+      errors[field] = error;
     }
-  })
+  });
   
-  return errors
-}
+  return errors;
+};
 
 /**
  * Checks if form has any errors
  * @param {Object} errors - Errors object
  * @returns {boolean} - Whether form has errors
  */
-export const hasErrors = (errors) => {
-  return Object.keys(errors).length > 0
-}
+const hasErrors = (errors) => {
+  return Object.keys(errors).length > 0;
+};
 
 /**
  * Sanitizes form input
  * @param {string} input - Input to sanitize
  * @returns {string} - Sanitized input
  */
-export const sanitizeInput = (input) => {
-  if (typeof input !== 'string') return input
-  return input.trim().replace(/[<>]/g, '')
-}
+const sanitizeInput = (input) => {
+  if (typeof input !== 'string') return input;
+  return input.trim().replace(/[<>]/g, '');
+};
+
+module.exports = {
+  isValidEmail,
+  validatePassword,
+  validateField,
+  validateForm,
+  hasErrors,
+  sanitizeInput,
+  VALIDATION_RULES,
+};

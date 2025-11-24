@@ -107,7 +107,8 @@ export async function middleware(request) {
         
         if (shouldCheckPublication) {
             try {
-                const checkUrl = new URL("/api/publication/check", request.url);
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+                const checkUrl = `${apiUrl}/publication/check`;
                 const response = await fetch(checkUrl, {
                     headers: {
                         Cookie: `better-auth.session_token=${sessionToken.value}`,
