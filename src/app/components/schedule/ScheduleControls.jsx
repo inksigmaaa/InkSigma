@@ -17,7 +17,7 @@ export default function ScheduleControls({
   return (
     <div className="hidden sm:flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 p-2 bg-gray-100">
+        <div className="flex items-center gap-2 cursor-pointer w-[123px] h-8 bg-[#F8F8F8] rounded px-3 py-2">
           <input
             type="checkbox"
             id="select-all"
@@ -28,7 +28,7 @@ export default function ScheduleControls({
               accentColor: '#7c3aed'
             }}
           />
-          <label htmlFor="select-all" className="text-sm text-gray-600 cursor-pointer">
+          <label htmlFor="select-all" className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-500">
             Select all
           </label>
         </div>
