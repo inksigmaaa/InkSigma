@@ -88,6 +88,9 @@ export const publication = pgTable("publication", {
     subdomain: text("subdomain").notNull().unique(),
     description: text("description"),
     image: text("image"),
+    logoUrl: text("logoUrl"),
+    faviconUrl: text("faviconUrl"),
+    metaOgImageUrl: text("metaOgImageUrl"),
     userId: text("userId")
         .notNull()
         .references(() => user.id),

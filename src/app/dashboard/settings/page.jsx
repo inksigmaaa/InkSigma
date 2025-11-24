@@ -6,27 +6,127 @@ import { useEffect, useState } from "react"
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import Sidebar from "../../components/sidebar/Sidebar"
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+
 export default function SettingsPage() {
   const { data: session, isPending } = useSession()
   const router = useRouter()
   const [showResetModal, setShowResetModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(null)
+  
+  // Publication data
+  const [publicationId, setPublicationId] = useState(null)
+  const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
+  const [subdomain, setSubdomain] = useState("")
+  const [originalSubdomain, setOriginalSubdomain] = useState("")
   const [logo, setLogo] = useState("/icons/inksigma-logo.svg")
   const [favicon, setFavicon] = useState("/icons/inksigma-logo.svg")
   const [metaOg, setMetaOg] = useState("/icons/inksigma-logo.svg")
+
+  // Load publication data
+  useEffect(() => {
+    if (session?.user?.id) {
+      loadPublicationData()
+    }
+  }, [session])
+
+  const loadPublicationData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await fetch(`${API_URL}/publications/user/${session.user.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Loaded publication:', data)
+        setPublicationId(data.id)
+        setName(data.name || "")
+        setDescription(data.description || "")
+        setSubdomain(data.subdomain || "")
+        setOriginalSubdomain(data.subdomain || "")
+        
+        // Set image URLs with full path if they exist
+        if (data.logoUrl) {
+          setLogo(`http://localhost:3001${data.logoUrl}`)
+        }
+        if (data.faviconUrl) {
+          setFavicon(`http://localhost:3001${data.faviconUrl}`)
+        }
+        if (data.metaOgImageUrl) {
+          setMetaOg(`http://localhost:3001${data.metaOgImageUrl}`)
+        }
+      } else {
+        throw new Error('Failed to load publication')
+      }
+    } catch (err) {
+      console.error('Failed to load publication:', err)
+      setError('Failed to load publication settings')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleImageUpload = async (file, type) => {
+    if (!publicationId) {
+      setError('Publication not loaded yet')
+      return
+    }
+    
+    try {
+      setUploading(true)
+      setError(null)
+      
+      const formData = new FormData()
+      formData.append(type, file)
+      
+      const response = await fetch(`${API_URL}/publications/${publicationId}/${type}`, {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Upload response:', data)
+        const fullUrl = `http://localhost:3001${data.url}`
+        
+        if (type === 'logo') {
+          setLogo(fullUrl)
+          setSuccess('Logo uploaded successfully!')
+        } else if (type === 'favicon') {
+          setFavicon(fullUrl)
+          setSuccess('Favicon uploaded successfully!')
+        } else if (type === 'meta_og') {
+          setMetaOg(fullUrl)
+          setSuccess('Meta OG image uploaded successfully!')
+        }
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccess(null), 3000)
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Upload failed')
+      }
+    } catch (err) {
+      console.error('Upload error:', err)
+      setError(`Failed to upload ${type}: ${err.message}`)
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const handleLogoChange = () => {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = e.target.files[0]
       if (file) {
-        const reader = new FileReader()
-        reader.onload = (event) => {
-          setLogo(event.target.result)
-        }
-        reader.readAsDataURL(file)
+        await handleImageUpload(file, 'logo')
       }
     }
     input.click()
@@ -36,14 +136,10 @@ export default function SettingsPage() {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = e.target.files[0]
       if (file) {
-        const reader = new FileReader()
-        reader.onload = (event) => {
-          setFavicon(event.target.result)
-        }
-        reader.readAsDataURL(file)
+        await handleImageUpload(file, 'favicon')
       }
     }
     input.click()
@@ -53,29 +149,81 @@ export default function SettingsPage() {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = e.target.files[0]
       if (file) {
-        const reader = new FileReader()
-        reader.onload = (event) => {
-          setMetaOg(event.target.result)
-        }
-        reader.readAsDataURL(file)
+        await handleImageUpload(file, 'meta_og')
       }
     }
     input.click()
   }
 
-  const handleLogoRemove = () => {
-    setLogo("/icons/inksigma-logo.svg")
+  const handleImageRemove = async (type) => {
+    if (!publicationId) return
+    
+    try {
+      const response = await fetch(`${API_URL}/publications/${publicationId}/${type}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        if (type === 'logo') setLogo("/icons/inksigma-logo.svg")
+        else if (type === 'favicon') setFavicon("/icons/inksigma-logo.svg")
+        else if (type === 'meta_og') setMetaOg("/icons/inksigma-logo.svg")
+      }
+    } catch (err) {
+      console.error('Remove error:', err)
+    }
   }
 
-  const handleFaviconRemove = () => {
-    setFavicon("/icons/inksigma-logo.svg")
-  }
+  const handleLogoRemove = () => handleImageRemove('logo')
+  const handleFaviconRemove = () => handleImageRemove('favicon')
+  const handleMetaOgRemove = () => handleImageRemove('meta_og')
 
-  const handleMetaOgRemove = () => {
-    setMetaOg("/icons/inksigma-logo.svg")
+  const handleSave = async () => {
+    if (!publicationId) return
+    
+    try {
+      setSaving(true)
+      setError(null)
+      setSuccess(null)
+      
+      // Update basic info (name and description)
+      const response = await fetch(`${API_URL}/publications/${publicationId}/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description })
+      })
+      
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to save')
+      }
+      
+      // Update subdomain only if it changed
+      if (subdomain && subdomain !== originalSubdomain) {
+        const subdomainResponse = await fetch(`${API_URL}/publications/${publicationId}/subdomain`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subdomain })
+        })
+        
+        if (!subdomainResponse.ok) {
+          const data = await subdomainResponse.json()
+          throw new Error(data.error || 'Failed to update subdomain')
+        }
+        
+        // Update the original subdomain after successful change
+        setOriginalSubdomain(subdomain)
+      }
+      
+      setShowSuccessModal(true)
+    } catch (err) {
+      console.error('Save error:', err)
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   useEffect(() => {
@@ -84,7 +232,7 @@ export default function SettingsPage() {
     }
   }, [session, isPending, router])
 
-  if (isPending) {
+  if (isPending || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
@@ -103,6 +251,24 @@ export default function SettingsPage() {
       <div className="min-h-screen bg-white flex justify-center p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 md:pl-64 mb-20 md:mb-0">
         <div className="w-[400px] h-[1100px] space-y-8">
           <h1 className="text-lg font-bold text-gray-900 text-center">Publication Settings</h1>
+          
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+              {error}
+            </div>
+          )}
+          
+          {uploading && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded text-sm">
+              Uploading image...
+            </div>
+          )}
+          
+          {success && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded text-sm">
+              {success}
+            </div>
+          )}
           
           {/* Logo Upload */}
           <div className="border border-gray-200 rounded-lg p-4">
@@ -152,6 +318,8 @@ export default function SettingsPage() {
             <input
               type="text"
               placeholder="Publication name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               minLength={2}
               maxLength={50}
               className="w-full border-b border-gray-300 py-2 text-sm focus:outline-none focus:border-purple-500"
@@ -163,9 +331,11 @@ export default function SettingsPage() {
             <label className="block text-sm font-semibold text-gray-900 mb-2">Publication Description</label>
             <textarea
               placeholder="Write publication Description"
-              rows={1}
+              value={description || ""}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
               maxLength={200}
-              className="w-full border-b border-gray-300 py-2 text-sm focus:outline-none focus:border-purple-500 resize-none"
+              className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:border-purple-500 resize-none"
             />
           </div>
 
@@ -176,6 +346,8 @@ export default function SettingsPage() {
               <input
                 type="text"
                 placeholder="Graceblog"
+                value={subdomain}
+                onChange={(e) => setSubdomain(e.target.value.toLowerCase())}
                 minLength={3}
                 maxLength={63}
                 className="flex-1 text-sm focus:outline-none"
@@ -185,8 +357,12 @@ export default function SettingsPage() {
           </div>
 
           {/* Save Button */}
-          <button className="w-full bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors mb-6">
-            Save
+          <button 
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors mb-6 disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>
@@ -242,10 +418,10 @@ export default function SettingsPage() {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Mail Sent
+                Settings Saved
               </h2>
               <p className="text-gray-500">
-                A link has been to your registered Email ID
+                Your publication settings have been updated successfully
               </p>
             </div>
           </div>
