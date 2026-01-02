@@ -1,0 +1,6 @@
+# Ignore node_modules during merges
+backend/node_modules/** merge=ours
+node_modules/** merge=ours
+
+# Handle package-lock.json conflicts
+**/package-lock.json merge=union
