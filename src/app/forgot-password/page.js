@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import AuthLayout from "@/components/auth/AuthLayout"
 import { ArrowLeft, CheckCircle2 } from "lucide-react"
-import { forgetPassword } from "@/lib/auth-client"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
@@ -21,14 +20,35 @@ export default function ForgotPasswordPage() {
     setLoading(true)
 
     try {
-      await forgetPassword({
-        email,
-        redirectTo: "/reset-password"
+      // Use custom endpoint
+      const response = await fetch("http://localhost:5000/api/custom/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          redirectTo: "http://localhost:3000/reset-password"
+        }),
+        credentials: "include",
       })
-      setSuccess(true)
+      
+      const data = await response.json()
+      console.log("Response:", response.status, data)
+      
+      if (response.ok && data.success) {
+        setSuccess(true)
+        return
+      }
+      
+      throw new Error(data.error || "Failed to send reset email")
     } catch (err) {
       console.error('Password reset error:', err)
-      setError(err.message || "Failed to send reset email. Please try again.")
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        setError("Cannot connect to server. Please try again.")
+      } else {
+        setError(err.message || "Failed to send reset email. Please try again.")
+      }
     } finally {
       setLoading(false)
     }
@@ -67,9 +87,7 @@ export default function ForgotPasswordPage() {
     <AuthLayout title="Forgot Password?">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-gray-700">
-            Email
-          </Label>
+          <Label htmlFor="email" className="text-gray-700">Email</Label>
           <Input
             id="email"
             type="email"
@@ -96,6 +114,7 @@ export default function ForgotPasswordPage() {
           {loading ? "Sending..." : "Send to Mail"}
         </Button>
       </form>
+
       <div className="text-center pt-4">
         <Link
           href="/login"

@@ -4,14 +4,10 @@ import { useState } from "react"
 import ScheduleHeader from "./ScheduleHeader"
 import ScheduleControls from "./ScheduleControls"
 import SchedulePostCard from "./SchedulePostCard"
-import { useVerifyBanner } from "@/hooks/useVerifyBanner"
 
 export default function SchedulePageClient({ posts }) {
   const [selectedPosts, setSelectedPosts] = useState([])
   const [category, setCategory] = useState("")
-  
-  // Check if verify banner should be shown
-  const showVerifyBanner = useVerifyBanner()
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -29,9 +25,9 @@ export default function SchedulePageClient({ posts }) {
     }
   }
 
-  // Dynamic top position based on verify banner visibility
-  const topPosition = showVerifyBanner ? 'top-[215px]' : 'top-[160px]';
-  const mobileTopPosition = showVerifyBanner ? 'max-md:top-[220px]' : 'max-md:top-[120px]';
+  // Fixed top position (no verify banner)
+  const topPosition = 'top-[160px]';
+  const mobileTopPosition = 'max-md:top-[120px]';
 
   return (
     <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>

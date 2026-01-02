@@ -2,20 +2,20 @@
 
 import { useState, Suspense } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import AuthLayout from "@/components/auth/AuthLayout"
 import PasswordField from "@/components/auth/PasswordField"
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton"
-import { signUp, signIn, signOut } from "@/lib/auth-client"
+import { signUp, signIn } from "@/lib/auth-client"
+import { CheckCircle2, ArrowLeft } from "lucide-react"
 
 function SignupForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect") || "/dashboard"
-
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -23,6 +23,7 @@ function SignupForm() {
   })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [verificationSent, setVerificationSent] = useState(false)
 
   const handleInputChange = (field) => (e) => {
     setFormData(prev => ({
@@ -42,6 +43,7 @@ function SignupForm() {
         email: formData.email,
         password: formData.password,
         name: formData.name,
+        callbackURL: "http://localhost:3000/login",
       })
 
       if (result.error) {
@@ -49,11 +51,8 @@ function SignupForm() {
         return
       }
 
-      // Sign out the user after successful signup
-      await signOut()
-
-      // Redirect to login page
-      router.push('/login')
+      // Show verification message
+      setVerificationSent(true)
     } catch (err) {
       setError(err.message || "An unexpected error occurred")
       console.error(err)
@@ -66,12 +65,41 @@ function SignupForm() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: redirectTo,
+        callbackURL: `http://localhost:3000${redirectTo}`,
       })
     } catch (err) {
       setError("Failed to sign up with Google")
       console.error(err)
     }
+  }
+
+  if (verificationSent) {
+    return (
+      <AuthLayout title="Verify Your Email">
+        <div className="space-y-6 text-center">
+          <div className="flex justify-center">
+            <CheckCircle2 className="w-16 h-16 text-green-500" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-gray-700">
+              We've sent a verification link to <strong>{formData.email}</strong>
+            </p>
+            <p className="text-sm text-gray-500">
+              Please check your inbox and click the link to verify your email before logging in.
+            </p>
+          </div>
+          <div className="text-center pt-4">
+            <Link
+              href="/login"
+              className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Go to Login
+            </Link>
+          </div>
+        </div>
+      </AuthLayout>
+    )
   }
 
   return (
@@ -81,11 +109,10 @@ function SignupForm() {
           {error}
         </div>
       )}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="name" className="text-gray-700">
-            Name
-          </Label>
+          <Label htmlFor="name" className="text-gray-700">Name</Label>
           <Input
             id="name"
             type="text"
@@ -96,10 +123,9 @@ function SignupForm() {
             required
           />
         </div>
+
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-gray-700">
-            Email
-          </Label>
+          <Label htmlFor="email" className="text-gray-700">Email</Label>
           <Input
             id="email"
             type="email"
@@ -112,6 +138,7 @@ function SignupForm() {
             required
           />
         </div>
+
         <PasswordField
           id="password"
           label="Create Password"
@@ -121,6 +148,7 @@ function SignupForm() {
           minLength={12}
           maxLength={128}
         />
+
         <Button
           type="submit"
           disabled={loading}
@@ -129,15 +157,16 @@ function SignupForm() {
           {loading ? "Signing up..." : "Sign Up"}
         </Button>
       </form>
+
       <div className="text-center text-sm text-gray-600">
         Already a User?{" "}
         <Link href="/login" className="text-gray-900 underline hover:text-gray-700 transition-colors">
           Login
         </Link>
       </div>
-      <div className="text-center text-gray-400">
-        or
-      </div>
+
+      <div className="text-center text-gray-400">or</div>
+
       <GoogleAuthButton
         text="Signup With Google"
         onClick={handleGoogleSignup}
@@ -148,7 +177,11 @@ function SignupForm() {
 
 export default function SignupPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-lg">Loading...</div></div>}>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    }>
       <SignupForm />
     </Suspense>
   )

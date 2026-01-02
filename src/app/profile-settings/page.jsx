@@ -1,6 +1,5 @@
 "use client"
 
-import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
@@ -9,7 +8,6 @@ import Verify from "../components/verify/Verify"
 import UserAvatar from "@/components/ui/UserAvatar"
 
 export default function ProfileSettingsPage() {
-  const { data: session, isPending } = useSession()
   const router = useRouter()
   const [showResetModal, setShowResetModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
@@ -35,29 +33,6 @@ export default function ProfileSettingsPage() {
     return result
   }
 
-  useEffect(() => {
-    if (!isPending && !session) {
-      router.push("/login")
-    }
-
-    // Set default values when session is available
-    if (session?.user) {
-      setEmail(session.user.email || "")
-      setProfileName(session.user.name || "")
-      setBio(session.user.bio || "")
-
-      // Use existing username or generate new one
-      if (session.user.username) {
-        setUsername(session.user.username)
-      } else if (session.user.name) {
-        // Generate username from first name + random 4 chars only if no username exists
-        const firstName = session.user.name.split(' ')[0].toLowerCase()
-        const randomSuffix = generateRandomSuffix()
-        setUsername(firstName + randomSuffix)
-      }
-    }
-  }, [session, isPending, router])
-
   const handleSave = async () => {
     try {
       setIsSaving(true)
@@ -67,39 +42,11 @@ export default function ProfileSettingsPage() {
       console.log('Username:', username)
       console.log('Bio:', bio)
 
-      const payload = {
-        name: profileName,
-        username: username,
-        bio: bio,
-      }
-
-      console.log('Payload:', payload)
-
-      const response = await fetch('/api/user/update-profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
-
-      console.log('Response status:', response.status)
-
-      const data = await response.json()
-      console.log('Response data:', data)
-
-      if (!response.ok) {
-        console.error('Update failed:', data)
-        throw new Error(data.error || 'Failed to update profile')
-      }
-
+      // Frontend only - just show success message
       console.log('✅ Update successful! Showing message...')
 
       // Show success message
       setShowUpdateMessage(true)
-
-      // Refresh the router to update session data
-      router.refresh()
 
       // Hide message after 2 seconds
       setTimeout(() => {
@@ -112,18 +59,6 @@ export default function ProfileSettingsPage() {
     } finally {
       setIsSaving(false)
     }
-  }
-
-  if (isPending) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    )
-  }
-
-  if (!session) {
-    return null
   }
 
   return (
@@ -148,7 +83,6 @@ export default function ProfileSettingsPage() {
                 }}
               >
                 <UserAvatar
-                  user={session?.user}
                   size="xl"
                   className="w-full h-full"
                 />

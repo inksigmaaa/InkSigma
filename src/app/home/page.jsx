@@ -7,32 +7,15 @@ import BlogStatsComponent from "../components/BlogStatsComponent/BlogStatsCompon
 import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { useVerifyBanner } from "@/hooks/useVerifyBanner"
 
 export default function HomePage() {
   const router = useRouter()
   const [publication, setPublication] = useState(null)
   const [loading, setLoading] = useState(true)
-  
-  // Check if verify banner should be shown
-  const showVerifyBanner = useVerifyBanner()
 
   useEffect(() => {
-    const fetchPublication = async () => {
-      try {
-        const response = await fetch("/api/publication/get")
-        if (response.ok) {
-          const data = await response.json()
-          setPublication(data.publication)
-        }
-      } catch (error) {
-        console.error("Error fetching publication:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchPublication()
+    // Frontend only - no API call
+    setLoading(false)
   }, [])
 
   const handleStartWriting = () => {
@@ -88,7 +71,7 @@ export default function HomePage() {
       {/* Main Content */}
       <div className="pt-[112px] min-h-screen max-md:pt-[90px]">
         <div className="max-w-[1034px] mx-auto px-5 max-md:p-0">
-          <div className={`ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0 ${showVerifyBanner ? 'mt-[55px] max-md:mt-[130px]' : ''}`}>
+          <div className={`ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0`}>
           
           {/* Publication Header */}
           <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
@@ -96,7 +79,7 @@ export default function HomePage() {
               <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
                 {publication?.logoUrl ? (
                   <img 
-                    src={`http://localhost:3001${publication.logoUrl}`} 
+                    src={publication.logoUrl} 
                     alt={publication.name} 
                     className="w-full h-full object-cover" 
                   />

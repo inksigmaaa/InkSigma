@@ -2,12 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from "@/lib/auth-client";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 export default function MemberSidebar() {
   const pathname = usePathname();
-  const { data: session } = useSession();
   
   const getRoute = (label) => {
     const routes = {

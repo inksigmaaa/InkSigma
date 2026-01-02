@@ -3,15 +3,11 @@
 import { useState } from "react"
 import { ConfirmationModal } from "@/components/ui/confirmation-modal"
 import ReviewCard from "./ReviewCard"
-import { useVerifyBanner } from "@/hooks/useVerifyBanner"
 
 export default function ReviewPageClient({ articles }) {
   const [selectedArticles, setSelectedArticles] = useState({})
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState("all")
-  
-  // Check if verify banner should be shown
-  const showVerifyBanner = useVerifyBanner()
 
   const handleSelectionChange = (articleId, isSelected) => {
     setSelectedArticles(prev => ({
@@ -35,9 +31,9 @@ export default function ReviewPageClient({ articles }) {
     setShowConfirmModal(false)
   }
 
-  // Dynamic top position based on verify banner visibility (Review header + spacing)
-  const topPosition = showVerifyBanner ? 'top-[270px]' : 'top-[200px]';
-  const mobileTopPosition = showVerifyBanner ? 'max-md:top-[250px]' : 'max-md:top-[170px]';
+  // Fixed top position (no verify banner)
+  const topPosition = 'top-[200px]';
+  const mobileTopPosition = 'max-md:top-[170px]';
 
   return (
     <>
