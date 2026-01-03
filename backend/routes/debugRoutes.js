@@ -4,32 +4,6 @@ import { authService } from "../services/authService.js";
 
 const router = express.Router();
 
-<<<<<<< HEAD
-// GET /api/debug/users
-router.get("/users", async (req, res) => {
-    try {
-        const users = await authService.getAllUsers();
-        res.json({ count: users.length, users });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// GET /api/debug/cleanup-unverified
-router.get("/cleanup-unverified", async (req, res) => {
-    try {
-        const deletedCount = await authService.cleanupUnverifiedUsers();
-        res.json({ 
-            success: true, 
-            message: `Cleaned up ${deletedCount} unverified users` 
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-export default router;
-=======
 // Debug route to check all users
 router.get("/users", async (req, res) => {
     try {
@@ -67,4 +41,3 @@ router.post("/cleanup", async (req, res) => {
 });
 
 export default router;
->>>>>>> 1613a9b42c2fa6dec5a2057df2dbcaf648acdda7

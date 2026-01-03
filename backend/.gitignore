@@ -11,12 +11,9 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-<<<<<<< HEAD
-=======
 # Allow example env files
 !.env.example
 
->>>>>>> 1613a9b42c2fa6dec5a2057df2dbcaf648acdda7
 # Logs
 logs
 *.log
