@@ -1,13 +1,16 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authService } from '@/services/auth.service';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { useSession, signIn, signUp, signOut } from '@/lib/auth-client';
 
 interface User {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   image?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  emailVerified?: boolean;
 }
 
 interface AuthContextType {
@@ -24,104 +27,51 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Load current session on mount
-  useEffect(() => {
-    const loadSession = async () => {
-      try {
-        const response = await fetch('/api/auth/session', {
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.user);
-        } else {
-          setUser(null);
-        }
-      } catch (err) {
-        console.error('Failed to load session:', err);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadSession();
-  }, []);
+  const { data: session, isPending: loading, error } = useSession();
+  const user = session?.user || null;
 
   const login = async (credentials: { email: string; password: string }) => {
-    setLoading(true);
-    setError(null);
-
     try {
-      const data = await authService.login(credentials);
-      setUser(data.user);
-      return data;
+      const result = await signIn.email({
+        email: credentials.email,
+        password: credentials.password,
+      });
+      return result;
     } catch (err: any) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
+      throw new Error(err.message || 'Login failed');
     }
   };
 
   const register = async (userData: { name: string; email: string; password: string }) => {
-    setLoading(true);
-    setError(null);
-
     try {
-      const data = await authService.register(userData);
-      setUser(data.user);
-      return data;
+      const result = await signUp.email({
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
+      });
+      return result;
     } catch (err: any) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
+      throw new Error(err.message || 'Registration failed');
     }
   };
 
   const logout = async () => {
-    setLoading(true);
-    setError(null);
-
     try {
-      await authService.logout();
-      setUser(null);
+      await signOut();
     } catch (err: any) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
+      throw new Error(err.message || 'Logout failed');
     }
   };
 
   const refreshSession = async () => {
-    try {
-      const response = await fetch('/api/auth/session', {
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-      } else {
-        setUser(null);
-      }
-    } catch (err) {
-      console.error('Failed to refresh session:', err);
-      setUser(null);
-    }
+    // Better Auth handles session refresh automatically
+    // This is kept for compatibility with existing code
   };
 
   const value = {
     user,
     loading,
-    error,
+    error: error?.message || null,
     isAuthenticated: !!user,
     login,
     register,
