@@ -45,4 +45,8 @@ export const verification = pgTable("verification", {
     expiresAt: timestamp("expiresAt").notNull(),
     createdAt: timestamp("createdAt").defaultNow(),
     updatedAt: timestamp("updatedAt").defaultNow(),
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> 1613a9b42c2fa6dec5a2057df2dbcaf648acdda7
