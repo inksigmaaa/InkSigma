@@ -1,22 +1,13 @@
 // server.js
 import "dotenv/config";
 import express from "express";
-import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./config/betterAuth.js";
 import authRoutes from "./routes/authRoutes.js";
 import debugRoutes from "./routes/debugRoutes.js";
+import corsMiddleware from "./middleware/cors.js"
 
 const app = express();
-
-// CORS middleware
-const corsMiddleware = cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
-});
-
 // Middleware
 app.use(corsMiddleware);
 
