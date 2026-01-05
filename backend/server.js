@@ -1,21 +1,25 @@
 // server.js
 import "dotenv/config";
 import express from "express";
-import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./config/betterAuth.js";
 import authRoutes from "./routes/authRoutes.js";
 import debugRoutes from "./routes/debugRoutes.js";
-import profileRoutes from "./routes/profileRoutes.js";
+import corsMiddleware from "./middleware/cors.js"
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+// Middleware
+app.use(corsMiddleware);
 
-// CORS configuration
-app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
-    credentials: true,
-}));
+// Better Auth routes (must be before express.json)
+const authHandler = toNodeHandler(auth);
+app.use((req, res, next) => {
+    if (req.path.startsWith("/api/auth")) {
+        console.log(`[BETTER-AUTH] ${req.method} ${req.path}`);
+        return authHandler(req, res);
+    }
+    next();
+});
 
 // Parse JSON bodies
 app.use(express.json());
