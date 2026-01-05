@@ -5,26 +5,18 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./config/betterAuth.js";
 import authRoutes from "./routes/authRoutes.js";
 import debugRoutes from "./routes/debugRoutes.js";
-import corsMiddleware from "./middleware/cors.js"
+import profileRoutes from "./routes/profileRoutes.js";
+import { corsMiddleware } from "./middleware/cors.js";
+
 
 const app = express();
-// Middleware
-app.use(corsMiddleware);
+const PORT = process.env.PORT || 5000;
 
-// Better Auth routes (must be before express.json)
-const authHandler = toNodeHandler(auth);
-app.use((req, res, next) => {
-    if (req.path.startsWith("/api/auth")) {
-        console.log(`[BETTER-AUTH] ${req.method} ${req.path}`);
-        return authHandler(req, res);
-    }
-    next();
-});
 
 // Parse JSON bodies
 app.use(express.json());
 
-// Serve uploaded files
+app.use(corsMiddleware)// Serve uploaded files
 app.use("/uploads", express.static("uploads"));
 
 // Better Auth handler - handles /api/auth/*
@@ -45,7 +37,6 @@ app.get("/health", (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📧 Auth endpoints: http://localhost:${PORT}/api/auth`);
-    console.log(`🔧 Custom endpoints: http://localhost:${PORT}/api/custom`);
+    console.log(`Server running on http://localhost:${PORT}`);
+  
 });

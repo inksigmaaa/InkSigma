@@ -2,16 +2,17 @@
 
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
+import { useSession } from "@/lib/auth-client"
+import AuthGuard from "@/components/auth/AuthGuard"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
 import UserAvatar from "@/components/ui/UserAvatar"
-import { useSession } from "@/lib/auth-client"
 
 const API_URL = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:5000"
 
-export default function ProfileSettingsPage() {
+function ProfileSettingsContent() {
   const router = useRouter()
-  const { data: session, isPending } = useSession()
+  const { data: session } = useSession()
   const fileInputRef = useRef(null)
   const [showResetModal, setShowResetModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
@@ -27,40 +28,16 @@ export default function ProfileSettingsPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [error, setError] = useState("")
 
-  // Fetch profile data on mount
+  // Initialize with session data
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/profile`, {
-          credentials: "include",
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          setEmail(data.email || "")
-          setProfileName(data.profileName || "")
-          setUsername(data.username || "")
-          setBio(data.bio || "")
-          setImage(data.image || "")
-          setImagePreview(data.image || "")
-        } else if (response.status === 401) {
-          router.push("/login")
-        }
-      } catch (error) {
-        console.error("Error fetching profile:", error)
-      } finally {
-        setIsLoading(false)
-      }
+    if (session?.user) {
+      setEmail(session.user.email || "")
+      setProfileName(session.user.name || "")
+      setImage(session.user.image || "")
+      setImagePreview(session.user.image || "")
+      setIsLoading(false)
     }
-
-    if (!isPending) {
-      if (session?.user) {
-        fetchProfile()
-      } else {
-        router.push("/login")
-      }
-    }
-  }, [session, isPending, router])
+  }, [session])
 
   const handleImageChange = async (e) => {
     const file = e.target.files?.[0]
@@ -181,7 +158,7 @@ export default function ProfileSettingsPage() {
     }
   }
 
-  if (isPending || isLoading) {
+  if (isLoading) {
     return (
       <>
         <NavbarLoggedin />
@@ -436,5 +413,13 @@ export default function ProfileSettingsPage() {
         </div>
       )}
     </>
+  )
+}
+
+export default function ProfileSettingsPage() {
+  return (
+    <AuthGuard>
+      <ProfileSettingsContent />
+    </AuthGuard>
   )
 }
