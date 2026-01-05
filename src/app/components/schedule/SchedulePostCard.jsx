@@ -166,11 +166,16 @@ export default function SchedulePostCard({
       </div>
 
       {/* Mobile Layout */}
-      <div className="sm:hidden">
+      <div className="sm:hidden relative">
+        {/* Scheduled badge - top left */}
+        <div className="absolute -top-3 left-4 max-sm:-top-6 max-sm:-left-6 bg-blue-100 text-blue-600 text-xs font-medium px-3 py-1 rounded">
+          Scheduled
+        </div>
+
         {/* Three-dot menu for mobile */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-gray-400">
+            <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-gray-400 h-8 w-8">
               <MoreVertical className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
@@ -191,11 +196,11 @@ export default function SchedulePostCard({
         </DropdownMenu>
 
         {/* Content */}
-        <div className="mt-2 pr-8">
-          <h3 className="text-base font-semibold text-gray-900 mb-2">
+        <div className="pt-6 pr-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">
             {post.title}
           </h3>
-          <p className="text-gray-400 text-sm mb-4 leading-relaxed">
+          <p className="text-gray-400 text-sm mb-4 leading-relaxed line-clamp-3">
             {post.excerpt}
           </p>
 

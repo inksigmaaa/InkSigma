@@ -1,5 +1,5 @@
 // models/schema.js
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, serial, integer } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
     id: text("id").primaryKey(),
@@ -7,6 +7,8 @@ export const user = pgTable("user", {
     email: text("email").notNull().unique(),
     emailVerified: boolean("emailVerified").notNull().default(false),
     image: text("image"),
+    username: text("username"),
+    bio: text("bio"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
@@ -45,4 +47,42 @@ export const verification = pgTable("verification", {
     expiresAt: timestamp("expiresAt").notNull(),
     createdAt: timestamp("createdAt").defaultNow(),
     updatedAt: timestamp("updatedAt").defaultNow(),
+});
+
+export const blog = pgTable("blog", {
+    id: serial("id").primaryKey(),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    content: text("content").notNull(),
+    image: text("image"),
+    authorId: text("authorId").notNull().references(() => user.id),
+    categories: text("categories").array(),
+    published: boolean("published").notNull().default(false),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export const comment = pgTable("comment", {
+    id: serial("id").primaryKey(),
+    content: text("content").notNull(),
+    blogId: integer("blogId").notNull().references(() => blog.id),
+    authorId: text("authorId").notNull().references(() => user.id),
+    parentId: integer("parentId"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export const publication = pgTable("publication", {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    subdomain: text("subdomain").notNull().unique(),
+    description: text("description"),
+    image: text("image"),
+    logoUrl: text("logoUrl"),
+    faviconUrl: text("faviconUrl"),
+    metaOgImageUrl: text("metaOgImageUrl"),
+    userId: text("userId").notNull().references(() => user.id),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });

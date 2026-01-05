@@ -234,18 +234,19 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
       const { from, to } = editor.state.selection
       
       if (from === to) {
-        // No selection - show alert to user
-        alert('Please select some text first to apply color')
-        setShowColorPicker(false)
-        return
-      }
-      
-      if (color === '') {
-        // Remove color by unsetting it
-        editor.chain().focus().unsetColor().run()
+        // No selection - apply color as a mark for future text
+        if (color === '') {
+          editor.chain().focus().unsetColor().run()
+        } else {
+          editor.chain().focus().setColor(color).run()
+        }
       } else {
-        // Apply color to selected text
-        editor.chain().focus().setColor(color).run()
+        // Selection exists - apply color to selected text
+        if (color === '') {
+          editor.chain().focus().unsetColor().run()
+        } else {
+          editor.chain().focus().setColor(color).run()
+        }
       }
     }
     setShowColorPicker(false)
@@ -348,11 +349,12 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
       
       if (!isAnyDropdownOpen) return
       
-      // Check if click is inside any dropdown
+      // Check if click is inside any dropdown or button
       const isInsideDropdown = event.target.closest('.dropdown-container') || 
                               event.target.closest('.color-picker') || 
                               event.target.closest('.line-spacing-picker') ||
-                              event.target.closest('.link-popup')
+                              event.target.closest('.link-popup') ||
+                              event.target.closest('[role="dialog"]')
       
       if (!isInsideDropdown) {
         closeAllDropdowns()
@@ -416,7 +418,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
         clearTimeout(scrollTimeout)
       }
     }
-  }, [])
+  }, [showHeadingMenu, showListMenu, showAlignMenu, showAdvancedOptions, showColorPicker, showLineSpacing, showLinkPopup])
 
   // Specific handler for link popup click outside
   useEffect(() => {
@@ -737,7 +739,10 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
           <button 
             ref={setLinkButtonRef}
             className="p-1.5 md:p-2 hover:bg-gray-100 rounded"
-            onClick={insertLink}
+            onClick={() => {
+              closeAllDropdowns()
+              insertLink()
+            }}
             title="Insert Link"
           >
             <img src="/editor-icons/link.svg" alt="Link" className="w-5 h-5" />
@@ -824,8 +829,8 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             ref={setAdvancedButtonRef}
             className="text-xs md:text-sm text-gray-600 px-2 hover:text-gray-800 whitespace-nowrap"
             onClick={() => {
-              if (!showAdvancedOptions) closeAllDropdowns()
-              setShowAdvancedOptions(!showAdvancedOptions)
+              closeAllDropdowns()
+              setShowAdvancedOptions(true)
             }}
           >
             Advanced Options
@@ -840,6 +845,8 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
                 top: `${dropdownPositions.advanced.top}px`,
                 left: `${dropdownPositions.advanced.left}px`,
               }}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
             >
               <div className="space-y-4">
                 
@@ -847,6 +854,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
                   <button
                     onMouseDown={(e) => {
                       e.preventDefault()
+                      e.stopPropagation()
                       if (editor) {
                         editor.chain().focus().toggleSuperscript().run()
                       }
@@ -859,6 +867,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
                   <button
                     onMouseDown={(e) => {
                       e.preventDefault()
+                      e.stopPropagation()
                       if (editor) {
                         editor.chain().focus().toggleSubscript().run()
                       }
@@ -884,7 +893,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
                       <ChevronDown className="h-4 w-4" />
                     </button>
                     {showColorPicker && (
-                      <div className="color-picker absolute top-full left-0 mt-1 bg-white border rounded-md shadow-lg p-2 grid grid-cols-4 gap-1 min-w-[120px] z-[10000]">
+                      <div className="color-picker absolute top-full left-0 mt-1 bg-white border rounded-md shadow-lg p-2 grid grid-cols-4 gap-1 min-w-[120px] z-[10000]" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
                         {[
                           { color: '#000000', name: 'Black' },
                           { color: '#FF0000', name: 'Red' },
@@ -941,7 +950,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
                       <ChevronDown className="h-4 w-4" />
                     </button>
                     {showLineSpacing && (
-                      <div className="line-spacing-picker absolute top-full left-0 mt-1 bg-white border rounded-md shadow-lg py-1 min-w-[100px] z-[10000]">
+                      <div className="line-spacing-picker absolute top-full left-0 mt-1 bg-white border rounded-md shadow-lg py-1 min-w-[100px] z-[10000]" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
                         {['1', '1.15', '1.5', '2', '2.5', '3'].map((height) => (
                           <button
                             key={height}
@@ -964,6 +973,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
                   <button
                     onMouseDown={(e) => {
                       e.preventDefault()
+                      e.stopPropagation()
                       increaseIndent()
                     }}
                     className="p-3 hover:bg-gray-100 rounded"
@@ -974,6 +984,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
                   <button
                     onMouseDown={(e) => {
                       e.preventDefault()
+                      e.stopPropagation()
                       decreaseIndent()
                     }}
                     className="p-3 hover:bg-gray-100 rounded"
