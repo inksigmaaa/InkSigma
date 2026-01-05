@@ -39,7 +39,5 @@ app.get("/health", (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📧 Auth endpoints: http://localhost:${PORT}/api/auth`);
-    console.log(`🔧 Custom endpoints: http://localhost:${PORT}/api/custom`);
+    console.log(`Server running on http://localhost:${PORT}`);
 });
