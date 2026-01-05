@@ -1,16 +1,14 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useSession } from "@/lib/auth-client"
-import AuthGuard from "@/components/auth/AuthGuard"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
 import Verify from "../components/verify/Verify"
 import { ChevronRight } from "lucide-react"
 
-function DashboardContent() {
+
+export default function DashboardPage() {
   const router = useRouter()
-  const { data: session } = useSession()
 
   return (
     <>
@@ -20,9 +18,7 @@ function DashboardContent() {
         <div className="max-w-[600px] mx-auto space-y-6 sm:space-y-8">
           {/* Welcome Banner */}
           <div className="text-center">
-            <h1 className="text-base sm:text-lg font-bold text-gray-900 mb-3">
-              Welcome to InkSigma{session?.user?.name ? `, ${session.user.name}` : ''}
-            </h1>
+            <h1 className="text-base sm:text-lg font-bold text-gray-900 mb-3">Welcome to InkSigma</h1>
             <p className="text-xs text-gray-500 leading-relaxed mb-4 px-4">
               Generate a publication and embark on crafting numerous articles showcasing your innovative ideas, thereby disseminating them to the global audience.
             </p>
@@ -99,13 +95,5 @@ function DashboardContent() {
         </div>
       </main>
     </>
-  )
-}
-
-export default function DashboardPage() {
-  return (
-    <AuthGuard>
-      <DashboardContent />
-    </AuthGuard>
   )
 }

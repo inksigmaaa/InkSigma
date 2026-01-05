@@ -8,15 +8,17 @@ import debugRoutes from "./routes/debugRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import { corsMiddleware } from "./middleware/cors.js";
 
-
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+app.use(corsMiddleware);
+
 
 
 // Parse JSON bodies
 app.use(express.json());
 
-app.use(corsMiddleware)// Serve uploaded files
+// Serve uploaded files
 app.use("/uploads", express.static("uploads"));
 
 // Better Auth handler - handles /api/auth/*
@@ -38,5 +40,4 @@ app.get("/health", (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
-  
 });
