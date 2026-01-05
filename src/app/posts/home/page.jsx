@@ -13,21 +13,8 @@ export default function PostsHomePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchPublication = async () => {
-      try {
-        const response = await fetch("/api/publication/get")
-        if (response.ok) {
-          const data = await response.json()
-          setPublication(data.publication)
-        }
-      } catch (error) {
-        console.error("Error fetching publication:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchPublication()
+    // Frontend only - no API call
+    setLoading(false)
   }, [])
 
   const handleStartWriting = () => {

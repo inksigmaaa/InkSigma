@@ -1,16 +1,18 @@
 "use client"
 
-import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
-import Verify from "../components/verify/Verify"
 import UserAvatar from "@/components/ui/UserAvatar"
+import { useSession } from "@/lib/auth-client"
+
+const API_URL = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:5000"
 
 export default function ProfileSettingsPage() {
-  const { data: session, isPending } = useSession()
   const router = useRouter()
+  const { data: session, isPending } = useSession()
+  const fileInputRef = useRef(null)
   const [showResetModal, setShowResetModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [showUpdateMessage, setShowUpdateMessage] = useState(false)
@@ -18,112 +20,184 @@ export default function ProfileSettingsPage() {
   const [profileName, setProfileName] = useState("")
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
+  const [image, setImage] = useState("")
+  const [imagePreview, setImagePreview] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [error, setError] = useState("")
 
-  // Debug: Log when showUpdateMessage changes
+  // Fetch profile data on mount
   useEffect(() => {
-    console.log('showUpdateMessage changed to:', showUpdateMessage)
-  }, [showUpdateMessage])
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/profile`, {
+          credentials: "include",
+        })
 
-  // Generate random 4 characters for username
-  const generateRandomSuffix = () => {
-    const chars = 'abcdefghijklmnopqrstuvwxyz'
-    let result = ''
-    for (let i = 0; i < 4; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length))
+        if (response.ok) {
+          const data = await response.json()
+          setEmail(data.email || "")
+          setProfileName(data.profileName || "")
+          setUsername(data.username || "")
+          setBio(data.bio || "")
+          setImage(data.image || "")
+          setImagePreview(data.image || "")
+        } else if (response.status === 401) {
+          router.push("/login")
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error)
+      } finally {
+        setIsLoading(false)
+      }
     }
-    return result
-  }
 
-  useEffect(() => {
-    if (!isPending && !session) {
-      router.push("/login")
-    }
-
-    // Set default values when session is available
-    if (session?.user) {
-      setEmail(session.user.email || "")
-      setProfileName(session.user.name || "")
-      setBio(session.user.bio || "")
-
-      // Use existing username or generate new one
-      if (session.user.username) {
-        setUsername(session.user.username)
-      } else if (session.user.name) {
-        // Generate username from first name + random 4 chars only if no username exists
-        const firstName = session.user.name.split(' ')[0].toLowerCase()
-        const randomSuffix = generateRandomSuffix()
-        setUsername(firstName + randomSuffix)
+    if (!isPending) {
+      if (session?.user) {
+        fetchProfile()
+      } else {
+        router.push("/login")
       }
     }
   }, [session, isPending, router])
 
+  const handleImageChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file")
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be less than 5MB")
+      return
+    }
+
+    setError("")
+    setIsUploadingImage(true)
+
+    try {
+      // Create preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result)
+      }
+      reader.readAsDataURL(file)
+
+      // Upload image
+      const formData = new FormData()
+      formData.append("image", file)
+
+      const response = await fetch(`${API_URL}/api/profile/image`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || "Failed to upload image")
+        setImagePreview(image) // Revert preview
+        return
+      }
+
+      setImage(data.imageUrl)
+      setImagePreview(data.imageUrl)
+    } catch (error) {
+      console.error("Error uploading image:", error)
+      setError("Failed to upload image")
+      setImagePreview(image) // Revert preview
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
+  const handleRemoveImage = async () => {
+    setIsUploadingImage(true)
+    setError("")
+
+    try {
+      const response = await fetch(`${API_URL}/api/profile/image`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        setError(data.error || "Failed to remove image")
+        return
+      }
+
+      setImage("")
+      setImagePreview("")
+    } catch (error) {
+      console.error("Error removing image:", error)
+      setError("Failed to remove image")
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
   const handleSave = async () => {
     try {
       setIsSaving(true)
+      setError("")
 
-      console.log('=== SAVING PROFILE ===')
-      console.log('Profile Name:', profileName)
-      console.log('Username:', username)
-      console.log('Bio:', bio)
-
-      const payload = {
-        name: profileName,
-        username: username,
-        bio: bio,
-      }
-
-      console.log('Payload:', payload)
-
-      const response = await fetch('/api/user/update-profile', {
-        method: 'POST',
+      const response = await fetch(`${API_URL}/api/profile`, {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        credentials: "include",
+        body: JSON.stringify({
+          profileName,
+          username,
+          bio,
+        }),
       })
 
-      console.log('Response status:', response.status)
-
       const data = await response.json()
-      console.log('Response data:', data)
 
       if (!response.ok) {
-        console.error('Update failed:', data)
-        throw new Error(data.error || 'Failed to update profile')
+        setError(data.error || "Failed to save profile")
+        return
       }
 
-      console.log('✅ Update successful! Showing message...')
-
-      // Show success message
       setShowUpdateMessage(true)
-
-      // Refresh the router to update session data
-      router.refresh()
-
-      // Hide message after 2 seconds
       setTimeout(() => {
-        console.log('Hiding message...')
         setShowUpdateMessage(false)
       }, 2000)
     } catch (error) {
-      console.error('Error saving profile:', error)
-      alert('Failed to save profile. Please try again.')
+      console.error("Error saving profile:", error)
+      setError("Failed to save profile. Please try again.")
     } finally {
       setIsSaving(false)
     }
   }
 
-  if (isPending) {
+  if (isPending || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
+      <>
+        <NavbarLoggedin />
+        <DashboardSimpleSidebar />
+        <div className="min-h-screen bg-white flex justify-center items-center p-4 pt-[140px] md:pt-32 md:pl-64">
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </>
     )
   }
 
-  if (!session) {
-    return null
+  // User object for avatar
+  const userForAvatar = {
+    email,
+    name: profileName,
+    image: imagePreview,
   }
 
   return (
@@ -135,31 +209,43 @@ export default function ProfileSettingsPage() {
           <h1 className="text-lg font-bold text-gray-900 text-center">Profile Settings</h1>
 
           <div className="flex flex-col items-center">
-
             {/* Profile Image */}
             <div className="flex flex-col items-center">
               <div
                 style={{
                   width: '100px',
                   height: '100px',
-                  opacity: 1,
+                  opacity: isUploadingImage ? 0.5 : 1,
                   borderRadius: '52px',
                   overflow: 'hidden'
                 }}
               >
-                <UserAvatar
-                  user={session?.user}
-                  size="xl"
-                  className="w-full h-full"
-                />
+                <UserAvatar user={userForAvatar} size="xl" className="w-full h-full" />
               </div>
+
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                accept="image/*"
+                className="hidden"
+              />
 
               {/* Change/Remove buttons */}
               <div className="flex gap-4 mt-4">
-                <button className="text-purple-500 hover:text-purple-600 text-sm font-medium">
-                  Change
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingImage}
+                  className="text-purple-500 hover:text-purple-600 text-sm font-medium disabled:opacity-50"
+                >
+                  {isUploadingImage ? "Uploading..." : "Change"}
                 </button>
-                <button className="text-gray-400 hover:text-gray-600 text-sm font-medium">
+                <button 
+                  onClick={handleRemoveImage}
+                  disabled={isUploadingImage || !imagePreview}
+                  className="text-gray-400 hover:text-gray-600 text-sm font-medium disabled:opacity-50"
+                >
                   Remove
                 </button>
               </div>
@@ -199,16 +285,13 @@ export default function ProfileSettingsPage() {
                 />
               </div>
 
-              {/* Email ID */}
+              {/* Email ID - Read Only */}
               <div>
                 <label className="block text-black font-bold text-base mb-2">
                   Email ID
                 </label>
                 <input
                   type="email"
-                  minLength={5}
-                  maxLength={254}
-                  placeholder="Enter your Email ID"
                   value={email}
                   readOnly
                   disabled
@@ -245,6 +328,15 @@ export default function ProfileSettingsPage() {
                 </button>
               </div>
 
+              {/* Error Message */}
+              {error && (
+                <div className="flex justify-center" style={{ marginTop: '16px' }}>
+                  <div className="bg-red-100 text-red-800 text-center font-medium px-4 py-2 rounded text-sm">
+                    {error}
+                  </div>
+                </div>
+              )}
+
               {/* Settings Updated Message */}
               {showUpdateMessage && (
                 <div className="flex justify-center" style={{ marginTop: '32px', marginBottom: '8px' }}>
@@ -254,14 +346,7 @@ export default function ProfileSettingsPage() {
                       width: '259px',
                       height: '32px',
                       borderRadius: '4px',
-                      opacity: 1,
-                      gap: '10px',
                       fontSize: '14px',
-                      textWrap: 'nowrap',
-                      paddingTop: '8px',
-                      paddingRight: '109px',
-                      paddingBottom: '8px',
-                      paddingLeft: '109px'
                     }}
                   >
                     Settings Updated
@@ -279,16 +364,10 @@ export default function ProfileSettingsPage() {
                     width: '259px',
                     height: '32px',
                     borderRadius: '4px',
-                    opacity: 1,
-                    gap: '10px',
                     fontSize: '14px',
-                    paddingTop: '8px',
-                    paddingRight: '109px',
-                    paddingBottom: '8px',
-                    paddingLeft: '109px'
                   }}
                 >
-                  {isSaving ? 'Update' : 'Update'}
+                  {isSaving ? 'Saving...' : 'Update'}
                 </button>
               </div>
             </div>

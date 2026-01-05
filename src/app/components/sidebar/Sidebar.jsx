@@ -3,28 +3,11 @@
 import { FileClock } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [publication, setPublication] = useState(null);
-
-  // Fetch publication data
-  useEffect(() => {
-    const fetchPublication = async () => {
-      try {
-        const response = await fetch("/api/publication/get");
-        if (response.ok) {
-          const data = await response.json();
-          setPublication(data.publication);
-        }
-      } catch (error) {
-        console.error("Error fetching publication:", error);
-      }
-    };
-
-    fetchPublication();
-  }, []);
 
   // Route mapping for navigation
   const getRoute = (label) => {
@@ -70,7 +53,7 @@ export default function Sidebar() {
             <div className="w-[34px] h-[34px] rounded-full overflow-hidden border-2 border-violet-500 flex-shrink-0 bg-gray-100 flex items-center justify-center">
               {publication?.logoUrl ? (
                 <img
-                  src={`http://localhost:3001${publication.logoUrl}`}
+                  src={publication.logoUrl}
                   alt={publication.name || "Publication"}
                   className="w-full h-full object-cover"
                 />

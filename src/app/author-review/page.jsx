@@ -5,7 +5,6 @@ import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Verify from "../components/verify/Verify"
 import ReviewPageClient from "../components/review/ReviewPageClient"
 import MemberSidebar from "../membersidebar/MemberSidebar"
-import { useVerifyBanner } from "@/hooks/useVerifyBanner"
 
 const categories = [
   "Agriculture", "Art & Illustration", "Business", "Climate & Environment",
@@ -23,9 +22,6 @@ export default function AuthorReviewPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategories, setSelectedCategories] = useState([])
   const dropdownRef = useRef(null)
-  
-  // Check if verify banner should be shown
-  const showVerifyBanner = useVerifyBanner()
   
   // This could come from props, API call, or database in a real app
   const articles = [
@@ -85,10 +81,9 @@ export default function AuthorReviewPage() {
     }
   }, [isDropdownOpen])
 
-  // Dynamic top position for Review header based on verify banner visibility
-  // Verify banner is at top-[128px] with ~70px height, so header should be at ~205px
-  const headerTopPosition = showVerifyBanner ? 'top-[205px]' : 'top-[120px]'
-  const mobileHeaderTopPosition = showVerifyBanner ? 'max-md:top-[185px]' : 'max-md:top-[120px]'
+  // Fixed top position (no verify banner)
+  const headerTopPosition = 'top-[120px]'
+  const mobileHeaderTopPosition = 'max-md:top-[120px]'
 
   return (
     <>

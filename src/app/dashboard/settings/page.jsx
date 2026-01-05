@@ -1,19 +1,15 @@
 "use client"
 
-import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import Sidebar from "../../components/sidebar/Sidebar"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-
 export default function SettingsPage() {
-  const { data: session, isPending } = useSession()
   const router = useRouter()
   const [showResetModal, setShowResetModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
@@ -29,88 +25,34 @@ export default function SettingsPage() {
   const [favicon, setFavicon] = useState("/icons/inksigma-logo.svg")
   const [metaOg, setMetaOg] = useState("/icons/inksigma-logo.svg")
 
-  // Load publication data
-  useEffect(() => {
-    if (session?.user?.id) {
-      loadPublicationData()
-    }
-  }, [session])
+  // Load publication data - removed API call
 
   const loadPublicationData = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const response = await fetch(`${API_URL}/publications/user/${session.user.id}`)
-      if (response.ok) {
-        const data = await response.json()
-        console.log('Loaded publication:', data)
-        setPublicationId(data.id)
-        setName(data.name || "")
-        setDescription(data.description || "")
-        setSubdomain(data.subdomain || "")
-        setOriginalSubdomain(data.subdomain || "")
-        
-        // Set image URLs with full path if they exist
-        if (data.logoUrl) {
-          setLogo(`http://localhost:3001${data.logoUrl}`)
-        }
-        if (data.faviconUrl) {
-          setFavicon(`http://localhost:3001${data.faviconUrl}`)
-        }
-        if (data.metaOgImageUrl) {
-          setMetaOg(`http://localhost:3001${data.metaOgImageUrl}`)
-        }
-      } else {
-        throw new Error('Failed to load publication')
-      }
-    } catch (err) {
-      console.error('Failed to load publication:', err)
-      setError('Failed to load publication settings')
-    } finally {
-      setLoading(false)
-    }
+    // Frontend only - no API call
+    setLoading(false)
   }
 
   const handleImageUpload = async (file, type) => {
-    if (!publicationId) {
-      setError('Publication not loaded yet')
-      return
-    }
-    
+    // Frontend only - just preview the image
     try {
       setUploading(true)
       setError(null)
       
-      const formData = new FormData()
-      formData.append(type, file)
-      
-      const response = await fetch(`${API_URL}/publications/${publicationId}/${type}`, {
-        method: 'POST',
-        body: formData
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('Upload response:', data)
-        const fullUrl = `http://localhost:3001${data.url}`
-        
+      const reader = new FileReader()
+      reader.onloadend = () => {
         if (type === 'logo') {
-          setLogo(fullUrl)
-          setSuccess('Logo uploaded successfully!')
+          setLogo(reader.result)
+          setSuccess('Logo updated!')
         } else if (type === 'favicon') {
-          setFavicon(fullUrl)
-          setSuccess('Favicon uploaded successfully!')
+          setFavicon(reader.result)
+          setSuccess('Favicon updated!')
         } else if (type === 'meta_og') {
-          setMetaOg(fullUrl)
-          setSuccess('Meta OG image uploaded successfully!')
+          setMetaOg(reader.result)
+          setSuccess('Meta OG image updated!')
         }
-        
-        // Clear success message after 3 seconds
         setTimeout(() => setSuccess(null), 3000)
-      } else {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Upload failed')
       }
+      reader.readAsDataURL(file)
     } catch (err) {
       console.error('Upload error:', err)
       setError(`Failed to upload ${type}: ${err.message}`)
@@ -159,21 +101,9 @@ export default function SettingsPage() {
   }
 
   const handleImageRemove = async (type) => {
-    if (!publicationId) return
-    
-    try {
-      const response = await fetch(`${API_URL}/publications/${publicationId}/${type}`, {
-        method: 'DELETE'
-      })
-      
-      if (response.ok) {
-        if (type === 'logo') setLogo("/icons/inksigma-logo.svg")
-        else if (type === 'favicon') setFavicon("/icons/inksigma-logo.svg")
-        else if (type === 'meta_og') setMetaOg("/icons/inksigma-logo.svg")
-      }
-    } catch (err) {
-      console.error('Remove error:', err)
-    }
+    if (type === 'logo') setLogo("/icons/inksigma-logo.svg")
+    else if (type === 'favicon') setFavicon("/icons/inksigma-logo.svg")
+    else if (type === 'meta_og') setMetaOg("/icons/inksigma-logo.svg")
   }
 
   const handleLogoRemove = () => handleImageRemove('logo')
@@ -181,42 +111,12 @@ export default function SettingsPage() {
   const handleMetaOgRemove = () => handleImageRemove('meta_og')
 
   const handleSave = async () => {
-    if (!publicationId) return
-    
     try {
       setSaving(true)
       setError(null)
       setSuccess(null)
       
-      // Update basic info (name and description)
-      const response = await fetch(`${API_URL}/publications/${publicationId}/settings`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description })
-      })
-      
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to save')
-      }
-      
-      // Update subdomain only if it changed
-      if (subdomain && subdomain !== originalSubdomain) {
-        const subdomainResponse = await fetch(`${API_URL}/publications/${publicationId}/subdomain`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subdomain })
-        })
-        
-        if (!subdomainResponse.ok) {
-          const data = await subdomainResponse.json()
-          throw new Error(data.error || 'Failed to update subdomain')
-        }
-        
-        // Update the original subdomain after successful change
-        setOriginalSubdomain(subdomain)
-      }
-      
+      // Frontend only - just show success
       setShowSuccessModal(true)
     } catch (err) {
       console.error('Save error:', err)
@@ -226,22 +126,12 @@ export default function SettingsPage() {
     }
   }
 
-  useEffect(() => {
-    if (!isPending && !session) {
-      router.push("/login")
-    }
-  }, [session, isPending, router])
-
-  if (isPending || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
       </div>
     )
-  }
-
-  if (!session) {
-    return null
   }
 
   return (

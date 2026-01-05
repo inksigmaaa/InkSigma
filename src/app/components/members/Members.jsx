@@ -1,14 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useVerifyBanner } from "@/hooks/useVerifyBanner";
 
 export default function Members() {
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("Select Role");
-    
-    // Check if verify banner should be shown
-    const showVerifyBanner = useVerifyBanner();
 
     const members = [
         { name: "Special Batista", role: "Editor", status: null },
@@ -17,9 +13,9 @@ export default function Members() {
         { name: "Mocas Nicota", role: null, status: "Expired" },
     ];
 
-    // Dynamic top position based on verify banner visibility
-    const topPosition = showVerifyBanner ? 'top-[215px]' : 'top-[160px]';
-    const mobileTopPosition = showVerifyBanner ? 'max-md:top-[220px]' : 'max-md:top-[120px]';
+    // Fixed top position (no verify banner)
+    const topPosition = 'top-[160px]';
+    const mobileTopPosition = 'max-md:top-[120px]';
 
     return (
         <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5 pb-20 max-[767px]:px-4.5 max-md:pb-32`}>

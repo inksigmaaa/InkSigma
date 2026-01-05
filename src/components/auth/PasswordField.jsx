@@ -6,15 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Eye, EyeOff } from "lucide-react"
 
 /**
- * Reusable password input field with toggle visibility
- * @param {Object} props - Component props
- * @param {string} props.id - Input ID
- * @param {string} props.label - Field label
- * @param {string} props.placeholder - Input placeholder
- * @param {string} props.value - Input value
- * @param {Function} props.onChange - Change handler
- * @param {number} props.minLength - Minimum length
- * @param {number} props.maxLength - Maximum length
+ * Password input field with show/hide toggle
  */
 export default function PasswordField({ 
   id, 
@@ -22,16 +14,13 @@ export default function PasswordField({
   placeholder, 
   value, 
   onChange,
-  minLength,
-  maxLength
+  className = ""
 }) {
   const [showPassword, setShowPassword] = useState(false)
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor={id} className="text-gray-700">
-        {label}
-      </Label>
+    <div className={`space-y-2 ${className}`}>
+      <Label htmlFor={id} className="text-gray-700">{label}</Label>
       <div className="relative">
         <Input
           id={id}
@@ -39,20 +28,18 @@ export default function PasswordField({
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          minLength={minLength}
-          maxLength={maxLength}
-          className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 pr-12 focus-visible:ring-0 focus-visible:border-gray-900"
+          className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 pr-10 focus-visible:ring-0 focus-visible:border-gray-900"
+          required
         />
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-          aria-label={showPassword ? "Hide password" : "Show password"}
+          className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
         >
           {showPassword ? (
-            <EyeOff className="h-4 w-4" />
+            <EyeOff className="w-5 h-5" />
           ) : (
-            <Eye className="h-4 w-4" />
+            <Eye className="w-5 h-5" />
           )}
         </button>
       </div>

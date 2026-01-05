@@ -1,10 +1,8 @@
 "use client"
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
-import { useSession } from "@/lib/auth-client";
+import { useSession, signOut } from "@/lib/auth-client";
 import UserAvatar from "@/components/ui/UserAvatar";
-import { handleLogout } from "@/utils/auth";
 
 export default function NavbarLoggedin() {
     const [open, setOpen] = useState(false);
@@ -12,7 +10,10 @@ export default function NavbarLoggedin() {
     const wrapperRef = useRef(null);
     const notificationRef = useRef(null);
     const router = useRouter();
-    const { data: session } = useSession();
+    
+    // Get current user session
+    const { data: session, isPending } = useSession();
+    const user = session?.user;
 
     // Close dropdowns when clicking outside
     useEffect(() => {
@@ -29,9 +30,23 @@ export default function NavbarLoggedin() {
         return () => document.removeEventListener("click", handleClickOutside);
     }, []);
 
+    const handleLogout = async () => {
+        try {
+            await signOut();
+            localStorage.clear();
+            sessionStorage.clear();
+            router.push("/");
+        } catch (error) {
+            console.error("Logout error:", error);
+            // Fallback: clear storage and redirect anyway
+            localStorage.clear();
+            sessionStorage.clear();
+            router.push("/");
+        }
+    };
 
-
-    const userName = session?.user?.name || "User";
+    const userName = user?.name || "User";
+    const userEmail = user?.email || "";
 
     // Sample notification data - replace with real data from your API
     const notifications = [
@@ -156,14 +171,14 @@ export default function NavbarLoggedin() {
                             onClick={() => setOpen((prev) => !prev)}
                         >
                             <UserAvatar 
-                                user={session?.user} 
+                                user={user}
                                 size="md"
                                 className="max-md:w-9 max-md:h-9"
                             />
 
                             {/* Hide name on mobile */}
                             <div className="flex items-center gap-2 text-[14px] font-medium text-[#333] max-md:hidden">
-                                {userName}
+                                {isPending ? "Loading..." : userName}
                                 <span className="flex items-center">
                                     <img src="/images/icons/down.svg" className="w-4 h-4" />
                                 </span>

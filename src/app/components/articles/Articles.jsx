@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import ArticleContainer from '../articleContainer/ArticleContainer'
-import { useVerifyBanner } from '@/hooks/useVerifyBanner'
 
 const categories = [
     "Agriculture", "Art & Illustration", "Business", "Climate & Environment",
@@ -23,9 +22,6 @@ export default function Articles(props) {
     const [selectedArticles, setSelectedArticles] = useState(new Set())
     const mobileDropdownRef = useRef(null)
     const desktopDropdownRef = useRef(null)
-    
-    // Check if verify banner should be shown
-    const showVerifyBanner = useVerifyBanner()
 
     const filterStatus = props.filterStatus || null
     const showCreateButton = props.showCreateButton !== false
@@ -104,9 +100,9 @@ export default function Articles(props) {
         }
     }, [isDropdownOpen])
 
-    // Dynamic top position based on verify banner visibility
-    const topPosition = showVerifyBanner ? 'top-[215px]' : 'top-[160px]';
-    const mobileTopPosition = showVerifyBanner ? 'max-md:top-[220px]' : 'max-md:top-[120px]';
+    // Fixed top position (no verify banner)
+    const topPosition = 'top-[160px]';
+    const mobileTopPosition = 'max-md:top-[120px]';
 
     return (
         <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>

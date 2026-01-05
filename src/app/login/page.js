@@ -16,7 +16,7 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect") || "/dashboard"
-
+  
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -71,7 +71,7 @@ function LoginForm() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: redirectTo,
+        callbackURL: `http://localhost:3000${redirectTo}`,
       })
     } catch (err) {
       setError("Failed to login with Google")
@@ -90,11 +90,10 @@ function LoginForm() {
           {error}
         </div>
       )}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-gray-700">
-            Email
-          </Label>
+          <Label htmlFor="email" className="text-gray-700">Email</Label>
           <Input
             id="email"
             type="email"
@@ -105,6 +104,7 @@ function LoginForm() {
             required
           />
         </div>
+
         <PasswordField
           id="password"
           label="Password"
@@ -112,6 +112,7 @@ function LoginForm() {
           value={formData.password}
           onChange={handleInputChange('password')}
         />
+
         <div className="text-right">
           <Link
             href="/forgot-password"
@@ -120,6 +121,7 @@ function LoginForm() {
             Forgot Password?
           </Link>
         </div>
+
         <Button
           type="submit"
           disabled={loading}
@@ -127,6 +129,7 @@ function LoginForm() {
         >
           {loading ? "Logging in..." : "Login"}
         </Button>
+
         <Button
           type="button"
           variant="outline"
@@ -136,6 +139,7 @@ function LoginForm() {
           Login with Magic link
         </Button>
       </form>
+
       <div className="text-center text-sm text-gray-600">
         New to {APP_CONFIG.name}?{" "}
         <Link
@@ -145,9 +149,9 @@ function LoginForm() {
           Create a Account
         </Link>
       </div>
-      <div className="text-center text-gray-400">
-        or
-      </div>
+
+      <div className="text-center text-gray-400">or</div>
+
       <GoogleAuthButton
         text="Login With Google"
         onClick={handleGoogleLogin}
@@ -158,7 +162,11 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-lg">Loading...</div></div>}>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    }>
       <LoginForm />
     </Suspense>
   )

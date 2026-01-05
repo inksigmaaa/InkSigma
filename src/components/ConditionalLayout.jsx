@@ -8,7 +8,7 @@ import FeedbackButton from "@/components/FeedbackButton"
 
 export default function ConditionalLayout({ children }) {
   const pathname = usePathname()
-  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/forgot-password" || pathname === "/magic-link"
+  
   const isDashboardPage = pathname?.startsWith("/dashboard")
   const isSchedulePage = pathname === "/schedule"
   const isReviewPage = pathname === "/review"
@@ -28,22 +28,24 @@ export default function ConditionalLayout({ children }) {
   const isprofilesettings = pathname === "/profile-settings"
   const isHome = pathname === "/home"
   const ismembers = pathname === "/posts/members"
-  const ispostMyblogs = pathname === "/posts/my-blogs"
-  const isPosthome = pathname === "/posts/home"
-  const ispostPublished = pathname === "/posts/published"
   const isMembersDashboard = pathname === "/dashboard/members"
   const isPreview = pathname?.startsWith("/home/preview")
   const isLandingPage = pathname === "/"
   const isblog = pathname === "/posts/my-blogs"
   const ispostsmembers = pathname === "/posts/home"
   const ispostspublished = pathname === "/posts/published"
+  const islogin = pathname === "/login"
+  const issignup = pathname === "/signup"
+  const isforgot = pathname === "/forgot-password"
+  const isreset = pathname === "/reset-password"
 
-  // Show mobile buttons on all pages except auth pages, create-publication page, preview page, dashboard page, profile settings page, and editor page
-  const showMobileButtons = !isAuthPage && !isCreatePublicationPage && !isPreview && !isDashboardPage && !isprofilesettings && !isPostsSettingsPage && !isEditorPage
+  // Show mobile buttons on most pages except specific ones
+  const showMobileButtons = !isCreatePublicationPage && !isPreview && !isDashboardPage && !isprofilesettings && !isPostsSettingsPage && !isEditorPage
 
+  // Pages that use custom layout (no header/footer)
+  const useCustomLayout = isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished || islogin || issignup || isforgot || isreset
 
-
-  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished) {
+  if (useCustomLayout) {
     return (
       <div className="min-h-screen">
         {children}

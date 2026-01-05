@@ -51,7 +51,7 @@ function ViewSiteContent() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <HomeHeader 
         userName={publication?.name || "Your Publication Name"} 
-        userAvatar={publication?.logoUrl ? `http://localhost:3001${publication.logoUrl}` : null}
+        userAvatar={publication?.logoUrl || null}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
