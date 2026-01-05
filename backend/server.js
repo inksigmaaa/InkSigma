@@ -21,15 +21,31 @@ app.use((req, res, next) => {
     next();
 });
 
-// Parse JSON
+// Parse JSON bodies
 app.use(express.json());
 
-// Routes
+// Serve uploaded files
+app.use("/uploads", express.static("uploads"));
+
+// Better Auth handler - handles /api/auth/*
+app.all("/api/auth/*", toNodeHandler(auth));
+
+// Custom auth routes - handles /api/custom/*
 app.use("/api/custom", authRoutes);
+
+// Profile routes - handles /api/profile/*
+app.use("/api/profile", profileRoutes);
+
+// Debug routes (remove in production)
 app.use("/api/debug", debugRoutes);
 
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, async () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+// Health check
+app.get("/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📧 Auth endpoints: http://localhost:${PORT}/api/auth`);
+    console.log(`🔧 Custom endpoints: http://localhost:${PORT}/api/custom`);
 });
