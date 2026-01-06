@@ -26,14 +26,16 @@ const formatDate = (date) => {
 }
 
 // Helper function to convert database blog to article format
-const convertBlogToArticle = (blog, unpublishedIds = new Set()) => {
-  // Determine status based on published field and unpublished tracking
-  let status = 'draft';
-  if (blog.published) {
-    status = 'published';
-  } else if (unpublishedIds.has(blog.id)) {
-    // If it was manually unpublished
-    status = 'unpublished';
+const convertBlogToArticle = (blog) => {
+  // Use the status field if available, otherwise derive from published field
+  let status = blog.status || (blog.published ? 'published' : 'draft');
+  
+  // Ensure consistency with the publishing logic rules
+  if (blog.status) {
+    status = blog.status;
+  } else {
+    // Fallback for backward compatibility
+    status = blog.published ? 'published' : 'draft';
   }
 
   return {
@@ -44,6 +46,7 @@ const convertBlogToArticle = (blog, unpublishedIds = new Set()) => {
     categories: blog.categories || [],
     image: blog.image,
     status: status,
+    published: blog.published,
     postedTime: `Posted ${formatDate(new Date(blog.createdAt))}`,
     createdAt: blog.createdAt,
     updatedAt: blog.updatedAt,
@@ -56,7 +59,6 @@ export function ArticlesProvider({ children }) {
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [unpublishedArticleIds, setUnpublishedArticleIds] = useState(new Set())
   const { data: session } = useSession()
 
   // Load user's articles on mount
@@ -73,7 +75,7 @@ export function ArticlesProvider({ children }) {
       setLoading(true)
       setError(null)
       const blogs = await blogService.getUserBlogs(session.user.id)
-      const convertedArticles = blogs.map(blog => convertBlogToArticle(blog, unpublishedArticleIds))
+      const convertedArticles = blogs.map(convertBlogToArticle)
       setArticles(convertedArticles)
     } catch (err) {
       console.error('Error loading articles:', err)
@@ -85,15 +87,23 @@ export function ArticlesProvider({ children }) {
 
   const createArticle = async (articleData) => {
     try {
+      // Determine status based on published flag, defaulting to draft
+      let status = 'draft';
+      if (articleData.published === true) {
+        status = 'published';
+      } else if (articleData.status) {
+        status = articleData.status;
+      }
+
       const blog = await blogService.createBlog({
         title: articleData.title,
         description: articleData.description,
         content: articleData.content,
         categories: articleData.categories || [],
-        published: articleData.published || false
+        status: status
       })
       
-      const newArticle = convertBlogToArticle(blog, unpublishedArticleIds)
+      const newArticle = convertBlogToArticle(blog)
       setArticles(prev => [newArticle, ...prev])
       return newArticle
     } catch (err) {
@@ -104,15 +114,21 @@ export function ArticlesProvider({ children }) {
 
   const updateArticle = async (id, articleData) => {
     try {
+      // Determine status based on published flag or explicit status
+      let status = articleData.status;
+      if (!status && articleData.published !== undefined) {
+        status = articleData.published ? 'published' : 'draft';
+      }
+
       const blog = await blogService.updateBlog(id, {
         title: articleData.title,
         description: articleData.description,
         content: articleData.content,
         categories: articleData.categories,
-        published: articleData.published
+        status: status
       })
       
-      const updatedArticle = convertBlogToArticle(blog, unpublishedArticleIds)
+      const updatedArticle = convertBlogToArticle(blog)
       setArticles(prev => prev.map(article =>
         article.id === id ? updatedArticle : article
       ))
@@ -133,17 +149,38 @@ export function ArticlesProvider({ children }) {
     }
   }
 
+  const moveToDraft = async (id) => {
+    try {
+      const blog = await blogService.updateBlogStatus(id, 'draft')
+      const updatedArticle = convertBlogToArticle(blog)
+      setArticles(prev => prev.map(article =>
+        article.id === id ? updatedArticle : article
+      ))
+      return updatedArticle
+    } catch (err) {
+      console.error('Error moving article to draft:', err)
+      throw err
+    }
+  }
+
+  const moveToTrashStatus = async (id) => {
+    try {
+      const blog = await blogService.updateBlogStatus(id, 'trash')
+      const updatedArticle = convertBlogToArticle(blog)
+      setArticles(prev => prev.map(article =>
+        article.id === id ? updatedArticle : article
+      ))
+      return updatedArticle
+    } catch (err) {
+      console.error('Error moving article to trash:', err)
+      throw err
+    }
+  }
+
   const publishArticle = async (id) => {
     try {
-      const blog = await blogService.togglePublishStatus(id, true)
-      // Remove from unpublished tracking when republishing
-      setUnpublishedArticleIds(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(id)
-        return newSet
-      })
-      
-      const updatedArticle = convertBlogToArticle(blog, unpublishedArticleIds)
+      const blog = await blogService.updateBlogStatus(id, 'published')
+      const updatedArticle = convertBlogToArticle(blog)
       setArticles(prev => prev.map(article =>
         article.id === id ? updatedArticle : article
       ))
@@ -156,11 +193,8 @@ export function ArticlesProvider({ children }) {
 
   const unpublishArticle = async (id) => {
     try {
-      const blog = await blogService.togglePublishStatus(id, false)
-      // Add to unpublished tracking
-      setUnpublishedArticleIds(prev => new Set([...prev, id]))
-      
-      const updatedArticle = convertBlogToArticle(blog, new Set([...unpublishedArticleIds, id]))
+      const blog = await blogService.updateBlogStatus(id, 'unpublished')
+      const updatedArticle = convertBlogToArticle(blog)
       setArticles(prev => prev.map(article =>
         article.id === id ? updatedArticle : article
       ))
@@ -177,6 +211,23 @@ export function ArticlesProvider({ children }) {
       setArticles(prev => prev.filter(article => !ids.includes(article.id)))
     } catch (err) {
       console.error('Error bulk deleting articles:', err)
+      throw err
+    }
+  }
+
+  const bulkMoveToTrashStatus = async (ids) => {
+    try {
+      const updatedBlogs = await Promise.all(
+        ids.map(id => blogService.updateBlogStatus(id, 'trash'))
+      )
+      const updatedArticles = updatedBlogs.map(convertBlogToArticle)
+      
+      setArticles(prev => prev.map(article => {
+        const updated = updatedArticles.find(ua => ua.id === article.id)
+        return updated || article
+      }))
+    } catch (err) {
+      console.error('Error bulk moving articles to trash:', err)
       throw err
     }
   }
@@ -200,8 +251,13 @@ export function ArticlesProvider({ children }) {
 
   const uploadArticleImage = async (id, imageFile) => {
     try {
+      // Validate that imageFile is actually a File object
+      if (!imageFile || !(imageFile instanceof File)) {
+        throw new Error('Invalid image file provided')
+      }
+      
       const result = await blogService.uploadBlogImage(id, imageFile)
-      const updatedArticle = convertBlogToArticle(result.blog, unpublishedArticleIds)
+      const updatedArticle = convertBlogToArticle(result.blog)
       setArticles(prev => prev.map(article =>
         article.id === id ? updatedArticle : article
       ))
@@ -242,11 +298,14 @@ export function ArticlesProvider({ children }) {
       createArticle,
       updateArticle,
       moveToTrash,
+      moveToDraft,
+      moveToTrashStatus,
       restoreFromTrash,
       deleteArticle,
       publishArticle,
       unpublishArticle,
       bulkMoveToTrash,
+      bulkMoveToTrashStatus,
       bulkRestore,
       bulkDelete,
       bulkPublish,

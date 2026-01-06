@@ -89,7 +89,7 @@ export const blogService = {
     return response.json();
   },
 
-  // Publish/unpublish blog
+  // Publish/unpublish blog (backward compatibility)
   async togglePublishStatus(id, published) {
     const response = await fetch(`${API_URL}/api/blogs/${id}/publish`, {
       method: 'PATCH',
@@ -98,6 +98,25 @@ export const blogService = {
       },
       credentials: 'include',
       body: JSON.stringify({ published }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'Failed to update blog status');
+    }
+
+    return response.json();
+  },
+
+  // Update blog status (new method)
+  async updateBlogStatus(id, status) {
+    const response = await fetch(`${API_URL}/api/blogs/${id}/publish`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ status }),
     });
 
     if (!response.ok) {
@@ -125,6 +144,27 @@ export const blogService = {
 
   // Upload blog thumbnail
   async uploadBlogImage(id, imageFile) {
+    // Validate inputs
+    if (!id) {
+      throw new Error('Blog ID is required');
+    }
+    
+    if (!imageFile || !(imageFile instanceof File)) {
+      throw new Error('A valid image file is required');
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(imageFile.type)) {
+      throw new Error('Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.');
+    }
+
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (imageFile.size > maxSize) {
+      throw new Error('File size too large. Please upload an image smaller than 10MB.');
+    }
+
     const formData = new FormData();
     formData.append('image', imageFile);
 

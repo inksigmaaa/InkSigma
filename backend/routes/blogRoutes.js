@@ -91,11 +91,30 @@ const ensureUniqueSlug = async (baseSlug, excludeId = null) => {
     return slug;
 };
 
+// Helper function to sync status and published fields according to strict rules
+const syncStatusAndPublished = (status) => {
+    // Validate status
+    if (!['draft', 'published', 'unpublished', 'trash'].includes(status)) {
+        throw new Error(`Invalid status: ${status}. Must be 'draft', 'published', 'unpublished', or 'trash'`);
+    }
+    
+    // Apply strict synchronization rules:
+    // - Status 'published' = published TRUE (visible)
+    // - Status 'draft' = published FALSE (hidden)  
+    // - Status 'unpublished' = published FALSE (hidden)
+    // - Status 'trash' = published FALSE (hidden)
+    return {
+        status,
+        published: status === 'published'
+    };
+};
+
 // GET /api/blogs - Get all blogs with filters
 router.get("/", async (req, res) => {
     try {
         const { 
             published, 
+            status,
             authorId, 
             categories, 
             search, 
@@ -112,6 +131,7 @@ router.get("/", async (req, res) => {
                 content: blog.content,
                 image: blog.image,
                 categories: blog.categories,
+                status: blog.status,
                 published: blog.published,
                 createdAt: blog.createdAt,
                 updatedAt: blog.updatedAt,
@@ -129,7 +149,12 @@ router.get("/", async (req, res) => {
         // Apply filters
         const conditions = [];
         
-        if (published !== undefined) {
+        // Support both status and published filters for backward compatibility
+        if (status !== undefined) {
+            // If status is provided, convert to published boolean
+            const targetPublished = status === 'published';
+            conditions.push(eq(blog.published, targetPublished));
+        } else if (published !== undefined) {
             conditions.push(eq(blog.published, published === 'true'));
         }
         
@@ -184,6 +209,7 @@ router.get("/:id", async (req, res) => {
                 content: blog.content,
                 image: blog.image,
                 categories: blog.categories,
+                status: blog.status,
                 published: blog.published,
                 createdAt: blog.createdAt,
                 updatedAt: blog.updatedAt,
@@ -212,7 +238,7 @@ router.get("/:id", async (req, res) => {
 // POST /api/blogs - Create new blog
 router.post("/", getCurrentUser, async (req, res) => {
     try {
-        const { title, description, content, categories, published = false } = req.body;
+        const { title, description, content, categories, published = false, status } = req.body;
         
         if (!title || !description || !content) {
             return res.status(400).json({ 
@@ -222,19 +248,33 @@ router.post("/", getCurrentUser, async (req, res) => {
 
         const slug = await ensureUniqueSlug(generateSlug(title));
 
+        // Determine status: use status if provided, otherwise use published for backward compatibility
+        let targetStatus = 'draft';
+        
+        if (status) {
+            targetStatus = status;
+        } else if (published) {
+            targetStatus = 'published';
+        }
+
+        // Apply strict synchronization rules
+        const syncedFields = syncStatusAndPublished(targetStatus);
+
+        const blogData = {
+            slug,
+            title,
+            description,
+            content,
+            categories: categories || [],
+            ...syncedFields, // This ensures both status and published are always in sync
+            authorId: req.user.id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+
         const [newBlog] = await db
             .insert(blog)
-            .values({
-                slug,
-                title,
-                description,
-                content,
-                categories: categories || [],
-                published,
-                authorId: req.user.id,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            })
+            .values(blogData)
             .returning();
 
         res.status(201).json(newBlog);
@@ -248,7 +288,7 @@ router.post("/", getCurrentUser, async (req, res) => {
 router.put("/:id", getCurrentUser, async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, content, categories, published } = req.body;
+        const { title, description, content, categories, published, status } = req.body;
 
         // Check if blog exists and user owns it
         const [existingBlog] = await db
@@ -278,7 +318,18 @@ router.put("/:id", getCurrentUser, async (req, res) => {
         if (description !== undefined) updateData.description = description;
         if (content !== undefined) updateData.content = content;
         if (categories !== undefined) updateData.categories = categories;
-        if (published !== undefined) updateData.published = published;
+        
+        // Handle status update with strict synchronization
+        if (status !== undefined) {
+            const syncedFields = syncStatusAndPublished(status);
+            Object.assign(updateData, syncedFields);
+        } else if (published !== undefined) {
+            // Convert published boolean to status for backward compatibility
+            const targetStatus = published ? 'published' : 'draft';
+            const syncedFields = syncStatusAndPublished(targetStatus);
+            Object.assign(updateData, syncedFields);
+        }
+        
         if (slug !== existingBlog.slug) updateData.slug = slug;
 
         const [updatedBlog] = await db
@@ -298,10 +349,20 @@ router.put("/:id", getCurrentUser, async (req, res) => {
 router.patch("/:id/publish", getCurrentUser, async (req, res) => {
     try {
         const { id } = req.params;
-        const { published } = req.body;
+        const { published, status } = req.body;
 
-        if (typeof published !== 'boolean') {
-            return res.status(400).json({ error: "Published must be a boolean" });
+        // Determine target status with strict validation
+        let targetStatus;
+        
+        if (status !== undefined) {
+            targetStatus = status;
+        } else if (published !== undefined) {
+            if (typeof published !== 'boolean') {
+                return res.status(400).json({ error: "Published must be a boolean" });
+            }
+            targetStatus = published ? 'published' : 'unpublished';
+        } else {
+            return res.status(400).json({ error: "Either 'published' or 'status' must be provided" });
         }
 
         // Check if blog exists and user owns it
@@ -318,12 +379,17 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
             return res.status(403).json({ error: "Not authorized to modify this blog" });
         }
 
+        // Apply strict synchronization rules
+        const syncedFields = syncStatusAndPublished(targetStatus);
+
+        const updateData = {
+            ...syncedFields,
+            updatedAt: new Date(),
+        };
+
         const [updatedBlog] = await db
             .update(blog)
-            .set({
-                published,
-                updatedAt: new Date(),
-            })
+            .set(updateData)
             .where(eq(blog.id, parseInt(id)))
             .returning();
 

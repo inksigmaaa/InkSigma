@@ -9,7 +9,7 @@ import ConfirmModal from "../components/confirmModal/ConfirmModal"
 import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function DraftPage() {
-  const { articles, moveToTrash, bulkMoveToTrash, bulkPublish } = useArticles()
+  const { articles, moveToTrashStatus, bulkMoveToTrashStatus, bulkPublish } = useArticles()
   const [selectedArticles, setSelectedArticles] = useState([])
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPublishModal, setShowPublishModal] = useState(false)
@@ -19,9 +19,9 @@ export default function DraftPage() {
       .filter(article => article.status === 'draft')
       .map(article => ({
         ...article,
-        onDelete: () => moveToTrash(article.id)
+        onDelete: () => moveToTrashStatus(article.id)
       }))
-  }, [articles, moveToTrash])
+  }, [articles, moveToTrashStatus])
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -52,7 +52,7 @@ export default function DraftPage() {
   }
 
   const confirmDelete = () => {
-    bulkMoveToTrash(selectedArticles)
+    bulkMoveToTrashStatus(selectedArticles)
     setSelectedArticles([])
     setShowDeleteModal(false)
   }

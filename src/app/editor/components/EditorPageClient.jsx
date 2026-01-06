@@ -80,9 +80,15 @@ export default function EditorPageClient() {
         })
         setCurrentArticleId(newArticle.id)
         
-        // Upload thumbnail if provided
-        if (thumbnailImage) {
-          await uploadArticleImage(newArticle.id, thumbnailImage)
+        // Upload thumbnail if provided and it's a File object
+        if (thumbnailImage && thumbnailImage.file instanceof File) {
+          try {
+            await uploadArticleImage(newArticle.id, thumbnailImage.file)
+          } catch (imageError) {
+            console.error('Error uploading thumbnail:', imageError)
+            // Don't fail the entire publish process for image upload errors
+            alert(`Article published successfully, but thumbnail upload failed: ${imageError.message}`)
+          }
         }
       }
       
@@ -129,8 +135,13 @@ export default function EditorPageClient() {
         })
         setCurrentArticleId(newArticle.id)
         
-        if (thumbnailImage) {
-          await uploadArticleImage(newArticle.id, thumbnailImage)
+        if (thumbnailImage && thumbnailImage.file instanceof File) {
+          try {
+            await uploadArticleImage(newArticle.id, thumbnailImage.file)
+          } catch (imageError) {
+            console.error('Error uploading thumbnail:', imageError)
+            alert(`Article scheduled successfully, but thumbnail upload failed: ${imageError.message}`)
+          }
         }
       }
       
@@ -166,8 +177,13 @@ export default function EditorPageClient() {
         published: articleStatus === 'published'
       })
       
-      if (thumbnailImage && typeof thumbnailImage !== 'string') {
-        await uploadArticleImage(currentArticleId, thumbnailImage)
+      if (thumbnailImage && thumbnailImage.file instanceof File) {
+        try {
+          await uploadArticleImage(currentArticleId, thumbnailImage.file)
+        } catch (imageError) {
+          console.error('Error uploading thumbnail:', imageError)
+          alert(`Article updated successfully, but thumbnail upload failed: ${imageError.message}`)
+        }
       }
       
       alert('Article updated successfully!')
@@ -206,8 +222,13 @@ export default function EditorPageClient() {
         })
         setCurrentArticleId(newArticle.id)
         
-        if (thumbnailImage) {
-          await uploadArticleImage(newArticle.id, thumbnailImage)
+        if (thumbnailImage && thumbnailImage.file instanceof File) {
+          try {
+            await uploadArticleImage(newArticle.id, thumbnailImage.file)
+          } catch (imageError) {
+            console.error('Error uploading thumbnail:', imageError)
+            alert(`Draft saved successfully, but thumbnail upload failed: ${imageError.message}`)
+          }
         }
       }
       
