@@ -191,7 +191,9 @@ router.get("/", async (req, res) => {
         res.json(filteredBlogs);
     } catch (error) {
         console.error("Error fetching blogs:", error);
-        res.status(500).json({ error: "Failed to fetch blogs" });
+        console.error("Error details:", error.message);
+        console.error("Error stack:", error.stack);
+        res.status(500).json({ error: "Failed to fetch blogs", details: error.message });
     }
 });
 

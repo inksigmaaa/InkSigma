@@ -4,7 +4,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { db } from "../config/database.js";
-import { user } from "../models/schema.js";
+import { user, account } from "../models/schema.js";
 import { eq, and, ne } from "drizzle-orm";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
@@ -75,6 +75,17 @@ router.get("/", getCurrentUser, async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
+        // Check if user has a password account (not just social login)
+        const [passwordAccount] = await db
+            .select()
+            .from(account)
+            .where(and(
+                eq(account.userId, userId),
+                eq(account.providerId, "credential")
+            ));
+
+        const hasPasswordAccount = !!passwordAccount;
+
         res.json({
             email: userData.email,
             name: userData.name,
@@ -82,6 +93,7 @@ router.get("/", getCurrentUser, async (req, res) => {
             profileName: userData.name,
             username: userData.username || "",
             bio: userData.bio || "",
+            hasPasswordAccount,
         });
     } catch (error) {
         console.error("Error fetching profile:", error);
