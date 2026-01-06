@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { CategoryDropdown } from "./CategoryDropdown"
 import { ThumbnailModal } from "./ThumbnailModal"
 import { DateTimePicker } from "./DateTimePicker"
+import { useArticles } from "@/contexts/ArticlesContext"
+import { useSession } from "@/lib/auth-client"
 
 import { 
   Image as ImageIcon,
@@ -20,9 +22,12 @@ import { TiptapEditor } from "./TiptapEditor"
 export default function EditorPageClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { data: session } = useSession()
+  const { createArticle, updateArticle, uploadArticleImage } = useArticles()
   
-  // Get status from URL parameters
+  // Get status and ID from URL parameters
   const articleStatus = searchParams.get('status')
+  const articleId = searchParams.get('id')
   
   // State management
   const [title, setTitle] = useState('')
@@ -37,6 +42,8 @@ export default function EditorPageClient() {
   const [thumbnailImage, setThumbnailImage] = useState(null)
   const [isDateTimePickerOpen, setIsDateTimePickerOpen] = useState(false)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [currentArticleId, setCurrentArticleId] = useState(articleId ? parseInt(articleId) : null)
 
   const handleEditorUpdate = ({ html, charCount: chars, wordCount: words }) => {
     setEditorContent(html)
@@ -44,62 +51,202 @@ export default function EditorPageClient() {
     setWordCount(words)
   }
 
-  const handlePublish = () => {
-    console.log("Publishing:", { 
-      title, 
-      description, 
-      content: editorContent, 
-      categories: selectedCategories, 
-      publishDate, 
-      publishTime 
-    })
+  const handlePublish = async () => {
+    if (!title.trim() || !description.trim() || !editorContent.trim()) {
+      alert('Please fill in title, description, and content before publishing.')
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      
+      if (currentArticleId) {
+        // Update existing article and publish
+        await updateArticle(currentArticleId, {
+          title,
+          description,
+          content: editorContent,
+          categories: selectedCategories,
+          published: true
+        })
+      } else {
+        // Create new article and publish
+        const newArticle = await createArticle({
+          title,
+          description,
+          content: editorContent,
+          categories: selectedCategories,
+          published: true
+        })
+        setCurrentArticleId(newArticle.id)
+        
+        // Upload thumbnail if provided
+        if (thumbnailImage) {
+          await uploadArticleImage(newArticle.id, thumbnailImage)
+        }
+      }
+      
+      // Redirect to published page
+      router.push('/published')
+    } catch (error) {
+      console.error('Error publishing article:', error)
+      alert('Failed to publish article. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleSchedule = () => {
-    console.log("Scheduling:", { 
-      title, 
-      description, 
-      content: editorContent, 
-      categories: selectedCategories, 
-      publishDate, 
-      publishTime 
-    })
+  const handleSchedule = async () => {
+    if (!title.trim() || !description.trim() || !editorContent.trim()) {
+      alert('Please fill in title, description, and content before scheduling.')
+      return
+    }
+
+    if (!publishDate || !publishTime) {
+      alert('Please select a date and time for scheduling.')
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      
+      // For now, we'll save as draft and handle scheduling logic later
+      if (currentArticleId) {
+        await updateArticle(currentArticleId, {
+          title,
+          description,
+          content: editorContent,
+          categories: selectedCategories,
+          published: false
+        })
+      } else {
+        const newArticle = await createArticle({
+          title,
+          description,
+          content: editorContent,
+          categories: selectedCategories,
+          published: false
+        })
+        setCurrentArticleId(newArticle.id)
+        
+        if (thumbnailImage) {
+          await uploadArticleImage(newArticle.id, thumbnailImage)
+        }
+      }
+      
+      console.log("Scheduled for:", publishDate, publishTime)
+      router.push('/draft')
+    } catch (error) {
+      console.error('Error scheduling article:', error)
+      alert('Failed to schedule article. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleUpdate = () => {
-    console.log("Updating:", { 
-      title, 
-      description, 
-      content: editorContent, 
-      categories: selectedCategories, 
-      publishDate, 
-      publishTime 
-    })
+  const handleUpdate = async () => {
+    if (!currentArticleId) {
+      alert('No article to update.')
+      return
+    }
+
+    if (!title.trim() || !description.trim() || !editorContent.trim()) {
+      alert('Please fill in title, description, and content.')
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      
+      await updateArticle(currentArticleId, {
+        title,
+        description,
+        content: editorContent,
+        categories: selectedCategories,
+        published: articleStatus === 'published'
+      })
+      
+      if (thumbnailImage && typeof thumbnailImage !== 'string') {
+        await uploadArticleImage(currentArticleId, thumbnailImage)
+      }
+      
+      alert('Article updated successfully!')
+    } catch (error) {
+      console.error('Error updating article:', error)
+      alert('Failed to update article. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleRevertToDraft = () => {
-    console.log("Reverting to draft:", { 
-      title, 
-      description, 
-      content: editorContent, 
-      categories: selectedCategories 
-    })
+  const handleSaveDraft = async () => {
+    if (!title.trim() || !description.trim() || !editorContent.trim()) {
+      alert('Please fill in title, description, and content before saving.')
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      
+      if (currentArticleId) {
+        await updateArticle(currentArticleId, {
+          title,
+          description,
+          content: editorContent,
+          categories: selectedCategories,
+          published: false
+        })
+      } else {
+        const newArticle = await createArticle({
+          title,
+          description,
+          content: editorContent,
+          categories: selectedCategories,
+          published: false
+        })
+        setCurrentArticleId(newArticle.id)
+        
+        if (thumbnailImage) {
+          await uploadArticleImage(newArticle.id, thumbnailImage)
+        }
+      }
+      
+      router.push('/draft')
+    } catch (error) {
+      console.error('Error saving draft:', error)
+      alert('Failed to save draft. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleRevertToDraft = async () => {
+    if (!currentArticleId) return
+
+    try {
+      setIsLoading(true)
+      await updateArticle(currentArticleId, {
+        title,
+        description,
+        content: editorContent,
+        categories: selectedCategories,
+        published: false
+      })
+      router.push('/draft')
+    } catch (error) {
+      console.error('Error reverting to draft:', error)
+      alert('Failed to revert to draft. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleReschedule = () => {
-    console.log("Rescheduling:", { 
-      title, 
-      description, 
-      content: editorContent, 
-      categories: selectedCategories, 
-      publishDate, 
-      publishTime 
-    })
+    setIsDateTimePickerOpen(true)
   }
 
   const handleThumbnailAdd = (imageData) => {
     setThumbnailImage(imageData)
-    console.log("Thumbnail added:", imageData)
   }
 
   const handleDateTimeSelect = (date, time) => {
@@ -128,7 +275,7 @@ export default function EditorPageClient() {
 
   return (
     <div className="min-h-screen bg-[#fff] flex flex-col">
-      {/* Go Back Button - Full Width on Mobile/Tablet */}
+      {/* Go Back Button */}
       <div className="px-4 md:px-6 pt-6 pb-4 border-b border-gray-200 md:bg-transparent md:border-0">
         <Button 
           variant="ghost" 
@@ -140,7 +287,7 @@ export default function EditorPageClient() {
         </Button>
       </div>
 
-      {/* Main Editor Container - Flex grow to take available space */}
+      {/* Main Editor Container */}
       <div className="flex-1 w-full max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-6 pb-32">
         {/* Status Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200">
@@ -152,15 +299,11 @@ export default function EditorPageClient() {
         <div>
           <Input
             type="text"
-            placeholder="Title of the Blog..."
+            placeholder="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="text-3xl md:text-4xl font-bold border-0 px-0 focus-visible:ring-0 focus:outline-none placeholder:text-gray-300 bg-transparent outline-none shadow-none"
-            style={{ 
-              border: 'none', 
-              outline: 'none', 
-              boxShadow: 'none' 
-            }}
+            className="text-4xl md:text-5xl font-bold border-0 px-0 py-2 bg-transparent placeholder:text-gray-300 focus-visible:ring-0 shadow-none"
+            style={{ fontSize: 'clamp(2rem, 5vw, 3rem)' }}
           />
         </div>
 
@@ -168,35 +311,27 @@ export default function EditorPageClient() {
         <div>
           <Input
             type="text"
-            placeholder="Write your Short Description for your Blog..."
+            placeholder="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="text-base text-gray-400 border-0 px-0 focus-visible:ring-0 focus:outline-none placeholder:text-gray-300 bg-transparent outline-none shadow-none"
-            style={{ 
-              border: 'none', 
-              outline: 'none', 
-              boxShadow: 'none' 
-            }}
+            className="text-lg text-gray-600 border-0 px-0 py-2 bg-transparent placeholder:text-gray-300 focus-visible:ring-0 shadow-none"
           />
         </div>
 
-        {/* Category and Thumbnail */}
-        <div className="flex flex-wrap items-center gap-3 md:gap-4 py-4 border-y border-gray-200">
-          <CategoryDropdown 
+        {/* Categories and Thumbnail */}
+        <div className="flex flex-col md:flex-row gap-4 items-start">
+          <CategoryDropdown
             selectedCategories={selectedCategories}
             onCategoriesChange={setSelectedCategories}
           />
 
-          <Button 
-            variant="outline" 
-            className="gap-2 bg-white" 
+          <Button
             onClick={() => setIsThumbnailModalOpen(true)}
+            variant="outline"
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
           >
             <ImageIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">
-              {thumbnailImage ? 'Change Thumbnail' : 'Thumbnail Image'}
-            </span>
-            <span className="sm:hidden">
+            <span className="text-sm font-medium">
               {thumbnailImage ? 'Change' : 'Thumbnail'}
             </span>
           </Button>
@@ -215,10 +350,10 @@ export default function EditorPageClient() {
         />
       </div>
 
-      {/* Character/Word Count and Publish Controls - Fixed at bottom */}
+      {/* Character/Word Count and Publish Controls */}
       <div className={`fixed bottom-0 left-0 right-0 bg-[#fff] border-t border-gray-200 ${(isThumbnailModalOpen || isImageModalOpen) ? 'hidden' : ''}`} style={{zIndex:999}}>
         <div className="w-full max-w-5xl mx-auto px-4 md:px-6 py-4 space-y-4">
-          {/* Character/Word Count - Right Aligned */}
+          {/* Character/Word Count */}
           <div className="flex justify-end">
             <div className="text-sm text-gray-400">
               <span>Chars <span className="text-gray-600">{charCount}</span></span>
@@ -227,61 +362,43 @@ export default function EditorPageClient() {
             </div>
           </div>
 
-          {/* Publish Controls - Mobile: Single row, Desktop: Centered */}
+          {/* Publish Controls */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-center gap-3">
-            {/* Mobile Layout - Single Row */}
+            {/* Mobile Layout */}
             <div className="flex md:hidden items-center gap-2 w-full">
               {articleStatus === 'trash' ? (
-                <>
-                  {/* Revert to Draft Button */}
-                  <Button 
-                    onClick={handleRevertToDraft}
-                    className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
-                  >
-                    Revert to draft
-                  </Button>
-                </>
+                <Button 
+                  onClick={handleRevertToDraft}
+                  disabled={isLoading}
+                  className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
+                >
+                  {isLoading ? 'Reverting...' : 'Revert to draft'}
+                </Button>
               ) : articleStatus === 'review' ? (
-                <>
-                  {/* Send for Review Button */}
-                  <Button 
-                    onClick={handlePublish}
-                    className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
-                  >
-                    Send for Review
-                  </Button>
-                </>
+                <Button 
+                  onClick={handlePublish}
+                  disabled={isLoading}
+                  className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
+                >
+                  {isLoading ? 'Publishing...' : 'Send for Review'}
+                </Button>
               ) : articleStatus === 'published' ? (
-                <>
-                  {/* Update Button */}
-                  <Button 
-                    onClick={handleUpdate}
-                    className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium"
-                  >
-                    Update
-                  </Button>
-
-                  {/* Revert to Draft Button */}
-                  <Button 
-                    onClick={handleRevertToDraft}
-                    variant="outline"
-                    className="bg-gray-100 text-gray-500 hover:bg-gray-200 px-4 py-2.5 rounded-lg text-sm font-medium gap-2 flex-1"
-                  >
-                    <FileText className="h-4 w-4" />
-                    Revert to Draft
-                  </Button>
-                </>
+                <Button 
+                  onClick={handleUpdate}
+                  disabled={isLoading}
+                  className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
+                >
+                  {isLoading ? 'Updating...' : 'Update'}
+                </Button>
               ) : articleStatus === 'scheduled' ? (
                 <>
-                  {/* Publish Now Button */}
                   <Button 
                     onClick={handlePublish}
+                    disabled={isLoading}
                     className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium"
                   >
-                    Publish Now
+                    {isLoading ? 'Publishing...' : 'Publish Now'}
                   </Button>
-
-                  {/* Date/Time/Calendar Group - White Container */}
                   <div className="flex items-center gap-2 bg-white px-3 border border-gray-200 rounded-lg flex-1">
                     <Input
                       type="text"
@@ -289,7 +406,6 @@ export default function EditorPageClient() {
                       onChange={(e) => setPublishDate(e.target.value)}
                       placeholder="dd-mm-yyyy"
                       className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
-                      style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                     />
                     <Input
                       type="text"
@@ -297,7 +413,6 @@ export default function EditorPageClient() {
                       onChange={(e) => setPublishTime(e.target.value)}
                       placeholder="--:--"
                       className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
-                      style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                     />
                     <button
                       onClick={() => setIsDateTimePickerOpen(true)}
@@ -306,26 +421,23 @@ export default function EditorPageClient() {
                       <Calendar className="h-4 w-4 text-gray-700" />
                     </button>
                   </div>
-
-                  {/* Reschedule Button */}
                   <button 
                     onClick={handleReschedule}
+                    disabled={isLoading}
                     className="bg-gray-200 text-gray-400 text-sm font-medium px-4 py-2.5 rounded-lg"
                   >
-                    Reschedule
+                    {isLoading ? 'Rescheduling...' : 'Reschedule'}
                   </button>
                 </>
               ) : (
                 <>
-                  {/* Publish Button */}
                   <Button 
                     onClick={handlePublish}
+                    disabled={isLoading}
                     className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium"
                   >
-                    Publish
+                    {isLoading ? 'Publishing...' : 'Publish'}
                   </Button>
-
-                  {/* Date/Time/Calendar Group - White Container */}
                   <div className="flex items-center gap-2 bg-white px-3 border border-gray-200 rounded-lg flex-1">
                     <Input
                       type="text"
@@ -333,7 +445,6 @@ export default function EditorPageClient() {
                       onChange={(e) => setPublishDate(e.target.value)}
                       placeholder="dd-mm-yyyy"
                       className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
-                      style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                     />
                     <Input
                       type="text"
@@ -341,7 +452,6 @@ export default function EditorPageClient() {
                       onChange={(e) => setPublishTime(e.target.value)}
                       placeholder="--:--"
                       className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
-                      style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                     />
                     <button
                       onClick={() => setIsDateTimePickerOpen(true)}
@@ -350,89 +460,77 @@ export default function EditorPageClient() {
                       <Calendar className="h-4 w-4 text-gray-700" />
                     </button>
                   </div>
-
-                  {/* Schedule Button */}
                   <button 
                     onClick={handleSchedule}
+                    disabled={isLoading}
                     className="bg-gray-200 text-gray-400 text-sm font-medium px-4 py-2.5 rounded-lg"
                   >
-                    Schedule
+                    {isLoading ? 'Scheduling...' : 'Schedule'}
                   </button>
+                  <Button 
+                    onClick={handleSaveDraft}
+                    disabled={isLoading}
+                    className="bg-gray-200 text-gray-700 hover:bg-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium"
+                  >
+                    {isLoading ? 'Saving...' : 'Save as Draft'}
+                  </Button>
                 </>
               )}
             </div>
 
-            {/* Desktop Layout - Original Design */}
+            {/* Desktop Layout */}
             <div className="hidden md:flex items-center justify-center gap-3">
               {articleStatus === 'trash' ? (
-                <>
-                  {/* Revert to Draft Button */}
-                  <Button 
-                    onClick={handleRevertToDraft}
-                    className="bg-black text-white hover:bg-gray-800 px-6 rounded-lg"
-                  >
-                    Revert to draft
-                  </Button>
-                </>
+                <Button 
+                  onClick={handleRevertToDraft}
+                  disabled={isLoading}
+                  className="bg-black text-white hover:bg-gray-800 px-6 rounded-lg"
+                >
+                  {isLoading ? 'Reverting...' : 'Revert to draft'}
+                </Button>
               ) : articleStatus === 'review' ? (
-                <>
-                  {/* Send for Review Button */}
-                  <Button 
-                    onClick={handlePublish}
-                    className="bg-black text-white hover:bg-gray-800 px-6 rounded-lg"
-                  >
-                    Send for Review
-                  </Button>
-                </>
+                <Button 
+                  onClick={handlePublish}
+                  disabled={isLoading}
+                  className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg"
+                >
+                  {isLoading ? 'Publishing...' : 'Send for Review'}
+                  <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
+                </Button>
               ) : articleStatus === 'published' ? (
-                <>
-                  {/* Update Button */}
-                  <Button 
-                    onClick={handleUpdate}
-                    className="bg-black text-white hover:bg-gray-800 px-6 rounded-lg"
-                  >
-                    Update
-                  </Button>
-
-                  {/* Revert to Draft Button */}
-                  <Button 
-                    onClick={handleRevertToDraft}
-                    variant="outline"
-                    className="bg-gray-100 text-gray-500 hover:bg-gray-200 px-6 rounded-lg gap-2"
-                  >
-                    <FileText className="h-4 w-4" />
-                    Revert to Draft
-                  </Button>
-                </>
+                <Button 
+                  onClick={handleUpdate}
+                  disabled={isLoading}
+                  className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg"
+                >
+                  {isLoading ? 'Updating...' : 'Update'}
+                  <img src="/editor-icons/publish.svg" alt="Update" className="h-4 w-4" />
+                </Button>
               ) : articleStatus === 'scheduled' ? (
                 <>
                   <Button 
                     onClick={handlePublish}
+                    disabled={isLoading}
                     className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg"
                   >
-                    Publish Now
+                    {isLoading ? 'Publishing...' : 'Publish Now'}
                     <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
                   </Button>
-
-                  {/* Reschedule Group */}
                   <div className="flex items-center gap-0 rounded-lg overflow-hidden">
-                    {/* White background section */}
-                    <div className="flex items-center gap-3 bg-white px-4 border border-gray-200 rounded-l-lg">
+                    <div className="flex items-center gap-2 bg-white px-4 py-2.5 border border-gray-200 rounded-l-lg">
                       <Input
                         type="text"
                         value={publishDate}
                         onChange={(e) => setPublishDate(e.target.value)}
                         placeholder="dd-mm-yyyy"
-                        className="w-[130px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
-                        style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                        className="w-24 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
                       />
                       <Input
                         type="text"
                         value={publishTime}
                         onChange={(e) => setPublishTime(e.target.value)}
                         placeholder="--:--"
-                        className="w-[60px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
-                        style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                        className="w-16 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
                       />
                       <button
                         onClick={() => setIsDateTimePickerOpen(true)}
@@ -441,13 +539,12 @@ export default function EditorPageClient() {
                         <Calendar className="h-5 w-5 text-gray-700" />
                       </button>
                     </div>
-                    
-                    {/* Gray background button */}
                     <button 
                       onClick={handleReschedule}
+                      disabled={isLoading}
                       className="bg-gray-200 text-gray-400 text-sm font-medium px-6 py-2.5 rounded-r-lg border border-l-0 border-gray-200"
                     >
-                      Reschedule
+                      {isLoading ? 'Rescheduling...' : 'Reschedule'}
                     </button>
                   </div>
                 </>
@@ -455,31 +552,27 @@ export default function EditorPageClient() {
                 <>
                   <Button 
                     onClick={handlePublish}
+                    disabled={isLoading}
                     className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg"
                   >
-                    Publish Now
+                    {isLoading ? 'Publishing...' : 'Publish Now'}
                     <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
                   </Button>
-
-                  {/* Schedule Group */}
                   <div className="flex items-center gap-0 rounded-lg overflow-hidden">
-                    {/* White background section */}
-                    <div className="flex items-center gap-3 bg-white px-4 border border-gray-200 rounded-l-lg">
+                    <div className="flex items-center gap-2 bg-white px-4 py-2.5 border border-gray-200 rounded-l-lg">
                       <Input
                         type="text"
                         value={publishDate}
                         onChange={(e) => setPublishDate(e.target.value)}
                         placeholder="dd-mm-yyyy"
-                        className="w-[130px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
-                        style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                        className="w-24 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
                       />
                       <Input
                         type="text"
                         value={publishTime}
                         onChange={(e) => setPublishTime(e.target.value)}
                         placeholder="--:--"
-                        className="w-[60px] text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
-                        style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
+                        className="w-16 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
                       />
                       <button
                         onClick={() => setIsDateTimePickerOpen(true)}
@@ -488,15 +581,22 @@ export default function EditorPageClient() {
                         <Calendar className="h-5 w-5 text-gray-700" />
                       </button>
                     </div>
-                    
-                    {/* Gray background button */}
                     <button 
                       onClick={handleSchedule}
+                      disabled={isLoading}
                       className="bg-gray-200 text-gray-400 text-sm font-medium px-6 py-2.5 rounded-r-lg border border-l-0 border-gray-200"
                     >
-                      Schedule
+                      {isLoading ? 'Scheduling...' : 'Schedule'}
                     </button>
                   </div>
+                  <Button 
+                    onClick={handleSaveDraft}
+                    disabled={isLoading}
+                    className="bg-gray-200 text-gray-700 hover:bg-gray-300 gap-2 px-6 rounded-lg"
+                  >
+                    {isLoading ? 'Saving...' : 'Save as Draft'}
+                    <FileText className="h-4 w-4" />
+                  </Button>
                 </>
               )}
             </div>
