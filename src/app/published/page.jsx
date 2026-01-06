@@ -11,8 +11,21 @@ export default function Published() {
     const { articles, loading, error, unpublishArticle } = useArticles();
     const [selectedArticles, setSelectedArticles] = useState([]);
 
-    // Filter published articles
-    const publishedArticles = articles.filter(article => article.status === 'published');
+    // Filter published articles and add onDelete handler for mobile dropdown
+    // Delete on published page = move to unpublished
+    const publishedArticles = articles
+        .filter(article => article.status === 'published')
+        .map(article => ({
+            ...article,
+            onDelete: async () => {
+                try {
+                    await unpublishArticle(article.id);
+                } catch (error) {
+                    console.error('Error unpublishing article:', error);
+                    alert('Failed to unpublish article. Please try again.');
+                }
+            }
+        }));
 
     const handleArticleSelect = (id, isSelected) => {
         setSelectedArticles(prev => 
@@ -39,8 +52,9 @@ export default function Published() {
         if (selectedArticles.length === 0) return;
         
         try {
-            // Unpublish selected articles
+            // Unpublish selected articles one by one
             for (const articleId of selectedArticles) {
+                console.log('Unpublishing article:', articleId);
                 await unpublishArticle(articleId);
             }
             
@@ -51,7 +65,7 @@ export default function Published() {
             alert(`${selectedArticles.length} article(s) moved to unpublished successfully!`);
         } catch (error) {
             console.error('Error unpublishing articles:', error);
-            alert('Failed to unpublish articles. Please try again.');
+            alert('Failed to unpublish articles: ' + error.message);
         }
     };
 

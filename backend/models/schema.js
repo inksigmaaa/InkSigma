@@ -1,5 +1,8 @@
 // models/schema.js
-import { pgTable, text, timestamp, boolean, serial, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, serial, integer, pgEnum } from "drizzle-orm/pg-core";
+
+// Define blog status enum
+export const blogStatusEnum = pgEnum("blog_status", ["draft", "published", "unpublished", "trash"]);
 
 export const user = pgTable("user", {
     id: text("id").primaryKey(),
@@ -58,7 +61,13 @@ export const blog = pgTable("blog", {
     image: text("image"),
     authorId: text("authorId").notNull().references(() => user.id),
     categories: text("categories").array(),
+    status: blogStatusEnum("status").notNull().default("draft"),
     published: boolean("published").notNull().default(false),
+    scheduledAt: timestamp("scheduledAt"),
+    publishedAt: timestamp("publishedAt"),
+    readTime: integer("readTime"),
+    views: integer("views").default(0),
+    likes: integer("likes").default(0),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
