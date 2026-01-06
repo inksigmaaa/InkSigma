@@ -5,28 +5,14 @@ import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
 import PersonalArticles from "../components/personalArticles/personalArticles";
+import { useArticles } from "@/contexts/ArticlesContext";
 
 export default function Published() {
+    const { articles, loading, error, unpublishArticle } = useArticles();
     const [selectedArticles, setSelectedArticles] = useState([]);
 
-    const articles = [
-        {
-            id: 1,
-            status: "published",
-            title: "Title of the Blog will be in this area",
-            description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-            categories: ["Sports", "Humour", "History"],
-            postedTime: "Posted 2 mins ago",
-        },
-        {
-            id: 2,
-            status: "published",
-            title: "Another Blog Title Example",
-            description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-            categories: ["Technology", "Business"],
-            postedTime: "Posted 5 mins ago",
-        }
-    ];
+    // Filter published articles
+    const publishedArticles = articles.filter(article => article.status === 'published');
 
     const handleArticleSelect = (id, isSelected) => {
         setSelectedArticles(prev => 
@@ -38,7 +24,7 @@ export default function Published() {
 
     const handleSelectAll = (checked) => {
         if (checked) {
-            setSelectedArticles(articles.map(article => article.id));
+            setSelectedArticles(publishedArticles.map(article => article.id));
         } else {
             setSelectedArticles([]);
         }
@@ -49,10 +35,51 @@ export default function Published() {
         // Add copy logic here
     };
 
-    const handleDelete = () => {
-        console.log("Delete articles:", selectedArticles);
-        // Add delete logic here
+    const handleUnpublish = async () => {
+        if (selectedArticles.length === 0) return;
+        
+        try {
+            // Unpublish selected articles
+            for (const articleId of selectedArticles) {
+                await unpublishArticle(articleId);
+            }
+            
+            // Clear selection
+            setSelectedArticles([]);
+            
+            // Show success message
+            alert(`${selectedArticles.length} article(s) moved to unpublished successfully!`);
+        } catch (error) {
+            console.error('Error unpublishing articles:', error);
+            alert('Failed to unpublish articles. Please try again.');
+        }
     };
+
+    if (loading) {
+        return (
+            <>
+                <NavbarLoggedin />
+                <Sidebar />
+                <Verify />
+                <div className="flex justify-center items-center min-h-[400px]">
+                    <div className="text-gray-500">Loading published articles...</div>
+                </div>
+            </>
+        );
+    }
+
+    if (error) {
+        return (
+            <>
+                <NavbarLoggedin />
+                <Sidebar />
+                <Verify />
+                <div className="flex justify-center items-center min-h-[400px]">
+                    <div className="text-red-500">Error: {error}</div>
+                </div>
+            </>
+        );
+    }
 
     const hasSelectedArticles = selectedArticles.length > 0;
 
@@ -65,8 +92,8 @@ export default function Published() {
         },
         { 
             icon: "/images/icons/trash2.svg", 
-            title: "Delete", 
-            onClick: handleDelete,
+            title: "Unpublish", 
+            onClick: handleUnpublish,
             disabled: !hasSelectedArticles 
         },
     ];
@@ -79,7 +106,7 @@ export default function Published() {
             <PersonalArticles
                 title="Published"
                 titleColor="#267F24"
-                articles={articles}
+                articles={publishedArticles}
                 emptyMessage="No published articles yet"
                 showSelectAll={true}
                 showActions={true}
@@ -89,5 +116,5 @@ export default function Published() {
                 onArticleSelect={handleArticleSelect}
             />
         </>
-    )
+    );
 }
