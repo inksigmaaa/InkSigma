@@ -1,44 +1,116 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import imagePlaceholder from "@/icons/image-placeholder.svg";
 import cameraIcon from "@/icons/camera.svg";
+import { publicationService } from "@/services/publicationService";
 
 export default function CreatePublication() {
+  const router = useRouter();
+  const { data: session } = useSession();
   const [publicationName, setPublicationName] = useState("");
   const [subdomain, setSubdomain] = useState("");
   const [showErrors, setShowErrors] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [uploadedImage, setUploadedImage] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
 
   const handleStartWriting = async () => {
     if (!publicationName.trim() || !subdomain.trim()) {
+      setErrorMessage("Please fill in all required fields!");
       setShowErrors(true);
       return;
     }
 
     if (publicationName.length < 2 || publicationName.length > 50) {
+      setErrorMessage("Publication name must be between 2 and 50 characters!");
       setShowErrors(true);
       return;
     }
 
     if (subdomain.length < 3 || subdomain.length > 63) {
+      setErrorMessage("Subdomain must be between 3 and 63 characters!");
       setShowErrors(true);
       return;
     }
 
-    // Frontend only - just redirect
-    window.location.href = "/home";
+    // Validate subdomain format (alphanumeric and hyphens only)
+    if (!/^[a-zA-Z0-9-]+$/.test(subdomain)) {
+      setErrorMessage("Subdomain can only contain letters, numbers, and hyphens!");
+      setShowErrors(true);
+      return;
+    }
+
+    if (!session?.user?.id) {
+      setErrorMessage("User not authenticated!");
+      setShowErrors(true);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Create publication
+      const publication = await publicationService.createPublication({
+        name: publicationName,
+        subdomain: subdomain.toLowerCase(),
+        description: "",
+      });
+
+      // Update user's name if it's different from publication name
+      if (session.user.name !== publicationName) {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/profile`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            profileName: publicationName,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error('Failed to update user name');
+        }
+      }
+
+      // Upload image if provided
+      if (uploadedImage && publication.id) {
+        try {
+          // Convert base64 to file
+          const response = await fetch(uploadedImage);
+          const blob = await response.blob();
+          const file = new File([blob], "publication-logo.png", { type: "image/png" });
+          
+          await publicationService.uploadLogo(publication.id, file);
+        } catch (error) {
+          console.error('Failed to upload logo:', error);
+        }
+      }
+
+      // Redirect to dashboard
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error creating publication:', error);
+      setErrorMessage(error.message || "Failed to create publication. Please try again.");
+      setShowErrors(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     if (showErrors) {
       const timer = setTimeout(() => {
         setShowErrors(false);
-      }, 2000);
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [showErrors]);
@@ -147,7 +219,7 @@ export default function CreatePublication() {
           {showErrors && (
             <div className="mb-6">
               <div className="text-center" style={{ width: '300px', borderRadius: '4px', padding: '12px 16px', background: '#FFD6D6' }}>
-                <p style={{ fontSize: '12px', color: '#A30000' }}>Please fill in all required fields!</p>
+                <p style={{ fontSize: '12px', color: '#A30000' }}>{errorMessage}</p>
               </div>
             </div>
           )}
@@ -161,7 +233,8 @@ export default function CreatePublication() {
                 minLength={2}
                 maxLength={50}
                 onChange={(e) => setPublicationName(e.target.value)}
-                className="w-full px-0 py-2 border-0 border-b text-[14px] text-[#333] placeholder:text-[#CCCCCC] focus:outline-none bg-transparent"
+                disabled={loading}
+                className="w-full px-0 py-2 border-0 border-b text-[14px] text-[#333] placeholder:text-[#CCCCCC] focus:outline-none bg-transparent disabled:opacity-50"
                 style={{ borderBottomWidth: '1.5px', borderBottomColor: '#CBCBCB' }}
               />
             </div>
@@ -175,7 +248,8 @@ export default function CreatePublication() {
                   onChange={(e) => setSubdomain(e.target.value)}
                   minLength={3}
                   maxLength={63}
-                  className="w-full px-0 py-2 pr-[130px] border-0 border-b text-[14px] text-[#333] placeholder:text-[#CCCCCC] focus:outline-none bg-transparent"
+                  disabled={loading}
+                  className="w-full px-0 py-2 pr-[130px] border-0 border-b text-[14px] text-[#333] placeholder:text-[#CCCCCC] focus:outline-none bg-transparent disabled:opacity-50"
                   style={{ borderBottomWidth: '1.5px', borderBottomColor: '#CBCBCB' }}
                 />
                 <span className="absolute right-0 bottom-2 text-[14px] text-black">.inksigma.com</span>
@@ -185,9 +259,10 @@ export default function CreatePublication() {
             <div className="pt-6">
               <button
                 onClick={handleStartWriting}
-                className="mx-auto text-[#7C3AED] text-[14px] font-medium hover:text-[#6D28D9] flex items-center justify-center gap-2"
+                disabled={loading}
+                className="mx-auto text-[#7C3AED] text-[14px] font-medium hover:text-[#6D28D9] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Start Writing
+                {loading ? "Creating..." : "Start Writing"}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
