@@ -31,18 +31,21 @@ export default function NavbarLoggedin() {
     }, []);
 
     const handleLogout = async () => {
+        // Clear local data first
+        localStorage.clear();
+        sessionStorage.clear();
+        
         try {
-            await signOut();
-            localStorage.clear();
-            sessionStorage.clear();
-            router.push("/");
+            // Try to sign out from server (but don't wait for it)
+            signOut().catch(() => {
+                // Silently ignore server errors
+            });
         } catch (error) {
-            console.error("Logout error:", error);
-            // Fallback: clear storage and redirect anyway
-            localStorage.clear();
-            sessionStorage.clear();
-            router.push("/");
+            // Silently ignore any errors
         }
+        
+        // Redirect immediately
+        router.push("/");
     };
 
     const userName = user?.name || "User";

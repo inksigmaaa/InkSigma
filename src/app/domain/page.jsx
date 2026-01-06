@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
 import { Button } from "@/components/ui/button"
@@ -8,8 +8,40 @@ import { Input } from "@/components/ui/input"
 
 export default function DomainPage() {
   const [customDomain, setCustomDomain] = useState("")
-  const currentDomain = "Joshhh.inksigma.com"
-  const subdomain = "Subdomain"
+  const [subdomain, setSubdomain] = useState("Subdomain")
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadPublicationData()
+  }, [])
+
+  const loadPublicationData = async () => {
+    try {
+      const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
+        credentials: "include",
+      })
+      
+      if (!sessionRes.ok) return
+      
+      const sessionData = await sessionRes.json()
+      const userId = sessionData.user.id
+      
+      const pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+        credentials: "include",
+      })
+      
+      if (pubRes.ok) {
+        const pubData = await pubRes.json()
+        setSubdomain(pubData.subdomain || "Subdomain")
+      }
+    } catch (err) {
+      console.error("Error loading publication:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const currentDomain = `${subdomain}.inksigma.com`
 
   const handleSaveChanges = () => {
     console.log("Saving domain changes:", customDomain)

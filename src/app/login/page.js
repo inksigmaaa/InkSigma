@@ -48,16 +48,7 @@ function LoginForm() {
         return
       }
 
-      // Check if user has a publication
-      const checkResponse = await fetch('/api/publication/check')
-      if (checkResponse.ok) {
-        const { hasPublication } = await checkResponse.json()
-        if (!hasPublication) {
-          router.push('/create-publication')
-          return
-        }
-      }
-
+      // Redirect to dashboard - AuthGuard will handle publication check
       router.push(redirectTo)
     } catch (err) {
       setError(err.message || "An unexpected error occurred")

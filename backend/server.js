@@ -7,6 +7,7 @@ import authRoutes from "./routes/authRoutes.js";
 import debugRoutes from "./routes/debugRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
+import publicationRoutes from "./routes/publicationRoutes.js";
 import { corsMiddleware } from "./middleware/cors.js";
 
 const app = express();
@@ -33,6 +34,9 @@ app.use("/api/profile", profileRoutes);
 
 // Blog routes - handles /api/blogs/*
 app.use("/api/blogs", blogRoutes);
+
+// Publication routes - handles /api/publications/*
+app.use("/api/publications", publicationRoutes);
 
 // Debug routes (remove in production)
 app.use("/api/debug", debugRoutes);

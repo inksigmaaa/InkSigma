@@ -14,9 +14,64 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Frontend only - no API call
-    setLoading(false)
+    loadPublicationData()
   }, [])
+
+  const loadPublicationData = async () => {
+    try {
+      setLoading(true)
+      
+      const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
+        credentials: "include",
+      })
+      
+      if (!sessionRes.ok) {
+        setLoading(false)
+        return
+      }
+      
+      const sessionData = await sessionRes.json()
+      const userId = sessionData.user.id
+      const userName = sessionData.user.name || "My Publication"
+      const userUsername = sessionData.user.username || `user${userId.substring(0, 8)}`
+      
+      let pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+        credentials: "include",
+      })
+      
+      // If no publication exists, create one
+      if (pubRes.status === 404) {
+        const createRes = await fetch("http://localhost:5000/api/publications", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: userName,
+            subdomain: userUsername.toLowerCase().replace(/[^a-z0-9]/g, ''),
+            description: "Welcome to my publication",
+            userId: userId,
+          }),
+        })
+        
+        if (createRes.ok) {
+          pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+            credentials: "include",
+          })
+        }
+      }
+      
+      if (pubRes.ok) {
+        const pubData = await pubRes.json()
+        setPublication(pubData)
+      }
+    } catch (err) {
+      console.error("Error loading publication:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleStartWriting = () => {
     router.push("/editor")
@@ -79,12 +134,10 @@ export default function HomePage() {
               <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
                 {publication?.logoUrl ? (
                   <img 
-                    src={publication.logoUrl} 
+                    src={`http://localhost:5000${publication.logoUrl}`} 
                     alt={publication.name} 
                     className="w-full h-full object-cover" 
                   />
-                ) : publication?.image ? (
-                  <img src={publication.image} alt={publication.name} className="w-full h-full object-cover" />
                 ) : (
                   <img src="/icons/nib.svg" alt="publication" className="w-10 h-10 opacity-40 max-md:w-8 max-md:h-8" />
                 )}
@@ -94,7 +147,7 @@ export default function HomePage() {
                   {loading ? "Loading..." : publication?.name || "Publication Name"}
                 </h1>
                 <p className="text-sm text-gray-400 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-1">
-                  {publication?.description || `${publication?.subdomain || "subdomain"}.inksigma.com`}
+                  {publication?.subdomain ? `${publication.subdomain}.inksigma.com` : "subdomain.inksigma.com"}
                 </p>
               </div>
             </div>

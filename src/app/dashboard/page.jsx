@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
 import Verify from "../components/verify/Verify"
@@ -9,6 +10,63 @@ import { ChevronRight } from "lucide-react"
 
 export default function DashboardPage() {
   const router = useRouter()
+  const [publication, setPublication] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadPublication()
+  }, [])
+
+  const loadPublication = async () => {
+    try {
+      const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
+        credentials: "include",
+      })
+      
+      if (!sessionRes.ok) return
+      
+      const sessionData = await sessionRes.json()
+      const userId = sessionData.user.id
+      const userName = sessionData.user.name || "My Publication"
+      const userUsername = sessionData.user.username || `user${userId.substring(0, 8)}`
+      
+      let pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+        credentials: "include",
+      })
+      
+      // If no publication exists, create one
+      if (pubRes.status === 404) {
+        const createRes = await fetch("http://localhost:5000/api/publications", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: userName,
+            subdomain: userUsername.toLowerCase().replace(/[^a-z0-9]/g, ''),
+            description: "Welcome to my publication",
+            userId: userId,
+          }),
+        })
+        
+        if (createRes.ok) {
+          pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+            credentials: "include",
+          })
+        }
+      }
+      
+      if (pubRes.ok) {
+        const pubData = await pubRes.json()
+        setPublication(pubData)
+      }
+    } catch (err) {
+      console.error("Error loading publication:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <>
@@ -40,13 +98,23 @@ export default function DashboardPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex gap-4 items-center flex-1 w-full">
-                  <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <img src="/icons/nib.svg" alt="publication" className="w-14 h-14 rounded-full" />
+                  <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {publication?.logoUrl ? (
+                      <img 
+                        src={`http://localhost:5000${publication.logoUrl}`} 
+                        alt="publication logo" 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : (
+                      <img src="/icons/nib.svg" alt="publication" className="w-14 h-14 rounded-full" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1">Publication Name</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                      {publication?.name || "Publication Name"}
+                    </h3>
                     <p className="text-xs text-gray-400 leading-relaxed">
-                      Note: Edit/Upload your logo, Favicon & Publication Description inside the publication settings. Start with clicking this Publication card
+                      {publication?.description || "Note: Edit/Upload your logo, Favicon & Publication Description inside the publication settings. Start with clicking this Publication card"}
                     </p>
                   </div>
                 </div>

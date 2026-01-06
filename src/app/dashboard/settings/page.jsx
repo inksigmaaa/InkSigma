@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import Sidebar from "../../components/sidebar/Sidebar"
 
@@ -9,7 +9,7 @@ export default function SettingsPage() {
   const router = useRouter()
   const [showResetModal, setShowResetModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
@@ -25,34 +25,118 @@ export default function SettingsPage() {
   const [favicon, setFavicon] = useState("/icons/inksigma-logo.svg")
   const [metaOg, setMetaOg] = useState("/icons/inksigma-logo.svg")
 
-  // Load publication data - removed API call
+  useEffect(() => {
+    loadPublicationData()
+  }, [])
 
   const loadPublicationData = async () => {
-    // Frontend only - no API call
-    setLoading(false)
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Get user ID from session
+      const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
+        credentials: "include",
+      })
+      
+      if (!sessionRes.ok) {
+        console.log("Not authenticated")
+        setLoading(false)
+        return
+      }
+      
+      const sessionData = await sessionRes.json()
+      const userId = sessionData.user.id
+      const userName = sessionData.user.name || "My Publication"
+      const userUsername = sessionData.user.username || `user${userId.substring(0, 8)}`
+      
+      // Fetch publication data
+      let pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+        credentials: "include",
+      })
+      
+      // If no publication exists, create one
+      if (pubRes.status === 404) {
+        console.log("No publication found, creating one...")
+        const createRes = await fetch("http://localhost:5000/api/publications", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: userName,
+            subdomain: userUsername.toLowerCase().replace(/[^a-z0-9]/g, ''),
+            description: "Welcome to my publication",
+            userId: userId,
+          }),
+        })
+        
+        if (createRes.ok) {
+          pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+            credentials: "include",
+          })
+        }
+      }
+      
+      if (pubRes.ok) {
+        const pubData = await pubRes.json()
+        setPublicationId(pubData.id)
+        setName(pubData.name || "")
+        setDescription(pubData.description || "")
+        setSubdomain(pubData.subdomain || "")
+        setOriginalSubdomain(pubData.subdomain || "")
+        setLogo(pubData.logoUrl ? `http://localhost:5000${pubData.logoUrl}` : "/icons/inksigma-logo.svg")
+        setFavicon(pubData.faviconUrl ? `http://localhost:5000${pubData.faviconUrl}` : "/icons/inksigma-logo.svg")
+        setMetaOg(pubData.metaOgImageUrl ? `http://localhost:5000${pubData.metaOgImageUrl}` : "/icons/inksigma-logo.svg")
+      }
+    } catch (err) {
+      console.error("Load error:", err)
+      // Don't show error to user, just log it
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleImageUpload = async (file, type) => {
-    // Frontend only - just preview the image
+    if (!publicationId) {
+      setError("Publication not found")
+      return
+    }
+
     try {
       setUploading(true)
       setError(null)
       
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        if (type === 'logo') {
-          setLogo(reader.result)
-          setSuccess('Logo updated!')
-        } else if (type === 'favicon') {
-          setFavicon(reader.result)
-          setSuccess('Favicon updated!')
-        } else if (type === 'meta_og') {
-          setMetaOg(reader.result)
-          setSuccess('Meta OG image updated!')
-        }
-        setTimeout(() => setSuccess(null), 3000)
+      const formData = new FormData()
+      formData.append(type === 'logo' ? 'logo' : type === 'favicon' ? 'favicon' : 'metaOg', file)
+      
+      const endpoint = type === 'logo' ? 'logo' : type === 'favicon' ? 'favicon' : 'meta-og'
+      const res = await fetch(`http://localhost:5000/api/publications/${publicationId}/${endpoint}`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      })
+      
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || "Upload failed")
       }
-      reader.readAsDataURL(file)
+      
+      const data = await res.json()
+      const imageUrl = `http://localhost:5000${data[type === 'logo' ? 'logoUrl' : type === 'favicon' ? 'faviconUrl' : 'metaOgImageUrl']}`
+      
+      if (type === 'logo') {
+        setLogo(imageUrl)
+        setSuccess('Logo updated!')
+      } else if (type === 'favicon') {
+        setFavicon(imageUrl)
+        setSuccess('Favicon updated!')
+      } else if (type === 'meta_og') {
+        setMetaOg(imageUrl)
+        setSuccess('Meta OG image updated!')
+      }
+      setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Upload error:', err)
       setError(`Failed to upload ${type}: ${err.message}`)
@@ -101,9 +185,30 @@ export default function SettingsPage() {
   }
 
   const handleImageRemove = async (type) => {
-    if (type === 'logo') setLogo("/icons/inksigma-logo.svg")
-    else if (type === 'favicon') setFavicon("/icons/inksigma-logo.svg")
-    else if (type === 'meta_og') setMetaOg("/icons/inksigma-logo.svg")
+    if (!publicationId) return
+    
+    try {
+      setUploading(true)
+      const endpoint = type === 'logo' ? 'logo' : type === 'favicon' ? 'favicon' : 'meta-og'
+      
+      const res = await fetch(`http://localhost:5000/api/publications/${publicationId}/image/${endpoint}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+      
+      if (!res.ok) throw new Error("Failed to remove image")
+      
+      if (type === 'logo') setLogo("/icons/inksigma-logo.svg")
+      else if (type === 'favicon') setFavicon("/icons/inksigma-logo.svg")
+      else if (type === 'meta_og') setMetaOg("/icons/inksigma-logo.svg")
+      
+      setSuccess(`${type} removed successfully!`)
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleLogoRemove = () => handleImageRemove('logo')
@@ -111,12 +216,49 @@ export default function SettingsPage() {
   const handleMetaOgRemove = () => handleImageRemove('meta_og')
 
   const handleSave = async () => {
+    if (!publicationId) {
+      setError("Publication not found")
+      return
+    }
+
     try {
       setSaving(true)
       setError(null)
       setSuccess(null)
       
-      // Frontend only - just show success
+      // Validate inputs
+      if (!name || name.length < 2 || name.length > 50) {
+        throw new Error("Publication name must be between 2 and 50 characters")
+      }
+      
+      if (!subdomain || subdomain.length < 3 || subdomain.length > 63) {
+        throw new Error("Subdomain must be between 3 and 63 characters")
+      }
+      
+      if (description && description.length > 200) {
+        throw new Error("Description must be less than 200 characters")
+      }
+      
+      const res = await fetch(`http://localhost:5000/api/publications/${publicationId}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          description,
+          subdomain: subdomain.toLowerCase(),
+        }),
+      })
+      
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || "Failed to save")
+      }
+      
+      const updatedPub = await res.json()
+      setOriginalSubdomain(updatedPub.subdomain)
       setShowSuccessModal(true)
     } catch (err) {
       console.error('Save error:', err)
@@ -290,27 +432,27 @@ export default function SettingsPage() {
 
       {/* Success Modal */}
       {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 relative">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 relative">
             <button
               onClick={() => setShowSuccessModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
-            <div className="flex flex-col items-center text-center py-8">
-              <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mb-6">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <div className="flex flex-col items-center text-center py-4">
+              <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              <h2 className="text-lg font-bold text-gray-900 mb-2">
                 Settings Saved
               </h2>
-              <p className="text-gray-500">
+              <p className="text-sm text-gray-500">
                 Your publication settings have been updated successfully
               </p>
             </div>
