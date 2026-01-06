@@ -8,7 +8,7 @@ import PersonalArticles from "../components/personalArticles/personalArticles";
 import { useArticles } from "@/contexts/ArticlesContext";
 
 export default function Unpublished() {
-  const { articles, loading, error, publishArticle, moveToTrash } = useArticles();
+  const { articles, loading, error, publishArticle, moveToDraft } = useArticles();
   const [selectedArticles, setSelectedArticles] = useState([]);
 
   // Filter unpublished articles (articles that were published but then unpublished)
@@ -58,24 +58,24 @@ export default function Unpublished() {
   const handleDelete = async () => {
     if (selectedArticles.length === 0) return;
     
-    if (!confirm(`Are you sure you want to delete ${selectedArticles.length} article(s)? This action cannot be undone.`)) {
+    if (!confirm(`Are you sure you want to move ${selectedArticles.length} article(s) to drafts? They will be removed from unpublished and moved to drafts.`)) {
       return;
     }
     
     try {
-      // Delete selected articles
+      // Move selected articles to draft status (Unpublished-to-Draft Deletion Rule)
       for (const articleId of selectedArticles) {
-        await moveToTrash(articleId);
+        await moveToDraft(articleId);
       }
       
       // Clear selection
       setSelectedArticles([]);
       
       // Show success message
-      alert(`${selectedArticles.length} article(s) deleted successfully!`);
+      alert(`${selectedArticles.length} article(s) moved to drafts successfully!`);
     } catch (error) {
-      console.error('Error deleting articles:', error);
-      alert('Failed to delete articles. Please try again.');
+      console.error('Error moving articles to draft:', error);
+      alert('Failed to move articles to drafts. Please try again.');
     }
   };
 
@@ -122,7 +122,7 @@ export default function Unpublished() {
     },
     {
       icon: "/images/icons/trash2.svg",
-      title: "Delete",
+      title: "Move to Draft",
       onClick: handleDelete,
       disabled: !hasSelectedArticles
     },
