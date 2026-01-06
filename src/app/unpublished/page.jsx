@@ -5,10 +5,14 @@ import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
 import PersonalArticles from "../components/personalArticles/personalArticles";
+import { useArticles } from "@/contexts/ArticlesContext";
 
 export default function Unpublished() {
+  const { articles, loading, error, publishArticle, moveToTrash } = useArticles();
   const [selectedArticles, setSelectedArticles] = useState([]);
-  const articles = [];
+
+  // Filter unpublished articles (articles that were published but then unpublished)
+  const unpublishedArticles = articles.filter(article => article.status === 'unpublished');
 
   const handleArticleSelect = (id, isSelected) => {
     setSelectedArticles(prev =>
@@ -20,7 +24,7 @@ export default function Unpublished() {
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedArticles(articles.map(article => article.id));
+      setSelectedArticles(unpublishedArticles.map(article => article.id));
     } else {
       setSelectedArticles([]);
     }
@@ -31,10 +35,75 @@ export default function Unpublished() {
     // Add copy logic here
   };
 
-  const handleDelete = () => {
-    console.log("Delete articles:", selectedArticles);
-    // Add delete logic here
+  const handleRepublish = async () => {
+    if (selectedArticles.length === 0) return;
+    
+    try {
+      // Republish selected articles
+      for (const articleId of selectedArticles) {
+        await publishArticle(articleId);
+      }
+      
+      // Clear selection
+      setSelectedArticles([]);
+      
+      // Show success message
+      alert(`${selectedArticles.length} article(s) republished successfully!`);
+    } catch (error) {
+      console.error('Error republishing articles:', error);
+      alert('Failed to republish articles. Please try again.');
+    }
   };
+
+  const handleDelete = async () => {
+    if (selectedArticles.length === 0) return;
+    
+    if (!confirm(`Are you sure you want to delete ${selectedArticles.length} article(s)? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      // Delete selected articles
+      for (const articleId of selectedArticles) {
+        await moveToTrash(articleId);
+      }
+      
+      // Clear selection
+      setSelectedArticles([]);
+      
+      // Show success message
+      alert(`${selectedArticles.length} article(s) deleted successfully!`);
+    } catch (error) {
+      console.error('Error deleting articles:', error);
+      alert('Failed to delete articles. Please try again.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <>
+        <NavbarLoggedin />
+        <Sidebar />
+        <Verify />
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-gray-500">Loading unpublished articles...</div>
+        </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <NavbarLoggedin />
+        <Sidebar />
+        <Verify />
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-red-500">Error: {error}</div>
+        </div>
+      </>
+    );
+  }
 
   const hasSelectedArticles = selectedArticles.length > 0;
 
@@ -43,6 +112,12 @@ export default function Unpublished() {
       icon: "/images/icons/draft1.svg",
       title: "Copy",
       onClick: handleCopy,
+      disabled: !hasSelectedArticles
+    },
+    {
+      icon: "/images/icons/publish.svg",
+      title: "Republish",
+      onClick: handleRepublish,
       disabled: !hasSelectedArticles
     },
     {
@@ -61,7 +136,7 @@ export default function Unpublished() {
       <PersonalArticles
         title="Unpublished"
         titleColor="#D97706"
-        articles={articles}
+        articles={unpublishedArticles}
         emptyMessage="No unpublished articles yet"
         showSelectAll={true}
         showActions={true}

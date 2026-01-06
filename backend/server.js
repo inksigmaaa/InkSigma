@@ -6,6 +6,7 @@ import { auth } from "./config/betterAuth.js";
 import authRoutes from "./routes/authRoutes.js";
 import debugRoutes from "./routes/debugRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
+import blogRoutes from "./routes/blogRoutes.js";
 import { corsMiddleware } from "./middleware/cors.js";
 
 const app = express();
@@ -22,13 +23,16 @@ app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
 // Better Auth handler - handles /api/auth/*
-app.all("/api/auth/*", toNodeHandler(auth));
+app.use("/api/auth", toNodeHandler(auth));
 
 // Custom auth routes - handles /api/custom/*
 app.use("/api/custom", authRoutes);
 
 // Profile routes - handles /api/profile/*
 app.use("/api/profile", profileRoutes);
+
+// Blog routes - handles /api/blogs/*
+app.use("/api/blogs", blogRoutes);
 
 // Debug routes (remove in production)
 app.use("/api/debug", debugRoutes);
