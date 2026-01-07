@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import ArticleContainer from '../articleContainer/ArticleContainer'
+import ConfirmModal from '../confirmModal/ConfirmModal'
+import { useArticles } from '@/contexts/ArticlesContext'
 
 const categories = [
     "Agriculture", "Art & Illustration", "Business", "Climate & Environment",
@@ -15,22 +17,32 @@ const categories = [
 ]
 
 export default function Articles(props) {
+    const { articles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus } = useArticles()
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategories, setSelectedCategories] = useState([])
     const [selectAll, setSelectAll] = useState(false)
     const [selectedArticles, setSelectedArticles] = useState(new Set())
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [showPublishModal, setShowPublishModal] = useState(false)
+    const [showDraftModal, setShowDraftModal] = useState(false)
+    const [actionArticleId, setActionArticleId] = useState(null)
+    const [isBulkAction, setIsBulkAction] = useState(false)
     const mobileDropdownRef = useRef(null)
     const desktopDropdownRef = useRef(null)
 
     const filterStatus = props.filterStatus || null
     const showCreateButton = props.showCreateButton !== false
 
-    // Create article IDs for the articles that should be displayed
-    const articleIds = []
-    if (!filterStatus || filterStatus === "published") articleIds.push("published-1")
-    if (!filterStatus || filterStatus === "draft") articleIds.push("draft-1")
-    if (!filterStatus || filterStatus === "scheduled") articleIds.push("scheduled-1")
+    // Get real articles from context, excluding trash
+    const allArticles = articles.filter(article => article.status !== 'trash')
+    
+    // Filter by status if specified
+    const filteredArticles = filterStatus 
+        ? allArticles.filter(article => article.status === filterStatus)
+        : allArticles
+
+    const articleIds = filteredArticles.map(article => article.id)
 
     const filteredCategories = categories.filter(cat =>
         cat.toLowerCase().includes(searchTerm.toLowerCase())
@@ -46,11 +58,9 @@ export default function Articles(props) {
 
     const handleSelectAll = () => {
         if (selectAll) {
-            // Deselect all
             setSelectedArticles(new Set())
             setSelectAll(false)
         } else {
-            // Select all visible articles
             setSelectedArticles(new Set(articleIds))
             setSelectAll(true)
         }
@@ -66,148 +76,119 @@ export default function Articles(props) {
         setSelectedArticles(newSelected)
     }
 
-    // Update selectAll state based on individual selections
+    const handleDeleteArticle = (articleId) => {
+        setActionArticleId(articleId)
+        setIsBulkAction(false)
+        setShowDeleteModal(true)
+    }
+
+    const handlePublishArticle = (articleId) => {
+        setActionArticleId(articleId)
+        setIsBulkAction(false)
+        setShowPublishModal(true)
+    }
+
+    const handleDraftArticle = (articleId) => {
+        setActionArticleId(articleId)
+        setIsBulkAction(false)
+        setShowDraftModal(true)
+    }
+
+    const handleBulkDelete = () => {
+        if (selectedArticles.size > 0) {
+            setIsBulkAction(true)
+            setShowDeleteModal(true)
+        }
+    }
+
+    const confirmDelete = async () => {
+        try {
+            if (isBulkAction) {
+                await bulkMoveToTrashStatus(Array.from(selectedArticles))
+                setSelectedArticles(new Set())
+            } else {
+                await moveToTrashStatus(deleteArticleId)
+            }
+            setShowDeleteModal(false)
+            setDeleteArticleId(null)
+        } catch (error) {
+            console.error('Error moving articles to trash:', error)
+        }
+    }
+
     useEffect(() => {
         const allSelected = articleIds.length > 0 && articleIds.every(id => selectedArticles.has(id))
         setSelectAll(allSelected)
     }, [selectedArticles, articleIds.length])
 
-    // Check if any articles are selected
     const hasSelectedArticles = selectedArticles.size > 0
 
-    // Handle click outside to close dropdown
     useEffect(() => {
         const handleClickOutside = (event) => {
             const mobileDropdown = mobileDropdownRef.current
             const desktopDropdown = desktopDropdownRef.current
-            
-            if (mobileDropdown && mobileDropdown.contains(event.target)) {
-                return
-            }
-            if (desktopDropdown && desktopDropdown.contains(event.target)) {
-                return
-            }
-            
+            if (mobileDropdown && mobileDropdown.contains(event.target)) return
+            if (desktopDropdown && desktopDropdown.contains(event.target)) return
             setIsDropdownOpen(false)
         }
-
         if (isDropdownOpen) {
             document.addEventListener('mousedown', handleClickOutside)
         }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
-        }
+        return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [isDropdownOpen])
 
-    // Fixed top position (no verify banner)
-    const topPosition = 'top-[160px]';
-    const mobileTopPosition = 'max-md:top-[120px]';
+    const topPosition = 'top-[160px]'
+    const mobileTopPosition = 'max-md:top-[120px]'
+
+    if (loading) {
+        return (
+            <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
+                <div className="ml-0 md:ml-[185px]">
+                    <div className="flex justify-center items-center min-h-[400px]">
+                        <div className="text-gray-500">Loading articles...</div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
+                <div className="ml-0 md:ml-[185px]">
+                    <div className="flex justify-center items-center min-h-[400px]">
+                        <div className="text-red-500">Error: {error}</div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
-
             <div className="ml-0 md:ml-[185px]">
-
-                {/* Mobile header */}
                 <div className="flex flex-col justify-between gap-4 mb-6 px-2 md:hidden max-md:mt-3">
                     <h1 className="font-bold text-lg leading-8 text-gray-800 m-0 flex items-center gap-3">
                         <span className="w-3 h-3 bg-violet-500 rounded-full shrink-0"></span>
                         {props.title || "All Articles"}
                     </h1>
-
                     <div className="flex items-center justify-between gap-4 max-[410px]:gap-2">
-
                         {showCreateButton && (
                             <button className="font-semibold text-base leading-6 text-white bg-black rounded-lg px-6 py-3 whitespace-nowrap transition-colors hover:bg-gray-800 active:bg-gray-900 max-[410px]:text-sm max-[410px]:px-4 max-[410px]:py-2.5 max-[360px]:text-xs max-[360px]:px-3 max-[360px]:py-2">
                                 + Create Article
                             </button>
                         )}
-
                         <div className="relative" ref={mobileDropdownRef}>
-                            <button
-                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 max-[410px]:min-w-[120px] max-[410px]:text-xs max-[410px]:px-3 max-[410px]:py-2 max-[360px]:min-w-[100px] max-[360px]:px-2.5 max-[360px]:py-1.5 whitespace-nowrap"
-                                style={{
-                                    minWidth: '163px',
-                                    height: '32px',
-                                    borderRadius: '4px',
-                                    borderWidth: '1px',
-                                    opacity: 1,
-                                    gap: '10px',
-                                    padding: '6px 16px'
-                                }}
-                            >
-                                <span
-                                    style={{
-                                        fontFamily: 'Public Sans',
-                                        fontWeight: 400,
-                                        fontSize: '14px',
-                                        lineHeight: '150%',
-                                        letterSpacing: '0%',
-                                        color: '#6B7280'
-                                    }}
-                                >
-                                    Category
-                                </span>
-                                <svg 
-                                    width="16" 
-                                    height="16" 
-                                    viewBox="0 0 16 16" 
-                                    fill="none"
-                                    className="transition-transform max-[410px]:w-3.5 max-[410px]:h-3.5 flex-shrink-0"
-                                    style={{
-                                        strokeWidth: '1.4px',
-                                        opacity: 1,
-                                        color: '#9CA3AF',
-                                        transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'
-                                    }}
-                                >
+                            <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center justify-between bg-white border hover:bg-gray-50" style={{ minWidth: '163px', height: '32px', borderRadius: '4px', borderWidth: '1px', gap: '10px', padding: '6px 16px' }}>
+                                <span style={{ fontFamily: 'Public Sans', fontWeight: 400, fontSize: '14px', color: '#6B7280' }}>Category</span>
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: '#9CA3AF', transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                                     <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                                 </svg>
                             </button>
-
-                            {isDropdownOpen && (
-                                <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100] max-[410px]:w-72 max-[360px]:w-64">
-                                    <div className="p-4 flex gap-3 border-b border-gray-200 max-[410px]:p-3 max-[410px]:gap-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Search Category..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 outline-none focus:border-violet-500 focus:bg-white placeholder:text-gray-400 max-[410px]:text-xs max-[410px]:px-2 max-[410px]:py-1.5"
-                                        />
-                                        <button
-                                            onClick={() => setIsDropdownOpen(false)}
-                                            className="text-sm font-medium bg-violet-100 text-violet-600 rounded-lg px-6 py-2 whitespace-nowrap transition-colors hover:bg-violet-200 max-[410px]:text-xs max-[410px]:px-4 max-[410px]:py-1.5"
-                                        >
-                                            Apply
-                                        </button>
-                                    </div>
-
-                                    <div className="p-3 overflow-y-auto flex-1 max-[410px]:p-2">
-                                        {filteredCategories.map((category) => (
-                                            <label
-                                                key={category}
-                                                className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 max-[410px]:gap-2 max-[410px]:px-2 max-[410px]:py-1.5"
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedCategories.includes(category)}
-                                                    onChange={() => handleCategoryToggle(category)}
-                                                    className="w-5 h-5 cursor-pointer accent-violet-500 shrink-0 max-[410px]:w-4 max-[410px]:h-4"
-                                                />
-                                                <span className="text-sm text-gray-600 max-[410px]:text-xs">{category}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
 
-                {/* Desktop header */}
                 <div className="hidden md:flex flex-col gap-4">
                     <div className="flex items-center">
                         <h1 className="m-0 font-bold text-base leading-6 text-gray-800 flex items-center gap-2">
@@ -215,177 +196,107 @@ export default function Articles(props) {
                             {props.title || "All Articles"}
                         </h1>
                     </div>
-
                     <div className="flex items-center justify-between gap-5">
                         <div className="flex items-center gap-4">
                             <label className="flex items-center gap-2 cursor-pointer w-[123px] h-8 bg-[#F8F8F8] rounded px-3 py-2">
-                                <input
-                                    type="checkbox"
-                                    checked={selectAll}
-                                    onChange={handleSelectAll}
-                                    className="cursor-pointer accent-violet-500"
-                                    style={{
-                                        width: '16px',
-                                        height: '16px',
-                                        borderRadius: '4px',
-                                        borderWidth: '1px',
-                                        opacity: 1
-                                    }}
-                                />
-                                <span className="font-bold text-base leading-6 text-gray-500">
-                                    Select all
-                                </span>
+                                <input type="checkbox" checked={selectAll} onChange={handleSelectAll} className="cursor-pointer accent-violet-500" style={{ width: '16px', height: '16px' }} />
+                                <span className="font-bold text-base leading-6 text-gray-500">Select all</span>
                             </label>
-
-                            {[
-                                { icon: "/images/icons/draft1.svg", label: "Copy" },
-                                { icon: "/images/icons/share.svg", label: "Send" },
-                                { icon: "/images/icons/trash2.svg", label: "Delete" },
-                            ].map((btn) => (
-                                <button
-                                    key={btn.label}
-                                    title={btn.label}
-                                    disabled={!hasSelectedArticles}
-                                    className={`w-8 h-8 border rounded-lg p-2 flex items-center justify-center transition ${
-                                        hasSelectedArticles
-                                            ? "bg-white border-gray-200 cursor-pointer hover:bg-gray-50 hover:border-gray-300"
-                                            : "bg-gray-100 border-gray-200 cursor-not-allowed opacity-50"
-                                    }`}
-                                >
-                                    <img 
-                                        src={btn.icon} 
-                                        alt={btn.label} 
-                                        className={`w-5 h-5 ${!hasSelectedArticles ? "opacity-50" : ""}`} 
-                                    />
-                                </button>
-                            ))}
+                            <button title="Copy" disabled={!hasSelectedArticles} className={`w-8 h-8 border rounded-lg p-2 flex items-center justify-center transition ${hasSelectedArticles ? "bg-white border-gray-200 cursor-pointer hover:bg-gray-50" : "bg-gray-100 border-gray-200 cursor-not-allowed opacity-50"}`}>
+                                <img src="/images/icons/draft1.svg" alt="Copy" className={`w-5 h-5 ${!hasSelectedArticles ? "opacity-50" : ""}`} />
+                            </button>
+                            <button title="Send" disabled={!hasSelectedArticles} className={`w-8 h-8 border rounded-lg p-2 flex items-center justify-center transition ${hasSelectedArticles ? "bg-white border-gray-200 cursor-pointer hover:bg-gray-50" : "bg-gray-100 border-gray-200 cursor-not-allowed opacity-50"}`}>
+                                <img src="/images/icons/share.svg" alt="Send" className={`w-5 h-5 ${!hasSelectedArticles ? "opacity-50" : ""}`} />
+                            </button>
+                            <button title="Delete" disabled={!hasSelectedArticles} onClick={handleBulkDelete} className={`w-8 h-8 border rounded-lg p-2 flex items-center justify-center transition ${hasSelectedArticles ? "bg-white border-gray-200 cursor-pointer hover:bg-gray-50" : "bg-gray-100 border-gray-200 cursor-not-allowed opacity-50"}`}>
+                                <img src="/images/icons/trash2.svg" alt="Delete" className={`w-5 h-5 ${!hasSelectedArticles ? "opacity-50" : ""}`} />
+                            </button>
                         </div>
-
                         <div className="relative" ref={desktopDropdownRef}>
-                            <button
-                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 whitespace-nowrap"
-                                style={{
-                                    minWidth: '163px',
-                                    height: '32px',
-                                    borderRadius: '4px',
-                                    borderWidth: '1px',
-                                    opacity: 1,
-                                    gap: '10px',
-                                    padding: '6px 16px'
-                                }}
-                            >
-                                <span
-                                    style={{
-                                        fontFamily: 'Public Sans',
-                                        fontWeight: 400,
-                                        fontSize: '14px',
-                                        lineHeight: '150%',
-                                        letterSpacing: '0%',
-                                        color: '#6B7280'
-                                    }}
-                                >
-                                    Choose Category
-                                </span>
-                                <svg 
-                                    width="16" 
-                                    height="16" 
-                                    viewBox="0 0 16 16" 
-                                    fill="none"
-                                    className="transition-transform flex-shrink-0"
-                                    style={{
-                                        strokeWidth: '1.4px',
-                                        opacity: 1,
-                                        color: '#9CA3AF',
-                                        transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'
-                                    }}
-                                >
+                            <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center justify-between bg-white border hover:bg-gray-50" style={{ minWidth: '163px', height: '32px', borderRadius: '4px', borderWidth: '1px', gap: '10px', padding: '6px 16px' }}>
+                                <span style={{ fontFamily: 'Public Sans', fontWeight: 400, fontSize: '14px', color: '#6B7280' }}>Choose Category</span>
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: '#9CA3AF', transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                                     <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                                 </svg>
                             </button>
-
-                            {isDropdownOpen && (
-                                <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100]">
-                                    <div className="p-4 flex gap-3 border-b border-gray-200">
-                                        <input
-                                            type="text"
-                                            placeholder="Search Category..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 outline-none focus:border-violet-500 focus:bg-white placeholder:text-gray-400"
-                                        />
-                                        <button
-                                            onClick={() => setIsDropdownOpen(false)}
-                                            className="text-sm font-medium bg-violet-100 text-violet-600 rounded-lg px-6 py-2 whitespace-nowrap transition-colors hover:bg-violet-200"
-                                        >
-                                            Apply
-                                        </button>
-                                    </div>
-
-                                    <div className="p-3 overflow-y-auto flex-1">
-                                        {filteredCategories.map((category) => (
-                                            <label
-                                                key={category}
-                                                className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50"
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedCategories.includes(category)}
-                                                    onChange={() => handleCategoryToggle(category)}
-                                                    className="cursor-pointer accent-violet-500 shrink-0"
-                                                    style={{ width: '16px', height: '16px' }}
-                                                />
-                                                <span className="text-sm text-gray-600">{category}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
 
                 <div className="mt-6 space-y-4 pb-[85px]">
                     {(!filterStatus || filterStatus === "published") && (
-                        <ArticleContainer
-                            id="published-1"
-                            status="published"
-                            title="Title of the Blog will be in this area"
-                            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
-                            categories={["Sports", "Humour", "History"]}
-                            postedTime="Posted 2 mins ago"
-                            isSelected={selectedArticles.has("published-1")}
-                            onSelect={handleArticleSelect}
+                        <ArticleContainer 
+                            id="published-1" 
+                            status="published" 
+                            title="Title of the Blog will be in this area" 
+                            description="Lorem ipsum dolor sit amet..." 
+                            categories={["Sports", "Humour", "History"]} 
+                            postedTime="Posted 2 mins ago" 
+                            isSelected={selectedArticles.has("published-1")} 
+                            onSelect={handleArticleSelect} 
+                            onDelete={() => handleDeleteArticle("published-1")}
+                            onDraft={() => handleDraftArticle("published-1")}
                         />
                     )}
-
                     {(!filterStatus || filterStatus === "draft") && (
-                        <ArticleContainer
-                            id="draft-1"
-                            status="draft"
-                            title="Title of the Blog will be in this area"
-                            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
-                            categories={["Sports", "Humour", "History"]}
-                            postedTime="Posted 2 mins ago"
-                            isSelected={selectedArticles.has("draft-1")}
-                            onSelect={handleArticleSelect}
+                        <ArticleContainer 
+                            id="draft-1" 
+                            status="draft" 
+                            title="Title of the Blog will be in this area" 
+                            description="Lorem ipsum dolor sit amet..." 
+                            categories={["Sports", "Humour", "History"]} 
+                            postedTime="Posted 2 mins ago" 
+                            isSelected={selectedArticles.has("draft-1")} 
+                            onSelect={handleArticleSelect} 
+                            onDelete={() => handleDeleteArticle("draft-1")}
+                            onPublish={() => handlePublishArticle("draft-1")}
                         />
                     )}
-
                     {(!filterStatus || filterStatus === "scheduled") && (
-                        <ArticleContainer
-                            id="scheduled-1"
-                            status="scheduled"
-                            title="Title of the Blog will be in this area"
-                            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa..."
-                            categories={["Sports", "Humour", "History"]}
-                            postedTime="Posted 2 mins ago"
-                            isSelected={selectedArticles.has("scheduled-1")}
-                            onSelect={handleArticleSelect}
+                        <ArticleContainer 
+                            id="scheduled-1" 
+                            status="scheduled" 
+                            title="Title of the Blog will be in this area" 
+                            description="Lorem ipsum dolor sit amet..." 
+                            categories={["Sports", "Humour", "History"]} 
+                            postedTime="Posted 2 mins ago" 
+                            isSelected={selectedArticles.has("scheduled-1")} 
+                            onSelect={handleArticleSelect} 
+                            onDelete={() => handleDeleteArticle("scheduled-1")}
                         />
                     )}
                 </div>
             </div>
+
+            <ConfirmModal 
+                isOpen={showDeleteModal} 
+                onClose={() => { setShowDeleteModal(false); setActionArticleId(null) }} 
+                onConfirm={confirmDelete} 
+                title="Are you sure you want to put it in trash?" 
+                message="This will be put into trash and can be restored later" 
+                confirmText="Move to Trash" 
+                confirmStyle="danger" 
+            />
+
+            <ConfirmModal 
+                isOpen={showPublishModal} 
+                onClose={() => { setShowPublishModal(false); setActionArticleId(null) }} 
+                onConfirm={confirmPublish} 
+                title="Publish article?" 
+                message="This article will be published" 
+                confirmText="Publish" 
+                confirmStyle="normal" 
+            />
+
+            <ConfirmModal 
+                isOpen={showDraftModal} 
+                onClose={() => { setShowDraftModal(false); setActionArticleId(null) }} 
+                onConfirm={confirmDraft} 
+                title="Move to Draft?" 
+                message="This article will be moved to drafts" 
+                confirmText="Move to Draft" 
+                confirmStyle="normal" 
+            />
         </div>
     )
 }

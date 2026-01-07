@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { CategoryDropdown } from "./CategoryDropdown"
 import { ThumbnailModal } from "./ThumbnailModal"
 import { DateTimePicker } from "./DateTimePicker"
+import PublishSuccessModal from "./PublishSuccessModal"
 import { useArticles } from "@/contexts/ArticlesContext"
 import { useSession } from "@/lib/auth-client"
 
@@ -23,7 +24,7 @@ export default function EditorPageClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session } = useSession()
-  const { createArticle, updateArticle, uploadArticleImage } = useArticles()
+  const { createArticle, updateArticle, uploadArticleImage, getArticleById } = useArticles()
   
   // Get status and ID from URL parameters
   const articleStatus = searchParams.get('status')
@@ -46,6 +47,9 @@ export default function EditorPageClient() {
   const [currentArticleId, setCurrentArticleId] = useState(articleId ? parseInt(articleId) : null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
+  const [isLoadingArticle, setIsLoadingArticle] = useState(false)
+  const [showPublishSuccessModal, setShowPublishSuccessModal] = useState(false)
+  const [publishedBlogSlug, setPublishedBlogSlug] = useState('')
   
   // Refs to track latest values for auto-save
   const titleRef = useRef(title)
@@ -55,6 +59,37 @@ export default function EditorPageClient() {
   const currentArticleIdRef = useRef(currentArticleId)
   const hasUnsavedChangesRef = useRef(hasUnsavedChanges)
   const isSavingRef = useRef(false)
+
+  // Load existing article data if ID is provided
+  useEffect(() => {
+    const loadArticle = async () => {
+      if (articleId && session?.user?.id) {
+        try {
+          setIsLoadingArticle(true)
+          const article = await getArticleById(parseInt(articleId))
+          
+          // Populate form with existing article data
+          setTitle(article.title || '')
+          setDescription(article.description || '')
+          setSelectedCategories(article.categories || [])
+          setEditorContent(article.content || '')
+          setCurrentArticleId(article.id)
+          
+          // Reset unsaved changes since we just loaded
+          setHasUnsavedChanges(false)
+          setIsSaved(true)
+        } catch (error) {
+          console.error('Error loading article:', error)
+          alert('Failed to load article. Please try again.')
+          router.push('/home')
+        } finally {
+          setIsLoadingArticle(false)
+        }
+      }
+    }
+
+    loadArticle()
+  }, [articleId, session?.user?.id, getArticleById, router])
 
   // Update refs when state changes
   useEffect(() => { titleRef.current = title }, [title])
@@ -178,10 +213,11 @@ export default function EditorPageClient() {
 
     try {
       setIsLoading(true)
+      let publishedBlog = null
       
       if (currentArticleId) {
         // Update existing article and publish
-        await updateArticle(currentArticleId, {
+        publishedBlog = await updateArticle(currentArticleId, {
           title,
           description,
           content: editorContent,
@@ -190,19 +226,19 @@ export default function EditorPageClient() {
         })
       } else {
         // Create new article and publish
-        const newArticle = await createArticle({
+        publishedBlog = await createArticle({
           title,
           description,
           content: editorContent,
           categories: selectedCategories,
           status: 'published'
         })  
-        setCurrentArticleId(newArticle.id)
+        setCurrentArticleId(publishedBlog.id)
         
         // Upload thumbnail if provided and it's a File object
         if (thumbnailImage && thumbnailImage.file instanceof File) {
           try {
-            await uploadArticleImage(newArticle.id, thumbnailImage.file)
+            await uploadArticleImage(publishedBlog.id, thumbnailImage.file)
           } catch (imageError) {
             console.error('Error uploading thumbnail:', imageError)
             // Don't fail the entire publish process for image upload errors
@@ -213,8 +249,10 @@ export default function EditorPageClient() {
       
       setHasUnsavedChanges(false)
       setIsSaved(true)
-      // Redirect to published page
-      router.push('/published')
+      
+      // Set blog slug for the modal and show success modal
+      setPublishedBlogSlug(publishedBlog?.slug || 'blog')
+      setShowPublishSuccessModal(true)
     } catch (error) {
       console.error('Error publishing article:', error)
       alert('Failed to publish article. Please try again.')
@@ -473,6 +511,17 @@ export default function EditorPageClient() {
           border: none !important;
         }
       `}</style>
+      
+      {/* Loading state for article */}
+      {isLoadingArticle && (
+        <div className="fixed inset-0 bg-white/80 flex items-center justify-center z-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-2"></div>
+            <p className="text-gray-600">Loading article...</p>
+          </div>
+        </div>
+      )}
+      
       {/* Go Back Button */}
       <div className="px-4 md:px-6 pt-6 pb-4 border-b border-gray-200 md:bg-transparent md:border-0">
         <Button 
@@ -557,7 +606,7 @@ export default function EditorPageClient() {
         {/* Tiptap Editor */}
         <TiptapEditor 
           onUpdate={handleEditorUpdate}
-          initialContent=""
+          initialContent={editorContent}
           onImageModalToggle={setIsImageModalOpen}
         />
       </div>
@@ -715,7 +764,7 @@ export default function EditorPageClient() {
                 <button 
                   onClick={handleUpdate}
                   disabled={isLoading}
-                  className="bg-black text-white hover:bg-gray-800 flex items-center gap-2 px-6 py-2 rounded text-sm font-medium h-8"
+                  className="bg-black text-white hover:bg-gray-800 flex justify-center items-center gap-2 px-6 py-2 rounded text-sm font-medium h-8"
                   style={{ width: '160px' }}
                 >
                   {isLoading ? 'Updating...' : 'Update'}
@@ -843,6 +892,14 @@ export default function EditorPageClient() {
         onDateTimeSelect={handleDateTimeSelect}
         selectedDate={publishDate}
         selectedTime={publishTime}
+      />
+
+      {/* Publish Success Modal */}
+      <PublishSuccessModal
+        isOpen={showPublishSuccessModal}
+        onClose={() => setShowPublishSuccessModal(false)}
+        blogSlug={publishedBlogSlug}
+        blogTitle={title}
       />
     </div>
   )

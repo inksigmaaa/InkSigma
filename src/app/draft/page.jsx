@@ -9,19 +9,30 @@ import ConfirmModal from "../components/confirmModal/ConfirmModal"
 import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function DraftPage() {
-  const { articles, moveToTrashStatus, bulkMoveToTrashStatus, bulkPublish } = useArticles()
+  const { articles, moveToTrashStatus, bulkMoveToTrashStatus, bulkPublish, publishArticle } = useArticles()
   const [selectedArticles, setSelectedArticles] = useState([])
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPublishModal, setShowPublishModal] = useState(false)
+  const [actionArticleId, setActionArticleId] = useState(null)
+  const [isBulkAction, setIsBulkAction] = useState(false)
 
   const draftArticles = useMemo(() => {
     return articles
       .filter(article => article.status === 'draft')
       .map(article => ({
         ...article,
-        onDelete: () => moveToTrashStatus(article.id)
+        onDelete: () => {
+          setActionArticleId(article.id)
+          setIsBulkAction(false)
+          setShowDeleteModal(true)
+        },
+        onPublish: () => {
+          setActionArticleId(article.id)
+          setIsBulkAction(false)
+          setShowPublishModal(true)
+        }
       }))
-  }, [articles, moveToTrashStatus])
+  }, [articles])
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -41,26 +52,46 @@ export default function DraftPage() {
 
   const handleBulkDelete = () => {
     if (selectedArticles.length > 0) {
+      setIsBulkAction(true)
       setShowDeleteModal(true)
     }
   }
 
   const handleBulkPublish = () => {
     if (selectedArticles.length > 0) {
+      setIsBulkAction(true)
       setShowPublishModal(true)
     }
   }
 
-  const confirmDelete = () => {
-    bulkMoveToTrashStatus(selectedArticles)
-    setSelectedArticles([])
-    setShowDeleteModal(false)
+  const confirmDelete = async () => {
+    try {
+      if (isBulkAction) {
+        await bulkMoveToTrashStatus(selectedArticles)
+        setSelectedArticles([])
+      } else if (actionArticleId) {
+        await moveToTrashStatus(actionArticleId)
+      }
+      setShowDeleteModal(false)
+      setActionArticleId(null)
+    } catch (error) {
+      console.error('Error moving to trash:', error)
+    }
   }
 
-  const confirmPublish = () => {
-    bulkPublish(selectedArticles)
-    setSelectedArticles([])
-    setShowPublishModal(false)
+  const confirmPublish = async () => {
+    try {
+      if (isBulkAction) {
+        await bulkPublish(selectedArticles)
+        setSelectedArticles([])
+      } else if (actionArticleId) {
+        await publishArticle(actionArticleId)
+      }
+      setShowPublishModal(false)
+      setActionArticleId(null)
+    } catch (error) {
+      console.error('Error publishing:', error)
+    }
   }
 
   const actionButtons = [
@@ -98,20 +129,26 @@ export default function DraftPage() {
 
       <ConfirmModal
         isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
+        onClose={() => {
+          setShowDeleteModal(false)
+          setActionArticleId(null)
+        }}
         onConfirm={confirmDelete}
-        title="Move to trash?"
-        message={`${selectedArticles.length} article(s) will be moved to trash`}
-        confirmText="Move to trash"
+        title="Are you sure you want to put it in trash?"
+        message="This will be put into trash and can be restored later"
+        confirmText="Move to Trash"
         confirmStyle="danger"
       />
 
       <ConfirmModal
         isOpen={showPublishModal}
-        onClose={() => setShowPublishModal(false)}
+        onClose={() => {
+          setShowPublishModal(false)
+          setActionArticleId(null)
+        }}
         onConfirm={confirmPublish}
-        title="Publish articles?"
-        message={`${selectedArticles.length} article(s) will be published`}
+        title="Publish article?"
+        message={isBulkAction ? `${selectedArticles.length} article(s) will be published` : "This article will be published"}
         confirmText="Publish"
         confirmStyle="normal"
       />

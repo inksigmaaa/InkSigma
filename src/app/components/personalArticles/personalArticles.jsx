@@ -275,6 +275,8 @@ export default function PersonalArticles({
                                 onRestore={article.onRestore}
                                 onDraft={article.onDraft}
                                 onUnpublish={article.onUnpublish}
+                                onRepublish={article.onRepublish}
+                                onPublish={article.onPublish}
                                 isSelected={selectedArticles.includes(article.id)}
                                 onSelect={onArticleSelect}
                             />

@@ -3,20 +3,27 @@ import nodemailer from "nodemailer";
 
 class EmailService {
     constructor() {
-        this.transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST || "smtp.gmail.com",
-            port: 587,
-            secure: false,
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            },
-        });
+        this.transporter = null;
+    }
+
+    getTransporter() {
+        if (!this.transporter) {
+            this.transporter = nodemailer.createTransport({
+                host: process.env.SMTP_HOST || "smtp.gmail.com",
+                port: 587,
+                secure: false,
+                auth: {
+                    user: process.env.SMTP_USER,
+                    pass: process.env.SMTP_PASS,
+                },
+            });
+        }
+        return this.transporter;
     }
 
     async verify() {
         try {
-            await this.transporter.verify();
+            await this.getTransporter().verify();
             console.log("📧 SMTP server is ready");
             return true;
         } catch (error) {
@@ -28,7 +35,7 @@ class EmailService {
     async send({ to, subject, html }) {
         console.log(`[EMAIL] Sending "${subject}" to ${to}`);
         try {
-            const result = await this.transporter.sendMail({
+            const result = await this.getTransporter().sendMail({
                 from: process.env.SMTP_USER,
                 to,
                 subject,
