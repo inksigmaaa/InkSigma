@@ -273,6 +273,8 @@ export default function PersonalArticles({
                                 postedTime={article.postedTime}
                                 onDelete={article.onDelete}
                                 onRestore={article.onRestore}
+                                onDraft={article.onDraft}
+                                onUnpublish={article.onUnpublish}
                                 isSelected={selectedArticles.includes(article.id)}
                                 onSelect={onArticleSelect}
                             />

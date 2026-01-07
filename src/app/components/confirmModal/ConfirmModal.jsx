@@ -1,7 +1,7 @@
-export default function ConfirmModal({ isOpen, onClose, onConfirm, title, message, confirmText, confirmStyle = 'danger' }) {
+export default function ConfirmModal({ isOpen, onClose, onConfirm, title, message, confirmText = 'Confirm', confirmStyle = 'danger' }) {
   if (!isOpen) return null
 
-  const titleColor = confirmStyle === 'danger' ? 'text-red-600' : 'text-gray-800'
+  const titleColor = confirmStyle === 'danger' ? 'text-[#DC2626]' : 'text-gray-800'
 
   return (
     <div
@@ -9,26 +9,29 @@ export default function ConfirmModal({ isOpen, onClose, onConfirm, title, messag
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl p-6 sm:p-8 max-w-[500px] w-full shadow-[0_20px_60px_rgba(0,0,0,0.3)] text-left"
+        className="bg-white rounded-lg w-[408px] shadow-[0_20px_60px_rgba(0,0,0,0.3)] text-left flex flex-col gap-[9px]"
+        style={{ padding: '40px 56px' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className={`font-['Public_Sans'] font-bold text-lg sm:text-xl leading-[1.4] mb-3 ${titleColor}`}>
+        <h2 className={`font-['Public_Sans'] font-bold text-base leading-[150%] ${titleColor}`}>
           {title}
         </h2>
         {message && (
-          <p className="font-['Public_Sans'] font-normal text-sm sm:text-base leading-[1.6] text-gray-400 mb-6">
+          <p className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-[#A4A4A4]">
             {message}
           </p>
         )}
-        <div className="flex gap-3 flex-col sm:flex-row">
+        <div className="flex gap-2 mt-4">
           <button
-            className="font-['Public_Sans'] font-semibold text-sm sm:text-base px-5 py-2.5 sm:py-3 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors duration-200 flex-1 min-w-[100px]"
+            className="font-['Public_Sans'] font-medium text-sm h-8 rounded bg-[#F5F5F5] text-[#4A4A4A] hover:bg-gray-200 transition-colors duration-200"
+            style={{ padding: '8px 24px' }}
             onClick={onClose}
           >
             Close
           </button>
           <button
-            className="font-['Public_Sans'] font-semibold text-sm sm:text-base px-5 py-2.5 sm:py-3 rounded-lg bg-black text-white hover:opacity-90 transition-opacity duration-200 flex-1 min-w-[120px]"
+            className="font-['Public_Sans'] font-medium text-sm h-8 rounded bg-black text-white hover:opacity-90 transition-opacity duration-200 whitespace-nowrap"
+            style={{ padding: '8px 24px' }}
             onClick={onConfirm}
           >
             {confirmText}
