@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import ArticleContainer from '../articleContainer/ArticleContainer'
 import ConfirmModal from '../confirmModal/ConfirmModal'
+import { useArticles } from '@/contexts/ArticlesContext'
 
 const categories = [
     "Agriculture", "Art & Illustration", "Business", "Climate & Environment",
@@ -16,6 +17,7 @@ const categories = [
 ]
 
 export default function Articles(props) {
+    const { articles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus } = useArticles()
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategories, setSelectedCategories] = useState([])
@@ -90,6 +92,30 @@ export default function Articles(props) {
 
     const topPosition = 'top-[160px]'
     const mobileTopPosition = 'max-md:top-[120px]'
+
+    if (loading) {
+        return (
+            <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
+                <div className="ml-0 md:ml-[185px]">
+                    <div className="flex justify-center items-center min-h-[400px]">
+                        <div className="text-gray-500">Loading articles...</div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
+                <div className="ml-0 md:ml-[185px]">
+                    <div className="flex justify-center items-center min-h-[400px]">
+                        <div className="text-red-500">Error: {error}</div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <>

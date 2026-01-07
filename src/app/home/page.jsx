@@ -7,6 +7,7 @@ import BlogStatsComponent from "../components/BlogStatsComponent/BlogStatsCompon
 import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
+import AuthGuard from "@/components/auth/AuthGuard"
 
 export default function HomePage() {
   const router = useRouter()
@@ -32,35 +33,10 @@ export default function HomePage() {
       
       const sessionData = await sessionRes.json()
       const userId = sessionData.user.id
-      const userName = sessionData.user.name || "My Publication"
-      const userUsername = sessionData.user.username || `user${userId.substring(0, 8)}`
       
-      let pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+      const pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
         credentials: "include",
       })
-      
-      // If no publication exists, create one
-      if (pubRes.status === 404) {
-        const createRes = await fetch("http://localhost:5000/api/publications", {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: userName,
-            subdomain: userUsername.toLowerCase().replace(/[^a-z0-9]/g, ''),
-            description: "Welcome to my publication",
-            userId: userId,
-          }),
-        })
-        
-        if (createRes.ok) {
-          pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
-            credentials: "include",
-          })
-        }
-      }
       
       if (pubRes.ok) {
         const pubData = await pubRes.json()
@@ -118,7 +94,7 @@ export default function HomePage() {
   ]
 
   return (
-    <>
+    <AuthGuard>
       <NavbarLoggedin />
       <Sidebar />
       <Verify />
@@ -240,6 +216,6 @@ export default function HomePage() {
       >
         View site
       </button>
-    </>
+    </AuthGuard>
   )
 }

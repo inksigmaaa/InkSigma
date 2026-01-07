@@ -26,6 +26,8 @@ export default function ProfileSettingsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [error, setError] = useState("")
+  const [hasPasswordAccount, setHasPasswordAccount] = useState(false)
+  const [isResettingPassword, setIsResettingPassword] = useState(false)
 
   // Fetch profile data on mount
   useEffect(() => {
@@ -43,6 +45,7 @@ export default function ProfileSettingsPage() {
           setBio(data.bio || "")
           setImage(data.image || "")
           setImagePreview(data.image || "")
+          setHasPasswordAccount(data.hasPasswordAccount || false)
         } else if (response.status === 401) {
           router.push("/login")
         }
@@ -318,15 +321,24 @@ export default function ProfileSettingsPage() {
               </div>
 
               {/* Reset Account Password */}
-              <div className="flex justify-center mt-8">
-                <button
-                  className="text-gray-500 hover:text-gray-700 border-b border-gray-500 text-sm"
-                  style={{ width: '162px', height: '16px' }}
-                  onClick={() => setShowResetModal(true)}
-                >
-                  Reset Account Password
-                </button>
-              </div>
+              {hasPasswordAccount && (
+                <div className="flex justify-center mt-8">
+                  <button
+                    className="text-gray-500 hover:text-gray-700 border-b border-gray-500 text-sm"
+                    style={{ width: '162px', height: '16px' }}
+                    onClick={() => setShowResetModal(true)}
+                  >
+                    Reset Account Password
+                  </button>
+                </div>
+              )}
+              {!hasPasswordAccount && (
+                <div className="flex justify-center mt-8">
+                  <p className="text-gray-400 text-sm text-center">
+                    You signed in with a social provider. Password reset is not available.
+                  </p>
+                </div>
+              )}
 
               {/* Error Message */}
               {error && (
@@ -393,13 +405,39 @@ export default function ProfileSettingsPage() {
                 Close
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   setShowResetModal(false)
-                  setShowSuccessModal(true)
+                  setIsResettingPassword(true)
+                  try {
+                    const response = await fetch(`${API_URL}/api/auth/forget-password`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      credentials: "include",
+                      body: JSON.stringify({
+                        email: email,
+                        redirectTo: `${window.location.origin}/reset-password`,
+                      }),
+                    })
+
+                    if (response.ok) {
+                      setShowSuccessModal(true)
+                    } else {
+                      const data = await response.json()
+                      setError(data.error || "Failed to send reset email")
+                    }
+                  } catch (error) {
+                    console.error("Error sending reset email:", error)
+                    setError("Failed to send reset email. Please try again.")
+                  } finally {
+                    setIsResettingPassword(false)
+                  }
                 }}
-                className="flex-1 bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors"
+                disabled={isResettingPassword}
+                className="flex-1 bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50"
               >
-                Confirm
+                {isResettingPassword ? "Sending..." : "Confirm"}
               </button>
             </div>
           </div>

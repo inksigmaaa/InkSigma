@@ -16,6 +16,7 @@ export default function Unpublished() {
   const [showTrashModal, setShowTrashModal] = useState(false);
   const [actionArticleId, setActionArticleId] = useState(null);
   const [isBulkAction, setIsBulkAction] = useState(false);
+  const [actionArticleId, setActionArticleId] = useState(null);
 
   // Filter unpublished articles and add individual action handlers
   const unpublishedArticles = articles
@@ -38,6 +39,13 @@ export default function Unpublished() {
         setShowTrashModal(true);
       }
     }));
+
+  // Add handlers to articles
+  const articlesWithHandlers = unpublishedArticles.map(article => ({
+    ...article,
+    onDraft: () => handleIndividualDraft(article.id),
+    onDelete: () => handleIndividualDelete(article.id)
+  }));
 
   const handleArticleSelect = (id, isSelected) => {
     setSelectedArticles(prev =>
@@ -68,7 +76,20 @@ export default function Unpublished() {
   const handleBulkDraft = () => {
     if (selectedArticles.length === 0) return;
     setIsBulkAction(true);
+    setActionArticleId(null);
     setShowDraftModal(true);
+  };
+
+  const handleIndividualDraft = (id) => {
+    setIsBulkAction(false);
+    setActionArticleId(id);
+    setShowDraftModal(true);
+  };
+
+  const handleIndividualDelete = (id) => {
+    setIsBulkAction(false);
+    setActionArticleId(id);
+    setShowDeleteModal(true);
   };
 
   const confirmRepublish = async () => {
@@ -174,7 +195,7 @@ export default function Unpublished() {
       <PersonalArticles
         title="Unpublished"
         titleColor="#D97706"
-        articles={unpublishedArticles}
+        articles={articlesWithHandlers}
         emptyMessage="No unpublished articles yet"
         showSelectAll={true}
         showActions={true}
