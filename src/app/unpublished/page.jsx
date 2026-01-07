@@ -13,11 +13,32 @@ export default function Unpublished() {
   const [selectedArticles, setSelectedArticles] = useState([]);
   const [showRepublishModal, setShowRepublishModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showTrashModal, setShowTrashModal] = useState(false);
+  const [actionArticleId, setActionArticleId] = useState(null);
   const [isBulkAction, setIsBulkAction] = useState(false);
   const [actionArticleId, setActionArticleId] = useState(null);
 
-  const unpublishedArticles = articles.filter(article => article.status === 'unpublished');
+  // Filter unpublished articles and add individual action handlers
+  const unpublishedArticles = articles
+    .filter(article => article.status === 'unpublished')
+    .map(article => ({
+      ...article,
+      onRepublish: () => {
+        setActionArticleId(article.id);
+        setIsBulkAction(false);
+        setShowRepublishModal(true);
+      },
+      onDraft: () => {
+        setActionArticleId(article.id);
+        setIsBulkAction(false);
+        setShowDraftModal(true);
+      },
+      onDelete: () => {
+        setActionArticleId(article.id);
+        setIsBulkAction(false);
+        setShowTrashModal(true);
+      }
+    }));
 
   // Add handlers to articles
   const articlesWithHandlers = unpublishedArticles.map(article => ({
@@ -73,11 +94,16 @@ export default function Unpublished() {
 
   const confirmRepublish = async () => {
     try {
-      for (const articleId of selectedArticles) {
-        await publishArticle(articleId);
+      if (isBulkAction) {
+        for (const articleId of selectedArticles) {
+          await publishArticle(articleId);
+        }
+        setSelectedArticles([]);
+      } else if (actionArticleId) {
+        await publishArticle(actionArticleId);
       }
-      setSelectedArticles([]);
       setShowRepublishModal(false);
+      setActionArticleId(null);
     } catch (error) {
       console.error('Error republishing articles:', error);
     }
@@ -90,7 +116,7 @@ export default function Unpublished() {
           await moveToDraft(articleId);
         }
         setSelectedArticles([]);
-      } else {
+      } else if (actionArticleId) {
         await moveToDraft(actionArticleId);
       }
       setShowDraftModal(false);
@@ -100,20 +126,15 @@ export default function Unpublished() {
     }
   };
 
-  const confirmDelete = async () => {
+  const confirmTrash = async () => {
     try {
-      if (isBulkAction) {
-        for (const articleId of selectedArticles) {
-          await moveToTrashStatus(articleId);
-        }
-        setSelectedArticles([]);
-      } else {
+      if (actionArticleId) {
         await moveToTrashStatus(actionArticleId);
       }
-      setShowDeleteModal(false);
+      setShowTrashModal(false);
       setActionArticleId(null);
     } catch (error) {
-      console.error('Error moving articles to trash:', error);
+      console.error('Error moving article to trash:', error);
     }
   };
 
@@ -186,10 +207,13 @@ export default function Unpublished() {
 
       <ConfirmModal
         isOpen={showRepublishModal}
-        onClose={() => setShowRepublishModal(false)}
+        onClose={() => {
+          setShowRepublishModal(false);
+          setActionArticleId(null);
+        }}
         onConfirm={confirmRepublish}
-        title="Republish articles?"
-        message={`${selectedArticles.length} article(s) will be republished`}
+        title="Republish article?"
+        message={isBulkAction ? `${selectedArticles.length} article(s) will be republished` : "This article will be republished"}
         confirmText="Republish"
         confirmStyle="normal"
       />
@@ -202,26 +226,20 @@ export default function Unpublished() {
         }}
         onConfirm={confirmDraft}
         title="Move to Draft?"
-        message={isBulkAction 
-          ? `${selectedArticles.length} article(s) will be moved to drafts`
-          : "This article will be moved to drafts"
-        }
+        message={isBulkAction ? `${selectedArticles.length} article(s) will be moved to drafts` : "This article will be moved to drafts"}
         confirmText="Move to Draft"
         confirmStyle="normal"
       />
 
       <ConfirmModal
-        isOpen={showDeleteModal}
+        isOpen={showTrashModal}
         onClose={() => {
-          setShowDeleteModal(false);
+          setShowTrashModal(false);
           setActionArticleId(null);
         }}
-        onConfirm={confirmDelete}
+        onConfirm={confirmTrash}
         title="Are you sure you want to put it in trash?"
-        message={isBulkAction 
-          ? `${selectedArticles.length} article(s) will be put into trash and can be restored later`
-          : "This will be put into trash and can be restored later"
-        }
+        message="This will be put into trash and can be restored later"
         confirmText="Move to Trash"
         confirmStyle="danger"
       />

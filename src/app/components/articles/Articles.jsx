@@ -24,7 +24,9 @@ export default function Articles(props) {
     const [selectAll, setSelectAll] = useState(false)
     const [selectedArticles, setSelectedArticles] = useState(new Set())
     const [showDeleteModal, setShowDeleteModal] = useState(false)
-    const [deleteArticleId, setDeleteArticleId] = useState(null)
+    const [showPublishModal, setShowPublishModal] = useState(false)
+    const [showDraftModal, setShowDraftModal] = useState(false)
+    const [actionArticleId, setActionArticleId] = useState(null)
     const [isBulkAction, setIsBulkAction] = useState(false)
     const mobileDropdownRef = useRef(null)
     const desktopDropdownRef = useRef(null)
@@ -75,9 +77,21 @@ export default function Articles(props) {
     }
 
     const handleDeleteArticle = (articleId) => {
-        setDeleteArticleId(articleId)
+        setActionArticleId(articleId)
         setIsBulkAction(false)
         setShowDeleteModal(true)
+    }
+
+    const handlePublishArticle = (articleId) => {
+        setActionArticleId(articleId)
+        setIsBulkAction(false)
+        setShowPublishModal(true)
+    }
+
+    const handleDraftArticle = (articleId) => {
+        setActionArticleId(articleId)
+        setIsBulkAction(false)
+        setShowDraftModal(true)
     }
 
     const handleBulkDelete = () => {
@@ -210,43 +224,78 @@ export default function Articles(props) {
                 </div>
 
                 <div className="mt-6 space-y-4 pb-[85px]">
-                    {filteredArticles.length === 0 ? (
-                        <div className="flex justify-center items-center min-h-[200px]">
-                            <div className="text-gray-500">No articles found</div>
-                        </div>
-                    ) : (
-                        filteredArticles.map(article => (
-                            <ArticleContainer
-                                key={article.id}
-                                id={article.id}
-                                status={article.status}
-                                title={article.title}
-                                description={article.description}
-                                categories={article.categories || []}
-                                postedTime={article.postedTime}
-                                isSelected={selectedArticles.has(article.id)}
-                                onSelect={handleArticleSelect}
-                                onDelete={() => handleDeleteArticle(article.id)}
-                            />
-                        ))
+                    {(!filterStatus || filterStatus === "published") && (
+                        <ArticleContainer 
+                            id="published-1" 
+                            status="published" 
+                            title="Title of the Blog will be in this area" 
+                            description="Lorem ipsum dolor sit amet..." 
+                            categories={["Sports", "Humour", "History"]} 
+                            postedTime="Posted 2 mins ago" 
+                            isSelected={selectedArticles.has("published-1")} 
+                            onSelect={handleArticleSelect} 
+                            onDelete={() => handleDeleteArticle("published-1")}
+                            onDraft={() => handleDraftArticle("published-1")}
+                        />
+                    )}
+                    {(!filterStatus || filterStatus === "draft") && (
+                        <ArticleContainer 
+                            id="draft-1" 
+                            status="draft" 
+                            title="Title of the Blog will be in this area" 
+                            description="Lorem ipsum dolor sit amet..." 
+                            categories={["Sports", "Humour", "History"]} 
+                            postedTime="Posted 2 mins ago" 
+                            isSelected={selectedArticles.has("draft-1")} 
+                            onSelect={handleArticleSelect} 
+                            onDelete={() => handleDeleteArticle("draft-1")}
+                            onPublish={() => handlePublishArticle("draft-1")}
+                        />
+                    )}
+                    {(!filterStatus || filterStatus === "scheduled") && (
+                        <ArticleContainer 
+                            id="scheduled-1" 
+                            status="scheduled" 
+                            title="Title of the Blog will be in this area" 
+                            description="Lorem ipsum dolor sit amet..." 
+                            categories={["Sports", "Humour", "History"]} 
+                            postedTime="Posted 2 mins ago" 
+                            isSelected={selectedArticles.has("scheduled-1")} 
+                            onSelect={handleArticleSelect} 
+                            onDelete={() => handleDeleteArticle("scheduled-1")}
+                        />
                     )}
                 </div>
             </div>
 
             <ConfirmModal 
                 isOpen={showDeleteModal} 
-                onClose={() => { 
-                    setShowDeleteModal(false); 
-                    setDeleteArticleId(null) 
-                }} 
+                onClose={() => { setShowDeleteModal(false); setActionArticleId(null) }} 
                 onConfirm={confirmDelete} 
                 title="Are you sure you want to put it in trash?" 
-                message={isBulkAction 
-                    ? `${selectedArticles.size} article(s) will be put into trash and can be restored later`
-                    : "This will be put into trash and can be restored later"
-                } 
+                message="This will be put into trash and can be restored later" 
                 confirmText="Move to Trash" 
                 confirmStyle="danger" 
+            />
+
+            <ConfirmModal 
+                isOpen={showPublishModal} 
+                onClose={() => { setShowPublishModal(false); setActionArticleId(null) }} 
+                onConfirm={confirmPublish} 
+                title="Publish article?" 
+                message="This article will be published" 
+                confirmText="Publish" 
+                confirmStyle="normal" 
+            />
+
+            <ConfirmModal 
+                isOpen={showDraftModal} 
+                onClose={() => { setShowDraftModal(false); setActionArticleId(null) }} 
+                onConfirm={confirmDraft} 
+                title="Move to Draft?" 
+                message="This article will be moved to drafts" 
+                confirmText="Move to Draft" 
+                confirmStyle="normal" 
             />
         </div>
     )

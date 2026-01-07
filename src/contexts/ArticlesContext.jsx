@@ -85,6 +85,16 @@ export function ArticlesProvider({ children }) {
     }
   }
 
+  const getArticleById = async (id) => {
+    try {
+      const blog = await blogService.getBlog(id)
+      return convertBlogToArticle(blog)
+    } catch (err) {
+      console.error('Error loading article:', err)
+      throw err
+    }
+  }
+
   const createArticle = async (articleData) => {
     try {
       // Determine status based on published flag, defaulting to draft
@@ -297,6 +307,7 @@ export function ArticlesProvider({ children }) {
       loading,
       error,
       loadUserArticles,
+      getArticleById,
       createArticle,
       updateArticle,
       moveToTrash,
