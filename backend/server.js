@@ -8,6 +8,7 @@ import debugRoutes from "./routes/debugRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
 import { corsMiddleware } from "./middleware/cors.js";
+import { emailService } from "./services/emailService.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -42,6 +43,13 @@ app.get("/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    
+    // Verify SMTP connection on startup
+    const smtpReady = await emailService.verify();
+    if (!smtpReady) {
+        console.error("⚠️  WARNING: SMTP is not configured properly. Emails will not be sent!");
+        console.error("   Check your SMTP_USER and SMTP_PASS in .env file");
+    }
 });

@@ -34,20 +34,33 @@ export const auth = betterAuth({
         
         sendResetPassword: async ({ user, url }) => {
             console.log("[BETTER-AUTH] sendResetPassword called for:", user.email);
-            await emailService.sendPasswordReset({
-                email: user.email,
-                name: user.name,
-                resetUrl: url,
-            });
+            try {
+                await emailService.sendPasswordReset({
+                    email: user.email,
+                    name: user.name,
+                    resetUrl: url,
+                });
+                console.log("[BETTER-AUTH] Reset password email sent successfully");
+            } catch (error) {
+                console.error("[BETTER-AUTH] Failed to send reset password email:", error.message);
+                throw error;
+            }
         },
         
         sendVerificationEmail: async ({ user, url }) => {
             console.log("[BETTER-AUTH] sendVerificationEmail called for:", user.email);
-            await emailService.sendVerification({
-                email: user.email,
-                name: user.name,
-                verifyUrl: url,
-            });
+            console.log("[BETTER-AUTH] Verification URL:", url);
+            try {
+                await emailService.sendVerification({
+                    email: user.email,
+                    name: user.name,
+                    verifyUrl: url,
+                });
+                console.log("[BETTER-AUTH] Verification email sent successfully");
+            } catch (error) {
+                console.error("[BETTER-AUTH] Failed to send verification email:", error.message);
+                throw error;
+            }
         },
     },
 

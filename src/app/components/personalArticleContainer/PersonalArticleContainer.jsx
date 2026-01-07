@@ -1,7 +1,7 @@
 import ArticleDropdown from '../articleDropdown/ArticleDropdown.jsx'
 import { useRouter } from 'next/navigation'
 
-export default function PersonalArticleContainer({ id, status, title, description, categories, postedTime, onRestore, onDelete, isSelected, onSelect }) {
+export default function PersonalArticleContainer({ id, status, title, description, categories, postedTime, onRestore, onDelete, onDraft, onUnpublish, isSelected, onSelect }) {
     const router = useRouter()
 
     const handleEdit = () => {
@@ -27,12 +27,12 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
     }
 
     return (
-        <div 
-            className="relative bg-white border border-gray-200 rounded-lg p-4 mb-4 max-md:pt-10 max-md:p-4 cursor-pointer hover:shadow-md transition-shadow duration-200" 
+        <div
+            className="relative bg-white border border-gray-200 rounded-lg p-4 mb-4 max-md:pt-10 max-md:p-4 cursor-pointer hover:shadow-md transition-shadow duration-200"
             onClick={handleCardClick}
         >
-            <div 
-                className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center max-md:flex max-md:min-w-[88px] max-md:w-auto" 
+            <div
+                className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center max-md:flex max-md:min-w-[88px] max-md:w-auto"
                 style={{ background: config.bg, color: config.color }}
             >
                 {config.text}
@@ -49,8 +49,8 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
 
             {/* Tablet Status and Actions Row */}
             <div className="hidden">
-                <div 
-                    className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center" 
+                <div
+                    className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center"
                     style={{ background: config.bg, color: config.color }}
                 >
                     {config.text}
@@ -68,7 +68,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     ) : status === 'draft' ? (
                         <>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
-                                <img src="/images/icons/share.svg" alt="edit" className="w-6 h-6" />
+                                <img src="/images/icons/edit.svg" alt="edit" className="w-6 h-6" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
                                 <img src="/images/icons/trash2.svg" alt="delete" className="w-6 h-6" />
@@ -82,11 +82,20 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                         </>
                     ) : (
                         <>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
-                                <img src="/images/icons/share.svg" alt="edit" className="w-6 h-6" />
+                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Preview">
+                                <img src="/images/icons/preview.svg" alt="preview" className="w-6 h-6" />
                             </button>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Copy">
-                                <img src="/images/icons/copy.svg" alt="copy" className="w-6 h-6" />
+                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Unpublish" onClick={onUnpublish}>
+                                <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-6 h-6" />
+                            </button>
+                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
+                                <img src="/images/icons/edit.svg" alt="edit" className="w-6 h-6" />
+                            </button>
+                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Draft" onClick={onDraft}>
+                                <img src="/images/icons/copy.svg" alt="draft" className="w-6 h-6" />
+                            </button>
+                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
+                                <img src="/images/icons/delete.svg" alt="delete" className="w-6 h-6" />
                             </button>
                         </>
                     )}
@@ -126,7 +135,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                         ) : status === 'draft' ? (
                             <>
                                 <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
-                                    <img src="/images/icons/share.svg" alt="edit" className="w-5 h-5" />
+                                    <img src="/images/icons/edit.svg" alt="edit" className="w-5 h-5" />
                                 </button>
                                 <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={onDelete}>
                                     <img src="/images/icons/trash2.svg" alt="delete" className="w-5 h-5" />
@@ -140,11 +149,20 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                             </>
                         ) : (
                             <>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
-                                    <img src="/images/icons/share.svg" alt="edit" className="w-5 h-5" />
+                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Unpublish" onClick={onUnpublish}>
+                                    <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-5 h-5" />
                                 </button>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Copy">
-                                    <img src="/images/icons/copy.svg" alt="copy" className="w-5 h-5" />
+                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Preview">
+                                    <img src="/images/icons/preview.svg" alt="preview" className="w-5 h-5" />
+                                </button>
+                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
+                                    <img src="/images/icons/edit.svg" alt="edit" className="w-5 h-5" />
+                                </button>
+                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Draft" onClick={onDraft}>
+                                    <img src="/images/icons/copy.svg" alt="draft" className="w-5 h-5" />
+                                </button>
+                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={onDelete}>
+                                    <img src="/images/icons/delete.svg" alt="delete" className="w-5 h-5" />
                                 </button>
                             </>
                         )}

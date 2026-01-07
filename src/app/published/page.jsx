@@ -8,16 +8,34 @@ import PersonalArticles from "../components/personalArticles/personalArticles";
 import { useArticles } from "@/contexts/ArticlesContext";
 
 export default function Published() {
-    const { articles, loading, error, unpublishArticle } = useArticles();
+    const { articles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, unpublishArticle } = useArticles();
     const [selectedArticles, setSelectedArticles] = useState([]);
 
-    // Filter published articles and add onDelete handler for mobile dropdown
-    // Delete on published page = move to unpublished
+    // Filter published articles and add onDelete/onDraft/onUnpublish handlers
+    // Delete on published page = move to trash
+    // Draft on published page = move to draft
+    // Unpublish on published page = move to unpublished
     const publishedArticles = articles
         .filter(article => article.status === 'published')
         .map(article => ({
             ...article,
             onDelete: async () => {
+                try {
+                    await moveToTrashStatus(article.id);
+                } catch (error) {
+                    console.error('Error moving article to trash:', error);
+                    alert('Failed to move article to trash. Please try again.');
+                }
+            },
+            onDraft: async () => {
+                try {
+                    await moveToDraft(article.id);
+                } catch (error) {
+                    console.error('Error moving article to draft:', error);
+                    alert('Failed to move article to draft. Please try again.');
+                }
+            },
+            onUnpublish: async () => {
                 try {
                     await unpublishArticle(article.id);
                 } catch (error) {
@@ -48,24 +66,21 @@ export default function Published() {
         // Add copy logic here
     };
 
-    const handleUnpublish = async () => {
+    const handleDelete = async () => {
         if (selectedArticles.length === 0) return;
         
         try {
-            // Unpublish selected articles one by one
-            for (const articleId of selectedArticles) {
-                console.log('Unpublishing article:', articleId);
-                await unpublishArticle(articleId);
-            }
+            // Move selected articles to trash
+            await bulkMoveToTrashStatus(selectedArticles);
             
             // Clear selection
             setSelectedArticles([]);
             
             // Show success message
-            alert(`${selectedArticles.length} article(s) moved to unpublished successfully!`);
+            alert(`${selectedArticles.length} article(s) moved to trash successfully!`);
         } catch (error) {
-            console.error('Error unpublishing articles:', error);
-            alert('Failed to unpublish articles: ' + error.message);
+            console.error('Error moving articles to trash:', error);
+            alert('Failed to move articles to trash: ' + error.message);
         }
     };
 
@@ -106,8 +121,8 @@ export default function Published() {
         },
         { 
             icon: "/images/icons/trash2.svg", 
-            title: "Unpublish", 
-            onClick: handleUnpublish,
+            title: "Delete", 
+            onClick: handleDelete,
             disabled: !hasSelectedArticles 
         },
     ];
