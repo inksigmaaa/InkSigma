@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -44,6 +44,125 @@ export default function EditorPageClient() {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [currentArticleId, setCurrentArticleId] = useState(articleId ? parseInt(articleId) : null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
+  
+  // Refs to track latest values for auto-save
+  const titleRef = useRef(title)
+  const descriptionRef = useRef(description)
+  const editorContentRef = useRef(editorContent)
+  const selectedCategoriesRef = useRef(selectedCategories)
+  const currentArticleIdRef = useRef(currentArticleId)
+  const hasUnsavedChangesRef = useRef(hasUnsavedChanges)
+  const isSavingRef = useRef(false)
+
+  // Update refs when state changes
+  useEffect(() => { titleRef.current = title }, [title])
+  useEffect(() => { descriptionRef.current = description }, [description])
+  useEffect(() => { editorContentRef.current = editorContent }, [editorContent])
+  useEffect(() => { selectedCategoriesRef.current = selectedCategories }, [selectedCategories])
+  useEffect(() => { currentArticleIdRef.current = currentArticleId }, [currentArticleId])
+  useEffect(() => { hasUnsavedChangesRef.current = hasUnsavedChanges }, [hasUnsavedChanges])
+
+  // Track unsaved changes
+  useEffect(() => {
+    if (title || description || editorContent) {
+      setHasUnsavedChanges(true)
+      setIsSaved(false)
+    }
+  }, [title, description, editorContent, selectedCategories])
+
+  // Auto-save to draft function
+  const autoSaveToDraft = useCallback(async () => {
+    // Don't save if already saving, no content, or no unsaved changes
+    if (isSavingRef.current) return
+    if (!titleRef.current.trim() && !descriptionRef.current.trim() && !editorContentRef.current.trim()) return
+    if (!hasUnsavedChangesRef.current) return
+    
+    // Need at least a title to save
+    if (!titleRef.current.trim()) return
+
+    try {
+      isSavingRef.current = true
+      
+      if (currentArticleIdRef.current) {
+        // Update existing article
+        await updateArticle(currentArticleIdRef.current, {
+          title: titleRef.current,
+          description: descriptionRef.current,
+          content: editorContentRef.current,
+          categories: selectedCategoriesRef.current,
+          status: 'draft'
+        })
+      } else {
+        // Create new draft article
+        const newArticle = await createArticle({
+          title: titleRef.current,
+          description: descriptionRef.current || 'Draft',
+          content: editorContentRef.current || '<p></p>',
+          categories: selectedCategoriesRef.current,
+          status: 'draft'
+        })
+        currentArticleIdRef.current = newArticle.id
+        setCurrentArticleId(newArticle.id)
+      }
+      
+      setHasUnsavedChanges(false)
+      setIsSaved(true)
+    } catch (error) {
+      console.error('Auto-save failed:', error)
+    } finally {
+      isSavingRef.current = false
+    }
+  }, [createArticle, updateArticle])
+
+  // Auto-save on beforeunload (browser close/refresh)
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChangesRef.current && titleRef.current.trim()) {
+        // Try to save (may not complete due to async nature)
+        autoSaveToDraft()
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [autoSaveToDraft])
+
+  // Auto-save periodically (every 30 seconds) if there are unsaved changes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (hasUnsavedChangesRef.current && titleRef.current.trim()) {
+        autoSaveToDraft()
+      }
+    }, 30000)
+
+    return () => clearInterval(interval)
+  }, [autoSaveToDraft])
+
+  // Save to draft when component unmounts (navigating away)
+  useEffect(() => {
+    return () => {
+      if (hasUnsavedChangesRef.current && titleRef.current.trim()) {
+        // Use synchronous approach for unmount
+        const saveData = {
+          title: titleRef.current,
+          description: descriptionRef.current || 'Draft',
+          content: editorContentRef.current || '<p></p>',
+          categories: selectedCategoriesRef.current,
+          articleId: currentArticleIdRef.current
+        }
+        
+        // Store in sessionStorage for recovery if async save fails
+        sessionStorage.setItem('unsavedDraft', JSON.stringify(saveData))
+        
+        // Attempt async save
+        autoSaveToDraft()
+      }
+    }
+  }, [autoSaveToDraft])
 
   const handleEditorUpdate = ({ html, charCount: chars, wordCount: words }) => {
     setEditorContent(html)
@@ -77,7 +196,7 @@ export default function EditorPageClient() {
           content: editorContent,
           categories: selectedCategories,
           published: true
-        })
+        })  
         setCurrentArticleId(newArticle.id)
         
         // Upload thumbnail if provided and it's a File object
@@ -92,6 +211,8 @@ export default function EditorPageClient() {
         }
       }
       
+      setHasUnsavedChanges(false)
+      setIsSaved(true)
       // Redirect to published page
       router.push('/published')
     } catch (error) {
@@ -116,14 +237,35 @@ export default function EditorPageClient() {
     try {
       setIsLoading(true)
       
-      // For now, we'll save as draft and handle scheduling logic later
+      // Parse the date and time correctly
+      const [day, month, year] = publishDate.split('-').map(num => parseInt(num, 10))
+      const [hours, minutes] = publishTime.split(':').map(num => parseInt(num, 10))
+      
+      // Create date object in UTC to avoid timezone conversion issues
+      const scheduledDateTime = new Date(Date.UTC(year, month - 1, day, hours, minutes))
+      
+      // Validate the date
+      if (isNaN(scheduledDateTime.getTime())) {
+        alert('Invalid date or time format. Please check your input.')
+        return
+      }
+      
+      // Check if the scheduled time is in the future (compare in UTC)
+      const now = new Date()
+      if (scheduledDateTime <= now) {
+        alert('Scheduled time must be in the future.')
+        return
+      }
+      
+      
       if (currentArticleId) {
         await updateArticle(currentArticleId, {
           title,
           description,
           content: editorContent,
           categories: selectedCategories,
-          published: false
+          status: 'scheduled',
+          scheduledAt: scheduledDateTime.toISOString()
         })
       } else {
         const newArticle = await createArticle({
@@ -131,7 +273,8 @@ export default function EditorPageClient() {
           description,
           content: editorContent,
           categories: selectedCategories,
-          published: false
+          status: 'scheduled',
+          scheduledAt: scheduledDateTime.toISOString()
         })
         setCurrentArticleId(newArticle.id)
         
@@ -145,8 +288,10 @@ export default function EditorPageClient() {
         }
       }
       
-      console.log("Scheduled for:", publishDate, publishTime)
-      router.push('/draft')
+      setHasUnsavedChanges(false)
+      setIsSaved(true)
+      console.log("Successfully scheduled for:", scheduledDateTime.toISOString())
+      router.push('/schedule')
     } catch (error) {
       console.error('Error scheduling article:', error)
       alert('Failed to schedule article. Please try again.')
@@ -186,6 +331,8 @@ export default function EditorPageClient() {
         }
       }
       
+      setHasUnsavedChanges(false)
+      setIsSaved(true)
       alert('Article updated successfully!')
     } catch (error) {
       console.error('Error updating article:', error)
@@ -232,6 +379,8 @@ export default function EditorPageClient() {
         }
       }
       
+      setHasUnsavedChanges(false)
+      setIsSaved(true)
       router.push('/draft')
     } catch (error) {
       console.error('Error saving draft:', error)
@@ -253,6 +402,8 @@ export default function EditorPageClient() {
         categories: selectedCategories,
         published: false
       })
+      setHasUnsavedChanges(false)
+      setIsSaved(true)
       router.push('/draft')
     } catch (error) {
       console.error('Error reverting to draft:', error)
@@ -273,6 +424,25 @@ export default function EditorPageClient() {
   const handleDateTimeSelect = (date, time) => {
     setPublishDate(date)
     setPublishTime(time)
+  }
+
+  // Input validation functions
+  const handleDateChange = (e) => {
+    const value = e.target.value
+    // Allow only numbers and dashes, format: dd-mm-yyyy
+    const dateRegex = /^(\d{0,2})-?(\d{0,2})-?(\d{0,4})$/
+    if (dateRegex.test(value) || value === '') {
+      setPublishDate(value)
+    }
+  }
+
+  const handleTimeChange = (e) => {
+    const value = e.target.value
+    // Allow only numbers and colons, format: hh:mm
+    const timeRegex = /^(\d{0,2}):?(\d{0,2})$/
+    if (timeRegex.test(value) || value === '') {
+      setPublishTime(value)
+    }
   }
 
   // Status badge configuration
@@ -296,6 +466,13 @@ export default function EditorPageClient() {
 
   return (
     <div className="min-h-screen bg-[#fff] flex flex-col">
+      <style jsx>{`
+        input:focus {
+          outline: none !important;
+          box-shadow: none !important;
+          border: none !important;
+        }
+      `}</style>
       {/* Go Back Button */}
       <div className="px-4 md:px-6 pt-6 pb-4 border-b border-gray-200 md:bg-transparent md:border-0">
         <Button 
@@ -358,8 +535,22 @@ export default function EditorPageClient() {
           </Button>
 
           <div className="ml-auto flex items-center gap-2 text-green-600">
-            <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-            <span className="text-sm font-medium">Saved</span>
+            {isSaved ? (
+              <>
+                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                <span className="text-sm font-medium">Saved</span>
+              </>
+            ) : hasUnsavedChanges ? (
+              <>
+                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <span className="text-sm font-medium text-yellow-600">Unsaved</span>
+              </>
+            ) : (
+              <>
+                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                <span className="text-sm font-medium text-gray-400">No changes</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -424,15 +615,15 @@ export default function EditorPageClient() {
                     <Input
                       type="text"
                       value={publishDate}
-                      onChange={(e) => setPublishDate(e.target.value)}
-                      placeholder="dd-mm-yyyy"
+                      onChange={handleDateChange}
+                      placeholder="dd-mm-yyyy" maxLength={10}
                       className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
                     />
                     <Input
                       type="text"
                       value={publishTime}
-                      onChange={(e) => setPublishTime(e.target.value)}
-                      placeholder="--:--"
+                      onChange={handleTimeChange}
+                      placeholder="--:--" maxLength={5}
                       className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
                     />
                     <button
@@ -463,15 +654,15 @@ export default function EditorPageClient() {
                     <Input
                       type="text"
                       value={publishDate}
-                      onChange={(e) => setPublishDate(e.target.value)}
-                      placeholder="dd-mm-yyyy"
+                      onChange={handleDateChange}
+                      placeholder="dd-mm-yyyy" maxLength={10}
                       className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
                     />
                     <Input
                       type="text"
                       value={publishTime}
-                      onChange={(e) => setPublishTime(e.target.value)}
-                      placeholder="--:--"
+                      onChange={handleTimeChange}
+                      placeholder="--:--" maxLength={5}
                       className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
                     />
                     <button
@@ -500,124 +691,137 @@ export default function EditorPageClient() {
             </div>
 
             {/* Desktop Layout */}
-            <div className="hidden md:flex items-center justify-center gap-3">
+            <div className="hidden md:flex items-center justify-center gap-2">
               {articleStatus === 'trash' ? (
-                <Button 
+                <button 
                   onClick={handleRevertToDraft}
                   disabled={isLoading}
-                  className="bg-black text-white hover:bg-gray-800 px-6 rounded-lg"
+                  className="bg-black text-white hover:bg-gray-800 px-6 py-2 rounded text-sm font-medium h-8"
+                  style={{ width: '160px' }}
                 >
                   {isLoading ? 'Reverting...' : 'Revert to draft'}
-                </Button>
+                </button>
               ) : articleStatus === 'review' ? (
-                <Button 
+                <button 
                   onClick={handlePublish}
                   disabled={isLoading}
-                  className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg"
+                  className="bg-black text-white hover:bg-gray-800 flex items-center gap-2 px-6 py-2 rounded text-sm font-medium h-8"
+                  style={{ width: '160px' }}
                 >
                   {isLoading ? 'Publishing...' : 'Send for Review'}
                   <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
-                </Button>
+                </button>
               ) : articleStatus === 'published' ? (
-                <Button 
+                <button 
                   onClick={handleUpdate}
                   disabled={isLoading}
-                  className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg"
+                  className="bg-black text-white hover:bg-gray-800 flex items-center gap-2 px-6 py-2 rounded text-sm font-medium h-8"
+                  style={{ width: '160px' }}
                 >
                   {isLoading ? 'Updating...' : 'Update'}
                   <img src="/editor-icons/publish.svg" alt="Update" className="h-4 w-4" />
-                </Button>
+                </button>
               ) : articleStatus === 'scheduled' ? (
                 <>
-                  <Button 
+                  <button 
+                    onClick={handleSaveDraft}
+                    disabled={isLoading}
+                    className="bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
+                    style={{ width: '160px', padding: '8px 24px' }}
+                  >
+                    <FileText className="h-4 w-4" />
+                    {isLoading ? 'Saving...' : 'Save to draft'}
+                  </button>
+                  <button 
                     onClick={handlePublish}
                     disabled={isLoading}
-                    className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg"
+                    className="bg-black text-white hover:bg-gray-800 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
+                    style={{ width: '160px', padding: '8px 24px' }}
                   >
                     {isLoading ? 'Publishing...' : 'Publish Now'}
                     <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
-                  </Button>
-                  <div className="flex items-center gap-0 rounded-lg overflow-hidden">
-                    <div className="flex items-center gap-2 bg-white px-4 py-2.5 border border-gray-200 rounded-l-lg">
-                      <Input
-                        type="text"
-                        value={publishDate}
-                        onChange={(e) => setPublishDate(e.target.value)}
-                        placeholder="dd-mm-yyyy"
-                        className="w-24 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
-                      />
-                      <Input
-                        type="text"
-                        value={publishTime}
-                        onChange={(e) => setPublishTime(e.target.value)}
-                        placeholder="--:--"
-                        className="w-16 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
-                      />
-                      <button
-                        onClick={() => setIsDateTimePickerOpen(true)}
-                        className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-                      >
-                        <Calendar className="h-5 w-5 text-gray-700" />
-                      </button>
-                    </div>
-                    <button 
-                      onClick={handleReschedule}
-                      disabled={isLoading}
-                      className="bg-gray-200 text-gray-400 text-sm font-medium px-6 py-2.5 rounded-r-lg border border-l-0 border-gray-200"
+                  </button>
+                  <div className="flex items-center bg-white px-3 py-1 border border-gray-200 rounded text-sm text-gray-700 h-8" style={{ width: '200px' }}>
+                    <Input
+                      type="text"
+                      value={publishDate}
+                      onChange={handleDateChange}
+                      placeholder="dd-mm-yyyy" maxLength={10}
+                      className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 p-0"
+                    />
+                    <Input
+                      type="text"
+                      value={publishTime}
+                      onChange={handleTimeChange}
+                      placeholder="--:--" maxLength={5}
+                      className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center p-0"
+                    />
+                    <button
+                      onClick={() => setIsDateTimePickerOpen(true)}
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
                     >
-                      {isLoading ? 'Rescheduling...' : 'Reschedule'}
+                      <Calendar className="h-4 w-4 text-gray-700" />
                     </button>
                   </div>
+                  <button 
+                    onClick={handleReschedule}
+                    disabled={isLoading}
+                    className="bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-medium h-8 rounded"
+                    style={{ width: '80px', padding: '8px 5px' }}
+                  >
+                    {isLoading ? 'Rescheduling...' : 'Schedule'}
+                  </button>
                 </>
               ) : (
                 <>
-                  <Button 
-                    onClick={handlePublish}
-                    disabled={isLoading}
-                    className="bg-black text-white hover:bg-gray-800 gap-2 px-6 rounded-lg"
-                  >
-                    {isLoading ? 'Publishing...' : 'Publish Now'}
-                    <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
-                  </Button>
-                  <div className="flex items-center gap-0 rounded-lg overflow-hidden">
-                    <div className="flex items-center gap-2 bg-white px-4 py-2.5 border border-gray-200 rounded-l-lg">
-                      <Input
-                        type="text"
-                        value={publishDate}
-                        onChange={(e) => setPublishDate(e.target.value)}
-                        placeholder="dd-mm-yyyy"
-                        className="w-24 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
-                      />
-                      <Input
-                        type="text"
-                        value={publishTime}
-                        onChange={(e) => setPublishTime(e.target.value)}
-                        placeholder="--:--"
-                        className="w-16 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
-                      />
-                      <button
-                        onClick={() => setIsDateTimePickerOpen(true)}
-                        className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-                      >
-                        <Calendar className="h-5 w-5 text-gray-700" />
-                      </button>
-                    </div>
-                    <button 
-                      onClick={handleSchedule}
-                      disabled={isLoading}
-                      className="bg-gray-200 text-gray-400 text-sm font-medium px-6 py-2.5 rounded-r-lg border border-l-0 border-gray-200"
-                    >
-                      {isLoading ? 'Scheduling...' : 'Schedule'}
-                    </button>
-                  </div>
-                  <Button 
+                  <button 
                     onClick={handleSaveDraft}
                     disabled={isLoading}
-                    className="bg-gray-200 text-gray-700 hover:bg-gray-300 gap-2 px-6 rounded-lg"
+                    className="bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
+                    style={{ width: '160px', padding: '8px 24px' }}
                   >
-                    {isLoading ? 'Saving...' : 'Save as Draft'}
                     <FileText className="h-4 w-4" />
-                  </Button>
+                    {isLoading ? 'Saving...' : 'Save to draft'}
+                  </button>
+                  <button 
+                    onClick={handlePublish}
+                    disabled={isLoading}
+                    className="bg-black text-white hover:bg-gray-800 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
+                    style={{ width: '160px', padding: '8px 24px' }}
+                  >
+                    {isLoading ? 'Publishing...' : 'Publish'}
+                    <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
+                  </button>
+                  <div className="flex items-center bg-white px-3 py-1 border border-gray-200 rounded text-sm text-gray-700 h-8" style={{ width: '200px' }}>
+                    <Input
+                      type="text"
+                      value={publishDate}
+                      onChange={handleDateChange}
+                      placeholder="dd-mm-yyyy" maxLength={10}
+                      className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 p-0"
+                    />
+                    <Input
+                      type="text"
+                      value={publishTime}
+                      onChange={handleTimeChange}
+                      placeholder="--:--" maxLength={5}
+                      className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center p-0"
+                    />
+                    <button
+                      onClick={() => setIsDateTimePickerOpen(true)}
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <Calendar className="h-4 w-4 text-gray-700" />
+                    </button>
+                  </div>
+                  <button 
+                    onClick={handleSchedule}
+                    disabled={isLoading}
+                    className="bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-medium h-8 rounded"
+                    style={{ width: '80px', padding: '8px 5px' }}
+                  >
+                    {isLoading ? 'Scheduling...' : 'Schedule'}
+                  </button>
                 </>
               )}
             </div>

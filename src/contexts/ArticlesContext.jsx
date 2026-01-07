@@ -100,7 +100,8 @@ export function ArticlesProvider({ children }) {
         description: articleData.description,
         content: articleData.content,
         categories: articleData.categories || [],
-        status: status
+        status: status,
+        scheduledAt: articleData.scheduledAt
       })
       
       const newArticle = convertBlogToArticle(blog)
@@ -125,7 +126,8 @@ export function ArticlesProvider({ children }) {
         description: articleData.description,
         content: articleData.content,
         categories: articleData.categories,
-        status: status
+        status: status,
+        scheduledAt: articleData.scheduledAt
       })
       
       const updatedArticle = convertBlogToArticle(blog)

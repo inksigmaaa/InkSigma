@@ -82,11 +82,13 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                         </>
                     ) : (
                         <>
+                            {status === 'published' && (
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Unpublish" onClick={onUnpublish}>
+                                    <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-6 h-6" />
+                                </button>
+                            )}
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Preview">
                                 <img src="/images/icons/preview.svg" alt="preview" className="w-6 h-6" />
-                            </button>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Unpublish" onClick={onUnpublish}>
-                                <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-6 h-6" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
                                 <img src="/images/icons/edit.svg" alt="edit" className="w-6 h-6" />
@@ -149,9 +151,11 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                             </>
                         ) : (
                             <>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Unpublish" onClick={onUnpublish}>
-                                    <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-5 h-5" />
-                                </button>
+                                {status === 'published' && (
+                                    <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Unpublish" onClick={onUnpublish}>
+                                        <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-5 h-5" />
+                                    </button>
+                                )}
                                 <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Preview">
                                     <img src="/images/icons/preview.svg" alt="preview" className="w-5 h-5" />
                                 </button>
