@@ -94,8 +94,8 @@ const ensureUniqueSlug = async (baseSlug, excludeId = null) => {
 // Helper function to sync status and published fields according to strict rules
 const syncStatusAndPublished = (status) => {
     // Validate status
-    if (!['draft', 'published', 'unpublished', 'trash'].includes(status)) {
-        throw new Error(`Invalid status: ${status}. Must be 'draft', 'published', 'unpublished', or 'trash'`);
+    if (!['draft', 'published', 'unpublished', 'trash', 'scheduled'].includes(status)) {
+        throw new Error(`Invalid status: ${status}. Must be 'draft', 'published', 'unpublished', 'trash', or 'scheduled'`);
     }
     
     // Apply strict synchronization rules:
@@ -103,6 +103,7 @@ const syncStatusAndPublished = (status) => {
     // - Status 'draft' = published FALSE (hidden)  
     // - Status 'unpublished' = published FALSE (hidden)
     // - Status 'trash' = published FALSE (hidden)
+    // - Status 'scheduled' = published FALSE (hidden until scheduled time)
     return {
         status,
         published: status === 'published'
@@ -240,7 +241,7 @@ router.get("/:id", async (req, res) => {
 // POST /api/blogs - Create new blog
 router.post("/", getCurrentUser, async (req, res) => {
     try {
-        const { title, description, content, categories, published = false, status } = req.body;
+        const { title, description, content, categories, published = false, status, scheduledAt } = req.body;
         
         if (!title || !description || !content) {
             return res.status(400).json({ 
@@ -274,6 +275,11 @@ router.post("/", getCurrentUser, async (req, res) => {
             updatedAt: new Date(),
         };
 
+        // Add scheduledAt if provided
+        if (scheduledAt) {
+            blogData.scheduledAt = new Date(scheduledAt);
+        }
+
         const [newBlog] = await db
             .insert(blog)
             .values(blogData)
@@ -290,7 +296,7 @@ router.post("/", getCurrentUser, async (req, res) => {
 router.put("/:id", getCurrentUser, async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, content, categories, published, status } = req.body;
+        const { title, description, content, categories, published, status, scheduledAt } = req.body;
 
         // Check if blog exists and user owns it
         const [existingBlog] = await db
@@ -320,6 +326,7 @@ router.put("/:id", getCurrentUser, async (req, res) => {
         if (description !== undefined) updateData.description = description;
         if (content !== undefined) updateData.content = content;
         if (categories !== undefined) updateData.categories = categories;
+        if (scheduledAt !== undefined) updateData.scheduledAt = new Date(scheduledAt);
         
         // Handle status update with strict synchronization
         if (status !== undefined) {

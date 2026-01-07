@@ -10,6 +10,7 @@ import blogRoutes from "./routes/blogRoutes.js";
 import publicationRoutes from "./routes/publicationRoutes.js";
 import { corsMiddleware } from "./middleware/cors.js";
 import { emailService } from "./services/emailService.js";
+import schedulerService from "./services/schedulerService.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -56,4 +57,21 @@ app.listen(PORT, async () => {
         console.error("⚠️  WARNING: SMTP is not configured properly. Emails will not be sent!");
         console.error("   Check your SMTP_USER and SMTP_PASS in .env file");
     }
+    
+    // Start the blog scheduler
+    schedulerService.start();
+    console.log("📅 Blog scheduler started - checking for scheduled posts every minute");
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+    console.log('\n🛑 Shutting down server...');
+    schedulerService.stop();
+    process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+    console.log('\n🛑 Shutting down server...');
+    schedulerService.stop();
+    process.exit(0);
 });

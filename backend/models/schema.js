@@ -2,7 +2,7 @@
 import { pgTable, text, timestamp, boolean, serial, integer, pgEnum } from "drizzle-orm/pg-core";
 
 // Define blog status enum
-export const blogStatusEnum = pgEnum("blog_status", ["draft", "published", "unpublished", "trash"]);
+export const blogStatusEnum = pgEnum("blog_status", ["draft", "published", "unpublished", "trash", "scheduled"]);
 
 export const user = pgTable("user", {
     id: text("id").primaryKey(),
