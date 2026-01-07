@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { CategoryDropdown } from "./CategoryDropdown"
 import { ThumbnailModal } from "./ThumbnailModal"
 import { DateTimePicker } from "./DateTimePicker"
+import PublishSuccessModal from "./PublishSuccessModal"
 import { useArticles } from "@/contexts/ArticlesContext"
 import { useSession } from "@/lib/auth-client"
 
@@ -46,6 +47,8 @@ export default function EditorPageClient() {
   const [currentArticleId, setCurrentArticleId] = useState(articleId ? parseInt(articleId) : null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
+  const [showPublishSuccessModal, setShowPublishSuccessModal] = useState(false)
+  const [publishedBlogSlug, setPublishedBlogSlug] = useState('')
   
   // Refs to track latest values for auto-save
   const titleRef = useRef(title)
@@ -178,10 +181,11 @@ export default function EditorPageClient() {
 
     try {
       setIsLoading(true)
+      let publishedBlog = null
       
       if (currentArticleId) {
         // Update existing article and publish
-        await updateArticle(currentArticleId, {
+        publishedBlog = await updateArticle(currentArticleId, {
           title,
           description,
           content: editorContent,
@@ -190,19 +194,19 @@ export default function EditorPageClient() {
         })
       } else {
         // Create new article and publish
-        const newArticle = await createArticle({
+        publishedBlog = await createArticle({
           title,
           description,
           content: editorContent,
           categories: selectedCategories,
           published: true
         })  
-        setCurrentArticleId(newArticle.id)
+        setCurrentArticleId(publishedBlog.id)
         
         // Upload thumbnail if provided and it's a File object
         if (thumbnailImage && thumbnailImage.file instanceof File) {
           try {
-            await uploadArticleImage(newArticle.id, thumbnailImage.file)
+            await uploadArticleImage(publishedBlog.id, thumbnailImage.file)
           } catch (imageError) {
             console.error('Error uploading thumbnail:', imageError)
             // Don't fail the entire publish process for image upload errors
@@ -213,8 +217,10 @@ export default function EditorPageClient() {
       
       setHasUnsavedChanges(false)
       setIsSaved(true)
-      // Redirect to published page
-      router.push('/published')
+      
+      // Set blog slug for the modal and show success modal
+      setPublishedBlogSlug(publishedBlog?.slug || 'blog')
+      setShowPublishSuccessModal(true)
     } catch (error) {
       console.error('Error publishing article:', error)
       alert('Failed to publish article. Please try again.')
@@ -843,6 +849,14 @@ export default function EditorPageClient() {
         onDateTimeSelect={handleDateTimeSelect}
         selectedDate={publishDate}
         selectedTime={publishTime}
+      />
+
+      {/* Publish Success Modal */}
+      <PublishSuccessModal
+        isOpen={showPublishSuccessModal}
+        onClose={() => setShowPublishSuccessModal(false)}
+        blogSlug={publishedBlogSlug}
+        blogTitle={title}
       />
     </div>
   )
