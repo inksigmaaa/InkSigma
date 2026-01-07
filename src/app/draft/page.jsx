@@ -9,7 +9,7 @@ import ConfirmModal from "../components/confirmModal/ConfirmModal"
 import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function DraftPage() {
-  const { articles, moveToTrashStatus, bulkMoveToTrashStatus, bulkPublish } = useArticles()
+  const { articles, moveToTrashStatus, bulkMoveToTrashStatus, bulkPublish, publishArticle } = useArticles()
   const [selectedArticles, setSelectedArticles] = useState([])
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPublishModal, setShowPublishModal] = useState(false)
@@ -25,6 +25,11 @@ export default function DraftPage() {
           setActionArticleId(article.id)
           setIsBulkAction(false)
           setShowDeleteModal(true)
+        },
+        onPublish: () => {
+          setActionArticleId(article.id)
+          setIsBulkAction(false)
+          setShowPublishModal(true)
         }
       }))
   }, [articles])
@@ -76,9 +81,14 @@ export default function DraftPage() {
 
   const confirmPublish = async () => {
     try {
-      await bulkPublish(selectedArticles)
-      setSelectedArticles([])
+      if (isBulkAction) {
+        await bulkPublish(selectedArticles)
+        setSelectedArticles([])
+      } else if (actionArticleId) {
+        await publishArticle(actionArticleId)
+      }
       setShowPublishModal(false)
+      setActionArticleId(null)
     } catch (error) {
       console.error('Error publishing:', error)
     }
@@ -132,10 +142,13 @@ export default function DraftPage() {
 
       <ConfirmModal
         isOpen={showPublishModal}
-        onClose={() => setShowPublishModal(false)}
+        onClose={() => {
+          setShowPublishModal(false)
+          setActionArticleId(null)
+        }}
         onConfirm={confirmPublish}
-        title="Publish articles?"
-        message={`${selectedArticles.length} article(s) will be published`}
+        title="Publish article?"
+        message={isBulkAction ? `${selectedArticles.length} article(s) will be published` : "This article will be published"}
         confirmText="Publish"
         confirmStyle="normal"
       />
