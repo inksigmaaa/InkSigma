@@ -9,10 +9,11 @@ import ConfirmModal from "../components/confirmModal/ConfirmModal"
 import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function TrashPage() {
-  const { articles, loading, error, moveToDraft, moveToTrash } = useArticles()
+  const { articles, loading, error, moveToDraft, moveToTrash, bulkMoveToTrash } = useArticles()
   const [selectedArticles, setSelectedArticles] = useState([])
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showRestoreModal, setShowRestoreModal] = useState(false)
+  const [deleteArticleId, setDeleteArticleId] = useState(null)
 
   // Filter trash articles
   const trashArticles = articles.filter(article => article.status === 'trash')
@@ -35,6 +36,7 @@ export default function TrashPage() {
 
   const handleBulkDelete = () => {
     if (selectedArticles.length > 0) {
+      setDeleteArticleId(null)
       setShowDeleteModal(true)
     }
   }
@@ -45,27 +47,16 @@ export default function TrashPage() {
     }
   }
 
-  const handleIndividualDelete = async (id) => {
-    if (!confirm('Are you sure you want to permanently delete this article? This action cannot be undone.')) {
-      return
-    }
-    
-    try {
-      await moveToTrash(id)
-      alert('Article permanently deleted successfully!')
-    } catch (error) {
-      console.error('Error permanently deleting article:', error)
-      alert('Failed to delete article. Please try again.')
-    }
+  const handleIndividualDelete = (id) => {
+    setDeleteArticleId(id)
+    setShowDeleteModal(true)
   }
 
   const handleIndividualRestore = async (id) => {
     try {
       await moveToDraft(id)
-      alert('Article restored to drafts successfully!')
     } catch (error) {
       console.error('Error restoring article:', error)
-      alert('Failed to restore article. Please try again.')
     }
   }
 
@@ -78,17 +69,19 @@ export default function TrashPage() {
 
   const confirmDelete = async () => {
     try {
-      // Permanently delete selected articles
-      for (const articleId of selectedArticles) {
-        await moveToTrash(articleId)
+      if (deleteArticleId) {
+        // Single article permanent delete
+        await moveToTrash(deleteArticleId)
+      } else {
+        // Bulk permanent delete
+        await bulkMoveToTrash(selectedArticles)
+        setSelectedArticles([])
       }
       
-      setSelectedArticles([])
       setShowDeleteModal(false)
-      alert(`${selectedArticles.length} article(s) permanently deleted successfully!`)
+      setDeleteArticleId(null)
     } catch (error) {
       console.error('Error permanently deleting articles:', error)
-      alert('Failed to delete articles. Please try again.')
     }
   }
 
@@ -101,10 +94,8 @@ export default function TrashPage() {
       
       setSelectedArticles([])
       setShowRestoreModal(false)
-      alert(`${selectedArticles.length} article(s) restored to drafts successfully!`)
     } catch (error) {
       console.error('Error restoring articles:', error)
-      alert('Failed to restore articles. Please try again.')
     }
   }
 
@@ -173,11 +164,12 @@ export default function TrashPage() {
         isOpen={showDeleteModal}
         onClose={() => {
           setShowDeleteModal(false)
-          setSelectedArticles([])
+          setDeleteArticleId(null)
+          if (!deleteArticleId) setSelectedArticles([])
         }}
         onConfirm={confirmDelete}
-        title="Delete permanently?"
-        message={`${selectedArticles.length} article(s) will be permanently deleted and cannot be recovered`}
+        title="Are you sure you want to delete?"
+        message="This will permanently delete this article and cannot be restored"
         confirmText="Delete permanently"
         confirmStyle="danger"
       />
