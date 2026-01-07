@@ -8,11 +8,26 @@ import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import AuthGuard from "@/components/auth/AuthGuard"
+import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function HomePage() {
   const router = useRouter()
   const [publication, setPublication] = useState(null)
   const [loading, setLoading] = useState(true)
+  const { articles: allArticles } = useArticles()
+
+  // Get recent published articles (limit to 4)
+  const recentArticles = allArticles
+    .filter(article => article.status === 'published')
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 4)
+    .map(article => ({
+      id: article.id,
+      title: article.title,
+      description: article.description,
+      category: article.categories?.[0] || 'Uncategorized',
+      thumbnail: article.image || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"
+    }))
 
   useEffect(() => {
     loadPublicationData()
@@ -60,38 +75,6 @@ export default function HomePage() {
   const handleEditPublication = () => {
     router.push("/dashboard/settings")
   }
-
-  // Sample articles data
-  const articles = [
-    {
-      id: 1,
-      title: "Title of the Blog will be in this area",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      category: "Category",
-      thumbnail: "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"
-    },
-    {
-      id: 2,
-      title: "Title of the Blog will be in this area",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      category: "Category",
-      thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop"
-    },
-    {
-      id: 3,
-      title: "Title of the Blog will be in this area",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      category: "Category",
-      thumbnail: "https://images.unsplash.com/photo-1559028012-481c04fa702d?w=800&h=600&fit=crop"
-    },
-    {
-      id: 4,
-      title: "Title of the Blog will be in this area",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      category: "Category",
-      thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop"
-    }
-  ]
 
   return (
     <AuthGuard>
@@ -164,8 +147,13 @@ export default function HomePage() {
           <div className="px-8 py-6 pb-12 max-md:px-4 max-md:py-4 max-md:pb-20">
             <h3 className="text-lg font-bold text-gray-900 mb-6 max-md:text-base max-md:mb-4">Recent Articles</h3>
             
-            <div className="grid grid-cols-2 gap-6 max-md:grid-cols-1 max-md:gap-4">
-              {articles.map((article) => (
+            {recentArticles.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-sm">No published articles yet. Start writing to see them here!</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-6 max-md:grid-cols-1 max-md:gap-4">
+                {recentArticles.map((article) => (
                 <div 
                   key={article.id} 
                   className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5 cursor-pointer"
@@ -202,7 +190,8 @@ export default function HomePage() {
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </div>
 
           </div>

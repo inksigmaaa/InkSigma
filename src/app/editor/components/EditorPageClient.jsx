@@ -186,7 +186,7 @@ export default function EditorPageClient() {
           description,
           content: editorContent,
           categories: selectedCategories,
-          published: true
+          status: 'published'
         })
       } else {
         // Create new article and publish
@@ -195,7 +195,7 @@ export default function EditorPageClient() {
           description,
           content: editorContent,
           categories: selectedCategories,
-          published: true
+          status: 'published'
         })  
         setCurrentArticleId(newArticle.id)
         
@@ -319,7 +319,7 @@ export default function EditorPageClient() {
         description,
         content: editorContent,
         categories: selectedCategories,
-        published: articleStatus === 'published'
+        status: articleStatus || 'draft'
       })
       
       if (thumbnailImage && thumbnailImage.file instanceof File) {
@@ -357,7 +357,7 @@ export default function EditorPageClient() {
           description,
           content: editorContent,
           categories: selectedCategories,
-          published: false
+          status: 'draft'
         })
       } else {
         const newArticle = await createArticle({
@@ -365,7 +365,7 @@ export default function EditorPageClient() {
           description,
           content: editorContent,
           categories: selectedCategories,
-          published: false
+          status: 'draft'
         })
         setCurrentArticleId(newArticle.id)
         
@@ -400,7 +400,7 @@ export default function EditorPageClient() {
         description,
         content: editorContent,
         categories: selectedCategories,
-        published: false
+        status: 'draft'
       })
       setHasUnsavedChanges(false)
       setIsSaved(true)

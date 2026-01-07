@@ -1,8 +1,10 @@
 "use client"
 
 import { useState, useEffect, useRef } from 'react'
+import { useArticles } from '@/contexts/ArticlesContext'
 
 const BlogStatsComponent = () => {
+  const { articles } = useArticles()
   const [selectedPeriod, setSelectedPeriod] = useState('Monthly')
   const [showPeriodMenu, setShowPeriodMenu] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
@@ -17,12 +19,23 @@ const BlogStatsComponent = () => {
   
   const today = new Date()
   const periods = ['Today', 'Weekly', 'Monthly', 'Yearly', 'Custom Date']
-  const stats = {
-    totalArticles: 234,
-    views: 12,
-    comments: 23,
-    shares: 123
+  
+  // Calculate dynamic stats based on articles
+  const calculateStats = () => {
+    const totalArticles = articles.length
+    const totalViews = articles.reduce((sum, article) => sum + (article.views || 0), 0)
+    const totalComments = articles.reduce((sum, article) => sum + (article.comments || 0), 0)
+    const totalShares = articles.reduce((sum, article) => sum + (article.shares || 0), 0)
+    
+    return {
+      totalArticles,
+      views: totalViews,
+      comments: totalComments,
+      shares: totalShares
+    }
   }
+
+  const stats = calculateStats()
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December']

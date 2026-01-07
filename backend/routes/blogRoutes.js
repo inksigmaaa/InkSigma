@@ -152,10 +152,10 @@ router.get("/", async (req, res) => {
         
         // Support both status and published filters for backward compatibility
         if (status !== undefined) {
-            // If status is provided, convert to published boolean
-            const targetPublished = status === 'published';
-            conditions.push(eq(blog.published, targetPublished));
+            // Filter by status enum field directly
+            conditions.push(eq(blog.status, status));
         } else if (published !== undefined) {
+            // Filter by published boolean field
             conditions.push(eq(blog.published, published === 'true'));
         }
         
