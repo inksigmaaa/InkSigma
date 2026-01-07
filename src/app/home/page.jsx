@@ -10,6 +10,7 @@ import { useState, useEffect } from "react"
 import AuthGuard from "@/components/auth/AuthGuard"
 import { useArticles } from "@/contexts/ArticlesContext"
 
+
 export default function HomePage() {
   const router = useRouter()
   const [publication, setPublication] = useState(null)
