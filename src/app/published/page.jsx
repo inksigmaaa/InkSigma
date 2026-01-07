@@ -58,6 +58,12 @@ export default function Published() {
         console.log("Copy articles:", selectedArticles);
     };
 
+    const handleBulkDraft = () => {
+        if (selectedArticles.length === 0) return;
+        setIsBulkAction(true);
+        setShowDraftModal(true);
+    };
+
     const handleBulkDelete = () => {
         if (selectedArticles.length === 0) return;
         setIsBulkAction(true);
@@ -81,7 +87,12 @@ export default function Published() {
 
     const confirmDraft = async () => {
         try {
-            if (actionArticleId) {
+            if (isBulkAction) {
+                for (const articleId of selectedArticles) {
+                    await moveToDraft(articleId);
+                }
+                setSelectedArticles([]);
+            } else if (actionArticleId) {
                 await moveToDraft(actionArticleId);
             }
             setShowDraftModal(false);
@@ -134,8 +145,8 @@ export default function Published() {
     const actionButtons = [
         { 
             icon: "/images/icons/draft1.svg", 
-            title: "Copy", 
-            onClick: handleCopy,
+            title: "Move to Draft", 
+            onClick: handleBulkDraft,
             disabled: !hasSelectedArticles 
         },
         { 
@@ -185,7 +196,7 @@ export default function Published() {
                 }}
                 onConfirm={confirmDraft}
                 title="Move to Draft?"
-                message="This article will be moved to drafts"
+                message={isBulkAction ? `${selectedArticles.length} article(s) will be moved to drafts` : "This article will be moved to drafts"}
                 confirmText="Move to Draft"
                 confirmStyle="normal"
             />
