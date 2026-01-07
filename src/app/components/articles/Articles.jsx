@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import ArticleContainer from '../articleContainer/ArticleContainer'
 import ConfirmModal from '../confirmModal/ConfirmModal'
+import { useArticles } from '@/contexts/ArticlesContext'
 
 const categories = [
     "Agriculture", "Art & Illustration", "Business", "Climate & Environment",
@@ -16,6 +17,7 @@ const categories = [
 ]
 
 export default function Articles(props) {
+    const { articles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus } = useArticles()
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategories, setSelectedCategories] = useState([])
@@ -30,10 +32,15 @@ export default function Articles(props) {
     const filterStatus = props.filterStatus || null
     const showCreateButton = props.showCreateButton !== false
 
-    const articleIds = []
-    if (!filterStatus || filterStatus === "published") articleIds.push("published-1")
-    if (!filterStatus || filterStatus === "draft") articleIds.push("draft-1")
-    if (!filterStatus || filterStatus === "scheduled") articleIds.push("scheduled-1")
+    // Get real articles from context, excluding trash
+    const allArticles = articles.filter(article => article.status !== 'trash')
+    
+    // Filter by status if specified
+    const filteredArticles = filterStatus 
+        ? allArticles.filter(article => article.status === filterStatus)
+        : allArticles
+
+    const articleIds = filteredArticles.map(article => article.id)
 
     const filteredCategories = categories.filter(cat =>
         cat.toLowerCase().includes(searchTerm.toLowerCase())
@@ -80,15 +87,19 @@ export default function Articles(props) {
         }
     }
 
-    const confirmDelete = () => {
-        if (isBulkAction) {
-            console.log("Bulk deleting:", Array.from(selectedArticles))
-            setSelectedArticles(new Set())
-        } else {
-            console.log("Deleting article:", deleteArticleId)
+    const confirmDelete = async () => {
+        try {
+            if (isBulkAction) {
+                await bulkMoveToTrashStatus(Array.from(selectedArticles))
+                setSelectedArticles(new Set())
+            } else {
+                await moveToTrashStatus(deleteArticleId)
+            }
+            setShowDeleteModal(false)
+            setDeleteArticleId(null)
+        } catch (error) {
+            console.error('Error moving articles to trash:', error)
         }
-        setShowDeleteModal(false)
-        setDeleteArticleId(null)
     }
 
     useEffect(() => {
@@ -114,6 +125,30 @@ export default function Articles(props) {
 
     const topPosition = 'top-[160px]'
     const mobileTopPosition = 'max-md:top-[120px]'
+
+    if (loading) {
+        return (
+            <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
+                <div className="ml-0 md:ml-[185px]">
+                    <div className="flex justify-center items-center min-h-[400px]">
+                        <div className="text-gray-500">Loading articles...</div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
+                <div className="ml-0 md:ml-[185px]">
+                    <div className="flex justify-center items-center min-h-[400px]">
+                        <div className="text-red-500">Error: {error}</div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
@@ -175,19 +210,44 @@ export default function Articles(props) {
                 </div>
 
                 <div className="mt-6 space-y-4 pb-[85px]">
-                    {(!filterStatus || filterStatus === "published") && (
-                        <ArticleContainer id="published-1" status="published" title="Title of the Blog will be in this area" description="Lorem ipsum dolor sit amet..." categories={["Sports", "Humour", "History"]} postedTime="Posted 2 mins ago" isSelected={selectedArticles.has("published-1")} onSelect={handleArticleSelect} onDelete={() => handleDeleteArticle("published-1")} />
-                    )}
-                    {(!filterStatus || filterStatus === "draft") && (
-                        <ArticleContainer id="draft-1" status="draft" title="Title of the Blog will be in this area" description="Lorem ipsum dolor sit amet..." categories={["Sports", "Humour", "History"]} postedTime="Posted 2 mins ago" isSelected={selectedArticles.has("draft-1")} onSelect={handleArticleSelect} onDelete={() => handleDeleteArticle("draft-1")} />
-                    )}
-                    {(!filterStatus || filterStatus === "scheduled") && (
-                        <ArticleContainer id="scheduled-1" status="scheduled" title="Title of the Blog will be in this area" description="Lorem ipsum dolor sit amet..." categories={["Sports", "Humour", "History"]} postedTime="Posted 2 mins ago" isSelected={selectedArticles.has("scheduled-1")} onSelect={handleArticleSelect} onDelete={() => handleDeleteArticle("scheduled-1")} />
+                    {filteredArticles.length === 0 ? (
+                        <div className="flex justify-center items-center min-h-[200px]">
+                            <div className="text-gray-500">No articles found</div>
+                        </div>
+                    ) : (
+                        filteredArticles.map(article => (
+                            <ArticleContainer
+                                key={article.id}
+                                id={article.id}
+                                status={article.status}
+                                title={article.title}
+                                description={article.description}
+                                categories={article.categories || []}
+                                postedTime={article.postedTime}
+                                isSelected={selectedArticles.has(article.id)}
+                                onSelect={handleArticleSelect}
+                                onDelete={() => handleDeleteArticle(article.id)}
+                            />
+                        ))
                     )}
                 </div>
             </div>
 
-            <ConfirmModal isOpen={showDeleteModal} onClose={() => { setShowDeleteModal(false); setDeleteArticleId(null) }} onConfirm={confirmDelete} title="Are you sure you want to put it in trash?" message="This will be put into trash and can be restored later" confirmText="Move to Trash" confirmStyle="danger" />
+            <ConfirmModal 
+                isOpen={showDeleteModal} 
+                onClose={() => { 
+                    setShowDeleteModal(false); 
+                    setDeleteArticleId(null) 
+                }} 
+                onConfirm={confirmDelete} 
+                title="Are you sure you want to put it in trash?" 
+                message={isBulkAction 
+                    ? `${selectedArticles.size} article(s) will be put into trash and can be restored later`
+                    : "This will be put into trash and can be restored later"
+                } 
+                confirmText="Move to Trash" 
+                confirmStyle="danger" 
+            />
         </div>
     )
 }
