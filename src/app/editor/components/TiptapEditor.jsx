@@ -123,6 +123,13 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     },
   })
 
+  // Update editor content when initialContent changes (must be after useEditor)
+  useEffect(() => {
+    if (editor && initialContent && editor.getHTML() !== initialContent) {
+      editor.commands.setContent(initialContent)
+    }
+  }, [editor, initialContent])
+
   const cycleFontUp = () => {
     const currentIndex = fonts.indexOf(currentFont)
     const nextIndex = currentIndex > 0 ? currentIndex - 1 : fonts.length - 1

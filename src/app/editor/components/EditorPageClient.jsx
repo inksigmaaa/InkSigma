@@ -23,7 +23,7 @@ export default function EditorPageClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session } = useSession()
-  const { createArticle, updateArticle, uploadArticleImage } = useArticles()
+  const { createArticle, updateArticle, uploadArticleImage, getArticleById } = useArticles()
   
   // Get status and ID from URL parameters
   const articleStatus = searchParams.get('status')
@@ -46,6 +46,7 @@ export default function EditorPageClient() {
   const [currentArticleId, setCurrentArticleId] = useState(articleId ? parseInt(articleId) : null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
+  const [isLoadingArticle, setIsLoadingArticle] = useState(false)
   
   // Refs to track latest values for auto-save
   const titleRef = useRef(title)
@@ -55,6 +56,37 @@ export default function EditorPageClient() {
   const currentArticleIdRef = useRef(currentArticleId)
   const hasUnsavedChangesRef = useRef(hasUnsavedChanges)
   const isSavingRef = useRef(false)
+
+  // Load existing article data if ID is provided
+  useEffect(() => {
+    const loadArticle = async () => {
+      if (articleId && session?.user?.id) {
+        try {
+          setIsLoadingArticle(true)
+          const article = await getArticleById(parseInt(articleId))
+          
+          // Populate form with existing article data
+          setTitle(article.title || '')
+          setDescription(article.description || '')
+          setSelectedCategories(article.categories || [])
+          setEditorContent(article.content || '')
+          setCurrentArticleId(article.id)
+          
+          // Reset unsaved changes since we just loaded
+          setHasUnsavedChanges(false)
+          setIsSaved(true)
+        } catch (error) {
+          console.error('Error loading article:', error)
+          alert('Failed to load article. Please try again.')
+          router.push('/home')
+        } finally {
+          setIsLoadingArticle(false)
+        }
+      }
+    }
+
+    loadArticle()
+  }, [articleId, session?.user?.id, getArticleById, router])
 
   // Update refs when state changes
   useEffect(() => { titleRef.current = title }, [title])
@@ -473,6 +505,17 @@ export default function EditorPageClient() {
           border: none !important;
         }
       `}</style>
+      
+      {/* Loading state for article */}
+      {isLoadingArticle && (
+        <div className="fixed inset-0 bg-white/80 flex items-center justify-center z-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-2"></div>
+            <p className="text-gray-600">Loading article...</p>
+          </div>
+        </div>
+      )}
+      
       {/* Go Back Button */}
       <div className="px-4 md:px-6 pt-6 pb-4 border-b border-gray-200 md:bg-transparent md:border-0">
         <Button 
@@ -557,7 +600,7 @@ export default function EditorPageClient() {
         {/* Tiptap Editor */}
         <TiptapEditor 
           onUpdate={handleEditorUpdate}
-          initialContent=""
+          initialContent={editorContent}
           onImageModalToggle={setIsImageModalOpen}
         />
       </div>
@@ -715,7 +758,7 @@ export default function EditorPageClient() {
                 <button 
                   onClick={handleUpdate}
                   disabled={isLoading}
-                  className="bg-black text-white hover:bg-gray-800 flex items-center gap-2 px-6 py-2 rounded text-sm font-medium h-8"
+                  className="bg-black text-white hover:bg-gray-800 flex justify-center items-center gap-2 px-6 py-2 rounded text-sm font-medium h-8"
                   style={{ width: '160px' }}
                 >
                   {isLoading ? 'Updating...' : 'Update'}
