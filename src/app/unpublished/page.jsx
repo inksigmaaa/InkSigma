@@ -168,8 +168,8 @@ export default function Unpublished() {
   const actionButtons = [
     {
       icon: "/images/icons/draft1.svg",
-      title: "Copy",
-      onClick: handleCopy,
+      title: "Move to Draft",
+      onClick: handleBulkDraft,
       disabled: !hasSelectedArticles
     },
     {
@@ -180,8 +180,8 @@ export default function Unpublished() {
     },
     {
       icon: "/images/icons/trash2.svg",
-      title: "Move to Draft",
-      onClick: handleBulkDraft,
+      title: "Delete",
+      onClick: () => {}, // Add bulk delete handler if needed
       disabled: !hasSelectedArticles
     },
   ];
