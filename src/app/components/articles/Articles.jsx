@@ -107,12 +107,34 @@ export default function Articles(props) {
                 await bulkMoveToTrashStatus(Array.from(selectedArticles))
                 setSelectedArticles(new Set())
             } else {
-                await moveToTrashStatus(deleteArticleId)
+                await moveToTrashStatus(actionArticleId)
             }
             setShowDeleteModal(false)
-            setDeleteArticleId(null)
+            setActionArticleId(null)
         } catch (error) {
             console.error('Error moving articles to trash:', error)
+        }
+    }
+
+    const confirmPublish = async () => {
+        try {
+            // TODO: Implement publish functionality
+            console.log('Publishing article:', actionArticleId)
+            setShowPublishModal(false)
+            setActionArticleId(null)
+        } catch (error) {
+            console.error('Error publishing article:', error)
+        }
+    }
+
+    const confirmDraft = async () => {
+        try {
+            // TODO: Implement move to draft functionality
+            console.log('Moving to draft:', actionArticleId)
+            setShowDraftModal(false)
+            setActionArticleId(null)
+        } catch (error) {
+            console.error('Error moving to draft:', error)
         }
     }
 
