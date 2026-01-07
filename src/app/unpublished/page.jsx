@@ -16,7 +16,6 @@ export default function Unpublished() {
   const [showTrashModal, setShowTrashModal] = useState(false);
   const [actionArticleId, setActionArticleId] = useState(null);
   const [isBulkAction, setIsBulkAction] = useState(false);
-  const [actionArticleId, setActionArticleId] = useState(null);
 
   // Filter unpublished articles and add individual action handlers
   const unpublishedArticles = articles

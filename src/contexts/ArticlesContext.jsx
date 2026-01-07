@@ -247,7 +247,7 @@ export function ArticlesProvider({ children }) {
   const bulkPublish = async (ids) => {
     try {
       const updatedBlogs = await Promise.all(
-        ids.map(id => blogService.togglePublishStatus(id, true))
+        ids.map(id => blogService.updateBlogStatus(id, 'published'))
       )
       const updatedArticles = updatedBlogs.map(convertBlogToArticle)
       

@@ -21,15 +21,28 @@ export default function Articles(props) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategories, setSelectedCategories] = useState([])
+    const [selectAll, setSelectAll] = useState(false)
+    const [selectedArticles, setSelectedArticles] = useState(new Set())
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [showPublishModal, setShowPublishModal] = useState(false)
     const [showDraftModal, setShowDraftModal] = useState(false)
     const [actionArticleId, setActionArticleId] = useState(null)
+    const [isBulkAction, setIsBulkAction] = useState(false)
     const mobileDropdownRef = useRef(null)
     const desktopDropdownRef = useRef(null)
 
     const filterStatus = props.filterStatus || null
     const showCreateButton = props.showCreateButton !== false
+
+    // Get real articles from context, excluding trash
+    const allArticles = articles.filter(article => article.status !== 'trash')
+    
+    // Filter by status if specified
+    const filteredArticles = filterStatus 
+        ? allArticles.filter(article => article.status === filterStatus)
+        : allArticles
+
+    const articleIds = filteredArticles.map(article => article.id)
 
     const filteredCategories = categories.filter(cat =>
         cat.toLowerCase().includes(searchTerm.toLowerCase())
@@ -45,36 +58,96 @@ export default function Articles(props) {
 
     const handleDeleteArticle = (articleId) => {
         setActionArticleId(articleId)
+        setIsBulkAction(false)
         setShowDeleteModal(true)
     }
 
     const handlePublishArticle = (articleId) => {
         setActionArticleId(articleId)
+        setIsBulkAction(false)
         setShowPublishModal(true)
     }
 
     const handleDraftArticle = (articleId) => {
         setActionArticleId(articleId)
+        setIsBulkAction(false)
         setShowDraftModal(true)
     }
 
-    const confirmDelete = () => {
-        console.log("Deleting article:", actionArticleId)
-        setShowDeleteModal(false)
-        setActionArticleId(null)
+    const handleSelectAll = () => {
+        if (selectAll) {
+            setSelectedArticles(new Set())
+            setSelectAll(false)
+        } else {
+            const allArticles = articles.filter(article => article.status !== 'trash')
+            const filteredArticles = filterStatus 
+                ? allArticles.filter(article => article.status === filterStatus)
+                : allArticles
+            setSelectedArticles(new Set(filteredArticles.map(article => article.id)))
+            setSelectAll(true)
+        }
     }
 
-    const confirmPublish = () => {
-        console.log("Publishing article:", actionArticleId)
-        setShowPublishModal(false)
-        setActionArticleId(null)
+    const handleArticleSelect = (articleId, isSelected) => {
+        const newSelected = new Set(selectedArticles)
+        if (isSelected) {
+            newSelected.add(articleId)
+        } else {
+            newSelected.delete(articleId)
+        }
+        setSelectedArticles(newSelected)
     }
 
-    const confirmDraft = () => {
-        console.log("Moving to draft:", actionArticleId)
-        setShowDraftModal(false)
-        setActionArticleId(null)
+    const handleBulkDelete = () => {
+        if (selectedArticles.size > 0) {
+            setIsBulkAction(true)
+            setShowDeleteModal(true)
+        }
     }
+
+    const confirmDelete = async () => {
+        try {
+            if (isBulkAction) {
+                await bulkMoveToTrashStatus(Array.from(selectedArticles))
+                setSelectedArticles(new Set())
+            } else {
+                await moveToTrashStatus(actionArticleId)
+            }
+            setShowDeleteModal(false)
+            setActionArticleId(null)
+        } catch (error) {
+            console.error('Error moving articles to trash:', error)
+        }
+    }
+
+    const confirmPublish = async () => {
+        try {
+            // TODO: Implement publish functionality
+            console.log('Publishing article:', actionArticleId)
+            setShowPublishModal(false)
+            setActionArticleId(null)
+        } catch (error) {
+            console.error('Error publishing article:', error)
+        }
+    }
+
+    const confirmDraft = async () => {
+        try {
+            // TODO: Implement move to draft functionality
+            console.log('Moving to draft:', actionArticleId)
+            setShowDraftModal(false)
+            setActionArticleId(null)
+        } catch (error) {
+            console.error('Error moving to draft:', error)
+        }
+    }
+
+    useEffect(() => {
+        const allSelected = articleIds.length > 0 && articleIds.every(id => selectedArticles.has(id))
+        setSelectAll(allSelected)
+    }, [selectedArticles, articleIds.length])
+
+    const hasSelectedArticles = selectedArticles.size > 0
 
     useEffect(() => {
         const handleClickOutside = (event) => {
