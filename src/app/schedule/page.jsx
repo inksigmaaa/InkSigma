@@ -3,32 +3,54 @@
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
-import SchedulePageClient from "../components/schedule/SchedulePageClient";
+import PersonalArticles from "../components/personalArticles/personalArticles";
+import { useArticles } from "@/contexts/ArticlesContext";
+
 export default function SchedulePage() {
-  // Mock data matching the image design
-  const posts = [
-    {
-      id: 1,
-      title: "Title of the Blog will be in this area",
-      excerpt: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      tags: ["Sports", "Humour", "History"],
-      postedTime: "Posted on 2nd Feb, 2023",
-    },
-    {
-      id: 2,
-      title: "Title of the Blog will be in this area",
-      excerpt: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      tags: ["Sports", "Humour", "History"],
-      postedTime: "Posted on 2nd Feb, 2023",
-    }
-  ];
+  const { articles, loading, error } = useArticles();
+
+  // Filter scheduled articles
+  const scheduledArticles = articles.filter(article => article.status === 'scheduled');
+
+  if (loading) {
+    return (
+      <>
+        <NavbarLoggedin />
+        <Sidebar />
+        <Verify />
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-gray-500">Loading scheduled articles...</div>
+        </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <NavbarLoggedin />
+        <Sidebar />
+        <Verify />
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-red-500">Error: {error}</div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
       <NavbarLoggedin />
       <Sidebar />
       <Verify />
-      <SchedulePageClient posts={posts} />
+      <PersonalArticles
+        title="Scheduled"
+        titleColor="#0048B5"
+        articles={scheduledArticles}
+        emptyMessage="No scheduled articles yet"
+        showSelectAll={true}
+        showActions={false}
+      />
     </>
-  )
+  );
 }
