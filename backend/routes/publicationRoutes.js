@@ -64,9 +64,8 @@ const getCurrentUser = async (req, res, next) => {
 };
 
 // Check if user has a publication
-router.get("/check", async (req, res) => {
+router.get("/check", getCurrentUser, async (req, res) => {
   try {
-    // Get user from session (you'll need to add auth middleware)
     const userId = req.user?.id;
     
     if (!userId) {

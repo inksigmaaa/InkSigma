@@ -22,6 +22,20 @@
       "when": 1767589996204,
       "tag": "0002_colorful_hannibal_king",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1767699071087,
+      "tag": "0003_absent_morlocks",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1767779961873,
+      "tag": "0004_moaning_orphan",
+      "breakpoints": true
     }
   ]
 }

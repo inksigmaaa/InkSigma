@@ -21,6 +21,20 @@ export default function CreatePublication() {
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
 
+  // Extract name from email on component mount
+  useEffect(() => {
+    if (session?.user?.email && !publicationName) {
+      const emailUsername = session.user.email.split('@')[0];
+      // Capitalize first letter and replace dots/underscores with spaces
+      const formattedName = emailUsername
+        .replace(/[._]/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      setPublicationName(formattedName);
+    }
+  }, [session, publicationName]);
+
   const handleStartWriting = async () => {
     if (!publicationName.trim() || !subdomain.trim()) {
       setErrorMessage("Please fill in all required fields!");
@@ -62,24 +76,6 @@ export default function CreatePublication() {
         subdomain: subdomain.toLowerCase(),
         description: "",
       });
-
-      // Update user's name if it's different from publication name
-      if (session.user.name !== publicationName) {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/profile`, {
-          method: 'PUT',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            profileName: publicationName,
-          }),
-        });
-
-        if (!response.ok) {
-          console.error('Failed to update user name');
-        }
-      }
 
       // Upload image if provided
       if (uploadedImage && publication.id) {
@@ -176,10 +172,10 @@ export default function CreatePublication() {
                 WebkitTextFillColor: 'transparent'
               }}
             >
-              Create Your Publication
+              Welcome to InkSigma!
             </h1>
             <p className="text-center text-[14px] text-[#404040]">
-              Set up a publication & Start Writing
+              Create your publication to get started
             </p>
           </div>
 
@@ -215,6 +211,7 @@ export default function CreatePublication() {
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
             </div>
           </div>
+          <p className="text-center text-[12px] text-[#999] mb-8">Add a logo (optional)</p>
 
           {showErrors && (
             <div className="mb-6">
@@ -226,6 +223,7 @@ export default function CreatePublication() {
 
           <div className="space-y-8">
             <div>
+              <label className="block text-[12px] text-[#666] mb-1">Publication Name</label>
               <input
                 type="text"
                 placeholder="Enter your Publication Name"
@@ -240,10 +238,11 @@ export default function CreatePublication() {
             </div>
 
             <div>
+              <label className="block text-[12px] text-[#666] mb-1">Subdomain</label>
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Subdomain name"
+                  placeholder="your-subdomain"
                   value={subdomain}
                   onChange={(e) => setSubdomain(e.target.value)}
                   minLength={3}
@@ -262,7 +261,7 @@ export default function CreatePublication() {
                 disabled={loading}
                 className="mx-auto text-[#7C3AED] text-[14px] font-medium hover:text-[#6D28D9] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Creating..." : "Start Writing"}
+                {loading ? "Creating Publication..." : "Continue to Dashboard"}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
