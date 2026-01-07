@@ -14,47 +14,33 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadPublication()
+    checkAndLoadPublication()
   }, [])
 
-  const loadPublication = async () => {
+  const checkAndLoadPublication = async () => {
     try {
+      // First check if user is authenticated
       const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
         credentials: "include",
       })
       
-      if (!sessionRes.ok) return
+      if (!sessionRes.ok) {
+        router.push('/login')
+        return
+      }
       
       const sessionData = await sessionRes.json()
       const userId = sessionData.user.id
-      const userName = sessionData.user.name || "My Publication"
-      const userUsername = sessionData.user.username || `user${userId.substring(0, 8)}`
       
-      let pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+      // Check if user has a publication
+      const pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
         credentials: "include",
       })
       
-      // If no publication exists, create one
       if (pubRes.status === 404) {
-        const createRes = await fetch("http://localhost:5000/api/publications", {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: userName,
-            subdomain: userUsername.toLowerCase().replace(/[^a-z0-9]/g, ''),
-            description: "Welcome to my publication",
-            userId: userId,
-          }),
-        })
-        
-        if (createRes.ok) {
-          pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
-            credentials: "include",
-          })
-        }
+        // No publication found, redirect to create one
+        router.push('/create-publication')
+        return
       }
       
       if (pubRes.ok) {
