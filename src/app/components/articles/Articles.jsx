@@ -21,15 +21,28 @@ export default function Articles(props) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategories, setSelectedCategories] = useState([])
+    const [selectAll, setSelectAll] = useState(false)
+    const [selectedArticles, setSelectedArticles] = useState(new Set())
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [showPublishModal, setShowPublishModal] = useState(false)
     const [showDraftModal, setShowDraftModal] = useState(false)
     const [actionArticleId, setActionArticleId] = useState(null)
+    const [isBulkAction, setIsBulkAction] = useState(false)
     const mobileDropdownRef = useRef(null)
     const desktopDropdownRef = useRef(null)
 
     const filterStatus = props.filterStatus || null
     const showCreateButton = props.showCreateButton !== false
+
+    // Get real articles from context, excluding trash
+    const allArticles = articles.filter(article => article.status !== 'trash')
+    
+    // Filter by status if specified
+    const filteredArticles = filterStatus 
+        ? allArticles.filter(article => article.status === filterStatus)
+        : allArticles
+
+    const articleIds = filteredArticles.map(article => article.id)
 
     const filteredCategories = categories.filter(cat =>
         cat.toLowerCase().includes(searchTerm.toLowerCase())
@@ -45,23 +58,51 @@ export default function Articles(props) {
 
     const handleDeleteArticle = (articleId) => {
         setActionArticleId(articleId)
+        setIsBulkAction(false)
         setShowDeleteModal(true)
     }
 
     const handlePublishArticle = (articleId) => {
         setActionArticleId(articleId)
+        setIsBulkAction(false)
         setShowPublishModal(true)
     }
 
     const handleDraftArticle = (articleId) => {
         setActionArticleId(articleId)
+        setIsBulkAction(false)
         setShowDraftModal(true)
     }
 
-    const confirmDelete = () => {
-        console.log("Deleting article:", actionArticleId)
-        setShowDeleteModal(false)
-        setActionArticleId(null)
+    const handleSelectAll = () => {
+        if (selectAll) {
+            setSelectedArticles(new Set())
+            setSelectAll(false)
+        } else {
+            const allArticles = articles.filter(article => article.status !== 'trash')
+            const filteredArticles = filterStatus 
+                ? allArticles.filter(article => article.status === filterStatus)
+                : allArticles
+            setSelectedArticles(new Set(filteredArticles.map(article => article.id)))
+            setSelectAll(true)
+        }
+    }
+
+    const handleArticleSelect = (articleId, isSelected) => {
+        const newSelected = new Set(selectedArticles)
+        if (isSelected) {
+            newSelected.add(articleId)
+        } else {
+            newSelected.delete(articleId)
+        }
+        setSelectedArticles(newSelected)
+    }
+
+    const handleBulkDelete = () => {
+        if (selectedArticles.size > 0) {
+            setIsBulkAction(true)
+            setShowDeleteModal(true)
+        }
     }
 
     const confirmDelete = async () => {
