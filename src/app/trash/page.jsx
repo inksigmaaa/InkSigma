@@ -168,7 +168,7 @@ export default function TrashPage() {
           if (!deleteArticleId) setSelectedArticles([])
         }}
         onConfirm={confirmDelete}
-        title="Are you sure you want to delete?"
+        title="Are you sure you want to delete permanently?"
         message="This will permanently delete this article and cannot be restored"
         confirmText="Delete permanently"
         confirmStyle="danger"
@@ -178,8 +178,7 @@ export default function TrashPage() {
         isOpen={showRestoreModal}
         onClose={() => setShowRestoreModal(false)}
         onConfirm={confirmRestore}
-        title="Restore articles?"
-        message={`${selectedArticles.length} article(s) will be restored to drafts`}
+        title="Are you sure you want to Restore?"
         confirmText="Restore"
         confirmStyle="normal"
       />

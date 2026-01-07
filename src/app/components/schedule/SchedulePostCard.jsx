@@ -16,7 +16,8 @@ import { useRouter } from 'next/navigation'
 export default function SchedulePostCard({ 
   post, 
   isSelected, 
-  onSelectPost 
+  onSelectPost,
+  onDelete 
 }) {
   const router = useRouter()
 
@@ -26,22 +27,18 @@ export default function SchedulePostCard({
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 relative">
-      {/* Scheduled badge - only for desktop */}
       <div className="absolute -top-0 -left-0 bg-blue-100 text-blue-600 text-xs font-medium px-3 py-1 rounded lg:block hidden">
         Scheduled
       </div>
 
-      {/* Desktop Layout - with checkboxes */}
       <div className="hidden lg:block">
         <div className="flex items-start gap-4 mt-2">
-          {/* Checkbox */}
           <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => onSelectPost(post.id, checked)}
             className="mt-1"
           />
 
-          {/* Content */}
           <div className="flex-1">
             <h3 className="text-base font-semibold text-gray-900 mb-2">
               {post.title}
@@ -49,12 +46,8 @@ export default function SchedulePostCard({
             <p className="text-gray-400 text-sm mb-4 leading-relaxed">
               {post.excerpt}
             </p>
-
-            
           </div>
-          
 
-          {/* Action buttons */}
           <div className="flex gap-1 ml-4">
             <Button 
               variant="ghost" 
@@ -75,42 +68,39 @@ export default function SchedulePostCard({
               variant="ghost" 
               size="icon" 
               className="text-gray-400 hover:text-gray-600 h-8 w-8"
+              onClick={onDelete}
             >
               <Image src="/svg/delete.svg" alt="Delete" width={16} height={16} />
             </Button>
           </div>
         </div>
-        {/* Tags and timestamp row */}
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2 flex-wrap">
-                {post.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="bg-gray-100 text-gray-500 text-xs px-3 py-1 rounded"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+        <div className="flex items-center justify-between">
+          <div className="flex gap-2 flex-wrap">
+            {post.tags.map((tag, index) => (
+              <span
+                key={index}
+                className="bg-gray-100 text-gray-500 text-xs px-3 py-1 rounded"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
 
-              <div className="flex items-center gap-2 text-gray-400 text-sm whitespace-nowrap ml-4">
-                <Clock className="h-4 w-4" />
-                <span>{post.postedTime}</span>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 text-gray-400 text-sm whitespace-nowrap ml-4">
+            <Clock className="h-4 w-4" />
+            <span>{post.postedTime}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Tablet Layout - with checkboxes and right-aligned badge/actions */}
       <div className="hidden sm:block lg:hidden">
         <div className="flex items-center gap-4 mt-2">
-          {/* Checkbox */}
           <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => onSelectPost(post.id, checked)}
             className="mt-1"
           />
 
-          {/* Content */}
           <div className="flex-1">
             <h3 className="text-base font-semibold text-gray-900 mb-2">
               {post.title}
@@ -119,7 +109,6 @@ export default function SchedulePostCard({
               {post.excerpt}
             </p>
 
-            {/* Tags */}
             <div className="flex gap-2 flex-wrap">
               {post.tags.map((tag, index) => (
                 <span
@@ -132,7 +121,6 @@ export default function SchedulePostCard({
             </div>
           </div>
 
-          {/* Right-aligned Scheduled badge and action buttons */}
           <div className="flex items-center gap-2">
             <div className="bg-blue-100 text-blue-600 text-xs font-medium px-3 py-1 rounded">
               Scheduled
@@ -157,6 +145,7 @@ export default function SchedulePostCard({
                 variant="ghost" 
                 size="icon" 
                 className="text-gray-400 hover:text-gray-600 h-8 w-8"
+                onClick={onDelete}
               >
                 <Image src="/svg/delete.svg" alt="Delete" width={16} height={16} />
               </Button>
@@ -165,14 +154,11 @@ export default function SchedulePostCard({
         </div>
       </div>
 
-      {/* Mobile Layout */}
       <div className="sm:hidden relative">
-        {/* Scheduled badge - top left */}
         <div className="absolute -top-3 left-4 max-sm:-top-6 max-sm:-left-6 bg-blue-100 text-blue-600 text-xs font-medium px-3 py-1 rounded">
           Scheduled
         </div>
 
-        {/* Three-dot menu for mobile */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-gray-400 h-8 w-8">
@@ -188,14 +174,13 @@ export default function SchedulePostCard({
               <Image src="/svg/edit.svg" alt="Edit" width={16} height={16} />
               <span className="text-base text-gray-700">Edit</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="gap-3 py-3 cursor-pointer">
+            <DropdownMenuItem className="gap-3 py-3 cursor-pointer" onClick={onDelete}>
               <Image src="/svg/delete.svg" alt="Delete" width={16} height={16} />
               <span className="text-base text-gray-700">Move to Trash</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Content */}
         <div className="pt-6 pr-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-3">
             {post.title}
@@ -204,7 +189,6 @@ export default function SchedulePostCard({
             {post.excerpt}
           </p>
 
-          {/* Tags */}
           <div className="flex gap-2 flex-wrap mb-4">
             {post.tags.map((tag, index) => (
               <span
@@ -216,7 +200,6 @@ export default function SchedulePostCard({
             ))}
           </div>
 
-          {/* Timestamp */}
           <div className="flex items-center gap-2 text-gray-400 text-sm">
             <Clock className="h-4 w-4" />
             <span>{post.postedTime}</span>

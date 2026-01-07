@@ -5,43 +5,36 @@ import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
 import PersonalArticles from "../components/personalArticles/personalArticles";
+import ConfirmModal from "../components/confirmModal/ConfirmModal";
 import { useArticles } from "@/contexts/ArticlesContext";
 
 export default function Published() {
     const { articles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, unpublishArticle } = useArticles();
     const [selectedArticles, setSelectedArticles] = useState([]);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showDraftModal, setShowDraftModal] = useState(false);
+    const [showUnpublishModal, setShowUnpublishModal] = useState(false);
+    const [actionArticleId, setActionArticleId] = useState(null);
+    const [isBulkAction, setIsBulkAction] = useState(false);
 
-    // Filter published articles and add onDelete/onDraft/onUnpublish handlers
-    // Delete on published page = move to trash
-    // Draft on published page = move to draft
-    // Unpublish on published page = move to unpublished
     const publishedArticles = articles
         .filter(article => article.status === 'published')
         .map(article => ({
             ...article,
-            onDelete: async () => {
-                try {
-                    await moveToTrashStatus(article.id);
-                } catch (error) {
-                    console.error('Error moving article to trash:', error);
-                    alert('Failed to move article to trash. Please try again.');
-                }
+            onDelete: () => {
+                setActionArticleId(article.id);
+                setIsBulkAction(false);
+                setShowDeleteModal(true);
             },
-            onDraft: async () => {
-                try {
-                    await moveToDraft(article.id);
-                } catch (error) {
-                    console.error('Error moving article to draft:', error);
-                    alert('Failed to move article to draft. Please try again.');
-                }
+            onDraft: () => {
+                setActionArticleId(article.id);
+                setIsBulkAction(false);
+                setShowDraftModal(true);
             },
-            onUnpublish: async () => {
-                try {
-                    await unpublishArticle(article.id);
-                } catch (error) {
-                    console.error('Error unpublishing article:', error);
-                    alert('Failed to unpublish article. Please try again.');
-                }
+            onUnpublish: () => {
+                setActionArticleId(article.id);
+                setIsBulkAction(false);
+                setShowUnpublishModal(true);
             }
         }));
 
@@ -63,24 +56,50 @@ export default function Published() {
 
     const handleCopy = () => {
         console.log("Copy articles:", selectedArticles);
-        // Add copy logic here
     };
 
-    const handleDelete = async () => {
+    const handleBulkDelete = () => {
         if (selectedArticles.length === 0) return;
-        
+        setIsBulkAction(true);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDelete = async () => {
         try {
-            // Move selected articles to trash
-            await bulkMoveToTrashStatus(selectedArticles);
-            
-            // Clear selection
-            setSelectedArticles([]);
-            
-            // Show success message
-            alert(`${selectedArticles.length} article(s) moved to trash successfully!`);
+            if (isBulkAction) {
+                await bulkMoveToTrashStatus(selectedArticles);
+                setSelectedArticles([]);
+            } else if (actionArticleId) {
+                await moveToTrashStatus(actionArticleId);
+            }
+            setShowDeleteModal(false);
+            setActionArticleId(null);
         } catch (error) {
-            console.error('Error moving articles to trash:', error);
-            alert('Failed to move articles to trash: ' + error.message);
+            console.error('Error moving article to trash:', error);
+        }
+    };
+
+    const confirmDraft = async () => {
+        try {
+            if (actionArticleId) {
+                await moveToDraft(actionArticleId);
+            }
+            setShowDraftModal(false);
+            setActionArticleId(null);
+        } catch (error) {
+            console.error('Error moving article to draft:', error);
+        }
+    };
+
+    const confirmUnpublish = async () => {
+        try {
+            if (actionArticleId) {
+                await unpublishArticle(actionArticleId);
+            }
+            setShowUnpublishModal(false);
+            setActionArticleId(null);
+        } catch (error) {
+            console.error('Error unpublishing article:', error);
         }
     };
 
@@ -122,7 +141,7 @@ export default function Published() {
         { 
             icon: "/images/icons/trash2.svg", 
             title: "Delete", 
-            onClick: handleDelete,
+            onClick: handleBulkDelete,
             disabled: !hasSelectedArticles 
         },
     ];
@@ -143,6 +162,45 @@ export default function Published() {
                 selectedArticles={selectedArticles}
                 onSelectAll={handleSelectAll}
                 onArticleSelect={handleArticleSelect}
+            />
+
+            <ConfirmModal
+                isOpen={showDeleteModal}
+                onClose={() => {
+                    setShowDeleteModal(false);
+                    setActionArticleId(null);
+                }}
+                onConfirm={confirmDelete}
+                title="Are you sure you want to put it in trash?"
+                message="This will be put into trash and can be restored later"
+                confirmText="Move to Trash"
+                confirmStyle="danger"
+            />
+
+            <ConfirmModal
+                isOpen={showDraftModal}
+                onClose={() => {
+                    setShowDraftModal(false);
+                    setActionArticleId(null);
+                }}
+                onConfirm={confirmDraft}
+                title="Move to Draft?"
+                message="This article will be moved to drafts"
+                confirmText="Move to Draft"
+                confirmStyle="normal"
+            />
+
+            <ConfirmModal
+                isOpen={showUnpublishModal}
+                onClose={() => {
+                    setShowUnpublishModal(false);
+                    setActionArticleId(null);
+                }}
+                onConfirm={confirmUnpublish}
+                title="Unpublish this article?"
+                message="This article will be unpublished and moved to unpublished section"
+                confirmText="Unpublish"
+                confirmStyle="normal"
             />
         </>
     );

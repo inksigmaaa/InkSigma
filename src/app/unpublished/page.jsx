@@ -5,13 +5,16 @@ import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
 import PersonalArticles from "../components/personalArticles/personalArticles";
+import ConfirmModal from "../components/confirmModal/ConfirmModal";
 import { useArticles } from "@/contexts/ArticlesContext";
 
 export default function Unpublished() {
   const { articles, loading, error, publishArticle, moveToDraft } = useArticles();
   const [selectedArticles, setSelectedArticles] = useState([]);
+  const [showRepublishModal, setShowRepublishModal] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
+  const [isBulkAction, setIsBulkAction] = useState(false);
 
-  // Filter unpublished articles (articles that were published but then unpublished)
   const unpublishedArticles = articles.filter(article => article.status === 'unpublished');
 
   const handleArticleSelect = (id, isSelected) => {
@@ -32,50 +35,41 @@ export default function Unpublished() {
 
   const handleCopy = () => {
     console.log("Copy articles:", selectedArticles);
-    // Add copy logic here
   };
 
-  const handleRepublish = async () => {
+  const handleBulkRepublish = () => {
     if (selectedArticles.length === 0) return;
-    
+    setIsBulkAction(true);
+    setShowRepublishModal(true);
+  };
+
+  const handleBulkDraft = () => {
+    if (selectedArticles.length === 0) return;
+    setIsBulkAction(true);
+    setShowDraftModal(true);
+  };
+
+  const confirmRepublish = async () => {
     try {
-      // Republish selected articles
       for (const articleId of selectedArticles) {
         await publishArticle(articleId);
       }
-      
-      // Clear selection
       setSelectedArticles([]);
-      
-      // Show success message
-      alert(`${selectedArticles.length} article(s) republished successfully!`);
+      setShowRepublishModal(false);
     } catch (error) {
       console.error('Error republishing articles:', error);
-      alert('Failed to republish articles. Please try again.');
     }
   };
 
-  const handleDelete = async () => {
-    if (selectedArticles.length === 0) return;
-    
-    if (!confirm(`Are you sure you want to move ${selectedArticles.length} article(s) to drafts? They will be removed from unpublished and moved to drafts.`)) {
-      return;
-    }
-    
+  const confirmDraft = async () => {
     try {
-      // Move selected articles to draft status (Unpublished-to-Draft Deletion Rule)
       for (const articleId of selectedArticles) {
         await moveToDraft(articleId);
       }
-      
-      // Clear selection
       setSelectedArticles([]);
-      
-      // Show success message
-      alert(`${selectedArticles.length} article(s) moved to drafts successfully!`);
+      setShowDraftModal(false);
     } catch (error) {
       console.error('Error moving articles to draft:', error);
-      alert('Failed to move articles to drafts. Please try again.');
     }
   };
 
@@ -117,13 +111,13 @@ export default function Unpublished() {
     {
       icon: "/images/icons/publish.svg",
       title: "Republish",
-      onClick: handleRepublish,
+      onClick: handleBulkRepublish,
       disabled: !hasSelectedArticles
     },
     {
       icon: "/images/icons/trash2.svg",
       title: "Move to Draft",
-      onClick: handleDelete,
+      onClick: handleBulkDraft,
       disabled: !hasSelectedArticles
     },
   ];
@@ -144,6 +138,26 @@ export default function Unpublished() {
         selectedArticles={selectedArticles}
         onSelectAll={handleSelectAll}
         onArticleSelect={handleArticleSelect}
+      />
+
+      <ConfirmModal
+        isOpen={showRepublishModal}
+        onClose={() => setShowRepublishModal(false)}
+        onConfirm={confirmRepublish}
+        title="Republish articles?"
+        message={`${selectedArticles.length} article(s) will be republished`}
+        confirmText="Republish"
+        confirmStyle="normal"
+      />
+
+      <ConfirmModal
+        isOpen={showDraftModal}
+        onClose={() => setShowDraftModal(false)}
+        onConfirm={confirmDraft}
+        title="Move to Draft?"
+        message={`${selectedArticles.length} article(s) will be moved to drafts`}
+        confirmText="Move to Draft"
+        confirmStyle="normal"
       />
     </>
   )
