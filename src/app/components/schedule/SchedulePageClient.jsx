@@ -4,10 +4,13 @@ import { useState } from "react"
 import ScheduleHeader from "./ScheduleHeader"
 import ScheduleControls from "./ScheduleControls"
 import SchedulePostCard from "./SchedulePostCard"
+import ConfirmModal from "../confirmModal/ConfirmModal"
 
 export default function SchedulePageClient({ posts }) {
   const [selectedPosts, setSelectedPosts] = useState([])
   const [category, setCategory] = useState("")
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deletePostId, setDeletePostId] = useState(null)
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -25,40 +28,65 @@ export default function SchedulePageClient({ posts }) {
     }
   }
 
-  // Fixed top position (no verify banner)
+  const handleDeletePost = (postId) => {
+    setDeletePostId(postId)
+    setShowDeleteModal(true)
+  }
+
+  const confirmDelete = () => {
+    console.log("Deleting post:", deletePostId)
+    setShowDeleteModal(false)
+    setDeletePostId(null)
+  }
+
   const topPosition = 'top-[160px]';
   const mobileTopPosition = 'max-md:top-[120px]';
 
   return (
-    <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
-      <div className="ml-0 md:ml-[185px]">
-        <div className="space-y-6">
-          <ScheduleHeader 
-            category={category}
-            onCategoryChange={setCategory}
-          />
+    <>
+      <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
+        <div className="ml-0 md:ml-[185px]">
+          <div className="space-y-6">
+            <ScheduleHeader 
+              category={category}
+              onCategoryChange={setCategory}
+            />
 
-          <ScheduleControls 
-            selectedPosts={selectedPosts}
-            totalPosts={posts.length}
-            onSelectAll={handleSelectAll}
-            category={category}
-            onCategoryChange={setCategory}
-          />
+            <ScheduleControls 
+              selectedPosts={selectedPosts}
+              totalPosts={posts.length}
+              onSelectAll={handleSelectAll}
+              category={category}
+              onCategoryChange={setCategory}
+            />
 
-          {/* Posts List */}
-          <div className="space-y-4">
-            {posts.map((post) => (
-              <SchedulePostCard
-                key={post.id}
-                post={post}
-                isSelected={selectedPosts.includes(post.id)}
-                onSelectPost={handleSelectPost}
-              />
-            ))}
+            <div className="space-y-4">
+              {posts.map((post) => (
+                <SchedulePostCard
+                  key={post.id}
+                  post={post}
+                  isSelected={selectedPosts.includes(post.id)}
+                  onSelectPost={handleSelectPost}
+                  onDelete={() => handleDeletePost(post.id)}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false)
+          setDeletePostId(null)
+        }}
+        onConfirm={confirmDelete}
+        title="Are you sure you want to put it in trash?"
+        message="This will be put into trash and can be restored later"
+        confirmText="Move to Trash"
+        confirmStyle="danger"
+      />
+    </>
   )
 }
