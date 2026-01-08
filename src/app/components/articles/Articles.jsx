@@ -75,6 +75,12 @@ export default function Articles(props) {
         setShowDraftModal(true)
     }
 
+    const handleUnpublishArticle = (articleId) => {
+        setActionArticleId(articleId)
+        setIsBulkAction(false)
+        setShowUnpublishModal(true)
+    }
+
     const handleSelectAll = () => {
         if (selectAll) {
             setSelectedArticles(new Set())
@@ -123,8 +129,7 @@ export default function Articles(props) {
 
     const confirmPublish = async () => {
         try {
-            // TODO: Implement publish functionality
-            console.log('Publishing article:', actionArticleId)
+            await publishArticle(actionArticleId)
             setShowPublishModal(false)
             setActionArticleId(null)
         } catch (error) {
@@ -134,8 +139,7 @@ export default function Articles(props) {
 
     const confirmDraft = async () => {
         try {
-            // TODO: Implement move to draft functionality
-            console.log('Moving to draft:', actionArticleId)
+            await moveToDraft(actionArticleId)
             setShowDraftModal(false)
             setActionArticleId(null)
         } catch (error) {
@@ -143,17 +147,20 @@ export default function Articles(props) {
         }
     }
 
-    useEffect(() => {
-        const allSelected = articleIds.length > 0 && articleIds.every(id => selectedArticles.has(id))
-        setSelectAll(allSelected)
-    }, [selectedArticles, articleIds.length])
+    const confirmUnpublish = async () => {
+        try {
+            await unpublishArticle(actionArticleId)
+            setShowUnpublishModal(false)
+            setActionArticleId(null)
+        } catch (error) {
+            console.error('Error unpublishing article:', error)
+        }
+    }
 
     useEffect(() => {
         const allSelected = articleIds.length > 0 && articleIds.every(id => selectedArticles.has(id))
         setSelectAll(allSelected)
     }, [selectedArticles, articleIds.length])
-
-    const hasSelectedArticles = selectedArticles.size > 0
 
     useEffect(() => {
         const handleClickOutside = (event) => {
