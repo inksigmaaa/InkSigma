@@ -99,24 +99,6 @@ export default function Articles(props) {
         setSelectedArticles(newSelected)
     }
 
-    const handleDeleteArticle = (articleId) => {
-        setActionArticleId(articleId)
-        setIsBulkAction(false)
-        setShowDeleteModal(true)
-    }
-
-    const handlePublishArticle = (articleId) => {
-        setActionArticleId(articleId)
-        setIsBulkAction(false)
-        setShowPublishModal(true)
-    }
-
-    const handleDraftArticle = (articleId) => {
-        setActionArticleId(articleId)
-        setIsBulkAction(false)
-        setShowDraftModal(true)
-    }
-
     const handleUnpublishArticle = (articleId) => {
         setActionArticleId(articleId)
         setIsBulkAction(false)
@@ -344,5 +326,6 @@ export default function Articles(props) {
                 confirmStyle="normal" 
             />
         </div>
+        </>
     )
 }
