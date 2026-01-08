@@ -70,17 +70,29 @@ export function ArticlesProvider({ children }) {
   }, [session?.user?.id])
 
   const loadUserArticles = async () => {
-    if (!session?.user?.id) return
-    
     try {
       setLoading(true)
       setError(null)
-      const blogs = await blogService.getUserBlogs(session.user.id)
+      
+      // Try to load articles even if session is not fully loaded
+      let blogs;
+      if (session?.user?.id) {
+        blogs = await blogService.getUserBlogs(session.user.id)
+      } else {
+        // Fallback: try to load all blogs (this might work if cookies are set)
+        blogs = await blogService.getAllBlogs()
+      }
+      
       const convertedArticles = blogs.map(convertBlogToArticle)
       setArticles(convertedArticles)
     } catch (err) {
       console.error('Error loading articles:', err)
       setError(err.message)
+      
+      // If the error is auth-related, try to reload the page
+      if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+        console.log('Auth error detected, you may need to log in again')
+      }
     } finally {
       setLoading(false)
     }
@@ -262,6 +274,23 @@ export function ArticlesProvider({ children }) {
     }
   }
 
+  const bulkMoveToDraft = async (ids) => {
+    try {
+      const updatedBlogs = await Promise.all(
+        ids.map(id => blogService.updateBlogStatus(id, 'draft'))
+      )
+      const updatedArticles = updatedBlogs.map(convertBlogToArticle)
+      
+      setArticles(prev => prev.map(article => {
+        const updated = updatedArticles.find(ua => ua.id === article.id)
+        return updated || article
+      }))
+    } catch (err) {
+      console.error('Error bulk moving articles to draft:', err)
+      throw err
+    }
+  }
+
   const uploadArticleImage = async (id, imageFile) => {
     try {
       // Validate that imageFile is actually a File object
@@ -320,6 +349,7 @@ export function ArticlesProvider({ children }) {
       unpublishArticle,
       bulkMoveToTrash,
       bulkMoveToTrashStatus,
+      bulkMoveToDraft,
       bulkRestore,
       bulkDelete,
       bulkPublish,
