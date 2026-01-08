@@ -10,7 +10,9 @@ export default function SchedulePageClient({ posts }) {
   const [selectedPosts, setSelectedPosts] = useState([])
   const [category, setCategory] = useState("")
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showDraftModal, setShowDraftModal] = useState(false)
   const [deletePostId, setDeletePostId] = useState(null)
+  const [isBulkAction, setIsBulkAction] = useState(false)
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -30,13 +32,39 @@ export default function SchedulePageClient({ posts }) {
 
   const handleDeletePost = (postId) => {
     setDeletePostId(postId)
+    setIsBulkAction(false)
     setShowDeleteModal(true)
   }
 
+  const handleBulkDelete = () => {
+    if (selectedPosts.length > 0) {
+      setIsBulkAction(true)
+      setShowDeleteModal(true)
+    }
+  }
+
+  const handleBulkDraft = () => {
+    if (selectedPosts.length > 0) {
+      setIsBulkAction(true)
+      setShowDraftModal(true)
+    }
+  }
+
   const confirmDelete = () => {
-    console.log("Deleting post:", deletePostId)
+    if (isBulkAction) {
+      console.log("Bulk deleting posts:", selectedPosts)
+      setSelectedPosts([])
+    } else {
+      console.log("Deleting post:", deletePostId)
+    }
     setShowDeleteModal(false)
     setDeletePostId(null)
+  }
+
+  const confirmDraft = () => {
+    console.log("Moving to draft:", selectedPosts)
+    setSelectedPosts([])
+    setShowDraftModal(false)
   }
 
   const topPosition = 'top-[160px]';
@@ -58,6 +86,8 @@ export default function SchedulePageClient({ posts }) {
               onSelectAll={handleSelectAll}
               category={category}
               onCategoryChange={setCategory}
+              onBulkDraft={handleBulkDraft}
+              onBulkDelete={handleBulkDelete}
             />
 
             <div className="space-y-4">
@@ -83,9 +113,21 @@ export default function SchedulePageClient({ posts }) {
         }}
         onConfirm={confirmDelete}
         title="Are you sure you want to put it in trash?"
-        message="This will be put into trash and can be restored later"
+        message={isBulkAction ? `${selectedPosts.length} post(s) will be put into trash and can be restored later` : "This will be put into trash and can be restored later"}
         confirmText="Move to Trash"
         confirmStyle="danger"
+      />
+
+      <ConfirmModal
+        isOpen={showDraftModal}
+        onClose={() => {
+          setShowDraftModal(false)
+        }}
+        onConfirm={confirmDraft}
+        title="Move to Draft?"
+        message={`${selectedPosts.length} post(s) will be moved to drafts`}
+        confirmText="Move to Draft"
+        confirmStyle="normal"
       />
     </>
   )

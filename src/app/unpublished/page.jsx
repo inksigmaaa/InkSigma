@@ -180,8 +180,8 @@ export default function Unpublished() {
   const actionButtons = [
     {
       icon: "/images/icons/draft1.svg",
-      title: "Copy",
-      onClick: handleCopy,
+      title: "Move to Draft",
+      onClick: handleBulkDraft,
       disabled: !hasSelectedArticles
     },
     {

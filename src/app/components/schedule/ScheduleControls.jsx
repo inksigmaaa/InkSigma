@@ -12,7 +12,9 @@ export default function ScheduleControls({
   totalPosts, 
   onSelectAll, 
   category, 
-  onCategoryChange 
+  onCategoryChange,
+  onBulkDraft,
+  onBulkDelete
 }) {
   return (
     <div className="hidden sm:flex items-center justify-between">
@@ -33,8 +35,21 @@ export default function ScheduleControls({
           </label>
         </div>
         <button
+          title="Move to Draft"
+          disabled={selectedPosts.length === 0}
+          onClick={onBulkDraft}
+          className={`w-8 h-8 border rounded flex items-center justify-center transition ${
+            selectedPosts.length > 0
+              ? "bg-white border-gray-300 cursor-pointer hover:bg-gray-50"
+              : "bg-gray-50 border-gray-200 cursor-not-allowed opacity-50"
+          }`}
+        >
+          <img src="/images/icons/draft1.svg" alt="Move to Draft" className={`w-4 h-4 ${selectedPosts.length === 0 ? "opacity-50" : ""}`} />
+        </button>
+        <button
           title="Delete selected"
           disabled={selectedPosts.length === 0}
+          onClick={onBulkDelete}
           className={`w-8 h-8 border rounded flex items-center justify-center transition ${
             selectedPosts.length > 0
               ? "bg-white border-gray-300 cursor-pointer hover:bg-gray-50"
