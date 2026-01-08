@@ -43,63 +43,69 @@ router.post("/cleanup", async (req, res) => {
     }
 });
 
-// Debug route to check scheduler status and scheduled blogs
-router.get('/scheduler', async (req, res) => {
+// Debug route to sync blog status and published fields
+router.post("/sync-blog-status", async (req, res) => {
     try {
-        const { schedulerService } = req.app.locals;
-        const status = schedulerService.getStatus();
-        
-        // Get all scheduled blogs
-        const scheduledBlogs = await db
-            .select({
-                id: blog.id,
-                title: blog.title,
-                status: blog.status,
-                scheduledAt: blog.scheduledAt,
-                authorId: blog.authorId
-            })
-            .from(blog)
-            .where(eq(blog.status, 'scheduled'));
-        
-        const nowUTC = new Date();
-        
-        // Add timing information to each scheduled blog
-        const blogsWithTiming = scheduledBlogs.map(blogPost => {
-            const scheduledTimeUTC = new Date(blogPost.scheduledAt);
-            const timeDiff = scheduledTimeUTC.getTime() - nowUTC.getTime();
-            const minutesUntil = Math.round(timeDiff / (1000 * 60));
-            
-            return {
-                ...blogPost,
-                scheduledAtUTC: scheduledTimeUTC.toISOString(),
-                isPastDue: scheduledTimeUTC <= nowUTC,
-                minutesUntil: minutesUntil,
-                timeDiffMs: timeDiff
-            };
-        });
-        
-        res.json({
-            scheduler: status,
-            currentTimeUTC: nowUTC.toISOString(),
-            scheduledBlogs: blogsWithTiming,
-            totalScheduled: scheduledBlogs.length,
-            pastDue: blogsWithTiming.filter(b => b.isPastDue).length
-        });
-    } catch (error) {
-        console.error('Error getting scheduler status:', error);
-        res.status(500).json({ error: 'Failed to get scheduler status' });
-    }
-});
+        console.log("Starting blog status synchronization...");
 
-// Manual trigger for scheduler check
-router.post('/scheduler/check', async (req, res) => {
-    try {
-        const { schedulerService } = req.app.locals;
-        await schedulerService.manualCheck();
-        res.json({ message: 'Manual scheduler check completed' });
+        // Get all blogs
+        const allBlogs = await db.select().from(blog);
+        console.log(`Found ${allBlogs.length} total blog(s)`);
+
+        let updatedCount = 0;
+        const updates = [];
+
+        // Update each blog to ensure status and published are in sync
+        for (const blogPost of allBlogs) {
+            const shouldBePublished = blogPost.status === 'published';
+            
+            // Check if update is needed
+            if (blogPost.published !== shouldBePublished) {
+                await db
+                    .update(blog)
+                    .set({ 
+                        published: shouldBePublished,
+                        updatedAt: new Date()
+                    })
+                    .where(eq(blog.id, blogPost.id));
+                
+                const updateInfo = {
+                    id: blogPost.id,
+                    title: blogPost.title,
+                    status: blogPost.status,
+                    oldPublished: blogPost.published,
+                    newPublished: shouldBePublished
+                };
+                
+                console.log(`Updated blog #${blogPost.id} "${blogPost.title}": status=${blogPost.status}, published=${blogPost.published} → ${shouldBePublished}`);
+                updates.push(updateInfo);
+                updatedCount++;
+            }
+        }
+
+        // Get updated stats
+        const updatedBlogs = await db.select().from(blog);
+        const stats = {};
+        
+        updatedBlogs.forEach(b => {
+            const key = `${b.status} (published=${b.published})`;
+            stats[key] = (stats[key] || 0) + 1;
+        });
+
+        res.json({
+            success: true,
+            message: `Synchronized ${updatedCount} blog(s)`,
+            totalBlogs: allBlogs.length,
+            updatedCount,
+            updates,
+            currentStats: stats
+        });
     } catch (error) {
-        console.error('Error in manual scheduler check:', error);
-        res.status(500).json({ error: 'Failed to run manual scheduler check' });
+        console.error("[DEBUG] Error syncing blog status:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
     }
 });
 

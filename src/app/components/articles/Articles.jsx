@@ -75,6 +75,12 @@ export default function Articles(props) {
         setShowDraftModal(true)
     }
 
+    const handleUnpublishArticle = (articleId) => {
+        setActionArticleId(articleId)
+        setIsBulkAction(false)
+        setShowUnpublishModal(true)
+    }
+
     const handleSelectAll = () => {
         if (selectAll) {
             setSelectedArticles(new Set())
@@ -97,12 +103,6 @@ export default function Articles(props) {
             newSelected.delete(articleId)
         }
         setSelectedArticles(newSelected)
-    }
-
-    const handleUnpublishArticle = (articleId) => {
-        setActionArticleId(articleId)
-        setIsBulkAction(false)
-        setShowUnpublishModal(true)
     }
 
     const handleBulkDelete = () => {
@@ -129,9 +129,7 @@ export default function Articles(props) {
 
     const confirmPublish = async () => {
         try {
-            if (actionArticleId) {
-                await publishArticle(actionArticleId)
-            }
+            await publishArticle(actionArticleId)
             setShowPublishModal(false)
             setActionArticleId(null)
         } catch (error) {
@@ -141,21 +139,17 @@ export default function Articles(props) {
 
     const confirmDraft = async () => {
         try {
-            if (actionArticleId) {
-                await moveToDraft(actionArticleId)
-            }
+            await moveToDraft(actionArticleId)
             setShowDraftModal(false)
             setActionArticleId(null)
         } catch (error) {
-            console.error('Error moving article to draft:', error)
+            console.error('Error moving to draft:', error)
         }
     }
 
     const confirmUnpublish = async () => {
         try {
-            if (actionArticleId) {
-                await unpublishArticle(actionArticleId)
-            }
+            await unpublishArticle(actionArticleId)
             setShowUnpublishModal(false)
             setActionArticleId(null)
         } catch (error) {
@@ -167,8 +161,6 @@ export default function Articles(props) {
         const allSelected = articleIds.length > 0 && articleIds.every(id => selectedArticles.has(id))
         setSelectAll(allSelected)
     }, [selectedArticles, articleIds.length])
-
-    const hasSelectedArticles = selectedArticles.size > 0
 
     useEffect(() => {
         const handleClickOutside = (event) => {

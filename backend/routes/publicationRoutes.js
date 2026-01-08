@@ -26,7 +26,22 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+    
+    // Map MIME types to proper file extensions
+    const extensionMap = {
+      'image/jpeg': '.jpg',
+      'image/jpg': '.jpg',
+      'image/png': '.png',
+      'image/gif': '.gif',
+      'image/webp': '.webp',
+      'image/svg+xml': '.svg',
+      'image/svg': '.svg'
+    };
+    
+    // Get extension from MIME type or fall back to original extension
+    const ext = extensionMap[file.mimetype] || path.extname(file.originalname);
+    
+    cb(null, file.fieldname + "-" + uniqueSuffix + ext);
   },
 });
 
@@ -203,11 +218,15 @@ router.post("/:id/logo", upload.single("logo"), async (req, res) => {
   try {
     const { id } = req.params;
 
+    console.log('Logo upload request for publication:', id);
+    console.log('File received:', req.file);
+
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
     const logoUrl = `/uploads/publications/${req.file.filename}`;
+    console.log('Logo URL to save:', logoUrl);
 
     const updated = await db
       .update(publication)
@@ -218,6 +237,8 @@ router.post("/:id/logo", upload.single("logo"), async (req, res) => {
     if (updated.length === 0) {
       return res.status(404).json({ error: "Publication not found" });
     }
+
+    console.log('Publication updated with logo:', updated[0]);
 
     res.json({ logoUrl, publication: updated[0] });
   } catch (error) {

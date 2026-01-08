@@ -22,6 +22,7 @@ export default function DashboardPage() {
       // First check if user is authenticated
       const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
         credentials: "include",
+        cache: "no-store", // Prevent caching
       })
       
       if (!sessionRes.ok) {
@@ -35,6 +36,7 @@ export default function DashboardPage() {
       // Check if user has a publication
       const pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
         credentials: "include",
+        cache: "no-store", // Prevent caching
       })
       
       if (pubRes.status === 404) {
@@ -45,6 +47,7 @@ export default function DashboardPage() {
       
       if (pubRes.ok) {
         const pubData = await pubRes.json()
+        console.log('Publication data loaded:', pubData) // Debug log
         setPublication(pubData)
       }
     } catch (err) {
@@ -52,6 +55,10 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (loading) {
+    return null
   }
 
   return (
@@ -89,7 +96,12 @@ export default function DashboardPage() {
                       <img 
                         src={`http://localhost:5000${publication.logoUrl}`} 
                         alt="publication logo" 
-                        className="w-full h-full object-cover" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error('Failed to load logo:', publication.logoUrl);
+                          e.target.onerror = null;
+                          e.target.src = "/icons/nib.svg";
+                        }}
                       />
                     ) : (
                       <img src="/icons/nib.svg" alt="publication" className="w-14 h-14 rounded-full" />
