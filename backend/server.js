@@ -1,4 +1,3 @@
-// server.js
 import "dotenv/config";
 import express from "express";
 import { toNodeHandler } from "better-auth/node";
@@ -15,32 +14,30 @@ import schedulerService from "./services/schedulerService.js";
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Middleware
 app.use(corsMiddleware);
-
-
-
-// Parse JSON bodies
 app.use(express.json());
 
-// Serve uploaded files
+// Static file serving
 app.use("/uploads", express.static("uploads"));
 
-// Better Auth handler - handles /api/auth/*
-app.use("/api/auth", toNodeHandler(auth));
+// Authentication routes
+console.log("Mounting better-auth handler at /api/auth");
+try {
+    const authHandler = toNodeHandler(auth);
+    app.use("/api/auth", authHandler);
+    console.log("✅ Better-auth handler mounted successfully");
+} catch (error) {
+    console.error("❌ Error mounting better-auth handler:", error);
+}
 
-// Custom auth routes - handles /api/custom/*
+// API routes
 app.use("/api/custom", authRoutes);
-
-// Profile routes - handles /api/profile/*
 app.use("/api/profile", profileRoutes);
-
-// Blog routes - handles /api/blogs/*
 app.use("/api/blogs", blogRoutes);
-
-// Publication routes - handles /api/publications/*
 app.use("/api/publications", publicationRoutes);
 
-// Debug routes (remove in production)
+// Debug routes (consider removing in production)
 app.use("/api/debug", debugRoutes);
 
 // Health check
@@ -51,19 +48,17 @@ app.get("/health", (req, res) => {
 app.listen(PORT, async () => {
     console.log(`Server running on http://localhost:${PORT}`);
     
-    // Verify SMTP connection on startup
+    // Verify SMTP connection
     const smtpReady = await emailService.verify();
     if (!smtpReady) {
-        console.error("⚠️  WARNING: SMTP is not configured properly. Emails will not be sent!");
-        console.error("   Check your SMTP_USER and SMTP_PASS in .env file");
+        console.error("⚠️  WARNING: SMTP not configured properly. Emails will not be sent!");
+        console.error("   Check SMTP_USER and SMTP_PASS in .env file");
     }
     
-    // Make schedulerService available to routes
+    // Initialize scheduler
     app.locals.schedulerService = schedulerService;
-    
-    // Start the blog scheduler
     schedulerService.start();
-    console.log("📅 Blog scheduler started - checking for scheduled posts every 30 seconds");
+    console.log("📅 Blog scheduler started - checking every 30 seconds");
 });
 
 // Graceful shutdown

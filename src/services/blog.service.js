@@ -32,6 +32,21 @@ export const blogService = {
     return this.getBlogs({ ...filters, published: true });
   },
 
+  // Get all blogs (fallback method)
+  async getAllBlogs() {
+    const response = await fetch(`${API_URL}/api/blogs`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'Failed to fetch blogs');
+    }
+
+    return response.json();
+  },
+
   // Get user's blogs
   async getUserBlogs(authorId, filters = {}) {
     return this.getBlogs({ ...filters, authorId });
