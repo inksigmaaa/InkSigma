@@ -3,11 +3,38 @@
 import { FileClock } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSession } from '@/lib/auth-client';
+import { publicationService } from '@/services/publicationService';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [publication, setPublication] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const { data: session } = useSession();
+
+  // Fetch user's publication data
+  useEffect(() => {
+    const fetchPublication = async () => {
+      if (!session?.user?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const publicationData = await publicationService.getUserPublication(session.user.id);
+        setPublication(publicationData);
+      } catch (error) {
+        console.error('Error fetching publication:', error);
+        // Publication might not exist yet, which is fine
+        setPublication(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPublication();
+  }, [session?.user?.id]);
 
   // Route mapping for navigation
   const getRoute = (label) => {
@@ -51,9 +78,11 @@ export default function Sidebar() {
             className="flex items-center gap-2 pb-[10px] border-b border-gray-200 max-md:hidden"
           >
             <div className="w-[34px] h-[34px] rounded-full overflow-hidden border-2 border-violet-500 flex-shrink-0 bg-gray-100 flex items-center justify-center">
-              {publication?.logoUrl ? (
+              {loading ? (
+                <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+              ) : publication?.logoUrl ? (
                 <img
-                  src={publication.logoUrl}
+                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${publication.logoUrl}`}
                   alt={publication.name || "Publication"}
                   className="w-full h-full object-cover"
                 />
