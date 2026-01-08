@@ -58,9 +58,12 @@ app.listen(PORT, async () => {
         console.error("   Check your SMTP_USER and SMTP_PASS in .env file");
     }
     
+    // Make schedulerService available to routes
+    app.locals.schedulerService = schedulerService;
+    
     // Start the blog scheduler
     schedulerService.start();
-    console.log("📅 Blog scheduler started - checking for scheduled posts every minute");
+    console.log("📅 Blog scheduler started - checking for scheduled posts every 30 seconds");
 });
 
 // Graceful shutdown

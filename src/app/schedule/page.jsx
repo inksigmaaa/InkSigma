@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
@@ -7,7 +8,12 @@ import PersonalArticles from "../components/personalArticles/personalArticles";
 import { useArticles } from "@/contexts/ArticlesContext";
 
 export default function SchedulePage() {
-  const { articles, loading, error } = useArticles();
+  const { articles, loading, error, loadUserArticles } = useArticles();
+
+  // Refresh articles when component mounts to ensure we have the latest data
+  useEffect(() => {
+    loadUserArticles();
+  }, []);
 
   // Filter scheduled articles
   const scheduledArticles = articles.filter(article => article.status === 'scheduled');
