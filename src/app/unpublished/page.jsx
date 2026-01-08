@@ -16,7 +16,6 @@ export default function Unpublished() {
   const [showTrashModal, setShowTrashModal] = useState(false);
   const [actionArticleId, setActionArticleId] = useState(null);
   const [isBulkAction, setIsBulkAction] = useState(false);
-  const [actionArticleId, setActionArticleId] = useState(null);
 
   // Filter unpublished articles and add individual action handlers
   const unpublishedArticles = articles
@@ -80,6 +79,13 @@ export default function Unpublished() {
     setShowDraftModal(true);
   };
 
+  const handleBulkDelete = () => {
+    if (selectedArticles.length === 0) return;
+    setIsBulkAction(true);
+    setActionArticleId(null);
+    setShowTrashModal(true);
+  };
+
   const handleIndividualDraft = (id) => {
     setIsBulkAction(false);
     setActionArticleId(id);
@@ -89,7 +95,7 @@ export default function Unpublished() {
   const handleIndividualDelete = (id) => {
     setIsBulkAction(false);
     setActionArticleId(id);
-    setShowDeleteModal(true);
+    setShowTrashModal(true);
   };
 
   const confirmRepublish = async () => {
@@ -128,13 +134,18 @@ export default function Unpublished() {
 
   const confirmTrash = async () => {
     try {
-      if (actionArticleId) {
+      if (isBulkAction) {
+        for (const articleId of selectedArticles) {
+          await moveToTrashStatus(articleId);
+        }
+        setSelectedArticles([]);
+      } else {
         await moveToTrashStatus(actionArticleId);
       }
       setShowTrashModal(false);
       setActionArticleId(null);
     } catch (error) {
-      console.error('Error moving article to trash:', error);
+      console.error('Error moving articles to trash:', error);
     }
   };
 
@@ -181,8 +192,8 @@ export default function Unpublished() {
     },
     {
       icon: "/images/icons/trash2.svg",
-      title: "Move to Draft",
-      onClick: handleBulkDraft,
+      title: "Delete",
+      onClick: handleBulkDelete,
       disabled: !hasSelectedArticles
     },
   ];
@@ -239,7 +250,10 @@ export default function Unpublished() {
         }}
         onConfirm={confirmTrash}
         title="Are you sure you want to put it in trash?"
-        message="This will be put into trash and can be restored later"
+        message={isBulkAction 
+          ? `${selectedArticles.length} article(s) will be put into trash and can be restored later`
+          : "This will be put into trash and can be restored later"
+        }
         confirmText="Move to Trash"
         confirmStyle="danger"
       />

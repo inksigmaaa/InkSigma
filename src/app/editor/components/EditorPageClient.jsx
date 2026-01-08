@@ -26,6 +26,13 @@ export default function EditorPageClient() {
   const { data: session } = useSession()
   const { createArticle, updateArticle, uploadArticleImage, getArticleById } = useArticles()
   
+  // Prevent hydration mismatch by ensuring client-side rendering
+  const [isMounted, setIsMounted] = useState(false)
+  
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+  
   // Get status and ID from URL parameters
   const articleStatus = searchParams.get('status')
   const articleId = searchParams.get('id')
@@ -121,20 +128,20 @@ export default function EditorPageClient() {
       isSavingRef.current = true
       
       if (currentArticleIdRef.current) {
-        // Update existing article
+        // Update existing article - ensure required fields have valid content
         await updateArticle(currentArticleIdRef.current, {
-          title: titleRef.current,
-          description: descriptionRef.current,
-          content: editorContentRef.current,
+          title: titleRef.current.trim(),
+          description: descriptionRef.current.trim() || 'Draft',
+          content: editorContentRef.current.trim() || '<p></p>',
           categories: selectedCategoriesRef.current,
           status: 'draft'
         })
       } else {
         // Create new draft article
         const newArticle = await createArticle({
-          title: titleRef.current,
-          description: descriptionRef.current || 'Draft',
-          content: editorContentRef.current || '<p></p>',
+          title: titleRef.current.trim(),
+          description: descriptionRef.current.trim() || 'Draft',
+          content: editorContentRef.current.trim() || '<p></p>',
           categories: selectedCategoriesRef.current,
           status: 'draft'
         })
@@ -279,22 +286,30 @@ export default function EditorPageClient() {
       const [day, month, year] = publishDate.split('-').map(num => parseInt(num, 10))
       const [hours, minutes] = publishTime.split(':').map(num => parseInt(num, 10))
       
-      // Create date object in UTC to avoid timezone conversion issues
-      const scheduledDateTime = new Date(Date.UTC(year, month - 1, day, hours, minutes))
+      // Create date object in user's local timezone first
+      const localDateTime = new Date(year, month - 1, day, hours, minutes)
       
       // Validate the date
-      if (isNaN(scheduledDateTime.getTime())) {
+      if (isNaN(localDateTime.getTime())) {
         alert('Invalid date or time format. Please check your input.')
         return
       }
       
-      // Check if the scheduled time is in the future (compare in UTC)
+      // Check if the scheduled time is in the future (compare in local time)
       const now = new Date()
-      if (scheduledDateTime <= now) {
+      if (localDateTime <= now) {
         alert('Scheduled time must be in the future.')
         return
       }
       
+      // Convert to UTC for storage (this preserves the user's intended local time)
+      const scheduledDateTimeUTC = new Date(localDateTime.getTime())
+      
+      console.log('Scheduling details:')
+      console.log('- User input:', `${publishDate} ${publishTime}`)
+      console.log('- Local time:', localDateTime.toLocaleString())
+      console.log('- UTC time for storage:', scheduledDateTimeUTC.toISOString())
+      console.log('- User timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone)
       
       if (currentArticleId) {
         await updateArticle(currentArticleId, {
@@ -303,7 +318,7 @@ export default function EditorPageClient() {
           content: editorContent,
           categories: selectedCategories,
           status: 'scheduled',
-          scheduledAt: scheduledDateTime.toISOString()
+          scheduledAt: scheduledDateTimeUTC.toISOString()
         })
       } else {
         const newArticle = await createArticle({
@@ -312,7 +327,7 @@ export default function EditorPageClient() {
           content: editorContent,
           categories: selectedCategories,
           status: 'scheduled',
-          scheduledAt: scheduledDateTime.toISOString()
+          scheduledAt: scheduledDateTimeUTC.toISOString()
         })
         setCurrentArticleId(newArticle.id)
         
@@ -328,7 +343,7 @@ export default function EditorPageClient() {
       
       setHasUnsavedChanges(false)
       setIsSaved(true)
-      console.log("Successfully scheduled for:", scheduledDateTime.toISOString())
+      console.log("Successfully scheduled for:", scheduledDateTimeUTC.toISOString())
       router.push('/schedule')
     } catch (error) {
       console.error('Error scheduling article:', error)
@@ -503,15 +518,13 @@ export default function EditorPageClient() {
   const statusConfig = getStatusConfig()
 
   return (
-    <div className="min-h-screen bg-[#fff] flex flex-col">
-      <style jsx>{`
-        input:focus {
-          outline: none !important;
-          box-shadow: none !important;
-          border: none !important;
-        }
-      `}</style>
-      
+    <>
+      {!isMounted ? (
+        <div className="min-h-screen bg-[#fff] flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+        </div>
+      ) : (
+        <div className="min-h-screen bg-[#fff] flex flex-col">
       {/* Loading state for article */}
       {isLoadingArticle && (
         <div className="fixed inset-0 bg-white/80 flex items-center justify-center z-50">
@@ -901,6 +914,8 @@ export default function EditorPageClient() {
         blogSlug={publishedBlogSlug}
         blogTitle={title}
       />
-    </div>
+        </div>
+      )}
+    </>
   )
 }

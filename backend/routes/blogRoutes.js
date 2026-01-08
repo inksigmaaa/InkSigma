@@ -134,6 +134,7 @@ router.get("/", async (req, res) => {
                 categories: blog.categories,
                 status: blog.status,
                 published: blog.published,
+                scheduledAt: blog.scheduledAt,
                 createdAt: blog.createdAt,
                 updatedAt: blog.updatedAt,
                 author: {
@@ -214,6 +215,7 @@ router.get("/:id", async (req, res) => {
                 categories: blog.categories,
                 status: blog.status,
                 published: blog.published,
+                scheduledAt: blog.scheduledAt,
                 createdAt: blog.createdAt,
                 updatedAt: blog.updatedAt,
                 author: {
@@ -322,9 +324,28 @@ router.put("/:id", getCurrentUser, async (req, res) => {
             updatedAt: new Date(),
         };
 
-        if (title !== undefined) updateData.title = title;
-        if (description !== undefined) updateData.description = description;
-        if (content !== undefined) updateData.content = content;
+        // Validate and set required fields
+        if (title !== undefined) {
+            if (typeof title !== 'string' || title.trim() === '') {
+                return res.status(400).json({ error: "Title cannot be empty" });
+            }
+            updateData.title = title.trim();
+        }
+        
+        if (description !== undefined) {
+            if (typeof description !== 'string' || description.trim() === '') {
+                return res.status(400).json({ error: "Description cannot be empty" });
+            }
+            updateData.description = description.trim();
+        }
+        
+        if (content !== undefined) {
+            if (typeof content !== 'string' || content.trim() === '') {
+                return res.status(400).json({ error: "Content cannot be empty" });
+            }
+            updateData.content = content.trim();
+        }
+        
         if (categories !== undefined) updateData.categories = categories;
         if (scheduledAt !== undefined) updateData.scheduledAt = new Date(scheduledAt);
         
@@ -350,6 +371,18 @@ router.put("/:id", getCurrentUser, async (req, res) => {
         res.json(updatedBlog);
     } catch (error) {
         console.error("Error updating blog:", error);
+        
+        // Provide more specific error messages
+        if (error.code === '23502') { // NOT NULL violation
+            return res.status(400).json({ error: "Required fields cannot be empty" });
+        }
+        if (error.code === '23505') { // UNIQUE violation
+            return res.status(400).json({ error: "Blog with this slug already exists" });
+        }
+        if (error.message.includes('invalid input syntax')) {
+            return res.status(400).json({ error: "Invalid data format" });
+        }
+        
         res.status(500).json({ error: "Failed to update blog" });
     }
 });
