@@ -147,8 +147,6 @@ export default function Articles(props) {
         setSelectAll(allSelected)
     }, [selectedArticles, articleIds.length])
 
-    const hasSelectedArticles = selectedArticles.size > 0
-
     useEffect(() => {
         const handleClickOutside = (event) => {
             const mobileDropdown = mobileDropdownRef.current
