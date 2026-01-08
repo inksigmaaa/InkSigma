@@ -65,7 +65,7 @@ function SignupForm() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: `http://localhost:3000${redirectTo}`,
+        callbackURL: `http://localhost:3000/auth-callback`,
       })
     } catch (err) {
       setError("Failed to sign up with Google")

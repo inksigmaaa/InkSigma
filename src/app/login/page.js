@@ -48,7 +48,31 @@ function LoginForm() {
         return
       }
 
-      // Redirect to dashboard - AuthGuard will handle publication check
+      // Check if user has a publication
+      try {
+        const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
+          credentials: "include",
+        })
+        
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json()
+          const userId = sessionData.user.id
+          
+          const pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+            credentials: "include",
+          })
+          
+          if (pubRes.status === 404) {
+            // No publication, redirect to create one
+            router.push('/create-publication')
+            return
+          }
+        }
+      } catch (err) {
+        console.error("Error checking publication:", err)
+      }
+
+      // User has publication or check failed, go to dashboard
       router.push(redirectTo)
     } catch (err) {
       setError(err.message || "An unexpected error occurred")
@@ -62,7 +86,7 @@ function LoginForm() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: `http://localhost:3000${redirectTo}`,
+        callbackURL: `http://localhost:3000/auth-callback`,
       })
     } catch (err) {
       setError("Failed to login with Google")

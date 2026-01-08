@@ -77,18 +77,53 @@ export default function CreatePublication() {
         description: "",
       });
 
+      console.log('Publication created:', publication);
+
       // Upload image if provided
       if (uploadedImage && publication.id) {
         try {
-          // Convert base64 to file
-          const response = await fetch(uploadedImage);
-          const blob = await response.blob();
-          const file = new File([blob], "publication-logo.png", { type: "image/png" });
+          console.log('Uploading logo for publication:', publication.id);
           
-          await publicationService.uploadLogo(publication.id, file);
+          // Convert base64 to blob
+          const base64Response = await fetch(uploadedImage);
+          const blob = await base64Response.blob();
+          
+          // Determine the correct mime type from the base64 string
+          const mimeType = uploadedImage.match(/data:([^;]+);/)?.[1] || 'image/png';
+          
+          // Map MIME types to proper file extensions
+          const extensionMap = {
+            'image/jpeg': 'jpg',
+            'image/jpg': 'jpg',
+            'image/png': 'png',
+            'image/gif': 'gif',
+            'image/webp': 'webp',
+            'image/svg+xml': 'svg',
+            'image/svg': 'svg'
+          };
+          
+          const extension = extensionMap[mimeType] || 'png';
+          
+          console.log('Image details:', { mimeType, extension, size: blob.size });
+          
+          // Create file with correct mime type
+          const file = new File([blob], `publication-logo.${extension}`, { type: mimeType });
+          
+          const uploadResult = await publicationService.uploadLogo(publication.id, file);
+          console.log('Logo upload result:', uploadResult);
+          
+          // Wait a bit to ensure database is updated
+          await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
           console.error('Failed to upload logo:', error);
+          console.error('Error details:', error.message);
+          // Show error but don't block navigation
+          setErrorMessage('Publication created but logo upload failed. You can upload it later in settings.');
+          setShowErrors(true);
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
+      } else {
+        console.log('No image to upload or publication ID missing');
       }
 
       // Redirect to dashboard
