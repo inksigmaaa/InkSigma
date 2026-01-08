@@ -24,7 +24,7 @@ export default function EditorPageClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session } = useSession()
-  const { createArticle, updateArticle, uploadArticleImage, getArticleById } = useArticles()
+  const { createArticle, updateArticle, uploadArticleImage, getArticleById, loadUserArticles } = useArticles()
   
   // Prevent hydration mismatch by ensuring client-side rendering
   const [isMounted, setIsMounted] = useState(false)
@@ -117,7 +117,7 @@ export default function EditorPageClient() {
   // Auto-save to draft function
   const autoSaveToDraft = useCallback(async () => {
     // Don't save if already saving, no content, or no unsaved changes
-    if (isSavingRef.current) return
+    if (isSavingRef.current || isLoading) return
     if (!titleRef.current.trim() && !descriptionRef.current.trim() && !editorContentRef.current.trim()) return
     if (!hasUnsavedChangesRef.current) return
     
@@ -156,7 +156,7 @@ export default function EditorPageClient() {
     } finally {
       isSavingRef.current = false
     }
-  }, [createArticle, updateArticle])
+  }, [createArticle, updateArticle, isLoading])
 
   // Auto-save on beforeunload (browser close/refresh)
   useEffect(() => {
@@ -218,8 +218,14 @@ export default function EditorPageClient() {
       return
     }
 
+    // Prevent multiple simultaneous saves
+    if (isLoading || isSavingRef.current) {
+      return
+    }
+
     try {
       setIsLoading(true)
+      isSavingRef.current = true
       let publishedBlog = null
       
       if (currentArticleId) {
@@ -241,6 +247,7 @@ export default function EditorPageClient() {
           status: 'published'
         })  
         setCurrentArticleId(publishedBlog.id)
+        currentArticleIdRef.current = publishedBlog.id
         
         // Upload thumbnail if provided and it's a File object
         if (thumbnailImage && thumbnailImage.file instanceof File) {
@@ -257,6 +264,9 @@ export default function EditorPageClient() {
       setHasUnsavedChanges(false)
       setIsSaved(true)
       
+      // Refresh articles list to ensure the published article appears correctly
+      await loadUserArticles()
+      
       // Set blog slug for the modal and show success modal
       setPublishedBlogSlug(publishedBlog?.slug || 'blog')
       setShowPublishSuccessModal(true)
@@ -265,6 +275,7 @@ export default function EditorPageClient() {
       alert('Failed to publish article. Please try again.')
     } finally {
       setIsLoading(false)
+      isSavingRef.current = false
     }
   }
 
@@ -279,8 +290,14 @@ export default function EditorPageClient() {
       return
     }
 
+    // Prevent multiple simultaneous saves
+    if (isLoading || isSavingRef.current) {
+      return
+    }
+
     try {
       setIsLoading(true)
+      isSavingRef.current = true
       
       // Parse the date and time correctly
       const [day, month, year] = publishDate.split('-').map(num => parseInt(num, 10))
@@ -304,12 +321,6 @@ export default function EditorPageClient() {
       
       // Convert to UTC for storage (this preserves the user's intended local time)
       const scheduledDateTimeUTC = new Date(localDateTime.getTime())
-      
-      console.log('Scheduling details:')
-      console.log('- User input:', `${publishDate} ${publishTime}`)
-      console.log('- Local time:', localDateTime.toLocaleString())
-      console.log('- UTC time for storage:', scheduledDateTimeUTC.toISOString())
-      console.log('- User timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone)
       
       if (currentArticleId) {
         await updateArticle(currentArticleId, {
@@ -343,13 +354,23 @@ export default function EditorPageClient() {
       
       setHasUnsavedChanges(false)
       setIsSaved(true)
-      console.log("Successfully scheduled for:", scheduledDateTimeUTC.toISOString())
-      router.push('/schedule')
+      
+      // Refresh articles list to ensure the scheduled article appears in the schedule page
+      await loadUserArticles()
+      
+      // Use window.location for more reliable navigation
+      if (typeof window !== 'undefined') {
+        window.location.href = '/schedule'
+      } else {
+        // Fallback to router.push
+        router.push('/schedule')
+      }
     } catch (error) {
       console.error('Error scheduling article:', error)
       alert('Failed to schedule article. Please try again.')
     } finally {
       setIsLoading(false)
+      isSavingRef.current = false
     }
   }
 
@@ -386,6 +407,10 @@ export default function EditorPageClient() {
       
       setHasUnsavedChanges(false)
       setIsSaved(true)
+      
+      // Refresh articles list to ensure updates are reflected
+      await loadUserArticles()
+      
       alert('Article updated successfully!')
     } catch (error) {
       console.error('Error updating article:', error)
@@ -401,8 +426,14 @@ export default function EditorPageClient() {
       return
     }
 
+    // Prevent multiple simultaneous saves
+    if (isLoading || isSavingRef.current) {
+      return
+    }
+
     try {
       setIsLoading(true)
+      isSavingRef.current = true
       
       if (currentArticleId) {
         await updateArticle(currentArticleId, {
@@ -421,6 +452,7 @@ export default function EditorPageClient() {
           status: 'draft'
         })
         setCurrentArticleId(newArticle.id)
+        currentArticleIdRef.current = newArticle.id
         
         if (thumbnailImage && thumbnailImage.file instanceof File) {
           try {
@@ -434,12 +466,20 @@ export default function EditorPageClient() {
       
       setHasUnsavedChanges(false)
       setIsSaved(true)
-      router.push('/draft')
+      
+      // Refresh articles list to ensure draft appears in draft page
+      await loadUserArticles()
+      
+      // Small delay to ensure the UI updates
+      setTimeout(() => {
+        router.push('/draft')
+      }, 100)
     } catch (error) {
       console.error('Error saving draft:', error)
       alert('Failed to save draft. Please try again.')
     } finally {
       setIsLoading(false)
+      isSavingRef.current = false
     }
   }
 
@@ -457,7 +497,14 @@ export default function EditorPageClient() {
       })
       setHasUnsavedChanges(false)
       setIsSaved(true)
-      router.push('/draft')
+      
+      // Refresh articles list to ensure reverted draft appears in draft page
+      await loadUserArticles()
+      
+      // Small delay to ensure the UI updates
+      setTimeout(() => {
+        router.push('/draft')
+      }, 100)
     } catch (error) {
       console.error('Error reverting to draft:', error)
       alert('Failed to revert to draft. Please try again.')
