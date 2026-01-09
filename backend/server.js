@@ -12,6 +12,7 @@ import publicationStatsRoutes from "./routes/publicationStatsRoutes.js";
 import { corsMiddleware } from "./middleware/cors.js";
 import { emailService } from "./services/emailService.js";
 import schedulerService from "./services/schedulerService.js";
+import InvitationService from "./services/invitationService.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -63,6 +64,9 @@ app.listen(PORT, async () => {
     app.locals.schedulerService = schedulerService;
     schedulerService.start();
     console.log("📅 Blog scheduler started - checking every 30 seconds");
+    
+    // Initialize invitation cleanup
+    InvitationService.startScheduler();
 });
 
 // Graceful shutdown

@@ -39,6 +39,21 @@ export default function ArticleContainer({ id, status, title, description, categ
         if (onDelete) onDelete()
     }
 
+    const handlePublish = (e) => {
+        e?.stopPropagation()
+        if (onPublish) onPublish()
+    }
+
+    const handleUnpublish = (e) => {
+        e?.stopPropagation()
+        if (onUnpublish) onUnpublish()
+    }
+
+    const handleDraft = (e) => {
+        e?.stopPropagation()
+        if (onDraft) onDraft()
+    }
+
     const statusConfig = {
         published: { bg: '#D5F2D4', color: '#267F24', text: 'Published' },
         draft: { bg: '#FFEADB', color: '#A34200', text: 'Draft' },
@@ -97,12 +112,44 @@ export default function ArticleContainer({ id, status, title, description, categ
                         >
                             <img src="/images/icons/stats1.svg" alt="Stats" className="w-5 h-5" />
                         </button>
+                        
+                        {/* Publish/Unpublish/Draft buttons based on status */}
+                        {status === 'draft' && (
+                            <button
+                                className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
+                                title="Publish"
+                                onClick={handlePublish}
+                            >
+                                <img src="/images/icons/share.svg" alt="Publish" className="w-5 h-5" />
+                            </button>
+                        )}
+                        
+                        {status === 'published' && (
+                            <button
+                                className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
+                                title="Unpublish"
+                                onClick={handleUnpublish}
+                            >
+                                <img src="/images/icons/unpublished.svg" alt="Unpublish" className="w-5 h-5" />
+                            </button>
+                        )}
+                        
+                        {status === 'unpublished' && (
+                            <button
+                                className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
+                                title="Republish"
+                                onClick={handlePublish}
+                            >
+                                <img src="/images/icons/publish.svg" alt="Republish" className="w-5 h-5" />
+                            </button>
+                        )}
+                        
                         <button
                             className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
-                            title="Edit"
-                            onClick={handleEdit}
+                            title="Publish"
+                            onClick={handlePublish}
                         >
-                            <img src="/images/icons/share.svg" alt="Edit" className="w-5 h-5" />
+                            <img src="/images/icons/edit.svg" alt="Edit" className="w-5 h-5" />
                         </button>
                         <button
                             className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
@@ -110,6 +157,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                         >
                             <img src="/images/icons/copy.svg" alt="Copy" className="w-5 h-5" />
                         </button>
+
                         <button
                             className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
                             title="Delete"
@@ -127,15 +175,30 @@ export default function ArticleContainer({ id, status, title, description, categ
                         </DropdownMenuTrigger>
 
                         <DropdownMenuContent align="end" className="w-40 rounded-lg border border-gray-200 bg-white shadow-lg md:hidden">
-                            <DropdownMenuItem className="gap-2 text-sm">
+                            {status === 'draft' && (
+                                <DropdownMenuItem className="gap-2 text-sm" onClick={handlePublish}>
+                                    <img src="/images/icons/share.svg" className="w-4 h-4" /> Publish
+                                </DropdownMenuItem>
+                            )}
+                            {status === 'published' && (
+                                <DropdownMenuItem className="gap-2 text-sm" onClick={handleUnpublish}>
+                                    <img src="/images/icons/unpublished.svg" className="w-4 h-4" /> Unpublish
+                                </DropdownMenuItem>
+                            )}
+                            {status === 'unpublished' && (
+                                <DropdownMenuItem className="gap-2 text-sm" onClick={handlePublish}>
+                                    <img src="/images/icons/publish.svg" className="w-4 h-4" /> Republish
+                                </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem className="gap-2 text-sm" onClick={handleDraft}>
                                 <img src="/images/icons/clip.svg" className="w-4 h-4" /> Send to draft
                             </DropdownMenuItem>
                             <DropdownMenuItem className="gap-2 text-sm" onClick={handleStatsClick}>
                                 <img src="/images/icons/statistics.svg" className="w-4 h-4" />
                                 Statistics
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2 text-sm" onClick={handleEdit}>
-                                <img src="/images/icons/edit.svg" className="w-4 h-4" /> Edit
+                            <DropdownMenuItem className="gap-2 text-sm" onClick={handlePublish}>
+                                <img src="/images/icons/edit.svg" className="w-4 h-4" /> Publish
                             </DropdownMenuItem>
                             <DropdownMenuItem className="gap-2 text-sm text-red-500" onClick={handleDelete}>
                                 <img src="/images/icons/trash3.svg" className="w-4 h-4" /> Move to Trash

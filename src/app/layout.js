@@ -3,6 +3,7 @@ import "./globals.css";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import { ArticlesProvider } from "@/contexts/ArticlesContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { PublicationProvider } from "@/contexts/PublicationContext";
 
 const publicSans = Public_Sans({
   variable: "--font-public-sans",
@@ -27,11 +28,13 @@ export default function RootLayout({ children }) {
         className={`${publicSans.variable} ${allison.variable} antialiased`}
       >
         <AuthProvider>
-          <ArticlesProvider>
-            <ConditionalLayout>
-              {children}
-            </ConditionalLayout>
-          </ArticlesProvider>
+          <PublicationProvider>
+            <ArticlesProvider>
+              <ConditionalLayout>
+                {children}
+              </ConditionalLayout>
+            </ArticlesProvider>
+          </PublicationProvider>
         </AuthProvider>
       </body>
     </html>

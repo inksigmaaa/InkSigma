@@ -4,12 +4,111 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { db } from "../config/database.js";
-import { blog, user } from "../models/schema.js";
+import { blog, user, publication, publicationMember } from "../models/schema.js";
 import { eq, desc, and, or, ilike } from "drizzle-orm";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 
 const router = express.Router();
+
+// Helper function to check if user can modify a blog
+const canUserModifyBlog = async (userId, blogAuthorId) => {
+    console.log(`Checking authorization: userId=${userId}, blogAuthorId=${blogAuthorId}`);
+    
+    // If user is the author, they can always modify
+    if (userId === blogAuthorId) {
+        console.log('User is the author - authorized');
+        return true;
+    }
+
+    // Check if the current user owns a publication and the blog author is a member of that publication
+    const userOwnedPublications = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.userId, userId));
+
+    for (const userPub of userOwnedPublications) {
+        console.log(`Checking if blog author is member of user's publication: ${userPub.id}`);
+        
+        const [authorMembership] = await db
+            .select()
+            .from(publicationMember)
+            .where(
+                and(
+                    eq(publicationMember.publicationId, userPub.id),
+                    eq(publicationMember.userId, blogAuthorId)
+                )
+            );
+
+        if (authorMembership) {
+            console.log(`Blog author is ${authorMembership.role} in user's publication ${userPub.id} - authorized`);
+            return true;
+        }
+    }
+
+    // Check if both users are members of the same publication and current user is admin/editor
+    const blogAuthorMemberships = await db
+        .select()
+        .from(publicationMember)
+        .where(eq(publicationMember.userId, blogAuthorId));
+
+    for (const authorMembership of blogAuthorMemberships) {
+        console.log(`Author is member of publication: ${authorMembership.publicationId}`);
+        
+        const [currentUserMembership] = await db
+            .select()
+            .from(publicationMember)
+            .where(
+                and(
+                    eq(publicationMember.publicationId, authorMembership.publicationId),
+                    eq(publicationMember.userId, userId)
+                )
+            );
+
+        if (currentUserMembership) {
+            console.log(`Current user is ${currentUserMembership.role} in same publication ${authorMembership.publicationId}`);
+            
+            if (currentUserMembership.role === "admin" || currentUserMembership.role === "editor") {
+                console.log(`User is ${currentUserMembership.role} in same publication - authorized`);
+                return true;
+            } else {
+                console.log(`User role ${currentUserMembership.role} is not sufficient for modification`);
+            }
+        } else {
+            console.log(`Current user is not a member of publication ${authorMembership.publicationId}`);
+        }
+    }
+
+    // Check if current user is admin/editor in a publication where the blog author is also a member
+    const currentUserMemberships = await db
+        .select()
+        .from(publicationMember)
+        .where(eq(publicationMember.userId, userId));
+
+    for (const userMembership of currentUserMemberships) {
+        if (userMembership.role === "admin" || userMembership.role === "editor") {
+            console.log(`User is ${userMembership.role} in publication ${userMembership.publicationId}`);
+            
+            const [authorInSamePub] = await db
+                .select()
+                .from(publicationMember)
+                .where(
+                    and(
+                        eq(publicationMember.publicationId, userMembership.publicationId),
+                        eq(publicationMember.userId, blogAuthorId)
+                    )
+                );
+
+            if (authorInSamePub) {
+                console.log(`Blog author is also in publication ${userMembership.publicationId} - authorized`);
+                return true;
+            }
+        }
+    }
+
+    console.log('User not authorized to modify this blog');
+    return false;
+};
 
 // Configure multer for blog image uploads
 const storage = multer.diskStorage({
@@ -206,6 +305,107 @@ router.get("/", async (req, res) => {
     }
 });
 
+// GET /api/blogs/publication/:publicationId - Get all blogs for a publication
+router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
+    try {
+        const { publicationId } = req.params;
+        const { 
+            status,
+            limit = 50, 
+            offset = 0 
+        } = req.query;
+
+        // Import publication member table
+        const { publicationMember, publication } = await import("../models/schema.js");
+
+        // Check if user has access to this publication
+        const [pub] = await db
+            .select()
+            .from(publication)
+            .where(eq(publication.id, parseInt(publicationId)));
+
+        if (!pub) {
+            return res.status(404).json({ error: "Publication not found" });
+        }
+
+        // Check if user is owner or member
+        const isOwner = pub.userId === req.user.id;
+        
+        let isMember = false;
+        if (!isOwner) {
+            const [member] = await db
+                .select()
+                .from(publicationMember)
+                .where(
+                    and(
+                        eq(publicationMember.publicationId, parseInt(publicationId)),
+                        eq(publicationMember.userId, req.user.id)
+                    )
+                );
+            isMember = !!member;
+        }
+
+        if (!isOwner && !isMember) {
+            return res.status(403).json({ error: "Access denied" });
+        }
+
+        // Get all members of this publication (including owner)
+        const members = await db
+            .select({ userId: publicationMember.userId })
+            .from(publicationMember)
+            .where(eq(publicationMember.publicationId, parseInt(publicationId)));
+
+        // Include the owner's ID
+        const memberIds = [pub.userId, ...members.map(m => m.userId)];
+
+        // Get all blogs from publication members
+        let query = db
+            .select({
+                id: blog.id,
+                slug: blog.slug,
+                title: blog.title,
+                description: blog.description,
+                content: blog.content,
+                image: blog.image,
+                categories: blog.categories,
+                status: blog.status,
+                published: blog.published,
+                scheduledAt: blog.scheduledAt,
+                createdAt: blog.createdAt,
+                updatedAt: blog.updatedAt,
+                author: {
+                    id: user.id,
+                    name: user.name,
+                    image: user.image,
+                    username: user.username
+                }
+            })
+            .from(blog)
+            .leftJoin(user, eq(blog.authorId, user.id))
+            .where(
+                or(...memberIds.map(id => eq(blog.authorId, id)))
+            )
+            .orderBy(desc(blog.createdAt));
+
+        // Apply status filter if provided
+        if (status) {
+            query = query.where(
+                and(
+                    or(...memberIds.map(id => eq(blog.authorId, id))),
+                    eq(blog.status, status)
+                )
+            );
+        }
+
+        const blogs = await query.limit(parseInt(limit)).offset(parseInt(offset));
+
+        res.json(blogs);
+    } catch (error) {
+        console.error("Error fetching publication blogs:", error);
+        res.status(500).json({ error: "Failed to fetch publication blogs" });
+    }
+});
+
 // GET /api/blogs/:id - Get single blog
 router.get("/:id", async (req, res) => {
     try {
@@ -312,7 +512,7 @@ router.put("/:id", getCurrentUser, async (req, res) => {
         const { id } = req.params;
         const { title, description, content, categories, published, status, scheduledAt } = req.body;
 
-        // Check if blog exists and user owns it
+        // Check if blog exists
         const [existingBlog] = await db
             .select()
             .from(blog)
@@ -322,7 +522,9 @@ router.put("/:id", getCurrentUser, async (req, res) => {
             return res.status(404).json({ error: "Blog not found" });
         }
 
-        if (existingBlog.authorId !== req.user.id) {
+        // Check if user can modify this blog (author, admin, or editor)
+        const canModify = await canUserModifyBlog(req.user.id, existingBlog.authorId);
+        if (!canModify) {
             return res.status(403).json({ error: "Not authorized to update this blog" });
         }
 
@@ -471,7 +673,7 @@ router.delete("/:id", getCurrentUser, async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check if blog exists and user owns it
+        // Check if blog exists
         const [existingBlog] = await db
             .select()
             .from(blog)
@@ -481,7 +683,9 @@ router.delete("/:id", getCurrentUser, async (req, res) => {
             return res.status(404).json({ error: "Blog not found" });
         }
 
-        if (existingBlog.authorId !== req.user.id) {
+        // Check if user can modify this blog (author, admin, or editor)
+        const canModify = await canUserModifyBlog(req.user.id, existingBlog.authorId);
+        if (!canModify) {
             return res.status(403).json({ error: "Not authorized to delete this blog" });
         }
 
@@ -512,7 +716,7 @@ router.post("/:id/image", getCurrentUser, upload.single("image"), async (req, re
             return res.status(400).json({ error: "No image file provided" });
         }
 
-        // Check if blog exists and user owns it
+        // Check if blog exists
         const [existingBlog] = await db
             .select()
             .from(blog)
@@ -522,7 +726,9 @@ router.post("/:id/image", getCurrentUser, upload.single("image"), async (req, re
             return res.status(404).json({ error: "Blog not found" });
         }
 
-        if (existingBlog.authorId !== req.user.id) {
+        // Check if user can modify this blog (author, admin, or editor)
+        const canModify = await canUserModifyBlog(req.user.id, existingBlog.authorId);
+        if (!canModify) {
             return res.status(403).json({ error: "Not authorized to modify this blog" });
         }
 
@@ -551,6 +757,40 @@ router.post("/:id/image", getCurrentUser, upload.single("image"), async (req, re
     } catch (error) {
         console.error("Error uploading blog image:", error);
         res.status(500).json({ error: "Failed to upload image" });
+    }
+});
+
+// Debug endpoint to check publication memberships
+router.get("/debug/memberships/:userId", getCurrentUser, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        // Get user's owned publications
+        const ownedPublications = await db
+            .select()
+            .from(publication)
+            .where(eq(publication.userId, userId));
+            
+        // Get user's memberships
+        const memberships = await db
+            .select({
+                publicationId: publicationMember.publicationId,
+                role: publicationMember.role,
+                joinedAt: publicationMember.joinedAt,
+                publicationName: publication.name,
+            })
+            .from(publicationMember)
+            .innerJoin(publication, eq(publicationMember.publicationId, publication.id))
+            .where(eq(publicationMember.userId, userId));
+            
+        res.json({
+            userId,
+            ownedPublications,
+            memberships,
+        });
+    } catch (error) {
+        console.error("Error fetching debug memberships:", error);
+        res.status(500).json({ error: "Failed to fetch memberships" });
     }
 });
 

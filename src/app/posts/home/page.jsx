@@ -4,7 +4,8 @@ import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import MemberSidebar from "../../membersidebar/MemberSidebar"
 import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+import { usePublication } from "@/contexts/PublicationContext"
+import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function PostsHomePage() {
   const router = useRouter()
@@ -131,7 +132,11 @@ export default function PostsHomePage() {
                       }}
                     />
                   ) : (
-                    <img src="/icons/nib.svg" alt="publication" className="w-10 h-10 opacity-40 max-md:w-8 max-md:h-8" />
+                    <div className="w-full h-full bg-violet-100 rounded-full flex items-center justify-center">
+                      <span className="text-violet-600 font-bold text-xl">
+                        {currentPublication?.name?.charAt(0).toUpperCase() || "P"}
+                      </span>
+                    </div>
                   )}
                 </div>
                 <div className="flex-1">
@@ -141,6 +146,16 @@ export default function PostsHomePage() {
                   <p className="text-sm text-gray-400 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-1">
                     {publication.description || `${publication.subdomain}.inksigma.com`}
                   </p>
+                  {publicationDetails && (
+                    <div className="flex items-center gap-4 mt-2">
+                      <span className="text-xs text-gray-500">
+                        {publicationDetails.memberCount} member{publicationDetails.memberCount !== 1 ? 's' : ''}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {publicationDetails.postCount} post{publicationDetails.postCount !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

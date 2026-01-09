@@ -15,6 +15,42 @@ export const publicationService = {
     return response.json();
   },
 
+  // Get publication details with stats (for members)
+  async getPublicationDetails(publicationId) {
+    if (!publicationId) {
+      throw new Error('Publication ID is required');
+    }
+    
+    try {
+      const url = `${API_URL}/api/publications/${publicationId}/details`;
+      
+      const response = await fetch(url, {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Publication details API error (${response.status}):`, errorText);
+        
+        // Try to parse as JSON, fallback to text
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText || `HTTP ${response.status}` };
+        }
+        
+        throw new Error(errorData.error || `Failed to fetch publication details (${response.status})`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Publication details service error:', error);
+      throw error;
+    }
+  },
+
   // Create publication
   async createPublication(data) {
     const response = await fetch(`${API_URL}/api/publications`, {
