@@ -4,12 +4,88 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { db } from "../config/database.js";
-import { blog, user } from "../models/schema.js";
+import { blog, user, publication, publicationMember } from "../models/schema.js";
 import { eq, desc, and, or, ilike } from "drizzle-orm";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 
 const router = express.Router();
+
+// Helper function to check if user can modify a blog
+const canUserModifyBlog = async (userId, blogAuthorId) => {
+    console.log(`Checking authorization: userId=${userId}, blogAuthorId=${blogAuthorId}`);
+    
+    // If user is the author, they can always modify
+    if (userId === blogAuthorId) {
+        console.log('User is the author - authorized');
+        return true;
+    }
+
+    // Get the author's publication (assuming author belongs to a publication)
+    const [authorPublication] = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.userId, blogAuthorId));
+
+    if (authorPublication) {
+        console.log(`Found author's publication: ${authorPublication.id}`);
+        
+        // Check if the current user is an admin of the author's publication
+        const [userMembership] = await db
+            .select()
+            .from(publicationMember)
+            .where(
+                and(
+                    eq(publicationMember.publicationId, authorPublication.id),
+                    eq(publicationMember.userId, userId),
+                    eq(publicationMember.role, "admin")
+                )
+            );
+
+        if (userMembership) {
+            console.log('User is admin of author\'s publication - authorized');
+            return true;
+        }
+
+        // Check if current user is the publication owner
+        if (authorPublication.userId === userId) {
+            console.log('User is publication owner - authorized');
+            return true;
+        }
+    }
+
+    // Also check if both users are members of the same publication and current user is admin/editor
+    const [blogAuthorMembership] = await db
+        .select()
+        .from(publicationMember)
+        .where(eq(publicationMember.userId, blogAuthorId));
+
+    if (blogAuthorMembership) {
+        console.log(`Author is member of publication: ${blogAuthorMembership.publicationId}`);
+        
+        const [currentUserMembership] = await db
+            .select()
+            .from(publicationMember)
+            .where(
+                and(
+                    eq(publicationMember.publicationId, blogAuthorMembership.publicationId),
+                    eq(publicationMember.userId, userId),
+                    or(
+                        eq(publicationMember.role, "admin"),
+                        eq(publicationMember.role, "editor")
+                    )
+                )
+            );
+
+        if (currentUserMembership) {
+            console.log(`User is ${currentUserMembership.role} in same publication - authorized`);
+            return true;
+        }
+    }
+
+    console.log('User not authorized to modify this blog');
+    return false;
+};
 
 // Configure multer for blog image uploads
 const storage = multer.diskStorage({
@@ -401,7 +477,7 @@ router.put("/:id", getCurrentUser, async (req, res) => {
         const { id } = req.params;
         const { title, description, content, categories, published, status, scheduledAt } = req.body;
 
-        // Check if blog exists and user owns it
+        // Check if blog exists
         const [existingBlog] = await db
             .select()
             .from(blog)
@@ -411,7 +487,9 @@ router.put("/:id", getCurrentUser, async (req, res) => {
             return res.status(404).json({ error: "Blog not found" });
         }
 
-        if (existingBlog.authorId !== req.user.id) {
+        // Check if user can modify this blog (author, admin, or editor)
+        const canModify = await canUserModifyBlog(req.user.id, existingBlog.authorId);
+        if (!canModify) {
             return res.status(403).json({ error: "Not authorized to update this blog" });
         }
 
@@ -508,7 +586,7 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
             return res.status(400).json({ error: "Either 'published' or 'status' must be provided" });
         }
 
-        // Check if blog exists and user owns it
+        // Check if blog exists
         const [existingBlog] = await db
             .select()
             .from(blog)
@@ -518,7 +596,9 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
             return res.status(404).json({ error: "Blog not found" });
         }
 
-        if (existingBlog.authorId !== req.user.id) {
+        // Check if user can modify this blog (author, admin, or editor)
+        const canModify = await canUserModifyBlog(req.user.id, existingBlog.authorId);
+        if (!canModify) {
             return res.status(403).json({ error: "Not authorized to modify this blog" });
         }
 
@@ -548,7 +628,7 @@ router.delete("/:id", getCurrentUser, async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check if blog exists and user owns it
+        // Check if blog exists
         const [existingBlog] = await db
             .select()
             .from(blog)
@@ -558,7 +638,9 @@ router.delete("/:id", getCurrentUser, async (req, res) => {
             return res.status(404).json({ error: "Blog not found" });
         }
 
-        if (existingBlog.authorId !== req.user.id) {
+        // Check if user can modify this blog (author, admin, or editor)
+        const canModify = await canUserModifyBlog(req.user.id, existingBlog.authorId);
+        if (!canModify) {
             return res.status(403).json({ error: "Not authorized to delete this blog" });
         }
 
@@ -589,7 +671,7 @@ router.post("/:id/image", getCurrentUser, upload.single("image"), async (req, re
             return res.status(400).json({ error: "No image file provided" });
         }
 
-        // Check if blog exists and user owns it
+        // Check if blog exists
         const [existingBlog] = await db
             .select()
             .from(blog)
@@ -599,7 +681,9 @@ router.post("/:id/image", getCurrentUser, upload.single("image"), async (req, re
             return res.status(404).json({ error: "Blog not found" });
         }
 
-        if (existingBlog.authorId !== req.user.id) {
+        // Check if user can modify this blog (author, admin, or editor)
+        const canModify = await canUserModifyBlog(req.user.id, existingBlog.authorId);
+        if (!canModify) {
             return res.status(403).json({ error: "Not authorized to modify this blog" });
         }
 
