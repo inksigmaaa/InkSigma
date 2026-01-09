@@ -475,6 +475,7 @@ export default function EditorPageClient() {
           status: 'draft'
         }
         
+        
         // Add publicationId if creating for a joined publication
         if (publicationId) {
           articleData.publicationId = parseInt(publicationId)
