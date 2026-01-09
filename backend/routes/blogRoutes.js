@@ -21,65 +21,88 @@ const canUserModifyBlog = async (userId, blogAuthorId) => {
         return true;
     }
 
-    // Get the author's publication (assuming author belongs to a publication)
-    const [authorPublication] = await db
+    // Check if the current user owns a publication and the blog author is a member of that publication
+    const userOwnedPublications = await db
         .select()
         .from(publication)
-        .where(eq(publication.userId, blogAuthorId));
+        .where(eq(publication.userId, userId));
 
-    if (authorPublication) {
-        console.log(`Found author's publication: ${authorPublication.id}`);
+    for (const userPub of userOwnedPublications) {
+        console.log(`Checking if blog author is member of user's publication: ${userPub.id}`);
         
-        // Check if the current user is an admin of the author's publication
-        const [userMembership] = await db
+        const [authorMembership] = await db
             .select()
             .from(publicationMember)
             .where(
                 and(
-                    eq(publicationMember.publicationId, authorPublication.id),
-                    eq(publicationMember.userId, userId),
-                    eq(publicationMember.role, "admin")
+                    eq(publicationMember.publicationId, userPub.id),
+                    eq(publicationMember.userId, blogAuthorId)
                 )
             );
 
-        if (userMembership) {
-            console.log('User is admin of author\'s publication - authorized');
-            return true;
-        }
-
-        // Check if current user is the publication owner
-        if (authorPublication.userId === userId) {
-            console.log('User is publication owner - authorized');
+        if (authorMembership) {
+            console.log(`Blog author is ${authorMembership.role} in user's publication ${userPub.id} - authorized`);
             return true;
         }
     }
 
-    // Also check if both users are members of the same publication and current user is admin/editor
-    const [blogAuthorMembership] = await db
+    // Check if both users are members of the same publication and current user is admin/editor
+    const blogAuthorMemberships = await db
         .select()
         .from(publicationMember)
         .where(eq(publicationMember.userId, blogAuthorId));
 
-    if (blogAuthorMembership) {
-        console.log(`Author is member of publication: ${blogAuthorMembership.publicationId}`);
+    for (const authorMembership of blogAuthorMemberships) {
+        console.log(`Author is member of publication: ${authorMembership.publicationId}`);
         
         const [currentUserMembership] = await db
             .select()
             .from(publicationMember)
             .where(
                 and(
-                    eq(publicationMember.publicationId, blogAuthorMembership.publicationId),
-                    eq(publicationMember.userId, userId),
-                    or(
-                        eq(publicationMember.role, "admin"),
-                        eq(publicationMember.role, "editor")
-                    )
+                    eq(publicationMember.publicationId, authorMembership.publicationId),
+                    eq(publicationMember.userId, userId)
                 )
             );
 
         if (currentUserMembership) {
-            console.log(`User is ${currentUserMembership.role} in same publication - authorized`);
-            return true;
+            console.log(`Current user is ${currentUserMembership.role} in same publication ${authorMembership.publicationId}`);
+            
+            if (currentUserMembership.role === "admin" || currentUserMembership.role === "editor") {
+                console.log(`User is ${currentUserMembership.role} in same publication - authorized`);
+                return true;
+            } else {
+                console.log(`User role ${currentUserMembership.role} is not sufficient for modification`);
+            }
+        } else {
+            console.log(`Current user is not a member of publication ${authorMembership.publicationId}`);
+        }
+    }
+
+    // Check if current user is admin/editor in a publication where the blog author is also a member
+    const currentUserMemberships = await db
+        .select()
+        .from(publicationMember)
+        .where(eq(publicationMember.userId, userId));
+
+    for (const userMembership of currentUserMemberships) {
+        if (userMembership.role === "admin" || userMembership.role === "editor") {
+            console.log(`User is ${userMembership.role} in publication ${userMembership.publicationId}`);
+            
+            const [authorInSamePub] = await db
+                .select()
+                .from(publicationMember)
+                .where(
+                    and(
+                        eq(publicationMember.publicationId, userMembership.publicationId),
+                        eq(publicationMember.userId, blogAuthorId)
+                    )
+                );
+
+            if (authorInSamePub) {
+                console.log(`Blog author is also in publication ${userMembership.publicationId} - authorized`);
+                return true;
+            }
         }
     }
 
@@ -712,6 +735,40 @@ router.post("/:id/image", getCurrentUser, upload.single("image"), async (req, re
     } catch (error) {
         console.error("Error uploading blog image:", error);
         res.status(500).json({ error: "Failed to upload image" });
+    }
+});
+
+// Debug endpoint to check publication memberships
+router.get("/debug/memberships/:userId", getCurrentUser, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        // Get user's owned publications
+        const ownedPublications = await db
+            .select()
+            .from(publication)
+            .where(eq(publication.userId, userId));
+            
+        // Get user's memberships
+        const memberships = await db
+            .select({
+                publicationId: publicationMember.publicationId,
+                role: publicationMember.role,
+                joinedAt: publicationMember.joinedAt,
+                publicationName: publication.name,
+            })
+            .from(publicationMember)
+            .innerJoin(publication, eq(publicationMember.publicationId, publication.id))
+            .where(eq(publicationMember.userId, userId));
+            
+        res.json({
+            userId,
+            ownedPublications,
+            memberships,
+        });
+    } catch (error) {
+        console.error("Error fetching debug memberships:", error);
+        res.status(500).json({ error: "Failed to fetch memberships" });
     }
 });
 
