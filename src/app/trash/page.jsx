@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import AuthGuard from "@/components/AuthGuard"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
 import Verify from "../components/verify/Verify"
@@ -143,7 +144,7 @@ export default function TrashPage() {
   ]
 
   return (
-    <>
+    <AuthGuard>
       <NavbarLoggedin />
       <Sidebar />
       <Verify />
@@ -182,6 +183,6 @@ export default function TrashPage() {
         confirmText="Restore"
         confirmStyle="normal"
       />
-    </>
+    </AuthGuard>
   )
 }

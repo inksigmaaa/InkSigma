@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import AuthGuard from "@/components/AuthGuard"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
 import Verify from "../components/verify/Verify"
@@ -40,9 +41,16 @@ export default function MyBlogsPage() {
       onRepublish: () => {
         setActionArticleId(article.id)
         setShowRepublishModal(true)
+      },
+      onRestore: async () => {
+        try {
+          await moveToDraft(article.id)
+        } catch (error) {
+          console.error('Error restoring article:', error)
+        }
       }
     }))
-  }, [articles])
+  }, [articles, moveToDraft])
 
   const handleArticleSelect = (id, checked) => {
     if (checked) {
@@ -113,7 +121,7 @@ export default function MyBlogsPage() {
   }
 
   return (
-    <>
+    <AuthGuard>
       <NavbarLoggedin />
       <Sidebar />
       <Verify />
@@ -192,6 +200,6 @@ export default function MyBlogsPage() {
         confirmText="Republish"
         confirmStyle="normal"
       />
-    </>
+    </AuthGuard>
   )
 }

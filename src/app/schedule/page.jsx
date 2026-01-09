@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react";
+import AuthGuard from "@/components/AuthGuard";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
@@ -174,32 +175,32 @@ export default function SchedulePage() {
 
   if (loading) {
     return (
-      <>
+      <AuthGuard>
         <NavbarLoggedin />
         <Sidebar />
         <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-gray-500">Loading scheduled articles...</div>
         </div>
-      </>
+      </AuthGuard>
     );
   }
 
   if (error) {
     return (
-      <>
+      <AuthGuard>
         <NavbarLoggedin />
         <Sidebar />
         <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-red-500">Error: {error}</div>
         </div>
-      </>
+      </AuthGuard>
     );
   }
 
   return (
-    <>
+    <AuthGuard>
       <NavbarLoggedin />
       <Sidebar />
       <Verify />
@@ -241,6 +242,6 @@ export default function SchedulePage() {
         confirmText="Move to Draft"
         confirmStyle="normal"
       />
-    </>
+    </AuthGuard>
   );
 }

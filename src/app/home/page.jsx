@@ -7,7 +7,7 @@ import BlogStatsComponent from "../components/BlogStatsComponent/BlogStatsCompon
 import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import AuthGuard from "@/components/auth/AuthGuard"
+import AuthGuard from "@/components/AuthGuard"
 import { useArticles } from "@/contexts/ArticlesContext"
 
 
