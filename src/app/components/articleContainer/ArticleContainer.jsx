@@ -8,7 +8,7 @@ import {
 import { useRouter } from 'next/navigation'
 import StatsPopup from './StatsPopup'
 
-export default function ArticleContainer({ id, status, title, description, categories, postedTime, isSelected, onSelect, onDelete }) {
+export default function ArticleContainer({ id, status, title, description, categories, postedTime, isSelected, onSelect, onDelete, onDraft, onPublish, onUnpublish }) {
     const router = useRouter()
     const [showStats, setShowStats] = useState(false)
     const [statsPosition, setStatsPosition] = useState({ top: 0, left: 0 })
@@ -33,6 +33,11 @@ export default function ArticleContainer({ id, status, title, description, categ
     const handleDelete = (e) => {
         e?.stopPropagation()
         if (onDelete) onDelete()
+    }
+
+    const handleDraft = (e) => {
+        e?.stopPropagation()
+        if (onDraft) onDraft()
     }
 
     const statusConfig = {
@@ -85,12 +90,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                         >
                             <img src="/images/icons/share.svg" alt="Edit" className="w-5 h-5" />
                         </button>
-                        <button
-                            className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
-                            title="Copy"
-                        >
-                            <img src="/images/icons/copy.svg" alt="Copy" className="w-5 h-5" />
-                        </button>
+
                         <button
                             className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
                             title="Delete"
@@ -108,9 +108,6 @@ export default function ArticleContainer({ id, status, title, description, categ
                         </DropdownMenuTrigger>
 
                         <DropdownMenuContent align="end" className="w-40 rounded-lg border border-gray-200 bg-white shadow-lg md:hidden">
-                            <DropdownMenuItem className="gap-2 text-sm">
-                                <img src="/images/icons/clip.svg" className="w-4 h-4" /> Send to draft
-                            </DropdownMenuItem>
                             <DropdownMenuItem className="gap-2 text-sm" onClick={handleStatsClick}>
                                 <img src="/images/icons/statistics.svg" className="w-4 h-4" />
                                 Statistics
