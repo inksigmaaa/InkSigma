@@ -129,14 +129,11 @@ export default function PostsHomePage() {
                   <p className="text-sm text-gray-400 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-1">
                     {currentPublication?.subdomain ? `${currentPublication.subdomain}.inksigma.com` : "subdomain.inksigma.com"}
                   </p>
-                  {publicationDetails && (
-                    <div className="flex items-center gap-4 mt-2">
-                      <span className="text-xs text-gray-500">
-                        {publicationDetails.memberCount} member{publicationDetails.memberCount !== 1 ? 's' : ''}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {publicationDetails.postCount} post{publicationDetails.postCount !== 1 ? 's' : ''}
-                      </span>
+                  {currentPublication?.description && (
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-600 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-2">
+                        {currentPublication.description}
+                      </p>
                     </div>
                   )}
                 </div>
