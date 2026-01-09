@@ -7,9 +7,6 @@ export const blogStatusEnum = pgEnum("blog_status", ["draft", "published", "unpu
 // Define member role enum
 export const memberRoleEnum = pgEnum("member_role", ["admin", "editor", "author"]);
 
-// Define invitation status enum
-export const invitationStatusEnum = pgEnum("invitation_status", ["pending", "accepted", "declined", "expired"]);
-
 export const user = pgTable("user", {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
@@ -65,7 +62,7 @@ export const blog = pgTable("blog", {
     description: text("description").notNull(),
     content: text("content").notNull(),
     image: text("image"),
-    authorId: text("authorId").notNull().references(() => user.id),
+    authorId: text("authorId").notNull().references(() => user.id, { onDelete: "cascade" }),
     publicationId: integer("publicationId").references(() => publication.id, { onDelete: "cascade" }),
     categories: text("categories").array(),
     status: blogStatusEnum("status").notNull().default("draft"),
@@ -82,9 +79,9 @@ export const blog = pgTable("blog", {
 export const comment = pgTable("comment", {
     id: serial("id").primaryKey(),
     content: text("content").notNull(),
-    blogId: integer("blogId").notNull().references(() => blog.id),
-    authorId: text("authorId").notNull().references(() => user.id),
-    parentId: integer("parentId"),
+    blogId: integer("blogId").notNull().references(() => blog.id, { onDelete: "cascade" }),
+    authorId: text("authorId").notNull().references(() => user.id, { onDelete: "cascade" }),
+    parentId: integer("parentId").references(() => comment.id, { onDelete: "cascade" }),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
@@ -103,14 +100,30 @@ export const publication = pgTable("publication", {
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
 
-// Define member role enum
-export const memberRoleEnum = pgEnum("member_role", ["owner", "editor", "author"]);
+// Define invitation status enum
+export const invitationStatusEnum = pgEnum("invitation_status", ["pending", "accepted", "declined", "expired"]);
 
 export const publicationMember = pgTable("publication_member", {
     id: serial("id").primaryKey(),
     publicationId: integer("publicationId").notNull().references(() => publication.id, { onDelete: "cascade" }),
     userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
     role: memberRoleEnum("role").notNull().default("author"),
+    invitedBy: text("invitedBy").references(() => user.id),
+    joinedAt: timestamp("joinedAt").notNull().defaultNow(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export const invitation = pgTable("invitation", {
+    id: serial("id").primaryKey(),
+    publicationId: integer("publicationId").notNull().references(() => publication.id, { onDelete: "cascade" }),
+    inviterId: text("inviterId").notNull().references(() => user.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: memberRoleEnum("role").notNull().default("author"),
+    token: text("token").notNull().unique(),
+    status: invitationStatusEnum("status").notNull().default("pending"),
+    expiresAt: timestamp("expiresAt").notNull(),
+    acceptedAt: timestamp("acceptedAt"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });

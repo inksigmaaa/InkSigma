@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
-import AuthGuard from "@/components/AuthGuard";
+import AuthGuard from "@/components/auth/AuthGuard";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import imagePlaceholder from "@/icons/image-placeholder.svg";
 import cameraIcon from "@/icons/camera.svg";
