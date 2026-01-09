@@ -15,16 +15,26 @@ export const blogService = {
       }
     });
 
-    const response = await fetch(`${API_URL}/api/blogs?${params}`, {
-      credentials: 'include',
-    });
+    try {
+      const response = await fetch(`${API_URL}/api/blogs?${params}`, {
+        credentials: 'include',
+      });
 
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to fetch blogs');
+      if (!response.ok) {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to fetch blogs');
+        } else {
+          throw new Error(`Server error (${response.status}): ${response.statusText}`);
+        }
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error("Get blogs error:", error);
+      throw error;
     }
-
-    return response.json();
   },
 
   // Get published blogs only
@@ -40,8 +50,13 @@ export const blogService = {
     });
 
     if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to fetch blogs');
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to fetch blogs');
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -59,8 +74,13 @@ export const blogService = {
     });
 
     if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to fetch publication blogs');
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to fetch publication blogs');
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -73,8 +93,13 @@ export const blogService = {
     });
 
     if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to fetch blog');
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to fetch blog');
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -92,8 +117,13 @@ export const blogService = {
     });
 
     if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to create blog');
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to create blog');
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -111,8 +141,13 @@ export const blogService = {
     });
 
     if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to update blog');
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update blog');
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -130,8 +165,13 @@ export const blogService = {
     });
 
     if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to update blog status');
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update blog status');
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -152,9 +192,15 @@ export const blogService = {
     console.log(`[blogService] Response status: ${response.status}`)
     
     if (!response.ok) {
-      const data = await response.json();
-      console.error(`[blogService] Error response:`, data)
-      throw new Error(data.error || 'Failed to update blog status');
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        console.error(`[blogService] Error response:`, data)
+        throw new Error(data.error || 'Failed to update blog status');
+      } else {
+        console.error(`[blogService] Non-JSON error response`)
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     const result = await response.json();
@@ -170,8 +216,13 @@ export const blogService = {
     });
 
     if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to delete blog');
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete blog');
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -210,8 +261,13 @@ export const blogService = {
     });
 
     if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to upload image');
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to upload image');
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();

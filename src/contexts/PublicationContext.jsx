@@ -40,10 +40,12 @@ function PublicationProviderInner({ children }) {
     try {
       setLoading(true);
       const data = await memberService.getUserPublications();
-      setUserPublications(data.publications);
+      // Backend returns array directly, not wrapped in object
+      const publications = Array.isArray(data) ? data : [];
+      setUserPublications(publications);
       
       // Set current publication based on context
-      if (data.publications.length > 0) {
+      if (publications.length > 0) {
         // Only set initial publication if none is set
         if (!currentPublication) {
           let pubToSet = null;
@@ -52,19 +54,19 @@ function PublicationProviderInner({ children }) {
           const urlPubId = getPublicationIdFromUrl();
           if (urlPubId) {
             // Try to find the URL publication (could be owned or joined)
-            pubToSet = data.publications.find(pub => pub.id === urlPubId);
+            pubToSet = publications.find(pub => pub.id === urlPubId);
           }
           
           // If no URL publication found, use route-based logic
           if (!pubToSet) {
             if (isMemberDashboard()) {
               // On member dashboard, prioritize joined publications
-              const joinedPub = data.publications.find(pub => !pub.isOwner);
-              pubToSet = joinedPub || data.publications.find(pub => pub.isOwner) || data.publications[0];
+              const joinedPub = publications.find(pub => !pub.isOwner);
+              pubToSet = joinedPub || publications.find(pub => pub.isOwner) || publications[0];
             } else {
               // On admin dashboard, prioritize owned publications
-              const ownedPub = data.publications.find(pub => pub.isOwner);
-              pubToSet = ownedPub || data.publications[0];
+              const ownedPub = publications.find(pub => pub.isOwner);
+              pubToSet = ownedPub || publications[0];
             }
           }
           
@@ -80,17 +82,17 @@ function PublicationProviderInner({ children }) {
           }
         } else {
           // If current publication exists, make sure it's still valid
-          const stillExists = data.publications.find(pub => pub.id === currentPublication.id);
+          const stillExists = publications.find(pub => pub.id === currentPublication.id);
           if (!stillExists) {
             // Current publication no longer exists, set a new one using same logic as above
             let pubToSet = null;
             
             if (isMemberDashboard()) {
-              const joinedPub = data.publications.find(pub => !pub.isOwner);
-              pubToSet = joinedPub || data.publications.find(pub => pub.isOwner) || data.publications[0];
+              const joinedPub = publications.find(pub => !pub.isOwner);
+              pubToSet = joinedPub || publications.find(pub => pub.isOwner) || publications[0];
             } else {
-              const ownedPub = data.publications.find(pub => pub.isOwner);
-              pubToSet = ownedPub || data.publications[0];
+              const ownedPub = publications.find(pub => pub.isOwner);
+              pubToSet = ownedPub || publications[0];
             }
             
             if (pubToSet) {

@@ -65,7 +65,6 @@ app.listen(PORT, async () => {
     // Initialize scheduler
     app.locals.schedulerService = schedulerService;
     schedulerService.start();
-    console.log("📅 Blog scheduler started - checking every 30 seconds");
     
     // Initialize invitation cleanup
     InvitationService.startScheduler();
@@ -73,13 +72,13 @@ app.listen(PORT, async () => {
 
 // Graceful shutdown
 process.on('SIGINT', () => {
-    console.log('\n🛑 Shutting down server...');
+    console.log('\nShutting down server...');
     schedulerService.stop();
     process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-    console.log('\n🛑 Shutting down server...');
+    console.log('\n Shutting down server...');
     schedulerService.stop();
     process.exit(0);
 });

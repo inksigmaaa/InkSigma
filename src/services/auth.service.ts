@@ -48,8 +48,13 @@ export const authService = {
     });
 
     if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to send reset email');
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to send reset email');
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -63,8 +68,13 @@ export const authService = {
     });
 
     if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to reset password');
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to reset password');
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();

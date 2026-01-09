@@ -6,6 +6,7 @@ import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar
 import Verify from "../components/verify/Verify"
 import { ChevronRight } from "lucide-react"
 import { usePublication } from "@/contexts/PublicationContext"
+import AuthGuard from "@/components/auth/AuthGuard"
 
 
 export default function DashboardPage() {
