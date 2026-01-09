@@ -199,6 +199,107 @@ router.get("/", async (req, res) => {
     }
 });
 
+// GET /api/blogs/publication/:publicationId - Get all blogs for a publication
+router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
+    try {
+        const { publicationId } = req.params;
+        const { 
+            status,
+            limit = 50, 
+            offset = 0 
+        } = req.query;
+
+        // Import publication member table
+        const { publicationMember, publication } = await import("../models/schema.js");
+
+        // Check if user has access to this publication
+        const [pub] = await db
+            .select()
+            .from(publication)
+            .where(eq(publication.id, parseInt(publicationId)));
+
+        if (!pub) {
+            return res.status(404).json({ error: "Publication not found" });
+        }
+
+        // Check if user is owner or member
+        const isOwner = pub.userId === req.user.id;
+        
+        let isMember = false;
+        if (!isOwner) {
+            const [member] = await db
+                .select()
+                .from(publicationMember)
+                .where(
+                    and(
+                        eq(publicationMember.publicationId, parseInt(publicationId)),
+                        eq(publicationMember.userId, req.user.id)
+                    )
+                );
+            isMember = !!member;
+        }
+
+        if (!isOwner && !isMember) {
+            return res.status(403).json({ error: "Access denied" });
+        }
+
+        // Get all members of this publication (including owner)
+        const members = await db
+            .select({ userId: publicationMember.userId })
+            .from(publicationMember)
+            .where(eq(publicationMember.publicationId, parseInt(publicationId)));
+
+        // Include the owner's ID
+        const memberIds = [pub.userId, ...members.map(m => m.userId)];
+
+        // Get all blogs from publication members
+        let query = db
+            .select({
+                id: blog.id,
+                slug: blog.slug,
+                title: blog.title,
+                description: blog.description,
+                content: blog.content,
+                image: blog.image,
+                categories: blog.categories,
+                status: blog.status,
+                published: blog.published,
+                scheduledAt: blog.scheduledAt,
+                createdAt: blog.createdAt,
+                updatedAt: blog.updatedAt,
+                author: {
+                    id: user.id,
+                    name: user.name,
+                    image: user.image,
+                    username: user.username
+                }
+            })
+            .from(blog)
+            .leftJoin(user, eq(blog.authorId, user.id))
+            .where(
+                or(...memberIds.map(id => eq(blog.authorId, id)))
+            )
+            .orderBy(desc(blog.createdAt));
+
+        // Apply status filter if provided
+        if (status) {
+            query = query.where(
+                and(
+                    or(...memberIds.map(id => eq(blog.authorId, id))),
+                    eq(blog.status, status)
+                )
+            );
+        }
+
+        const blogs = await query.limit(parseInt(limit)).offset(parseInt(offset));
+
+        res.json(blogs);
+    } catch (error) {
+        console.error("Error fetching publication blogs:", error);
+        res.status(500).json({ error: "Failed to fetch publication blogs" });
+    }
+});
+
 // GET /api/blogs/:id - Get single blog
 router.get("/:id", async (req, res) => {
     try {
