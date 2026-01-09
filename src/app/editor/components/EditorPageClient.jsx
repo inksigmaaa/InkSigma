@@ -284,6 +284,15 @@ export default function EditorPageClient() {
       // Set blog slug for the modal and show success modal
       setPublishedBlogSlug(publishedBlog?.slug || 'blog')
       setShowPublishSuccessModal(true)
+      
+      // Clear the editor state after successful publish
+      setTitle('')
+      setDescription('')
+      setEditorContent('')
+      setSelectedCategories([])
+      setThumbnailImage(null)
+      setCurrentArticleId(null)
+      currentArticleIdRef.current = null
     } catch (error) {
       console.error('Error publishing article:', error)
       alert('Failed to publish article. Please try again.')

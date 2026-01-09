@@ -211,7 +211,9 @@ export function ArticlesProvider({ children }) {
 
   const publishArticle = async (id) => {
     try {
+      console.log('Publishing article with ID:', id)
       const blog = await blogService.updateBlogStatus(id, 'published')
+      console.log('Article published successfully:', blog)
       const updatedArticle = convertBlogToArticle(blog)
       setArticles(prev => prev.map(article =>
         article.id === id ? updatedArticle : article

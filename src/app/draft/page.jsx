@@ -81,16 +81,34 @@ export default function DraftPage() {
 
   const confirmPublish = async () => {
     try {
+      console.log('=== PUBLISH FLOW START ===')
+      console.log('Is bulk action:', isBulkAction)
+      console.log('Action article ID:', actionArticleId)
+      console.log('Selected articles:', selectedArticles)
+      
       if (isBulkAction) {
+        console.log('Calling bulkPublish with IDs:', selectedArticles)
         await bulkPublish(selectedArticles)
         setSelectedArticles([])
+        alert(`${selectedArticles.length} article(s) published successfully!`)
       } else if (actionArticleId) {
-        await publishArticle(actionArticleId)
+        console.log('Calling publishArticle with ID:', actionArticleId)
+        const result = await publishArticle(actionArticleId)
+        console.log('Publish result:', result)
+        alert('Article published successfully!')
+      } else {
+        console.error('No article ID to publish!')
+        alert('Error: No article selected to publish')
       }
+      
       setShowPublishModal(false)
       setActionArticleId(null)
+      console.log('=== PUBLISH FLOW END ===')
     } catch (error) {
+      console.error('=== PUBLISH ERROR ===')
       console.error('Error publishing:', error)
+      console.error('Error details:', error.message, error.stack)
+      alert(`Failed to publish: ${error.message}`)
     }
   }
 

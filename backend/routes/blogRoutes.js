@@ -405,6 +405,10 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
         const { id } = req.params;
         const { published, status } = req.body;
 
+        console.log(`[PATCH /api/blogs/${id}/publish] Request received`)
+        console.log('Request body:', { published, status })
+        console.log('User:', req.user?.id)
+
         // Determine target status with strict validation
         let targetStatus;
         
@@ -419,6 +423,8 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
             return res.status(400).json({ error: "Either 'published' or 'status' must be provided" });
         }
 
+        console.log('Target status:', targetStatus)
+
         // Check if blog exists and user owns it
         const [existingBlog] = await db
             .select()
@@ -426,15 +432,20 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
             .where(eq(blog.id, parseInt(id)));
 
         if (!existingBlog) {
+            console.error('Blog not found:', id)
             return res.status(404).json({ error: "Blog not found" });
         }
 
+        console.log('Existing blog:', { id: existingBlog.id, authorId: existingBlog.authorId, currentStatus: existingBlog.status })
+
         if (existingBlog.authorId !== req.user.id) {
+            console.error('Authorization failed. Blog author:', existingBlog.authorId, 'User:', req.user.id)
             return res.status(403).json({ error: "Not authorized to modify this blog" });
         }
 
         // Apply strict synchronization rules
         const syncedFields = syncStatusAndPublished(targetStatus);
+        console.log('Synced fields:', syncedFields)
 
         const updateData = {
             ...syncedFields,
@@ -447,6 +458,7 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
             .where(eq(blog.id, parseInt(id)))
             .returning();
 
+        console.log('Blog updated successfully:', { id: updatedBlog.id, status: updatedBlog.status, published: updatedBlog.published })
         res.json(updatedBlog);
     } catch (error) {
         console.error("Error updating blog status:", error);

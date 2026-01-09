@@ -125,6 +125,7 @@ export const blogService = {
 
   // Update blog status (new method)
   async updateBlogStatus(id, status) {
+    console.log(`[blogService] Updating blog ${id} to status: ${status}`)
     const response = await fetch(`${API_URL}/api/blogs/${id}/publish`, {
       method: 'PATCH',
       headers: {
@@ -134,12 +135,17 @@ export const blogService = {
       body: JSON.stringify({ status }),
     });
 
+    console.log(`[blogService] Response status: ${response.status}`)
+    
     if (!response.ok) {
       const data = await response.json();
+      console.error(`[blogService] Error response:`, data)
       throw new Error(data.error || 'Failed to update blog status');
     }
 
-    return response.json();
+    const result = await response.json();
+    console.log(`[blogService] Success result:`, result)
+    return result;
   },
 
   // Delete blog
