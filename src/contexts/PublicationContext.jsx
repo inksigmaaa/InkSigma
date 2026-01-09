@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, Suspense } from 'react';
 import { useSession } from '@/lib/auth-client';
 import { memberService } from '@/services/memberService';
 import { publicationService } from '@/services/publicationService';
@@ -8,7 +8,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 
 const PublicationContext = createContext();
 
-export function PublicationProvider({ children }) {
+function PublicationProviderInner({ children }) {
   const { data: session, isPending } = useSession();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -283,6 +283,18 @@ export function PublicationProvider({ children }) {
     <PublicationContext.Provider value={value}>
       {children}
     </PublicationContext.Provider>
+  );
+}
+
+export function PublicationProvider({ children }) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+      </div>
+    }>
+      <PublicationProviderInner>{children}</PublicationProviderInner>
+    </Suspense>
   );
 }
 
