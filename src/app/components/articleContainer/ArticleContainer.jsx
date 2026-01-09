@@ -8,14 +8,18 @@ import {
 import { useRouter } from 'next/navigation'
 import StatsPopup from './StatsPopup'
 
-export default function ArticleContainer({ id, status, title, description, categories, postedTime, isSelected, onSelect, onDelete, onDraft, onPublish, onUnpublish }) {
+export default function ArticleContainer({ id, status, title, description, categories, postedTime, isSelected, onSelect, onDelete, publicationId, image }) {
     const router = useRouter()
     const [showStats, setShowStats] = useState(false)
     const [statsPosition, setStatsPosition] = useState({ top: 0, left: 0 })
     const statsButtonRef = useRef(null)
 
     const handleEdit = () => {
-        router.push(`/editor?status=${status}&id=${id}`)
+        const params = new URLSearchParams({ status, id: id.toString() })
+        if (publicationId) {
+            params.append('publicationId', publicationId.toString())
+        }
+        router.push(`/editor?${params.toString()}`)
     }
 
     const handleStatsClick = (e) => {
@@ -54,6 +58,7 @@ export default function ArticleContainer({ id, status, title, description, categ
         published: { bg: '#D5F2D4', color: '#267F24', text: 'Published' },
         draft: { bg: '#FFEADB', color: '#A34200', text: 'Draft' },
         scheduled: { bg: '#D6EEFB', color: '#0048B5', text: 'Scheduled' },
+        review: { bg: '#FFEADB', color: '#A34200', text: 'Draft' }, // Show as Draft for individual writers
     }
 
     const config = statusConfig[status] || statusConfig.published
@@ -68,7 +73,21 @@ export default function ArticleContainer({ id, status, title, description, categ
             </div>
 
             <div className="flex flex-col md:flex-row justify-between items-start gap-4 mt-5">
-                <div className="flex w-[100%]">
+                <div className="flex w-[100%] gap-4">
+                    {/* Thumbnail Image */}
+                    {image && (
+                        <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                            <img 
+                                src={image} 
+                                alt={title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    e.target.style.display = 'none'
+                                }}
+                            />
+                        </div>
+                    )}
+                    
                     <div className="flex gap-3 flex-1">
                         <input
                             type="checkbox"

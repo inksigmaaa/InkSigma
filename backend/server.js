@@ -7,7 +7,8 @@ import debugRoutes from "./routes/debugRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
 import publicationRoutes from "./routes/publicationRoutes.js";
-import memberRoutes from "./routes/memberRoutes.js";
+import publicationMemberRoutes from "./routes/publicationMemberRoutes.js";
+import publicationStatsRoutes from "./routes/publicationStatsRoutes.js";
 import { corsMiddleware } from "./middleware/cors.js";
 import { emailService } from "./services/emailService.js";
 import schedulerService from "./services/schedulerService.js";
@@ -38,7 +39,8 @@ app.use("/api/custom", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/publications", publicationRoutes);
-app.use("/api/members", memberRoutes);
+app.use("/api/publication-members", publicationMemberRoutes);
+app.use("/api/publication-stats", publicationStatsRoutes);
 
 // Debug routes (consider removing in production)
 app.use("/api/debug", debugRoutes);

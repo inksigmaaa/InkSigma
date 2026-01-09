@@ -2,7 +2,7 @@
 import { pgTable, text, timestamp, boolean, serial, integer, pgEnum } from "drizzle-orm/pg-core";
 
 // Define blog status enum
-export const blogStatusEnum = pgEnum("blog_status", ["draft", "published", "unpublished", "trash", "scheduled"]);
+export const blogStatusEnum = pgEnum("blog_status", ["draft", "published", "unpublished", "trash", "scheduled", "review"]);
 
 // Define member role enum
 export const memberRoleEnum = pgEnum("member_role", ["admin", "editor", "author"]);
@@ -66,6 +66,7 @@ export const blog = pgTable("blog", {
     content: text("content").notNull(),
     image: text("image"),
     authorId: text("authorId").notNull().references(() => user.id),
+    publicationId: integer("publicationId").references(() => publication.id, { onDelete: "cascade" }),
     categories: text("categories").array(),
     status: blogStatusEnum("status").notNull().default("draft"),
     published: boolean("published").notNull().default(false),
@@ -102,29 +103,14 @@ export const publication = pgTable("publication", {
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
 
-// Publication members table - tracks active members
+// Define member role enum
+export const memberRoleEnum = pgEnum("member_role", ["owner", "editor", "author"]);
+
 export const publicationMember = pgTable("publication_member", {
     id: serial("id").primaryKey(),
     publicationId: integer("publicationId").notNull().references(() => publication.id, { onDelete: "cascade" }),
     userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
-    role: memberRoleEnum("role").notNull(),
-    joinedAt: timestamp("joinedAt").notNull().defaultNow(),
-    invitedBy: text("invitedBy").notNull().references(() => user.id),
-    createdAt: timestamp("createdAt").notNull().defaultNow(),
-    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
-});
-
-// Invitations table - tracks all invitations (pending, accepted, declined, expired)
-export const invitation = pgTable("invitation", {
-    id: serial("id").primaryKey(),
-    publicationId: integer("publicationId").notNull().references(() => publication.id, { onDelete: "cascade" }),
-    inviterId: text("inviterId").notNull().references(() => user.id),
-    email: text("email").notNull(),
-    role: memberRoleEnum("role").notNull(),
-    token: text("token").notNull().unique(),
-    status: invitationStatusEnum("status").notNull().default("pending"),
-    expiresAt: timestamp("expiresAt").notNull(),
-    acceptedAt: timestamp("acceptedAt"),
+    role: memberRoleEnum("role").notNull().default("author"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });

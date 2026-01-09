@@ -2,7 +2,6 @@
 
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import MemberSidebar from "../../membersidebar/MemberSidebar"
-import BlogStatsComponent from "../../components/BlogStatsComponent/BlogStatsComponent"
 import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { usePublication } from "@/contexts/PublicationContext"
@@ -10,37 +9,70 @@ import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function PostsHomePage() {
   const router = useRouter()
-  const { currentPublication, publicationDetails, loading } = usePublication()
-  const { articles: allArticles } = useArticles()
+  const [publication, setPublication] = useState(null)
+  const [stats, setStats] = useState({ totalArticles: 0, publishedArticles: 0, totalViews: 0, totalLikes: 0 })
+  const [recentArticles, setRecentArticles] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Show loading state while authentication and publication data is loading
-  if (loading) {
-    return (
-      <>
-        <NavbarLoggedin />
-        <MemberSidebar key="member-sidebar" />
-        <div className="pt-[112px] min-h-screen max-md:pt-[90px] flex items-center justify-center">
-          <div className="text-gray-500">Loading publication...</div>
-        </div>
-      </>
-    )
+  useEffect(() => {
+    loadPublicationData()
+  }, [])
+
+  const loadPublicationData = async () => {
+    try {
+      // Get user's joined publications
+      const membershipsRes = await fetch("http://localhost:5000/api/publication-members/my-publications", {
+        credentials: "include",
+      })
+
+      if (!membershipsRes.ok) {
+        console.error("Failed to fetch memberships")
+        setLoading(false)
+        return
+      }
+
+      const memberships = await membershipsRes.json()
+      
+      // For now, use the first joined publication
+      if (memberships.length > 0) {
+        const firstPub = memberships[0].publication
+        setPublication(firstPub)
+
+        // Fetch stats for this publication
+        const statsRes = await fetch(`http://localhost:5000/api/publication-stats/${firstPub.id}`, {
+          credentials: "include",
+        })
+
+        if (statsRes.ok) {
+          const statsData = await statsRes.json()
+          setStats(statsData)
+        }
+
+        // Fetch recent published articles for this publication
+        const articlesRes = await fetch(
+          `http://localhost:5000/api/blogs?publicationId=${firstPub.id}&status=published&limit=4`,
+          { credentials: "include" }
+        )
+
+        if (articlesRes.ok) {
+          const articlesData = await articlesRes.json()
+          setRecentArticles(articlesData)
+        }
+      }
+    } catch (error) {
+      console.error("Error loading publication data:", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // Get recent published articles (limit to 4)
-  const recentArticles = allArticles
-    .filter(article => article.status === 'published')
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 4)
-    .map(article => ({
-      id: article.id,
-      title: article.title,
-      description: article.description,
-      category: article.categories?.[0] || 'Uncategorized',
-      thumbnail: article.image || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"
-    }))
-
   const handleStartWriting = () => {
-    router.push("/editor")
+    // Pass publicationId to editor so blogs are created for this publication
+    if (publication?.id) {
+      router.push(`/editor?publicationId=${publication.id}`)
+    } else {
+      router.push("/editor")
+    }
   }
 
   const handleVisitSite = () => {
@@ -51,37 +83,29 @@ export default function PostsHomePage() {
     router.push("/dashboard/settings")
   }
 
-  // Sample articles data
-  const articles = [
-    {
-      id: 1,
-      title: "Title of the Blog will be in this area",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      category: "Category",
-      thumbnail: "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"
-    },
-    {
-      id: 2,
-      title: "Title of the Blog will be in this area",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      category: "Category",
-      thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop"
-    },
-    {
-      id: 3,
-      title: "Title of the Blog will be in this area",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      category: "Category",
-      thumbnail: "https://images.unsplash.com/photo-1559028012-481c04fa702d?w=800&h=600&fit=crop"
-    },
-    {
-      id: 4,
-      title: "Title of the Blog will be in this area",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      category: "Category",
-      thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop"
-    }
-  ]
+  if (loading) {
+    return (
+      <>
+        <NavbarLoggedin />
+        <MemberSidebar key="member-sidebar" />
+        <div className="pt-[112px] min-h-screen max-md:pt-[90px] flex items-center justify-center">
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </>
+    )
+  }
+
+  if (!publication) {
+    return (
+      <>
+        <NavbarLoggedin />
+        <MemberSidebar key="member-sidebar" />
+        <div className="pt-[112px] min-h-screen max-md:pt-[90px] flex items-center justify-center">
+          <p className="text-gray-500">No joined publications found</p>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
@@ -97,11 +121,15 @@ export default function PostsHomePage() {
             <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3">
               <div className="flex items-start gap-4 max-md:gap-3">
                 <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
-                  {currentPublication?.logoUrl ? (
+                  {publication?.logoUrl ? (
                     <img 
-                      src={`http://localhost:5000${currentPublication.logoUrl}`} 
-                      alt={currentPublication?.name} 
-                      className="w-full h-full object-cover" 
+                      src={`http://localhost:5000${publication.logoUrl}`} 
+                      alt={publication.name} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "/icons/nib.svg";
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full bg-violet-100 rounded-full flex items-center justify-center">
@@ -112,22 +140,11 @@ export default function PostsHomePage() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-lg font-semibold text-gray-900 max-md:text-base max-md:font-bold">
-                      {loading ? "Loading..." : currentPublication?.name || "Publication Name"}
-                    </h1>
-                    {currentPublication && !currentPublication.isOwner && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        currentPublication.role === 'editor' 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {currentPublication.role?.charAt(0).toUpperCase() + currentPublication.role?.slice(1)}
-                      </span>
-                    )}
-                  </div>
+                  <h1 className="text-lg font-semibold text-gray-900 mb-1 max-md:text-base max-md:font-bold">
+                    {publication.name}
+                  </h1>
                   <p className="text-sm text-gray-400 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-1">
-                    {currentPublication?.subdomain ? `${currentPublication.subdomain}.inksigma.com` : "subdomain.inksigma.com"}
+                    {publication.description || `${publication.subdomain}.inksigma.com`}
                   </p>
                   {currentPublication?.description && (
                     <div className="mt-2">
@@ -138,19 +155,36 @@ export default function PostsHomePage() {
                   )}
                 </div>
               </div>
-              {currentPublication?.isOwner && (
-                <button
-                  onClick={handleEditPublication}
-                  className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 border border-gray-200 rounded-md transition-colors max-md:px-3 max-md:py-1.5 max-md:text-xs flex-shrink-0 max-md:rounded-lg"
-                >
-                  Edit
-                </button>
-              )}
             </div>
 
             {/* Statistics Section */}
             <div className="relative py-6 border-b border-gray-200 max-md:px-4 max-md:py-0 max-md:pb-4 max-md:border-b-0">
-              <BlogStatsComponent />
+              <div className="px-8 max-md:px-0 mb-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-sm text-gray-600">Monthly</span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
+                    <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-left">
+                    <p className="text-4xl font-bold text-gray-900">{stats.totalArticles}</p>
+                    <p className="text-sm text-purple-500 mt-1">Total no. Articles</p>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-4xl font-bold text-gray-900">{stats.totalViews}</p>
+                    <p className="text-sm text-purple-500 mt-1">Views</p>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-4xl font-bold text-gray-900">{stats.totalLikes}</p>
+                    <p className="text-sm text-purple-500 mt-1">Comments</p>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-4xl font-bold text-gray-900">{stats.publishedArticles}</p>
+                    <p className="text-sm text-purple-500 mt-1">Shares</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* What's on your mind Section */}
@@ -160,7 +194,7 @@ export default function PostsHomePage() {
                   What's on your mind?
                 </h2>
                 <p className="text-sm text-gray-500 mb-6 leading-relaxed max-md:text-xs max-md:mb-5 max-md:text-gray-600">
-                  Craft persuasive articles showcasing your novel ideas by publishing them on your very own website
+                  Craft persuasive articles showcasing your novel ideas by publishing them on this publication
                 </p>
 
                 <button
@@ -175,11 +209,11 @@ export default function PostsHomePage() {
 
             {/* Recent Articles Section */}
             <div className="px-8 py-6 pb-12 max-md:px-4 max-md:py-4 max-md:pb-20">
-              <h3 className="text-lg font-bold text-gray-900 mb-6 max-md:text-base max-md:mb-4">Recent Articles</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-6 max-md:text-base max-md:mb-4">Recent Published Articles</h3>
 
               {recentArticles.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <p className="text-sm">No published articles yet. Start writing to see them here!</p>
+                <div className="flex items-center justify-center min-h-[200px] py-20 px-10 bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)]">
+                  <p className="font-['Public_Sans'] font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">No published articles yet</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-6 max-md:grid-cols-1 max-md:gap-4">
@@ -187,35 +221,33 @@ export default function PostsHomePage() {
                     <div 
                       key={article.id} 
                       className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5 cursor-pointer"
-                      onClick={() => router.push(`/home/preview/${article.id}`)}
+                      onClick={() => router.push(`/posts/published`)}
                     >
-                      <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4">
-                        <img
-                          src={article.thumbnail}
-                          alt={article.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                      {article.image && (
+                        <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4">
+                          <img
+                            src={article.image}
+                            alt={article.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
                       <div>
-                        <h4 className="font-semibold text-gray-900 mb-3 text-lg leading-snug">
+                        <h4 className="font-semibold text-gray-900 mb-3 text-lg leading-snug line-clamp-2">
                           {article.title}
                         </h4>
                         <p className="text-sm text-gray-400 mb-4 leading-relaxed line-clamp-2">
                           {article.description}
                         </p>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-400 bg-gray-50 px-4 py-2 rounded-lg">
-                            {article.category}
+                          {article.categories && article.categories.length > 0 && (
+                            <span className="text-sm text-gray-400 bg-gray-50 px-4 py-2 rounded-lg">
+                              {article.categories[0]}
+                            </span>
+                          )}
+                          <span className="text-xs text-gray-400">
+                            by {article.author?.name || 'Unknown'}
                           </span>
-                          <button 
-                            className="text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/editor?status=published&id=${article.id}`);
-                            }}
-                          >
-                            <Pencil className="w-5 h-5" />
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -238,4 +270,3 @@ export default function PostsHomePage() {
     </>
   )
 }
-
