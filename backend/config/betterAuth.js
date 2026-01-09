@@ -46,19 +46,28 @@ export const auth = betterAuth({
                 throw error;
             }
         },
-        
-        sendVerificationEmail: async ({ user, url }) => {
+    },
+
+    // Email verification configuration - this is where sendVerificationEmail should be
+    emailVerification: {
+        sendOnSignUp: true,
+        autoSignInAfterVerification: true,
+        sendVerificationEmail: async ({ user, url, token }) => {
             console.log("[BETTER-AUTH] sendVerificationEmail called for:", user.email);
             console.log("[BETTER-AUTH] Verification URL:", url);
+            console.log("[BETTER-AUTH] Token:", token);
+            
             try {
-                await emailService.sendVerification({
+                const result = await emailService.sendVerification({
                     email: user.email,
                     name: user.name,
                     verifyUrl: url,
                 });
-                console.log("[BETTER-AUTH] Verification email sent successfully");
+                console.log("[BETTER-AUTH] Verification email sent successfully, result:", result?.messageId);
+                return result;
             } catch (error) {
                 console.error("[BETTER-AUTH] Failed to send verification email:", error.message);
+                console.error("[BETTER-AUTH] Full error:", error);
                 throw error;
             }
         },

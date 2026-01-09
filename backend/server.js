@@ -4,6 +4,7 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./config/betterAuth.js";
 import authRoutes from "./routes/authRoutes.js";
 import debugRoutes from "./routes/debugRoutes.js";
+import emailDebugRoutes from "./routes/emailDebugRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
 import publicationRoutes from "./routes/publicationRoutes.js";
@@ -39,6 +40,7 @@ app.use("/api/publications", publicationRoutes);
 
 // Debug routes (consider removing in production)
 app.use("/api/debug", debugRoutes);
+app.use("/api/email-debug", emailDebugRoutes);
 
 // Health check
 app.get("/health", (req, res) => {
