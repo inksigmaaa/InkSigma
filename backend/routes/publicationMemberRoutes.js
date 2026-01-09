@@ -47,7 +47,19 @@ router.get("/my-publications", getCurrentUser, async (req, res) => {
             .leftJoin(publication, eq(publicationMember.publicationId, publication.id))
             .where(eq(publicationMember.userId, req.user.id));
 
-        res.json(memberships);
+        // Transform to match frontend expectations
+        const publications = memberships.map(membership => ({
+            id: membership.publication.id,
+            name: membership.publication.name,
+            subdomain: membership.publication.subdomain,
+            description: membership.publication.description,
+            logoUrl: membership.publication.logoUrl,
+            role: membership.role,
+            isOwner: membership.publication.userId === req.user.id,
+            membershipId: membership.id
+        }));
+
+        res.json(publications);
     } catch (error) {
         console.error("Error fetching user publications:", error);
         res.status(500).json({ error: "Failed to fetch publications" });

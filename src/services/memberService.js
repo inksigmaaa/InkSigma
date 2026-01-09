@@ -1,16 +1,21 @@
 // services/memberService.js
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 export const memberService = {
   // Get all members of a publication
   async getMembers(publicationId) {
-    const response = await fetch(`${API_URL}/api/members/${publicationId}/members`, {
+    const response = await fetch(`${API_URL}/api/publication-members/${publicationId}/members`, {
       credentials: "include",
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to fetch members");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to fetch members");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -18,7 +23,7 @@ export const memberService = {
 
   // Send invitation to join publication
   async sendInvitation(publicationId, email, role) {
-    const response = await fetch(`${API_URL}/api/members/${publicationId}/invite`, {
+    const response = await fetch(`${API_URL}/api/publication-members/${publicationId}/invite`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -28,8 +33,13 @@ export const memberService = {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to send invitation");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to send invitation");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -37,14 +47,19 @@ export const memberService = {
 
   // Resend invitation
   async resendInvitation(publicationId, invitationId) {
-    const response = await fetch(`${API_URL}/api/members/${publicationId}/invite/${invitationId}/resend`, {
+    const response = await fetch(`${API_URL}/api/publication-members/${publicationId}/invite/${invitationId}/resend`, {
       method: "POST",
       credentials: "include",
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to resend invitation");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to resend invitation");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -52,14 +67,19 @@ export const memberService = {
 
   // Cancel invitation
   async cancelInvitation(publicationId, invitationId) {
-    const response = await fetch(`${API_URL}/api/members/${publicationId}/invite/${invitationId}`, {
+    const response = await fetch(`${API_URL}/api/publication-members/${publicationId}/invite/${invitationId}`, {
       method: "DELETE",
       credentials: "include",
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to cancel invitation");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to cancel invitation");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -67,14 +87,19 @@ export const memberService = {
 
   // Remove member from publication
   async removeMember(publicationId, memberId) {
-    const response = await fetch(`${API_URL}/api/members/${publicationId}/members/${memberId}`, {
+    const response = await fetch(`${API_URL}/api/publication-members/${publicationId}/members/${memberId}`, {
       method: "DELETE",
       credentials: "include",
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to remove member");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to remove member");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -82,14 +107,19 @@ export const memberService = {
 
   // Leave publication
   async leavePublication(publicationId) {
-    const response = await fetch(`${API_URL}/api/members/${publicationId}/leave`, {
+    const response = await fetch(`${API_URL}/api/publication-members/${publicationId}/leave`, {
       method: "POST",
       credentials: "include",
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to leave publication");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to leave publication");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -97,13 +127,18 @@ export const memberService = {
 
   // Get user's publications (owned + joined)
   async getUserPublications() {
-    const response = await fetch(`${API_URL}/api/members/user/publications`, {
+    const response = await fetch(`${API_URL}/api/publication-members/my-publications`, {
       credentials: "include",
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to fetch user publications");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to fetch user publications");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -111,14 +146,19 @@ export const memberService = {
 
   // Accept invitation
   async acceptInvitation(token) {
-    const response = await fetch(`${API_URL}/api/members/invite/${token}/accept`, {
+    const response = await fetch(`${API_URL}/api/publication-members/invite/${token}/accept`, {
       method: "POST",
       credentials: "include",
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to accept invitation");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to accept invitation");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -126,14 +166,19 @@ export const memberService = {
 
   // Decline invitation
   async declineInvitation(token) {
-    const response = await fetch(`${API_URL}/api/members/invite/${token}/decline`, {
+    const response = await fetch(`${API_URL}/api/publication-members/invite/${token}/decline`, {
       method: "POST",
       credentials: "include",
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to decline invitation");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to decline invitation");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
