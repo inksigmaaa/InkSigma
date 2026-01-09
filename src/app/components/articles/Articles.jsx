@@ -250,8 +250,8 @@ export default function Articles(props) {
 
                 <div className="mt-6 space-y-4 pb-[85px]">
                     {filteredArticles.length === 0 ? (
-                        <div className="flex justify-center items-center min-h-[200px]">
-                            <div className="text-gray-500">No articles found</div>
+                        <div className="flex items-center justify-center min-h-[200px] py-20 px-10 bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)]">
+                            <p className="font-['Public_Sans'] font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">No articles found</p>
                         </div>
                     ) : (
                         filteredArticles.map(article => (

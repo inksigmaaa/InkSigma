@@ -141,8 +141,8 @@ export default function PostsMyBlogsPage() {
                 <div className="text-gray-500">Loading articles...</div>
               </div>
             ) : articles.length === 0 ? (
-              <div className="flex justify-center items-center min-h-[200px]">
-                <div className="text-gray-500">No articles yet</div>
+              <div className="flex items-center justify-center min-h-[200px] py-20 px-10 bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)]">
+                <p className="font-['Public_Sans'] font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">No articles yet</p>
               </div>
             ) : (
               articles.map(article => (
