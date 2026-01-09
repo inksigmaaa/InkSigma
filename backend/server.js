@@ -8,9 +8,11 @@ import emailDebugRoutes from "./routes/emailDebugRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
 import publicationRoutes from "./routes/publicationRoutes.js";
+import memberRoutes from "./routes/memberRoutes.js";
 import { corsMiddleware } from "./middleware/cors.js";
 import { emailService } from "./services/emailService.js";
 import schedulerService from "./services/schedulerService.js";
+import InvitationService from "./services/invitationService.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -37,6 +39,7 @@ app.use("/api/custom", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/publications", publicationRoutes);
+app.use("/api/members", memberRoutes);
 
 // Debug routes (consider removing in production)
 app.use("/api/debug", debugRoutes);
@@ -61,6 +64,9 @@ app.listen(PORT, async () => {
     app.locals.schedulerService = schedulerService;
     schedulerService.start();
     console.log("📅 Blog scheduler started - checking every 30 seconds");
+    
+    // Initialize invitation cleanup
+    InvitationService.startScheduler();
 });
 
 // Graceful shutdown

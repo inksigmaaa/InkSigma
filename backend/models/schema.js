@@ -4,6 +4,12 @@ import { pgTable, text, timestamp, boolean, serial, integer, pgEnum } from "driz
 // Define blog status enum
 export const blogStatusEnum = pgEnum("blog_status", ["draft", "published", "unpublished", "trash", "scheduled"]);
 
+// Define member role enum
+export const memberRoleEnum = pgEnum("member_role", ["admin", "editor", "author"]);
+
+// Define invitation status enum
+export const invitationStatusEnum = pgEnum("invitation_status", ["pending", "accepted", "declined", "expired"]);
+
 export const user = pgTable("user", {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
@@ -92,6 +98,33 @@ export const publication = pgTable("publication", {
     faviconUrl: text("faviconUrl"),
     metaOgImageUrl: text("metaOgImageUrl"),
     userId: text("userId").notNull().references(() => user.id),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+// Publication members table - tracks active members
+export const publicationMember = pgTable("publication_member", {
+    id: serial("id").primaryKey(),
+    publicationId: integer("publicationId").notNull().references(() => publication.id, { onDelete: "cascade" }),
+    userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
+    role: memberRoleEnum("role").notNull(),
+    joinedAt: timestamp("joinedAt").notNull().defaultNow(),
+    invitedBy: text("invitedBy").notNull().references(() => user.id),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+// Invitations table - tracks all invitations (pending, accepted, declined, expired)
+export const invitation = pgTable("invitation", {
+    id: serial("id").primaryKey(),
+    publicationId: integer("publicationId").notNull().references(() => publication.id, { onDelete: "cascade" }),
+    inviterId: text("inviterId").notNull().references(() => user.id),
+    email: text("email").notNull(),
+    role: memberRoleEnum("role").notNull(),
+    token: text("token").notNull().unique(),
+    status: invitationStatusEnum("status").notNull().default("pending"),
+    expiresAt: timestamp("expiresAt").notNull(),
+    acceptedAt: timestamp("acceptedAt"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });

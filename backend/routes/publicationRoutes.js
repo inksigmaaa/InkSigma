@@ -1,8 +1,8 @@
 // routes/publicationRoutes.js
 import express from "express";
 import { db } from "../config/database.js";
-import { publication } from "../models/schema.js";
-import { eq } from "drizzle-orm";
+import { publication, publicationMember, blog, user } from "../models/schema.js";
+import { eq, and, or } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -122,6 +122,115 @@ router.get("/user/:userId", async (req, res) => {
   }
 });
 
+// Get publication details with stats (for members)
+router.get("/:publicationId/details", getCurrentUser, async (req, res) => {
+  try {
+    const { publicationId } = req.params;
+    const userId = req.user.id;
+
+    console.log(`Publication details request: publicationId=${publicationId}, userId=${userId}`);
+
+    // Get publication
+    const [pub] = await db
+      .select()
+      .from(publication)
+      .where(eq(publication.id, parseInt(publicationId)));
+
+    if (!pub) {
+      console.log(`Publication not found: ${publicationId}`);
+      return res.status(404).json({ error: "Publication not found" });
+    }
+
+    console.log(`Publication found:`, pub);
+
+    // Check if user is owner or member
+    const isOwner = pub.userId === userId;
+    
+    let userRole = null;
+    let isMember = false;
+    
+    if (!isOwner) {
+      const [member] = await db
+        .select()
+        .from(publicationMember)
+        .where(
+          and(
+            eq(publicationMember.publicationId, parseInt(publicationId)),
+            eq(publicationMember.userId, userId)
+          )
+        );
+      
+      if (member) {
+        isMember = true;
+        userRole = member.role;
+        console.log(`User is member with role: ${userRole}`);
+      } else {
+        console.log(`User is not a member of this publication`);
+      }
+    } else {
+      userRole = "admin";
+      console.log(`User is owner/admin`);
+    }
+
+    if (!isOwner && !isMember) {
+      console.log(`Access denied for user ${userId} to publication ${publicationId}`);
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    // Get member count
+    const members = await db
+      .select()
+      .from(publicationMember)
+      .where(eq(publicationMember.publicationId, parseInt(publicationId)));
+
+    const memberCount = members.length;
+
+    // Get all member IDs including owner
+    const memberIds = [pub.userId, ...members.map(m => m.userId)];
+
+    // Get post count from all members - handle case where there are no members
+    let postCount = 0;
+    let publishedCount = 0;
+    
+    if (memberIds.length > 0) {
+      const posts = await db
+        .select()
+        .from(blog)
+        .where(or(...memberIds.map(id => eq(blog.authorId, id))));
+
+      postCount = posts.length;
+      publishedCount = posts.filter(p => p.status === 'published').length;
+    }
+
+    // Get owner info
+    const [owner] = await db
+      .select({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+      })
+      .from(user)
+      .where(eq(user.id, pub.userId));
+
+    const response = {
+      ...pub,
+      isOwner,
+      userRole,
+      memberCount,
+      postCount,
+      publishedCount,
+      owner,
+    };
+
+    console.log(`Publication details response:`, response);
+    res.json(response);
+  } catch (error) {
+    console.error("Error fetching publication details:", error);
+    res.status(500).json({ error: "Failed to fetch publication details" });
+  }
+});
+
 // Create publication
 router.post("/", getCurrentUser, async (req, res) => {
   try {
@@ -130,6 +239,21 @@ router.post("/", getCurrentUser, async (req, res) => {
 
     if (!name || !subdomain) {
       return res.status(400).json({ error: "Name and subdomain are required" });
+    }
+
+    // Validate publication name length
+    if (name.length < 2 || name.length > 50) {
+      return res.status(400).json({ error: "Publication name must be between 2 and 50 characters" });
+    }
+
+    // Validate subdomain length
+    if (subdomain.length < 3 || subdomain.length > 63) {
+      return res.status(400).json({ error: "Subdomain must be between 3 and 63 characters" });
+    }
+
+    // Validate subdomain format (alphanumeric and hyphens only, no consecutive hyphens, no leading/trailing hyphens)
+    if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(subdomain)) {
+      return res.status(400).json({ error: "Subdomain can only contain letters, numbers, and hyphens. Cannot start or end with hyphens or contain consecutive hyphens." });
     }
 
     // Check if user already has a publication
@@ -152,20 +276,36 @@ router.post("/", getCurrentUser, async (req, res) => {
       return res.status(400).json({ error: "Subdomain already taken" });
     }
 
-    const newPublication = await db
-      .insert(publication)
-      .values({
-        name,
-        subdomain: subdomain.toLowerCase(),
-        description: description || null,
-        userId,
-        logoUrl: null,
-        faviconUrl: null,
-        metaOgImageUrl: null,
-      })
-      .returning();
+    // Create publication and add creator as admin member in a transaction
+    const result = await db.transaction(async (tx) => {
+      // Create the publication
+      const [newPublication] = await tx
+        .insert(publication)
+        .values({
+          name,
+          subdomain: subdomain.toLowerCase(),
+          description: description || null,
+          userId,
+          logoUrl: null,
+          faviconUrl: null,
+          metaOgImageUrl: null,
+        })
+        .returning();
 
-    res.status(201).json(newPublication[0]);
+      // Add creator as admin member
+      await tx
+        .insert(publicationMember)
+        .values({
+          publicationId: newPublication.id,
+          userId: userId,
+          role: "admin",
+          invitedBy: userId, // Self-invited as creator
+        });
+
+      return newPublication;
+    });
+
+    res.status(201).json(result);
   } catch (error) {
     console.error("Error creating publication:", error);
     res.status(500).json({ error: "Failed to create publication" });
