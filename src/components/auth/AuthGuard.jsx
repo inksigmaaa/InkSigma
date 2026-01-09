@@ -5,14 +5,18 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useSession } from '@/lib/auth-client';
 
 export default function AuthGuard({ children }) {
-    const { data: session, isLoading } = useSession();
+    const { data: session, isPending } = useSession();
     const router = useRouter();
     const pathname = usePathname();
     const [checkingPublication, setCheckingPublication] = useState(true);
+    const [authChecked, setAuthChecked] = useState(false);
 
     useEffect(() => {
         const checkAuth = async () => {
-            if (isLoading) return;
+            // Wait for session to be determined
+            if (isPending) return;
+
+            setAuthChecked(true);
 
             if (!session?.user) {
                 router.push('/login');
@@ -46,10 +50,10 @@ export default function AuthGuard({ children }) {
         };
 
         checkAuth();
-    }, [session, isLoading, router, pathname]);
+    }, [session, isPending, router, pathname]);
 
     // Show loading while checking authentication or publication
-    if (isLoading || checkingPublication) {
+    if (isPending || !authChecked || checkingPublication) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>

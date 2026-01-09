@@ -1,4 +1,4 @@
- "use client"
+"use client"
 
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
@@ -6,15 +6,14 @@ import Verify from "../components/verify/Verify"
 import BlogStatsComponent from "../components/BlogStatsComponent/BlogStatsComponent"
 import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
-import AuthGuard from "@/components/AuthGuard"
+import AuthGuard from "@/components/auth/AuthGuard"
 import { useArticles } from "@/contexts/ArticlesContext"
+import { usePublication } from "@/contexts/PublicationContext"
 
 
 export default function HomePage() {
   const router = useRouter()
-  const [publication, setPublication] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { currentPublication, publicationDetails, loading } = usePublication()
   const { articles: allArticles } = useArticles()
 
   // Get recent published articles (limit to 4)
@@ -29,41 +28,6 @@ export default function HomePage() {
       category: article.categories?.[0] || 'Uncategorized',
       thumbnail: article.image || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"
     }))
-
-  useEffect(() => {
-    loadPublicationData()
-  }, [])
-
-  const loadPublicationData = async () => {
-    try {
-      setLoading(true)
-      
-      const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
-        credentials: "include",
-      })
-      
-      if (!sessionRes.ok) {
-        setLoading(false)
-        return
-      }
-      
-      const sessionData = await sessionRes.json()
-      const userId = sessionData.user.id
-      
-      const pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
-        credentials: "include",
-      })
-      
-      if (pubRes.ok) {
-        const pubData = await pubRes.json()
-        setPublication(pubData)
-      }
-    } catch (err) {
-      console.error("Error loading publication:", err)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleStartWriting = () => {
     router.push("/editor")
@@ -92,31 +56,58 @@ export default function HomePage() {
           <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
             <div className="flex items-start gap-4 max-md:gap-3">
               <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
-                {publication?.logoUrl ? (
+                {currentPublication?.logoUrl ? (
                   <img 
-                    src={`http://localhost:5000${publication.logoUrl}`} 
-                    alt={publication.name} 
+                    src={`http://localhost:5000${currentPublication.logoUrl}`} 
+                    alt={currentPublication.name} 
                     className="w-full h-full object-cover" 
                   />
                 ) : (
-                  <img src="/icons/nib.svg" alt="publication" className="w-10 h-10 opacity-40 max-md:w-8 max-md:h-8" />
+                  <div className="w-full h-full bg-violet-100 rounded-full flex items-center justify-center">
+                    <span className="text-violet-600 font-bold text-xl">
+                      {currentPublication?.name?.charAt(0).toUpperCase() || "P"}
+                    </span>
+                  </div>
                 )}
               </div>
               <div className="flex-1">
-                <h1 className="text-lg font-semibold text-gray-900 mb-1 max-md:text-base max-md:font-bold">
-                  {loading ? "Loading..." : publication?.name || "Publication Name"}
-                </h1>
+                <div className="flex items-center gap-2 mb-1">
+                  <h1 className="text-lg font-semibold text-gray-900 max-md:text-base max-md:font-bold">
+                    {loading ? "Loading..." : currentPublication?.name || "Publication Name"}
+                  </h1>
+                  {currentPublication && !currentPublication.isOwner && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      currentPublication.role === 'editor' 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {currentPublication.role?.charAt(0).toUpperCase() + currentPublication.role?.slice(1)}
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-gray-400 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-1">
-                  {publication?.subdomain ? `${publication.subdomain}.inksigma.com` : "subdomain.inksigma.com"}
+                  {currentPublication?.subdomain ? `${currentPublication.subdomain}.inksigma.com` : "subdomain.inksigma.com"}
                 </p>
+                {publicationDetails && (
+                  <div className="flex items-center gap-4 mt-2">
+                    <span className="text-xs text-gray-500">
+                      {publicationDetails.memberCount} member{publicationDetails.memberCount !== 1 ? 's' : ''}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {publicationDetails.postCount} post{publicationDetails.postCount !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
-            <button 
-              onClick={handleEditPublication}
-              className="text-sm text-gray-600 bg-[#f4f4f4] hover:text-gray-900 px-4 py-2 border border-gray-200 rounded-md transition-colors max-md:px-3 max-md:py-1.5 max-md:text-xs flex-shrink-0 max-md:rounded-lg"
-            >
-              Edit
-            </button>
+            {currentPublication?.isOwner && (
+              <button 
+                onClick={handleEditPublication}
+                className="text-sm text-gray-600 bg-[#f4f4f4] hover:text-gray-900 px-4 py-2 border border-gray-200 rounded-md transition-colors max-md:px-3 max-md:py-1.5 max-md:text-xs flex-shrink-0 max-md:rounded-lg"
+              >
+                Edit
+              </button>
+            )}
           </div>
 
           {/* Statistics Section */}

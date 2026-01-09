@@ -3,38 +3,13 @@
 import { FileClock } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
 import { useSession } from '@/lib/auth-client';
-import { publicationService } from '@/services/publicationService';
+import { usePublication } from '@/contexts/PublicationContext';
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [publication, setPublication] = useState(null);
-  const [loading, setLoading] = useState(true);
   const { data: session } = useSession();
-
-  // Fetch user's publication data
-  useEffect(() => {
-    const fetchPublication = async () => {
-      if (!session?.user?.id) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const publicationData = await publicationService.getUserPublication(session.user.id);
-        setPublication(publicationData);
-      } catch (error) {
-        console.error('Error fetching publication:', error);
-        // Publication might not exist yet, which is fine
-        setPublication(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPublication();
-  }, [session?.user?.id]);
+  const { currentPublication, loading } = usePublication();
 
   // Route mapping for navigation
   const getRoute = (label) => {
@@ -80,12 +55,16 @@ export default function Sidebar() {
             <div className="w-[34px] h-[34px] rounded-full overflow-hidden border-2 border-violet-500 flex-shrink-0 bg-gray-100 flex items-center justify-center">
               {loading ? (
                 <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
-              ) : publication?.logoUrl ? (
+              ) : currentPublication?.logoUrl ? (
                 <img
-                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${publication.logoUrl}`}
-                  alt={publication.name || "Publication"}
+                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${currentPublication.logoUrl}`}
+                  alt={currentPublication.name || "Publication"}
                   className="w-full h-full object-cover"
                 />
+              ) : currentPublication?.name ? (
+                <span className="text-violet-600 font-bold text-sm">
+                  {currentPublication.name.charAt(0).toUpperCase()}
+                </span>
               ) : (
                 <img
                   src="/images/icons/profileuser.svg"
