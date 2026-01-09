@@ -540,6 +540,8 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
     const { token } = req.params;
     const userId = req.user.id;
 
+    console.log(`[Invitation Accept] User ${userId} attempting to accept invitation`);
+
     // Get invitation
     const [invite] = await db
       .select()
@@ -547,8 +549,11 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
       .where(eq(invitation.token, token));
 
     if (!invite) {
+      console.log(`[Invitation Accept] Invalid token: ${token}`);
       return res.status(404).json({ error: "Invalid invitation link" });
     }
+
+    console.log(`[Invitation Accept] Found invitation ID: ${invite.id}, email: ${invite.email}, status: ${invite.status}`);
 
     if (invite.status !== "pending") {
       return res.status(400).json({ error: "Invitation is no longer valid" });
@@ -566,6 +571,7 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
 
     // Check if user email matches invitation email
     if (req.user.email !== invite.email) {
+      console.log(`[Invitation Accept] Email mismatch: user=${req.user.email}, invite=${invite.email}`);
       return res.status(400).json({ error: "This invitation was sent to a different email address" });
     }
 
@@ -583,6 +589,8 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
     if (existingMember.length > 0) {
       return res.status(400).json({ error: "You are already a member of this publication" });
     }
+
+    console.log(`[Invitation Accept] Adding user as ${invite.role} to publication ${invite.publicationId}`);
 
     // Accept invitation in transaction
     const result = await db.transaction(async (tx) => {
@@ -615,15 +623,19 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
           description: publication.description,
           logoUrl: publication.logoUrl,
           createdAt: publication.createdAt,
-          role: invite.role,
-          memberCount: 1, // Will be updated with actual count if needed
-          postCount: 0, // Will be updated with actual count if needed
         })
         .from(publication)
         .where(eq(publication.id, invite.publicationId));
 
-      return joinedPublication;
+      return {
+        ...joinedPublication,
+        role: invite.role,
+        memberCount: 1,
+        postCount: 0,
+      };
     });
+
+    console.log(`[Invitation Accept] Success! User ${userId} joined publication ${invite.publicationId}`);
 
     res.json({ 
       message: "Invitation accepted successfully",

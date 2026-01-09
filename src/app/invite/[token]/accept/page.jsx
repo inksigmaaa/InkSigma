@@ -20,7 +20,7 @@ export default function AcceptInvitation() {
   useEffect(() => {
     if (!isPending && !session) {
       // Redirect to login with return URL
-      router.push(`/sign-in?returnUrl=/invite/${token}/accept`);
+      router.push(`/login?redirect=/invite/${token}/accept`);
     }
   }, [session, isPending, token, router]);
 
