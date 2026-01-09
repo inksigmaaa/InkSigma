@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
+import { useSession } from "@/lib/auth-client"
+import AuthGuard from "@/components/AuthGuard"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
 import Verify from "../components/verify/Verify"
@@ -10,28 +12,19 @@ import { ChevronRight } from "lucide-react"
 
 export default function DashboardPage() {
   const router = useRouter()
+  const { data: session } = useSession()
   const [publication, setPublication] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    checkAndLoadPublication()
-  }, [])
+    if (session?.user?.id) {
+      checkAndLoadPublication()
+    }
+  }, [session?.user?.id])
 
   const checkAndLoadPublication = async () => {
     try {
-      // First check if user is authenticated
-      const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
-        credentials: "include",
-        cache: "no-store", // Prevent caching
-      })
-      
-      if (!sessionRes.ok) {
-        router.push('/login')
-        return
-      }
-      
-      const sessionData = await sessionRes.json()
-      const userId = sessionData.user.id
+      const userId = session.user.id
       
       // Check if user has a publication
       const pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
@@ -58,11 +51,17 @@ export default function DashboardPage() {
   }
 
   if (loading) {
-    return null
+    return (
+      <AuthGuard>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      </AuthGuard>
+    )
   }
 
   return (
-    <>
+    <AuthGuard>
       <NavbarLoggedin />
       <DashboardSimpleSidebar />
       <main className="flex-1 bg-white px-4 sm:px-8 py-6 sm:py-10 mt-[120px] md:mt-[120px] pb-24 md:pb-0 md:ml-[165px]">
@@ -160,6 +159,6 @@ export default function DashboardPage() {
           </section>
         </div>
       </main>
-    </>
+    </AuthGuard>
   )
 }
