@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import MemberSidebar from "../../membersidebar/MemberSidebar"
 import { Pencil } from "lucide-react"
@@ -9,55 +10,40 @@ import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function PostsHomePage() {
   const router = useRouter()
-  const [publication, setPublication] = useState(null)
+  const { currentPublication, publicationDetails, loading: publicationLoading } = usePublication()
   const [stats, setStats] = useState({ totalArticles: 0, publishedArticles: 0, totalViews: 0, totalLikes: 0 })
   const [recentArticles, setRecentArticles] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadPublicationData()
-  }, [])
+    if (currentPublication && !publicationLoading) {
+      loadPublicationData()
+    }
+  }, [currentPublication, publicationLoading])
 
   const loadPublicationData = async () => {
+    if (!currentPublication) return
+    
     try {
-      // Get user's joined publications
-      const membershipsRes = await fetch("http://localhost:5000/api/publication-members/my-publications", {
+      // Fetch stats for this publication
+      const statsRes = await fetch(`http://localhost:5000/api/publication-stats/${currentPublication.id}`, {
         credentials: "include",
       })
 
-      if (!membershipsRes.ok) {
-        console.error("Failed to fetch memberships")
-        setLoading(false)
-        return
+      if (statsRes.ok) {
+        const statsData = await statsRes.json()
+        setStats(statsData)
       }
 
-      const memberships = await membershipsRes.json()
-      
-      // For now, use the first joined publication
-      if (memberships.length > 0) {
-        const firstPub = memberships[0].publication
-        setPublication(firstPub)
+      // Fetch recent published articles for this publication
+      const articlesRes = await fetch(
+        `http://localhost:5000/api/blogs?publicationId=${currentPublication.id}&status=published&limit=4`,
+        { credentials: "include" }
+      )
 
-        // Fetch stats for this publication
-        const statsRes = await fetch(`http://localhost:5000/api/publication-stats/${firstPub.id}`, {
-          credentials: "include",
-        })
-
-        if (statsRes.ok) {
-          const statsData = await statsRes.json()
-          setStats(statsData)
-        }
-
-        // Fetch recent published articles for this publication
-        const articlesRes = await fetch(
-          `http://localhost:5000/api/blogs?publicationId=${firstPub.id}&status=published&limit=4`,
-          { credentials: "include" }
-        )
-
-        if (articlesRes.ok) {
-          const articlesData = await articlesRes.json()
-          setRecentArticles(articlesData)
-        }
+      if (articlesRes.ok) {
+        const articlesData = await articlesRes.json()
+        setRecentArticles(articlesData)
       }
     } catch (error) {
       console.error("Error loading publication data:", error)
@@ -68,8 +54,8 @@ export default function PostsHomePage() {
 
   const handleStartWriting = () => {
     // Pass publicationId to editor so blogs are created for this publication
-    if (publication?.id) {
-      router.push(`/editor?publicationId=${publication.id}`)
+    if (currentPublication?.id) {
+      router.push(`/editor?publicationId=${currentPublication.id}`)
     } else {
       router.push("/editor")
     }
@@ -83,7 +69,7 @@ export default function PostsHomePage() {
     router.push("/dashboard/settings")
   }
 
-  if (loading) {
+  if (publicationLoading || loading) {
     return (
       <>
         <NavbarLoggedin />
@@ -95,7 +81,7 @@ export default function PostsHomePage() {
     )
   }
 
-  if (!publication) {
+  if (!currentPublication) {
     return (
       <>
         <NavbarLoggedin />
@@ -121,10 +107,10 @@ export default function PostsHomePage() {
             <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3">
               <div className="flex items-start gap-4 max-md:gap-3">
                 <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
-                  {publication?.logoUrl ? (
+                  {currentPublication?.logoUrl ? (
                     <img 
-                      src={`http://localhost:5000${publication.logoUrl}`} 
-                      alt={publication.name} 
+                      src={`http://localhost:5000${currentPublication.logoUrl}`} 
+                      alt={currentPublication.name} 
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.onerror = null;
@@ -141,18 +127,11 @@ export default function PostsHomePage() {
                 </div>
                 <div className="flex-1">
                   <h1 className="text-lg font-semibold text-gray-900 mb-1 max-md:text-base max-md:font-bold">
-                    {publication.name}
+                    {currentPublication.name}
                   </h1>
                   <p className="text-sm text-gray-400 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-1">
-                    {publication.description || `${publication.subdomain}.inksigma.com`}
+                    {currentPublication.description || `${currentPublication.subdomain}.inksigma.com`}
                   </p>
-                  {currentPublication?.description && (
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-600 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-2">
-                        {currentPublication.description}
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
