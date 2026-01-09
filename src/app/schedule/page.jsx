@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react";
+import AuthGuard from "@/components/AuthGuard";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
@@ -17,24 +18,7 @@ export default function SchedulePage() {
   const [isBulkAction, setIsBulkAction] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Refresh articles when component mounts to ensure we have the latest data
-  useEffect(() => {
-    loadUserArticles();
-  }, []);
-
-  // Manual refresh function
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await loadUserArticles();
-    } catch (error) {
-      console.error('Error refreshing articles:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  // Filter scheduled articles and add action handlers
+  // Filter scheduled articles and add action handlers - MUST be defined before useEffects that use it
   const scheduledArticles = useMemo(() => {
     return articles
       .filter(article => article.status === 'scheduled')
@@ -52,6 +36,67 @@ export default function SchedulePage() {
         }
       }));
   }, [articles]);
+
+  // Refresh articles when component mounts to ensure we have the latest data
+  useEffect(() => {
+    loadUserArticles();
+  }, []);
+
+  // Auto-refresh to check for published scheduled articles
+  useEffect(() => {
+    // Check every 30 seconds for scheduled articles that should have been published
+    const interval = setInterval(() => {
+      loadUserArticles();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Smart auto-refresh: set timer for the next scheduled article
+  useEffect(() => {
+    if (scheduledArticles.length === 0) return;
+
+    const now = new Date();
+    
+    // Find articles that are due to be published in the future
+    const upcomingArticles = scheduledArticles
+      .filter(article => article.scheduledAt)
+      .map(article => ({
+        id: article.id,
+        scheduledTime: new Date(article.scheduledAt)
+      }))
+      .filter(article => article.scheduledTime > now)
+      .sort((a, b) => a.scheduledTime - b.scheduledTime);
+
+    // If no upcoming articles, don't set any timer (the 30-second interval will handle it)
+    if (upcomingArticles.length === 0) return;
+
+    // Set a timer for the next scheduled article
+    const nextArticle = upcomingArticles[0];
+    const timeUntilPublish = nextArticle.scheduledTime.getTime() - now.getTime();
+
+    // If within 2 minutes, set a precise timer
+    if (timeUntilPublish <= 120000 && timeUntilPublish > 0) {
+      const timer = setTimeout(() => {
+        // Refresh after the scheduled time + 3 seconds buffer for backend processing
+        loadUserArticles();
+      }, timeUntilPublish + 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [scheduledArticles.length]); // Only depend on length to avoid infinite loops
+
+  // Manual refresh function
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await loadUserArticles();
+    } catch (error) {
+      console.error('Error refreshing articles:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -115,12 +160,6 @@ export default function SchedulePage() {
 
   const actionButtons = [
     {
-      title: "Refresh",
-      icon: "/images/icons/refresh.svg",
-      onClick: handleRefresh,
-      disabled: isRefreshing || loading
-    },
-    {
       title: "Move to Draft",
       icon: "/images/icons/edit.svg",
       onClick: handleBulkDraft,
@@ -136,32 +175,32 @@ export default function SchedulePage() {
 
   if (loading) {
     return (
-      <>
+      <AuthGuard>
         <NavbarLoggedin />
         <Sidebar />
         <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-gray-500">Loading scheduled articles...</div>
         </div>
-      </>
+      </AuthGuard>
     );
   }
 
   if (error) {
     return (
-      <>
+      <AuthGuard>
         <NavbarLoggedin />
         <Sidebar />
         <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-red-500">Error: {error}</div>
         </div>
-      </>
+      </AuthGuard>
     );
   }
 
   return (
-    <>
+    <AuthGuard>
       <NavbarLoggedin />
       <Sidebar />
       <Verify />
@@ -203,6 +242,6 @@ export default function SchedulePage() {
         confirmText="Move to Draft"
         confirmStyle="normal"
       />
-    </>
+    </AuthGuard>
   );
 }

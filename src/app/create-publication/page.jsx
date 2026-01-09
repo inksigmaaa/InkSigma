@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
+import AuthGuard from "@/components/AuthGuard";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import imagePlaceholder from "@/icons/image-placeholder.svg";
 import cameraIcon from "@/icons/camera.svg";
@@ -192,7 +193,7 @@ export default function CreatePublication() {
   };
 
   return (
-    <>
+    <AuthGuard>
       <NavbarLoggedin />
 
       <div className="min-h-screen bg-white px-4 flex items-center justify-center">
@@ -311,6 +312,6 @@ export default function CreatePublication() {
           Copyright © 2023 designed & developed by <a href="#" className="text-[#CCCCCC] underline">Inksigma</a>, a <a href="#" className="text-[#CCCCCC] underline">Zemuria Inc.</a> brand
         </p>
       </div>
-    </>
+    </AuthGuard>
   );
 }

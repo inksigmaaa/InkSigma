@@ -4,6 +4,12 @@ import { pgTable, text, timestamp, boolean, serial, integer, pgEnum } from "driz
 // Define blog status enum
 export const blogStatusEnum = pgEnum("blog_status", ["draft", "published", "unpublished", "trash", "scheduled", "review"]);
 
+// Define member role enum
+export const memberRoleEnum = pgEnum("member_role", ["admin", "editor", "author"]);
+
+// Define invitation status enum
+export const invitationStatusEnum = pgEnum("invitation_status", ["pending", "accepted", "declined", "expired"]);
+
 export const user = pgTable("user", {
     id: text("id").primaryKey(),
     name: text("name").notNull(),

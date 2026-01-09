@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { blogService } from '@/services/blog.service'
 import { useSession } from '@/lib/auth-client'
+import { usePublication } from '@/contexts/PublicationContext'
 
 const ArticlesContext = createContext()
 
@@ -61,12 +62,33 @@ export function ArticlesProvider({ children }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const { data: session } = useSession()
+  
+  // Try to get publication context, but handle case where it might not be available
+  let currentPublication = null
+  try {
+    const pubContext = usePublication()
+    currentPublication = pubContext?.currentPublication
+  } catch (e) {
+    // PublicationContext not available, will use default behavior
+  }
 
-  // Load user's articles on mount
+  // Load articles when session or publication changes
   useEffect(() => {
     if (session?.user?.id) {
       loadUserArticles()
     }
+  }, [session?.user?.id, currentPublication?.id])
+
+  // Auto-refresh for scheduled articles - check every 30 seconds
+  useEffect(() => {
+    if (!session?.user?.id) return
+
+    // Check every 30 seconds for scheduled articles that should have been published
+    const interval = setInterval(() => {
+      loadUserArticles()
+    }, 30000)
+
+    return () => clearInterval(interval)
   }, [session?.user?.id])
 
   const loadUserArticles = async () => {
@@ -74,12 +96,15 @@ export function ArticlesProvider({ children }) {
       setLoading(true)
       setError(null)
       
-      // Try to load articles even if session is not fully loaded
       let blogs;
       if (session?.user?.id) {
-        blogs = await blogService.getUserBlogs(session.user.id)
+        // If we have a current publication, load articles for that publication
+        if (currentPublication?.id) {
+          blogs = await blogService.getPublicationBlogs(currentPublication.id)
+        } else {
+          blogs = await blogService.getUserBlogs(session.user.id)
+        }
       } else {
-        // Fallback: try to load all blogs (this might work if cookies are set)
         blogs = await blogService.getAllBlogs()
       }
       
@@ -89,7 +114,6 @@ export function ArticlesProvider({ children }) {
       console.error('Error loading articles:', err)
       setError(err.message)
       
-      // If the error is auth-related, try to reload the page
       if (err.message.includes('401') || err.message.includes('Unauthorized')) {
         console.log('Auth error detected, you may need to log in again')
       }

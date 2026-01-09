@@ -52,6 +52,20 @@ export const blogService = {
     return this.getBlogs({ ...filters, authorId });
   },
 
+  // Get publication's blogs
+  async getPublicationBlogs(publicationId, filters = {}) {
+    const response = await fetch(`${API_URL}/api/blogs/publication/${publicationId}`, {
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'Failed to fetch publication blogs');
+    }
+
+    return response.json();
+  },
+
   // Get single blog by ID
   async getBlog(id) {
     const response = await fetch(`${API_URL}/api/blogs/${id}`, {
