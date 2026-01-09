@@ -118,14 +118,21 @@ export function ArticlesProvider({ children }) {
         status = articleData.status;
       }
 
-      const blog = await blogService.createBlog({
+      const blogData = {
         title: articleData.title,
         description: articleData.description,
         content: articleData.content,
         categories: articleData.categories || [],
         status: status,
         scheduledAt: articleData.scheduledAt
-      })
+      }
+
+      // Add publicationId if provided
+      if (articleData.publicationId) {
+        blogData.publicationId = articleData.publicationId
+      }
+
+      const blog = await blogService.createBlog(blogData)
       
       const newArticle = convertBlogToArticle(blog)
       setArticles(prev => [newArticle, ...prev])

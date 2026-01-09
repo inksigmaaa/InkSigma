@@ -2,7 +2,7 @@
 import { pgTable, text, timestamp, boolean, serial, integer, pgEnum } from "drizzle-orm/pg-core";
 
 // Define blog status enum
-export const blogStatusEnum = pgEnum("blog_status", ["draft", "published", "unpublished", "trash", "scheduled"]);
+export const blogStatusEnum = pgEnum("blog_status", ["draft", "published", "unpublished", "trash", "scheduled", "review"]);
 
 export const user = pgTable("user", {
     id: text("id").primaryKey(),
@@ -60,6 +60,7 @@ export const blog = pgTable("blog", {
     content: text("content").notNull(),
     image: text("image"),
     authorId: text("authorId").notNull().references(() => user.id),
+    publicationId: integer("publicationId").references(() => publication.id, { onDelete: "cascade" }),
     categories: text("categories").array(),
     status: blogStatusEnum("status").notNull().default("draft"),
     published: boolean("published").notNull().default(false),
@@ -92,6 +93,18 @@ export const publication = pgTable("publication", {
     faviconUrl: text("faviconUrl"),
     metaOgImageUrl: text("metaOgImageUrl"),
     userId: text("userId").notNull().references(() => user.id),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+// Define member role enum
+export const memberRoleEnum = pgEnum("member_role", ["owner", "editor", "author"]);
+
+export const publicationMember = pgTable("publication_member", {
+    id: serial("id").primaryKey(),
+    publicationId: integer("publicationId").notNull().references(() => publication.id, { onDelete: "cascade" }),
+    userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
+    role: memberRoleEnum("role").notNull().default("author"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });

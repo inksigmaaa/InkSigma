@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (response.ok) {
           const data = await response.json();
-          setUser(data.user);
+          setUser(data?.user || null);
         } else {
           setUser(null);
         }
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const data = await response.json();
-        setUser(data.user);
+        setUser(data?.user || null);
       } else {
         setUser(null);
       }

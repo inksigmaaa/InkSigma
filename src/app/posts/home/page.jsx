@@ -2,7 +2,6 @@
 
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import MemberSidebar from "../../membersidebar/MemberSidebar"
-import BlogStatsComponent from "../../components/BlogStatsComponent/BlogStatsComponent"
 import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
@@ -10,15 +9,69 @@ import { useState, useEffect } from "react"
 export default function PostsHomePage() {
   const router = useRouter()
   const [publication, setPublication] = useState(null)
+  const [stats, setStats] = useState({ totalArticles: 0, publishedArticles: 0, totalViews: 0, totalLikes: 0 })
+  const [recentArticles, setRecentArticles] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Frontend only - no API call
-    setLoading(false)
+    loadPublicationData()
   }, [])
 
+  const loadPublicationData = async () => {
+    try {
+      // Get user's joined publications
+      const membershipsRes = await fetch("http://localhost:5000/api/publication-members/my-publications", {
+        credentials: "include",
+      })
+
+      if (!membershipsRes.ok) {
+        console.error("Failed to fetch memberships")
+        setLoading(false)
+        return
+      }
+
+      const memberships = await membershipsRes.json()
+      
+      // For now, use the first joined publication
+      if (memberships.length > 0) {
+        const firstPub = memberships[0].publication
+        setPublication(firstPub)
+
+        // Fetch stats for this publication
+        const statsRes = await fetch(`http://localhost:5000/api/publication-stats/${firstPub.id}`, {
+          credentials: "include",
+        })
+
+        if (statsRes.ok) {
+          const statsData = await statsRes.json()
+          setStats(statsData)
+        }
+
+        // Fetch recent published articles for this publication
+        const articlesRes = await fetch(
+          `http://localhost:5000/api/blogs?publicationId=${firstPub.id}&status=published&limit=4`,
+          { credentials: "include" }
+        )
+
+        if (articlesRes.ok) {
+          const articlesData = await articlesRes.json()
+          setRecentArticles(articlesData)
+        }
+      }
+    } catch (error) {
+      console.error("Error loading publication data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleStartWriting = () => {
-    router.push("/editor")
+    // Pass publicationId to editor so blogs are created for this publication
+    if (publication?.id) {
+      router.push(`/editor?publicationId=${publication.id}`)
+    } else {
+      router.push("/editor")
+    }
   }
 
   const handleVisitSite = () => {
@@ -29,37 +82,29 @@ export default function PostsHomePage() {
     router.push("/dashboard/settings")
   }
 
-  // Sample articles data
-  const articles = [
-    {
-      id: 1,
-      title: "Title of the Blog will be in this area",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      category: "Category",
-      thumbnail: "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"
-    },
-    {
-      id: 2,
-      title: "Title of the Blog will be in this area",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      category: "Category",
-      thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop"
-    },
-    {
-      id: 3,
-      title: "Title of the Blog will be in this area",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      category: "Category",
-      thumbnail: "https://images.unsplash.com/photo-1559028012-481c04fa702d?w=800&h=600&fit=crop"
-    },
-    {
-      id: 4,
-      title: "Title of the Blog will be in this area",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...",
-      category: "Category",
-      thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=600&fit=crop"
-    }
-  ]
+  if (loading) {
+    return (
+      <>
+        <NavbarLoggedin />
+        <MemberSidebar key="member-sidebar" />
+        <div className="pt-[112px] min-h-screen max-md:pt-[90px] flex items-center justify-center">
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </>
+    )
+  }
+
+  if (!publication) {
+    return (
+      <>
+        <NavbarLoggedin />
+        <MemberSidebar key="member-sidebar" />
+        <div className="pt-[112px] min-h-screen max-md:pt-[90px] flex items-center justify-center">
+          <p className="text-gray-500">No joined publications found</p>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
@@ -75,32 +120,59 @@ export default function PostsHomePage() {
             <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3">
               <div className="flex items-start gap-4 max-md:gap-3">
                 <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
-                  {publication?.image ? (
-                    <img src={publication.image} alt={publication.name} className="w-full h-full object-cover" />
+                  {publication?.logoUrl ? (
+                    <img 
+                      src={`http://localhost:5000${publication.logoUrl}`} 
+                      alt={publication.name} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "/icons/nib.svg";
+                      }}
+                    />
                   ) : (
                     <img src="/icons/nib.svg" alt="publication" className="w-10 h-10 opacity-40 max-md:w-8 max-md:h-8" />
                   )}
                 </div>
                 <div className="flex-1">
                   <h1 className="text-lg font-semibold text-gray-900 mb-1 max-md:text-base max-md:font-bold">
-                    {loading ? "Loading..." : publication?.name || "Publication Name"}
+                    {publication.name}
                   </h1>
                   <p className="text-sm text-gray-400 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-1">
-                    {publication?.description || `${publication?.subdomain || "subdomain"}.inksigma.com`}
+                    {publication.description || `${publication.subdomain}.inksigma.com`}
                   </p>
                 </div>
               </div>
-              <button
-                onClick={handleEditPublication}
-                className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 border border-gray-200 rounded-md transition-colors max-md:px-3 max-md:py-1.5 max-md:text-xs flex-shrink-0 max-md:rounded-lg"
-              >
-                Edit
-              </button>
             </div>
 
             {/* Statistics Section */}
             <div className="relative py-6 border-b border-gray-200 max-md:px-4 max-md:py-0 max-md:pb-4 max-md:border-b-0">
-              <BlogStatsComponent />
+              <div className="px-8 max-md:px-0 mb-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-sm text-gray-600">Monthly</span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
+                    <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-left">
+                    <p className="text-4xl font-bold text-gray-900">{stats.totalArticles}</p>
+                    <p className="text-sm text-purple-500 mt-1">Total no. Articles</p>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-4xl font-bold text-gray-900">{stats.totalViews}</p>
+                    <p className="text-sm text-purple-500 mt-1">Views</p>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-4xl font-bold text-gray-900">{stats.totalLikes}</p>
+                    <p className="text-sm text-purple-500 mt-1">Comments</p>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-4xl font-bold text-gray-900">{stats.publishedArticles}</p>
+                    <p className="text-sm text-purple-500 mt-1">Shares</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* What's on your mind Section */}
@@ -110,7 +182,7 @@ export default function PostsHomePage() {
                   What's on your mind?
                 </h2>
                 <p className="text-sm text-gray-500 mb-6 leading-relaxed max-md:text-xs max-md:mb-5 max-md:text-gray-600">
-                  Craft persuasive articles showcasing your novel ideas by publishing them on your very own website
+                  Craft persuasive articles showcasing your novel ideas by publishing them on this publication
                 </p>
 
                 <button
@@ -125,37 +197,51 @@ export default function PostsHomePage() {
 
             {/* Recent Articles Section */}
             <div className="px-8 py-6 pb-12 max-md:px-4 max-md:py-4 max-md:pb-20">
-              <h3 className="text-lg font-bold text-gray-900 mb-6 max-md:text-base max-md:mb-4">Recent Articles</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-6 max-md:text-base max-md:mb-4">Recent Published Articles</h3>
 
-              <div className="grid grid-cols-2 gap-6 max-md:grid-cols-1 max-md:gap-4">
-                {articles.map((article) => (
-                  <div key={article.id} className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5">
-                    <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4">
-                      <img
-                        src={article.thumbnail}
-                        alt={article.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-3 text-lg leading-snug">
-                        {article.title}
-                      </h4>
-                      <p className="text-sm text-gray-400 mb-4 leading-relaxed line-clamp-2">
-                        {article.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-400 bg-gray-50 px-4 py-2 rounded-lg">
-                          {article.category}
-                        </span>
-                        <button className="text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition-colors">
-                          <Pencil className="w-5 h-5" />
-                        </button>
+              {recentArticles.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-400 text-sm">No published articles yet</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-6 max-md:grid-cols-1 max-md:gap-4">
+                  {recentArticles.map((article) => (
+                    <div 
+                      key={article.id} 
+                      className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5 cursor-pointer"
+                      onClick={() => router.push(`/posts/published`)}
+                    >
+                      {article.image && (
+                        <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4">
+                          <img
+                            src={article.image}
+                            alt={article.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-3 text-lg leading-snug line-clamp-2">
+                          {article.title}
+                        </h4>
+                        <p className="text-sm text-gray-400 mb-4 leading-relaxed line-clamp-2">
+                          {article.description}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          {article.categories && article.categories.length > 0 && (
+                            <span className="text-sm text-gray-400 bg-gray-50 px-4 py-2 rounded-lg">
+                              {article.categories[0]}
+                            </span>
+                          )}
+                          <span className="text-xs text-gray-400">
+                            by {article.author?.name || 'Unknown'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
           </div>
@@ -172,4 +258,3 @@ export default function PostsHomePage() {
     </>
   )
 }
-

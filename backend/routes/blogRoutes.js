@@ -94,8 +94,8 @@ const ensureUniqueSlug = async (baseSlug, excludeId = null) => {
 // Helper function to sync status and published fields according to strict rules
 const syncStatusAndPublished = (status) => {
     // Validate status
-    if (!['draft', 'published', 'unpublished', 'trash', 'scheduled'].includes(status)) {
-        throw new Error(`Invalid status: ${status}. Must be 'draft', 'published', 'unpublished', 'trash', or 'scheduled'`);
+    if (!['draft', 'published', 'unpublished', 'trash', 'scheduled', 'review'].includes(status)) {
+        throw new Error(`Invalid status: ${status}. Must be 'draft', 'published', 'unpublished', 'trash', 'scheduled', or 'review'`);
     }
     
     // Apply strict synchronization rules:
@@ -104,6 +104,7 @@ const syncStatusAndPublished = (status) => {
     // - Status 'unpublished' = published FALSE (hidden)
     // - Status 'trash' = published FALSE (hidden)
     // - Status 'scheduled' = published FALSE (hidden until scheduled time)
+    // - Status 'review' = published FALSE (hidden, pending review)
     return {
         status,
         published: status === 'published'
@@ -116,7 +117,8 @@ router.get("/", async (req, res) => {
         const { 
             published, 
             status,
-            authorId, 
+            authorId,
+            publicationId,
             categories, 
             search, 
             limit = 50, 
@@ -131,6 +133,7 @@ router.get("/", async (req, res) => {
                 description: blog.description,
                 content: blog.content,
                 image: blog.image,
+                publicationId: blog.publicationId,
                 categories: blog.categories,
                 status: blog.status,
                 published: blog.published,
@@ -162,6 +165,10 @@ router.get("/", async (req, res) => {
         
         if (authorId) {
             conditions.push(eq(blog.authorId, authorId));
+        }
+
+        if (publicationId) {
+            conditions.push(eq(blog.publicationId, parseInt(publicationId)));
         }
         
         if (search) {
@@ -243,7 +250,7 @@ router.get("/:id", async (req, res) => {
 // POST /api/blogs - Create new blog
 router.post("/", getCurrentUser, async (req, res) => {
     try {
-        const { title, description, content, categories, published = false, status, scheduledAt } = req.body;
+        const { title, description, content, categories, published = false, status, scheduledAt, publicationId } = req.body;
         
         if (!title || !description || !content) {
             return res.status(400).json({ 
@@ -276,6 +283,11 @@ router.post("/", getCurrentUser, async (req, res) => {
             createdAt: new Date(),
             updatedAt: new Date(),
         };
+
+        // Add publicationId if provided
+        if (publicationId) {
+            blogData.publicationId = parseInt(publicationId);
+        }
 
         // Add scheduledAt if provided
         if (scheduledAt) {

@@ -36,6 +36,13 @@ export default function EditorPageClient() {
   // Get status and ID from URL parameters
   const articleStatus = searchParams.get('status')
   const articleId = searchParams.get('id')
+  const publicationId = searchParams.get('publicationId') // For joined publications
+  
+  // Debug log
+  useEffect(() => {
+    console.log('Editor - publicationId:', publicationId)
+    console.log('Editor - articleStatus:', articleStatus)
+  }, [publicationId, articleStatus])
   
   // State management
   const [title, setTitle] = useState('')
@@ -239,13 +246,20 @@ export default function EditorPageClient() {
         })
       } else {
         // Create new article and publish
-        publishedBlog = await createArticle({
+        const articleData = {
           title,
           description,
           content: editorContent,
           categories: selectedCategories,
           status: 'published'
-        })  
+        }
+        
+        // Add publicationId if creating for a joined publication
+        if (publicationId) {
+          articleData.publicationId = parseInt(publicationId)
+        }
+        
+        publishedBlog = await createArticle(articleData)
         setCurrentArticleId(publishedBlog.id)
         currentArticleIdRef.current = publishedBlog.id
         
@@ -444,13 +458,20 @@ export default function EditorPageClient() {
           status: 'draft'
         })
       } else {
-        const newArticle = await createArticle({
+        const articleData = {
           title,
           description,
           content: editorContent,
           categories: selectedCategories,
           status: 'draft'
-        })
+        }
+        
+        // Add publicationId if creating for a joined publication
+        if (publicationId) {
+          articleData.publicationId = parseInt(publicationId)
+        }
+        
+        const newArticle = await createArticle(articleData)
         setCurrentArticleId(newArticle.id)
         currentArticleIdRef.current = newArticle.id
         
@@ -513,6 +534,91 @@ export default function EditorPageClient() {
     }
   }
 
+  const handleSendForReview = async () => {
+    if (!title.trim() || !description.trim() || !editorContent.trim()) {
+      alert('Please fill in title, description, and content before sending for review.')
+      return
+    }
+
+    // Prevent multiple simultaneous saves
+    if (isLoading || isSavingRef.current) {
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      isSavingRef.current = true
+      
+      if (currentArticleId) {
+        // Update existing article and send for review
+        await updateArticle(currentArticleId, {
+          title,
+          description,
+          content: editorContent,
+          categories: selectedCategories,
+          status: 'review'
+        })
+        
+        // Upload thumbnail if provided and it's a File object
+        if (thumbnailImage && thumbnailImage.file instanceof File) {
+          try {
+            await uploadArticleImage(currentArticleId, thumbnailImage.file)
+          } catch (imageError) {
+            console.error('Error uploading thumbnail:', imageError)
+            alert(`Article sent for review successfully, but thumbnail upload failed: ${imageError.message}`)
+          }
+        }
+      } else {
+        // Create new article and send for review
+        const articleData = {
+          title,
+          description,
+          content: editorContent,
+          categories: selectedCategories,
+          status: 'review'
+        }
+        
+        // Add publicationId if creating for a joined publication
+        if (publicationId) {
+          articleData.publicationId = parseInt(publicationId)
+        }
+        
+        const newArticle = await createArticle(articleData)
+        setCurrentArticleId(newArticle.id)
+        currentArticleIdRef.current = newArticle.id
+        
+        // Upload thumbnail if provided and it's a File object
+        if (thumbnailImage && thumbnailImage.file instanceof File) {
+          try {
+            await uploadArticleImage(newArticle.id, thumbnailImage.file)
+          } catch (imageError) {
+            console.error('Error uploading thumbnail:', imageError)
+            alert(`Article sent for review successfully, but thumbnail upload failed: ${imageError.message}`)
+          }
+        }
+      }
+      
+      setHasUnsavedChanges(false)
+      setIsSaved(true)
+      
+      // Refresh articles list
+      await loadUserArticles()
+      
+      alert('Article sent for review successfully!')
+      
+      // Navigate to My Blogs page
+      setTimeout(() => {
+        router.push('/posts/my-blogs')
+      }, 100)
+    } catch (error) {
+      console.error('Error sending article for review:', error)
+      alert('Failed to send article for review. Please try again.')
+    } finally {
+      setIsLoading(false)
+      isSavingRef.current = false
+    }
+  }
+
   const handleReschedule = () => {
     setIsDateTimePickerOpen(true)
   }
@@ -555,7 +661,7 @@ export default function EditorPageClient() {
       case 'trash':
         return { color: 'bg-red-400', text: 'Trash' }
       case 'review':
-        return { color: 'bg-orange-400', text: 'Draft' }
+        return { color: 'bg-yellow-400', text: 'In Review' }
       case 'draft':
       default:
         return { color: 'bg-orange-400', text: 'Drafts' }
@@ -697,11 +803,11 @@ export default function EditorPageClient() {
                 </Button>
               ) : articleStatus === 'review' ? (
                 <Button 
-                  onClick={handlePublish}
+                  onClick={handleSendForReview}
                   disabled={isLoading}
                   className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
                 >
-                  {isLoading ? 'Publishing...' : 'Send for Review'}
+                  {isLoading ? 'Sending...' : 'Send for Review'}
                 </Button>
               ) : articleStatus === 'published' ? (
                 <Button 
@@ -752,49 +858,63 @@ export default function EditorPageClient() {
                 </>
               ) : (
                 <>
-                  <Button 
-                    onClick={handlePublish}
-                    disabled={isLoading}
-                    className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium"
-                  >
-                    {isLoading ? 'Publishing...' : 'Publish'}
-                  </Button>
-                  <div className="flex items-center gap-2 bg-white px-3 border border-gray-200 rounded-lg flex-1">
-                    <Input
-                      type="text"
-                      value={publishDate}
-                      onChange={handleDateChange}
-                      placeholder="dd-mm-yyyy" maxLength={10}
-                      className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
-                    />
-                    <Input
-                      type="text"
-                      value={publishTime}
-                      onChange={handleTimeChange}
-                      placeholder="--:--" maxLength={5}
-                      className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
-                    />
-                    <button
-                      onClick={() => setIsDateTimePickerOpen(true)}
-                      className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                  {publicationId ? (
+                    // For joined publications - only show Send for Review button
+                    <Button 
+                      onClick={handleSendForReview}
+                      disabled={isLoading}
+                      className="bg-black text-white hover:bg-gray-800 px-6 py-2.5 rounded-lg text-sm font-medium"
                     >
-                      <Calendar className="h-4 w-4 text-gray-700" />
-                    </button>
-                  </div>
-                  <button 
-                    onClick={handleSchedule}
-                    disabled={isLoading}
-                    className="bg-gray-200 text-gray-400 text-sm font-medium px-4 py-2.5 rounded-lg"
-                  >
-                    {isLoading ? 'Scheduling...' : 'Schedule'}
-                  </button>
-                  <Button 
-                    onClick={handleSaveDraft}
-                    disabled={isLoading}
-                    className="bg-gray-200 text-gray-700 hover:bg-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium"
-                  >
-                    {isLoading ? 'Saving...' : 'Save as Draft'}
-                  </Button>
+                      {isLoading ? 'Sending...' : 'Send for Review'}
+                    </Button>
+                  ) : (
+                    // For personal publications - show all buttons
+                    <>
+                      <Button 
+                        onClick={handlePublish}
+                        disabled={isLoading}
+                        className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium"
+                      >
+                        {isLoading ? 'Publishing...' : 'Publish'}
+                      </Button>
+                      <div className="flex items-center gap-2 bg-white px-3 border border-gray-200 rounded-lg flex-1">
+                        <Input
+                          type="text"
+                          value={publishDate}
+                          onChange={handleDateChange}
+                          placeholder="dd-mm-yyyy" maxLength={10}
+                          className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                        />
+                        <Input
+                          type="text"
+                          value={publishTime}
+                          onChange={handleTimeChange}
+                          placeholder="--:--" maxLength={5}
+                          className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
+                        />
+                        <button
+                          onClick={() => setIsDateTimePickerOpen(true)}
+                          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                        >
+                          <Calendar className="h-4 w-4 text-gray-700" />
+                        </button>
+                      </div>
+                      <button 
+                        onClick={handleSchedule}
+                        disabled={isLoading}
+                        className="bg-gray-200 text-gray-400 text-sm font-medium px-4 py-2.5 rounded-lg"
+                      >
+                        {isLoading ? 'Scheduling...' : 'Schedule'}
+                      </button>
+                      <Button 
+                        onClick={handleSaveDraft}
+                        disabled={isLoading}
+                        className="bg-gray-200 text-gray-700 hover:bg-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium"
+                      >
+                        {isLoading ? 'Saving...' : 'Save as Draft'}
+                      </Button>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -812,13 +932,12 @@ export default function EditorPageClient() {
                 </button>
               ) : articleStatus === 'review' ? (
                 <button 
-                  onClick={handlePublish}
+                  onClick={handleSendForReview}
                   disabled={isLoading}
-                  className="bg-black text-white hover:bg-gray-800 flex items-center gap-2 px-6 py-2 rounded text-sm font-medium h-8"
+                  className="bg-black text-white hover:bg-gray-800 flex items-center justify-center px-6 py-2 rounded text-sm font-medium h-8"
                   style={{ width: '160px' }}
                 >
-                  {isLoading ? 'Publishing...' : 'Send for Review'}
-                  <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
+                  {isLoading ? 'Sending...' : 'Send for Review'}
                 </button>
               ) : articleStatus === 'published' ? (
                 <button 
@@ -883,54 +1002,69 @@ export default function EditorPageClient() {
                 </>
               ) : (
                 <>
-                  <button 
-                    onClick={handleSaveDraft}
-                    disabled={isLoading}
-                    className="bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
-                    style={{ width: '160px', padding: '8px 24px' }}
-                  >
-                    <FileText className="h-4 w-4" />
-                    {isLoading ? 'Saving...' : 'Save to draft'}
-                  </button>
-                  <button 
-                    onClick={handlePublish}
-                    disabled={isLoading}
-                    className="bg-black text-white hover:bg-gray-800 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
-                    style={{ width: '160px', padding: '8px 24px' }}
-                  >
-                    {isLoading ? 'Publishing...' : 'Publish'}
-                    <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
-                  </button>
-                  <div className="flex items-center bg-white px-3 py-1 border border-gray-200 rounded text-sm text-gray-700 h-8" style={{ width: '200px' }}>
-                    <Input
-                      type="text"
-                      value={publishDate}
-                      onChange={handleDateChange}
-                      placeholder="dd-mm-yyyy" maxLength={10}
-                      className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 p-0"
-                    />
-                    <Input
-                      type="text"
-                      value={publishTime}
-                      onChange={handleTimeChange}
-                      placeholder="--:--" maxLength={5}
-                      className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center p-0"
-                    />
-                    <button
-                      onClick={() => setIsDateTimePickerOpen(true)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                  {publicationId ? (
+                    // For joined publications - only show Send for Review button
+                    <button 
+                      onClick={handleSendForReview}
+                      disabled={isLoading}
+                      className="bg-black text-white hover:bg-gray-800 flex items-center justify-center text-sm font-medium h-8 rounded"
+                      style={{ width: '160px', padding: '8px 24px' }}
                     >
-                      <Calendar className="h-4 w-4 text-gray-700" />
+                      {isLoading ? 'Sending...' : 'Send for Review'}
                     </button>
-                  </div>
-                  <button 
-                    onClick={handleSchedule}
-                    disabled={isLoading}
-                    className="bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-medium h-8 rounded"
-                    style={{ width: '80px', padding: '8px 5px' }}
-                  >
-                    {isLoading ? 'Scheduling...' : 'Schedule'}
-                  </button>
+                  ) : (
+                    // For personal publications - show all buttons
+                    <>
+                      <button 
+                        onClick={handleSaveDraft}
+                        disabled={isLoading}
+                        className="bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
+                        style={{ width: '160px', padding: '8px 24px' }}
+                      >
+                        <FileText className="h-4 w-4" />
+                        {isLoading ? 'Saving...' : 'Save to draft'}
+                      </button>
+                      <button 
+                        onClick={handlePublish}
+                        disabled={isLoading}
+                        className="bg-black text-white hover:bg-gray-800 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
+                        style={{ width: '160px', padding: '8px 24px' }}
+                      >
+                        {isLoading ? 'Publishing...' : 'Publish'}
+                        <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
+                      </button>
+                      <div className="flex items-center bg-white px-3 py-1 border border-gray-200 rounded text-sm text-gray-700 h-8" style={{ width: '200px' }}>
+                        <Input
+                          type="text"
+                          value={publishDate}
+                          onChange={handleDateChange}
+                          placeholder="dd-mm-yyyy" maxLength={10}
+                          className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 p-0"
+                        />
+                        <Input
+                          type="text"
+                          value={publishTime}
+                          onChange={handleTimeChange}
+                          placeholder="--:--" maxLength={5}
+                          className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center p-0"
+                        />
+                        <button
+                          onClick={() => setIsDateTimePickerOpen(true)}
+                          className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        >
+                          <Calendar className="h-4 w-4 text-gray-700" />
+                        </button>
+                      </div>
+                      <button 
+                        onClick={handleSchedule}
+                        disabled={isLoading}
+                        className="bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-medium h-8 rounded"
+                        style={{ width: '80px', padding: '8px 5px' }}
+                      >
+                        {isLoading ? 'Scheduling...' : 'Schedule'}
+                      </button>
+                    </>
+                  )}
                 </>
               )}
             </div>
