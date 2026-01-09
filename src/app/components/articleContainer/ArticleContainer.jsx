@@ -8,20 +8,7 @@ import {
 import { useRouter } from 'next/navigation'
 import StatsPopup from './StatsPopup'
 
-export default function ArticleContainer({ 
-    id, 
-    status, 
-    title, 
-    description, 
-    categories, 
-    postedTime, 
-    isSelected, 
-    onSelect, 
-    onDelete, 
-    onPublish, 
-    onUnpublish, 
-    onDraft 
-}) {
+export default function ArticleContainer({ id, status, title, description, categories, postedTime, isSelected, onSelect, onDelete, onDraft, onPublish, onUnpublish }) {
     const router = useRouter()
     const [showStats, setShowStats] = useState(false)
     const [statsPosition, setStatsPosition] = useState({ top: 0, left: 0 })
@@ -140,8 +127,8 @@ export default function ArticleContainer({
                         
                         <button
                             className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
-                            title="Edit"
-                            onClick={handleEdit}
+                            title="Publish"
+                            onClick={handlePublish}
                         >
                             <img src="/images/icons/edit.svg" alt="Edit" className="w-5 h-5" />
                         </button>
@@ -151,6 +138,7 @@ export default function ArticleContainer({
                         >
                             <img src="/images/icons/copy.svg" alt="Copy" className="w-5 h-5" />
                         </button>
+
                         <button
                             className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
                             title="Delete"
@@ -190,8 +178,8 @@ export default function ArticleContainer({
                                 <img src="/images/icons/statistics.svg" className="w-4 h-4" />
                                 Statistics
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2 text-sm" onClick={handleEdit}>
-                                <img src="/images/icons/edit.svg" className="w-4 h-4" /> Edit
+                            <DropdownMenuItem className="gap-2 text-sm" onClick={handlePublish}>
+                                <img src="/images/icons/edit.svg" className="w-4 h-4" /> Publish
                             </DropdownMenuItem>
                             <DropdownMenuItem className="gap-2 text-sm text-red-500" onClick={handleDelete}>
                                 <img src="/images/icons/trash3.svg" className="w-4 h-4" /> Move to Trash

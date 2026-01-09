@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const joinedPublications = getJoinedPublications()
 
   return (
-    <>
+    <AuthGuard>
       <NavbarLoggedin />
       <DashboardSimpleSidebar />
       <main className="flex-1 bg-white px-4 sm:px-8 py-6 sm:py-10 mt-[120px] md:mt-[120px] pb-24 md:pb-0 md:ml-[165px]">
@@ -199,6 +199,6 @@ export default function DashboardPage() {
           </section>
         </div>
       </main>
-    </>
+    </AuthGuard>
   )
 }

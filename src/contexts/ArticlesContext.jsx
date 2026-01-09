@@ -79,6 +79,18 @@ export function ArticlesProvider({ children }) {
     }
   }, [session?.user?.id, currentPublication?.id])
 
+  // Auto-refresh for scheduled articles - check every 30 seconds
+  useEffect(() => {
+    if (!session?.user?.id) return
+
+    // Check every 30 seconds for scheduled articles that should have been published
+    const interval = setInterval(() => {
+      loadUserArticles()
+    }, 30000)
+
+    return () => clearInterval(interval)
+  }, [session?.user?.id])
+
   const loadUserArticles = async () => {
     try {
       setLoading(true)

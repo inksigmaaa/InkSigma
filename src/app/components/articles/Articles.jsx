@@ -274,6 +274,7 @@ export default function Articles(props) {
                     )}
                 </div>
             </div>
+        </div>
 
             <ConfirmModal 
                 isOpen={showDeleteModal} 
@@ -317,7 +318,6 @@ export default function Articles(props) {
                 confirmText="Unpublish" 
                 confirmStyle="normal" 
             />
-        </div>
         </>
     )
 }
