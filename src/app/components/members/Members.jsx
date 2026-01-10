@@ -8,7 +8,7 @@ import ConfirmModal from "../confirmModal/ConfirmModal";
 
 export default function Members() {
     const { data: session } = useSession();
-    const { currentPublication, refreshCurrentPublication, getCurrentUserRole, isCurrentUserAdmin } = usePublication();
+    const { currentPublication, refreshCurrentPublication, getCurrentUserRole, isCurrentUserAdmin, loading: publicationLoading } = usePublication();
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("Select Role");
     const [members, setMembers] = useState([]);
@@ -34,12 +34,15 @@ export default function Members() {
             }, 30000);
 
             return () => clearInterval(interval);
+        } else if (!publicationLoading && !currentPublication) {
+            // Publication context finished loading but no publication found
+            setLoading(false);
         }
-    }, [currentPublication?.id, session?.user?.id]);
+    }, [currentPublication?.id, session?.user?.id, publicationLoading]);
 
     const loadData = async (silent = false) => {
         if (!currentPublication) {
-            setError("No publication selected");
+            // No publication - don't set error, let the UI handle it gracefully
             setLoading(false);
             return;
         }
@@ -141,7 +144,7 @@ export default function Members() {
     const topPosition = 'top-[160px]';
     const mobileTopPosition = 'max-md:top-[120px]';
 
-    if (loading) {
+    if (loading || publicationLoading) {
         return (
             <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
                 <div className="ml-[185px] max-[767px]:ml-0">
@@ -153,14 +156,23 @@ export default function Members() {
         );
     }
 
-    if (error && !currentPublication) {
+    if (!currentPublication) {
         return (
             <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
                 <div className="ml-[185px] max-[767px]:ml-0">
                     <div className="flex flex-col justify-center items-center min-h-[400px] text-center">
-                        <div className="text-red-500 mb-4">{error}</div>
-                        <button onClick={() => window.location.href = '/myspace'} className="bg-violet-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-violet-700">
-                            Go to My Space
+                        <div className="text-gray-600 mb-4">
+                            <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Publication Found</h3>
+                            <p className="text-gray-500 mb-6">You need to create a publication first to manage members.</p>
+                        </div>
+                        <button 
+                            onClick={() => window.location.href = '/create-publication'} 
+                            className="bg-violet-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-violet-700"
+                        >
+                            Create Publication
                         </button>
                     </div>
                 </div>

@@ -42,15 +42,18 @@ export default function SchedulePage() {
     loadUserArticles();
   }, []);
 
-  // Auto-refresh to check for published scheduled articles
+  // Auto-refresh to check for published scheduled articles - only when there are scheduled articles
   useEffect(() => {
+    // Only set up auto-refresh if there are scheduled articles
+    if (scheduledArticles.length === 0) return;
+
     // Check every 30 seconds for scheduled articles that should have been published
     const interval = setInterval(() => {
       loadUserArticles();
     }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [scheduledArticles.length]); // Depend on length to start/stop based on presence of articles
 
   // Smart auto-refresh: set timer for the next scheduled article
   useEffect(() => {
