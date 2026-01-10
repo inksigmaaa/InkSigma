@@ -114,6 +114,48 @@ class AuthService {
         }).from(user);
     }
 
+    // Find Google OAuth account for user (no password set)
+    async findGoogleAccount(userId) {
+        const accounts = await db.select().from(account).where(eq(account.userId, userId));
+        return accounts.find(a => a.providerId === "google") || null;
+    }
+
+    // Check if user has any credential account (email/password)
+    async hasCredentialAccount(userId) {
+        const credentialAccount = await this.findCredentialAccount(userId);
+        return credentialAccount !== null;
+    }
+
+    // Create credential account for Google user (set password)
+    async createCredentialAccountForGoogleUser(userId, email, password) {
+        const hashedPassword = await this.hashPassword(password);
+        const accountId = this.generateToken(16);
+        
+        await db.insert(account).values({
+            id: accountId,
+            accountId: email,
+            providerId: "credential",
+            userId: userId,
+            password: hashedPassword,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+
+        return accountId;
+    }
+
+    // Check if user can set password (Google user without credential account)
+    async canSetPassword(userId) {
+        const googleAccount = await this.findGoogleAccount(userId);
+        const credentialAccount = await this.findCredentialAccount(userId);
+        
+        return {
+            canSet: googleAccount !== null && credentialAccount === null,
+            hasGoogleAccount: googleAccount !== null,
+            hasCredentialAccount: credentialAccount !== null,
+        };
+    }
+
     // Clean up unverified users older than 24 hours
     async cleanupUnverifiedUsers() {
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
