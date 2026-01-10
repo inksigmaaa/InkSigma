@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import AuthGuard from "@/components/AuthGuard"
+import AuthGuard from "@/components/auth/AuthGuard"
 import EditorPageClient from "./components/EditorPageClient"
 
 export default function EditorPage() {
