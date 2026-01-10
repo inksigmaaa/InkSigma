@@ -19,10 +19,40 @@ export default function Members() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     
+    // Toast visibility states for smooth animations
+    const [showSuccessToast, setShowSuccessToast] = useState(false);
+    const [showErrorToast, setShowErrorToast] = useState(false);
+    
     // Modal states
     const [showRemoveModal, setShowRemoveModal] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
     const [selectedMember, setSelectedMember] = useState(null);
+
+    // Smooth toast animation for success
+    useEffect(() => {
+        if (success) {
+            setShowSuccessToast(true);
+            const hideTimer = setTimeout(() => setShowSuccessToast(false), 2500);
+            const clearTimer = setTimeout(() => setSuccess(""), 3000);
+            return () => {
+                clearTimeout(hideTimer);
+                clearTimeout(clearTimer);
+            };
+        }
+    }, [success]);
+
+    // Smooth toast animation for error
+    useEffect(() => {
+        if (error) {
+            setShowErrorToast(true);
+            const hideTimer = setTimeout(() => setShowErrorToast(false), 4500);
+            const clearTimer = setTimeout(() => setError(""), 5000);
+            return () => {
+                clearTimeout(hideTimer);
+                clearTimeout(clearTimer);
+            };
+        }
+    }, [error]);
 
     // Auto-refresh interval for real-time updates
     useEffect(() => {
@@ -178,7 +208,7 @@ export default function Members() {
                 <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5 pb-20 max-[767px]:px-4.5 max-md:pb-32`}>
                     <div className="ml-[185px] max-[767px]:ml-0">
                         {error && (
-                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div className={`mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-center transition-all duration-300 ease-in-out ${showErrorToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
                                 <p className="text-red-600 text-sm">{error}</p>
                             </div>
                         )}
@@ -252,12 +282,12 @@ export default function Members() {
             <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5 pb-20 max-[767px]:px-4.5 max-md:pb-32`}>
                 <div className="ml-[185px] max-[767px]:ml-0">
                     {error && (
-                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className={`mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-center transition-all duration-300 ease-in-out ${showErrorToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
                             <p className="text-red-600 text-sm">{error}</p>
                         </div>
                     )}
                     {success && (
-                        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className={`mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-center transition-all duration-300 ease-in-out ${showSuccessToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
                             <p className="text-green-600 text-sm">{success}</p>
                         </div>
                     )}

@@ -7,6 +7,9 @@ export const blogStatusEnum = pgEnum("blog_status", ["draft", "published", "unpu
 // Define member role enum
 export const memberRoleEnum = pgEnum("member_role", ["owner", "admin", "editor", "author"]);
 
+// Define invitation status enum
+export const invitationStatusEnum = pgEnum("invitation_status", ["pending", "accepted", "declined", "expired"]);
+
 export const user = pgTable("user", {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
@@ -125,14 +128,4 @@ export const invitation = pgTable("invitation", {
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
 
-export const invitation = pgTable("invitation", {
-    id: serial("id").primaryKey(),
-    publicationId: integer("publicationId").notNull().references(() => publication.id, { onDelete: "cascade" }),
-    email: text("email").notNull(),
-    role: memberRoleEnum("role").notNull().default("author"),
-    status: invitationStatusEnum("status").notNull().default("pending"),
-    invitedBy: text("invitedBy").notNull().references(() => user.id),
-    expiresAt: timestamp("expiresAt").notNull(),
-    createdAt: timestamp("createdAt").notNull().defaultNow(),
-    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
-});
+
