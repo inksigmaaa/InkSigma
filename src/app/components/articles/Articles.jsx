@@ -263,6 +263,7 @@ export default function Articles(props) {
                                 description={article.description}
                                 categories={article.categories || []}
                                 postedTime={article.postedTime}
+                                image={article.image}
                                 isSelected={selectedArticles.has(article.id)}
                                 onSelect={handleArticleSelect}
                                 onDelete={() => handleDeleteArticle(article.id)}
