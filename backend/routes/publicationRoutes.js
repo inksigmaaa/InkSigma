@@ -234,28 +234,37 @@ router.get("/:publicationId/details", getCurrentUser, async (req, res) => {
 // Create publication
 router.post("/", getCurrentUser, async (req, res) => {
   try {
+    console.log("Create publication request received");
+    console.log("Request body:", req.body);
+    console.log("User:", req.user);
+    
     const { name, subdomain, description } = req.body;
     const userId = req.user.id;
 
     if (!name || !subdomain) {
+      console.log("Validation failed: missing name or subdomain");
       return res.status(400).json({ error: "Name and subdomain are required" });
     }
 
     // Validate publication name length
     if (name.length < 2 || name.length > 50) {
+      console.log("Validation failed: invalid name length");
       return res.status(400).json({ error: "Publication name must be between 2 and 50 characters" });
     }
 
     // Validate subdomain length
     if (subdomain.length < 3 || subdomain.length > 63) {
+      console.log("Validation failed: invalid subdomain length");
       return res.status(400).json({ error: "Subdomain must be between 3 and 63 characters" });
     }
 
     // Validate subdomain format (alphanumeric and hyphens only, no consecutive hyphens, no leading/trailing hyphens)
     if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(subdomain)) {
+      console.log("Validation failed: invalid subdomain format");
       return res.status(400).json({ error: "Subdomain can only contain letters, numbers, and hyphens. Cannot start or end with hyphens or contain consecutive hyphens." });
     }
 
+    console.log("Checking for existing user publication...");
     // Check if user already has a publication
     const existingUserPub = await db
       .select()
@@ -263,9 +272,11 @@ router.post("/", getCurrentUser, async (req, res) => {
       .where(eq(publication.userId, userId));
 
     if (existingUserPub.length > 0) {
+      console.log("User already has a publication:", existingUserPub[0]);
       return res.status(400).json({ error: "User already has a publication" });
     }
 
+    console.log("Checking if subdomain is available...");
     // Check if subdomain already exists
     const existing = await db
       .select()
@@ -273,9 +284,11 @@ router.post("/", getCurrentUser, async (req, res) => {
       .where(eq(publication.subdomain, subdomain.toLowerCase()));
 
     if (existing.length > 0) {
+      console.log("Subdomain already taken:", subdomain);
       return res.status(400).json({ error: "Subdomain already taken" });
     }
 
+    console.log("Creating publication in transaction...");
     // Create publication and add creator as admin member in a transaction
     const result = await db.transaction(async (tx) => {
       // Create the publication
@@ -292,6 +305,8 @@ router.post("/", getCurrentUser, async (req, res) => {
         })
         .returning();
 
+      console.log("Publication created:", newPublication);
+
       // Add creator as admin member
       await tx
         .insert(publicationMember)
@@ -299,16 +314,24 @@ router.post("/", getCurrentUser, async (req, res) => {
           publicationId: newPublication.id,
           userId: userId,
           role: "admin",
-          invitedBy: userId, // Self-invited as creator
         });
+
+      console.log("Admin member added for publication:", newPublication.id);
 
       return newPublication;
     });
 
+    console.log("Publication creation successful:", result);
     res.status(201).json(result);
   } catch (error) {
     console.error("Error creating publication:", error);
-    res.status(500).json({ error: "Failed to create publication" });
+    console.error("Error stack:", error.stack);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+    });
+    res.status(500).json({ error: "Failed to create publication", details: error.message });
   }
 });
 

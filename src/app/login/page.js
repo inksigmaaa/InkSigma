@@ -44,7 +44,16 @@ function LoginForm() {
       })
 
       if (result.error) {
-        setError(result.error.message || "Invalid email or password")
+        const errorMessage = result.error.message || "Invalid email or password"
+        
+        // Check if it's a "no password account" error
+        if (errorMessage.toLowerCase().includes("no password account")) {
+          setError("This account was created with Google. Please use 'Login With Google' button below.")
+        } else if (errorMessage.toLowerCase().includes("email not verified")) {
+          setError("Please verify your email before logging in. Check your inbox for the verification link.")
+        } else {
+          setError(errorMessage)
+        }
         return
       }
 
@@ -75,7 +84,14 @@ function LoginForm() {
       // User has publication or check failed, go to dashboard
       router.push(redirectTo)
     } catch (err) {
-      setError(err.message || "An unexpected error occurred")
+      const errorMessage = err.message || "An unexpected error occurred"
+      
+      // Provide user-friendly error messages
+      if (errorMessage.toLowerCase().includes("no password account")) {
+        setError("This account was created with Google. Please use 'Login With Google' button below.")
+      } else {
+        setError(errorMessage)
+      }
       console.error(err)
     } finally {
       setLoading(false)
