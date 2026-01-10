@@ -7,6 +7,7 @@ export const blogStatusEnum = pgEnum("blog_status", ["draft", "published", "unpu
 // Define member role enum
 export const memberRoleEnum = pgEnum("member_role", ["owner", "admin", "editor", "author"]);
 
+// Define invitation status enum
 export const invitationStatusEnum = pgEnum("invitation_status", ["pending", "accepted", "declined", "expired"]);
 
 export const user = pgTable("user", {
@@ -126,4 +127,5 @@ export const invitation = pgTable("invitation", {
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
+
 
