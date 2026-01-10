@@ -8,7 +8,7 @@ import ConfirmModal from "../confirmModal/ConfirmModal";
 
 export default function Members() {
     const { data: session } = useSession();
-    const { currentPublication, refreshCurrentPublication, getCurrentUserRole, isCurrentUserAdmin } = usePublication();
+    const { currentPublication, refreshCurrentPublication, getCurrentUserRole, isCurrentUserAdmin, loading: publicationLoading } = usePublication();
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("Select Role");
     const [members, setMembers] = useState([]);
@@ -34,12 +34,15 @@ export default function Members() {
             }, 30000);
 
             return () => clearInterval(interval);
+        } else if (!publicationLoading && !currentPublication) {
+            // Publication context finished loading but no publication found
+            setLoading(false);
         }
-    }, [currentPublication?.id, session?.user?.id]);
+    }, [currentPublication?.id, session?.user?.id, publicationLoading]);
 
     const loadData = async (silent = false) => {
         if (!currentPublication) {
-            setError("No publication selected");
+            // No publication - don't set error, let the UI handle it gracefully
             setLoading(false);
             return;
         }
@@ -141,7 +144,7 @@ export default function Members() {
     const topPosition = 'top-[160px]';
     const mobileTopPosition = 'max-md:top-[120px]';
 
-    if (loading) {
+    if (loading || publicationLoading) {
         return (
             <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
                 <div className="ml-[185px] max-[767px]:ml-0">
@@ -153,7 +156,7 @@ export default function Members() {
         );
     }
 
-    if (error && !currentPublication) {
+    if (!currentPublication) {
         return (
             <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
                 <div className="ml-[185px] max-[767px]:ml-0">

@@ -72,7 +72,7 @@ export default function AuthGuard({ children }) {
     }, [session, isPending, pathname, router]);
 
     // Show loading while checking authentication or publication
-    if (isPending || checkingPublication) {
+    if (isLoading || checkingPublication) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>

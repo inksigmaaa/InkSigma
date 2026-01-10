@@ -1,5 +1,5 @@
 // services/publicationService.js
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 export const publicationService = {
   // Get user's publication
@@ -9,7 +9,13 @@ export const publicationService = {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch publication");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to fetch publication");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -53,21 +59,53 @@ export const publicationService = {
 
   // Create publication
   async createPublication(data) {
-    const response = await fetch(`${API_URL}/api/publications`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
+    try {
+      const response = await fetch(`${API_URL}/api/publications`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to create publication");
+      if (!response.ok) {
+        // Clone the response so we can read it multiple times if needed
+        const clonedResponse = response.clone();
+        
+        try {
+          // Try to parse as JSON first
+          const contentType = response.headers.get("content-type");
+          
+          if (contentType && contentType.includes("application/json")) {
+            const error = await response.json();
+            console.error("Create publication error response:", error);
+            const errorMessage = error.error || error.message || "Failed to create publication";
+            throw new Error(errorMessage);
+          } else {
+            // If not JSON, read as text
+            const text = await response.text();
+            console.error("Non-JSON response:", text.substring(0, 500));
+            throw new Error(`Server error (${response.status}): ${response.statusText}`);
+          }
+        } catch (parseError) {
+          // If JSON parsing fails, try reading as text from cloned response
+          console.error("Error parsing response:", parseError);
+          try {
+            const text = await clonedResponse.text();
+            console.error("Response text:", text.substring(0, 500));
+            throw new Error(`Server error (${response.status}): ${text.substring(0, 100) || response.statusText}`);
+          } catch {
+            throw new Error(`Server error (${response.status}): ${response.statusText}`);
+          }
+        }
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error("Create publication error:", error);
+      throw error;
     }
-
-    return response.json();
   },
 
   // Update publication
@@ -82,8 +120,13 @@ export const publicationService = {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to update publication");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update publication");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -101,8 +144,13 @@ export const publicationService = {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to upload logo");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to upload logo");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -120,8 +168,13 @@ export const publicationService = {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to upload favicon");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to upload favicon");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -139,8 +192,13 @@ export const publicationService = {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to upload meta OG image");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to upload meta OG image");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
@@ -154,8 +212,13 @@ export const publicationService = {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to remove image");
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to remove image");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
     }
 
     return response.json();
