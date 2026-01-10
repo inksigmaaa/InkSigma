@@ -8,10 +8,12 @@ import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import imagePlaceholder from "@/icons/image-placeholder.svg";
 import cameraIcon from "@/icons/camera.svg";
 import { publicationService } from "@/services/publicationService";
+import { usePublication } from "@/contexts/PublicationContext";
 
 export default function CreatePublication() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { loadUserPublications, switchPublication } = usePublication();
   const [publicationName, setPublicationName] = useState("");
   const [subdomain, setSubdomain] = useState("");
   const [showErrors, setShowErrors] = useState(false);
@@ -128,7 +130,41 @@ export default function CreatePublication() {
       }
 
       // Redirect to dashboard
-      router.push('/dashboard');
+      console.log('Refreshing user publications...');
+      
+      try {
+        // Refresh the publication context to include the new publication
+        await loadUserPublications();
+        
+        // Wait a bit to ensure the context is updated
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Switch to the newly created publication
+        const publicationWithMeta = {
+          ...publication,
+          isOwner: true,
+          role: "admin",
+          joinedAt: publication.createdAt,
+        };
+        
+        switchPublication(publicationWithMeta);
+        
+        // Clear any cached publication check to force AuthGuard to recheck
+        // This prevents the AuthGuard from redirecting back to create-publication
+        const cacheKey = `publication-check-${session.user.id}`;
+        sessionStorage.setItem(cacheKey, 'true');
+        sessionStorage.removeItem('publication-check-cache');
+        
+        // Redirect to dashboard (myspace) instead of directly to publication
+        router.push('/dashboard');
+      } catch (contextError) {
+        console.error('Failed to update context, redirecting to dashboard:', contextError);
+        // Clear cache and redirect to dashboard (myspace)
+        const cacheKey = `publication-check-${session.user.id}`;
+        sessionStorage.setItem(cacheKey, 'true');
+        sessionStorage.removeItem('publication-check-cache');
+        router.push('/dashboard');
+      }
     } catch (error) {
       console.error('Error creating publication:', error);
       setErrorMessage(error.message || "Failed to create publication. Please try again.");
