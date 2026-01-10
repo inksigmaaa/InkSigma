@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import AuthGuard from "@/components/auth/AuthGuard";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
@@ -17,43 +17,67 @@ export default function SchedulePage() {
   const [actionArticleId, setActionArticleId] = useState(null);
   const [isBulkAction, setIsBulkAction] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Refs to prevent stale closures and unnecessary re-renders
+  const loadUserArticlesRef = useRef(loadUserArticles);
+  const hasMountedRef = useRef(false);
+  
+  // Update ref when loadUserArticles changes
+  useEffect(() => {
+    loadUserArticlesRef.current = loadUserArticles;
+  }, [loadUserArticles]);
 
-  // Filter scheduled articles and add action handlers - MUST be defined before useEffects that use it
+  // Filter scheduled articles - separate from action handlers to prevent re-renders
+  const scheduledArticleIds = useMemo(() => {
+    return articles
+      .filter(article => article.status === 'scheduled')
+      .map(article => article.id);
+  }, [articles]);
+
+  // Memoized action handlers
+  const handleDeleteAction = useCallback((articleId) => {
+    setActionArticleId(articleId);
+    setIsBulkAction(false);
+    setShowDeleteModal(true);
+  }, []);
+
+  const handleDraftAction = useCallback((articleId) => {
+    setActionArticleId(articleId);
+    setIsBulkAction(false);
+    setShowDraftModal(true);
+  }, []);
+
+  // Create scheduled articles with stable action handlers
   const scheduledArticles = useMemo(() => {
     return articles
       .filter(article => article.status === 'scheduled')
       .map(article => ({
         ...article,
-        onDelete: () => {
-          setActionArticleId(article.id);
-          setIsBulkAction(false);
-          setShowDeleteModal(true);
-        },
-        onDraft: () => {
-          setActionArticleId(article.id);
-          setIsBulkAction(false);
-          setShowDraftModal(true);
-        }
+        onDelete: () => handleDeleteAction(article.id),
+        onDraft: () => handleDraftAction(article.id)
       }));
-  }, [articles]);
+  }, [articles, handleDeleteAction, handleDraftAction]);
 
-  // Refresh articles when component mounts to ensure we have the latest data
+  // Refresh articles only once when component mounts
   useEffect(() => {
-    loadUserArticles();
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      loadUserArticlesRef.current();
+    }
   }, []);
 
   // Auto-refresh to check for published scheduled articles - only when there are scheduled articles
   useEffect(() => {
     // Only set up auto-refresh if there are scheduled articles
-    if (scheduledArticles.length === 0) return;
+    if (scheduledArticleIds.length === 0) return;
 
     // Check every 30 seconds for scheduled articles that should have been published
     const interval = setInterval(() => {
-      loadUserArticles();
+      loadUserArticlesRef.current();
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [scheduledArticles.length]); // Depend on length to start/stop based on presence of articles
+  }, [scheduledArticleIds.length]); // Depend on length to start/stop based on presence of articles
 
   // Smart auto-refresh: set timer for the next scheduled article
   useEffect(() => {
@@ -82,7 +106,7 @@ export default function SchedulePage() {
     if (timeUntilPublish <= 120000 && timeUntilPublish > 0) {
       const timer = setTimeout(() => {
         // Refresh after the scheduled time + 3 seconds buffer for backend processing
-        loadUserArticles();
+        loadUserArticlesRef.current();
       }, timeUntilPublish + 3000);
 
       return () => clearTimeout(timer);
@@ -90,48 +114,44 @@ export default function SchedulePage() {
   }, [scheduledArticles.length]); // Only depend on length to avoid infinite loops
 
   // Manual refresh function
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await loadUserArticles();
+      await loadUserArticlesRef.current();
     } catch (error) {
       console.error('Error refreshing articles:', error);
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, []);
 
-  const handleSelectAll = (checked) => {
+  const handleSelectAll = useCallback((checked) => {
     if (checked) {
-      setSelectedArticles(scheduledArticles.map(a => a.id));
+      setSelectedArticles(scheduledArticleIds);
     } else {
       setSelectedArticles([]);
     }
-  };
+  }, [scheduledArticleIds]);
 
-  const handleArticleSelect = (id, checked) => {
+  const handleArticleSelect = useCallback((id, checked) => {
     if (checked) {
       setSelectedArticles(prev => [...prev, id]);
     } else {
       setSelectedArticles(prev => prev.filter(articleId => articleId !== id));
     }
-  };
+  }, []);
 
-  const handleBulkDelete = () => {
-    if (selectedArticles.length > 0) {
-      setIsBulkAction(true);
-      setShowDeleteModal(true);
-    }
-  };
+  const handleBulkDelete = useCallback(() => {
+    setIsBulkAction(true);
+    setShowDeleteModal(true);
+  }, []);
 
-  const handleBulkDraft = () => {
-    if (selectedArticles.length > 0) {
-      setIsBulkAction(true);
-      setShowDraftModal(true);
-    }
-  };
+  const handleBulkDraft = useCallback(() => {
+    setIsBulkAction(true);
+    setShowDraftModal(true);
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     try {
       if (isBulkAction) {
         await bulkMoveToTrashStatus(selectedArticles);
@@ -144,9 +164,9 @@ export default function SchedulePage() {
     } catch (error) {
       console.error('Error moving to trash:', error);
     }
-  };
+  }, [isBulkAction, selectedArticles, actionArticleId, bulkMoveToTrashStatus, moveToTrashStatus]);
 
-  const confirmDraft = async () => {
+  const confirmDraft = useCallback(async () => {
     try {
       if (isBulkAction) {
         await bulkMoveToDraft(selectedArticles);
@@ -159,9 +179,9 @@ export default function SchedulePage() {
     } catch (error) {
       console.error('Error moving to draft:', error);
     }
-  };
+  }, [isBulkAction, selectedArticles, actionArticleId, bulkMoveToDraft, moveToDraft]);
 
-  const actionButtons = [
+  const actionButtons = useMemo(() => [
     {
       title: "Move to Draft",
       icon: "/images/icons/edit.svg",
@@ -174,7 +194,17 @@ export default function SchedulePage() {
       onClick: handleBulkDelete,
       disabled: selectedArticles.length === 0
     }
-  ];
+  ], [handleBulkDraft, handleBulkDelete, selectedArticles.length]);
+
+  const handleCloseDeleteModal = useCallback(() => {
+    setShowDeleteModal(false);
+    setActionArticleId(null);
+  }, []);
+
+  const handleCloseDraftModal = useCallback(() => {
+    setShowDraftModal(false);
+    setActionArticleId(null);
+  }, []);
 
   if (loading) {
     return (
@@ -222,10 +252,7 @@ export default function SchedulePage() {
 
       <ConfirmModal
         isOpen={showDeleteModal}
-        onClose={() => {
-          setShowDeleteModal(false);
-          setActionArticleId(null);
-        }}
+        onClose={handleCloseDeleteModal}
         onConfirm={confirmDelete}
         title="Are you sure you want to put it in trash?"
         message={isBulkAction ? `${selectedArticles.length} scheduled article(s) will be moved to trash` : "This scheduled article will be moved to trash"}
@@ -235,10 +262,7 @@ export default function SchedulePage() {
 
       <ConfirmModal
         isOpen={showDraftModal}
-        onClose={() => {
-          setShowDraftModal(false);
-          setActionArticleId(null);
-        }}
+        onClose={handleCloseDraftModal}
         onConfirm={confirmDraft}
         title="Move to Draft?"
         message={isBulkAction ? `${selectedArticles.length} scheduled article(s) will be moved to drafts` : "This scheduled article will be moved to drafts"}

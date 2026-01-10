@@ -66,7 +66,7 @@ export default function EditorPageClient() {
   const [publishedBlogSlug, setPublishedBlogSlug] = useState('')
   const [showDraftSavedToast, setShowDraftSavedToast] = useState(false)
   
-  // Refs to track latest values for auto-save
+  // Refs to track latest values for auto-save - consolidated to reduce effect count
   const titleRef = useRef(title)
   const descriptionRef = useRef(description)
   const editorContentRef = useRef(editorContent)
@@ -74,6 +74,10 @@ export default function EditorPageClient() {
   const currentArticleIdRef = useRef(currentArticleId)
   const hasUnsavedChangesRef = useRef(hasUnsavedChanges)
   const isSavingRef = useRef(false)
+  const createArticleRef = useRef(createArticle)
+  const updateArticleRef = useRef(updateArticle)
+  const loadUserArticlesRef = useRef(loadUserArticles)
+  const isInitialLoadRef = useRef(true)
 
   // Load existing article data if ID is provided
   useEffect(() => {
@@ -93,35 +97,44 @@ export default function EditorPageClient() {
           // Reset unsaved changes since we just loaded
           setHasUnsavedChanges(false)
           setIsSaved(true)
+          isInitialLoadRef.current = false
         } catch (error) {
           console.error('Error loading article:', error)
           router.push('/home')
         } finally {
           setIsLoadingArticle(false)
         }
+      } else {
+        isInitialLoadRef.current = false
       }
     }
 
     loadArticle()
   }, [articleId, session?.user?.id, getArticleById, router])
 
-  // Update refs when state changes
-  useEffect(() => { titleRef.current = title }, [title])
-  useEffect(() => { descriptionRef.current = description }, [description])
-  useEffect(() => { editorContentRef.current = editorContent }, [editorContent])
-  useEffect(() => { selectedCategoriesRef.current = selectedCategories }, [selectedCategories])
-  useEffect(() => { currentArticleIdRef.current = currentArticleId }, [currentArticleId])
-  useEffect(() => { hasUnsavedChangesRef.current = hasUnsavedChanges }, [hasUnsavedChanges])
-
-  // Track unsaved changes
+  // Consolidated ref updates - single effect instead of multiple
   useEffect(() => {
+    titleRef.current = title
+    descriptionRef.current = description
+    editorContentRef.current = editorContent
+    selectedCategoriesRef.current = selectedCategories
+    currentArticleIdRef.current = currentArticleId
+    hasUnsavedChangesRef.current = hasUnsavedChanges
+    createArticleRef.current = createArticle
+    updateArticleRef.current = updateArticle
+    loadUserArticlesRef.current = loadUserArticles
+  })
+
+  // Track unsaved changes - skip during initial load
+  useEffect(() => {
+    if (isInitialLoadRef.current) return
     if (title || description || editorContent) {
       setHasUnsavedChanges(true)
       setIsSaved(false)
     }
   }, [title, description, editorContent, selectedCategories])
 
-  // Auto-save to draft function
+  // Auto-save to draft function - uses refs to avoid dependency changes
   const autoSaveToDraft = useCallback(async () => {
     // Don't save if already saving, no content, or no unsaved changes
     if (isSavingRef.current || isLoading) return
@@ -136,7 +149,7 @@ export default function EditorPageClient() {
       
       if (currentArticleIdRef.current) {
         // Update existing article - ensure required fields have valid content
-        await updateArticle(currentArticleIdRef.current, {
+        await updateArticleRef.current(currentArticleIdRef.current, {
           title: titleRef.current.trim(),
           description: descriptionRef.current.trim() || 'Draft',
           content: editorContentRef.current.trim() || '<p></p>',
@@ -145,7 +158,7 @@ export default function EditorPageClient() {
         })
       } else {
         // Create new draft article
-        const newArticle = await createArticle({
+        const newArticle = await createArticleRef.current({
           title: titleRef.current.trim(),
           description: descriptionRef.current.trim() || 'Draft',
           content: editorContentRef.current.trim() || '<p></p>',
@@ -163,7 +176,7 @@ export default function EditorPageClient() {
     } finally {
       isSavingRef.current = false
     }
-  }, [createArticle, updateArticle, isLoading])
+  }, [isLoading]) // Uses refs internally, only isLoading is a direct dependency
 
   // Auto-save on beforeunload (browser close/refresh)
   useEffect(() => {
@@ -213,11 +226,12 @@ export default function EditorPageClient() {
     }
   }, [autoSaveToDraft])
 
-  const handleEditorUpdate = ({ html, charCount: chars, wordCount: words }) => {
+  // Memoize editor update handler to prevent TiptapEditor re-renders
+  const handleEditorUpdate = useCallback(({ html, charCount: chars, wordCount: words }) => {
     setEditorContent(html)
     setCharCount(chars)
     setWordCount(words)
-  }
+  }, [])
 
   const handlePublish = async () => {
     if (!title.trim() || !description.trim() || !editorContent.trim()) {
@@ -604,18 +618,18 @@ export default function EditorPageClient() {
     }
   }
 
-  const handleReschedule = () => {
+  const handleReschedule = useCallback(() => {
     setIsDateTimePickerOpen(true)
-  }
+  }, [])
 
-  const handleThumbnailAdd = (imageData) => {
+  const handleThumbnailAdd = useCallback((imageData) => {
     setThumbnailImage(imageData)
-  }
+  }, [])
 
-  const handleDateTimeSelect = (date, time) => {
+  const handleDateTimeSelect = useCallback((date, time) => {
     setPublishDate(date)
     setPublishTime(time)
-  }
+  }, [])
 
   // Handle Go Back - auto-save to draft if there are unsaved changes
   const handleGoBack = async () => {
