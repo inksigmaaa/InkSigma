@@ -43,6 +43,13 @@
       "when": 1767873538425,
       "tag": "0005_opposite_abomination",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1736499600000,
+      "tag": "0008_add_publication_members_invitation",
+      "breakpoints": true
     }
   ]
 }
