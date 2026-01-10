@@ -40,7 +40,7 @@ export default function PublicationSwitcher() {
 
   const handleViewMySpace = () => {
     setIsOpen(false);
-    router.push('/myspace');
+    router.push('/dashboard');
   };
 
   if (loading || !currentPublication) {

@@ -21,27 +21,48 @@ export default function AuthGuard({ children }) {
                 return;
             }
 
-            // Skip publication check if already on create-publication page
-            if (pathname === '/create-publication') {
+            // Skip publication check if already on create-publication page or invitation pages
+            if (pathname === '/create-publication' || pathname?.startsWith('/invite/')) {
+                setCheckingPublication(false);
+                return;
+            }
+
+            // Check cache first (but allow cache to be cleared)
+            const cacheKey = `publication-check-${session.user.id}`;
+            const cached = sessionStorage.getItem(cacheKey);
+            
+            if (cached && cached !== 'false') {
+                console.log('[AuthGuard] Using cached publication check result');
                 setCheckingPublication(false);
                 return;
             }
 
             // Check if user has a publication
             try {
+                console.log('[AuthGuard] Checking if user has publication...');
                 const pubResponse = await fetch(`http://localhost:5000/api/publications/check`, {
                     credentials: 'include',
                 });
 
                 if (pubResponse.ok) {
                     const { hasPublication } = await pubResponse.json();
+                    console.log('[AuthGuard] Has publication:', hasPublication);
+                    
+                    // Cache the result
+                    sessionStorage.setItem(cacheKey, hasPublication.toString());
+                    
                     if (!hasPublication) {
+                        console.log('[AuthGuard] No publication found, redirecting to create-publication');
                         router.push('/create-publication');
                         return;
                     }
+                } else {
+                    console.error('[AuthGuard] Failed to check publication:', pubResponse.status);
+                    // If the check fails, allow access to prevent blocking the user
                 }
             } catch (error) {
                 console.error('[AuthGuard] Error checking publication:', error);
+                // If there's an error, allow access to prevent blocking the user
             }
 
             setCheckingPublication(false);
