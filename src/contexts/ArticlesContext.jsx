@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { blogService } from '@/services/blog.service'
 import { useSession } from '@/lib/auth-client'
 import { usePublication } from '@/contexts/PublicationContext'
@@ -63,6 +63,10 @@ export function ArticlesProvider({ children }) {
   const [error, setError] = useState(null)
   const { data: session } = useSession()
   
+  // Refs to track current values without causing re-renders
+  const sessionRef = useRef(session)
+  const isLoadingRef = useRef(false)
+  
   // Try to get publication context, but handle case where it might not be available
   let currentPublication = null
   try {
@@ -71,38 +75,38 @@ export function ArticlesProvider({ children }) {
   } catch (e) {
     // PublicationContext not available, will use default behavior
   }
-
-  // Load articles when session or publication changes
+  
+  const currentPublicationRef = useRef(currentPublication)
+  
+  // Update refs when values change
   useEffect(() => {
-    if (session?.user?.id) {
-      loadUserArticles()
-    }
-  }, [session?.user?.id, currentPublication?.id])
-
-  // Auto-refresh for scheduled articles - check every 30 seconds
+    sessionRef.current = session
+  }, [session])
+  
   useEffect(() => {
-    if (!session?.user?.id) return
+    currentPublicationRef.current = currentPublication
+  }, [currentPublication])
 
-    // Check every 30 seconds for scheduled articles that should have been published
-    const interval = setInterval(() => {
-      loadUserArticles()
-    }, 30000)
-
-    return () => clearInterval(interval)
-  }, [session?.user?.id])
-
-  const loadUserArticles = async () => {
+  // Memoized loadUserArticles to prevent unnecessary re-renders
+  const loadUserArticles = useCallback(async () => {
+    // Prevent concurrent loads
+    if (isLoadingRef.current) return
+    
+    const currentSession = sessionRef.current
+    const currentPub = currentPublicationRef.current
+    
     try {
+      isLoadingRef.current = true
       setLoading(true)
       setError(null)
       
       let blogs;
-      if (session?.user?.id) {
+      if (currentSession?.user?.id) {
         // If we have a current publication, load articles for that publication
-        if (currentPublication?.id) {
-          blogs = await blogService.getPublicationBlogs(currentPublication.id)
+        if (currentPub?.id) {
+          blogs = await blogService.getPublicationBlogs(currentPub.id)
         } else {
-          blogs = await blogService.getUserBlogs(session.user.id)
+          blogs = await blogService.getUserBlogs(currentSession.user.id)
         }
       } else {
         blogs = await blogService.getAllBlogs()
@@ -119,10 +123,19 @@ export function ArticlesProvider({ children }) {
       }
     } finally {
       setLoading(false)
+      isLoadingRef.current = false
     }
-  }
+  }, []) // Empty deps - uses refs internally
 
-  const getArticleById = async (id) => {
+  // Load articles when session or publication changes
+  useEffect(() => {
+    if (session?.user?.id) {
+      loadUserArticles()
+    }
+  }, [session?.user?.id, currentPublication?.id, loadUserArticles])
+
+  // Memoize all functions to prevent unnecessary re-renders
+  const getArticleById = useCallback(async (id) => {
     try {
       const blog = await blogService.getBlog(id)
       return convertBlogToArticle(blog)
@@ -130,9 +143,9 @@ export function ArticlesProvider({ children }) {
       console.error('Error loading article:', err)
       throw err
     }
-  }
+  }, [])
 
-  const createArticle = async (articleData) => {
+  const createArticle = useCallback(async (articleData) => {
     try {
       // Determine status based on published flag, defaulting to draft
       let status = 'draft';
@@ -165,9 +178,9 @@ export function ArticlesProvider({ children }) {
       console.error('Error creating article:', err)
       throw err
     }
-  }
+  }, [])
 
-  const updateArticle = async (id, articleData) => {
+  const updateArticle = useCallback(async (id, articleData) => {
     try {
       // Determine status based on published flag or explicit status
       let status = articleData.status;
@@ -193,9 +206,9 @@ export function ArticlesProvider({ children }) {
       console.error('Error updating article:', err)
       throw err
     }
-  }
+  }, [])
 
-  const moveToTrash = async (id) => {
+  const moveToTrash = useCallback(async (id) => {
     try {
       await blogService.deleteBlog(id)
       setArticles(prev => prev.filter(article => article.id !== id))
@@ -203,9 +216,9 @@ export function ArticlesProvider({ children }) {
       console.error('Error deleting article:', err)
       throw err
     }
-  }
+  }, [])
 
-  const moveToDraft = async (id) => {
+  const moveToDraft = useCallback(async (id) => {
     try {
       const blog = await blogService.updateBlogStatus(id, 'draft')
       const updatedArticle = convertBlogToArticle(blog)
@@ -217,9 +230,9 @@ export function ArticlesProvider({ children }) {
       console.error('Error moving article to draft:', err)
       throw err
     }
-  }
+  }, [])
 
-  const moveToTrashStatus = async (id) => {
+  const moveToTrashStatus = useCallback(async (id) => {
     try {
       const blog = await blogService.updateBlogStatus(id, 'trash')
       const updatedArticle = convertBlogToArticle(blog)
@@ -231,9 +244,9 @@ export function ArticlesProvider({ children }) {
       console.error('Error moving article to trash:', err)
       throw err
     }
-  }
+  }, [])
 
-  const publishArticle = async (id) => {
+  const publishArticle = useCallback(async (id) => {
     try {
       console.log('Publishing article with ID:', id)
       const blog = await blogService.updateBlogStatus(id, 'published')
@@ -247,9 +260,9 @@ export function ArticlesProvider({ children }) {
       console.error('Error publishing article:', err)
       throw err
     }
-  }
+  }, [])
 
-  const unpublishArticle = async (id) => {
+  const unpublishArticle = useCallback(async (id) => {
     try {
       const blog = await blogService.updateBlogStatus(id, 'unpublished')
       const updatedArticle = convertBlogToArticle(blog)
@@ -261,9 +274,9 @@ export function ArticlesProvider({ children }) {
       console.error('Error unpublishing article:', err)
       throw err
     }
-  }
+  }, [])
 
-  const bulkMoveToTrash = async (ids) => {
+  const bulkMoveToTrash = useCallback(async (ids) => {
     try {
       await Promise.all(ids.map(id => blogService.deleteBlog(id)))
       setArticles(prev => prev.filter(article => !ids.includes(article.id)))
@@ -271,9 +284,9 @@ export function ArticlesProvider({ children }) {
       console.error('Error bulk deleting articles:', err)
       throw err
     }
-  }
+  }, [])
 
-  const bulkMoveToTrashStatus = async (ids) => {
+  const bulkMoveToTrashStatus = useCallback(async (ids) => {
     try {
       const updatedBlogs = await Promise.all(
         ids.map(id => blogService.updateBlogStatus(id, 'trash'))
@@ -288,9 +301,9 @@ export function ArticlesProvider({ children }) {
       console.error('Error bulk moving articles to trash:', err)
       throw err
     }
-  }
+  }, [])
 
-  const bulkPublish = async (ids) => {
+  const bulkPublish = useCallback(async (ids) => {
     try {
       const updatedBlogs = await Promise.all(
         ids.map(id => blogService.updateBlogStatus(id, 'published'))
@@ -305,9 +318,9 @@ export function ArticlesProvider({ children }) {
       console.error('Error bulk publishing articles:', err)
       throw err
     }
-  }
+  }, [])
 
-  const bulkMoveToDraft = async (ids) => {
+  const bulkMoveToDraft = useCallback(async (ids) => {
     try {
       const updatedBlogs = await Promise.all(
         ids.map(id => blogService.updateBlogStatus(id, 'draft'))
@@ -322,9 +335,9 @@ export function ArticlesProvider({ children }) {
       console.error('Error bulk moving articles to draft:', err)
       throw err
     }
-  }
+  }, [])
 
-  const uploadArticleImage = async (id, imageFile) => {
+  const uploadArticleImage = useCallback(async (id, imageFile) => {
     try {
       // Validate that imageFile is actually a File object
       if (!imageFile || !(imageFile instanceof File)) {
@@ -341,53 +354,78 @@ export function ArticlesProvider({ children }) {
       console.error('Error uploading article image:', err)
       throw err
     }
-  }
+  }, [])
 
   // Legacy methods for backward compatibility (now just update status locally)
-  const restoreFromTrash = (id) => {
+  const restoreFromTrash = useCallback((id) => {
     setArticles(prev => prev.map(article =>
       article.id === id ? { ...article, status: 'draft' } : article
     ))
-  }
+  }, [])
 
-  const deleteArticle = (id) => {
+  const deleteArticle = useCallback((id) => {
     setArticles(prev => prev.filter(article => article.id !== id))
-  }
+  }, [])
 
-  const bulkRestore = (ids) => {
+  const bulkRestore = useCallback((ids) => {
     setArticles(prev => prev.map(article =>
       ids.includes(article.id) ? { ...article, status: 'draft' } : article
     ))
-  }
+  }, [])
 
-  const bulkDelete = (ids) => {
+  const bulkDelete = useCallback((ids) => {
     setArticles(prev => prev.filter(article => !ids.includes(article.id)))
-  }
+  }, [])
+
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    articles,
+    loading,
+    error,
+    loadUserArticles,
+    getArticleById,
+    createArticle,
+    updateArticle,
+    moveToTrash,
+    moveToDraft,
+    moveToTrashStatus,
+    restoreFromTrash,
+    deleteArticle,
+    publishArticle,
+    unpublishArticle,
+    bulkMoveToTrash,
+    bulkMoveToTrashStatus,
+    bulkMoveToDraft,
+    bulkRestore,
+    bulkDelete,
+    bulkPublish,
+    uploadArticleImage
+  }), [
+    articles,
+    loading,
+    error,
+    loadUserArticles,
+    getArticleById,
+    createArticle,
+    updateArticle,
+    moveToTrash,
+    moveToDraft,
+    moveToTrashStatus,
+    restoreFromTrash,
+    deleteArticle,
+    publishArticle,
+    unpublishArticle,
+    bulkMoveToTrash,
+    bulkMoveToTrashStatus,
+    bulkMoveToDraft,
+    bulkRestore,
+    bulkDelete,
+    bulkPublish,
+    uploadArticleImage
+  ])
 
   return (
-    <ArticlesContext.Provider value={{
-      articles,
-      loading,
-      error,
-      loadUserArticles,
-      getArticleById,
-      createArticle,
-      updateArticle,
-      moveToTrash,
-      moveToDraft,
-      moveToTrashStatus,
-      restoreFromTrash,
-      deleteArticle,
-      publishArticle,
-      unpublishArticle,
-      bulkMoveToTrash,
-      bulkMoveToTrashStatus,
-      bulkMoveToDraft,
-      bulkRestore,
-      bulkDelete,
-      bulkPublish,
-      uploadArticleImage
-    }}>
+    <ArticlesContext.Provider value={contextValue}>
       {children}
     </ArticlesContext.Provider>
   )
