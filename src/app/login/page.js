@@ -23,6 +23,9 @@ function LoginForm() {
   })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [showResendVerification, setShowResendVerification] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
 
   const handleInputChange = (field) => (e) => {
     setFormData(prev => ({
@@ -51,6 +54,7 @@ function LoginForm() {
           setError("This account was created with Google. Please use 'Login With Google' button below.")
         } else if (errorMessage.toLowerCase().includes("email not verified")) {
           setError("Please verify your email before logging in. Check your inbox for the verification link.")
+          setShowResendVerification(true)
         } else {
           setError(errorMessage)
         }
@@ -89,6 +93,9 @@ function LoginForm() {
       // Provide user-friendly error messages
       if (errorMessage.toLowerCase().includes("no password account")) {
         setError("This account was created with Google. Please use 'Login With Google' button below.")
+      } else if (errorMessage.toLowerCase().includes("email not verified")) {
+        setError("Please verify your email before logging in. Check your inbox for the verification link.")
+        setShowResendVerification(true)
       } else {
         setError(errorMessage)
       }
@@ -114,11 +121,56 @@ function LoginForm() {
     router.push('/magic-link')
   }
 
+  const handleResendVerification = async () => {
+    setResendLoading(true)
+    setResendSuccess(false)
+    
+    try {
+      const response = await fetch("http://localhost:5000/api/resend-verification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ email: formData.email }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || "Failed to resend verification email")
+      }
+
+      setResendSuccess(true)
+      setError("")
+      setShowResendVerification(false)
+    } catch (err) {
+      setError(err.message || "Failed to resend verification email")
+    } finally {
+      setResendLoading(false)
+    }
+  }
+
   return (
     <AuthLayout title="Login here!">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
           {error}
+          {showResendVerification && (
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={resendLoading}
+              className="mt-2 text-sm underline hover:text-red-800 disabled:opacity-50"
+            >
+              {resendLoading ? "Sending..." : "Resend Verification Email"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {resendSuccess && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4">
+          Verification email sent! Please check your inbox (and spam folder).
         </div>
       )}
 

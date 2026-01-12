@@ -21,8 +21,11 @@ export default function CreatePublication() {
   const [uploadedImage, setUploadedImage] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [checkingSubdomain, setCheckingSubdomain] = useState(false);
+  const [subdomainAvailable, setSubdomainAvailable] = useState(null);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
+  const subdomainCheckTimeout = useRef(null);
 
   // Extract name from email on component mount
   useEffect(() => {
@@ -37,6 +40,53 @@ export default function CreatePublication() {
       setPublicationName(formattedName);
     }
   }, [session, publicationName]);
+
+  // Check subdomain availability with debounce
+  useEffect(() => {
+    if (subdomainCheckTimeout.current) {
+      clearTimeout(subdomainCheckTimeout.current);
+    }
+
+    if (!subdomain || subdomain.length < 3) {
+      setSubdomainAvailable(null);
+      return;
+    }
+
+    // Validate subdomain format first
+    if (!/^[a-zA-Z0-9-]+$/.test(subdomain)) {
+      setSubdomainAvailable(null);
+      return;
+    }
+
+    setCheckingSubdomain(true);
+    
+    subdomainCheckTimeout.current = setTimeout(async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+        const response = await fetch(`${API_URL}/api/publications/check-subdomain/${subdomain.toLowerCase()}`, {
+          credentials: "include",
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setSubdomainAvailable(data.available);
+        } else {
+          setSubdomainAvailable(null);
+        }
+      } catch (error) {
+        console.error('Error checking subdomain:', error);
+        setSubdomainAvailable(null);
+      } finally {
+        setCheckingSubdomain(false);
+      }
+    }, 500);
+
+    return () => {
+      if (subdomainCheckTimeout.current) {
+        clearTimeout(subdomainCheckTimeout.current);
+      }
+    };
+  }, [subdomain]);
 
   const handleStartWriting = async () => {
     if (!publicationName.trim() || !subdomain.trim()) {
@@ -60,6 +110,13 @@ export default function CreatePublication() {
     // Validate subdomain format (alphanumeric and hyphens only)
     if (!/^[a-zA-Z0-9-]+$/.test(subdomain)) {
       setErrorMessage("Subdomain can only contain letters, numbers, and hyphens!");
+      setShowErrors(true);
+      return;
+    }
+
+    // Check if subdomain is available
+    if (subdomainAvailable === false) {
+      setErrorMessage("This subdomain is already taken. Please choose another one.");
       setShowErrors(true);
       return;
     }
@@ -325,6 +382,17 @@ export default function CreatePublication() {
                 />
                 <span className="absolute right-0 bottom-2 text-[14px] text-black">.inksigma.com</span>
               </div>
+              {subdomain.length >= 3 && (
+                <div className="mt-2 text-[11px]">
+                  {checkingSubdomain ? (
+                    <span className="text-[#666]">Checking availability...</span>
+                  ) : subdomainAvailable === true ? (
+                    <span className="text-green-600">✓ Subdomain available</span>
+                  ) : subdomainAvailable === false ? (
+                    <span className="text-red-600">✗ Subdomain already taken</span>
+                  ) : null}
+                </div>
+              )}
             </div>
 
             <div className="pt-6">

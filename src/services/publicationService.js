@@ -60,6 +60,9 @@ export const publicationService = {
   // Create publication
   async createPublication(data) {
     try {
+      console.log("Creating publication with data:", data);
+      console.log("API URL:", API_URL);
+      
       const response = await fetch(`${API_URL}/api/publications`, {
         method: "POST",
         credentials: "include",
@@ -69,41 +72,35 @@ export const publicationService = {
         body: JSON.stringify(data),
       });
 
+      console.log("Response status:", response.status);
+      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        // Clone the response so we can read it multiple times if needed
-        const clonedResponse = response.clone();
+        // Read response as text first to see what we're getting
+        const responseText = await response.text();
+        console.error("Error response text:", responseText);
         
+        // Try to parse as JSON
+        let errorData;
         try {
-          // Try to parse as JSON first
-          const contentType = response.headers.get("content-type");
-          
-          if (contentType && contentType.includes("application/json")) {
-            const error = await response.json();
-            console.error("Create publication error response:", error);
-            const errorMessage = error.error || error.message || "Failed to create publication";
-            throw new Error(errorMessage);
-          } else {
-            // If not JSON, read as text
-            const text = await response.text();
-            console.error("Non-JSON response:", text.substring(0, 500));
-            throw new Error(`Server error (${response.status}): ${response.statusText}`);
-          }
-        } catch (parseError) {
-          // If JSON parsing fails, try reading as text from cloned response
-          console.error("Error parsing response:", parseError);
-          try {
-            const text = await clonedResponse.text();
-            console.error("Response text:", text.substring(0, 500));
-            throw new Error(`Server error (${response.status}): ${text.substring(0, 100) || response.statusText}`);
-          } catch {
-            throw new Error(`Server error (${response.status}): ${response.statusText}`);
-          }
+          errorData = JSON.parse(responseText);
+          console.error("Parsed error data:", errorData);
+        } catch (e) {
+          console.error("Failed to parse error response as JSON:", e);
+          errorData = { error: responseText || `HTTP ${response.status}: ${response.statusText}` };
         }
+        
+        const errorMessage = errorData.error || errorData.message || errorData.details || `Server error (${response.status})`;
+        throw new Error(errorMessage);
       }
 
-      return response.json();
+      const result = await response.json();
+      console.log("Publication created successfully:", result);
+      return result;
     } catch (error) {
       console.error("Create publication error:", error);
+      console.error("Error type:", error.constructor.name);
+      console.error("Error message:", error.message);
       throw error;
     }
   },

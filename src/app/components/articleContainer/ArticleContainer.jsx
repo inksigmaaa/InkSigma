@@ -8,7 +8,7 @@ import {
 import { useRouter } from 'next/navigation'
 import StatsPopup from './StatsPopup'
 
-export default function ArticleContainer({ id, status, title, description, categories, postedTime, isSelected, onSelect, onDelete, publicationId, image }) {
+export default function ArticleContainer({ id, status, title, description, categories, postedTime, isSelected, onSelect, onDelete, onPublish, onUnpublish, onDraft, publicationId, image }) {
     const router = useRouter()
     const [showStats, setShowStats] = useState(false)
     const [statsPosition, setStatsPosition] = useState({ top: 0, left: 0 })
@@ -74,20 +74,6 @@ export default function ArticleContainer({ id, status, title, description, categ
 
             <div className="flex flex-col md:flex-row justify-between items-start gap-4 mt-5">
                 <div className="flex w-[100%] gap-4">
-                    {/* Thumbnail Image */}
-                    {image && (
-                        <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-                            <img 
-                                src={image} 
-                                alt={title}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                    e.target.style.display = 'none'
-                                }}
-                            />
-                        </div>
-                    )}
-                    
                     <div className="flex gap-3 flex-1">
                         <input
                             type="checkbox"
