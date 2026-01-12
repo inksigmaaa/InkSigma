@@ -89,14 +89,14 @@ export default function ArticleContainer({ id, status, title, description, categ
                         </div>
                     </div>
 
-                    <div className="hidden md:flex gap-2 shrink-0">
+                    <div className="hidden md:flex gap-[10px] shrink-0">
                         <button
                             ref={statsButtonRef}
-                            className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-1 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
+                            className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
                             title="Stats"
                             onClick={handleStatsClick}
                         >
-                            <img src="/images/icons/stats1.svg" alt="Stats" className="w-5 h-5" />
+                            <img src="/images/icons/stats1.svg" alt="Stats" className="w-4 h-4" />
                         </button>
                         
                         {/* Publish/Unpublish/Draft buttons based on status */}
@@ -106,7 +106,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 title="Publish"
                                 onClick={handlePublish}
                             >
-                                <img src="/images/icons/share.svg" alt="Publish" className="w-5 h-5" />
+                                <img src="/images/icons/share.svg" alt="Publish" className="w-4 h-4" />
                             </button>
                         )}
                         
@@ -116,7 +116,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 title="Unpublish"
                                 onClick={handleUnpublish}
                             >
-                                <img src="/images/icons/unpublished.svg" alt="Unpublish" className="w-5 h-5" />
+                                <img src="/images/icons/unpublished.svg" alt="Unpublish" className="w-4 h-4" />
                             </button>
                         )}
                         
@@ -126,22 +126,22 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 title="Republish"
                                 onClick={handlePublish}
                             >
-                                <img src="/images/icons/publish.svg" alt="Republish" className="w-5 h-5" />
+                                <img src="/images/icons/publish.svg" alt="Republish" className="w-4 h-4" />
                             </button>
                         )}
                         
                         <button
                             className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
-                            title="Publish"
-                            onClick={handlePublish}
+                            title="Edit"
+                            onClick={handleEdit}
                         >
-                            <img src="/images/icons/edit.svg" alt="Edit" className="w-5 h-5" />
+                            <img src="/images/icons/edit.svg" alt="Edit" className="w-4 h-4" />
                         </button>
                         <button
                             className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
                             title="Copy"
                         >
-                            <img src="/images/icons/copy.svg" alt="Copy" className="w-5 h-5" />
+                            <img src="/images/icons/copy.svg" alt="Copy" className="w-4 h-4" />
                         </button>
 
                         <button
@@ -149,7 +149,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                             title="Delete"
                             onClick={handleDelete}
                         >
-                            <img src="/images/icons/trash2.svg" alt="Delete" className="w-5 h-5" />
+                            <img src="/images/icons/trash2.svg" alt="Delete" className="w-4 h-4" />
                         </button>
                     </div>
 
