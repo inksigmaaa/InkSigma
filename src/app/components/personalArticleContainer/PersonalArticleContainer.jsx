@@ -55,67 +55,67 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                 >
                     {config.text}
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-[10px] shrink-0">
                     {status === 'trash' ? (
                         <>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Restore" onClick={onRestore}>
-                                <img src="/images/icons/restore.svg" alt="restore" className="w-6 h-6" />
+                                <img src="/images/icons/restore.svg" alt="restore" className="w-4 h-4" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete Permanently" onClick={onDelete}>
-                                <img src="/images/icons/trash2.svg" alt="delete" className="w-6 h-6" />
+                                <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
                             </button>
                         </>
                     ) : status === 'draft' ? (
                         <>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Publish" onClick={onPublish}>
-                                <img src="/images/icons/share.svg" alt="publish" className="w-6 h-6" />
+                                <img src="/images/icons/share.svg" alt="publish" className="w-4 h-4" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
-                                <img src="/images/icons/edit.svg" alt="edit" className="w-6 h-6" />
+                                <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
-                                <img src="/images/icons/trash2.svg" alt="delete" className="w-6 h-6" />
+                                <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
                             </button>
                         </>
                     ) : status === 'review' ? (
                         <>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Copy">
-                                <img src="/images/icons/copy.svg" alt="copy" className="w-6 h-6" />
+                                <img src="/images/icons/copy.svg" alt="copy" className="w-4 h-4" />
                             </button>
                         </>
                     ) : status === 'unpublished' ? (
                         <>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Republish" onClick={onRepublish}>
-                                <img src="/images/icons/publish.svg" alt="republish" className="w-6 h-6" />
+                                <img src="/images/icons/publish.svg" alt="republish" className="w-4 h-4" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
-                                <img src="/images/icons/edit.svg" alt="edit" className="w-6 h-6" />
+                                <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Move to Draft" onClick={onDraft}>
-                                <img src="/images/icons/copy.svg" alt="draft" className="w-6 h-6" />
+                                <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
-                                <img src="/images/icons/trash2.svg" alt="delete" className="w-6 h-6" />
+                                <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
                             </button>
                         </>
                     ) : (
                         <>
                             {status === 'published' && (
                                 <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Unpublish" onClick={onUnpublish}>
-                                    <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-6 h-6" />
+                                    <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-4 h-4" />
                                 </button>
                             )}
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Preview">
-                                <img src="/images/icons/preview.svg" alt="preview" className="w-6 h-6" />
+                                <img src="/images/icons/preview.svg" alt="preview" className="w-4 h-4" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
-                                <img src="/images/icons/edit.svg" alt="edit" className="w-6 h-6" />
+                                <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Draft" onClick={onDraft}>
-                                <img src="/images/icons/copy.svg" alt="draft" className="w-6 h-6" />
+                                <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
                             </button>
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
-                                <img src="/images/icons/delete.svg" alt="delete" className="w-6 h-6" />
+                                <img src="/images/icons/delete.svg" alt="delete" className="w-4 h-4" />
                             </button>
                         </>
                     )}
@@ -142,67 +142,67 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     </div>
 
                     {/* desktop actions */}
-                    <div className="hidden md:flex gap-2 shrink-0">
+                    <div className="hidden md:flex gap-[10px] shrink-0">
                         {status === 'trash' ? (
                             <>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Restore" onClick={onRestore}>
-                                    <img src="/images/icons/restore.svg" alt="restore" className="w-5 h-5" />
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Restore" onClick={onRestore}>
+                                    <img src="/images/icons/restore.svg" alt="restore" className="w-4 h-4" />
                                 </button>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete Permanently" onClick={onDelete}>
-                                    <img src="/images/icons/trash2.svg" alt="delete" className="w-5 h-5" />
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete Permanently" onClick={onDelete}>
+                                    <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
                                 </button>
                             </>
                         ) : status === 'draft' ? (
                             <>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Publish" onClick={onPublish}>
-                                    <img src="/images/icons/share.svg" alt="publish" className="w-5 h-5" />
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Publish" onClick={onPublish}>
+                                    <img src="/images/icons/share.svg" alt="publish" className="w-4 h-4" />
                                 </button>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
-                                    <img src="/images/icons/edit.svg" alt="edit" className="w-5 h-5" />
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
+                                    <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
                                 </button>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={onDelete}>
-                                    <img src="/images/icons/trash2.svg" alt="delete" className="w-5 h-5" />
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={onDelete}>
+                                    <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
                                 </button>
                             </>
                         ) : status === 'review' ? (
                             <>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Copy">
-                                    <img src="/images/icons/copy.svg" alt="copy" className="w-5 h-5" />
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Copy">
+                                    <img src="/images/icons/copy.svg" alt="copy" className="w-4 h-4" />
                                 </button>
                             </>
                         ) : status === 'unpublished' ? (
                             <>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Republish" onClick={onRepublish}>
-                                    <img src="/images/icons/publish.svg" alt="republish" className="w-5 h-5" />
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Republish" onClick={onRepublish}>
+                                    <img src="/images/icons/publish.svg" alt="republish" className="w-4 h-4" />
                                 </button>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
-                                    <img src="/images/icons/edit.svg" alt="edit" className="w-5 h-5" />
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
+                                    <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
                                 </button>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Move to Draft" onClick={onDraft}>
-                                    <img src="/images/icons/copy.svg" alt="draft" className="w-5 h-5" />
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Move to Draft" onClick={onDraft}>
+                                    <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
                                 </button>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={onDelete}>
-                                    <img src="/images/icons/trash2.svg" alt="delete" className="w-5 h-5" />
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={onDelete}>
+                                    <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
                                 </button>
                             </>
                         ) : (
                             <>
                                 {status === 'published' && (
-                                    <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Unpublish" onClick={onUnpublish}>
-                                        <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-5 h-5" />
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Unpublish" onClick={onUnpublish}>
+                                        <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-4 h-4" />
                                     </button>
                                 )}
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Preview">
-                                    <img src="/images/icons/preview.svg" alt="preview" className="w-5 h-5" />
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Preview">
+                                    <img src="/images/icons/preview.svg" alt="preview" className="w-4 h-4" />
                                 </button>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
-                                    <img src="/images/icons/edit.svg" alt="edit" className="w-5 h-5" />
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
+                                    <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
                                 </button>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Draft" onClick={onDraft}>
-                                    <img src="/images/icons/copy.svg" alt="draft" className="w-5 h-5" />
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Draft" onClick={onDraft}>
+                                    <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
                                 </button>
-                                <button className="w-9 h-9 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={onDelete}>
-                                    <img src="/images/icons/delete.svg" alt="delete" className="w-5 h-5" />
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={onDelete}>
+                                    <img src="/images/icons/delete.svg" alt="delete" className="w-4 h-4" />
                                 </button>
                             </>
                         )}
