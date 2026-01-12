@@ -21,16 +21,20 @@ export default function HomePage() {
     .filter(article => article.status === 'published')
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 4)
-    .map(article => ({
-      id: article.id,
-      title: article.title,
-      description: article.description,
-      category: article.categories?.[0] || 'Uncategorized',
-      // Always use a valid image URL - either the article image or fallback
-      thumbnail: article.image && article.image.trim() !== '' 
+    .map(article => {
+      // Check if article has an image - use fallback if not
+      const thumbnailUrl = (article.image && article.image.trim() !== '') 
         ? article.image 
-        : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"
-    }))
+        : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
+      
+      return {
+        id: article.id,
+        title: article.title,
+        description: article.description,
+        category: article.categories?.[0] || 'Uncategorized',
+        thumbnail: thumbnailUrl
+      };
+    })
 
   const handleStartWriting = () => {
     router.push("/editor")

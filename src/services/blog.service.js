@@ -180,32 +180,42 @@ export const blogService = {
   // Update blog status (new method)
   async updateBlogStatus(id, status) {
     console.log(`[blogService] Updating blog ${id} to status: ${status}`)
-    const response = await fetch(`${API_URL}/api/blogs/${id}/publish`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ status }),
-    });
-
-    console.log(`[blogService] Response status: ${response.status}`)
     
-    if (!response.ok) {
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data = await response.json();
-        console.error(`[blogService] Error response:`, data)
-        throw new Error(data.error || 'Failed to update blog status');
-      } else {
-        console.error(`[blogService] Non-JSON error response`)
-        throw new Error(`Server error (${response.status}): ${response.statusText}`);
-      }
-    }
+    try {
+      const response = await fetch(`${API_URL}/api/blogs/${id}/publish`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status }),
+      });
 
-    const result = await response.json();
-    console.log(`[blogService] Success result:`, result)
-    return result;
+      console.log(`[blogService] Response status: ${response.status}`)
+      console.log(`[blogService] Response ok: ${response.ok}`)
+      
+      if (!response.ok) {
+        const contentType = response.headers.get("content-type");
+        console.log(`[blogService] Error content-type: ${contentType}`)
+        
+        if (contentType && contentType.includes("application/json")) {
+          const data = await response.json();
+          console.error(`[blogService] Error response:`, data)
+          throw new Error(data.error || data.message || 'Failed to update blog status');
+        } else {
+          const text = await response.text();
+          console.error(`[blogService] Non-JSON error response:`, text)
+          throw new Error(`Server error (${response.status}): ${response.statusText}`);
+        }
+      }
+
+      const result = await response.json();
+      console.log(`[blogService] Success result:`, result)
+      return result;
+    } catch (error) {
+      console.error(`[blogService] Exception caught:`, error)
+      throw error;
+    }
   },
 
   // Delete blog

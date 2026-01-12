@@ -118,6 +118,11 @@ export default function Members() {
             return;
         }
 
+        if (!currentPublication || !currentPublication.id) {
+            setError("No publication selected. Please select a publication first.");
+            return;
+        }
+
         setSending(true);
         setError("");
         setSuccess("");
@@ -130,7 +135,7 @@ export default function Members() {
             await loadData();
             await refreshCurrentPublication();
         } catch (error) {
-            setError(error.message);
+            setError(error.message || "Failed to send invitation. Please try again.");
         } finally {
             setSending(false);
         }

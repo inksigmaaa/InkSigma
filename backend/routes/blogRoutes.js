@@ -627,7 +627,7 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
 
         console.log('Target status:', targetStatus)
 
-        // Check if blog exists and user owns it
+        // Check if blog exists
         const [existingBlog] = await db
             .select()
             .from(blog)
@@ -640,7 +640,9 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
 
         console.log('Existing blog:', { id: existingBlog.id, authorId: existingBlog.authorId, currentStatus: existingBlog.status })
 
-        if (existingBlog.authorId !== req.user.id) {
+        // Check if user can modify this blog (author, admin, or editor)
+        const canModify = await canUserModifyBlog(req.user.id, existingBlog.authorId);
+        if (!canModify) {
             console.error('Authorization failed. Blog author:', existingBlog.authorId, 'User:', req.user.id)
             return res.status(403).json({ error: "Not authorized to modify this blog" });
         }
@@ -664,7 +666,12 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
         res.json(updatedBlog);
     } catch (error) {
         console.error("Error updating blog status:", error);
-        res.status(500).json({ error: "Failed to update blog status" });
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+        
+        // Ensure we always send a proper JSON response
+        const errorMessage = error.message || "Failed to update blog status";
+        return res.status(500).json({ error: errorMessage });
     }
 });
 
