@@ -34,8 +34,9 @@ export default function PostsPublished() {
                 const memberships = await membershipsRes.json()
                 
                 // If user has joined publications, fetch articles for the first one
+                // API returns flat array of publications, not nested structure
                 if (memberships.length > 0) {
-                    const firstPub = memberships[0].publication
+                    const firstPub = memberships[0]
                     setPublicationId(firstPub.id)
 
                     const articlesRes = await fetch(

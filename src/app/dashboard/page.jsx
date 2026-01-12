@@ -126,7 +126,7 @@ export default function DashboardPage() {
             ) : (
               <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <div className="text-center py-8">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center  mb-3">
                     <img src="/icons/nib.svg" alt="publication" className="w-6 h-6" />
                   </div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-1">No Publication Yet</h3>

@@ -47,8 +47,9 @@ export default function PostsMyBlogsPage() {
       const memberships = await membershipsRes.json()
       
       // For now, use the first joined publication
+      // API returns flat array of publications, not nested structure
       if (memberships.length > 0) {
-        const firstPub = memberships[0].publication
+        const firstPub = memberships[0]
         setPublicationId(firstPub.id)
 
         // Fetch user's blogs for this publication
