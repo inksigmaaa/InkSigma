@@ -156,6 +156,16 @@ router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
       .innerJoin(user, eq(publicationMember.userId, user.id))
       .where(eq(publicationMember.publicationId, parseInt(publicationId)));
 
+    // Deduplicate members by userId (in case there are duplicates in the database)
+    const uniqueMembers = [];
+    const seenUserIds = new Set();
+    for (const member of members) {
+      if (!seenUserIds.has(member.userId)) {
+        seenUserIds.add(member.userId);
+        uniqueMembers.push(member);
+      }
+    }
+
     // If admin, also get pending invitations
     let pendingInvitations = [];
     if (isAdmin) {
@@ -181,7 +191,7 @@ router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
     }
 
     res.json({
-      members,
+      members: uniqueMembers,
       pendingInvitations: isAdmin ? pendingInvitations : [],
       userRole: userRole,
     });
