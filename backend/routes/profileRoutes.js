@@ -107,6 +107,8 @@ router.put("/", getCurrentUser, async (req, res) => {
         const userId = req.user.id;
         const { profileName, username, bio } = req.body;
 
+        console.log('[PROFILE-UPDATE] Request received:', { userId, profileName, username, bio });
+
         // Validate username format (alphanumeric and underscores only)
         if (username && !/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
             return res.status(400).json({ 
@@ -126,16 +128,42 @@ router.put("/", getCurrentUser, async (req, res) => {
             }
         }
 
+        // Build update object with only defined fields
+        const updateData = {
+            updatedAt: new Date(),
+        };
+
+        // Only include fields that have values or are explicitly being cleared
+        if (profileName !== undefined && profileName !== null) {
+            updateData.name = profileName;
+        }
+        if (username !== undefined && username !== null) {
+            updateData.username = username;
+        }
+        if (bio !== undefined) {
+            updateData.bio = bio;
+        }
+
+        console.log('[PROFILE-UPDATE] Update data:', updateData);
+
         // Update user profile
         await db
             .update(user)
-            .set({
-                name: profileName || undefined,
-                username: username || undefined,
-                bio: bio !== undefined ? bio : undefined,
-                updatedAt: new Date(),
-            })
+            .set(updateData)
             .where(eq(user.id, userId));
+
+        // Fetch updated user to verify
+        const [updatedUser] = await db
+            .select()
+            .from(user)
+            .where(eq(user.id, userId));
+
+        console.log('[PROFILE-UPDATE] Updated user:', {
+            id: updatedUser.id,
+            name: updatedUser.name,
+            username: updatedUser.username,
+            bio: updatedUser.bio,
+        });
 
         res.json({ success: true, message: "Profile updated successfully" });
     } catch (error) {

@@ -127,7 +127,7 @@ export const memberService = {
 
   // Get user's publications (owned + joined)
   async getUserPublications() {
-    const response = await fetch(`${API_URL}/api/members/user/publications`, {
+    const response = await fetch(`${API_URL}/api/publication-members/my-publications`, {
       credentials: "include",
     });
 

@@ -202,15 +202,20 @@ export default function PostsHomePage() {
                       className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5 cursor-pointer"
                       onClick={() => router.push(`/posts/published`)}
                     >
-                      {article.image && (
-                        <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4">
-                          <img
-                            src={article.image}
-                            alt={article.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
+                      <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative">
+                        <img
+                          src={article.image || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"}
+                          alt={article.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Prevent infinite loop
+                            if (e.target.src !== "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop") {
+                              e.target.onerror = null;
+                              e.target.src = "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
+                            }
+                          }}
+                        />
+                      </div>
                       <div>
                         <h4 className="font-semibold text-gray-900 mb-3 text-lg leading-snug line-clamp-2">
                           {article.title}

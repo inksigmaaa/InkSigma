@@ -118,6 +118,11 @@ export default function Members() {
             return;
         }
 
+        if (!currentPublication || !currentPublication.id) {
+            setError("No publication selected. Please select a publication first.");
+            return;
+        }
+
         setSending(true);
         setError("");
         setSuccess("");
@@ -130,7 +135,7 @@ export default function Members() {
             await loadData();
             await refreshCurrentPublication();
         } catch (error) {
-            setError(error.message);
+            setError(error.message || "Failed to send invitation. Please try again.");
         } finally {
             setSending(false);
         }
@@ -231,7 +236,7 @@ export default function Members() {
                             </h2>
 
                             <div>
-                                {members.map((member, index) => (
+                                {members && members.length > 0 && members.map((member, index) => (
                                     <div key={`member-${member.id}`}>
                                         <div className="flex items-center justify-between py-6 max-[767px]:py-4">
                                             <div className="flex items-center gap-4 flex-1 max-[767px]:gap-3">
@@ -264,7 +269,7 @@ export default function Members() {
                                     </div>
                                 ))}
 
-                                {members.length === 0 && (
+                                {(!members || members.length === 0) && (
                                     <div className="text-center py-12">
                                         <p className="text-gray-500">No members found.</p>
                                     </div>
@@ -352,7 +357,7 @@ export default function Members() {
                         <h2 className="text-xl font-bold text-gray-900 mb-6 max-[767px]:text-lg max-[767px]:mb-4">Members</h2>
 
                         <div>
-                            {members.map((member, index) => (
+                            {members && members.length > 0 && members.map((member, index) => (
                                 <div key={`member-${member.id}`}>
                                     <div className="flex items-center justify-between py-6 max-[767px]:py-4">
                                         <div className="flex items-center gap-4 w-1/3 max-[767px]:gap-2 max-[639px]:flex-1">
@@ -398,7 +403,7 @@ export default function Members() {
                             ))}
 
                             {/* Pending Invitations */}
-                            {pendingInvitations.map((invitation, index) => (
+                            {pendingInvitations && pendingInvitations.length > 0 && pendingInvitations.map((invitation, index) => (
                                 <div key={`invitation-${invitation.id}`}>
                                     <div className="flex items-center justify-between py-6 max-[767px]:py-4">
                                         <div className="flex items-center gap-4 w-1/3 max-[767px]:gap-2 max-[639px]:flex-1">
@@ -425,7 +430,7 @@ export default function Members() {
                                 </div>
                             ))}
 
-                            {members.length === 0 && pendingInvitations.length === 0 && (
+                            {(!members || members.length === 0) && (!pendingInvitations || pendingInvitations.length === 0) && (
                                 <div className="text-center py-12">
                                     <p className="text-gray-500">No members yet. Start by inviting someone!</p>
                                 </div>

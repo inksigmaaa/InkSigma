@@ -112,11 +112,15 @@ export default function ProfileSettingsPage() {
 
       setImage(data.imageUrl)
       setImagePreview(data.imageUrl)
+      
+      // Reload page to update navbar
+      setTimeout(() => {
+        window.location.reload()
+      }, 500)
     } catch (error) {
       console.error("Error uploading image:", error)
       setError("Failed to upload image")
       setImagePreview(image) // Revert preview
-    } finally {
       setIsUploadingImage(false)
     }
   }
@@ -139,10 +143,14 @@ export default function ProfileSettingsPage() {
 
       setImage("")
       setImagePreview("")
+      
+      // Reload page to update navbar
+      setTimeout(() => {
+        window.location.reload()
+      }, 500)
     } catch (error) {
       console.error("Error removing image:", error)
       setError("Failed to remove image")
-    } finally {
       setIsUploadingImage(false)
     }
   }
@@ -173,13 +181,14 @@ export default function ProfileSettingsPage() {
       }
 
       setShowUpdateMessage(true)
+      
+      // Reload page after a short delay to show success message
       setTimeout(() => {
-        setShowUpdateMessage(false)
-      }, 2000)
+        window.location.reload()
+      }, 1500)
     } catch (error) {
       console.error("Error saving profile:", error)
       setError("Failed to save profile. Please try again.")
-    } finally {
       setIsSaving(false)
     }
   }

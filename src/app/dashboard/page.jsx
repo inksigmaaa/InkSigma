@@ -88,7 +88,6 @@ export default function DashboardPage() {
                           alt="publication logo"
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            console.error('Failed to load logo:', ownedPublications[0].logoUrl);
                             e.target.onerror = null;
                             e.target.src = "/icons/nib.svg";
                           }}

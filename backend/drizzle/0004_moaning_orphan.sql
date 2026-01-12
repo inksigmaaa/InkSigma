@@ -1,1 +1,0 @@
-ALTER TYPE "public"."blog_status" ADD VALUE 'scheduled';
