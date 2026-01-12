@@ -12,13 +12,13 @@ import AuthGuard from "@/components/auth/AuthGuard"
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { 
-    currentPublication, 
-    getOwnedPublications, 
+  const {
+    currentPublication,
+    getOwnedPublications,
     getJoinedPublications,
     switchPublication,
     loadUserPublications,
-    loading: publicationLoading 
+    loading: publicationLoading
   } = usePublication()
 
   // Effect to handle potential context refresh issues
@@ -28,7 +28,7 @@ export default function DashboardPage() {
     if (!publicationLoading) {
       const ownedPublications = getOwnedPublications()
       const joinedPublications = getJoinedPublications()
-      
+
       if (ownedPublications.length === 0 && joinedPublications.length === 0) {
         const hasRefreshed = sessionStorage.getItem('dashboard-refreshed');
         if (!hasRefreshed) {
@@ -83,9 +83,9 @@ export default function DashboardPage() {
                   <div className="flex gap-4 items-center flex-1 w-full">
                     <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                       {ownedPublications[0]?.logoUrl ? (
-                        <img 
-                          src={`http://localhost:5000${ownedPublications[0].logoUrl}`} 
-                          alt="publication logo" 
+                        <img
+                          src={`http://localhost:5000${ownedPublications[0].logoUrl}`}
+                          alt="publication logo"
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             console.error('Failed to load logo:', ownedPublications[0].logoUrl);
@@ -127,12 +127,15 @@ export default function DashboardPage() {
               <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <div className="text-center py-8">
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center  mb-3">
-                    <img src="/icons/nib.svg" alt="publication" className="w-6 h-6" />
+                    <img src="/icons/nib.svg" alt="publication" className="w-12 h-12" />
                   </div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-1">No Publication Yet</h3>
-                  <p className="text-xs text-gray-400">
-                    Create your first publication to get started.
-                  </p>
+                  <div className="mx-auto">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">No Publication Yet</h3>
+                    <p className="text-xs text-gray-400">
+                      Create your first publication to get started.
+                    </p>
+                  </div>
+
                   <button
                     onClick={() => router.push('/create-publication')}
                     className="mt-4 bg-violet-600 text-white px-6 py-2 rounded-lg text-xs font-medium hover:bg-violet-700 transition-colors"
@@ -155,9 +158,9 @@ export default function DashboardPage() {
                       <div className="flex gap-4 items-center flex-1 w-full">
                         <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {joinedPub.logoUrl ? (
-                            <img 
-                              src={`http://localhost:5000${joinedPub.logoUrl}`} 
-                              alt={`${joinedPub.name} logo`} 
+                            <img
+                              src={`http://localhost:5000${joinedPub.logoUrl}`}
+                              alt={`${joinedPub.name} logo`}
                               className="w-full h-full object-cover"
                               onError={(e) => {
                                 e.target.onerror = null;
@@ -178,15 +181,14 @@ export default function DashboardPage() {
                             {joinedPub.description || "No description provided"}
                           </p>
                           <div className="flex items-center gap-4 mt-2">
-                            <span className={`text-xs font-medium ${
-                              joinedPub.role === 'editor' ? 'text-green-600' : 'text-blue-600'
-                            }`}>
+                            <span className={`text-xs font-medium ${joinedPub.role === 'editor' ? 'text-green-600' : 'text-blue-600'
+                              }`}>
                               {joinedPub.role.charAt(0).toUpperCase() + joinedPub.role.slice(1)}
                             </span>
                             <span className="text-xs text-gray-400">
                               Joined {new Date(joinedPub.joinedAt).toLocaleDateString('en-US', {
                                 year: 'numeric',
-                                month: 'short', 
+                                month: 'short',
                                 day: 'numeric'
                               })}
                             </span>
@@ -209,14 +211,17 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                <div className="text-center py-8">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <img src="/icons/pen.svg" alt="publication" className="w-6 h-6" />
+                <div className="text-center flex py-2">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center  mb-3">
+                    <img src="/icons/pen.svg" alt="publication" className="w-12 h-12" />
                   </div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-1">No Joined Publications</h3>
-                  <p className="text-xs text-gray-400">
-                    You haven't joined any publications yet. Accept an invitation to get started.
-                  </p>
+                  <div className="mx-auto">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">No Joined Publications</h3>
+                    <p className="text-xs text-gray-400">
+                      You haven't joined any publications yet. Accept an invitation to get started.
+                    </p>
+                  </div>
+
                 </div>
               </div>
             )}
