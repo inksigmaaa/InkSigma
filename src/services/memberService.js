@@ -4,7 +4,7 @@ const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 export const memberService = {
   // Get all members of a publication
   async getMembers(publicationId) {
-    const response = await fetch(`${API_URL}/api/publication-members/${publicationId}/members`, {
+    const response = await fetch(`${API_URL}/api/members/${publicationId}/members`, {
       credentials: "include",
     });
 
@@ -23,7 +23,7 @@ export const memberService = {
 
   // Send invitation to join publication
   async sendInvitation(publicationId, email, role) {
-    const response = await fetch(`${API_URL}/api/publication-members/${publicationId}/invite`, {
+    const response = await fetch(`${API_URL}/api/members/${publicationId}/invite`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -47,7 +47,7 @@ export const memberService = {
 
   // Resend invitation
   async resendInvitation(publicationId, invitationId) {
-    const response = await fetch(`${API_URL}/api/publication-members/${publicationId}/invite/${invitationId}/resend`, {
+    const response = await fetch(`${API_URL}/api/members/${publicationId}/invite/${invitationId}/resend`, {
       method: "POST",
       credentials: "include",
     });
@@ -67,7 +67,7 @@ export const memberService = {
 
   // Cancel invitation
   async cancelInvitation(publicationId, invitationId) {
-    const response = await fetch(`${API_URL}/api/publication-members/${publicationId}/invite/${invitationId}`, {
+    const response = await fetch(`${API_URL}/api/members/${publicationId}/invite/${invitationId}`, {
       method: "DELETE",
       credentials: "include",
     });
@@ -87,7 +87,7 @@ export const memberService = {
 
   // Remove member from publication
   async removeMember(publicationId, memberId) {
-    const response = await fetch(`${API_URL}/api/publication-members/${publicationId}/members/${memberId}`, {
+    const response = await fetch(`${API_URL}/api/members/${publicationId}/members/${memberId}`, {
       method: "DELETE",
       credentials: "include",
     });
@@ -107,7 +107,7 @@ export const memberService = {
 
   // Leave publication
   async leavePublication(publicationId) {
-    const response = await fetch(`${API_URL}/api/publication-members/${publicationId}/leave`, {
+    const response = await fetch(`${API_URL}/api/members/${publicationId}/leave`, {
       method: "POST",
       credentials: "include",
     });
@@ -146,7 +146,7 @@ export const memberService = {
 
   // Accept invitation
   async acceptInvitation(token) {
-    const response = await fetch(`${API_URL}/api/publication-members/invite/${token}/accept`, {
+    const response = await fetch(`${API_URL}/api/members/invite/${token}/accept`, {
       method: "POST",
       credentials: "include",
     });
@@ -166,7 +166,7 @@ export const memberService = {
 
   // Decline invitation
   async declineInvitation(token) {
-    const response = await fetch(`${API_URL}/api/publication-members/invite/${token}/decline`, {
+    const response = await fetch(`${API_URL}/api/members/invite/${token}/decline`, {
       method: "POST",
       credentials: "include",
     });

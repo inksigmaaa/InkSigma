@@ -8,7 +8,7 @@ async function listData() {
     console.log('\n=== PUBLICATIONS ===');
     const pubs = await db.select().from(publication);
     pubs.forEach(p => {
-      console.log(`ID: ${p.id}, Name: ${p.name}, Owner: ${p.userId}`);
+      console.log(`ID: ${p.id}, Name: ${p.name}, Subdomain: ${p.subdomain}, Owner: ${p.userId}`);
     });
 
     console.log('\n=== USERS ===');

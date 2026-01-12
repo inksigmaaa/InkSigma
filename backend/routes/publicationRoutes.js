@@ -62,19 +62,33 @@ const upload = multer({
 // Middleware to get current user from session
 const getCurrentUser = async (req, res, next) => {
   try {
+    console.log("[getCurrentUser] Checking authentication...");
+    console.log("[getCurrentUser] Request headers:", JSON.stringify({
+      cookie: req.headers.cookie ? "present" : "missing",
+      authorization: req.headers.authorization ? "present" : "missing",
+      origin: req.headers.origin,
+      referer: req.headers.referer
+    }));
+    
     const session = await auth.api.getSession({
       headers: fromNodeHeaders(req.headers),
     });
 
+    console.log("[getCurrentUser] Session result:", session ? "found" : "not found");
+    console.log("[getCurrentUser] User:", session?.user ? JSON.stringify(session.user) : "no user");
+
     if (!session?.user) {
-      return res.status(401).json({ error: "Unauthorized" });
+      console.log("[getCurrentUser] Unauthorized - no session or user");
+      return res.status(401).json({ error: "Unauthorized - Please log in" });
     }
 
     req.user = session.user;
+    console.log("[getCurrentUser] Authentication successful for user:", req.user.id);
     next();
   } catch (error) {
-    console.error("Auth error:", error);
-    return res.status(401).json({ error: "Unauthorized" });
+    console.error("[getCurrentUser] Auth error:", error);
+    console.error("[getCurrentUser] Error stack:", error.stack);
+    return res.status(401).json({ error: "Unauthorized - Authentication failed" });
   }
 };
 
@@ -97,6 +111,28 @@ router.get("/check", getCurrentUser, async (req, res) => {
   } catch (error) {
     console.error("Error checking publication:", error);
     res.status(500).json({ error: "Failed to check publication" });
+  }
+});
+
+// Check subdomain availability
+router.get("/check-subdomain/:subdomain", async (req, res) => {
+  try {
+    const { subdomain } = req.params;
+    
+    if (!subdomain || subdomain.length < 3) {
+      return res.status(400).json({ error: "Invalid subdomain" });
+    }
+
+    const existing = await db
+      .select()
+      .from(publication)
+      .where(eq(publication.subdomain, subdomain.toLowerCase()))
+      .limit(1);
+
+    res.json({ available: existing.length === 0 });
+  } catch (error) {
+    console.error("Error checking subdomain:", error);
+    res.status(500).json({ error: "Failed to check subdomain" });
   }
 });
 
@@ -235,11 +271,17 @@ router.get("/:publicationId/details", getCurrentUser, async (req, res) => {
 router.post("/", getCurrentUser, async (req, res) => {
   try {
     console.log("Create publication request received");
-    console.log("Request body:", req.body);
-    console.log("User:", req.user);
+    console.log("Request body:", JSON.stringify(req.body, null, 2));
+    console.log("User:", JSON.stringify(req.user, null, 2));
+    console.log("Headers:", JSON.stringify(req.headers, null, 2));
     
     const { name, subdomain, description } = req.body;
-    const userId = req.user.id;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      console.log("Validation failed: no user ID");
+      return res.status(401).json({ error: "User not authenticated" });
+    }
 
     if (!name || !subdomain) {
       console.log("Validation failed: missing name or subdomain");
@@ -322,7 +364,7 @@ router.post("/", getCurrentUser, async (req, res) => {
     });
 
     console.log("Publication creation successful:", result);
-    res.status(201).json(result);
+    return res.status(201).json(result);
   } catch (error) {
     console.error("Error creating publication:", error);
     console.error("Error stack:", error.stack);
@@ -330,8 +372,17 @@ router.post("/", getCurrentUser, async (req, res) => {
       message: error.message,
       code: error.code,
       detail: error.detail,
+      name: error.name,
     });
-    res.status(500).json({ error: "Failed to create publication", details: error.message });
+    
+    // Ensure we always return a JSON response
+    if (!res.headersSent) {
+      return res.status(500).json({ 
+        error: "Failed to create publication", 
+        details: error.message,
+        code: error.code 
+      });
+    }
   }
 });
 
