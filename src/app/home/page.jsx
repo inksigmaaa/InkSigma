@@ -26,7 +26,10 @@ export default function HomePage() {
       title: article.title,
       description: article.description,
       category: article.categories?.[0] || 'Uncategorized',
-      thumbnail: article.image || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"
+      // Always use a valid image URL - either the article image or fallback
+      thumbnail: article.image && article.image.trim() !== '' 
+        ? article.image 
+        : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"
     }))
 
   const handleStartWriting = () => {
@@ -148,11 +151,18 @@ export default function HomePage() {
                   className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5 cursor-pointer"
                   onClick={() => router.push(`/home/preview/${article.id}`)}
                 >
-                  <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4">
+                  <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative">
                     <img 
                       src={article.thumbnail} 
                       alt={article.title}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Prevent infinite loop
+                        if (e.target.src !== "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop") {
+                          e.target.onerror = null;
+                          e.target.src = "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
+                        }
+                      }}
                     />
                   </div>
                   <div>
