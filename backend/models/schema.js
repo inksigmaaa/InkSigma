@@ -127,3 +127,5 @@ export const invitation = pgTable("invitation", {
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
+
+

@@ -1,27 +1,4 @@
-// Run this script to apply the migration
-// Usage: node run-migration.js
-
-import 'dotenv/config';
-import pg from 'pg';
-
-const { Client } = pg;
-
-const migrationSQL = `
--- Add publicationId column to blog table if not exists
-DO $$ BEGIN
-    ALTER TABLE "blog" ADD COLUMN "publicationId" integer;
-EXCEPTION
-    WHEN duplicate_column THEN null;
-END $$;
-
--- Add foreign key for blog.publicationId
-DO $$ BEGIN
-    ALTER TABLE "blog" 
-        ADD CONSTRAINT "blog_publicationId_publication_id_fk" 
-        FOREIGN KEY ("publicationId") REFERENCES "publication"("id") ON DELETE CASCADE;
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+-- Run this SQL directly in your PostgreSQL database to add publication_member and invitation tables
 
 -- Create member_role enum if not exists
 DO $$ BEGIN
@@ -64,11 +41,11 @@ CREATE TABLE IF NOT EXISTS "invitation" (
     "updatedAt" timestamp NOT NULL DEFAULT now()
 );
 
--- Add foreign key constraints for publication_member
+-- Add foreign key constraints for publication_member (if not exists)
 DO $$ BEGIN
     ALTER TABLE "publication_member" 
         ADD CONSTRAINT "publication_member_publicationId_publication_id_fk" 
-        FOREIGN KEY ("publicationId") REFERENCES "publication"("id") ON DELETE CASCADE;
+        FOREIGN KEY ("publicationId") REFERENCES "publication"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
@@ -76,7 +53,7 @@ END $$;
 DO $$ BEGIN
     ALTER TABLE "publication_member" 
         ADD CONSTRAINT "publication_member_userId_user_id_fk" 
-        FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE;
+        FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
@@ -84,16 +61,16 @@ END $$;
 DO $$ BEGIN
     ALTER TABLE "publication_member" 
         ADD CONSTRAINT "publication_member_invitedBy_user_id_fk" 
-        FOREIGN KEY ("invitedBy") REFERENCES "user"("id") ON DELETE SET NULL;
+        FOREIGN KEY ("invitedBy") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- Add foreign key constraints for invitation
+-- Add foreign key constraints for invitation (if not exists)
 DO $$ BEGIN
     ALTER TABLE "invitation" 
         ADD CONSTRAINT "invitation_publicationId_publication_id_fk" 
-        FOREIGN KEY ("publicationId") REFERENCES "publication"("id") ON DELETE CASCADE;
+        FOREIGN KEY ("publicationId") REFERENCES "publication"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
@@ -101,35 +78,10 @@ END $$;
 DO $$ BEGIN
     ALTER TABLE "invitation" 
         ADD CONSTRAINT "invitation_inviterId_user_id_fk" 
-        FOREIGN KEY ("inviterId") REFERENCES "user"("id") ON DELETE CASCADE;
+        FOREIGN KEY ("inviterId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
-`;
 
-async function runMigration() {
-    const client = new Client({
-        connectionString: process.env.DATABASE_URL,
-    });
-
-    try {
-        console.log('Connecting to database...');
-        await client.connect();
-        
-        console.log('Running migration...');
-        await client.query(migrationSQL);
-        
-        console.log('✅ Migration completed successfully!');
-        console.log('   - publication_member table created');
-        console.log('   - invitation table created');
-        console.log('   - member_role enum created');
-        console.log('   - invitation_status enum created');
-    } catch (error) {
-        console.error('❌ Migration failed:', error.message);
-        process.exit(1);
-    } finally {
-        await client.end();
-    }
-}
-
-runMigration();
+-- Success message
+SELECT 'Migration completed successfully! publication_member and invitation tables created.' as result;

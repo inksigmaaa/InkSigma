@@ -138,7 +138,11 @@ export default function MySpace() {
                             {publication.role?.charAt(0).toUpperCase() + publication.role?.slice(1)}
                           </span>
                           <span className="text-xs text-gray-400">
-                            Joined {new Date(publication.joinedAt).toLocaleDateString()}
+                            Joined {new Date(publication.joinedAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short', 
+                              day: 'numeric'
+                            })}
                           </span>
                         </div>
                       </div>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
 import Verify from "../components/verify/Verify"
@@ -16,8 +17,31 @@ export default function DashboardPage() {
     getOwnedPublications, 
     getJoinedPublications,
     switchPublication,
+    loadUserPublications,
     loading: publicationLoading 
   } = usePublication()
+
+  // Effect to handle potential context refresh issues
+  useEffect(() => {
+    // If we're not loading and have no publications, try refreshing once
+    // This handles the case where a user just created a publication but context wasn't updated
+    if (!publicationLoading) {
+      const ownedPublications = getOwnedPublications()
+      const joinedPublications = getJoinedPublications()
+      
+      if (ownedPublications.length === 0 && joinedPublications.length === 0) {
+        const hasRefreshed = sessionStorage.getItem('dashboard-refreshed');
+        if (!hasRefreshed) {
+          console.log('No publications found, refreshing context...');
+          sessionStorage.setItem('dashboard-refreshed', 'true');
+          loadUserPublications();
+        }
+      } else {
+        // Clear the refresh flag when publications are found
+        sessionStorage.removeItem('dashboard-refreshed');
+      }
+    }
+  }, [publicationLoading, loadUserPublications, getOwnedPublications, getJoinedPublications]);
 
   if (publicationLoading) {
     return null
@@ -101,7 +125,7 @@ export default function DashboardPage() {
             ) : (
               <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <div className="text-center py-8">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center  mb-3">
                     <img src="/icons/nib.svg" alt="publication" className="w-6 h-6" />
                   </div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-1">No Publication Yet</h3>
@@ -159,7 +183,11 @@ export default function DashboardPage() {
                               {joinedPub.role.charAt(0).toUpperCase() + joinedPub.role.slice(1)}
                             </span>
                             <span className="text-xs text-gray-400">
-                              Joined {new Date(joinedPub.joinedAt).toLocaleDateString()}
+                              Joined {new Date(joinedPub.joinedAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short', 
+                                day: 'numeric'
+                              })}
                             </span>
                           </div>
                         </div>

@@ -1,5 +1,12 @@
-CREATE TYPE "public"."blog_status" AS ENUM('draft', 'published', 'unpublished', 'trash');--> statement-breakpoint
-CREATE TABLE "blog" (
+-- Create blog_status enum if not exists
+DO $$ BEGIN
+    CREATE TYPE "public"."blog_status" AS ENUM('draft', 'published', 'unpublished', 'trash');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "blog" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"slug" text NOT NULL,
 	"title" text NOT NULL,
@@ -20,7 +27,7 @@ CREATE TABLE "blog" (
 	CONSTRAINT "blog_slug_unique" UNIQUE("slug")
 );
 --> statement-breakpoint
-CREATE TABLE "comment" (
+CREATE TABLE IF NOT EXISTS "comment" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"content" text NOT NULL,
 	"blogId" integer NOT NULL,
@@ -30,7 +37,7 @@ CREATE TABLE "comment" (
 	"updatedAt" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "publication" (
+CREATE TABLE IF NOT EXISTS "publication" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"subdomain" text NOT NULL,
@@ -45,10 +52,32 @@ CREATE TABLE "publication" (
 	CONSTRAINT "publication_subdomain_unique" UNIQUE("subdomain")
 );
 --> statement-breakpoint
-DROP TABLE "user_profile" CASCADE;--> statement-breakpoint
-ALTER TABLE "user" ADD COLUMN "username" text;--> statement-breakpoint
-ALTER TABLE "user" ADD COLUMN "bio" text;--> statement-breakpoint
-ALTER TABLE "blog" ADD CONSTRAINT "blog_authorId_user_id_fk" FOREIGN KEY ("authorId") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "comment" ADD CONSTRAINT "comment_blogId_blog_id_fk" FOREIGN KEY ("blogId") REFERENCES "public"."blog"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "comment" ADD CONSTRAINT "comment_authorId_user_id_fk" FOREIGN KEY ("authorId") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "publication" ADD CONSTRAINT "publication_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;
+DROP TABLE IF EXISTS "user_profile" CASCADE;
+--> statement-breakpoint
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "username" text;
+--> statement-breakpoint
+ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "bio" text;
+--> statement-breakpoint
+DO $$ BEGIN
+    ALTER TABLE "blog" ADD CONSTRAINT "blog_authorId_user_id_fk" FOREIGN KEY ("authorId") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+    ALTER TABLE "comment" ADD CONSTRAINT "comment_blogId_blog_id_fk" FOREIGN KEY ("blogId") REFERENCES "public"."blog"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+    ALTER TABLE "comment" ADD CONSTRAINT "comment_authorId_user_id_fk" FOREIGN KEY ("authorId") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+    ALTER TABLE "publication" ADD CONSTRAINT "publication_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;

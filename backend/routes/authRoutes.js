@@ -2,8 +2,20 @@
 import express from "express";
 import { authService } from "../services/authService.js";
 import { emailService } from "../services/emailService.js";
+import { auth } from "../config/betterAuth.js";
 
 const router = express.Router();
+
+// Helper to get session from request
+async function getSession(req) {
+    const headers = new Headers();
+    for (const [key, value] of Object.entries(req.headers)) {
+        if (value) headers.set(key, Array.isArray(value) ? value[0] : value);
+    }
+    
+    const session = await auth.api.getSession({ headers });
+    return session;
+}
 
 // POST /api/custom/forgot-password
 router.post("/forgot-password", async (req, res) => {
@@ -64,8 +76,18 @@ router.post("/reset-password", async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        const credentialAccount = await authService.findCredentialAccount(user.id);
+        let credentialAccount = await authService.findCredentialAccount(user.id);
+        
+        // If no credential account exists (Google-only user), create one
         if (!credentialAccount) {
+            const googleAccount = await authService.findGoogleAccount(user.id);
+            if (googleAccount) {
+                // Create credential account for Google user
+                await authService.createCredentialAccountForGoogleUser(user.id, email, newPassword);
+                await authService.deleteToken(validToken.id);
+                console.log(`[AUTH] Password set for Google user via reset: ${email}`);
+                return res.json({ success: true });
+            }
             return res.status(400).json({ error: "No password account found" });
         }
 
@@ -139,3 +161,80 @@ router.post("/verify-email", async (req, res) => {
 });
 
 export default router;
+
+// POST /api/custom/set-password - Set password for Google OAuth users
+router.post("/set-password", async (req, res) => {
+    try {
+        // Check authentication
+        const session = await getSession(req);
+        if (!session?.user) {
+            return res.status(401).json({ error: "Unauthorized. Please log in first." });
+        }
+
+        const { password, confirmPassword } = req.body;
+        const userId = session.user.id;
+        const userEmail = session.user.email;
+
+        console.log(`[AUTH] Set password request for user: ${userEmail}`);
+
+        // Validate password
+        if (!password || !confirmPassword) {
+            return res.status(400).json({ error: "Password and confirm password are required" });
+        }
+
+        if (password.length < 8) {
+            return res.status(400).json({ error: "Password must be at least 8 characters" });
+        }
+
+        if (password !== confirmPassword) {
+            return res.status(400).json({ error: "Passwords do not match" });
+        }
+
+        // Check if user can set password
+        const { canSet, hasGoogleAccount, hasCredentialAccount } = await authService.canSetPassword(userId);
+
+        if (!hasGoogleAccount) {
+            return res.status(400).json({ 
+                error: "This feature is only available for Google OAuth users" 
+            });
+        }
+
+        if (hasCredentialAccount) {
+            return res.status(400).json({ 
+                error: "Password already set. Use forgot password to reset it." 
+            });
+        }
+
+        if (!canSet) {
+            return res.status(400).json({ error: "Cannot set password for this account" });
+        }
+
+        // Create credential account with password
+        await authService.createCredentialAccountForGoogleUser(userId, userEmail, password);
+
+        console.log(`[AUTH] Password set successfully for Google user: ${userEmail}`);
+        res.json({ 
+            success: true, 
+            message: "Password set successfully. You can now login with email and password." 
+        });
+    } catch (error) {
+        console.error(`[AUTH] Set password error:`, error);
+        res.status(500).json({ error: "Failed to set password" });
+    }
+});
+
+// GET /api/custom/can-set-password - Check if current user can set password
+router.get("/can-set-password", async (req, res) => {
+    try {
+        const session = await getSession(req);
+        if (!session?.user) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const result = await authService.canSetPassword(session.user.id);
+        res.json(result);
+    } catch (error) {
+        console.error(`[AUTH] Can set password check error:`, error);
+        res.status(500).json({ error: "Failed to check password status" });
+    }
+});

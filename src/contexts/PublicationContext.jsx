@@ -1,10 +1,10 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, Suspense } from 'react';
+import { createContext, useContext, useState, useEffect, Suspense, useRef, useCallback } from 'react';
 import { useSession } from '@/lib/auth-client';
 import { memberService } from '@/services/memberService';
 import { publicationService } from '@/services/publicationService';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 
 const PublicationContext = createContext();
 
@@ -12,11 +12,18 @@ function PublicationProviderInner({ children }) {
   const { data: session, isPending } = useSession();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [userPublications, setUserPublications] = useState([]);
   const [currentPublication, setCurrentPublication] = useState(null);
   const [publicationDetails, setPublicationDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const currentPubRef = useRef(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    currentPubRef.current = currentPublication;
+  }, [currentPublication]);
 
   // Helper function to determine if we're on member dashboard routes
   const isMemberDashboard = () => {
@@ -29,7 +36,7 @@ function PublicationProviderInner({ children }) {
   };
 
   // Load user's publications (owned + joined)
-  const loadUserPublications = async () => {
+  const loadUserPublications = useCallback(async (silent = false) => {
     if (!session?.user?.id || isPending) {
       if (!isPending) {
         setLoading(false);
@@ -38,10 +45,30 @@ function PublicationProviderInner({ children }) {
     }
 
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       const data = await memberService.getUserPublications();
-      // Backend returns array directly, not wrapped in object
-      const publications = Array.isArray(data) ? data : [];
+      // Backend returns either array (legacy) or object with publications array (new)
+      const publications = Array.isArray(data) ? data : (data.publications || []);
+      
+      // Check if user was removed from current publication (for joined publications only)
+      const currentPub = currentPubRef.current;
+      if (currentPub && !currentPub.isOwner) {
+        const stillHasAccess = publications.find(pub => pub.id === currentPub.id);
+        if (!stillHasAccess) {
+          // User was removed from this publication, redirect to dashboard
+          console.log('[PublicationContext] User removed from publication, redirecting to dashboard');
+          setCurrentPublication(null);
+          setPublicationDetails(null);
+          setUserPublications(publications);
+          setLoading(false);
+          // Use window.location for a full page redirect to ensure clean state
+          window.location.href = '/dashboard';
+          return;
+        }
+      }
+      
       setUserPublications(publications);
       
       // Set current publication based on context
@@ -108,11 +135,15 @@ function PublicationProviderInner({ children }) {
       }
     } catch (error) {
       console.error('Error loading user publications:', error);
-      setError(error.message);
+      if (!silent) {
+        setError(error.message);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  };
+  }, [session?.user?.id, isPending, router]);
 
   // Load full publication details (with stats)
   const loadPublicationDetails = async (publicationId) => {
@@ -233,6 +264,20 @@ function PublicationProviderInner({ children }) {
       loadUserPublications();
     }
   }, [session?.user?.id, isPending]);
+
+  // Polling effect to detect membership changes (e.g., being removed by admin)
+  useEffect(() => {
+    if (!session?.user?.id || isPending || !currentPublication) return;
+
+    // Only poll for joined publications (not owned)
+    if (currentPublication.isOwner) return;
+
+    const pollInterval = setInterval(() => {
+      loadUserPublications(true); // silent polling
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [session?.user?.id, isPending, currentPublication?.id, currentPublication?.isOwner, loadUserPublications]);
 
   // Effect to handle route changes and URL parameters
   useEffect(() => {

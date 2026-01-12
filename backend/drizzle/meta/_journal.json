@@ -47,8 +47,8 @@
     {
       "idx": 6,
       "version": "7",
-      "when": 1768037180528,
-      "tag": "0006_minor_genesis",
+      "when": 1736499600000,
+      "tag": "0008_add_publication_members_invitation",
       "breakpoints": true
     }
   ]

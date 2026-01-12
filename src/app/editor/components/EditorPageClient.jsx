@@ -64,8 +64,9 @@ export default function EditorPageClient() {
   const [isLoadingArticle, setIsLoadingArticle] = useState(false)
   const [showPublishSuccessModal, setShowPublishSuccessModal] = useState(false)
   const [publishedBlogSlug, setPublishedBlogSlug] = useState('')
+  const [showDraftSavedToast, setShowDraftSavedToast] = useState(false)
   
-  // Refs to track latest values for auto-save
+  // Refs to track latest values for auto-save - consolidated to reduce effect count
   const titleRef = useRef(title)
   const descriptionRef = useRef(description)
   const editorContentRef = useRef(editorContent)
@@ -73,6 +74,10 @@ export default function EditorPageClient() {
   const currentArticleIdRef = useRef(currentArticleId)
   const hasUnsavedChangesRef = useRef(hasUnsavedChanges)
   const isSavingRef = useRef(false)
+  const createArticleRef = useRef(createArticle)
+  const updateArticleRef = useRef(updateArticle)
+  const loadUserArticlesRef = useRef(loadUserArticles)
+  const isInitialLoadRef = useRef(true)
 
   // Load existing article data if ID is provided
   useEffect(() => {
@@ -92,36 +97,44 @@ export default function EditorPageClient() {
           // Reset unsaved changes since we just loaded
           setHasUnsavedChanges(false)
           setIsSaved(true)
+          isInitialLoadRef.current = false
         } catch (error) {
           console.error('Error loading article:', error)
-          alert('Failed to load article. Please try again.')
           router.push('/home')
         } finally {
           setIsLoadingArticle(false)
         }
+      } else {
+        isInitialLoadRef.current = false
       }
     }
 
     loadArticle()
   }, [articleId, session?.user?.id, getArticleById, router])
 
-  // Update refs when state changes
-  useEffect(() => { titleRef.current = title }, [title])
-  useEffect(() => { descriptionRef.current = description }, [description])
-  useEffect(() => { editorContentRef.current = editorContent }, [editorContent])
-  useEffect(() => { selectedCategoriesRef.current = selectedCategories }, [selectedCategories])
-  useEffect(() => { currentArticleIdRef.current = currentArticleId }, [currentArticleId])
-  useEffect(() => { hasUnsavedChangesRef.current = hasUnsavedChanges }, [hasUnsavedChanges])
-
-  // Track unsaved changes
+  // Consolidated ref updates - single effect instead of multiple
   useEffect(() => {
+    titleRef.current = title
+    descriptionRef.current = description
+    editorContentRef.current = editorContent
+    selectedCategoriesRef.current = selectedCategories
+    currentArticleIdRef.current = currentArticleId
+    hasUnsavedChangesRef.current = hasUnsavedChanges
+    createArticleRef.current = createArticle
+    updateArticleRef.current = updateArticle
+    loadUserArticlesRef.current = loadUserArticles
+  })
+
+  // Track unsaved changes - skip during initial load
+  useEffect(() => {
+    if (isInitialLoadRef.current) return
     if (title || description || editorContent) {
       setHasUnsavedChanges(true)
       setIsSaved(false)
     }
   }, [title, description, editorContent, selectedCategories])
 
-  // Auto-save to draft function
+  // Auto-save to draft function - uses refs to avoid dependency changes
   const autoSaveToDraft = useCallback(async () => {
     // Don't save if already saving, no content, or no unsaved changes
     if (isSavingRef.current || isLoading) return
@@ -136,7 +149,7 @@ export default function EditorPageClient() {
       
       if (currentArticleIdRef.current) {
         // Update existing article - ensure required fields have valid content
-        await updateArticle(currentArticleIdRef.current, {
+        await updateArticleRef.current(currentArticleIdRef.current, {
           title: titleRef.current.trim(),
           description: descriptionRef.current.trim() || 'Draft',
           content: editorContentRef.current.trim() || '<p></p>',
@@ -145,7 +158,7 @@ export default function EditorPageClient() {
         })
       } else {
         // Create new draft article
-        const newArticle = await createArticle({
+        const newArticle = await createArticleRef.current({
           title: titleRef.current.trim(),
           description: descriptionRef.current.trim() || 'Draft',
           content: editorContentRef.current.trim() || '<p></p>',
@@ -163,7 +176,7 @@ export default function EditorPageClient() {
     } finally {
       isSavingRef.current = false
     }
-  }, [createArticle, updateArticle, isLoading])
+  }, [isLoading]) // Uses refs internally, only isLoading is a direct dependency
 
   // Auto-save on beforeunload (browser close/refresh)
   useEffect(() => {
@@ -213,15 +226,15 @@ export default function EditorPageClient() {
     }
   }, [autoSaveToDraft])
 
-  const handleEditorUpdate = ({ html, charCount: chars, wordCount: words }) => {
+  // Memoize editor update handler to prevent TiptapEditor re-renders
+  const handleEditorUpdate = useCallback(({ html, charCount: chars, wordCount: words }) => {
     setEditorContent(html)
     setCharCount(chars)
     setWordCount(words)
-  }
+  }, [])
 
   const handlePublish = async () => {
     if (!title.trim() || !description.trim() || !editorContent.trim()) {
-      alert('Please fill in title, description, and content before publishing.')
       return
     }
 
@@ -270,7 +283,6 @@ export default function EditorPageClient() {
           } catch (imageError) {
             console.error('Error uploading thumbnail:', imageError)
             // Don't fail the entire publish process for image upload errors
-            alert(`Article published successfully, but thumbnail upload failed: ${imageError.message}`)
           }
         }
       }
@@ -295,7 +307,6 @@ export default function EditorPageClient() {
       currentArticleIdRef.current = null
     } catch (error) {
       console.error('Error publishing article:', error)
-      alert('Failed to publish article. Please try again.')
     } finally {
       setIsLoading(false)
       isSavingRef.current = false
@@ -304,12 +315,10 @@ export default function EditorPageClient() {
 
   const handleSchedule = async () => {
     if (!title.trim() || !description.trim() || !editorContent.trim()) {
-      alert('Please fill in title, description, and content before scheduling.')
       return
     }
 
     if (!publishDate || !publishTime) {
-      alert('Please select a date and time for scheduling.')
       return
     }
 
@@ -331,14 +340,12 @@ export default function EditorPageClient() {
       
       // Validate the date
       if (isNaN(localDateTime.getTime())) {
-        alert('Invalid date or time format. Please check your input.')
         return
       }
       
       // Check if the scheduled time is in the future (compare in local time)
       const now = new Date()
       if (localDateTime <= now) {
-        alert('Scheduled time must be in the future.')
         return
       }
       
@@ -370,7 +377,6 @@ export default function EditorPageClient() {
             await uploadArticleImage(newArticle.id, thumbnailImage.file)
           } catch (imageError) {
             console.error('Error uploading thumbnail:', imageError)
-            alert(`Article scheduled successfully, but thumbnail upload failed: ${imageError.message}`)
           }
         }
       }
@@ -390,7 +396,6 @@ export default function EditorPageClient() {
       }
     } catch (error) {
       console.error('Error scheduling article:', error)
-      alert('Failed to schedule article. Please try again.')
     } finally {
       setIsLoading(false)
       isSavingRef.current = false
@@ -399,12 +404,10 @@ export default function EditorPageClient() {
 
   const handleUpdate = async () => {
     if (!currentArticleId) {
-      alert('No article to update.')
       return
     }
 
     if (!title.trim() || !description.trim() || !editorContent.trim()) {
-      alert('Please fill in title, description, and content.')
       return
     }
 
@@ -424,7 +427,6 @@ export default function EditorPageClient() {
           await uploadArticleImage(currentArticleId, thumbnailImage.file)
         } catch (imageError) {
           console.error('Error uploading thumbnail:', imageError)
-          alert(`Article updated successfully, but thumbnail upload failed: ${imageError.message}`)
         }
       }
       
@@ -433,11 +435,8 @@ export default function EditorPageClient() {
       
       // Refresh articles list to ensure updates are reflected
       await loadUserArticles()
-      
-      alert('Article updated successfully!')
     } catch (error) {
       console.error('Error updating article:', error)
-      alert('Failed to update article. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -445,7 +444,6 @@ export default function EditorPageClient() {
 
   const handleSaveDraft = async () => {
     if (!title.trim() || !description.trim() || !editorContent.trim()) {
-      alert('Please fill in title, description, and content before saving.')
       return
     }
 
@@ -490,7 +488,6 @@ export default function EditorPageClient() {
             await uploadArticleImage(newArticle.id, thumbnailImage.file)
           } catch (imageError) {
             console.error('Error uploading thumbnail:', imageError)
-            alert(`Draft saved successfully, but thumbnail upload failed: ${imageError.message}`)
           }
         }
       }
@@ -507,7 +504,6 @@ export default function EditorPageClient() {
       }, 100)
     } catch (error) {
       console.error('Error saving draft:', error)
-      alert('Failed to save draft. Please try again.')
     } finally {
       setIsLoading(false)
       isSavingRef.current = false
@@ -538,7 +534,6 @@ export default function EditorPageClient() {
       }, 100)
     } catch (error) {
       console.error('Error reverting to draft:', error)
-      alert('Failed to revert to draft. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -546,7 +541,6 @@ export default function EditorPageClient() {
 
   const handleSendForReview = async () => {
     if (!title.trim() || !description.trim() || !editorContent.trim()) {
-      alert('Please fill in title, description, and content before sending for review.')
       return
     }
 
@@ -575,7 +569,6 @@ export default function EditorPageClient() {
             await uploadArticleImage(currentArticleId, thumbnailImage.file)
           } catch (imageError) {
             console.error('Error uploading thumbnail:', imageError)
-            alert(`Article sent for review successfully, but thumbnail upload failed: ${imageError.message}`)
           }
         }
       } else {
@@ -603,7 +596,6 @@ export default function EditorPageClient() {
             await uploadArticleImage(newArticle.id, thumbnailImage.file)
           } catch (imageError) {
             console.error('Error uploading thumbnail:', imageError)
-            alert(`Article sent for review successfully, but thumbnail upload failed: ${imageError.message}`)
           }
         }
       }
@@ -614,32 +606,77 @@ export default function EditorPageClient() {
       // Refresh articles list
       await loadUserArticles()
       
-      alert('Article sent for review successfully!')
-      
       // Navigate to My Blogs page
       setTimeout(() => {
         router.push('/posts/my-blogs')
       }, 100)
     } catch (error) {
       console.error('Error sending article for review:', error)
-      alert('Failed to send article for review. Please try again.')
     } finally {
       setIsLoading(false)
       isSavingRef.current = false
     }
   }
 
-  const handleReschedule = () => {
+  const handleReschedule = useCallback(() => {
     setIsDateTimePickerOpen(true)
-  }
+  }, [])
 
-  const handleThumbnailAdd = (imageData) => {
+  const handleThumbnailAdd = useCallback((imageData) => {
     setThumbnailImage(imageData)
-  }
+  }, [])
 
-  const handleDateTimeSelect = (date, time) => {
+  const handleDateTimeSelect = useCallback((date, time) => {
     setPublishDate(date)
     setPublishTime(time)
+  }, [])
+
+  // Handle Go Back - auto-save to draft if there are unsaved changes
+  const handleGoBack = async () => {
+    // If there are unsaved changes and at least a title, save as draft
+    if (hasUnsavedChanges && title.trim()) {
+      try {
+        isSavingRef.current = true
+        
+        // Mark as saved to prevent duplicate saves from unmount effect
+        setHasUnsavedChanges(false)
+        hasUnsavedChangesRef.current = false
+        
+        if (currentArticleId) {
+          await updateArticle(currentArticleId, {
+            title: title.trim(),
+            description: description.trim() || 'Draft',
+            content: editorContent.trim() || '<p></p>',
+            categories: selectedCategories,
+            status: 'draft'
+          })
+        } else {
+          const newArticle = await createArticle({
+            title: title.trim(),
+            description: description.trim() || 'Draft',
+            content: editorContent.trim() || '<p></p>',
+            categories: selectedCategories,
+            status: 'draft'
+          })
+          // Update refs to prevent duplicate creation
+          currentArticleIdRef.current = newArticle.id
+          setCurrentArticleId(newArticle.id)
+        }
+        
+        // Show toast and redirect
+        setShowDraftSavedToast(true)
+        setTimeout(() => {
+          window.location.href = '/home'
+        }, 1500)
+      } catch (error) {
+        console.error('Error saving draft on exit:', error)
+        window.location.href = '/home'
+      } finally {
+        isSavingRef.current = false
+      }
+    } else {
+      window.location.href = '/home'
+    }
   }
 
   // Input validation functions
@@ -702,7 +739,7 @@ export default function EditorPageClient() {
       <div className="px-4 md:px-6 pt-6 pb-4 border-b border-gray-200 md:bg-transparent md:border-0">
         <Button 
           variant="ghost" 
-          onClick={() => router.push('/home')}
+          onClick={handleGoBack}
           className="text-gray-500 hover:text-gray-700 px-2 gap-1"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -1105,6 +1142,20 @@ export default function EditorPageClient() {
         blogSlug={publishedBlogSlug}
         blogTitle={title}
       />
+
+      {/* Draft Saved Toast */}
+      {showDraftSavedToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <span className="text-sm font-medium">Blog saved as draft</span>
+          </div>
+        </div>
+      )}
         </div>
       )}
     </>
