@@ -8,6 +8,7 @@ import { blog, user, publication, publicationMember } from "../models/schema.js"
 import { eq, desc, and, or, ilike } from "drizzle-orm";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
+import schedulerService from "../services/schedulerService.js";
 
 const router = express.Router();
 
@@ -221,8 +222,20 @@ router.get("/", async (req, res) => {
             categories, 
             search, 
             limit = 50, 
-            offset = 0 
+            offset = 0,
+            includeUnpublished // Only for authenticated requests
         } = req.query;
+
+        // Check if user is authenticated (for viewing their own unpublished posts)
+        let currentUserId = null;
+        try {
+            const session = await auth.api.getSession({
+                headers: fromNodeHeaders(req.headers),
+            });
+            currentUserId = session?.user?.id;
+        } catch (e) {
+            // Not authenticated, that's fine for public requests
+        }
 
         let query = db
             .select({
@@ -239,6 +252,7 @@ router.get("/", async (req, res) => {
                 scheduledAt: blog.scheduledAt,
                 createdAt: blog.createdAt,
                 updatedAt: blog.updatedAt,
+                authorId: blog.authorId,
                 author: {
                     id: user.id,
                     name: user.name,
@@ -253,13 +267,17 @@ router.get("/", async (req, res) => {
         // Apply filters
         const conditions = [];
         
-        // Support both status and published filters for backward compatibility
+        // PUBLIC ACCESS: Only show published blogs by default
+        // Unless user is authenticated AND requesting their own posts OR includeUnpublished is set
         if (status !== undefined) {
-            // Filter by status enum field directly
+            // Explicit status filter requested
             conditions.push(eq(blog.status, status));
         } else if (published !== undefined) {
-            // Filter by published boolean field
+            // Explicit published filter requested
             conditions.push(eq(blog.published, published === 'true'));
+        } else if (!includeUnpublished || includeUnpublished !== 'true') {
+            // Default: only show published blogs for public access
+            conditions.push(eq(blog.status, 'published'));
         }
         
         if (authorId) {
@@ -283,20 +301,30 @@ router.get("/", async (req, res) => {
             query = query.where(and(...conditions));
         }
 
-        const blogs = await query.limit(parseInt(limit)).offset(parseInt(offset));
+        let blogs = await query.limit(parseInt(limit)).offset(parseInt(offset));
 
         // Filter by categories if provided (since categories is an array field)
-        let filteredBlogs = blogs;
         if (categories) {
             const categoryArray = Array.isArray(categories) ? categories : [categories];
-            filteredBlogs = blogs.filter(b => 
+            blogs = blogs.filter(b => 
                 b.categories && b.categories.some(cat => 
                     categoryArray.includes(cat)
                 )
             );
         }
 
-        res.json(filteredBlogs);
+        // Security: If not authenticated or not the author, filter out non-published posts
+        // This is a safety net in case someone bypasses the query filters
+        if (!currentUserId) {
+            blogs = blogs.filter(b => b.status === 'published');
+        } else if (!includeUnpublished || includeUnpublished !== 'true') {
+            // Authenticated but not requesting unpublished - show published + own posts
+            blogs = blogs.filter(b => 
+                b.status === 'published' || b.authorId === currentUserId
+            );
+        }
+
+        res.json(blogs);
     } catch (error) {
         console.error("Error fetching blogs:", error);
         console.error("Error details:", error.message);
@@ -411,6 +439,17 @@ router.get("/:id", async (req, res) => {
     try {
         const { id } = req.params;
 
+        // Check if user is authenticated
+        let currentUserId = null;
+        try {
+            const session = await auth.api.getSession({
+                headers: fromNodeHeaders(req.headers),
+            });
+            currentUserId = session?.user?.id;
+        } catch (e) {
+            // Not authenticated
+        }
+
         const [blogData] = await db
             .select({
                 id: blog.id,
@@ -425,6 +464,7 @@ router.get("/:id", async (req, res) => {
                 scheduledAt: blog.scheduledAt,
                 createdAt: blog.createdAt,
                 updatedAt: blog.updatedAt,
+                authorId: blog.authorId,
                 author: {
                     id: user.id,
                     name: user.name,
@@ -440,9 +480,76 @@ router.get("/:id", async (req, res) => {
             return res.status(404).json({ error: "Blog not found" });
         }
 
+        // Security: Only show non-published blogs to the author
+        if (blogData.status !== 'published') {
+            if (!currentUserId || blogData.authorId !== currentUserId) {
+                return res.status(404).json({ error: "Blog not found" });
+            }
+        }
+
         res.json(blogData);
     } catch (error) {
         console.error("Error fetching blog:", error);
+        res.status(500).json({ error: "Failed to fetch blog" });
+    }
+});
+
+// GET /api/blogs/slug/:slug - Get single blog by slug (public route)
+router.get("/slug/:slug", async (req, res) => {
+    try {
+        const { slug } = req.params;
+
+        // Check if user is authenticated
+        let currentUserId = null;
+        try {
+            const session = await auth.api.getSession({
+                headers: fromNodeHeaders(req.headers),
+            });
+            currentUserId = session?.user?.id;
+        } catch (e) {
+            // Not authenticated
+        }
+
+        const [blogData] = await db
+            .select({
+                id: blog.id,
+                slug: blog.slug,
+                title: blog.title,
+                description: blog.description,
+                content: blog.content,
+                image: blog.image,
+                categories: blog.categories,
+                status: blog.status,
+                published: blog.published,
+                scheduledAt: blog.scheduledAt,
+                createdAt: blog.createdAt,
+                updatedAt: blog.updatedAt,
+                authorId: blog.authorId,
+                author: {
+                    id: user.id,
+                    name: user.name,
+                    image: user.image,
+                    username: user.username
+                }
+            })
+            .from(blog)
+            .leftJoin(user, eq(blog.authorId, user.id))
+            .where(eq(blog.slug, slug));
+
+        if (!blogData) {
+            return res.status(404).json({ error: "Blog not found" });
+        }
+
+        // Security: Only show non-published blogs to the author
+        if (blogData.status !== 'published') {
+            if (!currentUserId || blogData.authorId !== currentUserId) {
+                return res.status(404).json({ error: "Blog not found" });
+            }
+        }
+
+        res.json(blogData);
+    } catch (error) {
+        console.error("Error fetching blog by slug:", error);
         res.status(500).json({ error: "Failed to fetch blog" });
     }
 });
@@ -498,6 +605,11 @@ router.post("/", getCurrentUser, async (req, res) => {
             .insert(blog)
             .values(blogData)
             .returning();
+
+        // Notify scheduler if blog is scheduled
+        if (newBlog.status === 'scheduled' && newBlog.scheduledAt) {
+            schedulerService.onBlogScheduled(newBlog.id);
+        }
 
         res.status(201).json(newBlog);
     } catch (error) {
@@ -561,7 +673,10 @@ router.put("/:id", getCurrentUser, async (req, res) => {
         }
         
         if (categories !== undefined) updateData.categories = categories;
-        if (scheduledAt !== undefined) updateData.scheduledAt = new Date(scheduledAt);
+        if (scheduledAt !== undefined) {
+            updateData.scheduledAt = new Date(scheduledAt);
+            console.log(`[BLOG] Scheduling blog ${id} for: ${updateData.scheduledAt.toISOString()}`);
+        }
         
         // Handle status update with strict synchronization
         if (status !== undefined) {
@@ -581,6 +696,14 @@ router.put("/:id", getCurrentUser, async (req, res) => {
             .set(updateData)
             .where(eq(blog.id, parseInt(id)))
             .returning();
+
+        // Notify scheduler about status changes
+        if (updatedBlog.status === 'scheduled' && updatedBlog.scheduledAt) {
+            schedulerService.onBlogScheduled(updatedBlog.id);
+        } else if (existingBlog.status === 'scheduled' && updatedBlog.status !== 'scheduled') {
+            // Blog was unscheduled
+            schedulerService.onBlogUnscheduled(updatedBlog.id);
+        }
 
         res.json(updatedBlog);
     } catch (error) {

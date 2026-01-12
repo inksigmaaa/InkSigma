@@ -21,7 +21,16 @@ class EmailService {
         return this.transporter;
     }
 
-    
+    async verify() {
+        try {
+            await this.getTransporter().verify();
+            console.log("[EMAIL] SMTP connection verified");
+            return true;
+        } catch (error) {
+            console.error("[EMAIL] SMTP verification failed:", error.message);
+            return false;
+        }
+    }
 
     async send({ to, subject, html }) {
         console.log(`[EMAIL] Sending "${subject}" to ${to}`);

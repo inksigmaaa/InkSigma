@@ -50,6 +50,13 @@
       "when": 1736499600000,
       "tag": "0008_add_publication_members_invitation",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1768195327037,
+      "tag": "0007_ordinary_magus",
+      "breakpoints": true
     }
   ]
 }

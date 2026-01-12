@@ -335,22 +335,25 @@ export default function EditorPageClient() {
       const [day, month, year] = publishDate.split('-').map(num => parseInt(num, 10))
       const [hours, minutes] = publishTime.split(':').map(num => parseInt(num, 10))
       
-      // Create date object in user's local timezone first
+      // Create date object in user's local timezone
       const localDateTime = new Date(year, month - 1, day, hours, minutes)
       
       // Validate the date
       if (isNaN(localDateTime.getTime())) {
+        console.error('[SCHEDULE] Invalid date/time')
         return
       }
       
-      // Check if the scheduled time is in the future (compare in local time)
+      // Check if the scheduled time is in the future
       const now = new Date()
       if (localDateTime <= now) {
+        console.error('[SCHEDULE] Time must be in the future')
         return
       }
       
-      // Convert to UTC for storage (this preserves the user's intended local time)
-      const scheduledDateTimeUTC = new Date(localDateTime.getTime())
+      // Log for debugging
+      console.log('[SCHEDULE] Local time selected:', localDateTime.toString())
+      console.log('[SCHEDULE] Will be stored as UTC:', localDateTime.toISOString())
       
       if (currentArticleId) {
         await updateArticle(currentArticleId, {
@@ -359,7 +362,7 @@ export default function EditorPageClient() {
           content: editorContent,
           categories: selectedCategories,
           status: 'scheduled',
-          scheduledAt: scheduledDateTimeUTC.toISOString()
+          scheduledAt: localDateTime.toISOString()
         })
       } else {
         const newArticle = await createArticle({
@@ -368,7 +371,7 @@ export default function EditorPageClient() {
           content: editorContent,
           categories: selectedCategories,
           status: 'scheduled',
-          scheduledAt: scheduledDateTimeUTC.toISOString()
+          scheduledAt: localDateTime.toISOString()
         })
         setCurrentArticleId(newArticle.id)
         
