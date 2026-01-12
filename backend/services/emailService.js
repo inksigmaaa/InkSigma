@@ -24,10 +24,10 @@ class EmailService {
     async verify() {
         try {
             await this.getTransporter().verify();
-            console.log("📧 SMTP server is ready");
+            console.log("[EMAIL] SMTP connection verified");
             return true;
         } catch (error) {
-            console.error("📧 SMTP connection error:", error.message);
+            console.error("[EMAIL] SMTP verification failed:", error.message);
             return false;
         }
     }

@@ -66,52 +66,38 @@ export default function SchedulePage() {
     }
   }, []);
 
-  // Auto-refresh to check for published scheduled articles - only when there are scheduled articles
-  useEffect(() => {
-    // Only set up auto-refresh if there are scheduled articles
-    if (scheduledArticleIds.length === 0) return;
-
-    // Check every 30 seconds for scheduled articles that should have been published
-    const interval = setInterval(() => {
-      loadUserArticlesRef.current();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [scheduledArticleIds.length]); // Depend on length to start/stop based on presence of articles
-
-  // Smart auto-refresh: set timer for the next scheduled article
+  // Smart refresh: set a single timer for the next scheduled article to publish
   useEffect(() => {
     if (scheduledArticles.length === 0) return;
 
     const now = new Date();
     
-    // Find articles that are due to be published in the future
+    // Find the next article that will be published
     const upcomingArticles = scheduledArticles
       .filter(article => article.scheduledAt)
       .map(article => ({
         id: article.id,
+        title: article.title,
         scheduledTime: new Date(article.scheduledAt)
       }))
       .filter(article => article.scheduledTime > now)
       .sort((a, b) => a.scheduledTime - b.scheduledTime);
 
-    // If no upcoming articles, don't set any timer (the 30-second interval will handle it)
     if (upcomingArticles.length === 0) return;
 
-    // Set a timer for the next scheduled article
     const nextArticle = upcomingArticles[0];
     const timeUntilPublish = nextArticle.scheduledTime.getTime() - now.getTime();
 
-    // If within 2 minutes, set a precise timer
-    if (timeUntilPublish <= 120000 && timeUntilPublish > 0) {
-      const timer = setTimeout(() => {
-        // Refresh after the scheduled time + 3 seconds buffer for backend processing
-        loadUserArticlesRef.current();
-      }, timeUntilPublish + 3000);
+    // Set a timer to refresh after the scheduled time + 2 seconds buffer
+    const timer = setTimeout(() => {
+      console.log(`[SCHEDULE] Article "${nextArticle.title}" should be published now, refreshing...`);
+      loadUserArticlesRef.current();
+    }, timeUntilPublish + 2000);
 
-      return () => clearTimeout(timer);
-    }
-  }, [scheduledArticles.length]); // Only depend on length to avoid infinite loops
+    console.log(`[SCHEDULE] Next publish: "${nextArticle.title}" in ${Math.round(timeUntilPublish / 1000)}s`);
+
+    return () => clearTimeout(timer);
+  }, [scheduledArticles]);
 
   // Manual refresh function
   const handleRefresh = useCallback(async () => {
@@ -248,6 +234,8 @@ export default function SchedulePage() {
         selectedArticles={selectedArticles}
         onSelectAll={handleSelectAll}
         onArticleSelect={handleArticleSelect}
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
       />
 
       <ConfirmModal
