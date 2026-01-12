@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSession } from "@/lib/auth-client";
 import { memberService } from "@/services/memberService";
 import { usePublication } from "@/contexts/PublicationContext";
@@ -18,6 +18,14 @@ export default function Members() {
     const [sending, setSending] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    
+    // Memoized admin check to prevent flickering during state updates
+    const isAdmin = useMemo(() => {
+        const contextAdmin = isCurrentUserAdmin();
+        const localAdmin = userRole === "admin";
+        return contextAdmin || localAdmin;
+    }, [isCurrentUserAdmin, userRole]);
     
     // Toast visibility states for smooth animations
     const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -54,10 +62,11 @@ export default function Members() {
         }
     }, [error]);
 
-    // Auto-refresh interval for real-time updates
+    // Initial and periodic data loading
     useEffect(() => {
-        if (currentPublication && session?.user?.id) {
-            loadData();
+        if (currentPublication?.id && session?.user?.id) {
+            loadData(isInitialLoad ? false : true);
+            if (isInitialLoad) setIsInitialLoad(false);
             
             const interval = setInterval(() => {
                 loadData(true);
@@ -65,8 +74,8 @@ export default function Members() {
 
             return () => clearInterval(interval);
         } else if (!publicationLoading && !currentPublication) {
-            // Publication context finished loading but no publication found
             setLoading(false);
+            setIsInitialLoad(false);
         }
     }, [currentPublication?.id, session?.user?.id, publicationLoading]);
 
@@ -84,9 +93,13 @@ export default function Members() {
             }
             
             const membersData = await memberService.getMembers(currentPublication.id);
-            setMembers(membersData.members);
-            setPendingInvitations(membersData.pendingInvitations);
-            setUserRole(membersData.userRole);
+            
+            // De-duplicate members by userId to fix "admin in twice" issue
+            const uniqueMembers = Array.from(new Map(membersData.members.map(m => [m.userId, m])).values());
+            
+            setMembers(prev => JSON.stringify(prev) === JSON.stringify(uniqueMembers) ? prev : uniqueMembers);
+            setPendingInvitations(prev => JSON.stringify(prev) === JSON.stringify(membersData.pendingInvitations) ? prev : membersData.pendingInvitations);
+            setUserRole(prev => prev === membersData.userRole ? prev : membersData.userRole);
         } catch (error) {
             console.error("Error loading data:", error);
             if (!silent) {
@@ -170,7 +183,6 @@ export default function Members() {
         }
     };
 
-    const isAdmin = userRole === "admin" || isCurrentUserAdmin();
     const topPosition = 'top-[160px]';
     const mobileTopPosition = 'max-md:top-[120px]';
 
