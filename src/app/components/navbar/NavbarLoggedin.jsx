@@ -96,6 +96,21 @@ export default function NavbarLoggedin() {
         }
     };
 
+    const handleNotificationClick = async (notification) => {
+        // Mark as read if unread
+        if (!notification.isRead) {
+            await markAsRead(notification.id);
+        }
+        
+        // Close notification dropdown
+        setNotificationOpen(false);
+        
+        // Navigate to the appropriate page
+        if (notification.navigationUrl) {
+            router.push(notification.navigationUrl);
+        }
+    };
+
     const handleLogout = async () => {
         // Clear local data first
         localStorage.clear();
@@ -186,7 +201,7 @@ export default function NavbarLoggedin() {
                                             <div 
                                                 key={notification.id} 
                                                 className={`flex items-start gap-3 p-4 hover:bg-[#F8F9FA] border-b border-[#F0F0F0] last:border-b-0 max-md:p-3 max-md:gap-2.5 cursor-pointer ${!notification.isRead ? 'bg-blue-50' : ''}`}
-                                                onClick={() => !notification.isRead && markAsRead(notification.id)}
+                                                onClick={() => handleNotificationClick(notification)}
                                             >
                                                 <img 
                                                     src={notification.avatar} 

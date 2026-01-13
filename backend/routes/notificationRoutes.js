@@ -30,6 +30,28 @@ router.get("/:userId", async (req, res) => {
             .orderBy(desc(notification.createdAt))
             .limit(50);
 
+        // Helper function to generate navigation URL based on notification type
+        const getNavigationUrl = (notif) => {
+            switch (notif.type) {
+                case "invitation":
+                    return "/members"; // Or `/invite/${token}` if you have token-based invites
+                case "blog_accepted":
+                    return notif.relatedBlogId ? `/home/preview/${notif.relatedBlogId}` : "/published";
+                case "blog_rejected":
+                    return notif.relatedBlogId ? `/home/preview/${notif.relatedBlogId}` : "/draft";
+                case "blog_review":
+                    return "/review"; // Or `/author-review` for specific review page
+                case "blog_published":
+                    return notif.relatedBlogId ? `/home/preview/${notif.relatedBlogId}` : "/published";
+                case "invitation_declined":
+                    return "/members";
+                case "member_joined":
+                    return "/members";
+                default:
+                    return "/dashboard";
+            }
+        };
+
         // Format notifications - ensure createdAt is ISO string with timezone
         const formattedNotifications = notifications.map(notif => ({
             id: notif.id,
@@ -41,6 +63,7 @@ router.get("/:userId", async (req, res) => {
             createdAt: notif.createdAt instanceof Date ? notif.createdAt.toISOString() : notif.createdAt,
             relatedBlogId: notif.relatedBlogId,
             relatedPublicationId: notif.relatedPublicationId,
+            navigationUrl: getNavigationUrl(notif),
         }));
 
         res.json({ notifications: formattedNotifications });
