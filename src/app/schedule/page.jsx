@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import AuthGuard from "@/components/auth/AuthGuard";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
@@ -11,6 +12,8 @@ import { useArticles } from "@/contexts/ArticlesContext";
 
 export default function SchedulePage() {
   const { articles, loading, error, loadUserArticles, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, bulkMoveToDraft } = useArticles();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [selectedArticles, setSelectedArticles] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
@@ -26,6 +29,15 @@ export default function SchedulePage() {
   useEffect(() => {
     loadUserArticlesRef.current = loadUserArticles;
   }, [loadUserArticles]);
+
+  // Refresh articles when coming from editor with refresh param
+  useEffect(() => {
+    if (searchParams.get('refresh') === 'true') {
+      loadUserArticlesRef.current();
+      // Clean up the URL
+      router.replace('/schedule', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   // Filter scheduled articles - separate from action handlers to prevent re-renders
   const scheduledArticleIds = useMemo(() => {

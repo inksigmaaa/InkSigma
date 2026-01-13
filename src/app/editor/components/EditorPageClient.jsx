@@ -1,1166 +1,742 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { CategoryDropdown } from "./CategoryDropdown"
-import { ThumbnailModal } from "./ThumbnailModal"
-import { DateTimePicker } from "./DateTimePicker"
-import PublishSuccessModal from "./PublishSuccessModal"
-import { useArticles } from "@/contexts/ArticlesContext"
-import { useSession } from "@/lib/auth-client"
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import { ThumbnailModal } from './ThumbnailModal'
+import { TiptapEditor } from './TiptapEditor'
 
-import { 
-  Image as ImageIcon,
-  Calendar,
-  ChevronLeft,
-  FileText,
-} from "lucide-react"
+const categories = [
+  "Fashion",
+  "Space", 
+  "Sports",
+  "Art",
+  "Humor",
+  "Climate & Environment",
+  "Technology",
+  "Business",
+  "Health",
+  "Education"
+]
 
-import { TiptapEditor } from "./TiptapEditor"
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
 export default function EditorPageClient() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const { data: session } = useSession()
-  const { createArticle, updateArticle, uploadArticleImage, getArticleById, loadUserArticles } = useArticles()
-  
-  // Prevent hydration mismatch by ensuring client-side rendering
-  const [isMounted, setIsMounted] = useState(false)
-  
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
-  
-  // Get status and ID from URL parameters
-  const articleStatus = searchParams.get('status')
-  const articleId = searchParams.get('id')
-  const publicationId = searchParams.get('publicationId') // For joined publications
-  
-  // Debug log
-  useEffect(() => {
-    console.log('Editor - publicationId:', publicationId)
-    console.log('Editor - articleStatus:', articleStatus)
-  }, [publicationId, articleStatus])
-  
-  // State management
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState([])
-  const [publishDate, setPublishDate] = useState('')
-  const [publishTime, setPublishTime] = useState('')
-  const [charCount, setCharCount] = useState(0)
-  const [wordCount, setWordCount] = useState(0)
-  const [editorContent, setEditorContent] = useState('')
-  const [isThumbnailModalOpen, setIsThumbnailModalOpen] = useState(false)
-  const [thumbnailImage, setThumbnailImage] = useState(null)
-  const [isDateTimePickerOpen, setIsDateTimePickerOpen] = useState(false)
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [currentArticleId, setCurrentArticleId] = useState(articleId ? parseInt(articleId) : null)
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const [isSaved, setIsSaved] = useState(false)
-  const [isLoadingArticle, setIsLoadingArticle] = useState(false)
-  const [showPublishSuccessModal, setShowPublishSuccessModal] = useState(false)
-  const [publishedBlogSlug, setPublishedBlogSlug] = useState('')
-  const [showDraftSavedToast, setShowDraftSavedToast] = useState(false)
-  
-  // Refs to track latest values for auto-save - consolidated to reduce effect count
-  const titleRef = useRef(title)
-  const descriptionRef = useRef(description)
-  const editorContentRef = useRef(editorContent)
-  const selectedCategoriesRef = useRef(selectedCategories)
-  const currentArticleIdRef = useRef(currentArticleId)
-  const hasUnsavedChangesRef = useRef(hasUnsavedChanges)
-  const isSavingRef = useRef(false)
-  const createArticleRef = useRef(createArticle)
-  const updateArticleRef = useRef(updateArticle)
-  const loadUserArticlesRef = useRef(loadUserArticles)
-  const isInitialLoadRef = useRef(true)
+  const [categorySearch, setCategorySearch] = useState('')
+  const [showThumbnailModal, setShowThumbnailModal] = useState(false)
+  const [thumbnailData, setThumbnailData] = useState(null)
+  const [showCalendar, setShowCalendar] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(null)
+  const [selectedHour, setSelectedHour] = useState(10)
+  const [selectedMinute, setSelectedMinute] = useState(30)
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
+  const [manualDate, setManualDate] = useState('')
+  const [manualTime, setManualTime] = useState('')
+  const [editorContent, setEditorContent] = useState({ charCount: 0, wordCount: 0, html: '', text: '' })
+  const [blogTitle, setBlogTitle] = useState('')
+  const [blogDescription, setBlogDescription] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+  const calendarRef = useRef(null)
 
-  // Load existing article data if ID is provided
-  useEffect(() => {
-    const loadArticle = async () => {
-      if (articleId && session?.user?.id) {
-        try {
-          setIsLoadingArticle(true)
-          const article = await getArticleById(parseInt(articleId))
-          
-          // Populate form with existing article data
-          setTitle(article.title || '')
-          setDescription(article.description || '')
-          setSelectedCategories(article.categories || [])
-          setEditorContent(article.content || '')
-          setCurrentArticleId(article.id)
-          
-          // Reset unsaved changes since we just loaded
-          setHasUnsavedChanges(false)
-          setIsSaved(true)
-          isInitialLoadRef.current = false
-        } catch (error) {
-          console.error('Error loading article:', error)
-          router.push('/home')
-        } finally {
-          setIsLoadingArticle(false)
-        }
-      } else {
-        isInitialLoadRef.current = false
-      }
+  // Save blog to database
+  const saveBlog = async (status, scheduledAt = null) => {
+    if (!blogTitle.trim()) {
+      alert('Please enter a title for your blog')
+      return false
+    }
+    if (!blogDescription.trim()) {
+      alert('Please enter a description for your blog')
+      return false
+    }
+    if (!editorContent.html || editorContent.html === '<p></p>') {
+      alert('Please write some content for your blog')
+      return false
     }
 
-    loadArticle()
-  }, [articleId, session?.user?.id, getArticleById, router])
-
-  // Consolidated ref updates - single effect instead of multiple
-  useEffect(() => {
-    titleRef.current = title
-    descriptionRef.current = description
-    editorContentRef.current = editorContent
-    selectedCategoriesRef.current = selectedCategories
-    currentArticleIdRef.current = currentArticleId
-    hasUnsavedChangesRef.current = hasUnsavedChanges
-    createArticleRef.current = createArticle
-    updateArticleRef.current = updateArticle
-    loadUserArticlesRef.current = loadUserArticles
-  })
-
-  // Track unsaved changes - skip during initial load
-  useEffect(() => {
-    if (isInitialLoadRef.current) return
-    if (title || description || editorContent) {
-      setHasUnsavedChanges(true)
-      setIsSaved(false)
-    }
-  }, [title, description, editorContent, selectedCategories])
-
-  // Auto-save to draft function - uses refs to avoid dependency changes
-  const autoSaveToDraft = useCallback(async () => {
-    // Don't save if already saving, no content, or no unsaved changes
-    if (isSavingRef.current || isLoading) return
-    if (!titleRef.current.trim() && !descriptionRef.current.trim() && !editorContentRef.current.trim()) return
-    if (!hasUnsavedChangesRef.current) return
-    
-    // Need at least a title to save
-    if (!titleRef.current.trim()) return
-
+    setIsSaving(true)
     try {
-      isSavingRef.current = true
-      
-      if (currentArticleIdRef.current) {
-        // Update existing article - ensure required fields have valid content
-        await updateArticleRef.current(currentArticleIdRef.current, {
-          title: titleRef.current.trim(),
-          description: descriptionRef.current.trim() || 'Draft',
-          content: editorContentRef.current.trim() || '<p></p>',
-          categories: selectedCategoriesRef.current,
-          status: 'draft'
-        })
-      } else {
-        // Create new draft article
-        const newArticle = await createArticleRef.current({
-          title: titleRef.current.trim(),
-          description: descriptionRef.current.trim() || 'Draft',
-          content: editorContentRef.current.trim() || '<p></p>',
-          categories: selectedCategoriesRef.current,
-          status: 'draft'
-        })
-        currentArticleIdRef.current = newArticle.id
-        setCurrentArticleId(newArticle.id)
-      }
-      
-      setHasUnsavedChanges(false)
-      setIsSaved(true)
-    } catch (error) {
-      console.error('Auto-save failed:', error)
-    } finally {
-      isSavingRef.current = false
-    }
-  }, [isLoading]) // Uses refs internally, only isLoading is a direct dependency
-
-  // Auto-save on beforeunload (browser close/refresh)
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (hasUnsavedChangesRef.current && titleRef.current.trim()) {
-        // Try to save (may not complete due to async nature)
-        autoSaveToDraft()
-        e.preventDefault()
-        e.returnValue = ''
-      }
-    }
-
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [autoSaveToDraft])
-
-  // Auto-save periodically (every 30 seconds) if there are unsaved changes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (hasUnsavedChangesRef.current && titleRef.current.trim()) {
-        autoSaveToDraft()
-      }
-    }, 30000)
-
-    return () => clearInterval(interval)
-  }, [autoSaveToDraft])
-
-  // Save to draft when component unmounts (navigating away)
-  useEffect(() => {
-    return () => {
-      if (hasUnsavedChangesRef.current && titleRef.current.trim()) {
-        // Use synchronous approach for unmount
-        const saveData = {
-          title: titleRef.current,
-          description: descriptionRef.current || 'Draft',
-          content: editorContentRef.current || '<p></p>',
-          categories: selectedCategoriesRef.current,
-          articleId: currentArticleIdRef.current
-        }
-        
-        // Store in sessionStorage for recovery if async save fails
-        sessionStorage.setItem('unsavedDraft', JSON.stringify(saveData))
-        
-        // Attempt async save
-        autoSaveToDraft()
-      }
-    }
-  }, [autoSaveToDraft])
-
-  // Memoize editor update handler to prevent TiptapEditor re-renders
-  const handleEditorUpdate = useCallback(({ html, charCount: chars, wordCount: words }) => {
-    setEditorContent(html)
-    setCharCount(chars)
-    setWordCount(words)
-  }, [])
-
-  const handlePublish = async () => {
-    if (!title.trim() || !description.trim() || !editorContent.trim()) {
-      return
-    }
-
-    // Prevent multiple simultaneous saves
-    if (isLoading || isSavingRef.current) {
-      return
-    }
-
-    try {
-      setIsLoading(true)
-      isSavingRef.current = true
-      let publishedBlog = null
-      
-      if (currentArticleId) {
-        // Update existing article and publish
-        publishedBlog = await updateArticle(currentArticleId, {
-          title,
-          description,
-          content: editorContent,
-          categories: selectedCategories,
-          status: 'published'
-        })
-      } else {
-        // Create new article and publish
-        const articleData = {
-          title,
-          description,
-          content: editorContent,
-          categories: selectedCategories,
-          status: 'published'
-        }
-        
-        // Add publicationId if creating for a joined publication
-        if (publicationId) {
-          articleData.publicationId = parseInt(publicationId)
-        }
-        
-        publishedBlog = await createArticle(articleData)
-        setCurrentArticleId(publishedBlog.id)
-        currentArticleIdRef.current = publishedBlog.id
-        
-        // Upload thumbnail if provided and it's a File object
-        if (thumbnailImage && thumbnailImage.file instanceof File) {
-          try {
-            await uploadArticleImage(publishedBlog.id, thumbnailImage.file)
-          } catch (imageError) {
-            console.error('Error uploading thumbnail:', imageError)
-            // Don't fail the entire publish process for image upload errors
-          }
-        }
-      }
-      
-      setHasUnsavedChanges(false)
-      setIsSaved(true)
-      
-      // Refresh articles list to ensure the published article appears correctly
-      await loadUserArticles()
-      
-      // Set blog slug for the modal and show success modal
-      setPublishedBlogSlug(publishedBlog?.slug || 'blog')
-      setShowPublishSuccessModal(true)
-      
-      // Clear the editor state after successful publish
-      setTitle('')
-      setDescription('')
-      setEditorContent('')
-      setSelectedCategories([])
-      setThumbnailImage(null)
-      setCurrentArticleId(null)
-      currentArticleIdRef.current = null
-    } catch (error) {
-      console.error('Error publishing article:', error)
-    } finally {
-      setIsLoading(false)
-      isSavingRef.current = false
-    }
-  }
-
-  const handleSchedule = async () => {
-    if (!title.trim() || !description.trim() || !editorContent.trim()) {
-      return
-    }
-
-    if (!publishDate || !publishTime) {
-      return
-    }
-
-    // Prevent multiple simultaneous saves
-    if (isLoading || isSavingRef.current) {
-      return
-    }
-
-    try {
-      setIsLoading(true)
-      isSavingRef.current = true
-      
-      // Parse the date and time correctly
-      const [day, month, year] = publishDate.split('-').map(num => parseInt(num, 10))
-      const [hours, minutes] = publishTime.split(':').map(num => parseInt(num, 10))
-      
-      // Create date object in user's local timezone
-      const localDateTime = new Date(year, month - 1, day, hours, minutes)
-      
-      // Validate the date
-      if (isNaN(localDateTime.getTime())) {
-        console.error('[SCHEDULE] Invalid date/time')
-        return
-      }
-      
-      // Check if the scheduled time is in the future
-      const now = new Date()
-      if (localDateTime <= now) {
-        console.error('[SCHEDULE] Time must be in the future')
-        return
-      }
-      
-      // Log for debugging
-      console.log('[SCHEDULE] Local time selected:', localDateTime.toString())
-      console.log('[SCHEDULE] Will be stored as UTC:', localDateTime.toISOString())
-      
-      if (currentArticleId) {
-        await updateArticle(currentArticleId, {
-          title,
-          description,
-          content: editorContent,
-          categories: selectedCategories,
-          status: 'scheduled',
-          scheduledAt: localDateTime.toISOString()
-        })
-      } else {
-        const newArticle = await createArticle({
-          title,
-          description,
-          content: editorContent,
-          categories: selectedCategories,
-          status: 'scheduled',
-          scheduledAt: localDateTime.toISOString()
-        })
-        setCurrentArticleId(newArticle.id)
-        
-        if (thumbnailImage && thumbnailImage.file instanceof File) {
-          try {
-            await uploadArticleImage(newArticle.id, thumbnailImage.file)
-          } catch (imageError) {
-            console.error('Error uploading thumbnail:', imageError)
-          }
-        }
-      }
-      
-      setHasUnsavedChanges(false)
-      setIsSaved(true)
-      
-      // Refresh articles list to ensure the scheduled article appears in the schedule page
-      await loadUserArticles()
-      
-      // Use window.location for more reliable navigation
-      if (typeof window !== 'undefined') {
-        window.location.href = '/schedule'
-      } else {
-        // Fallback to router.push
-        router.push('/schedule')
-      }
-    } catch (error) {
-      console.error('Error scheduling article:', error)
-    } finally {
-      setIsLoading(false)
-      isSavingRef.current = false
-    }
-  }
-
-  const handleUpdate = async () => {
-    if (!currentArticleId) {
-      return
-    }
-
-    if (!title.trim() || !description.trim() || !editorContent.trim()) {
-      return
-    }
-
-    try {
-      setIsLoading(true)
-      
-      await updateArticle(currentArticleId, {
-        title,
-        description,
-        content: editorContent,
+      const blogData = {
+        title: blogTitle,
+        description: blogDescription,
+        content: editorContent.html,
         categories: selectedCategories,
-        status: articleStatus || 'draft'
-      })
-      
-      if (thumbnailImage && thumbnailImage.file instanceof File) {
-        try {
-          await uploadArticleImage(currentArticleId, thumbnailImage.file)
-        } catch (imageError) {
-          console.error('Error uploading thumbnail:', imageError)
-        }
+        status: status,
+        published: status === 'published'
       }
-      
-      setHasUnsavedChanges(false)
-      setIsSaved(true)
-      
-      // Refresh articles list to ensure updates are reflected
-      await loadUserArticles()
+
+      // Add scheduledAt if scheduling
+      if (scheduledAt) {
+        blogData.scheduledAt = scheduledAt.toISOString()
+      }
+
+      const response = await fetch(`${API_URL}/api/blogs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(blogData)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to save blog')
+      }
+
+      return true
     } catch (error) {
-      console.error('Error updating article:', error)
+      console.error('Error saving blog:', error)
+      alert(error.message || 'Failed to save blog')
+      return false
     } finally {
-      setIsLoading(false)
+      setIsSaving(false)
     }
   }
 
+  // Handle Save to Draft
   const handleSaveDraft = async () => {
-    if (!title.trim() || !description.trim() || !editorContent.trim()) {
-      return
-    }
-
-    // Prevent multiple simultaneous saves
-    if (isLoading || isSavingRef.current) {
-      return
-    }
-
-    try {
-      setIsLoading(true)
-      isSavingRef.current = true
-      
-      if (currentArticleId) {
-        await updateArticle(currentArticleId, {
-          title,
-          description,
-          content: editorContent,
-          categories: selectedCategories,
-          status: 'draft'
-        })
-      } else {
-        const articleData = {
-          title,
-          description,
-          content: editorContent,
-          categories: selectedCategories,
-          status: 'draft'
-        }
-        
-        
-        // Add publicationId if creating for a joined publication
-        if (publicationId) {
-          articleData.publicationId = parseInt(publicationId)
-        }
-        
-        const newArticle = await createArticle(articleData)
-        setCurrentArticleId(newArticle.id)
-        currentArticleIdRef.current = newArticle.id
-        
-        if (thumbnailImage && thumbnailImage.file instanceof File) {
-          try {
-            await uploadArticleImage(newArticle.id, thumbnailImage.file)
-          } catch (imageError) {
-            console.error('Error uploading thumbnail:', imageError)
-          }
-        }
-      }
-      
-      setHasUnsavedChanges(false)
-      setIsSaved(true)
-      
-      // Refresh articles list to ensure draft appears in draft page
-      await loadUserArticles()
-      
-      // Small delay to ensure the UI updates
-      setTimeout(() => {
-        router.push('/draft')
-      }, 100)
-    } catch (error) {
-      console.error('Error saving draft:', error)
-    } finally {
-      setIsLoading(false)
-      isSavingRef.current = false
+    const success = await saveBlog('draft')
+    if (success) {
+      router.push('/draft?refresh=true')
     }
   }
 
-  const handleRevertToDraft = async () => {
-    if (!currentArticleId) return
-
-    try {
-      setIsLoading(true)
-      await updateArticle(currentArticleId, {
-        title,
-        description,
-        content: editorContent,
-        categories: selectedCategories,
-        status: 'draft'
-      })
-      setHasUnsavedChanges(false)
-      setIsSaved(true)
-      
-      // Refresh articles list to ensure reverted draft appears in draft page
-      await loadUserArticles()
-      
-      // Small delay to ensure the UI updates
-      setTimeout(() => {
-        router.push('/draft')
-      }, 100)
-    } catch (error) {
-      console.error('Error reverting to draft:', error)
-    } finally {
-      setIsLoading(false)
+  // Handle Publish
+  const handlePublish = async () => {
+    const success = await saveBlog('published')
+    if (success) {
+      router.push('/published?refresh=true')
     }
   }
 
-  const handleSendForReview = async () => {
-    if (!title.trim() || !description.trim() || !editorContent.trim()) {
+  // Handle Schedule
+  const handleSchedule = async () => {
+    if (!selectedDate) {
+      alert('Please select a date and time to schedule')
       return
     }
 
-    // Prevent multiple simultaneous saves
-    if (isLoading || isSavingRef.current) {
+    // Create scheduled datetime from selected date and time
+    const scheduledDateTime = new Date(selectedDate)
+    scheduledDateTime.setHours(selectedHour, selectedMinute, 0, 0)
+
+    // Check if scheduled time is in the future
+    if (scheduledDateTime <= new Date()) {
+      alert('Please select a future date and time')
       return
     }
 
-    try {
-      setIsLoading(true)
-      isSavingRef.current = true
-      
-      if (currentArticleId) {
-        // Update existing article and send for review
-        await updateArticle(currentArticleId, {
-          title,
-          description,
-          content: editorContent,
-          categories: selectedCategories,
-          status: 'review'
-        })
-        
-        // Upload thumbnail if provided and it's a File object
-        if (thumbnailImage && thumbnailImage.file instanceof File) {
-          try {
-            await uploadArticleImage(currentArticleId, thumbnailImage.file)
-          } catch (imageError) {
-            console.error('Error uploading thumbnail:', imageError)
-          }
-        }
-      } else {
-        // Create new article and send for review
-        const articleData = {
-          title,
-          description,
-          content: editorContent,
-          categories: selectedCategories,
-          status: 'review'
-        }
-        
-        // Add publicationId if creating for a joined publication
-        if (publicationId) {
-          articleData.publicationId = parseInt(publicationId)
-        }
-        
-        const newArticle = await createArticle(articleData)
-        setCurrentArticleId(newArticle.id)
-        currentArticleIdRef.current = newArticle.id
-        
-        // Upload thumbnail if provided and it's a File object
-        if (thumbnailImage && thumbnailImage.file instanceof File) {
-          try {
-            await uploadArticleImage(newArticle.id, thumbnailImage.file)
-          } catch (imageError) {
-            console.error('Error uploading thumbnail:', imageError)
-          }
-        }
-      }
-      
-      setHasUnsavedChanges(false)
-      setIsSaved(true)
-      
-      // Refresh articles list
-      await loadUserArticles()
-      
-      // Navigate to My Blogs page
-      setTimeout(() => {
-        router.push('/posts/my-blogs')
-      }, 100)
-    } catch (error) {
-      console.error('Error sending article for review:', error)
-    } finally {
-      setIsLoading(false)
-      isSavingRef.current = false
+    const success = await saveBlog('scheduled', scheduledDateTime)
+    if (success) {
+      setShowCalendar(false)
+      router.push('/schedule?refresh=true')
     }
   }
 
-  const handleReschedule = useCallback(() => {
-    setIsDateTimePickerOpen(true)
-  }, [])
-
-  const handleThumbnailAdd = useCallback((imageData) => {
-    setThumbnailImage(imageData)
-  }, [])
-
-  const handleDateTimeSelect = useCallback((date, time) => {
-    setPublishDate(date)
-    setPublishTime(time)
-  }, [])
-
-  // Handle Go Back - auto-save to draft if there are unsaved changes
-  const handleGoBack = async () => {
-    // If there are unsaved changes and at least a title, save as draft
-    if (hasUnsavedChanges && title.trim()) {
-      try {
-        isSavingRef.current = true
-        
-        // Mark as saved to prevent duplicate saves from unmount effect
-        setHasUnsavedChanges(false)
-        hasUnsavedChangesRef.current = false
-        
-        if (currentArticleId) {
-          await updateArticle(currentArticleId, {
-            title: title.trim(),
-            description: description.trim() || 'Draft',
-            content: editorContent.trim() || '<p></p>',
-            categories: selectedCategories,
-            status: 'draft'
-          })
-        } else {
-          const newArticle = await createArticle({
-            title: title.trim(),
-            description: description.trim() || 'Draft',
-            content: editorContent.trim() || '<p></p>',
-            categories: selectedCategories,
-            status: 'draft'
-          })
-          // Update refs to prevent duplicate creation
-          currentArticleIdRef.current = newArticle.id
-          setCurrentArticleId(newArticle.id)
-        }
-        
-        // Show toast and redirect
-        setShowDraftSavedToast(true)
-        setTimeout(() => {
-          window.location.href = '/home'
-        }, 1500)
-      } catch (error) {
-        console.error('Error saving draft on exit:', error)
-        window.location.href = '/home'
-      } finally {
-        isSavingRef.current = false
+  // Close calendar when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+        setShowCalendar(false)
       }
+    }
+
+    if (showCalendar) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showCalendar])
+
+  const filteredCategories = categories.filter(cat =>
+    cat.toLowerCase().includes(categorySearch.toLowerCase())
+  )
+
+  // Calendar helper functions
+  const getDaysInMonth = (month, year) => {
+    return new Date(year, month + 1, 0).getDate()
+  }
+
+  const getFirstDayOfMonth = (month, year) => {
+    return new Date(year, month, 1).getDay()
+  }
+
+  const monthNames = ["January", "February", "March", "April", "May", "June", 
+    "July", "August", "September", "October", "November", "December"]
+
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11)
+      setCurrentYear(currentYear - 1)
     } else {
-      window.location.href = '/home'
+      setCurrentMonth(currentMonth - 1)
     }
   }
 
-  // Input validation functions
-  const handleDateChange = (e) => {
-    const value = e.target.value
-    // Allow only numbers and dashes, format: dd-mm-yyyy
-    const dateRegex = /^(\d{0,2})-?(\d{0,2})-?(\d{0,4})$/
-    if (dateRegex.test(value) || value === '') {
-      setPublishDate(value)
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0)
+      setCurrentYear(currentYear + 1)
+    } else {
+      setCurrentMonth(currentMonth + 1)
     }
   }
 
-  const handleTimeChange = (e) => {
-    const value = e.target.value
-    // Allow only numbers and colons, format: hh:mm
-    const timeRegex = /^(\d{0,2}):?(\d{0,2})$/
-    if (timeRegex.test(value) || value === '') {
-      setPublishTime(value)
+  const handleDateSelect = (day) => {
+    const newDate = new Date(currentYear, currentMonth, day)
+    setSelectedDate(newDate)
+    const dayStr = String(day).padStart(2, '0')
+    const monthStr = String(currentMonth + 1).padStart(2, '0')
+    setManualDate(`${dayStr}-${monthStr}-${currentYear}`)
+    const hourStr = String(selectedHour).padStart(2, '0')
+    const minuteStr = String(selectedMinute).padStart(2, '0')
+    setManualTime(`${hourStr}:${minuteStr}`)
+  }
+
+  const handleClearDate = () => {
+    setSelectedDate(null)
+    setSelectedHour(10)
+    setSelectedMinute(30)
+    setManualDate('')
+    setManualTime('')
+  }
+
+  const handleToday = () => {
+    const today = new Date()
+    setSelectedDate(today)
+    setCurrentMonth(today.getMonth())
+    setCurrentYear(today.getFullYear())
+    const dayStr = String(today.getDate()).padStart(2, '0')
+    const monthStr = String(today.getMonth() + 1).padStart(2, '0')
+    setManualDate(`${dayStr}-${monthStr}-${today.getFullYear()}`)
+    const hourStr = String(selectedHour).padStart(2, '0')
+    const minuteStr = String(selectedMinute).padStart(2, '0')
+    setManualTime(`${hourStr}:${minuteStr}`)
+  }
+
+  const formatSelectedDateTime = () => {
+    if (!selectedDate) return ""
+    const day = String(selectedDate.getDate()).padStart(2, '0')
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0')
+    const year = selectedDate.getFullYear()
+    const hour = String(selectedHour).padStart(2, '0')
+    const minute = String(selectedMinute).padStart(2, '0')
+    return `${day}-${month}-${year}   ${hour}:${minute}`
+  }
+
+  const handleManualInput = (e) => {
+    let value = e.target.value
+    
+    // Only allow numbers and dashes
+    value = value.replace(/[^0-9\-]/g, '')
+    
+    // Remove all formatting to get just numbers
+    const numbersOnly = value.replace(/[^0-9]/g, '')
+    
+    // If input is empty, clear the selected date
+    if (numbersOnly === '') {
+      setManualDate('')
+      setSelectedDate(null)
+      return
+    }
+    
+    // Auto-format as user types: dd-mm-yyyy
+    let formatted = ''
+    for (let i = 0; i < numbersOnly.length && i < 8; i++) {
+      if (i === 2 || i === 4) {
+        formatted += '-'
+      }
+      formatted += numbersOnly[i]
+    }
+    
+    setManualDate(formatted)
+    
+    // Validate and set date when complete (8 digits: ddmmyyyy)
+    if (numbersOnly.length === 8) {
+      const day = parseInt(numbersOnly.substring(0, 2))
+      const month = parseInt(numbersOnly.substring(2, 4))
+      const year = parseInt(numbersOnly.substring(4, 8))
+      
+      // Validate ranges
+      if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 2024) {
+        const parsedDate = new Date(year, month - 1, day)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        
+        if (parsedDate >= today) {
+          setSelectedDate(parsedDate)
+          setCurrentMonth(parsedDate.getMonth())
+          setCurrentYear(parsedDate.getFullYear())
+        }
+      }
     }
   }
 
-  // Status badge configuration
-  const getStatusConfig = () => {
-    switch (articleStatus) {
-      case 'published':
-        return { color: 'bg-green-400', text: 'Published' }
-      case 'scheduled':
-        return { color: 'bg-blue-400', text: 'Scheduled' }
-      case 'trash':
-        return { color: 'bg-red-400', text: 'Trash' }
-      case 'review':
-        return { color: 'bg-yellow-400', text: 'In Review' }
-      case 'draft':
-      default:
-        return { color: 'bg-orange-400', text: 'Drafts' }
+  const handleTimeInput = (e) => {
+    let value = e.target.value
+    
+    // Only allow numbers and colons
+    value = value.replace(/[^0-9:]/g, '')
+    
+    // Remove all formatting to get just numbers
+    const numbersOnly = value.replace(/[^0-9]/g, '')
+    
+    // If input is empty, reset time
+    if (numbersOnly === '') {
+      setManualTime('')
+      return
+    }
+    
+    // Auto-format as user types: hh:mm
+    let formatted = ''
+    for (let i = 0; i < numbersOnly.length && i < 4; i++) {
+      if (i === 2) {
+        formatted += ':'
+      }
+      formatted += numbersOnly[i]
+    }
+    
+    setManualTime(formatted)
+    
+    // Validate and set time when complete (4 digits: hhmm)
+    if (numbersOnly.length === 4) {
+      const hour = parseInt(numbersOnly.substring(0, 2))
+      const minute = parseInt(numbersOnly.substring(2, 4))
+      
+      // Validate ranges
+      if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+        setSelectedHour(hour)
+        setSelectedMinute(minute)
+      }
     }
   }
 
-  const statusConfig = getStatusConfig()
+  const getDisplayDate = () => {
+    if (manualDate) return manualDate
+    if (!selectedDate) return ""
+    const day = String(selectedDate.getDate()).padStart(2, '0')
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0')
+    const year = selectedDate.getFullYear()
+    return `${day}-${month}-${year}`
+  }
+
+  const getDisplayTime = () => {
+    if (manualTime) return manualTime
+    return ""
+  }
+
+  const renderCalendarDays = () => {
+    const daysInMonth = getDaysInMonth(currentMonth, currentYear)
+    const firstDay = getFirstDayOfMonth(currentMonth, currentYear)
+    const days = []
+    const dayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    // Day labels
+    dayLabels.forEach((label, i) => {
+      days.push(
+        <div key={`label-${i}`} className="w-6 h-6 flex items-center justify-center text-xs text-gray-500 font-medium">
+          {label}
+        </div>
+      )
+    })
+    
+    // Empty cells for days before first day of month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="w-6 h-6" />)
+    }
+    
+    // Days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateToCheck = new Date(currentYear, currentMonth, day)
+      dateToCheck.setHours(0, 0, 0, 0)
+      const isPast = dateToCheck < today
+      
+      const isSelected = selectedDate && 
+        selectedDate.getDate() === day && 
+        selectedDate.getMonth() === currentMonth && 
+        selectedDate.getFullYear() === currentYear
+      
+      days.push(
+        <button
+          key={day}
+          onClick={() => !isPast && handleDateSelect(day)}
+          disabled={isPast}
+          className={`w-6 h-6 flex items-center justify-center text-xs rounded-full transition-colors
+            ${isPast ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-purple-100'}`}
+          style={isSelected ? { backgroundColor: '#4B6CFB', color: 'white' } : {}}
+        >
+          {day}
+        </button>
+      )
+    }
+    
+    return days
+  }
+
+  const handleThumbnailAdd = (data) => {
+    setThumbnailData(data)
+    console.log('Thumbnail added:', data)
+  }
+
+  const toggleCategory = (category) => {
+    setSelectedCategories(prev => 
+      prev.includes(category) 
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    )
+  }
 
   return (
-    <>
-      {!isMounted ? (
-        <div className="min-h-screen bg-[#fff] flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+    <div className="overflow-x-hidden">
+      {/* Fixed Left Vertical Line */}
+      <div className="hidden md:block fixed top-0 bottom-0 w-px bg-gray-200 z-[150]" style={{ left: 'calc(50% - 448px)' }} />
+      
+      {/* Fixed Right Vertical Line */}
+      <div className="hidden md:block fixed top-0 bottom-0 w-px bg-gray-200 z-[150]" style={{ left: 'calc(50% + 468px)' }} />
+
+      <div className="w-full min-h-screen bg-white flex justify-center overflow-x-hidden">
+        {/* Left Sidebar Area */}
+        <div className="hidden md:block w-[512px] flex-shrink-0" />
+
+        {/* Center Content Area */}
+        <div className="w-[916px] flex-shrink-0">
+          {/* Header Section */}
+          <div className="flex flex-col w-[916px] h-[152px] gap-2.5 pt-6 pr-8 pb-6 pl-8 border-b border-gray-200">
+            {/* Title Block */}
+            <div className="flex flex-col w-[282px] h-[104px] gap-4">
+              {/* Drafts Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200 w-fit">
+                <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                <span className="text-gray-500 text-sm">Drafts</span>
+              </div>
+
+              {/* Title Input */}
+              <input
+                type="text"
+                placeholder="Title of the Blog..."
+                value={blogTitle}
+                onChange={(e) => setBlogTitle(e.target.value)}
+                className="w-[271px] h-[38px] text-3xl font-semibold bg-transparent placeholder:text-gray-300 focus:outline-none border-0 p-0"
+              />
+
+              {/* Description Input */}
+              <input
+                type="text"
+                placeholder="Write your Short Description for your Blog..."
+                value={blogDescription}
+                onChange={(e) => setBlogDescription(e.target.value)}
+                className="w-[282px] h-4 text-sm text-gray-500 bg-transparent placeholder:text-gray-400 focus:outline-none border-0 p-0"
+              />
+            </div>
+          </div>
+
+          {/* Category/Toolbar Section */}
+          <div className="flex flex-col w-[916px] h-16 p-4 gap-2 bg-[#FEFEFE] border-b border-gray-200">
+            {/* Category and Thumbnail Row */}
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <button 
+                  className="flex items-center w-[115px] h-8 gap-2.5 rounded border border-gray-200 bg-white text-sm px-4 py-2.5 hover:bg-gray-50 transition-colors"
+                  onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                >
+                  Category
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {/* Category Dropdown */}
+                {showCategoryDropdown && (
+                  <div className="absolute top-full left-0 mt-1 w-[283px] h-[244px] p-2 rounded-lg bg-[#FEFEFE] border border-gray-200 shadow-lg z-[1000] flex flex-col gap-1">
+                    {/* Search and Apply Row */}
+                    <div className="flex gap-2 mb-2">
+                      <input
+                        type="text"
+                        placeholder="Search Category..."
+                        value={categorySearch}
+                        onChange={(e) => setCategorySearch(e.target.value)}
+                        className="w-[204px] h-[30px] px-3 py-2 rounded border border-gray-200 text-sm outline-none bg-gray-50"
+                      />
+                      <button
+                        onClick={() => setShowCategoryDropdown(false)}
+                        className="w-[59px] h-[30px] p-2.5 rounded bg-purple-100 border-none cursor-pointer flex items-center justify-center"
+                      >
+                        <span className="font-medium text-sm bg-gradient-to-br from-purple-500 to-indigo-500 bg-clip-text text-transparent">
+                          Apply
+                        </span>
+                      </button>
+                    </div>
+                    
+                    {/* Category List */}
+                    <div className="flex-1 overflow-y-auto">
+                      {filteredCategories.map((category) => (
+                        <label 
+                          key={category}
+                          className="flex items-center w-[204px] h-[29px] gap-2.5 rounded px-2 py-1 bg-[#FEFEFE] cursor-pointer hover:bg-gray-50"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedCategories.includes(category)}
+                            onChange={() => toggleCategory(category)}
+                            className="w-4 h-4 rounded border border-gray-300 accent-purple-500"
+                          />
+                          <span className="font-normal text-sm text-gray-800">
+                            {category}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button 
+                className="flex items-center w-[180px] h-8 gap-2 rounded border border-gray-200 bg-white text-sm px-4 py-2 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                onClick={() => setShowThumbnailModal(true)}
+              >
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Thumbnail Image
+              </button>
+
+              <div className="ml-auto flex items-center w-[78px] h-[33px] gap-2 rounded border border-gray-200 px-2 py-1.5">
+                <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
+                <span className="text-sm font-medium text-green-600">Saved</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Editor Content Area */}
+          <div className="w-[917px] bg-white">
+            <TiptapEditor 
+              onUpdate={(data) => setEditorContent(data)}
+            />
+          </div>
         </div>
-      ) : (
-        <div className="min-h-screen bg-[#fff] flex flex-col">
-      {/* Loading state for article */}
-      {isLoadingArticle && (
-        <div className="fixed inset-0 bg-white/80 flex items-center justify-center z-50">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-2"></div>
-            <p className="text-gray-600">Loading article...</p>
+
+        {/* Right Sidebar Area */}
+        <div className="hidden md:block w-[490px] flex-shrink-0" />
+      </div>
+
+      {/* Bottom Stats Bar */}
+      <div className="fixed flex items-center justify-end bg-white border-t border-gray-200 w-[916px] h-[39px] z-[100]" style={{ bottom: '72px', left: 'calc(50% - 448px)' }}>
+        <div className="flex items-center w-[180px] h-[39px] gap-3.5 py-2.5 px-3.5 bg-gray-100 border border-gray-200 text-sm text-gray-700 whitespace-nowrap">
+          <span>Chars <strong>{editorContent.charCount}</strong></span>
+          <span className="border-l border-gray-300 h-5"></span>
+          <span>Words <strong>{editorContent.wordCount}</strong></span>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="fixed bottom-0 left-0 right-0 w-full h-[72px] flex items-center justify-center bg-white rounded-lg pt-4 pr-4 pb-6 pl-4 shadow-lg z-[100]">
+        <div className="flex items-center justify-center gap-4 h-8">
+          <button 
+            className="flex items-center justify-center gap-3 w-40 h-8 rounded border border-gray-200 bg-gray-100 px-6 py-2 text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
+            onClick={handleSaveDraft}
+            disabled={isSaving}
+          >
+            <img src="/images/icons/Draft.svg" alt="Save to draft" className="w-5 h-5" />
+            <span className="whitespace-nowrap font-normal text-sm text-gray-900">
+              {isSaving ? 'Saving...' : 'Save to draft'}
+            </span>
+          </button>
+          
+          <button 
+            className="flex items-center justify-center gap-2 w-40 h-8 rounded bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+            onClick={handlePublish}
+            disabled={isSaving}
+          >
+            {isSaving ? 'Publishing...' : 'Publish'}
+            <img src="/images/icons/Publish.svg" alt="Publish" className="w-4 h-4 brightness-0 invert" />
+          </button>
+
+          <div 
+            className="flex items-center h-8 border border-gray-200 rounded overflow-hidden"
+          >
+            <input 
+              type="text" 
+              placeholder="dd-mm-yyyy"
+              value={getDisplayDate()}
+              onChange={handleManualInput}
+              maxLength={10}
+              className="h-[21px] w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
+            />
+            <input 
+              type="text" 
+              placeholder="--:--"
+              value={getDisplayTime()}
+              onChange={handleTimeInput}
+              maxLength={5}
+              className="h-[21px] w-[40px] flex-shrink-0 text-sm bg-transparent outline-none ml-2"
+            />
+            <svg 
+              className="w-4 h-4 text-gray-400 flex-shrink-0 cursor-pointer mx-2" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+              onClick={() => setShowCalendar(!showCalendar)}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span 
+              className="text-sm text-gray-400 flex-shrink-0 h-full flex items-center justify-center bg-gray-100 border-l border-gray-200 cursor-pointer px-3"
+              onClick={() => setShowCalendar(!showCalendar)}
+            >
+              Schedule
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Calendar Popup */}
+      {showCalendar && (
+        <div 
+          ref={calendarRef}
+          className="fixed z-[1001] bg-white rounded flex"
+          style={{
+            gap: '15px',
+            bottom: '88px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            border: '0.75px solid #B0B0B0',
+            boxShadow: '8px 4px 30px 0px rgba(0,0,0,0.15)',
+            padding: '16px'
+          }}
+        >
+          {/* Calendar Section */}
+          <div className="flex flex-col" style={{ width: '220px', gap: '8px' }}>
+            {/* Month Navigation */}
+            <div className="flex items-center justify-between">
+              <span className="text-base font-medium text-gray-800">
+                {monthNames[currentMonth]}, {currentYear}
+              </span>
+              <div className="flex items-center gap-1">
+                <button 
+                  onClick={handlePrevMonth}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <svg className="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                  </svg>
+                </button>
+                <button 
+                  onClick={handleNextMonth}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <svg className="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-1 flex-1">
+              {renderCalendarDays()}
+            </div>
+            
+            {/* Clear and Today buttons */}
+            <div className="flex justify-between">
+              <button 
+                onClick={handleClearDate}
+                className="text-sm text-blue-500 hover:text-blue-600"
+              >
+                Clear
+              </button>
+              <button 
+                onClick={handleToday}
+                className="text-sm text-blue-500 hover:text-blue-600"
+              >
+                Today
+              </button>
+            </div>
+          </div>
+          
+          {/* Divider */}
+          <div className="w-px bg-gray-200" />
+          
+          {/* Time Picker Section */}
+          <div 
+            className="flex flex-col"
+            style={{ 
+              width: '90px', 
+              gap: '8px',
+              paddingRight: '8px',
+              paddingLeft: '8px'
+            }}
+          >
+            {/* Headers - aligned with day labels row (Su, Mo, Tu...) */}
+            <div className="flex justify-between h-6 items-center" style={{ marginTop: '34px' }}>
+              <span className="text-xs text-gray-500 w-7 text-center">Hour</span>
+              <span className="text-xs text-gray-500 w-7 text-center">Min</span>
+            </div>
+            
+            {/* Time columns - 4 rows visible */}
+            <div className="flex justify-between" style={{ height: '104px', gap: '16px' }}>
+              {/* Hours - 4 rows */}
+              <div className="flex flex-col items-center overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+                {[...Array(24)].map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setSelectedHour(i)
+                      const minuteStr = String(selectedMinute).padStart(2, '0')
+                      setManualTime(`${String(i).padStart(2, '0')}:${minuteStr}`)
+                    }}
+                    className={`w-7 h-6 text-xs rounded-md ${selectedHour === i ? 'text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+                    style={{ marginBottom: '2px', flexShrink: 0, ...(selectedHour === i ? { backgroundColor: '#4B6CFB' } : {}) }}
+                  >
+                    {String(i).padStart(2, '0')}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Minutes - 4 rows */}
+              <div className="flex flex-col items-center overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+                {[...Array(60)].map((_, m) => (
+                  <button
+                    key={m}
+                    onClick={() => {
+                      setSelectedMinute(m)
+                      const hourStr = String(selectedHour).padStart(2, '0')
+                      setManualTime(`${hourStr}:${String(m).padStart(2, '0')}`)
+                    }}
+                    className={`w-7 h-6 text-xs rounded-md ${selectedMinute === m ? 'text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+                    style={{ marginBottom: '2px', flexShrink: 0, ...(selectedMinute === m ? { backgroundColor: '#4B6CFB' } : {}) }}
+                  >
+                    {String(m).padStart(2, '0')}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Apply Button */}
+            <button 
+              onClick={handleSchedule}
+              disabled={isSaving || !selectedDate}
+              className="w-full py-1.5 text-sm text-white bg-black rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ marginTop: '20px' }}
+            >
+              {isSaving ? 'Scheduling...' : 'Schedule'}
+            </button>
           </div>
         </div>
       )}
-      
-      {/* Go Back Button */}
-      <div className="px-4 md:px-6 pt-6 pb-4 border-b border-gray-200 md:bg-transparent md:border-0">
-        <Button 
-          variant="ghost" 
-          onClick={handleGoBack}
-          className="text-gray-500 hover:text-gray-700 px-2 gap-1"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Go Back
-        </Button>
-      </div>
-
-      {/* Main Editor Container */}
-      <div className="flex-1 w-full max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-6 pb-32">
-        {/* Status Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200">
-          <div className={`w-2 h-2 ${statusConfig.color} rounded-full`}></div>
-          <span className="text-gray-500 text-sm">{statusConfig.text}</span>
-        </div>
-
-        {/* Title */}
-        <div>
-          <Input
-            type="text"
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="text-4xl md:text-5xl font-bold border-0 px-0 py-2 bg-transparent placeholder:text-gray-300 focus-visible:ring-0 shadow-none"
-            style={{ fontSize: 'clamp(2rem, 5vw, 3rem)' }}
-          />
-        </div>
-
-        {/* Description */}
-        <div>
-          <Input
-            type="text"
-            placeholder="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="text-lg text-gray-600 border-0 px-0 py-2 bg-transparent placeholder:text-gray-300 focus-visible:ring-0 shadow-none"
-          />
-        </div>
-
-        {/* Categories and Thumbnail */}
-        <div className="flex flex-col md:flex-row gap-4 items-start">
-          <CategoryDropdown
-            selectedCategories={selectedCategories}
-            onCategoriesChange={setSelectedCategories}
-          />
-
-          <Button
-            onClick={() => setIsThumbnailModalOpen(true)}
-            variant="outline"
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            <ImageIcon className="h-4 w-4" />
-            <span className="text-sm font-medium">
-              {thumbnailImage ? 'Change' : 'Thumbnail'}
-            </span>
-          </Button>
-
-          <div className="ml-auto flex items-center gap-2 text-green-600">
-            {isSaved ? (
-              <>
-                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                <span className="text-sm font-medium">Saved</span>
-              </>
-            ) : hasUnsavedChanges ? (
-              <>
-                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                <span className="text-sm font-medium text-yellow-600">Unsaved</span>
-              </>
-            ) : (
-              <>
-                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                <span className="text-sm font-medium text-gray-400">No changes</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Tiptap Editor */}
-        <TiptapEditor 
-          onUpdate={handleEditorUpdate}
-          initialContent={editorContent}
-          onImageModalToggle={setIsImageModalOpen}
-        />
-      </div>
-
-      {/* Character/Word Count and Publish Controls */}
-      <div className={`fixed bottom-0 left-0 right-0 bg-[#fff] border-t border-gray-200 ${(isThumbnailModalOpen || isImageModalOpen) ? 'hidden' : ''}`} style={{zIndex:999}}>
-        <div className="w-full max-w-5xl mx-auto px-4 md:px-6 py-4 space-y-4">
-          {/* Character/Word Count */}
-          <div className="flex justify-end">
-            <div className="text-sm text-gray-400">
-              <span>Chars <span className="text-gray-600">{charCount}</span></span>
-              <span className="mx-2">|</span>
-              <span>Words <span className="text-gray-600">{wordCount}</span></span>
-            </div>
-          </div>
-
-          {/* Publish Controls */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-center gap-3">
-            {/* Mobile Layout */}
-            <div className="flex md:hidden items-center gap-2 w-full">
-              {articleStatus === 'trash' ? (
-                <Button 
-                  onClick={handleRevertToDraft}
-                  disabled={isLoading}
-                  className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
-                >
-                  {isLoading ? 'Reverting...' : 'Revert to draft'}
-                </Button>
-              ) : articleStatus === 'review' ? (
-                <Button 
-                  onClick={handleSendForReview}
-                  disabled={isLoading}
-                  className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
-                >
-                  {isLoading ? 'Sending...' : 'Send for Review'}
-                </Button>
-              ) : articleStatus === 'published' ? (
-                <Button 
-                  onClick={handleUpdate}
-                  disabled={isLoading}
-                  className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
-                >
-                  {isLoading ? 'Updating...' : 'Update'}
-                </Button>
-              ) : articleStatus === 'scheduled' ? (
-                <>
-                  <Button 
-                    onClick={handlePublish}
-                    disabled={isLoading}
-                    className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium"
-                  >
-                    {isLoading ? 'Publishing...' : 'Publish Now'}
-                  </Button>
-                  <div className="flex items-center gap-2 bg-white px-3 border border-gray-200 rounded-lg flex-1">
-                    <Input
-                      type="text"
-                      value={publishDate}
-                      onChange={handleDateChange}
-                      placeholder="dd-mm-yyyy" maxLength={10}
-                      className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
-                    />
-                    <Input
-                      type="text"
-                      value={publishTime}
-                      onChange={handleTimeChange}
-                      placeholder="--:--" maxLength={5}
-                      className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
-                    />
-                    <button
-                      onClick={() => setIsDateTimePickerOpen(true)}
-                      className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-                    >
-                      <Calendar className="h-4 w-4 text-gray-700" />
-                    </button>
-                  </div>
-                  <button 
-                    onClick={handleReschedule}
-                    disabled={isLoading}
-                    className="bg-gray-200 text-gray-400 text-sm font-medium px-4 py-2.5 rounded-lg"
-                  >
-                    {isLoading ? 'Rescheduling...' : 'Reschedule'}
-                  </button>
-                </>
-              ) : (
-                <>
-                  {publicationId ? (
-                    // For joined publications - only show Send for Review button
-                    <Button 
-                      onClick={handleSendForReview}
-                      disabled={isLoading}
-                      className="bg-black text-white hover:bg-gray-800 px-6 py-2.5 rounded-lg text-sm font-medium"
-                    >
-                      {isLoading ? 'Sending...' : 'Send for Review'}
-                    </Button>
-                  ) : (
-                    // For personal publications - show all buttons
-                    <>
-                      <Button 
-                        onClick={handlePublish}
-                        disabled={isLoading}
-                        className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium"
-                      >
-                        {isLoading ? 'Publishing...' : 'Publish'}
-                      </Button>
-                      <div className="flex items-center gap-2 bg-white px-3 border border-gray-200 rounded-lg flex-1">
-                        <Input
-                          type="text"
-                          value={publishDate}
-                          onChange={handleDateChange}
-                          placeholder="dd-mm-yyyy" maxLength={10}
-                          className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
-                        />
-                        <Input
-                          type="text"
-                          value={publishTime}
-                          onChange={handleTimeChange}
-                          placeholder="--:--" maxLength={5}
-                          className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
-                        />
-                        <button
-                          onClick={() => setIsDateTimePickerOpen(true)}
-                          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-                        >
-                          <Calendar className="h-4 w-4 text-gray-700" />
-                        </button>
-                      </div>
-                      <button 
-                        onClick={handleSchedule}
-                        disabled={isLoading}
-                        className="bg-gray-200 text-gray-400 text-sm font-medium px-4 py-2.5 rounded-lg"
-                      >
-                        {isLoading ? 'Scheduling...' : 'Schedule'}
-                      </button>
-                      <Button 
-                        onClick={handleSaveDraft}
-                        disabled={isLoading}
-                        className="bg-gray-200 text-gray-700 hover:bg-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium"
-                      >
-                        {isLoading ? 'Saving...' : 'Save as Draft'}
-                      </Button>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Desktop Layout */}
-            <div className="hidden md:flex items-center justify-center gap-2">
-              {articleStatus === 'trash' ? (
-                <button 
-                  onClick={handleRevertToDraft}
-                  disabled={isLoading}
-                  className="bg-black text-white hover:bg-gray-800 px-6 py-2 rounded text-sm font-medium h-8"
-                  style={{ width: '160px' }}
-                >
-                  {isLoading ? 'Reverting...' : 'Revert to draft'}
-                </button>
-              ) : articleStatus === 'review' ? (
-                <button 
-                  onClick={handleSendForReview}
-                  disabled={isLoading}
-                  className="bg-black text-white hover:bg-gray-800 flex items-center justify-center px-6 py-2 rounded text-sm font-medium h-8"
-                  style={{ width: '160px' }}
-                >
-                  {isLoading ? 'Sending...' : 'Send for Review'}
-                </button>
-              ) : articleStatus === 'published' ? (
-                <button 
-                  onClick={handleUpdate}
-                  disabled={isLoading}
-                  className="bg-black text-white hover:bg-gray-800 flex justify-center items-center gap-2 px-6 py-2 rounded text-sm font-medium h-8"
-                  style={{ width: '160px' }}
-                >
-                  {isLoading ? 'Updating...' : 'Update'}
-                  <img src="/editor-icons/publish.svg" alt="Update" className="h-4 w-4" />
-                </button>
-              ) : articleStatus === 'scheduled' ? (
-                <>
-                  <button 
-                    onClick={handleSaveDraft}
-                    disabled={isLoading}
-                    className="bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
-                    style={{ width: '160px', padding: '8px 24px' }}
-                  >
-                    <FileText className="h-4 w-4" />
-                    {isLoading ? 'Saving...' : 'Save to draft'}
-                  </button>
-                  <button 
-                    onClick={handlePublish}
-                    disabled={isLoading}
-                    className="bg-black text-white hover:bg-gray-800 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
-                    style={{ width: '160px', padding: '8px 24px' }}
-                  >
-                    {isLoading ? 'Publishing...' : 'Publish Now'}
-                    <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
-                  </button>
-                  <div className="flex items-center bg-white px-3 py-1 border border-gray-200 rounded text-sm text-gray-700 h-8" style={{ width: '200px' }}>
-                    <Input
-                      type="text"
-                      value={publishDate}
-                      onChange={handleDateChange}
-                      placeholder="dd-mm-yyyy" maxLength={10}
-                      className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 p-0"
-                    />
-                    <Input
-                      type="text"
-                      value={publishTime}
-                      onChange={handleTimeChange}
-                      placeholder="--:--" maxLength={5}
-                      className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center p-0"
-                    />
-                    <button
-                      onClick={() => setIsDateTimePickerOpen(true)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <Calendar className="h-4 w-4 text-gray-700" />
-                    </button>
-                  </div>
-                  <button 
-                    onClick={handleReschedule}
-                    disabled={isLoading}
-                    className="bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-medium h-8 rounded"
-                    style={{ width: '80px', padding: '8px 5px' }}
-                  >
-                    {isLoading ? 'Rescheduling...' : 'Schedule'}
-                  </button>
-                </>
-              ) : (
-                <>
-                  {publicationId ? (
-                    // For joined publications - only show Send for Review button
-                    <button 
-                      onClick={handleSendForReview}
-                      disabled={isLoading}
-                      className="bg-black text-white hover:bg-gray-800 flex items-center justify-center text-sm font-medium h-8 rounded"
-                      style={{ width: '160px', padding: '8px 24px' }}
-                    >
-                      {isLoading ? 'Sending...' : 'Send for Review'}
-                    </button>
-                  ) : (
-                    // For personal publications - show all buttons
-                    <>
-                      <button 
-                        onClick={handleSaveDraft}
-                        disabled={isLoading}
-                        className="bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
-                        style={{ width: '160px', padding: '8px 24px' }}
-                      >
-                        <FileText className="h-4 w-4" />
-                        {isLoading ? 'Saving...' : 'Save to draft'}
-                      </button>
-                      <button 
-                        onClick={handlePublish}
-                        disabled={isLoading}
-                        className="bg-black text-white hover:bg-gray-800 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
-                        style={{ width: '160px', padding: '8px 24px' }}
-                      >
-                        {isLoading ? 'Publishing...' : 'Publish'}
-                        <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
-                      </button>
-                      <div className="flex items-center bg-white px-3 py-1 border border-gray-200 rounded text-sm text-gray-700 h-8" style={{ width: '200px' }}>
-                        <Input
-                          type="text"
-                          value={publishDate}
-                          onChange={handleDateChange}
-                          placeholder="dd-mm-yyyy" maxLength={10}
-                          className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 p-0"
-                        />
-                        <Input
-                          type="text"
-                          value={publishTime}
-                          onChange={handleTimeChange}
-                          placeholder="--:--" maxLength={5}
-                          className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center p-0"
-                        />
-                        <button
-                          onClick={() => setIsDateTimePickerOpen(true)}
-                          className="p-1 hover:bg-gray-100 rounded transition-colors"
-                        >
-                          <Calendar className="h-4 w-4 text-gray-700" />
-                        </button>
-                      </div>
-                      <button 
-                        onClick={handleSchedule}
-                        disabled={isLoading}
-                        className="bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-medium h-8 rounded"
-                        style={{ width: '80px', padding: '8px 5px' }}
-                      >
-                        {isLoading ? 'Scheduling...' : 'Schedule'}
-                      </button>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Thumbnail Modal */}
-      <ThumbnailModal
-        isOpen={isThumbnailModalOpen}
-        onClose={() => setIsThumbnailModalOpen(false)}
+      <ThumbnailModal 
+        isOpen={showThumbnailModal}
+        onClose={() => setShowThumbnailModal(false)}
         onImageAdd={handleThumbnailAdd}
       />
-
-      {/* Date Time Picker */}
-      <DateTimePicker
-        isOpen={isDateTimePickerOpen}
-        onClose={() => setIsDateTimePickerOpen(false)}
-        onDateTimeSelect={handleDateTimeSelect}
-        selectedDate={publishDate}
-        selectedTime={publishTime}
-      />
-
-      {/* Publish Success Modal */}
-      <PublishSuccessModal
-        isOpen={showPublishSuccessModal}
-        onClose={() => setShowPublishSuccessModal(false)}
-        blogSlug={publishedBlogSlug}
-        blogTitle={title}
-      />
-
-      {/* Draft Saved Toast */}
-      {showDraftSavedToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] animate-in slide-in-from-bottom-4 fade-in duration-300">
-          <div className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
-            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <span className="text-sm font-medium">Blog saved as draft</span>
-          </div>
-        </div>
-      )}
-        </div>
-      )}
-    </>
+    </div>
   )
 }
