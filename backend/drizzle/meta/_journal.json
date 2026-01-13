@@ -57,6 +57,13 @@
       "when": 1768196553128,
       "tag": "0007_productive_stardust",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1768314671506,
+      "tag": "0008_wandering_senator_kelly",
+      "breakpoints": true
     }
   ]
 }

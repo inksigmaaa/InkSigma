@@ -185,11 +185,15 @@ export default function DashboardPage() {
                               {joinedPub.role.charAt(0).toUpperCase() + joinedPub.role.slice(1)}
                             </span>
                             <span className="text-xs text-gray-400">
-                              Joined {new Date(joinedPub.joinedAt).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                              })}
+                              {joinedPub.joinedAt ? (
+                                `Joined ${new Date(joinedPub.joinedAt).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}`
+                              ) : (
+                                'Joined Recently'
+                              )}
                             </span>
                           </div>
                         </div>

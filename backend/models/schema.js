@@ -150,6 +150,6 @@ export const notification = pgTable("notification", {
     relatedBlogId: integer("relatedBlogId").references(() => blog.id, { onDelete: "cascade" }),
     relatedPublicationId: integer("relatedPublicationId").references(() => publication.id, { onDelete: "cascade" }),
     isRead: boolean("isRead").notNull().default(false),
-    createdAt: timestamp("createdAt").notNull().defaultNow(),
-    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+    createdAt: timestamp("createdAt", { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });

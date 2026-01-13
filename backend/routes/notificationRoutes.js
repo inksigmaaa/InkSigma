@@ -30,7 +30,7 @@ router.get("/:userId", async (req, res) => {
             .orderBy(desc(notification.createdAt))
             .limit(50);
 
-        // Format notifications - send createdAt for client-side time calculation
+        // Format notifications - ensure createdAt is ISO string with timezone
         const formattedNotifications = notifications.map(notif => ({
             id: notif.id,
             type: notif.type,
@@ -38,7 +38,7 @@ router.get("/:userId", async (req, res) => {
             message: notif.message,
             isRead: notif.isRead,
             avatar: notif.relatedUserImage || "/images/icons/profileuser.svg",
-            createdAt: notif.createdAt,
+            createdAt: notif.createdAt instanceof Date ? notif.createdAt.toISOString() : notif.createdAt,
             relatedBlogId: notif.relatedBlogId,
             relatedPublicationId: notif.relatedPublicationId,
         }));
@@ -122,17 +122,5 @@ router.get("/user/:userId/unread-count", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch unread count" });
     }
 });
-
-// Helper function to format time ago
-function formatTimeAgo(date) {
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - new Date(date)) / 1000);
-
-    if (diffInSeconds < 60) return "Just now";
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} mins ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-    return `${Math.floor(diffInSeconds / 604800)} weeks ago`;
-}
 
 export default router;

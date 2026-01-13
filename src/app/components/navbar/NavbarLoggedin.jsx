@@ -3,58 +3,16 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
 import UserAvatar from "@/components/ui/UserAvatar";
-
-// Helper function to format time ago
-function formatTimeAgo(date) {
-    const now = new Date();
-    const notificationDate = new Date(date);
-    const diffInSeconds = Math.floor((now - notificationDate) / 1000);
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    const diffInDays = Math.floor(diffInHours / 24);
-
-    // Just now (< 1 minute)
-    if (diffInSeconds < 60) return "Just now";
-    
-    // 1 min ago - 59 mins ago
-    if (diffInMinutes < 60) {
-        return `${diffInMinutes} min${diffInMinutes === 1 ? '' : 's'} ago`;
-    }
-    
-    // 1 hour ago - 24 hours ago
-    if (diffInHours < 24) {
-        return `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`;
-    }
-    
-    // Yesterday
-    if (diffInDays === 1) {
-        return "Yesterday";
-    }
-    
-    // 2 days ago - 6 days ago
-    if (diffInDays < 7) {
-        return `${diffInDays} days ago`;
-    }
-    
-    // Last week (7-29 days)
-    if (diffInDays < 30) {
-        return "Last week";
-    }
-    
-    // Last month (30+ days)
-    return "Last month";
-}
+import { formatTimeAgo } from "@/utils/timeFormatter";
 
 export default function NavbarLoggedin() {
     const [open, setOpen] = useState(false);
     const [notificationOpen, setNotificationOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [currentTime, setCurrentTime] = useState(new Date());
-    const [hasNewNotification, setHasNewNotification] = useState(false);
+    const [, forceUpdate] = useState(0);
     const wrapperRef = useRef(null);
     const notificationRef = useRef(null);
-    const previousNotificationCount = useRef(0);
     const router = useRouter();
     
     // Get current user session
@@ -68,24 +26,21 @@ export default function NavbarLoggedin() {
         }
     }, [user?.id]);
 
-    // Auto-refresh notifications every 5 seconds for real-time updates
+    // Auto-refresh notifications every 30 seconds for real-time updates
     useEffect(() => {
         if (!user?.id) return;
 
         const interval = setInterval(() => {
             fetchNotifications();
-        }, 5000); // 5 seconds for real-time feel
+        }, 30000); // 30 seconds
 
         return () => clearInterval(interval);
     }, [user?.id]);
 
-    // Update current time every 10 seconds to refresh "time ago" displays
+    // Force re-render every minute to update "time ago" displays
     useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 10000); // Update every 10 seconds
-
-        return () => clearInterval(interval);
+        const tick = setInterval(() => forceUpdate(v => v + 1), 60000);
+        return () => clearInterval(tick);
     }, []);
 
     // Close dropdowns when clicking outside
@@ -115,17 +70,7 @@ export default function NavbarLoggedin() {
         try {
             const response = await fetch(`http://localhost:5000/api/notifications/${user.id}`);
             const data = await response.json();
-            const newNotifications = data.notifications || [];
-            
-            // Check if there are new notifications
-            if (previousNotificationCount.current > 0 && newNotifications.length > previousNotificationCount.current) {
-                setHasNewNotification(true);
-                // Reset the indicator after 3 seconds
-                setTimeout(() => setHasNewNotification(false), 3000);
-            }
-            
-            previousNotificationCount.current = newNotifications.length;
-            setNotifications(newNotifications);
+            setNotifications(data.notifications || []);
         } catch (error) {
             console.error("Error fetching notifications:", error);
         } finally {
@@ -170,7 +115,6 @@ export default function NavbarLoggedin() {
     };
 
     const userName = user?.name || "User";
-    const userEmail = user?.email || "";
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
     return (
@@ -188,7 +132,7 @@ export default function NavbarLoggedin() {
                     {/* Notification */}
                     <div ref={notificationRef} className="relative">
                         <div 
-                            className={`flex items-center cursor-pointer relative ${hasNewNotification ? 'animate-bounce' : ''}`}
+                            className="flex items-center cursor-pointer relative"
                             onClick={() => setNotificationOpen((prev) => !prev)}
                         >
                             <img
@@ -197,7 +141,7 @@ export default function NavbarLoggedin() {
                                 className="w-6 h-6 max-md:w-[22px] max-md:h-[22px]"
                             />
                             {unreadCount > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center animate-pulse">
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                                     {unreadCount > 9 ? '9+' : unreadCount}
                                 </span>
                             )}
@@ -214,7 +158,7 @@ export default function NavbarLoggedin() {
                                     <h3 className="text-[18px] font-semibold text-[#333] max-md:text-[16px]">Notification</h3>
                                     <button 
                                         onClick={() => setNotificationOpen(false)}
-                                        className="text-[#999] hover:text-[#333] transition-colors"
+                                        className="text-[#999] hover:text-[#333]"
                                     >
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="max-md:w-5 max-md:h-5">
                                             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -241,7 +185,7 @@ export default function NavbarLoggedin() {
                                         notifications.map((notification) => (
                                             <div 
                                                 key={notification.id} 
-                                                className={`flex items-start gap-3 p-4 hover:bg-[#F8F9FA] transition-colors border-b border-[#F0F0F0] last:border-b-0 max-md:p-3 max-md:gap-2.5 cursor-pointer ${!notification.isRead ? 'bg-blue-50' : ''}`}
+                                                className={`flex items-start gap-3 p-4 hover:bg-[#F8F9FA] border-b border-[#F0F0F0] last:border-b-0 max-md:p-3 max-md:gap-2.5 cursor-pointer ${!notification.isRead ? 'bg-blue-50' : ''}`}
                                                 onClick={() => !notification.isRead && markAsRead(notification.id)}
                                             >
                                                 <img 

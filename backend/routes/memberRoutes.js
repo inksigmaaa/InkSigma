@@ -588,6 +588,91 @@ router.post("/:publicationId/leave", getCurrentUser, async (req, res) => {
   }
 });
 
+// Get invitation details (requires authentication)
+router.get("/invite/:token", getCurrentUser, async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    // Get invitation
+    const [invite] = await db
+      .select()
+      .from(invitation)
+      .where(eq(invitation.token, token));
+
+    if (!invite) {
+      return res.status(404).json({ error: "Invalid invitation link" });
+    }
+
+    // Check if invitation is still valid
+    if (invite.status !== "pending") {
+      return res.status(400).json({ 
+        error: "Invitation is no longer valid",
+        status: invite.status 
+      });
+    }
+
+    if (new Date() > invite.expiresAt) {
+      // Mark as expired
+      await db
+        .update(invitation)
+        .set({ status: "expired", updatedAt: new Date() })
+        .where(eq(invitation.id, invite.id));
+      
+      return res.status(400).json({ error: "Invitation has expired" });
+    }
+
+    // Check if user email matches invitation email
+    if (req.user.email !== invite.email) {
+      return res.status(400).json({ 
+        error: "This invitation was sent to a different email address",
+        invitedEmail: invite.email,
+        yourEmail: req.user.email
+      });
+    }
+
+    // Get publication details
+    const [pub] = await db
+      .select()
+      .from(publication)
+      .where(eq(publication.id, invite.publicationId));
+
+    if (!pub) {
+      return res.status(404).json({ error: "Publication not found" });
+    }
+
+    // Get inviter details
+    const [inviter] = await db
+      .select({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+      })
+      .from(user)
+      .where(eq(user.id, invite.inviterId));
+
+    res.json({
+      invitation: {
+        id: invite.id,
+        role: invite.role,
+        createdAt: invite.createdAt,
+        expiresAt: invite.expiresAt,
+      },
+      publication: {
+        id: pub.id,
+        name: pub.name,
+        subdomain: pub.subdomain,
+        description: pub.description,
+        logoUrl: pub.logoUrl,
+      },
+      inviter: inviter || null,
+    });
+  } catch (error) {
+    console.error("Error fetching invitation details:", error);
+    res.status(500).json({ error: "Failed to fetch invitation details" });
+  }
+});
+
 // Accept invitation
 router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
   try {
