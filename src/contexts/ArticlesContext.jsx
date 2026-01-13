@@ -147,6 +147,15 @@ export function ArticlesProvider({ children }) {
 
   const createArticle = useCallback(async (articleData) => {
     try {
+      const currentPub = currentPublicationRef.current;
+      
+      // publicationId is now required
+      const publicationId = articleData.publicationId || currentPub?.id;
+      
+      if (!publicationId) {
+        throw new Error('Publication ID is required to create an article');
+      }
+
       // Determine status based on published flag, defaulting to draft
       let status = 'draft';
       if (articleData.published === true) {
@@ -161,12 +170,8 @@ export function ArticlesProvider({ children }) {
         content: articleData.content,
         categories: articleData.categories || [],
         status: status,
-        scheduledAt: articleData.scheduledAt
-      }
-
-      // Add publicationId if provided
-      if (articleData.publicationId) {
-        blogData.publicationId = articleData.publicationId
+        scheduledAt: articleData.scheduledAt,
+        publicationId: publicationId
       }
 
       const blog = await blogService.createBlog(blogData)

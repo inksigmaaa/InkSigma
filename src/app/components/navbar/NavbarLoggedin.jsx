@@ -4,9 +4,59 @@ import { useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
 import UserAvatar from "@/components/ui/UserAvatar";
 
+// Helper function to format time ago
+function formatTimeAgo(date) {
+    const now = new Date();
+    const notificationDate = new Date(date);
+    const diffInSeconds = Math.floor((now - notificationDate) / 1000);
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    // Less than 1 minute
+    if (diffInSeconds < 60) return "Just now";
+    
+    // 1-59 minutes
+    if (diffInMinutes < 60) {
+        return `${diffInMinutes} ${diffInMinutes === 1 ? 'min' : 'mins'} ago`;
+    }
+    
+    // 1-23 hours
+    if (diffInHours < 24) {
+        return `${diffInHours} ${diffInHours === 1 ? 'hr' : 'hrs'} ago`;
+    }
+    
+    // Yesterday
+    if (diffInDays === 1) {
+        return "Yesterday";
+    }
+    
+    // 2-6 days ago
+    if (diffInDays < 7) {
+        return `${diffInDays} days ago`;
+    }
+    
+    // 1-4 weeks ago
+    if (diffInDays < 30) {
+        const weeks = Math.floor(diffInDays / 7);
+        return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`;
+    }
+    
+    // Format as date for older notifications
+    const options = { month: 'short', day: 'numeric' };
+    // Add year if it's not current year
+    if (notificationDate.getFullYear() !== now.getFullYear()) {
+        options.year = 'numeric';
+    }
+    return notificationDate.toLocaleDateString('en-US', options);
+}
+
 export default function NavbarLoggedin() {
     const [open, setOpen] = useState(false);
     const [notificationOpen, setNotificationOpen] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [currentTime, setCurrentTime] = useState(new Date());
     const wrapperRef = useRef(null);
     const notificationRef = useRef(null);
     const router = useRouter();
@@ -14,6 +64,33 @@ export default function NavbarLoggedin() {
     // Get current user session
     const { data: session, isPending } = useSession();
     const user = session?.user;
+
+    // Fetch notifications when user is available
+    useEffect(() => {
+        if (user?.id) {
+            fetchNotifications();
+        }
+    }, [user?.id]);
+
+    // Auto-refresh notifications every 30 seconds
+    useEffect(() => {
+        if (!user?.id) return;
+
+        const interval = setInterval(() => {
+            fetchNotifications();
+        }, 30000); // 30 seconds
+
+        return () => clearInterval(interval);
+    }, [user?.id]);
+
+    // Update current time every minute to refresh "time ago" displays
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 60000); // Update every minute
+
+        return () => clearInterval(interval);
+    }, []);
 
     // Close dropdowns when clicking outside
     useEffect(() => {
@@ -29,6 +106,37 @@ export default function NavbarLoggedin() {
         document.addEventListener("click", handleClickOutside);
         return () => document.removeEventListener("click", handleClickOutside);
     }, []);
+
+    const fetchNotifications = async () => {
+        if (!user?.id) return;
+        
+        setLoading(true);
+        try {
+            const response = await fetch(`http://localhost:5000/api/notifications/${user.id}`);
+            const data = await response.json();
+            setNotifications(data.notifications || []);
+        } catch (error) {
+            console.error("Error fetching notifications:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const markAsRead = async (notificationId) => {
+        try {
+            await fetch(`http://localhost:5000/api/notifications/${notificationId}/read`, {
+                method: "PATCH",
+            });
+            // Update local state
+            setNotifications(prev =>
+                prev.map(notif =>
+                    notif.id === notificationId ? { ...notif, isRead: true } : notif
+                )
+            );
+        } catch (error) {
+            console.error("Error marking notification as read:", error);
+        }
+    };
 
     const handleLogout = async () => {
         // Clear local data first
@@ -50,45 +158,7 @@ export default function NavbarLoggedin() {
 
     const userName = user?.name || "User";
     const userEmail = user?.email || "";
-
-    // Sample notification data - replace with real data from your API
-    const notifications = [
-        {
-            id: 1,
-            avatar: "/images/icons/profileuser.svg",
-            title: "Publication Name",
-            message: "You have been invited to join their publication.",
-            time: "5 mins ago"
-        },
-        {
-            id: 2,
-            avatar: "/images/icons/profileuser.svg",
-            title: "Publication Name",
-            message: "Has accepted your Blog.",
-            time: "18 mins ago"
-        },
-        {
-            id: 3,
-            avatar: "/images/icons/profileuser.svg",
-            title: "Publication Name",
-            message: "Has rejected your Blog.",
-            time: "1 hour ago"
-        },
-        {
-            id: 4,
-            avatar: "/images/icons/profileuser.svg",
-            title: "Author Name",
-            message: "Has sent you a Blog for a review.",
-            time: "5 hours ago"
-        },
-        {
-            id: 5,
-            avatar: "/images/icons/profileuser.svg",
-            title: "Author Name",
-            message: "Has sent you a Blog for a review.",
-            time: "5 hours ago"
-        }
-    ];
+    const unreadCount = notifications.filter(n => !n.isRead).length;
 
     return (
         <div className="fixed top-0 left-0 w-full flex justify-center bg-white p-5 z-[100]">
@@ -105,7 +175,7 @@ export default function NavbarLoggedin() {
                     {/* Notification */}
                     <div ref={notificationRef} className="relative">
                         <div 
-                            className="flex items-center cursor-pointer"
+                            className="flex items-center cursor-pointer relative"
                             onClick={() => setNotificationOpen((prev) => !prev)}
                         >
                             <img
@@ -113,6 +183,11 @@ export default function NavbarLoggedin() {
                                 alt="notification"
                                 className="w-6 h-6 max-md:w-[22px] max-md:h-[22px]"
                             />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
                         </div>
 
                         {/* Notification Dropdown */}
@@ -141,27 +216,43 @@ export default function NavbarLoggedin() {
                                          scrollbarWidth: 'none', /* Firefox */
                                          msOverflowStyle: 'none'  /* Internet Explorer 10+ */
                                      }}>
-                                    {notifications.map((notification) => (
-                                        <div key={notification.id} className="flex items-start gap-3 p-4 hover:bg-[#F8F9FA] transition-colors border-b border-[#F0F0F0] last:border-b-0 max-md:p-3 max-md:gap-2.5">
-                                            <img 
-                                                src={notification.avatar} 
-                                                alt="avatar" 
-                                                className="w-10 h-10 rounded-full object-cover flex-shrink-0 max-md:w-9 max-md:h-9"
-                                            />
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="text-[14px] font-semibold text-[#333] mb-1 max-md:text-[13px]">
-                                                    {notification.title}
-                                                </h4>
-                                                <p className="text-[13px] text-[#666] mb-2 leading-relaxed max-md:text-[12px] max-md:mb-1.5">
-                                                    {notification.message}
-                                                </p>
-                                                <div className="flex items-center text-[12px] text-[#999] max-md:text-[11px]">
-                                                    <span className="w-1 h-1 bg-[#999] rounded-full mr-2"></span>
-                                                    {notification.time}
+                                    {loading ? (
+                                        <div className="p-8 text-center text-[#999]">
+                                            Loading notifications...
+                                        </div>
+                                    ) : notifications.length === 0 ? (
+                                        <div className="p-8 text-center text-[#999]">
+                                            No notifications yet
+                                        </div>
+                                    ) : (
+                                        notifications.map((notification) => (
+                                            <div 
+                                                key={notification.id} 
+                                                className={`flex items-start gap-3 p-4 hover:bg-[#F8F9FA] transition-colors border-b border-[#F0F0F0] last:border-b-0 max-md:p-3 max-md:gap-2.5 cursor-pointer ${!notification.isRead ? 'bg-blue-50' : ''}`}
+                                                onClick={() => !notification.isRead && markAsRead(notification.id)}
+                                            >
+                                                <img 
+                                                    src={notification.avatar} 
+                                                    alt="avatar" 
+                                                    className="w-10 h-10 rounded-full object-cover flex-shrink-0 max-md:w-9 max-md:h-9"
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="text-[14px] font-semibold text-[#333] mb-1 max-md:text-[13px]">
+                                                        {notification.title}
+                                                    </h4>
+                                                    <p className="text-[13px] text-[#666] mb-2 leading-relaxed max-md:text-[12px] max-md:mb-1.5">
+                                                        {notification.message}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 text-[12px] text-[#999] max-md:text-[11px]">
+                                                        {!notification.isRead && (
+                                                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                        )}
+                                                        <span key={currentTime.getTime()}>{formatTimeAgo(notification.createdAt)}</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         )}

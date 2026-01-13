@@ -113,14 +113,15 @@ export default function ProfileSettingsPage() {
       setImage(data.imageUrl)
       setImagePreview(data.imageUrl)
       
-      // Reload page to update navbar
+      // Wait a moment for session to update on backend, then reload
       setTimeout(() => {
-        window.location.reload()
+        window.location.href = window.location.pathname
       }, 500)
     } catch (error) {
       console.error("Error uploading image:", error)
       setError("Failed to upload image")
       setImagePreview(image) // Revert preview
+    } finally {
       setIsUploadingImage(false)
     }
   }
@@ -144,13 +145,14 @@ export default function ProfileSettingsPage() {
       setImage("")
       setImagePreview("")
       
-      // Reload page to update navbar
+      // Wait a moment for session to update on backend, then reload
       setTimeout(() => {
-        window.location.reload()
+        window.location.href = window.location.pathname
       }, 500)
     } catch (error) {
       console.error("Error removing image:", error)
       setError("Failed to remove image")
+    } finally {
       setIsUploadingImage(false)
     }
   }

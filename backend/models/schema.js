@@ -10,6 +10,17 @@ export const memberRoleEnum = pgEnum("member_role", ["owner", "admin", "editor",
 // Define invitation status enum
 export const invitationStatusEnum = pgEnum("invitation_status", ["pending", "accepted", "declined", "expired"]);
 
+// Define notification type enum
+export const notificationTypeEnum = pgEnum("notification_type", [
+    "invitation",
+    "blog_accepted",
+    "blog_rejected",
+    "blog_review",
+    "blog_published",
+    "member_joined",
+    "member_removed"
+]);
+
 export const user = pgTable("user", {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
@@ -66,7 +77,7 @@ export const blog = pgTable("blog", {
     content: text("content").notNull(),
     image: text("image"),
     authorId: text("authorId").notNull().references(() => user.id, { onDelete: "cascade" }),
-    publicationId: integer("publicationId").references(() => publication.id, { onDelete: "cascade" }),
+    publicationId: integer("publicationId").notNull().references(() => publication.id, { onDelete: "cascade" }),
     categories: text("categories").array(),
     status: blogStatusEnum("status").notNull().default("draft"),
     published: boolean("published").notNull().default(false),
@@ -128,4 +139,16 @@ export const invitation = pgTable("invitation", {
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
 
-
+export const notification = pgTable("notification", {
+    id: serial("id").primaryKey(),
+    userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
+    type: notificationTypeEnum("type").notNull(),
+    title: text("title").notNull(),
+    message: text("message").notNull(),
+    relatedUserId: text("relatedUserId").references(() => user.id, { onDelete: "cascade" }),
+    relatedBlogId: integer("relatedBlogId").references(() => blog.id, { onDelete: "cascade" }),
+    relatedPublicationId: integer("relatedPublicationId").references(() => publication.id, { onDelete: "cascade" }),
+    isRead: boolean("isRead").notNull().default(false),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});

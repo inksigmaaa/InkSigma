@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useArticles } from '@/contexts/ArticlesContext'
+import { useToast } from '@/contexts/ToastContext'
 
 const BlogStatsComponent = () => {
   const { articles } = useArticles()
+  const { showToast } = useToast()
   const [selectedPeriod, setSelectedPeriod] = useState('Monthly')
   const [showPeriodMenu, setShowPeriodMenu] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
@@ -20,12 +22,62 @@ const BlogStatsComponent = () => {
   const today = new Date()
   const periods = ['Today', 'Weekly', 'Monthly', 'Yearly', 'Custom Date']
   
-  // Calculate dynamic stats based on articles
+  // Filter articles based on selected period
+  const getFilteredArticles = () => {
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    
+    return articles.filter(article => {
+      // Parse article date - assuming articles have createdAt or publishedAt field
+      const articleDate = new Date(article.createdAt || article.publishedAt || article.created_at)
+      articleDate.setHours(0, 0, 0, 0)
+      
+      switch (selectedPeriod) {
+        case 'Today':
+          return articleDate.getTime() === now.getTime()
+          
+        case 'Weekly':
+          const weekAgo = new Date(now)
+          weekAgo.setDate(weekAgo.getDate() - 7)
+          return articleDate >= weekAgo && articleDate <= now
+          
+        case 'Monthly':
+          const monthAgo = new Date(now)
+          monthAgo.setMonth(monthAgo.getMonth() - 1)
+          return articleDate >= monthAgo && articleDate <= now
+          
+        case 'Yearly':
+          const yearAgo = new Date(now)
+          yearAgo.setFullYear(yearAgo.getFullYear() - 1)
+          return articleDate >= yearAgo && articleDate <= now
+          
+        case 'Custom Date':
+          if (!fromDate || !toDate) return true
+          
+          const [fromDay, fromMonth, fromYear] = fromDate.split('/').map(Number)
+          const [toDay, toMonth, toYear] = toDate.split('/').map(Number)
+          
+          const fromDateObj = new Date(fromYear, fromMonth - 1, fromDay)
+          const toDateObj = new Date(toYear, toMonth - 1, toDay)
+          
+          fromDateObj.setHours(0, 0, 0, 0)
+          toDateObj.setHours(23, 59, 59, 999)
+          
+          return articleDate >= fromDateObj && articleDate <= toDateObj
+          
+        default:
+          return true
+      }
+    })
+  }
+
+  // Calculate dynamic stats based on filtered articles
   const calculateStats = () => {
-    const totalArticles = articles.length
-    const totalViews = articles.reduce((sum, article) => sum + (article.views || 0), 0)
-    const totalComments = articles.reduce((sum, article) => sum + (article.comments || 0), 0)
-    const totalShares = articles.reduce((sum, article) => sum + (article.shares || 0), 0)
+    const filteredArticles = getFilteredArticles()
+    const totalArticles = filteredArticles.length
+    const totalViews = filteredArticles.reduce((sum, article) => sum + (article.views || 0), 0)
+    const totalComments = filteredArticles.reduce((sum, article) => sum + (article.comments || 0), 0)
+    const totalShares = filteredArticles.reduce((sum, article) => sum + (article.shares || 0), 0)
     
     return {
       totalArticles,
@@ -90,8 +142,26 @@ const BlogStatsComponent = () => {
   const handleDateSelect = (date) => {
     const formatted = formatDate(date)
     if (showCalendar === 'from') {
+      // If 'to' date exists, ensure 'from' is not after 'to'
+      if (toDate) {
+        const [toDay, toMonth, toYear] = toDate.split('/').map(Number)
+        const toDateObj = new Date(toYear, toMonth - 1, toDay)
+        if (date > toDateObj) {
+          showToast('From date cannot be after To date', 'error')
+          return
+        }
+      }
       setFromDate(formatted)
     } else if (showCalendar === 'to') {
+      // If 'from' date exists, ensure 'to' is not before 'from'
+      if (fromDate) {
+        const [fromDay, fromMonth, fromYear] = fromDate.split('/').map(Number)
+        const fromDateObj = new Date(fromYear, fromMonth - 1, fromDay)
+        if (date < fromDateObj) {
+          showToast('To date cannot be before From date', 'error')
+          return
+        }
+      }
       setToDate(formatted)
     }
     setShowCalendar(null)
@@ -191,115 +261,179 @@ const BlogStatsComponent = () => {
 
         {/* Date Picker Modal */}
         {showDatePicker && !showCalendar && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-            <div ref={datePickerRef} className="bg-white rounded-2xl p-8 shadow-xl w-96">
-              <div className="grid grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label 
-                    className="block text-gray-700 font-semibold mb-2 cursor-pointer text-lg"
-                    onClick={() => setShowCalendar('from')}
-                  >
-                    From
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="DD/MM/YYYY"
-                    value={fromDate}
-                    readOnly
-                    className="w-full px-3 py-3 border-b-2 border-gray-300 text-gray-400 outline-none cursor-pointer"
-                    onClick={() => setShowCalendar('from')}
-                  />
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[9999]">
+            <div 
+              ref={datePickerRef} 
+              className="bg-white rounded-lg shadow-xl relative z-[10000]"
+              style={{ width: '276px', padding: '32px' }}
+            >
+              <div className="flex flex-col" style={{ gap: '29px' }}>
+                <div className="flex" style={{ gap: '32px' }}>
+                  <div className="flex-1">
+                    <label 
+                      className="block text-gray-900 font-semibold mb-2 cursor-pointer"
+                      style={{ 
+                        fontFamily: 'Public Sans',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        lineHeight: '100%'
+                      }}
+                      onClick={() => setShowCalendar('from')}
+                    >
+                      From
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="DD/MM/YYYY"
+                      value={fromDate}
+                      readOnly
+                      className="w-full border-b border-gray-300 text-gray-400 outline-none cursor-pointer bg-transparent"
+                      style={{ 
+                        fontFamily: 'Public Sans',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        lineHeight: '150%',
+                        paddingBottom: '4px'
+                      }}
+                      onClick={() => setShowCalendar('from')}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label 
+                      className="block text-gray-900 font-semibold mb-2 cursor-pointer"
+                      style={{ 
+                        fontFamily: 'Public Sans',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        lineHeight: '100%'
+                      }}
+                      onClick={() => setShowCalendar('to')}
+                    >
+                      To
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="DD/MM/YYYY"
+                      value={toDate}
+                      readOnly
+                      className="w-full border-b border-gray-300 text-gray-400 outline-none cursor-pointer bg-transparent"
+                      style={{ 
+                        fontFamily: 'Public Sans',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        lineHeight: '150%',
+                        paddingBottom: '4px'
+                      }}
+                      onClick={() => setShowCalendar('to')}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label 
-                    className="block text-gray-700 font-semibold mb-2 cursor-pointer text-lg"
-                    onClick={() => setShowCalendar('to')}
+                <button
+                  onClick={() => {
+                    setShowDatePicker(false)
+                    setShowCalendar(null)
+                    setSelectedPeriod('Custom Date')
+                  }}
+                  className="rounded hover:opacity-90 transition-opacity flex items-center justify-center"
+                  style={{
+                    width: '59px',
+                    height: '30px',
+                    borderRadius: '4px',
+                    backgroundColor: '#F3EEFF',
+                    fontFamily: 'Public Sans',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    lineHeight: '150%',
+                    padding: '0'
+                  }}
+                >
+                  <span
+                    style={{
+                      backgroundImage: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      display: 'block'
+                    }}
                   >
-                    To
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="DD/MM/YYYY"
-                    value={toDate}
-                    readOnly
-                    className="w-full px-3 py-3 border-b-2 border-gray-300 text-gray-400 outline-none cursor-pointer"
-                    onClick={() => setShowCalendar('to')}
-                  />
-                </div>
+                    Apply
+                  </span>
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setShowDatePicker(false)
-                  setShowCalendar(null)
-                  setSelectedPeriod('Custom Date')
-                }}
-                className="w-full px-8 py-3 bg-purple-100 text-purple-600 rounded-lg font-semibold hover:bg-purple-200 transition-colors"
-              >
-                Apply
-              </button>
             </div>
           </div>
         )}
 
         {/* Calendar Popup */}
         {showCalendar && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-            <div ref={calendarRef} className="bg-white rounded-xl shadow-2xl p-6 w-auto">
-              <div className="border-4 border-blue-400 rounded-lg p-4">
-                {/* Calendar Header */}
-                <div className="flex items-center justify-between mb-4 px-2">
-                  <button
-                    onClick={() => changeMonth(-1)}
-                    className="text-gray-400 hover:text-gray-600 text-2xl w-8 h-8 flex items-center justify-center"
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[9999]">
+            <div 
+              ref={calendarRef} 
+              className="bg-gray-100 rounded-2xl shadow-2xl relative z-[10000]"
+              style={{ width: '260px', padding: '20px' }}
+            >
+              {/* Calendar Header */}
+              <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+                <button
+                  onClick={() => changeMonth(-1)}
+                  className="text-gray-400 hover:text-gray-600 w-6 h-6 flex items-center justify-center"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                </button>
+                <div className="text-gray-500 font-semibold" style={{ fontSize: '14px' }}>
+                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                </div>
+                <button
+                  onClick={() => changeMonth(1)}
+                  className="text-gray-400 hover:text-gray-600 w-6 h-6 flex items-center justify-center"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Weekday Headers */}
+              <div className="grid grid-cols-7" style={{ gap: '10px', marginBottom: '10px' }}>
+                {daysOfWeek.map(day => (
+                  <div 
+                    key={day} 
+                    className="text-center text-gray-400 font-bold flex items-center justify-center"
+                    style={{ width: '26px', height: '20px', fontSize: '12px' }}
                   >
-                    «
-                  </button>
-                  <div className="text-gray-500 font-semibold text-lg">
-                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                    {day}
                   </div>
-                  <button
-                    onClick={() => changeMonth(1)}
-                    className="text-gray-400 hover:text-gray-600 text-2xl w-8 h-8 flex items-center justify-center"
-                  >
-                    »
-                  </button>
-                </div>
+                ))}
+              </div>
 
-                {/* Weekday Headers */}
-                <div className="grid grid-cols-7 gap-1 mb-2">
-                  {daysOfWeek.map(day => (
-                    <div key={day} className="text-center text-gray-400 font-bold text-sm py-2 w-10">
-                      {day}
-                    </div>
-                  ))}
-                </div>
+              {/* Calendar Days */}
+              <div className="grid grid-cols-7" style={{ gap: '10px' }}>
+                {days.map((dayObj, index) => {
+                  const isToday = dayObj.isCurrentMonth && 
+                    dayObj.day === today.getDate() &&
+                    currentDate.getMonth() === today.getMonth() &&
+                    currentDate.getFullYear() === today.getFullYear()
 
-                {/* Calendar Days */}
-                <div className="grid grid-cols-7 gap-1">
-                  {days.map((dayObj, index) => {
-                    const isToday = dayObj.isCurrentMonth && 
-                      dayObj.day === today.getDate() &&
-                      currentDate.getMonth() === today.getMonth() &&
-                      currentDate.getFullYear() === today.getFullYear()
-
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => dayObj.isCurrentMonth && handleDateSelect(dayObj.date)}
-                        disabled={!dayObj.isCurrentMonth}
-                        className={`w-10 h-10 text-center text-sm rounded flex items-center justify-center
-                          ${dayObj.isCurrentMonth 
-                            ? isToday 
-                              ? 'bg-gray-600 text-white font-bold' 
-                              : 'text-gray-700 hover:bg-gray-100'
-                            : 'text-gray-300'
-                          }`}
-                      >
-                        {dayObj.day}
-                      </button>
-                    )
-                  })}
-                </div>
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => dayObj.isCurrentMonth && handleDateSelect(dayObj.date)}
+                      disabled={!dayObj.isCurrentMonth}
+                      className={`text-center rounded-lg flex items-center justify-center font-medium transition-colors
+                        ${dayObj.isCurrentMonth 
+                          ? isToday 
+                            ? 'bg-gray-600 text-white' 
+                            : 'bg-white text-gray-600 hover:bg-gray-200'
+                          : 'bg-white text-gray-300'
+                        }`}
+                      style={{ width: '26px', height: '26px', fontSize: '14px' }}
+                    >
+                      {dayObj.day}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>

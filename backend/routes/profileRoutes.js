@@ -206,6 +206,17 @@ router.post("/image", getCurrentUser, upload.single("image"), async (req, res) =
             })
             .where(eq(user.id, userId));
 
+        // Update the session with new image
+        try {
+            await auth.api.updateUser({
+                userId: userId,
+                image: imageUrl,
+            });
+        } catch (sessionError) {
+            console.error("Failed to update session:", sessionError);
+            // Continue anyway as DB is updated
+        }
+
         res.json({ success: true, imageUrl });
     } catch (error) {
         console.error("Error uploading image:", error);
@@ -241,6 +252,17 @@ router.delete("/image", getCurrentUser, async (req, res) => {
                 updatedAt: new Date(),
             })
             .where(eq(user.id, userId));
+
+        // Update the session to remove image
+        try {
+            await auth.api.updateUser({
+                userId: userId,
+                image: null,
+            });
+        } catch (sessionError) {
+            console.error("Failed to update session:", sessionError);
+            // Continue anyway as DB is updated
+        }
 
         res.json({ success: true, message: "Image removed successfully" });
     } catch (error) {
