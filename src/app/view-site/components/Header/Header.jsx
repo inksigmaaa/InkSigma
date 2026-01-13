@@ -11,12 +11,14 @@ export default function ViewSiteHeader({ userName = 'The Nature Blog', userAvata
           {/* Logo/Avatar */}
           <div className="w-12 h-12 max-md:w-7 max-md:h-7 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
             {userAvatar ? (
-              <Image 
+              <img
                 src={userAvatar} 
                 alt={userName}
-                width={50}
-                height={50}
-                className="object-cover"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${userName?.charAt(0).toUpperCase() || 'P'}</span></div>`;
+                }}
               />
             ) : (
               <Image 

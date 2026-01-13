@@ -225,11 +225,6 @@ export default function DashboardPage() {
               </div>
             )}
           </section>
-
-          {/* Multiple Publication Coming Soon */}
-          <section className="rounded-lg py-16 text-center bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)]">
-            <p className="font-['Public_Sans'] font-normal text-xs text-gray-400 bg-white px-6 py-3 inline-block relative z-[1]">Multiple Publication coming soon!</p>
-          </section>
         </div>
       </main>
     </AuthGuard>

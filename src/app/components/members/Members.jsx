@@ -35,6 +35,11 @@ export default function Members() {
     const [showRemoveModal, setShowRemoveModal] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
     const [selectedMember, setSelectedMember] = useState(null);
+    const [showInviteSentToast, setShowInviteSentToast] = useState(false);
+    const [showInviteErrorToast, setShowInviteErrorToast] = useState(false);
+    const [showMemberExistsToast, setShowMemberExistsToast] = useState(false);
+    const [showMaxMembersToast, setShowMaxMembersToast] = useState(false);
+    const [showSingleEditorToast, setShowSingleEditorToast] = useState(false);
 
     // Smooth toast animation for success
     useEffect(() => {
@@ -97,7 +102,21 @@ export default function Members() {
             // De-duplicate members by userId to fix "admin in twice" issue
             const uniqueMembers = Array.from(new Map(membersData.members.map(m => [m.userId, m])).values());
             
-            setMembers(prev => JSON.stringify(prev) === JSON.stringify(uniqueMembers) ? prev : uniqueMembers);
+            // Sort members by role: Admin first, then Editor, then Authors (maintaining order within each role)
+            const sortedMembers = uniqueMembers.sort((a, b) => {
+                const roleOrder = { admin: 1, editor: 2, author: 3 };
+                const roleA = roleOrder[a.role.toLowerCase()] || 999;
+                const roleB = roleOrder[b.role.toLowerCase()] || 999;
+                
+                if (roleA !== roleB) {
+                    return roleA - roleB;
+                }
+                
+                // If same role, maintain original order (by id or createdAt if available)
+                return (a.id || 0) - (b.id || 0);
+            });
+            
+            setMembers(prev => JSON.stringify(prev) === JSON.stringify(sortedMembers) ? prev : sortedMembers);
             setPendingInvitations(prev => JSON.stringify(prev) === JSON.stringify(membersData.pendingInvitations) ? prev : membersData.pendingInvitations);
             setUserRole(prev => prev === membersData.userRole ? prev : membersData.userRole);
         } catch (error) {
@@ -123,19 +142,56 @@ export default function Members() {
             return;
         }
 
+        // Check if member already exists (either as existing member or pending invitation)
+        const emailLower = email.toLowerCase().trim();
+        const existingMember = members.find(m => m.userEmail?.toLowerCase() === emailLower);
+        const pendingInvitation = pendingInvitations.find(i => i.email?.toLowerCase() === emailLower);
+        
+        if (existingMember || pendingInvitation) {
+            setShowMemberExistsToast(true);
+            setTimeout(() => setShowMemberExistsToast(false), 3000);
+            return;
+        }
+
+        // Check if trying to add a second editor (only 1 editor allowed per publication)
+        if (role.toLowerCase() === "editor") {
+            const existingEditors = members.filter(m => m.role === "editor");
+            const pendingEditors = pendingInvitations.filter(i => i.role === "editor" && i.status === "pending");
+            
+            if (existingEditors.length > 0 || pendingEditors.length > 0) {
+                setShowSingleEditorToast(true);
+                setTimeout(() => setShowSingleEditorToast(false), 3000);
+                return;
+            }
+        }
+
+        // Check if maximum member limit reached (5 total: 1 admin + 1 editor + 3 authors)
+        const totalMembers = members.length + pendingInvitations.filter(i => i.status === "pending").length;
+        if (totalMembers >= 5) {
+            setShowMaxMembersToast(true);
+            setTimeout(() => setShowMaxMembersToast(false), 3000);
+            return;
+        }
+
         setSending(true);
         setError("");
         setSuccess("");
 
         try {
-            const result = await memberService.sendInvitation(currentPublication.id, email, role.toLowerCase());
-            setSuccess(result.message || "Invitation sent successfully!");
+            await memberService.sendInvitation(currentPublication.id, email, role.toLowerCase());
+            
+            // Show custom invitation sent toast
+            setShowInviteSentToast(true);
+            setTimeout(() => setShowInviteSentToast(false), 3000);
+            
             setEmail("");
             setRole("Select Role");
             await loadData();
             await refreshCurrentPublication();
         } catch (error) {
-            setError(error.message || "Failed to send invitation. Please try again.");
+            // Show custom error toast for network/server issues
+            setShowInviteErrorToast(true);
+            setTimeout(() => setShowInviteErrorToast(false), 3000);
         } finally {
             setSending(false);
         }
@@ -156,7 +212,6 @@ export default function Members() {
 
         try {
             await memberService.removeMember(currentPublication.id, selectedMember.id);
-            setSuccess("Member removed successfully!");
             setShowRemoveModal(false);
             setSelectedMember(null);
             await loadData();
@@ -412,15 +467,21 @@ export default function Members() {
                                         </div>
 
                                         <div className="w-1/3 flex justify-center max-[639px]:hidden">
-                                            <span className={`px-2 py-0 text-sm font-medium border-2 rounded-full ${invitation.status === "pending" ? "text-[#72D770] border-[#D5F2D4]" : "text-gray-400 border-gray-400"}`}>
-                                                {invitation.status === "pending" ? "Pending" : "Expired"}
+                                            <span className={`px-2 py-0 text-sm font-medium border-2 rounded-full ${
+                                                invitation.status === "pending" ? "text-[#72D770] border-[#D5F2D4]" : 
+                                                invitation.status === "declined" ? "text-red-500 border-red-200" : 
+                                                "text-gray-400 border-gray-400"
+                                            }`}>
+                                                {invitation.status === "pending" ? "Pending" : invitation.status === "declined" ? "Declined" : "Expired"}
                                             </span>
                                         </div>
 
                                         <div className="w-1/3 flex items-center justify-end gap-3 max-[639px]:w-auto">
-                                            <button onClick={() => handleResendInvite(invitation.id)} className="px-6 py-1.5 text-sm font-medium text-[#06AD2B] border-2 border-[#D5F2D4] rounded-md hover:bg-green-50">
-                                                {invitation.status === "pending" ? "Resend" : "Re-invite"}
-                                            </button>
+                                            {invitation.status !== "declined" && (
+                                                <button onClick={() => handleResendInvite(invitation.id)} className="px-6 py-1.5 text-sm font-medium text-[#06AD2B] border-2 border-[#D5F2D4] rounded-md hover:bg-green-50">
+                                                    {invitation.status === "pending" ? "Resend" : "Re-invite"}
+                                                </button>
+                                            )}
                                             <button onClick={() => handleCancelInvitation(invitation.id)} className="px-6 py-2 text-sm font-medium text-red-500 bg-red-50 rounded-md hover:bg-red-100">
                                                 Cancel
                                             </button>
@@ -444,10 +505,10 @@ export default function Members() {
                 isOpen={showRemoveModal}
                 onClose={() => { setShowRemoveModal(false); setSelectedMember(null); }}
                 onConfirm={handleRemoveMember}
-                title="Remove Member"
-                message={`Are you sure you want to remove ${selectedMember?.userName}?`}
+                title="Do you want to remove the member?"
+                message="The member will be removed from the publication."
                 confirmText="Remove"
-                confirmStyle="danger"
+                confirmStyle="normal"
             />
 
             <ConfirmModal
@@ -459,6 +520,212 @@ export default function Members() {
                 confirmText="Leave"
                 confirmStyle="danger"
             />
+
+            {/* Custom Invitation Sent Toast */}
+            {showInviteSentToast && (
+                <div className="fixed inset-0 flex items-center justify-center z-[10000] bg-black/50">
+                    <div 
+                        className="bg-white rounded-lg shadow-2xl flex flex-col items-center justify-center gap-6 animate-fade-in relative"
+                        style={{
+                            width: '353px',
+                            minHeight: '218px',
+                            paddingTop: '48px',
+                            paddingRight: '56px',
+                            paddingBottom: '48px',
+                            paddingLeft: '56px',
+                        }}
+                    >
+                        <button 
+                            onClick={() => setShowInviteSentToast(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                        <div 
+                            className="rounded-full flex items-center justify-center"
+                            style={{
+                                width: '64px',
+                                height: '64px',
+                                background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
+                            }}
+                        >
+                            <svg className="text-white" width="25" height="25" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">Mail Sent</h3>
+                            <p className="text-sm text-gray-500">An invitation link has been sent to the registered Email ID</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom Invitation Error Toast */}
+            {showInviteErrorToast && (
+                <div className="fixed inset-0 flex items-center justify-center z-[10000] bg-black/50">
+                    <div 
+                        className="bg-white rounded-lg shadow-2xl flex flex-col items-center justify-center gap-6 animate-fade-in relative"
+                        style={{
+                            width: '353px',
+                            minHeight: '218px',
+                            paddingTop: '48px',
+                            paddingRight: '56px',
+                            paddingBottom: '48px',
+                            paddingLeft: '56px',
+                        }}
+                    >
+                        <button 
+                            onClick={() => setShowInviteErrorToast(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                        <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">Oops!</h3>
+                            <p className="text-sm text-gray-500">Something went wrong. Your email wasn't sent. Please try again.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Member Already Exists Toast */}
+            {showMemberExistsToast && (
+                <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[10000] animate-slide-down">
+                    <div 
+                        className="flex items-center gap-2.5 rounded"
+                        style={{
+                            width: '227px',
+                            height: '45px',
+                            paddingTop: '12px',
+                            paddingRight: '16px',
+                            paddingBottom: '12px',
+                            paddingLeft: '16px',
+                            background: '#F9F9F9',
+                            boxShadow: '0px 4px 25px 0px rgba(0, 0, 0, 0.25)',
+                        }}
+                    >
+                        <div 
+                            className="flex-shrink-0 rounded-full flex items-center justify-center"
+                            style={{
+                                width: '20px',
+                                height: '20px',
+                                background: '#FC6161',
+                            }}
+                        >
+                            <svg className="text-white" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M6 1V7M6 9V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                        </div>
+                        <p 
+                            style={{
+                                fontFamily: 'Public Sans, sans-serif',
+                                fontWeight: 400,
+                                fontSize: '14px',
+                                lineHeight: '150%',
+                                color: '#808080',
+                            }}
+                        >
+                            Member already exists.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Single Editor Access Only Toast */}
+            {showSingleEditorToast && (
+                <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[10000] animate-slide-down">
+                    <div 
+                        className="flex items-center gap-2.5 rounded"
+                        style={{
+                            width: '227px',
+                            height: '45px',
+                            paddingTop: '12px',
+                            paddingRight: '16px',
+                            paddingBottom: '12px',
+                            paddingLeft: '16px',
+                            background: '#F9F9F9',
+                            boxShadow: '0px 4px 25px 0px rgba(0, 0, 0, 0.25)',
+                        }}
+                    >
+                        <div 
+                            className="flex-shrink-0 rounded-full flex items-center justify-center"
+                            style={{
+                                width: '20px',
+                                height: '20px',
+                                background: '#FC6161',
+                            }}
+                        >
+                            <svg className="text-white" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M6 1V7M6 9V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                        </div>
+                        <p 
+                            style={{
+                                fontFamily: 'Public Sans, sans-serif',
+                                fontWeight: 400,
+                                fontSize: '14px',
+                                lineHeight: '150%',
+                                color: '#808080',
+                            }}
+                        >
+                            Single editor access only.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Maximum Members Reached Toast */}
+            {showMaxMembersToast && (
+                <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[10000] animate-slide-down">
+                    <div 
+                        className="flex items-center gap-2.5 rounded"
+                        style={{
+                            width: '270px',
+                            height: '45px',
+                            paddingTop: '12px',
+                            paddingRight: '16px',
+                            paddingBottom: '12px',
+                            paddingLeft: '16px',
+                            background: '#F9F9F9',
+                            boxShadow: '0px 4px 25px 0px rgba(0, 0, 0, 0.25)',
+                        }}
+                    >
+                        <div 
+                            className="flex-shrink-0 rounded-full flex items-center justify-center"
+                            style={{
+                                width: '20px',
+                                height: '20px',
+                                background: '#FC6161',
+                            }}
+                        >
+                            <svg className="text-white" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M6 1V7M6 9V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                        </div>
+                        <p 
+                            style={{
+                                fontFamily: 'Public Sans, sans-serif',
+                                fontWeight: 400,
+                                fontSize: '14px',
+                                lineHeight: '150%',
+                                color: '#808080',
+                            }}
+                        >
+                            Reached the maximum invite.
+                        </p>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

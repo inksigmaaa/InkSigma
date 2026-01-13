@@ -15,6 +15,10 @@ export default function HomeHeader({ userName = 'The Nature Blog', userAvatar = 
                   src={userAvatar} 
                   alt={userName}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${userName?.charAt(0).toUpperCase() || 'P'}</span></div>`;
+                  }}
                 />
               ) : (
                 <img 

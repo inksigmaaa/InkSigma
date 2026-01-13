@@ -113,9 +113,9 @@ export default function ProfileSettingsPage() {
       setImage(data.imageUrl)
       setImagePreview(data.imageUrl)
       
-      // Reload page to update navbar
+      // Wait a moment for session to update on backend, then reload
       setTimeout(() => {
-        window.location.reload()
+        window.location.href = window.location.pathname
       }, 500)
     } catch (error) {
       console.error("Error uploading image:", error)
@@ -144,9 +144,9 @@ export default function ProfileSettingsPage() {
       setImage("")
       setImagePreview("")
       
-      // Reload page to update navbar
+      // Wait a moment for session to update on backend, then reload
       setTimeout(() => {
-        window.location.reload()
+        window.location.href = window.location.pathname
       }, 500)
     } catch (error) {
       console.error("Error removing image:", error)

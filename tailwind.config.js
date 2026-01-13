@@ -47,6 +47,26 @@ module.exports = {
                 md: "calc(var(--radius) - 2px)",
                 sm: "calc(var(--radius) - 4px)",
             },
+            keyframes: {
+                'slide-down': {
+                    '0%': { 
+                        opacity: '0',
+                        transform: 'translate(-50%, -20px)'
+                    },
+                    '100%': { 
+                        opacity: '1',
+                        transform: 'translate(-50%, 0)'
+                    },
+                },
+                'fade-in': {
+                    '0%': { opacity: '0' },
+                    '100%': { opacity: '1' },
+                },
+            },
+            animation: {
+                'slide-down': 'slide-down 0.3s ease-out',
+                'fade-in': 'fade-in 0.3s ease-out',
+            },
         },
     },
     plugins: [

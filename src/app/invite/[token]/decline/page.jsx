@@ -1,17 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
 import { memberService } from "@/services/memberService";
 
 export default function DeclineInvitation() {
   const { token } = useParams();
   const router = useRouter();
+  const { data: session, isPending } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  useEffect(() => {
+    if (!isPending && !session) {
+      // Redirect to login with return URL
+      router.push(`/login?redirect=/invite/${token}/decline`);
+    }
+  }, [session, isPending, token, router]);
+
   const handleDecline = async () => {
+    if (!session) return;
+
     setLoading(true);
     setError("");
 
@@ -24,6 +35,18 @@ export default function DeclineInvitation() {
       setLoading(false);
     }
   };
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null; // Will redirect to login
+  }
 
   if (success) {
     return (
@@ -39,10 +62,10 @@ export default function DeclineInvitation() {
             <p className="text-gray-600">You have declined the invitation to join the publication.</p>
           </div>
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/dashboard")}
             className="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200"
           >
-            Go to Homepage
+            Go to Dashboard
           </button>
         </div>
       </div>

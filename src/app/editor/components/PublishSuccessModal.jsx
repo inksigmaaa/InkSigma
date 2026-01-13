@@ -15,8 +15,8 @@ export default function PublishSuccessModal({ isOpen, onClose, blogSlug, blogTit
 
   const handleViewInSite = () => {
     onClose()
-    // Navigate to blog read page - adjust URL structure as needed
-    router.push(`/view-site/${blogSlug}`)
+    // Navigate to blog read page
+    router.push(`/view-site/blog/${blogSlug}`)
   }
 
   return (

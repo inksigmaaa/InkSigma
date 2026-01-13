@@ -10,6 +10,7 @@ import { DateTimePicker } from "./DateTimePicker"
 import PublishSuccessModal from "./PublishSuccessModal"
 import { useArticles } from "@/contexts/ArticlesContext"
 import { useSession } from "@/lib/auth-client"
+import { usePublication } from "@/contexts/PublicationContext"
 
 import { 
   Image as ImageIcon,
@@ -25,6 +26,7 @@ export default function EditorPageClient() {
   const searchParams = useSearchParams()
   const { data: session } = useSession()
   const { createArticle, updateArticle, uploadArticleImage, getArticleById, loadUserArticles } = useArticles()
+  const { currentPublication } = usePublication()
   
   // Prevent hydration mismatch by ensuring client-side rendering
   const [isMounted, setIsMounted] = useState(false)
@@ -38,11 +40,16 @@ export default function EditorPageClient() {
   const articleId = searchParams.get('id')
   const publicationId = searchParams.get('publicationId') // For joined publications
   
+  // Determine if user is owner or member
+  const isPublicationOwner = currentPublication?.isOwner ?? true // Default to true if no publication context
+  
   // Debug log
   useEffect(() => {
     console.log('Editor - publicationId:', publicationId)
     console.log('Editor - articleStatus:', articleStatus)
-  }, [publicationId, articleStatus])
+    console.log('Editor - isPublicationOwner:', isPublicationOwner)
+    console.log('Editor - currentPublication:', currentPublication)
+  }, [publicationId, articleStatus, isPublicationOwner, currentPublication])
   
   // State management
   const [title, setTitle] = useState('')
@@ -908,8 +915,8 @@ export default function EditorPageClient() {
                 </>
               ) : (
                 <>
-                  {publicationId ? (
-                    // For joined publications - only show Send for Review button
+                  {!isPublicationOwner ? (
+                    // For joined publications where user is NOT owner - only show Send for Review button
                     <Button 
                       onClick={handleSendForReview}
                       disabled={isLoading}
@@ -918,7 +925,7 @@ export default function EditorPageClient() {
                       {isLoading ? 'Sending...' : 'Send for Review'}
                     </Button>
                   ) : (
-                    // For personal publications - show all buttons
+                    // For owned publications - show all buttons
                     <>
                       <Button 
                         onClick={handlePublish}
@@ -1052,8 +1059,8 @@ export default function EditorPageClient() {
                 </>
               ) : (
                 <>
-                  {publicationId ? (
-                    // For joined publications - only show Send for Review button
+                  {!isPublicationOwner ? (
+                    // For joined publications where user is NOT owner - only show Send for Review button
                     <button 
                       onClick={handleSendForReview}
                       disabled={isLoading}
@@ -1063,7 +1070,7 @@ export default function EditorPageClient() {
                       {isLoading ? 'Sending...' : 'Send for Review'}
                     </button>
                   ) : (
-                    // For personal publications - show all buttons
+                    // For owned publications - show all buttons
                     <>
                       <button 
                         onClick={handleSaveDraft}

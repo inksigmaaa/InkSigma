@@ -7,6 +7,7 @@ import crypto from "crypto";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 import nodemailer from "nodemailer";
+import notificationService from "../services/notificationService.js";
 
 const router = express.Router();
 
@@ -184,7 +185,8 @@ router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
             eq(invitation.publicationId, parseInt(publicationId)),
             or(
               eq(invitation.status, "pending"),
-              eq(invitation.status, "expired")
+              eq(invitation.status, "expired"),
+              eq(invitation.status, "declined")
             )
           )
         );
@@ -285,6 +287,21 @@ router.post("/:publicationId/invite", getCurrentUser, requireAdmin, async (req, 
       console.error("Failed to send invitation email:", emailError);
       emailSent = false;
       // Still continue since the invitation was created in the database
+    }
+
+    // Create notification if user exists
+    if (existingUser.length > 0) {
+      try {
+        await notificationService.notifyInvitation({
+          userId: existingUser[0].id,
+          publicationName: pub.name,
+          inviterName: req.user.name,
+          inviterId: req.user.id,
+          publicationId: parseInt(publicationId),
+        });
+      } catch (notifError) {
+        console.error("Failed to create notification:", notifError);
+      }
     }
 
     res.status(201).json({
@@ -420,6 +437,33 @@ router.delete("/:publicationId/members/:memberId", getCurrentUser, requireAdmin,
 
     if (result.length === 0) {
       return res.status(404).json({ error: "Member not found" });
+    }
+
+    // Get removed member details
+    const [removedUser] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, member.userId));
+
+    // Notify the removed member
+    if (removedUser) {
+      try {
+        const [pub] = await db
+          .select()
+          .from(publication)
+          .where(eq(publication.id, parseInt(publicationId)));
+
+        await notificationService.createNotification({
+          userId: removedUser.id,
+          type: "member_removed",
+          title: pub.name,
+          message: "You have been removed from this publication.",
+          relatedUserId: req.user.id,  // Add the admin who removed them
+          relatedPublicationId: parseInt(publicationId),
+        });
+      } catch (notifError) {
+        console.error("Failed to create notification:", notifError);
+      }
     }
 
     res.json({ message: "Member removed successfully" });
@@ -647,6 +691,24 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
 
     console.log(`[Invitation Accept] Success! User ${userId} joined publication ${invite.publicationId}`);
 
+    // Get publication details for notification
+    const [pub] = await db
+      .select()
+      .from(publication)
+      .where(eq(publication.id, invite.publicationId));
+
+    // Notify publication owner that member joined
+    try {
+      await notificationService.notifyMemberJoined({
+        ownerId: pub.userId,
+        memberName: req.user.name,
+        memberId: userId,
+        publicationId: invite.publicationId,
+      });
+    } catch (notifError) {
+      console.error("Failed to create notification:", notifError);
+    }
+
     res.json({ 
       message: "Invitation accepted successfully",
       publication: result
@@ -658,9 +720,12 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
 });
 
 // Decline invitation
-router.post("/invite/:token/decline", async (req, res) => {
+router.post("/invite/:token/decline", getCurrentUser, async (req, res) => {
   try {
     const { token } = req.params;
+    const userId = req.user.id;
+
+    console.log(`[Invitation Decline] User ${userId} (${req.user.email}) attempting to decline invitation with token: ${token}`);
 
     // Get invitation
     const [invite] = await db
@@ -669,11 +734,21 @@ router.post("/invite/:token/decline", async (req, res) => {
       .where(eq(invitation.token, token));
 
     if (!invite) {
+      console.log(`[Invitation Decline] Invalid token: ${token}`);
       return res.status(404).json({ error: "Invalid invitation link" });
     }
 
+    console.log(`[Invitation Decline] Found invitation ID: ${invite.id}, email: ${invite.email}, status: ${invite.status}`);
+
     if (invite.status !== "pending") {
+      console.log(`[Invitation Decline] Invitation not pending, status: ${invite.status}`);
       return res.status(400).json({ error: "Invitation is no longer valid" });
+    }
+
+    // Check if user email matches invitation email
+    if (req.user.email !== invite.email) {
+      console.log(`[Invitation Decline] Email mismatch: user=${req.user.email}, invite=${invite.email}`);
+      return res.status(400).json({ error: "This invitation was sent to a different email address" });
     }
 
     // Mark invitation as declined
@@ -685,9 +760,40 @@ router.post("/invite/:token/decline", async (req, res) => {
       })
       .where(eq(invitation.id, invite.id));
 
+    console.log(`[Invitation Decline] Invitation ${invite.id} marked as declined`);
+
+    // Get publication details for notification
+    const [pub] = await db
+      .select()
+      .from(publication)
+      .where(eq(publication.id, invite.publicationId));
+
+    if (!pub) {
+      console.error(`[Invitation Decline] Publication not found: ${invite.publicationId}`);
+      return res.json({ message: "Invitation declined" });
+    }
+
+    console.log(`[Invitation Decline] Publication found: ${pub.name}, Owner: ${pub.userId}`);
+    console.log(`[Invitation Decline] Creating notification for publication owner ${pub.userId}`);
+    console.log(`[Invitation Decline] Decliner name: ${req.user.name}, Decliner ID: ${userId}`);
+
+    // Notify publication owner that invitation was declined
+    try {
+      const notification = await notificationService.notifyInvitationDeclined({
+        ownerId: pub.userId,  // Notify the publication owner
+        memberName: req.user.name,
+        memberId: userId,
+        publicationId: invite.publicationId,
+      });
+      console.log(`[Invitation Decline] Notification created successfully:`, notification);
+    } catch (notifError) {
+      console.error("[Invitation Decline] Failed to create notification:", notifError);
+      console.error("[Invitation Decline] Error details:", notifError.message, notifError.stack);
+    }
+
     res.json({ message: "Invitation declined" });
   } catch (error) {
-    console.error("Error declining invitation:", error);
+    console.error("[Invitation Decline] Error declining invitation:", error);
     res.status(500).json({ error: "Failed to decline invitation" });
   }
 });
@@ -706,7 +812,7 @@ async function sendInvitationEmail(email, publicationName, role, token, inviterN
       },
     });
 
-    const acceptUrl = `${process.env.FRONTEND_URL}/invite/${token}/accept`;
+    const acceptUrl = `${process.env.FRONTEND_URL}/invite/${token}`;
     const declineUrl = `${process.env.FRONTEND_URL}/invite/${token}/decline`;
 
     const mailOptions = {

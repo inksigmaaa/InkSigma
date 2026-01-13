@@ -12,6 +12,7 @@ import publicationMemberRoutes from "./routes/publicationMemberRoutes.js";
 import publicationStatsRoutes from "./routes/publicationStatsRoutes.js";
 import memberRoutes from "./routes/memberRoutes.js";
 import resendVerificationRoutes from "./routes/resendVerificationRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 import { corsMiddleware } from "./middleware/cors.js";
 import { emailService } from "./services/emailService.js";
 import schedulerService from "./services/schedulerService.js";
@@ -46,6 +47,7 @@ app.use("/api/publications", publicationRoutes);
 app.use("/api/publication-members", publicationMemberRoutes);
 app.use("/api/publication-stats", publicationStatsRoutes);
 app.use("/api/members", memberRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api", resendVerificationRoutes);
 
 // Debug routes (consider removing in production)
