@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useArticles } from '@/contexts/ArticlesContext'
+import { usePublication } from '@/contexts/PublicationContext'
 import { useToast } from '@/contexts/ToastContext'
 
 const BlogStatsComponent = () => {
   const { articles } = useArticles()
+  const { currentPublication } = usePublication()
   const { showToast } = useToast()
   const [selectedPeriod, setSelectedPeriod] = useState('Monthly')
   const [showPeriodMenu, setShowPeriodMenu] = useState(false)
@@ -22,12 +24,17 @@ const BlogStatsComponent = () => {
   const today = new Date()
   const periods = ['Today', 'Weekly', 'Monthly', 'Yearly', 'Custom Date']
   
+  // Filter articles by current publication first
+  const publicationArticles = currentPublication?.id 
+    ? articles.filter(article => article.publicationId === currentPublication.id)
+    : articles
+  
   // Filter articles based on selected period
   const getFilteredArticles = () => {
     const now = new Date()
     now.setHours(0, 0, 0, 0)
     
-    return articles.filter(article => {
+    return publicationArticles.filter(article => {
       // Parse article date - assuming articles have createdAt or publishedAt field
       const articleDate = new Date(article.createdAt || article.publishedAt || article.created_at)
       articleDate.setHours(0, 0, 0, 0)

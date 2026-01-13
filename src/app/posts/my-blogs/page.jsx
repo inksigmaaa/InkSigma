@@ -5,66 +5,41 @@ import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import MemberSidebar from "../../membersidebar/MemberSidebar"
 import Verify from "../../components/verify/Verify"
 import ArticleContainer from "../../components/articleContainer/ArticleContainer"
+import { useSession } from "@/lib/auth-client"
+import { usePublication } from "@/contexts/PublicationContext"
 
 export default function PostsMyBlogsPage() {
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
-  const [publicationId, setPublicationId] = useState(null)
-  const [userId, setUserId] = useState(null)
+  const { data: session } = useSession()
+  const { currentPublication } = usePublication()
 
   useEffect(() => {
-    loadMyBlogs()
-  }, [])
+    if (session?.user?.id && currentPublication?.id) {
+      loadMyBlogs()
+    }
+  }, [session?.user?.id, currentPublication?.id])
 
   const loadMyBlogs = async () => {
     try {
-      // Get current user session
-      const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
-        credentials: "include",
-      })
-
-      if (!sessionRes.ok) {
-        console.error("Failed to fetch session")
-        setLoading(false)
-        return
-      }
-
-      const sessionData = await sessionRes.json()
-      const currentUserId = sessionData.user.id
-      setUserId(currentUserId)
-
-      // Get user's joined publications
-      const membershipsRes = await fetch("http://localhost:5000/api/publication-members/my-publications", {
-        credentials: "include",
-      })
-
-      if (!membershipsRes.ok) {
-        console.error("Failed to fetch memberships")
-        setLoading(false)
-        return
-      }
-
-      const memberships = await membershipsRes.json()
+      setLoading(true)
       
-      // For now, use the first joined publication
-      // API returns flat array of publications, not nested structure
-      if (memberships.length > 0) {
-        const firstPub = memberships[0]
-        setPublicationId(firstPub.id)
+      // Fetch user's blogs for the current publication context
+      const articlesRes = await fetch(
+        `http://localhost:5000/api/blogs?publicationId=${currentPublication.id}&authorId=${session.user.id}`,
+        { credentials: "include" }
+      )
 
-        // Fetch user's blogs for this publication
-        const articlesRes = await fetch(
-          `http://localhost:5000/api/blogs?publicationId=${firstPub.id}&authorId=${currentUserId}`,
-          { credentials: "include" }
-        )
-
-        if (articlesRes.ok) {
-          const articlesData = await articlesRes.json()
-          setArticles(articlesData)
-        }
+      if (articlesRes.ok) {
+        const articlesData = await articlesRes.json()
+        setArticles(articlesData)
+      } else {
+        console.error("Failed to fetch articles")
+        setArticles([])
       }
     } catch (error) {
       console.error("Error loading my blogs:", error)
+      setArticles([])
     } finally {
       setLoading(false)
     }
@@ -176,7 +151,7 @@ export default function PostsMyBlogsPage() {
                   isSelected={false}
                   onSelect={() => {}}
                   onDelete={() => handleDeleteArticle(article.id)}
-                  publicationId={publicationId}
+                  publicationId={currentPublication?.id}
                   showActions={true}
                 />
               ))
