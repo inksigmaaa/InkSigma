@@ -9,6 +9,7 @@ import { eq, desc, and, or, ilike } from "drizzle-orm";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 import notificationService from "../services/notificationService.js";
+import schedulerService from "../services/schedulerService.js";
 
 const router = express.Router();
 
@@ -226,6 +227,8 @@ router.get("/", async (req, res) => {
             includeUnpublished // Only for authenticated requests
         } = req.query;
 
+        console.log('[GET /api/blogs] Query params:', { published, status, authorId, publicationId, includeUnpublished });
+
         // Check if user is authenticated (for viewing their own unpublished posts)
         let currentUserId = null;
         try {
@@ -233,8 +236,10 @@ router.get("/", async (req, res) => {
                 headers: fromNodeHeaders(req.headers),
             });
             currentUserId = session?.user?.id;
+            console.log('[GET /api/blogs] Current user ID:', currentUserId);
         } catch (e) {
             // Not authenticated, that's fine for public requests
+            console.log('[GET /api/blogs] Not authenticated');
         }
 
         let query = db
@@ -303,6 +308,8 @@ router.get("/", async (req, res) => {
 
         let blogs = await query.limit(parseInt(limit)).offset(parseInt(offset));
 
+        console.log('[GET /api/blogs] Raw blogs count:', blogs.length);
+
         // Filter by categories if provided (since categories is an array field)
         if (categories) {
             const categoryArray = Array.isArray(categories) ? categories : [categories];
@@ -315,14 +322,34 @@ router.get("/", async (req, res) => {
 
         // Security: If not authenticated or not the author, filter out non-published posts
         // This is a safety net in case someone bypasses the query filters
+        console.log('[GET /api/blogs] Security check - currentUserId:', currentUserId, 'authorId:', authorId, 'includeUnpublished:', includeUnpublished);
+        
         if (!currentUserId) {
+            console.log('[GET /api/blogs] No user - filtering to published only');
             blogs = blogs.filter(b => b.status === 'published');
-        } else if (!includeUnpublished || includeUnpublished !== 'true') {
+        } else if (includeUnpublished === 'true') {
+            // User is requesting with includeUnpublished
+            if (authorId && authorId === currentUserId) {
+                // User is requesting their own blogs - show all
+                console.log('[GET /api/blogs] User requesting own blogs with includeUnpublished - showing all');
+                // No filtering needed
+            } else {
+                // User is requesting all blogs with includeUnpublished - show published + own posts
+                console.log('[GET /api/blogs] includeUnpublished but not own blogs - showing published + own');
+                blogs = blogs.filter(b => 
+                    b.status === 'published' || b.authorId === currentUserId
+                );
+            }
+        } else {
             // Authenticated but not requesting unpublished - show published + own posts
+            console.log('[GET /api/blogs] Filtering to published + own posts');
             blogs = blogs.filter(b => 
                 b.status === 'published' || b.authorId === currentUserId
             );
         }
+
+        console.log('[GET /api/blogs] Final blogs count:', blogs.length);
+        console.log('[GET /api/blogs] Blog statuses:', blogs.map(b => ({ id: b.id, status: b.status, authorId: b.authorId })));
 
         res.json(blogs);
     } catch (error) {
@@ -549,42 +576,38 @@ router.post("/", getCurrentUser, async (req, res) => {
             });
         }
 
-        // publicationId is now required
-        if (!publicationId) {
-            return res.status(400).json({ 
-                error: "Publication ID is required" 
-            });
-        }
-
-        // Verify user has access to this publication
-        const [pub] = await db
-            .select()
-            .from(publication)
-            .where(eq(publication.id, parseInt(publicationId)));
-
-        if (!pub) {
-            return res.status(404).json({ error: "Publication not found" });
-        }
-
-        // Check if user is owner or member
-        const isOwner = pub.userId === req.user.id;
-        let isMember = false;
-        
-        if (!isOwner) {
-            const [member] = await db
+        // publicationId is optional - verify access only if provided
+        if (publicationId) {
+            // Verify user has access to this publication
+            const [pub] = await db
                 .select()
-                .from(publicationMember)
-                .where(
-                    and(
-                        eq(publicationMember.publicationId, parseInt(publicationId)),
-                        eq(publicationMember.userId, req.user.id)
-                    )
-                );
-            isMember = !!member;
-        }
+                .from(publication)
+                .where(eq(publication.id, parseInt(publicationId)));
 
-        if (!isOwner && !isMember) {
-            return res.status(403).json({ error: "You don't have access to this publication" });
+            if (!pub) {
+                return res.status(404).json({ error: "Publication not found" });
+            }
+
+            // Check if user is owner or member
+            const isOwner = pub.userId === req.user.id;
+            let isMember = false;
+            
+            if (!isOwner) {
+                const [member] = await db
+                    .select()
+                    .from(publicationMember)
+                    .where(
+                        and(
+                            eq(publicationMember.publicationId, parseInt(publicationId)),
+                            eq(publicationMember.userId, req.user.id)
+                        )
+                    );
+                isMember = !!member;
+            }
+
+            if (!isOwner && !isMember) {
+                return res.status(403).json({ error: "You don't have access to this publication" });
+            }
         }
 
         const slug = await ensureUniqueSlug(generateSlug(title));
@@ -609,10 +632,14 @@ router.post("/", getCurrentUser, async (req, res) => {
             categories: categories || [],
             ...syncedFields, // This ensures both status and published are always in sync
             authorId: req.user.id,
-            publicationId: parseInt(publicationId),
             createdAt: new Date(),
             updatedAt: new Date(),
         };
+
+        // Add publicationId only if provided
+        if (publicationId) {
+            blogData.publicationId = parseInt(publicationId);
+        }
 
         // Add scheduledAt if provided
         if (scheduledAt) {
