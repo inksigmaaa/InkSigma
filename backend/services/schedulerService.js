@@ -1,104 +1,120 @@
 // services/schedulerService.js
 import { db } from '../config/database.js';
 import { blog } from '../models/schema.js';
-import { eq, and, lte } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 class SchedulerService {
     constructor() {
-        this.intervalId = null;
-        this.isRunning = false;
+        this.scheduledTimers = new Map();
     }
 
-    // Start the scheduler
-    start() {
-        if (this.isRunning) return;
-
-        this.isRunning = true;
-
-        // Run immediately on start
-        this.checkAndPublishScheduledBlogs();
-
-        // Run every 30 seconds
-        this.intervalId = setInterval(() => {
-            this.checkAndPublishScheduledBlogs();
-        }, 30000);
+    async start() {
+        console.log('[SCHEDULER] Starting...');
+        await this.loadScheduledBlogs();
+        console.log('[SCHEDULER] Ready');
     }
 
-    // Stop the scheduler
     stop() {
-        if (this.intervalId) {
-            clearInterval(this.intervalId);
-            this.intervalId = null;
+        for (const [blogId, timerId] of this.scheduledTimers) {
+            clearTimeout(timerId);
         }
-        this.isRunning = false;
+        this.scheduledTimers.clear();
     }
 
-    // Check for scheduled blogs that should be published
-    async checkAndPublishScheduledBlogs() {
+    async loadScheduledBlogs() {
         try {
-            const nowUTC = new Date();
-
-            // Find all scheduled blogs where scheduledAt <= now
             const scheduledBlogs = await db
                 .select()
                 .from(blog)
-                .where(and(
-                    eq(blog.status, 'scheduled'),
-                    lte(blog.scheduledAt, nowUTC)
-                ));
+                .where(eq(blog.status, 'scheduled'));
 
-            if (scheduledBlogs.length > 0) {
-                console.log(` Found ${scheduledBlogs.length} blog(s) due for publishing.`);
-                
-                for (const blogPost of scheduledBlogs) {
-                    await this.publishScheduledBlog(blogPost);
-                }
+            console.log(`[SCHEDULER] Found ${scheduledBlogs.length} scheduled blog(s)`);
+            for (const blogPost of scheduledBlogs) {
+                this.schedulePublish(blogPost);
             }
         } catch (error) {
-            console.error(' Error checking scheduled blogs:', error);
+            console.error('[SCHEDULER] Error loading:', error);
         }
     }
 
-    // Publish a single scheduled blog
+    schedulePublish(blogPost) {
+        if (!blogPost.scheduledAt) return;
+
+        const now = new Date();
+        const scheduledTime = new Date(blogPost.scheduledAt);
+        const delay = scheduledTime.getTime() - now.getTime();
+
+        this.cancelSchedule(blogPost.id);
+
+        console.log(`[SCHEDULER] Blog "${blogPost.title}":`);
+        console.log(`[SCHEDULER]   - Scheduled for: ${scheduledTime.toISOString()} (UTC)`);
+        console.log(`[SCHEDULER]   - Current time:  ${now.toISOString()} (UTC)`);
+        console.log(`[SCHEDULER]   - Delay: ${Math.round(delay / 1000)} seconds`);
+
+        if (delay <= 0) {
+            console.log(`[SCHEDULER]   - Status: OVERDUE, publishing now`);
+            this.publishScheduledBlog(blogPost);
+        } else {
+            console.log(`[SCHEDULER]   - Status: WAITING`);
+            const timerId = setTimeout(() => {
+                this.publishScheduledBlog(blogPost);
+            }, delay);
+            this.scheduledTimers.set(blogPost.id, timerId);
+        }
+    }
+
+    cancelSchedule(blogId) {
+        const timerId = this.scheduledTimers.get(blogId);
+        if (timerId) {
+            clearTimeout(timerId);
+            this.scheduledTimers.delete(blogId);
+        }
+    }
+
     async publishScheduledBlog(blogPost) {
         try {
-            const nowUTC = new Date();
+            this.scheduledTimers.delete(blogPost.id);
+            const now = new Date();
 
-            // Update the blog to published status
             const [updatedBlog] = await db
                 .update(blog)
                 .set({
                     status: 'published',
                     published: true,
-                    publishedAt: nowUTC,
-                    updatedAt: nowUTC,
-                    scheduledAt: null // Clear the scheduled time
+                    publishedAt: now,
+                    updatedAt: now,
+                    scheduledAt: null
                 })
-                .where(eq(blog.id, blogPost.id))
+                .where(and(eq(blog.id, blogPost.id), eq(blog.status, 'scheduled')))
                 .returning();
 
-            console.log(`✅ Successfully published blog: "${blogPost.title}"`);
+            if (updatedBlog) {
+                console.log(`✅ [SCHEDULER] Published: "${blogPost.title}"`);
+            }
             return updatedBlog;
         } catch (error) {
-            console.error(`❌ Error publishing blog "${blogPost.title}":`, error);
-
-            // Mark as failed (revert to draft) for manual review
+            console.error(`❌ [SCHEDULER] Error publishing "${blogPost.title}":`, error);
             try {
-                await db
-                    .update(blog)
-                    .set({
-                        status: 'draft',
-                        updatedAt: new Date()
-                    })
-                    .where(eq(blog.id, blogPost.id));
-            } catch (revertError) {
-                console.error(`❌ Failed to revert blog status:`, revertError);
-            }
+                await db.update(blog).set({ status: 'draft', updatedAt: new Date() }).where(eq(blog.id, blogPost.id));
+            } catch (e) {}
         }
+    }
+
+    async onBlogScheduled(blogId) {
+        try {
+            const [blogPost] = await db.select().from(blog).where(eq(blog.id, blogId));
+            if (blogPost?.status === 'scheduled') {
+                this.schedulePublish(blogPost);
+            }
+        } catch (error) {
+            console.error('[SCHEDULER] Error:', error);
+        }
+    }
+
+    onBlogUnscheduled(blogId) {
+        this.cancelSchedule(blogId);
     }
 }
 
-// Create a singleton instance
 const schedulerService = new SchedulerService();
-
 export default schedulerService;

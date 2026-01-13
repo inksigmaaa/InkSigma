@@ -121,7 +121,6 @@ export default function ProfileSettingsPage() {
       console.error("Error uploading image:", error)
       setError("Failed to upload image")
       setImagePreview(image) // Revert preview
-    } finally {
       setIsUploadingImage(false)
     }
   }
@@ -152,7 +151,6 @@ export default function ProfileSettingsPage() {
     } catch (error) {
       console.error("Error removing image:", error)
       setError("Failed to remove image")
-    } finally {
       setIsUploadingImage(false)
     }
   }

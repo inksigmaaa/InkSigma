@@ -62,9 +62,9 @@ export const blogService = {
     return response.json();
   },
 
-  // Get user's blogs
+  // Get user's blogs (includes all statuses for the author)
   async getUserBlogs(authorId, filters = {}) {
-    return this.getBlogs({ ...filters, authorId });
+    return this.getBlogs({ ...filters, authorId, includeUnpublished: 'true' });
   },
 
   // Get publication's blogs
