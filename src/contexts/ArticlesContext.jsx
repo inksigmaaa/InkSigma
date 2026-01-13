@@ -92,27 +92,34 @@ export function ArticlesProvider({ children }) {
     // Prevent concurrent loads
     if (isLoadingRef.current) return
     
-    const currentSession = sessionRef.current
-    const currentPub = currentPublicationRef.current
+    // Use current session from ref, but also check the actual session state
+    const currentSession = sessionRef.current || session
+    
+    console.log('[ArticlesContext] loadUserArticles called')
+    console.log('[ArticlesContext] currentSession:', currentSession?.user?.id)
+    
+    // If no session yet, wait a bit and retry (session might still be loading)
+    if (!currentSession?.user?.id) {
+      console.log('[ArticlesContext] No session yet, will retry when session loads')
+      return
+    }
     
     try {
       isLoadingRef.current = true
       setLoading(true)
       setError(null)
       
-      let blogs;
-      if (currentSession?.user?.id) {
-        // If we have a current publication, load articles for that publication
-        if (currentPub?.id) {
-          blogs = await blogService.getPublicationBlogs(currentPub.id)
-        } else {
-          blogs = await blogService.getUserBlogs(currentSession.user.id)
-        }
-      } else {
-        blogs = await blogService.getAllBlogs()
-      }
+      // Always load user blogs (not publication blogs) for personal article pages
+      // This ensures all user's blogs are shown regardless of publication
+      console.log('[ArticlesContext] Loading user blogs for:', currentSession.user.id)
+      const blogs = await blogService.getUserBlogs(currentSession.user.id)
+      
+      console.log('[ArticlesContext] Blogs received:', blogs?.length, blogs)
       
       const convertedArticles = blogs.map(convertBlogToArticle)
+      console.log('[ArticlesContext] Converted articles:', convertedArticles?.length)
+      console.log('[ArticlesContext] Published articles:', convertedArticles?.filter(a => a.status === 'published'))
+      
       setArticles(convertedArticles)
     } catch (err) {
       console.error('Error loading articles:', err)
@@ -125,14 +132,14 @@ export function ArticlesProvider({ children }) {
       setLoading(false)
       isLoadingRef.current = false
     }
-  }, []) // Empty deps - uses refs internally
+  }, [session]) // Only depend on session
 
-  // Load articles when session or publication changes
+  // Load articles when session changes
   useEffect(() => {
     if (session?.user?.id) {
       loadUserArticles()
     }
-  }, [session?.user?.id, currentPublication?.id, loadUserArticles])
+  }, [session?.user?.id, loadUserArticles])
 
   // Memoize all functions to prevent unnecessary re-renders
   const getArticleById = useCallback(async (id) => {

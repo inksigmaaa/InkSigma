@@ -14,14 +14,18 @@ export default function DraftPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
-  // Refresh articles when coming from editor with refresh param
+  // Always load articles on mount
+  useEffect(() => {
+    console.log('[DraftPage] Loading articles on mount...');
+    loadUserArticles();
+  }, [loadUserArticles]);
+
+  // Clean up refresh param from URL if present
   useEffect(() => {
     if (searchParams.get('refresh') === 'true') {
-      loadUserArticles()
-      // Clean up the URL
-      router.replace('/draft', { scroll: false })
+      router.replace('/draft', { scroll: false });
     }
-  }, [searchParams, loadUserArticles, router])
+  }, [searchParams, router]);
   const [selectedArticles, setSelectedArticles] = useState([])
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPublishModal, setShowPublishModal] = useState(false)

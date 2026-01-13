@@ -39,6 +39,15 @@ export default function SchedulePage() {
     }
   }, [searchParams, router]);
 
+  // Refresh articles only once when component mounts
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      console.log('[SchedulePage] Loading articles on mount...');
+      loadUserArticlesRef.current();
+    }
+  }, []);
+
   // Filter scheduled articles - separate from action handlers to prevent re-renders
   const scheduledArticleIds = useMemo(() => {
     return articles
@@ -69,14 +78,6 @@ export default function SchedulePage() {
         onDraft: () => handleDraftAction(article.id)
       }));
   }, [articles, handleDeleteAction, handleDraftAction]);
-
-  // Refresh articles only once when component mounts
-  useEffect(() => {
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
-      loadUserArticlesRef.current();
-    }
-  }, []);
 
   // Smart refresh: set a single timer for the next scheduled article to publish
   useEffect(() => {

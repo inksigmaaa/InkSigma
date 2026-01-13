@@ -39,6 +39,8 @@ export default function EditorPageClient() {
   const [blogTitle, setBlogTitle] = useState('')
   const [blogDescription, setBlogDescription] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [showPublishSuccess, setShowPublishSuccess] = useState(false)
+  const [publishedBlogSlug, setPublishedBlogSlug] = useState('')
   const calendarRef = useRef(null)
 
   // Save blog to database
@@ -72,6 +74,8 @@ export default function EditorPageClient() {
         blogData.scheduledAt = scheduledAt.toISOString()
       }
 
+      console.log('Saving blog with data:', blogData)
+
       const response = await fetch(`${API_URL}/api/blogs`, {
         method: 'POST',
         headers: {
@@ -81,12 +85,16 @@ export default function EditorPageClient() {
         body: JSON.stringify(blogData)
       })
 
+      console.log('Response status:', response.status)
+      
+      const responseData = await response.json()
+      console.log('Response data:', responseData)
+
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to save blog')
+        throw new Error(responseData.error || 'Failed to save blog')
       }
 
-      return true
+      return responseData
     } catch (error) {
       console.error('Error saving blog:', error)
       alert(error.message || 'Failed to save blog')
@@ -98,17 +106,18 @@ export default function EditorPageClient() {
 
   // Handle Save to Draft
   const handleSaveDraft = async () => {
-    const success = await saveBlog('draft')
-    if (success) {
-      router.push('/draft?refresh=true')
+    const result = await saveBlog('draft')
+    if (result) {
+      window.location.href = '/draft?refresh=true'
     }
   }
 
   // Handle Publish
   const handlePublish = async () => {
-    const success = await saveBlog('published')
-    if (success) {
-      router.push('/published?refresh=true')
+    const result = await saveBlog('published')
+    if (result) {
+      setPublishedBlogSlug(result.slug || '')
+      setShowPublishSuccess(true)
     }
   }
 
@@ -129,10 +138,10 @@ export default function EditorPageClient() {
       return
     }
 
-    const success = await saveBlog('scheduled', scheduledDateTime)
-    if (success) {
+    const result = await saveBlog('scheduled', scheduledDateTime)
+    if (result) {
       setShowCalendar(false)
-      router.push('/schedule?refresh=true')
+      window.location.href = '/schedule?refresh=true'
     }
   }
 
@@ -737,6 +746,79 @@ export default function EditorPageClient() {
         onClose={() => setShowThumbnailModal(false)}
         onImageAdd={handleThumbnailAdd}
       />
+
+      {/* Publish Success Modal */}
+      {showPublishSuccess && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000]">
+          <div 
+            className="bg-white flex flex-col items-center justify-center"
+            style={{
+              width: '489px',
+              height: '323.63px',
+              borderRadius: '4px',
+              padding: '56px 40px',
+              gap: '32px'
+            }}
+          >
+            {/* Success Icon */}
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+              <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            {/* Success Message */}
+            <div className="text-center">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Published Successfully!</h2>
+              <p className="text-gray-500 text-sm">Your blog has been published and is now live.</p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => {
+                  setShowPublishSuccess(false)
+                  window.location.href = '/published?refresh=true'
+                }}
+                style={{
+                  width: '111px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  padding: '8px 24px',
+                  background: '#F4F4F4',
+                  border: '1px solid #ECECEC',
+                  gap: '4px'
+                }}
+                className="text-sm text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                See Later
+              </button>
+              <button
+                onClick={() => {
+                  setShowPublishSuccess(false)
+                  if (publishedBlogSlug) {
+                    window.location.href = `/blog/${publishedBlogSlug}`
+                  } else {
+                    window.location.href = '/published?refresh=true'
+                  }
+                }}
+                style={{
+                  width: '110px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
+                  boxShadow: '0px 4px 8px 0px #EADBF9',
+                  gap: '10px'
+                }}
+                className="text-sm text-white hover:opacity-90 transition-opacity"
+              >
+                View in Site
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

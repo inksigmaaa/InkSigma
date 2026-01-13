@@ -14,14 +14,18 @@ export default function Published() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
-    // Refresh articles when coming from editor with refresh param
+    // Always load articles on mount
+    useEffect(() => {
+        console.log('[PublishedPage] Loading articles on mount...');
+        loadUserArticles();
+    }, [loadUserArticles]);
+
+    // Clean up refresh param from URL if present
     useEffect(() => {
         if (searchParams.get('refresh') === 'true') {
-            loadUserArticles();
-            // Clean up the URL
             router.replace('/published', { scroll: false });
         }
-    }, [searchParams, loadUserArticles, router]);
+    }, [searchParams, router]);
     const [selectedArticles, setSelectedArticles] = useState([]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showDraftModal, setShowDraftModal] = useState(false);
@@ -29,8 +33,17 @@ export default function Published() {
     const [actionArticleId, setActionArticleId] = useState(null);
     const [isBulkAction, setIsBulkAction] = useState(false);
 
+    // Debug logging
+    console.log('[PublishedPage] All articles:', articles);
+    console.log('[PublishedPage] Articles count:', articles?.length);
+    console.log('[PublishedPage] Loading state:', loading);
+
     const publishedArticles = articles
-        .filter(article => article.status === 'published')
+        .filter(article => {
+            const isPublished = article.status === 'published';
+            console.log('[PublishedPage] Article:', article.id, 'title:', article.title, 'status:', article.status, 'isPublished:', isPublished);
+            return isPublished;
+        })
         .map(article => ({
             ...article,
             onDelete: () => {
@@ -49,6 +62,8 @@ export default function Published() {
                 setShowUnpublishModal(true);
             }
         }));
+
+    console.log('[PublishedPage] Filtered published articles count:', publishedArticles.length);
 
     const handleArticleSelect = (id, isSelected) => {
         setSelectedArticles(prev => 
