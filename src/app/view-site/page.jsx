@@ -3,27 +3,65 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { usePublicationMeta } from '@/hooks/usePublicationMeta';
+import { usePublication } from '@/contexts/PublicationContext';
 import HomeHeader from './components/Header/HomeHeader';
 import LatestBlog from './components/LatestBlog/LatestBlog';
 import AllArticles from './components/AllArticles/AllArticles';
 import Footer from './components/Footer/Footer';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
-import mockData from './mockData.json';
 
 function ViewSiteContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { currentPublication } = usePublication();
   
   // Get subdomain from URL params (set by middleware)
   const subdomain = searchParams.get('subdomain');
   
   // Fetch publication data and update meta tags
-  const { publication, loading } = usePublicationMeta(subdomain);
+  const { publication } = usePublicationMeta(subdomain);
+
+  // Fetch published blogs
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        setLoading(true);
+        const publicationId = currentPublication?.id;
+        
+        if (!publicationId) {
+          setBlogs([]);
+          return;
+        }
+
+        const response = await fetch(
+          `http://localhost:5000/api/blogs?publicationId=${publicationId}&status=published`,
+          { credentials: 'include' }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setBlogs(data);
+        } else {
+          console.error('Failed to fetch blogs:', response.status);
+          setBlogs([]);
+        }
+      } catch (error) {
+        console.error('Error fetching blogs:', error);
+        setBlogs([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlogs();
+  }, [currentPublication?.id]);
 
   // Get unique categories from blogs, limit to 3
-  const categories = [...new Set(mockData.blogs.map(blog => blog.category))].slice(0, 3);
+  const categories = [...new Set(blogs.map(blog => blog.categories?.[0]).filter(Boolean))].slice(0, 3);
 
   // Restore scroll position when returning from blog
   useEffect(() => {
@@ -47,19 +85,30 @@ function ViewSiteContent() {
     };
   }, []);
 
+  const publicationLogoUrl = publication?.logoUrl || currentPublication?.logoUrl;
+  const avatarUrl = publicationLogoUrl ? `http://localhost:5000${publicationLogoUrl}` : null;
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <HomeHeader 
-        userName={publication?.name || "Your Publication Name"} 
-        userAvatar={publication?.logoUrl || null}
+        userName={publication?.name || currentPublication?.name || "Your Publication Name"} 
+        userAvatar={avatarUrl}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
       <div className="flex-grow pt-20 md:pt-24">
-        <LatestBlog searchQuery={searchQuery} />
-        <AllArticles searchQuery={searchQuery} selectedCategory={selectedCategory} />
+        {loading ? (
+          <div className="flex justify-center items-center min-h-[400px]">
+            <p className="text-gray-500">Loading blogs...</p>
+          </div>
+        ) : (
+          <>
+            <LatestBlog searchQuery={searchQuery} blogs={blogs} />
+            <AllArticles searchQuery={searchQuery} selectedCategory={selectedCategory} blogs={blogs} />
+          </>
+        )}
       </div>
-      <Footer />
+      <Footer publicationName={publication?.name || currentPublication?.name} />
       <ScrollToTop />
     </div>
   );

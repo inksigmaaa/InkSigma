@@ -13,6 +13,7 @@ export const invitationStatusEnum = pgEnum("invitation_status", ["pending", "acc
 // Define notification type enum
 export const notificationTypeEnum = pgEnum("notification_type", [
     "invitation",
+    "invitation_declined",
     "blog_accepted",
     "blog_rejected",
     "blog_review",

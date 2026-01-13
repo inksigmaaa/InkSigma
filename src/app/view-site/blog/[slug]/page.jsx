@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { use, useEffect } from 'react';
+import { use, useEffect, useState } from 'react';
 import ViewSiteHeader from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import TableOfContents from '../../components/TableOfContents/TableOfContents';
@@ -10,12 +10,53 @@ import BackToHomeButton from '../../components/BackToHomeButton/BackToHomeButton
 import ScrollToTop from '../../components/ScrollToTop/ScrollToTop';
 import MobileBottomNav from '../../components/MobileBottomNav/MobileBottomNav';
 import ClockIcon from '../../components/icons/ClockIcon';
-import mockData from '../../mockData.json';
 
 export default function BlogDetailPage({ params }) {
   const { slug } = use(params);
+  const [blog, setBlog] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const blog = mockData.blogs.find(b => b.slug === slug) || null;
+  useEffect(() => {
+    const fetchBlog = async () => {
+      try {
+        setLoading(true);
+        // Fetch all published blogs and find by slug
+        const response = await fetch('http://localhost:5000/api/blogs?status=published');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch blog');
+        }
+        
+        const blogs = await response.json();
+        const foundBlog = blogs.find(b => b.slug === slug);
+        
+        if (!foundBlog) {
+          setError('Blog not found');
+        } else {
+          // Fetch publication details if publicationId exists
+          if (foundBlog.publicationId) {
+            const pubResponse = await fetch(`http://localhost:5000/api/publications/${foundBlog.publicationId}`, {
+              credentials: 'include'
+            });
+            
+            if (pubResponse.ok) {
+              const pubData = await pubResponse.json();
+              foundBlog.publication = pubData;
+            }
+          }
+          setBlog(foundBlog);
+        }
+      } catch (err) {
+        console.error('Error fetching blog:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlog();
+  }, [slug]);
 
   // Scroll to top when blog page loads
   useEffect(() => {
@@ -25,7 +66,6 @@ export default function BlogDetailPage({ params }) {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const day = String(date.getDate()).padStart(2, '0');
     const month = months[date.getMonth()];
@@ -39,7 +79,6 @@ export default function BlogDetailPage({ params }) {
     };
     
     return {
-      day: days[date.getDay()],
       date: `${day} ${month}, ${year}`,
       fullDate: `${getOrdinal(parseInt(day))} ${month}`,
     };
@@ -50,10 +89,22 @@ export default function BlogDetailPage({ params }) {
       ? window.location.href
       : `http://localhost:3000/view-site/blog/${slug}`;
 
-  if (!blog) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-white flex flex-col">
-        <ViewSiteHeader userName="Guest" userAvatar={null} />
+        <ViewSiteHeader userName="Loading..." userAvatar={null} />
+        <div className="flex-grow max-w-[800px] mx-auto px-6 py-12 flex items-center justify-center">
+          <p className="text-gray-500">Loading blog...</p>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !blog) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col">
+        <ViewSiteHeader userName="Publication" userAvatar={null} />
         <div className="flex-grow max-w-[800px] mx-auto px-6 py-12">
           <h1 className="text-4xl font-bold text-black mb-4">Blog not found</h1>
           <Link href="/view-site" className="text-purple-600 hover:text-purple-700">
@@ -66,15 +117,21 @@ export default function BlogDetailPage({ params }) {
   }
 
   const dateFormatted = formatDate(blog.createdAt);
+  const thumbnailUrl = (blog.image && blog.image.trim() !== '') 
+    ? blog.image 
+    : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <ViewSiteHeader userName="Your Publication Name" userAvatar={null} />
+      <ViewSiteHeader 
+        userName={blog.publication?.name || "Your Publication"} 
+        userAvatar={blog.publication?.logoUrl ? `http://localhost:5000${blog.publication.logoUrl}` : null} 
+      />
 
-      <section className="flex-grow flex justify-center w-full px-4 md:px-6 pt-20 md:pt-24">
+      <section className="flex-grow flex justify-center w-full px-4 md:px-6">
         <div className="flex max-w-[1400px] w-full ml-12 gap-8">
           {/* Left Sidebar - Back Button and Table of Contents */}
-          <aside className="hidden lg:block flex-shrink-0 pt-20 w-[300px]">
+          <aside className="hidden lg:block flex-shrink-0 w-[300px]">
             <div className="sticky flex item-start top-28">
               <BackToHomeButton />
               <TableOfContents />
@@ -82,7 +139,7 @@ export default function BlogDetailPage({ params }) {
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1 max-w-[800px] pb-40 max-md:pb-12 pt-6 md:pt-20 lg:pl-12 lg:border-l-2 min-w-0">
+          <div className="flex-1 max-w-[800px] pb-40 max-md:pb-12 lg:pl-12 lg:border-l-2 min-w-0">
           {/* Blog Title */}
           <h1 className="text-2xl leading-tight md:text-3xl font-bold text-black mb-4 md:mb-4 break-words">{blog.title}</h1>
 
@@ -97,17 +154,34 @@ export default function BlogDetailPage({ params }) {
           </div>
 
           {/* Author and Date */}
-          <div className="flex flex-wrap items-center gap-3 mb-6 md:mb-8 py-3 md:py-4 md:px-2 md:border-y md:border-gray-200">
+          <div className="flex items-center justify-between gap-3 mb-6 md:mb-8 py-3 md:py-4 md:px-2 md:border-y md:border-gray-200">
+            {/* Left side - Author */}
             <div className="flex items-center gap-2 md:gap-3 min-w-0">
               <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
-                {blog.author?.avatar && (
-                  <Image src={blog.author.avatar} alt={blog.author.name} width={40} height={40} unoptimized />
+                {blog.author?.image ? (
+                  <img
+                    src={blog.author.image.startsWith('http') ? blog.author.image : `http://localhost:5000${blog.author.image}`} 
+                    alt={blog.author.name} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${blog.author?.name?.charAt(0).toUpperCase() || 'A'}</span></div>`;
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-purple-100 flex items-center justify-center">
+                    <span className="text-purple-600 font-semibold text-sm">
+                      {blog.author?.name?.charAt(0).toUpperCase() || 'A'}
+                    </span>
+                  </div>
                 )}
               </div>
               <span className="text-gray-800 font-medium text-sm md:text-base truncate">
                 {blog.author?.name || 'Anonymous'}
               </span>
             </div>
+            
+            {/* Right side - Date */}
             <div className="flex items-center gap-1.5 text-gray-400 flex-shrink-0">
               <ClockIcon className="md:w-4 md:h-4 flex-shrink-0" />
               <span className="text-xs md:text-sm whitespace-nowrap">
@@ -119,7 +193,7 @@ export default function BlogDetailPage({ params }) {
           {/* Blog Image */}
           <div className="relative w-full h-[220px] md:h-[400px] rounded-lg md:rounded-2xl mb-6 md:mb-12 overflow-hidden">
             <Image
-              src={blog.thumbnail}
+              src={thumbnailUrl}
               alt={blog.title}
               fill
               className="object-cover"
@@ -136,7 +210,7 @@ export default function BlogDetailPage({ params }) {
         </div>
       </section>
 
-      <Footer />
+      <Footer publicationName={blog.publication?.name} />
       <ScrollToTop />
       
       {/* Mobile Bottom Navigation */}

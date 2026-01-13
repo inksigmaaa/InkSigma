@@ -2,51 +2,76 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { ChevronLeft, Info, Bell } from 'lucide-react';
+import { formatTimeAgo } from '@/utils/timeFormatter';
 
 export default function PreviewPage({ params }) {
   const { id } = use(params);
   const router = useRouter();
   const [article, setArticle] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Mock article data - replace with actual API call
-    const mockArticle = {
-      id: id,
-      title: 'Title of the blog will ( Heading 1)',
-      author: {
-        name: 'Author Name',
-        avatar: '/icons/nib.svg',
-      },
-      categories: ['Category'],
-      createdAt: '24th January',
-      content: `
-        <h2>Title of the blog will added in this area ( Heading 2)</h2>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+    const fetchArticle = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`http://localhost:5000/api/blogs/${id}`);
         
-        <h2>Title of the blog will added in this area ( Heading 2)</h2>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        if (!response.ok) {
+          throw new Error('Failed to fetch article');
+        }
         
-        <img src="https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop" alt="Article image" style="width: 100%; border-radius: 8px; margin: 24px 0;" />
+        const data = await response.json();
         
-        <blockquote style="border-left: 4px solid #e5e7eb; padding-left: 16px; margin: 24px 0; color: #6b7280; font-style: italic;">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-        </blockquote>
-      `,
+        // Fetch publication details if publicationId exists
+        if (data.publicationId) {
+          const pubResponse = await fetch(`http://localhost:5000/api/publications/${data.publicationId}`, {
+            credentials: 'include'
+          });
+          
+          if (pubResponse.ok) {
+            const pubData = await pubResponse.json();
+            data.publication = pubData;
+          }
+        }
+        
+        setArticle(data);
+      } catch (err) {
+        console.error('Error fetching article:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setArticle(mockArticle);
+    fetchArticle();
   }, [id]);
 
   const handleClose = () => {
     router.back();
   };
 
-  if (!article) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-500">Loading preview...</p>
+      </div>
+    );
+  }
+
+  if (error || !article) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error || 'Article not found'}</p>
+          <button 
+            onClick={handleClose}
+            className="text-purple-600 hover:text-purple-700 underline"
+          >
+            Go back
+          </button>
+        </div>
       </div>
     );
   }
@@ -56,12 +81,29 @@ export default function PreviewPage({ params }) {
       {/* Header */}
       <div className="h-[80px] max-md:h-[50px] bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="h-full px-4 md:px-6 flex items-center justify-between">
-          {/* Logo - Mobile only */}
+          {/* Logo/Publication Name - Mobile only */}
           <div className="flex items-center gap-2 md:hidden">
-            <span className="text-xl font-bold">
-              <span className="text-purple-600 italic">ink</span>
-              <span className="text-black">SIGMA</span>
-            </span>
+            {article.publication?.logoUrl ? (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200">
+                  <img
+                    src={`http://localhost:5000${article.publication.logoUrl}`}
+                    alt={article.publication.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-xs">${article.publication?.name?.charAt(0).toUpperCase() || 'P'}</span></div>`;
+                    }}
+                  />
+                </div>
+                <span className="text-lg font-bold text-black">{article.publication.name}</span>
+              </div>
+            ) : (
+              <span className="text-xl font-bold">
+                <span className="text-purple-600 italic">ink</span>
+                <span className="text-black">SIGMA</span>
+              </span>
+            )}
           </div>
 
           {/* Right side icons - Mobile only */}
@@ -73,7 +115,23 @@ export default function PreviewPage({ params }) {
 
             {/* User Avatar */}
             <div className="w-9 h-9 rounded-full bg-gray-300 overflow-hidden">
-              <Image src={article.author.avatar} alt="User" width={36} height={36} className="object-cover" />
+              {article.author?.image ? (
+                <img
+                  src={article.author.image.startsWith('http') ? article.author.image : `http://localhost:5000${article.author.image}`} 
+                  alt={article.author.name || 'User'} 
+                  className="w-full h-full object-cover" 
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${article.author?.name?.charAt(0).toUpperCase() || 'U'}</span></div>`;
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full bg-purple-100 flex items-center justify-center">
+                  <span className="text-purple-600 font-semibold text-sm">
+                    {article.author?.name?.charAt(0).toUpperCase() || 'U'}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -111,44 +169,18 @@ export default function PreviewPage({ params }) {
               {article.title}
             </h1>
 
-            {/* Categories - Mobile */}
-            <div className="flex items-center gap-2 mb-4 md:hidden">
-              {article.categories.map((category, index) => (
-                <span key={index} className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded">
-                  {category}
-                </span>
-              ))}
-            </div>
-
-            {/* Created Date - Mobile */}
-            <div className="flex items-center gap-1.5 text-gray-400 text-sm mb-6 md:hidden">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span>Created on {article.createdAt}</span>
-            </div>
-
-            {/* Categories, Author Avatar, and Date - Desktop */}
-            <div className="hidden md:flex items-center justify-between mb-10 pb-6 border-b border-gray-200">
-              {/* Left side - Categories and Author */}
-              <div className="flex items-center gap-4">
-                {/* Categories */}
-                <div className="flex items-center gap-2">
+            {/* Categories and Date - Mobile */}
+            <div className="md:hidden mb-6">
+              {article.categories && article.categories.length > 0 && (
+                <div className="flex items-center gap-2 mb-3">
                   {article.categories.map((category, index) => (
                     <span key={index} className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded">
                       {category}
                     </span>
                   ))}
                 </div>
-              </div>
-
-              {/* Right side - Created Date */}
-              <div className="flex items-center gap-1.5 text-gray-500 text-sm">
+              )}
+              <div className="flex items-center gap-1.5 text-gray-400 text-sm">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
@@ -157,7 +189,36 @@ export default function PreviewPage({ params }) {
                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <span>Created on {article.createdAt}</span>
+                <span>Created {formatTimeAgo(article.createdAt)}</span>
+              </div>
+            </div>
+
+            {/* Categories and Date - Desktop */}
+            <div className="hidden md:flex items-center justify-between mb-10 pb-6 border-b border-gray-200">
+              {/* Left side - Categories */}
+              <div className="flex items-center gap-4">
+                {article.categories && article.categories.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    {article.categories.map((category, index) => (
+                      <span key={index} className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded">
+                        {category}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Right side - Created Date */}
+              <div className="flex items-center gap-1.5 text-gray-500 text-sm flex-shrink-0">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span className="whitespace-nowrap">Created {formatTimeAgo(article.createdAt)}</span>
               </div>
             </div>
 

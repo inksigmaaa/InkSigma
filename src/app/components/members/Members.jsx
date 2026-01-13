@@ -467,15 +467,21 @@ export default function Members() {
                                         </div>
 
                                         <div className="w-1/3 flex justify-center max-[639px]:hidden">
-                                            <span className={`px-2 py-0 text-sm font-medium border-2 rounded-full ${invitation.status === "pending" ? "text-[#72D770] border-[#D5F2D4]" : "text-gray-400 border-gray-400"}`}>
-                                                {invitation.status === "pending" ? "Pending" : "Expired"}
+                                            <span className={`px-2 py-0 text-sm font-medium border-2 rounded-full ${
+                                                invitation.status === "pending" ? "text-[#72D770] border-[#D5F2D4]" : 
+                                                invitation.status === "declined" ? "text-red-500 border-red-200" : 
+                                                "text-gray-400 border-gray-400"
+                                            }`}>
+                                                {invitation.status === "pending" ? "Pending" : invitation.status === "declined" ? "Declined" : "Expired"}
                                             </span>
                                         </div>
 
                                         <div className="w-1/3 flex items-center justify-end gap-3 max-[639px]:w-auto">
-                                            <button onClick={() => handleResendInvite(invitation.id)} className="px-6 py-1.5 text-sm font-medium text-[#06AD2B] border-2 border-[#D5F2D4] rounded-md hover:bg-green-50">
-                                                {invitation.status === "pending" ? "Resend" : "Re-invite"}
-                                            </button>
+                                            {invitation.status !== "declined" && (
+                                                <button onClick={() => handleResendInvite(invitation.id)} className="px-6 py-1.5 text-sm font-medium text-[#06AD2B] border-2 border-[#D5F2D4] rounded-md hover:bg-green-50">
+                                                    {invitation.status === "pending" ? "Resend" : "Re-invite"}
+                                                </button>
+                                            )}
                                             <button onClick={() => handleCancelInvitation(invitation.id)} className="px-6 py-2 text-sm font-medium text-red-500 bg-red-50 rounded-md hover:bg-red-100">
                                                 Cancel
                                             </button>

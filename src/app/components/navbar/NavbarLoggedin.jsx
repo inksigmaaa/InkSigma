@@ -13,17 +13,17 @@ function formatTimeAgo(date) {
     const diffInHours = Math.floor(diffInMinutes / 60);
     const diffInDays = Math.floor(diffInHours / 24);
 
-    // Less than 1 minute
+    // Just now (< 1 minute)
     if (diffInSeconds < 60) return "Just now";
     
-    // 1-59 minutes
+    // 1 min ago - 59 mins ago
     if (diffInMinutes < 60) {
-        return `${diffInMinutes} ${diffInMinutes === 1 ? 'min' : 'mins'} ago`;
+        return `${diffInMinutes} min${diffInMinutes === 1 ? '' : 's'} ago`;
     }
     
-    // 1-23 hours
+    // 1 hour ago - 24 hours ago
     if (diffInHours < 24) {
-        return `${diffInHours} ${diffInHours === 1 ? 'hr' : 'hrs'} ago`;
+        return `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`;
     }
     
     // Yesterday
@@ -31,24 +31,18 @@ function formatTimeAgo(date) {
         return "Yesterday";
     }
     
-    // 2-6 days ago
+    // 2 days ago - 6 days ago
     if (diffInDays < 7) {
         return `${diffInDays} days ago`;
     }
     
-    // 1-4 weeks ago
+    // Last week (7-29 days)
     if (diffInDays < 30) {
-        const weeks = Math.floor(diffInDays / 7);
-        return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`;
+        return "Last week";
     }
     
-    // Format as date for older notifications
-    const options = { month: 'short', day: 'numeric' };
-    // Add year if it's not current year
-    if (notificationDate.getFullYear() !== now.getFullYear()) {
-        options.year = 'numeric';
-    }
-    return notificationDate.toLocaleDateString('en-US', options);
+    // Last month (30+ days)
+    return "Last month";
 }
 
 export default function NavbarLoggedin() {
@@ -57,8 +51,10 @@ export default function NavbarLoggedin() {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [hasNewNotification, setHasNewNotification] = useState(false);
     const wrapperRef = useRef(null);
     const notificationRef = useRef(null);
+    const previousNotificationCount = useRef(0);
     const router = useRouter();
     
     // Get current user session
@@ -72,22 +68,22 @@ export default function NavbarLoggedin() {
         }
     }, [user?.id]);
 
-    // Auto-refresh notifications every 30 seconds
+    // Auto-refresh notifications every 5 seconds for real-time updates
     useEffect(() => {
         if (!user?.id) return;
 
         const interval = setInterval(() => {
             fetchNotifications();
-        }, 30000); // 30 seconds
+        }, 5000); // 5 seconds for real-time feel
 
         return () => clearInterval(interval);
     }, [user?.id]);
 
-    // Update current time every minute to refresh "time ago" displays
+    // Update current time every 10 seconds to refresh "time ago" displays
     useEffect(() => {
         const interval = setInterval(() => {
             setCurrentTime(new Date());
-        }, 60000); // Update every minute
+        }, 10000); // Update every 10 seconds
 
         return () => clearInterval(interval);
     }, []);
@@ -110,15 +106,32 @@ export default function NavbarLoggedin() {
     const fetchNotifications = async () => {
         if (!user?.id) return;
         
-        setLoading(true);
+        // Don't show loading spinner on background refreshes
+        const isInitialLoad = notifications.length === 0;
+        if (isInitialLoad) {
+            setLoading(true);
+        }
+        
         try {
             const response = await fetch(`http://localhost:5000/api/notifications/${user.id}`);
             const data = await response.json();
-            setNotifications(data.notifications || []);
+            const newNotifications = data.notifications || [];
+            
+            // Check if there are new notifications
+            if (previousNotificationCount.current > 0 && newNotifications.length > previousNotificationCount.current) {
+                setHasNewNotification(true);
+                // Reset the indicator after 3 seconds
+                setTimeout(() => setHasNewNotification(false), 3000);
+            }
+            
+            previousNotificationCount.current = newNotifications.length;
+            setNotifications(newNotifications);
         } catch (error) {
             console.error("Error fetching notifications:", error);
         } finally {
-            setLoading(false);
+            if (isInitialLoad) {
+                setLoading(false);
+            }
         }
     };
 
@@ -175,7 +188,7 @@ export default function NavbarLoggedin() {
                     {/* Notification */}
                     <div ref={notificationRef} className="relative">
                         <div 
-                            className="flex items-center cursor-pointer relative"
+                            className={`flex items-center cursor-pointer relative ${hasNewNotification ? 'animate-bounce' : ''}`}
                             onClick={() => setNotificationOpen((prev) => !prev)}
                         >
                             <img
@@ -184,7 +197,7 @@ export default function NavbarLoggedin() {
                                 className="w-6 h-6 max-md:w-[22px] max-md:h-[22px]"
                             />
                             {unreadCount > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center animate-pulse">
                                     {unreadCount > 9 ? '9+' : unreadCount}
                                 </span>
                             )}
@@ -247,7 +260,7 @@ export default function NavbarLoggedin() {
                                                         {!notification.isRead && (
                                                             <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                                                         )}
-                                                        <span key={currentTime.getTime()}>{formatTimeAgo(notification.createdAt)}</span>
+                                                        <span>{formatTimeAgo(notification.createdAt)}</span>
                                                     </div>
                                                 </div>
                                             </div>

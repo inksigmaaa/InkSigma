@@ -185,7 +185,8 @@ router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
             eq(invitation.publicationId, parseInt(publicationId)),
             or(
               eq(invitation.status, "pending"),
-              eq(invitation.status, "expired")
+              eq(invitation.status, "expired"),
+              eq(invitation.status, "declined")
             )
           )
         );
@@ -767,19 +768,27 @@ router.post("/invite/:token/decline", getCurrentUser, async (req, res) => {
       .from(publication)
       .where(eq(publication.id, invite.publicationId));
 
-    console.log(`[Invitation Decline] Creating notification for inviter ${invite.inviterId}`);
+    if (!pub) {
+      console.error(`[Invitation Decline] Publication not found: ${invite.publicationId}`);
+      return res.json({ message: "Invitation declined" });
+    }
 
-    // Notify the person who sent the invitation (inviter) that it was declined
+    console.log(`[Invitation Decline] Publication found: ${pub.name}, Owner: ${pub.userId}`);
+    console.log(`[Invitation Decline] Creating notification for publication owner ${pub.userId}`);
+    console.log(`[Invitation Decline] Decliner name: ${req.user.name}, Decliner ID: ${userId}`);
+
+    // Notify publication owner that invitation was declined
     try {
-      await notificationService.notifyInvitationDeclined({
-        ownerId: invite.inviterId,  // Notify the inviter, not the publication owner
+      const notification = await notificationService.notifyInvitationDeclined({
+        ownerId: pub.userId,  // Notify the publication owner
         memberName: req.user.name,
         memberId: userId,
         publicationId: invite.publicationId,
       });
-      console.log(`[Invitation Decline] Notification created successfully`);
+      console.log(`[Invitation Decline] Notification created successfully:`, notification);
     } catch (notifError) {
       console.error("[Invitation Decline] Failed to create notification:", notifError);
+      console.error("[Invitation Decline] Error details:", notifError.message, notifError.stack);
     }
 
     res.json({ message: "Invitation declined" });
