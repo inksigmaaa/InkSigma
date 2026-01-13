@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
 import Verify from "../components/verify/Verify"
@@ -9,7 +10,18 @@ import ConfirmModal from "../components/confirmModal/ConfirmModal"
 import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function DraftPage() {
-  const { articles, moveToTrashStatus, bulkMoveToTrashStatus, bulkPublish, publishArticle } = useArticles()
+  const { articles, moveToTrashStatus, bulkMoveToTrashStatus, bulkPublish, publishArticle, loadUserArticles } = useArticles()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  // Refresh articles when coming from editor with refresh param
+  useEffect(() => {
+    if (searchParams.get('refresh') === 'true') {
+      loadUserArticles()
+      // Clean up the URL
+      router.replace('/draft', { scroll: false })
+    }
+  }, [searchParams, loadUserArticles, router])
   const [selectedArticles, setSelectedArticles] = useState([])
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPublishModal, setShowPublishModal] = useState(false)

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
@@ -9,7 +10,18 @@ import ConfirmModal from "../components/confirmModal/ConfirmModal";
 import { useArticles } from "@/contexts/ArticlesContext";
 
 export default function Published() {
-    const { articles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, unpublishArticle } = useArticles();
+    const { articles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, unpublishArticle, loadUserArticles } = useArticles();
+    const searchParams = useSearchParams();
+    const router = useRouter();
+
+    // Refresh articles when coming from editor with refresh param
+    useEffect(() => {
+        if (searchParams.get('refresh') === 'true') {
+            loadUserArticles();
+            // Clean up the URL
+            router.replace('/published', { scroll: false });
+        }
+    }, [searchParams, loadUserArticles, router]);
     const [selectedArticles, setSelectedArticles] = useState([]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showDraftModal, setShowDraftModal] = useState(false);
