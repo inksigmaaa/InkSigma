@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ThumbnailModal } from './ThumbnailModal'
 import { TiptapEditor } from './TiptapEditor'
 
@@ -22,6 +22,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
 export default function EditorPageClient() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const blogId = searchParams.get('id')
+  
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState([])
   const [categorySearch, setCategorySearch] = useState('')
@@ -41,9 +44,103 @@ export default function EditorPageClient() {
   const [isSaving, setIsSaving] = useState(false)
   const [showPublishSuccess, setShowPublishSuccess] = useState(false)
   const [publishedBlogSlug, setPublishedBlogSlug] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [initialContent, setInitialContent] = useState('')
+  const [existingBlogStatus, setExistingBlogStatus] = useState(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const calendarRef = useRef(null)
+  const autoSaveRef = useRef(false)
 
-  // Save blog to database
+  // Track unsaved changes
+  useEffect(() => {
+    if (blogTitle || blogDescription || (editorContent.html && editorContent.html !== '<p></p>')) {
+      setHasUnsavedChanges(true)
+    }
+  }, [blogTitle, blogDescription, editorContent.html])
+
+  // Auto-save as draft when leaving the page (only for new blogs)
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      // Only show warning if there are unsaved changes and it's a new blog
+      if (hasUnsavedChanges && !blogId && blogTitle.trim()) {
+        e.preventDefault()
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?'
+        return e.returnValue
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      
+      // Auto-save as draft when component unmounts (user navigates away)
+      if (hasUnsavedChanges && !blogId && !autoSaveRef.current && blogTitle.trim() && blogDescription.trim() && editorContent.html && editorContent.html !== '<p></p>') {
+        autoSaveRef.current = true
+        // Use sendBeacon for reliable save on page unload
+        const blogData = {
+          title: blogTitle,
+          description: blogDescription,
+          content: editorContent.html,
+          categories: selectedCategories,
+          status: 'draft',
+          published: false
+        }
+        
+        navigator.sendBeacon(
+          `${API_URL}/api/blogs/auto-save`,
+          new Blob([JSON.stringify(blogData)], { type: 'application/json' })
+        )
+      }
+    }
+  }, [hasUnsavedChanges, blogId, blogTitle, blogDescription, editorContent.html, selectedCategories])
+
+  // Load existing blog if editing
+  useEffect(() => {
+    if (blogId) {
+      loadExistingBlog(blogId)
+    }
+  }, [blogId])
+
+  const loadExistingBlog = async (id) => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`${API_URL}/api/blogs/${id}`, {
+        credentials: 'include'
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to load blog')
+      }
+      
+      const blog = await response.json()
+      console.log('Loaded blog for editing:', blog)
+      
+      setBlogTitle(blog.title || '')
+      setBlogDescription(blog.description || '')
+      setSelectedCategories(blog.categories || [])
+      setInitialContent(blog.content || '')
+      setExistingBlogStatus(blog.status)
+      
+      if (blog.image) {
+        setThumbnailData({ url: blog.image })
+      }
+      
+      if (blog.scheduledAt) {
+        const scheduledDate = new Date(blog.scheduledAt)
+        setSelectedDate(scheduledDate)
+        setSelectedHour(scheduledDate.getHours())
+        setSelectedMinute(scheduledDate.getMinutes())
+      }
+    } catch (error) {
+      console.error('Error loading blog:', error)
+      alert('Failed to load blog for editing')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Save blog to database (create new or update existing)
   const saveBlog = async (status, scheduledAt = null) => {
     if (!blogTitle.trim()) {
       alert('Please enter a title for your blog')
@@ -74,10 +171,14 @@ export default function EditorPageClient() {
         blogData.scheduledAt = scheduledAt.toISOString()
       }
 
-      console.log('Saving blog with data:', blogData)
+      console.log('Saving blog with data:', blogData, 'blogId:', blogId)
 
-      const response = await fetch(`${API_URL}/api/blogs`, {
-        method: 'POST',
+      // Use PUT for updates, POST for new blogs
+      const url = blogId ? `${API_URL}/api/blogs/${blogId}` : `${API_URL}/api/blogs`
+      const method = blogId ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -94,6 +195,9 @@ export default function EditorPageClient() {
         throw new Error(responseData.error || 'Failed to save blog')
       }
 
+      // Mark as saved to prevent auto-save on exit
+      setHasUnsavedChanges(false)
+      
       return responseData
     } catch (error) {
       console.error('Error saving blog:', error)
@@ -525,9 +629,17 @@ export default function EditorPageClient() {
 
           {/* Editor Content Area */}
           <div className="w-[917px] bg-white">
-            <TiptapEditor 
-              onUpdate={(data) => setEditorContent(data)}
-            />
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <span className="text-gray-500">Loading blog content...</span>
+              </div>
+            ) : (
+              <TiptapEditor 
+                key={blogId || 'new'}
+                onUpdate={(data) => setEditorContent(data)}
+                initialContent={initialContent}
+              />
+            )}
           </div>
         </div>
 
@@ -751,30 +863,66 @@ export default function EditorPageClient() {
       {showPublishSuccess && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000]">
           <div 
-            className="bg-white flex flex-col items-center justify-center"
+            className="relative flex flex-col items-center"
             style={{
               width: '489px',
               height: '323.63px',
               borderRadius: '4px',
               padding: '56px 40px',
-              gap: '32px'
+              gap: '32px',
+              background: '#FEFEFE'
             }}
           >
-            {/* Success Icon */}
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-              <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                setShowPublishSuccess(false)
+                window.location.href = '/published?refresh=true'
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-            </div>
+            </button>
 
-            {/* Success Message */}
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Published Successfully!</h2>
-              <p className="text-gray-500 text-sm">Your blog has been published and is now live.</p>
+            {/* Content Area - Icon + Text */}
+            <div 
+              className="flex flex-col items-center"
+              style={{
+                width: '357px',
+                height: '147.63px',
+                gap: '16px'
+              }}
+            >
+              {/* Paper Plane Icon with Checkmark */}
+              <div className="relative">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                  <path d="M52 12L28 36M52 12L36 52L28 36M52 12L12 28L28 36" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                  <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Success Message */}
+              <div className="text-center">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Successfully Published</h2>
+                <p className="text-gray-500 text-sm leading-relaxed">Your blog is successfully Published, Click the below<br/>button to view in site</p>
+              </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-4">
+            <div 
+              className="flex items-center"
+              style={{
+                width: '229px',
+                height: '32px',
+                gap: '8px'
+              }}
+            >
               <button
                 onClick={() => {
                   setShowPublishSuccess(false)
@@ -784,12 +932,10 @@ export default function EditorPageClient() {
                   width: '111px',
                   height: '32px',
                   borderRadius: '4px',
-                  padding: '8px 24px',
                   background: '#F4F4F4',
-                  border: '1px solid #ECECEC',
-                  gap: '4px'
+                  border: '1px solid #ECECEC'
                 }}
-                className="text-sm text-gray-700 hover:bg-gray-200 transition-colors"
+                className="flex items-center justify-center text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors whitespace-nowrap"
               >
                 See Later
               </button>
@@ -806,12 +952,9 @@ export default function EditorPageClient() {
                   width: '110px',
                   height: '32px',
                   borderRadius: '4px',
-                  padding: '8px 16px',
-                  background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
-                  boxShadow: '0px 4px 8px 0px #EADBF9',
-                  gap: '10px'
+                  background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)'
                 }}
-                className="text-sm text-white hover:opacity-90 transition-opacity"
+                className="flex items-center justify-center text-sm font-medium text-white hover:opacity-90 transition-opacity whitespace-nowrap"
               >
                 View in Site
               </button>

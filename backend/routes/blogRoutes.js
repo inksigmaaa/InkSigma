@@ -663,6 +663,53 @@ router.post("/", getCurrentUser, async (req, res) => {
     }
 });
 
+// POST /api/blogs/auto-save - Auto-save blog as draft (for sendBeacon)
+router.post("/auto-save", async (req, res) => {
+    try {
+        // Get session from cookies
+        const session = await auth.api.getSession({
+            headers: fromNodeHeaders(req.headers),
+        });
+
+        if (!session?.user) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const { title, description, content, categories } = req.body;
+        
+        // Only save if there's meaningful content
+        if (!title || !description || !content) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        const slug = await ensureUniqueSlug(generateSlug(title));
+
+        const blogData = {
+            slug,
+            title,
+            description,
+            content,
+            categories: categories || [],
+            status: 'draft',
+            published: false,
+            authorId: session.user.id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+
+        const [newBlog] = await db
+            .insert(blog)
+            .values(blogData)
+            .returning();
+
+        console.log('[AUTO-SAVE] Blog saved as draft:', newBlog.id);
+        res.status(201).json(newBlog);
+    } catch (error) {
+        console.error("Error auto-saving blog:", error);
+        res.status(500).json({ error: "Failed to auto-save blog" });
+    }
+});
+
 // PUT /api/blogs/:id - Update blog
 router.put("/:id", getCurrentUser, async (req, res) => {
     try {
