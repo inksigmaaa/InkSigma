@@ -3,12 +3,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import ShareMenu from '../ShareMenu/ShareMenu';
-import mockData from '../../mockData.json';
+import { formatTimeAgo } from '@/utils/timeFormatter';
 
-export default function LatestBlog({ searchQuery = '' }) {
+export default function LatestBlog({ searchQuery = '', blogs = [] }) {
   // Get the latest blog (first one in the array, sorted by date)
-  const latestBlog = mockData.blogs.length > 0
-    ? mockData.blogs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
+  const latestBlog = blogs.length > 0
+    ? blogs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
     : null;
 
   // Hide latest blog section if there's a search query
@@ -27,15 +27,14 @@ export default function LatestBlog({ searchQuery = '' }) {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
     const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    return {
-      day: days[date.getDay()],
-      date: `${String(date.getDate()).padStart(2, '0')} ${months[date.getMonth()]}, ${date.getFullYear()}`,
-    };
+    return `${String(date.getDate()).padStart(2, '0')} ${months[date.getMonth()]}, ${date.getFullYear()}`;
   };
 
   const dateFormatted = formatDate(latestBlog.createdAt);
+  const thumbnailUrl = (latestBlog.image && latestBlog.image.trim() !== '') 
+    ? latestBlog.image 
+    : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
 
   return (
     <section className="w-full max-w-[90%] md:max-w-[70%] mx-auto py-6 md:py-12 px-4 md:px-0">
@@ -70,8 +69,22 @@ export default function LatestBlog({ searchQuery = '' }) {
         {/* Author Info */}
         <div className="flex items-center gap-2 md:gap-3">
           <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
-            {latestBlog.author?.avatar && (
-              <Image src={latestBlog.author.avatar} alt={latestBlog.author.name} width={40} height={40} unoptimized />
+            {latestBlog.author?.image ? (
+              <img
+                src={latestBlog.author.image.startsWith('http') ? latestBlog.author.image : `http://localhost:5000${latestBlog.author.image}`} 
+                alt={latestBlog.author.name} 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${latestBlog.author?.name?.charAt(0).toUpperCase() || 'A'}</span></div>`;
+                }}
+              />
+            ) : (
+              <div className="w-full h-full bg-purple-100 flex items-center justify-center">
+                <span className="text-purple-600 font-semibold text-sm">
+                  {latestBlog.author?.name?.charAt(0).toUpperCase() || 'A'}
+                </span>
+              </div>
             )}
           </div>
           <span className="text-gray-900 font-medium text-sm md:text-base">{latestBlog.author?.name || 'Anonymous'}</span>
@@ -80,7 +93,7 @@ export default function LatestBlog({ searchQuery = '' }) {
         {/* Date */}
         <div className="text-right">
           <div className="text-gray-700 text-xs md:text-sm font-medium whitespace-nowrap">
-            {dateFormatted.date.split(',')[0]}
+            {dateFormatted}
           </div>
         </div>
       </div>
@@ -99,7 +112,7 @@ export default function LatestBlog({ searchQuery = '' }) {
           {/* Background Image */}
           <div className="absolute inset-0">
             <Image
-              src={latestBlog.thumbnail}
+              src={thumbnailUrl}
               alt={latestBlog.title}
               fill
               className="object-cover"
@@ -115,11 +128,13 @@ export default function LatestBlog({ searchQuery = '' }) {
               <h2 className="text-xl md:text-3xl font-bold mb-1 md:mb-2 text-white drop-shadow-lg line-clamp-2">{latestBlog.title}</h2>
               <p className="text-white text-sm md:text-base drop-shadow-md line-clamp-2 md:line-clamp-none mb-3">{latestBlog.description}</p>
               {/* Category */}
-              <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1.5 bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-md text-xs md:text-sm font-medium">
-                  {latestBlog.category}
-                </span>
-              </div>
+              {latestBlog.categories && latestBlog.categories.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1.5 bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-md text-xs md:text-sm font-medium">
+                    {latestBlog.categories[0]}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Right - Read Article Button */}

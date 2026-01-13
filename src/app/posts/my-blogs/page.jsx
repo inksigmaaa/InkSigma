@@ -97,25 +97,43 @@ export default function PostsMyBlogsPage() {
     const date = new Date(dateString)
     const now = new Date()
     const diffInMs = now - date
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+    const diffInSeconds = Math.floor(diffInMs / 1000)
+    const diffInMinutes = Math.floor(diffInSeconds / 60)
+    const diffInHours = Math.floor(diffInMinutes / 60)
+    const diffInDays = Math.floor(diffInHours / 24)
 
-    if (diffInMinutes < 1) {
+    // Just now (< 1 minute)
+    if (diffInSeconds < 60) {
       return 'Just now'
-    } else if (diffInMinutes < 60) {
-      return `${diffInMinutes} min${diffInMinutes > 1 ? 's' : ''} ago`
-    } else if (diffInHours < 24) {
-      return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`
-    } else if (diffInDays < 7) {
-      return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`
-    } else {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined 
-      })
     }
+    
+    // 1 min ago - 59 mins ago
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} min${diffInMinutes === 1 ? '' : 's'} ago`
+    }
+    
+    // 1 hour ago - 24 hours ago
+    if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`
+    }
+    
+    // Yesterday
+    if (diffInDays === 1) {
+      return 'Yesterday'
+    }
+    
+    // 2 days ago - 6 days ago
+    if (diffInDays < 7) {
+      return `${diffInDays} days ago`
+    }
+    
+    // Last week (7-29 days)
+    if (diffInDays < 30) {
+      return 'Last week'
+    }
+    
+    // Last month (30+ days)
+    return 'Last month'
   }
 
   const topPosition = 'top-[160px]'

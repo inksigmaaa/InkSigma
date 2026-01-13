@@ -44,11 +44,49 @@ function PublicationProviderInner({ children }) {
       return;
     }
 
+    // Only fetch on client side
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     try {
       if (!silent) {
         setLoading(true);
       }
-      const data = await memberService.getUserPublications();
+      
+      // Add retry logic for network errors
+      let retries = 3;
+      let data = null;
+      let lastError = null;
+      
+      while (retries > 0) {
+        try {
+          data = await memberService.getUserPublications();
+          console.log('[PublicationContext] Successfully loaded publications:', data);
+          break; // Success - exit retry loop
+        } catch (err) {
+          lastError = err;
+          retries--;
+          
+          console.error(`[PublicationContext] Failed to load publications (${retries} retries left):`, {
+            message: err.message,
+            type: err.constructor.name,
+            stack: err.stack
+          });
+          
+          if (retries > 0) {
+            console.warn(`[PublicationContext] Retrying in ${1000 * (4 - retries)}ms...`);
+            // Wait before retrying (exponential backoff: 1s, 2s, 3s)
+            await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)));
+          }
+        }
+      }
+      
+      // If all retries failed, throw the last error
+      if (lastError && !data) {
+        throw lastError;
+      }
+      
       // Backend returns either array (legacy) or object with publications array (new)
       const publications = Array.isArray(data) ? data : (data.publications || []);
       
@@ -148,6 +186,11 @@ function PublicationProviderInner({ children }) {
   // Load full publication details (with stats)
   const loadPublicationDetails = async (publicationId) => {
     if (!publicationId) {
+      return null;
+    }
+    
+    // Only fetch on client side
+    if (typeof window === 'undefined') {
       return null;
     }
     

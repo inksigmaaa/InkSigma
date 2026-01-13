@@ -4,6 +4,7 @@ import ConditionalLayout from "@/components/ConditionalLayout";
 import { ArticlesProvider } from "@/contexts/ArticlesContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PublicationProvider } from "@/contexts/PublicationContext";
+import { ToastProvider } from "@/contexts/ToastContext";
 
 const publicSans = Public_Sans({
   variable: "--font-public-sans",
@@ -30,9 +31,11 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <PublicationProvider>
             <ArticlesProvider>
-              <ConditionalLayout>
-                {children}
-              </ConditionalLayout>
+              <ToastProvider>
+                <ConditionalLayout>
+                  {children}
+                </ConditionalLayout>
+              </ToastProvider>
             </ArticlesProvider>
           </PublicationProvider>
         </AuthProvider>

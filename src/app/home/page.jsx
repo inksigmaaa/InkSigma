@@ -37,7 +37,12 @@ export default function HomePage() {
     })
 
   const handleStartWriting = () => {
-    router.push("/editor")
+    // Pass current publication ID to editor
+    if (currentPublication?.id) {
+      router.push(`/editor?publicationId=${currentPublication.id}`)
+    } else {
+      router.push("/editor")
+    }
   }
 
   const handleVisitSite = () => {
@@ -60,8 +65,8 @@ export default function HomePage() {
           <div className={`ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0`}>
           
           {/* Publication Header */}
-          <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
-            <div className="flex items-start gap-4 max-md:gap-3">
+          <div className="border-b border-gray-200 px-8 py-6 flex items-center justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
+            <div className="flex items-center gap-4 max-md:gap-3">
               <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
                 {currentPublication?.logoUrl ? (
                   <img 
@@ -92,15 +97,10 @@ export default function HomePage() {
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-400 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-1">
-                  {currentPublication?.subdomain ? `${currentPublication.subdomain}.inksigma.com` : "subdomain.inksigma.com"}
-                </p>
                 {currentPublication?.description && (
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-600 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-2">
-                      {currentPublication.description}
-                    </p>
-                  </div>
+                  <p className="text-sm text-gray-600 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-2">
+                    {currentPublication.description}
+                  </p>
                 )}
               </div>
             </div>

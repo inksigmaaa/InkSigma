@@ -77,9 +77,11 @@ export default function MySpace() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-semibold text-gray-900 mb-1">{publication.name}</h3>
-                        <p className="text-xs text-gray-400 leading-relaxed">
-                          {publication.subdomain}.inksigma.com
-                        </p>
+                        {publication.description && (
+                          <p className="text-xs text-gray-400 leading-relaxed">
+                            {publication.description}
+                          </p>
+                        )}
                         <div className="flex items-center gap-4 mt-2">
                           <span className="text-xs text-violet-600 font-medium">Owner</span>
                         </div>
@@ -128,9 +130,11 @@ export default function MySpace() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-semibold text-gray-900 mb-1">{publication.name}</h3>
-                        <p className="text-xs text-gray-400 leading-relaxed">
-                          {publication.subdomain}.inksigma.com
-                        </p>
+                        {publication.description && (
+                          <p className="text-xs text-gray-400 leading-relaxed">
+                            {publication.description}
+                          </p>
+                        )}
                         <div className="flex items-center gap-4 mt-2">
                           <span className={`text-xs font-medium ${
                             publication.role === 'editor' ? 'text-green-600' : 'text-blue-600'

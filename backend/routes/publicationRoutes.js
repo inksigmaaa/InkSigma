@@ -158,6 +158,27 @@ router.get("/user/:userId", async (req, res) => {
   }
 });
 
+// Get publication by ID (public endpoint for view-site)
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [pub] = await db
+      .select()
+      .from(publication)
+      .where(eq(publication.id, parseInt(id)));
+
+    if (!pub) {
+      return res.status(404).json({ error: "Publication not found" });
+    }
+
+    res.json(pub);
+  } catch (error) {
+    console.error("Error fetching publication:", error);
+    res.status(500).json({ error: "Failed to fetch publication" });
+  }
+});
+
 // Get publication details with stats (for members)
 router.get("/:publicationId/details", getCurrentUser, async (req, res) => {
   try {
