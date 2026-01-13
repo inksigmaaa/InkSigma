@@ -226,7 +226,12 @@ export function ArticlesProvider({ children }) {
       setArticles(prev => prev.filter(article => article.id !== id))
     } catch (err) {
       console.error('Error deleting article:', err)
-      throw err
+      // Still remove from local state if it's a "not found" error
+      if (err.message?.includes('not found')) {
+        setArticles(prev => prev.filter(article => article.id !== id))
+      } else {
+        throw err
+      }
     }
   }, [])
 
@@ -290,7 +295,17 @@ export function ArticlesProvider({ children }) {
 
   const bulkMoveToTrash = useCallback(async (ids) => {
     try {
-      await Promise.all(ids.map(id => blogService.deleteBlog(id)))
+      // Delete each blog, but continue even if some fail (already deleted)
+      const results = await Promise.allSettled(ids.map(id => blogService.deleteBlog(id)))
+      
+      // Log any failures but don't throw
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.warn(`Failed to delete blog ${ids[index]}:`, result.reason?.message)
+        }
+      })
+      
+      // Remove all from local state regardless of API result
       setArticles(prev => prev.filter(article => !ids.includes(article.id)))
     } catch (err) {
       console.error('Error bulk deleting articles:', err)

@@ -3,13 +3,12 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npm run db:push && node --watch server.js",
-    "start": "npm run db:push && node server.js",
+    "dev": "node --watch server.js",
+    "start": "node server.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
-    "migrate:data": "node migrate-existing-data.js"
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
