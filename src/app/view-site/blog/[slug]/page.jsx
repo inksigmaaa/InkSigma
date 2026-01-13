@@ -128,10 +128,10 @@ export default function BlogDetailPage({ params }) {
         userAvatar={blog.publication?.logoUrl ? `http://localhost:5000${blog.publication.logoUrl}` : null} 
       />
 
-      <section className="flex-grow flex justify-center w-full px-4 md:px-6">
+      <section className="flex-grow flex justify-center w-full px-4 md:px-6 md:pt-12">
         <div className="flex max-w-[1400px] w-full ml-12 gap-8">
           {/* Left Sidebar - Back Button and Table of Contents */}
-          <aside className="hidden lg:block flex-shrink-0 w-[300px]">
+          <aside className="hidden lg:block flex-shrink-0 pt-20 w-[300px]">
             <div className="sticky flex item-start top-28">
               <BackToHomeButton />
               <TableOfContents />
@@ -139,7 +139,7 @@ export default function BlogDetailPage({ params }) {
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1 max-w-[800px] pb-40 max-md:pb-12 lg:pl-12 lg:border-l-2 min-w-0">
+          <div className="flex-1 max-w-[800px] pb-40 max-md:pb-12 pt-6 md:pt-20 lg:pl-12 lg:border-l-2 min-w-0">
           {/* Blog Title */}
           <h1 className="text-2xl leading-tight md:text-3xl font-bold text-black mb-4 md:mb-4 break-words">{blog.title}</h1>
 
