@@ -201,6 +201,12 @@ export default function EditorPageClient() {
         published: status === 'published'
       }
 
+      // Add publicationId if available
+      const pubId = publicationId || currentPublication?.id
+      if (pubId) {
+        blogData.publicationId = parseInt(pubId)
+      }
+
       // Add scheduledAt if scheduling
       if (scheduledAt) {
         blogData.scheduledAt = scheduledAt.toISOString()
@@ -992,8 +998,10 @@ export default function EditorPageClient() {
               <button
                 onClick={() => {
                   setShowPublishSuccess(false)
-                  if (publishedBlogSlug) {
-                    router.push(`/blog/${publishedBlogSlug}`)
+                  // Navigate to view-site with publicationId
+                  const pubId = publicationId || currentPublication?.id
+                  if (pubId) {
+                    router.push(`/view-site?publicationId=${pubId}`)
                   } else {
                     router.push('/published?refresh=true')
                   }
