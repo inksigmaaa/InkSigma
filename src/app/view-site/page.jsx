@@ -15,22 +15,47 @@ function ViewSiteContent() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [publicationData, setPublicationData] = useState(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { currentPublication } = usePublication();
   
   // Get subdomain from URL params (set by middleware)
   const subdomain = searchParams.get('subdomain');
+  const pubIdFromUrl = searchParams.get('publicationId');
   
   // Fetch publication data and update meta tags
   const { publication } = usePublicationMeta(subdomain);
+
+  // Fetch publication details if publicationId is in URL
+  useEffect(() => {
+    const fetchPublicationDetails = async () => {
+      if (pubIdFromUrl) {
+        try {
+          const response = await fetch(`http://localhost:5000/api/publications/${pubIdFromUrl}`, {
+            credentials: 'include'
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setPublicationData(data);
+          }
+        } catch (error) {
+          console.error('Error fetching publication:', error);
+        }
+      }
+    };
+
+    fetchPublicationDetails();
+  }, [pubIdFromUrl]);
 
   // Fetch published blogs
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
         setLoading(true);
-        const publicationId = currentPublication?.id;
+        // Use publicationId from URL query parameter if available, otherwise use currentPublication
+        const pubIdFromUrl = searchParams.get('publicationId');
+        const publicationId = pubIdFromUrl ? parseInt(pubIdFromUrl) : currentPublication?.id;
         
         if (!publicationId) {
           setBlogs([]);
@@ -58,7 +83,7 @@ function ViewSiteContent() {
     };
 
     fetchBlogs();
-  }, [currentPublication?.id]);
+  }, [currentPublication?.id, searchParams]);
 
   // Get unique categories from blogs, limit to 3
   const categories = [...new Set(blogs.map(blog => blog.categories?.[0]).filter(Boolean))].slice(0, 3);
@@ -85,13 +110,14 @@ function ViewSiteContent() {
     };
   }, []);
 
-  const publicationLogoUrl = publication?.logoUrl || currentPublication?.logoUrl;
+  const publicationLogoUrl = publicationData?.logoUrl || publication?.logoUrl || currentPublication?.logoUrl;
   const avatarUrl = publicationLogoUrl ? `http://localhost:5000${publicationLogoUrl}` : null;
+  const publicationName = publicationData?.name || publication?.name || currentPublication?.name || "Your Publication Name";
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <HomeHeader 
-        userName={publication?.name || currentPublication?.name || "Your Publication Name"} 
+        userName={publicationName} 
         userAvatar={avatarUrl}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -108,7 +134,7 @@ function ViewSiteContent() {
           </>
         )}
       </div>
-      <Footer publicationName={publication?.name || currentPublication?.name} />
+      <Footer publicationName={publicationName} />
       <ScrollToTop />
     </div>
   );

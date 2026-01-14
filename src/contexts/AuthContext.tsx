@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadSession = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/auth/get-session', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/get-session`, {
           credentials: 'include',
         });
 
@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshSession = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/get-session', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/get-session`, {
         credentials: 'include',
       });
 

@@ -62,7 +62,12 @@ export default function PostsHomePage() {
   }
 
   const handleVisitSite = () => {
-    window.open("/view-site", "_blank")
+    // Pass the current publication ID to view-site
+    if (currentPublication?.id) {
+      window.open(`/view-site?publicationId=${currentPublication.id}`, "_blank")
+    } else {
+      window.open("/view-site", "_blank")
+    }
   }
 
   const handleEditPublication = () => {

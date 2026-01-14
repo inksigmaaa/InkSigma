@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import UserAvatar from "@/components/ui/UserAvatar";
+import { usePublication } from '@/contexts/PublicationContext';
 
 export default function MemberSidebar() {
   const pathname = usePathname();
+  const { currentPublication } = usePublication();
   
   const getRoute = (label) => {
     const routes = {
@@ -28,13 +30,35 @@ export default function MemberSidebar() {
           <div
             className="flex items-center gap-2 pb-[10px] border-b border-gray-200 max-md:hidden"
           >
-            <img
-              src="/images/icons/profileuser.svg"
-              alt="profileImg"
-              className="w-[34px] h-[34px] rounded-full object-cover border-2 border-violet-500 flex-shrink-0"
-            />
+            <div className="w-[34px] h-[34px] rounded-full overflow-hidden border-2 border-violet-500 flex-shrink-0 bg-gray-100 flex items-center justify-center">
+              {currentPublication?.logoUrl ? (
+                <img
+                  src={`http://localhost:5000${currentPublication.logoUrl}`}
+                  alt={currentPublication.name || "Publication"}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${currentPublication?.name?.charAt(0).toUpperCase() || 'P'}</span></div>`;
+                  }}
+                />
+              ) : currentPublication?.name ? (
+                <span className="text-violet-600 font-bold text-sm">
+                  {currentPublication.name.charAt(0).toUpperCase()}
+                </span>
+              ) : (
+                <img
+                  src="/images/icons/profileuser.svg"
+                  alt="profileImg"
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
 
-            <a href="/view-site" target="_blank" rel="noopener noreferrer">
+            <a 
+              href={currentPublication?.id ? `/view-site?publicationId=${currentPublication.id}` : "/view-site"} 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
               <button
                 className="w-full bg-violet-500 text-white px-[16px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:bg-violet-600"
               >

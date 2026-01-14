@@ -74,7 +74,11 @@ export default function Sidebar() {
               )}
             </div>
 
-            <a href="/view-site" target="_blank" rel="noopener noreferrer">
+            <a 
+              href={currentPublication?.id ? `/view-site?publicationId=${currentPublication.id}` : "/view-site"} 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
               <button
                 className="w-full bg-violet-500 text-white px-[16px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:bg-violet-600"
               >

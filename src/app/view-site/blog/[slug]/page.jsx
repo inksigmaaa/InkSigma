@@ -45,6 +45,11 @@ export default function BlogDetailPage({ params }) {
               foundBlog.publication = pubData;
             }
           }
+          
+          // Debug: Log author information
+          console.log('Blog author data:', foundBlog.author);
+          console.log('Author image path:', foundBlog.author?.image);
+          
           setBlog(foundBlog);
         }
       } catch (err) {
@@ -160,12 +165,20 @@ export default function BlogDetailPage({ params }) {
               <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
                 {blog.author?.image ? (
                   <img
-                    src={blog.author.image.startsWith('http') ? blog.author.image : `http://localhost:5000${blog.author.image}`} 
-                    alt={blog.author.name} 
+                    src={
+                      blog.author.image.startsWith('http') || blog.author.image.startsWith('https')
+                        ? blog.author.image 
+                        : blog.author.image.startsWith('/') 
+                          ? `http://localhost:5000${blog.author.image}`
+                          : `http://localhost:5000/${blog.author.image}`
+                    } 
+                    alt={blog.author?.name || 'Author'} 
                     className="w-full h-full object-cover"
                     onError={(e) => {
+                      e.target.onerror = null;
                       e.target.style.display = 'none';
-                      e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${blog.author?.name?.charAt(0).toUpperCase() || 'A'}</span></div>`;
+                      const initial = blog.author?.name?.charAt(0).toUpperCase() || 'A';
+                      e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${initial}</span></div>`;
                     }}
                   />
                 ) : (

@@ -78,7 +78,7 @@ export const blog = pgTable("blog", {
     content: text("content").notNull(),
     image: text("image"),
     authorId: text("authorId").notNull().references(() => user.id, { onDelete: "cascade" }),
-    publicationId: integer("publicationId").references(() => publication.id, { onDelete: "cascade" }),
+    publicationId: integer("publicationId").notNull().references(() => publication.id, { onDelete: "cascade" }),
     categories: text("categories").array(),
     status: blogStatusEnum("status").notNull().default("draft"),
     published: boolean("published").notNull().default(false),
@@ -150,6 +150,6 @@ export const notification = pgTable("notification", {
     relatedBlogId: integer("relatedBlogId").references(() => blog.id, { onDelete: "cascade" }),
     relatedPublicationId: integer("relatedPublicationId").references(() => publication.id, { onDelete: "cascade" }),
     isRead: boolean("isRead").notNull().default(false),
-    createdAt: timestamp("createdAt").notNull().defaultNow(),
-    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+    createdAt: timestamp("createdAt", { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });

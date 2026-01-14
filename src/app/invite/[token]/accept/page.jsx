@@ -13,7 +13,9 @@ export default function AcceptInvitation() {
   const { data: session, isPending } = useSession();
   const { setCurrentPublicationFromInvite } = usePublication();
   const [loading, setLoading] = useState(false);
+  const [fetchingDetails, setFetchingDetails] = useState(true);
   const [error, setError] = useState("");
+  const [invitationDetails, setInvitationDetails] = useState(null);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -21,6 +23,29 @@ export default function AcceptInvitation() {
       router.push(`/login?redirect=/invite/${token}/accept`);
     }
   }, [session, isPending, token, router]);
+
+  // Fetch invitation details when user is logged in
+  useEffect(() => {
+    const fetchInvitationDetails = async () => {
+      if (!session || !token) return;
+
+      setFetchingDetails(true);
+      setError("");
+
+      try {
+        const details = await memberService.getInvitationDetails(token);
+        setInvitationDetails(details);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setFetchingDetails(false);
+      }
+    };
+
+    if (session) {
+      fetchInvitationDetails();
+    }
+  }, [session, token]);
 
   const handleAccept = async () => {
     if (!session) return;
@@ -45,7 +70,7 @@ export default function AcceptInvitation() {
     }
   };
 
-  if (isPending) {
+  if (isPending || fetchingDetails) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-gray-500">Loading...</div>
@@ -63,7 +88,7 @@ export default function AcceptInvitation() {
       <div className="min-h-screen bg-white flex items-center justify-center px-4">
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Accept Invitation</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">You're Invited!</h1>
             <p className="text-gray-600">You've been invited to join a publication.</p>
           </div>
 
@@ -72,11 +97,11 @@ export default function AcceptInvitation() {
               <p className="text-red-600 text-sm">{error}</p>
             </div>
           )}
-
+          
           <div className="space-y-4">
             <button
               onClick={handleAccept}
-              disabled={loading}
+              disabled={loading || !invitationDetails}
               className="w-full bg-violet-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Accepting..." : "Accept Invitation"}

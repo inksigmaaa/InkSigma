@@ -2,10 +2,6 @@
 const nextConfig = {
   /* config options here */
   reactCompiler: true,
-  // Temporarily disable Fast Refresh to prevent navigation interruption
-  experimental: {
-    fastRefresh: false
-  },
   images: {
     remotePatterns: [
       {
