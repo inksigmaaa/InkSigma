@@ -255,14 +255,13 @@ export default function Articles(props) {
                         </div>
                     ) : (
                         filteredArticles.map(article => {
-                            // Only create stats array if article has any non-zero stat values
-                            const hasAnyStats = article.views || article.revisits || article.comments || article.shares
-                            const articleStats = hasAnyStats ? (article.stats || [
-                                { label: 'Views', value: article.views || 0, color: '#8B5CF6' },
-                                { label: 'Revisits', value: article.revisits || 0, color: '#8B5CF6' },
-                                { label: 'Comments', value: article.comments || 0, color: '#8B5CF6' },
-                                { label: 'Shares', value: article.shares || 0, color: '#8B5CF6' }
-                            ]) : undefined
+                            // Create stats array with mock data for now
+                            const articleStats = [
+                                { label: 'Views', value: article.views || 0 },
+                                { label: 'Revisits', value: article.revisits || 0 },
+                                { label: 'Comments', value: article.comments || 0 },
+                                { label: 'Shares', value: article.shares || 0 }
+                            ]
                             
                             return (
                                 <ArticleContainer
