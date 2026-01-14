@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import MemberSidebar from "../../membersidebar/MemberSidebar"
 import { Pencil } from "lucide-react"
@@ -14,19 +14,14 @@ export default function PostsHomePage() {
   const [stats, setStats] = useState({ totalArticles: 0, publishedArticles: 0, totalViews: 0, totalLikes: 0 })
   const [recentArticles, setRecentArticles] = useState([])
   const [loading, setLoading] = useState(true)
+  const lastPublicationIdRef = useRef(null)
 
-  useEffect(() => {
-    if (currentPublication && !publicationLoading) {
-      loadPublicationData()
-    }
-  }, [currentPublication, publicationLoading])
-
-  const loadPublicationData = async () => {
-    if (!currentPublication) return
+  const loadPublicationData = useCallback(async (pubId) => {
+    if (!pubId) return
     
     try {
       // Fetch stats for this publication
-      const statsRes = await fetch(`http://localhost:5000/api/publication-stats/${currentPublication.id}`, {
+      const statsRes = await fetch(`http://localhost:5000/api/publication-stats/${pubId}`, {
         credentials: "include",
       })
 
@@ -37,7 +32,7 @@ export default function PostsHomePage() {
 
       // Fetch recent published articles for this publication
       const articlesRes = await fetch(
-        `http://localhost:5000/api/blogs?publicationId=${currentPublication.id}&status=published&limit=4`,
+        `http://localhost:5000/api/blogs?publicationId=${pubId}&status=published&limit=4`,
         { credentials: "include" }
       )
 
@@ -50,7 +45,18 @@ export default function PostsHomePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (currentPublication && !publicationLoading) {
+      // Only load if publication ID changed
+      if (lastPublicationIdRef.current !== currentPublication.id) {
+        lastPublicationIdRef.current = currentPublication.id
+        setLoading(true)
+        loadPublicationData(currentPublication.id)
+      }
+    }
+  }, [currentPublication?.id, publicationLoading, loadPublicationData])
 
   const handleStartWriting = () => {
     // Pass publicationId to editor so blogs are created for this publication

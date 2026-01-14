@@ -257,10 +257,10 @@ export default function Articles(props) {
                         filteredArticles.map(article => {
                             // Create stats array with mock data for now
                             const articleStats = [
-                                { label: 'Views', value: article.views || 0 },
-                                { label: 'Revisits', value: article.revisits || 0 },
-                                { label: 'Comments', value: article.comments || 0 },
-                                { label: 'Shares', value: article.shares || 0 }
+                                { label: 'Views', value: article.views ?? 0 },
+                                { label: 'Revisits', value: article.revisits ?? 0 },
+                                { label: 'Comments', value: article.comments ?? 0 },
+                                { label: 'Shares', value: article.shares ?? 0 }
                             ]
                             
                             return (

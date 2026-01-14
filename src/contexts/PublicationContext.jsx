@@ -349,7 +349,7 @@ function PublicationProviderInner({ children }) {
         });
       }
     }
-  }, [pathname, searchParams, userPublications, currentPublication, isPending]);
+  }, [pathname, userPublications, isPending]);
 
   const value = {
     userPublications,
