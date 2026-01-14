@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
@@ -13,12 +13,18 @@ export default function Published() {
     const { articles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, unpublishArticle, loadUserArticles } = useArticles();
     const searchParams = useSearchParams();
     const router = useRouter();
+    const hasLoadedRef = useRef(false);
 
-    // Always load articles on mount
+    // Only load articles if they haven't been loaded yet or if refresh param is present
     useEffect(() => {
-        console.log('[PublishedPage] Loading articles on mount...');
-        loadUserArticles();
-    }, [loadUserArticles]);
+        const needsRefresh = searchParams.get('refresh') === 'true';
+        
+        if (needsRefresh || (articles.length === 0 && !loading && !hasLoadedRef.current)) {
+            console.log('[PublishedPage] Loading articles...');
+            hasLoadedRef.current = true;
+            loadUserArticles();
+        }
+    }, [searchParams, articles.length, loading, loadUserArticles]);
 
     // Clean up refresh param from URL if present
     useEffect(() => {
@@ -141,7 +147,8 @@ export default function Published() {
         }
     };
 
-    if (loading) {
+    // Only show loading state if we're loading AND have no articles yet
+    if (loading && articles.length === 0) {
         return (
             <>
                 <NavbarLoggedin />

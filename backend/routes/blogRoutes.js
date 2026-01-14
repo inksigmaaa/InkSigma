@@ -788,6 +788,16 @@ router.put("/:id", getCurrentUser, async (req, res) => {
             .where(eq(blog.id, parseInt(id)))
             .returning();
 
+        // Notify scheduler if blog is scheduled or rescheduled
+        if (updatedBlog.status === 'scheduled' && updatedBlog.scheduledAt) {
+            console.log(`[BLOG] Notifying scheduler for blog ${id}`);
+            schedulerService.onBlogScheduled(updatedBlog.id);
+        } else if (existingBlog.status === 'scheduled' && updatedBlog.status !== 'scheduled') {
+            // Blog was unscheduled
+            console.log(`[BLOG] Cancelling schedule for blog ${id}`);
+            schedulerService.onBlogUnscheduled(updatedBlog.id);
+        }
+
         // Create notifications based on status change
         if (status !== undefined && status !== existingBlog.status) {
             try {

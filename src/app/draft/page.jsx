@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
@@ -10,15 +10,21 @@ import ConfirmModal from "../components/confirmModal/ConfirmModal"
 import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function DraftPage() {
-  const { articles, moveToTrashStatus, bulkMoveToTrashStatus, bulkPublish, publishArticle, loadUserArticles } = useArticles()
+  const { articles, loading, moveToTrashStatus, bulkMoveToTrashStatus, bulkPublish, publishArticle, loadUserArticles } = useArticles()
   const searchParams = useSearchParams()
   const router = useRouter()
+  const hasLoadedRef = useRef(false)
 
-  // Always load articles on mount
+  // Only load articles if they haven't been loaded yet or if refresh param is present
   useEffect(() => {
-    console.log('[DraftPage] Loading articles on mount...');
-    loadUserArticles();
-  }, [loadUserArticles]);
+    const needsRefresh = searchParams.get('refresh') === 'true';
+    
+    if (needsRefresh || (articles.length === 0 && !loading && !hasLoadedRef.current)) {
+      console.log('[DraftPage] Loading articles...');
+      hasLoadedRef.current = true;
+      loadUserArticles();
+    }
+  }, [searchParams, articles.length, loading, loadUserArticles]);
 
   // Clean up refresh param from URL if present
   useEffect(() => {

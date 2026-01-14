@@ -829,10 +829,11 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
         </div>
 
         {/* Advanced Options */}
-        <div className="relative dropdown-container shrink-0 hidden md:block ml-auto">
+        <div className="relative dropdown-container shrink-0 hidden md:block">
           <button 
             ref={setAdvancedButtonRef}
-            className="text-sm text-gray-600 px-3 py-1.5 hover:bg-gray-100 rounded whitespace-nowrap"
+            className="text-sm text-gray-600 px-3 py-1.5 hover:bg-gray-200 rounded whitespace-nowrap"
+            style={{ backgroundColor: '#F8F8F8' }}
             onClick={() => {
               closeAllDropdowns()
               setShowAdvancedOptions(true)

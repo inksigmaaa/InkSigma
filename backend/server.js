@@ -77,6 +77,17 @@ app.use((err, req, res, next) => {
 app.listen(PORT, async () => {
     console.log(`Server running on http://localhost:${PORT}`);
     
+    // Check database connection
+    console.log("🔄 Checking database connection...");
+    try {
+        const { db } = await import("./config/database.js");
+        await db.execute("SELECT 1");
+        console.log("✅ Database connection verified!");
+        console.log("💡 Run 'npm run db:push' to sync schema changes");
+    } catch (error) {
+        console.error("❌ Database connection failed:", error.message);
+    }
+    
     // Verify SMTP connection
     const smtpReady = await emailService.verify();
     if (!smtpReady) {
