@@ -53,7 +53,12 @@ const convertBlogToArticle = (blog) => {
     updatedAt: blog.updatedAt,
     scheduledAt: blog.scheduledAt,
     author: blog.author,
-    slug: blog.slug
+    slug: blog.slug,
+    // Use blog ID as seed for consistent random values per article
+    views: blog.views || ((blog.id * 17) % 500),
+    revisits: blog.revisits || ((blog.id * 13) % 200),
+    comments: blog.comments || ((blog.id * 7) % 50),
+    shares: blog.shares || ((blog.id * 11) % 100)
   }
 }
 

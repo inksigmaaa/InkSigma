@@ -175,18 +175,18 @@ export default function EditorPageClient() {
   }
 
   // Save blog to database (create new or update existing)
-  const saveBlog = async (status, scheduledAt = null) => {
-    if (!blogTitle.trim()) {
-      alert('Please enter a title for your blog')
-      return false
-    }
-    if (!blogDescription.trim()) {
-      alert('Please enter a description for your blog')
-      return false
-    }
-    if (!editorContent.html || editorContent.html === '<p></p>') {
-      alert('Please write some content for your blog')
-      return false
+  const saveBlog = async (status, scheduledAt = null, skipValidation = false) => {
+    // Skip validation when reverting to draft or updating existing published articles
+    // Also skip validation if blog already exists (updating)
+    if (!skipValidation && !blogId) {
+      if (!blogTitle.trim()) {
+        alert('Please enter a title for your blog')
+        return false
+      }
+      if (!blogDescription.trim()) {
+        alert('Please enter a description for your blog')
+        return false
+      }
     }
 
     setIsSaving(true)
@@ -236,6 +236,18 @@ export default function EditorPageClient() {
         throw new Error(responseData.error || 'Failed to save blog')
       }
 
+      // Upload thumbnail if one was selected
+      if (thumbnailData && thumbnailData.file) {
+        try {
+          console.log('Uploading thumbnail for blog:', responseData.id)
+          await uploadArticleImage(responseData.id, thumbnailData.file)
+          console.log('Thumbnail uploaded successfully')
+        } catch (error) {
+          console.error('Error uploading thumbnail:', error)
+          // Don't fail the whole save if thumbnail upload fails
+        }
+      }
+
       // Mark as saved to prevent auto-save on exit
       setHasUnsavedChanges(false)
       savedSuccessfullyRef.current = true
@@ -252,9 +264,13 @@ export default function EditorPageClient() {
     }
   }
 
-  // Handle Save to Draft (without redirect - just save)
+  // Handle Save to Draft (without redirect - just save and stay on page)
   const handleSave = async () => {
-    await saveBlog(existingBlogStatus || 'draft')
+    const result = await saveBlog(existingBlogStatus || 'draft', null, true)
+    if (result && existingBlogStatus === 'published') {
+      // For published articles, just reload to show updated content
+      window.location.reload()
+    }
   }
 
   // Handle Save to Draft (with redirect)
@@ -265,12 +281,41 @@ export default function EditorPageClient() {
     }
   }
 
+  // Handle Revert to Draft (for published articles)
+  const handleDraft = async () => {
+    const result = await saveBlog('draft', null, true)
+    if (result) {
+      window.location.href = '/draft?refresh=true'
+    }
+  }
+
+  // Handle Revert from Trash to Draft
+  const handleRevertFromTrash = async () => {
+    try {
+      const result = await saveBlog('draft', null, true)
+      if (result) {
+        window.location.href = '/draft?refresh=true'
+      }
+    } catch (error) {
+      console.error('Error reverting from trash:', error)
+    }
+  }
+
   // Handle Publish
   const handlePublish = async () => {
     const result = await saveBlog('published')
     if (result) {
       setPublishedBlogSlug(result.slug || '')
       setShowPublishSuccess(true)
+    }
+  }
+
+  // Handle Send for Review (for editors/authors in joined publications)
+  const handleSendForReview = async () => {
+    const result = await saveBlog('review', null, true)
+    if (result) {
+      alert('Article sent for review!')
+      window.location.href = '/posts/drafts?refresh=true'
     }
   }
 
@@ -573,10 +618,21 @@ export default function EditorPageClient() {
           <div className="flex flex-col w-[916px] gap-2.5 pt-6 pr-8 pb-6 pl-8 border-b border-gray-200">
             {/* Title Block */}
             <div className="flex flex-col w-full gap-4">
-              {/* Drafts Badge */}
+              {/* Status Badge */}
               <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200 w-fit">
-                <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-                <span className="text-gray-500 text-sm">Drafts</span>
+                <div className={`w-2 h-2 rounded-full ${
+                  existingBlogStatus === 'published' ? 'bg-green-500' : 
+                  existingBlogStatus === 'scheduled' ? 'bg-blue-400' : 
+                  existingBlogStatus === 'trash' ? 'bg-red-500' :
+                  'bg-orange-400'
+                }`}></div>
+                <span className="text-gray-500 text-sm">
+                  {existingBlogStatus === 'published' ? 'Published' : 
+                   existingBlogStatus === 'scheduled' ? 'Scheduled' : 
+                   existingBlogStatus === 'trash' ? 'Trash' :
+                   existingBlogStatus === 'review' ? 'In Review' :
+                   'Drafts'}
+                </span>
               </div>
 
               {/* Title Input */}
@@ -708,68 +764,162 @@ export default function EditorPageClient() {
       {/* Footer */}
       <div className="fixed bottom-0 left-0 right-0 w-full h-[72px] flex items-center justify-center bg-white rounded-lg pt-4 pr-4 pb-6 pl-4 shadow-lg z-[100]">
         <div className="flex items-center justify-center gap-4 h-8">
-          <button 
-            className="flex items-center justify-center gap-3 w-40 h-8 rounded border border-gray-200 bg-gray-100 px-6 py-2 text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
-            onClick={handleSaveDraft}
-            disabled={isSaving}
-          >
-            <img src="/images/icons/Draft.svg" alt="Save to draft" className="w-5 h-5" />
-            <span className="whitespace-nowrap font-normal text-sm text-gray-900">
-              {isSaving ? 'Saving...' : 'Save to draft'}
-            </span>
-          </button>
-          
-          <button 
-            className="flex items-center justify-center gap-2 w-40 h-8 rounded bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
-            onClick={handlePublish}
-            disabled={isSaving}
-          >
-            {isSaving ? 'Publishing...' : 'Publish'}
-            <img src="/images/icons/Publish.svg" alt="Publish" className="w-4 h-4 brightness-0 invert" />
-          </button>
+          {/* Show different buttons based on article status */}
+          {existingBlogStatus === 'published' ? (
+            <>
+              <button 
+                className="flex items-center justify-center gap-3 w-40 h-8 rounded border border-gray-200 bg-gray-100 px-6 py-2 text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
+                onClick={handleDraft}
+                disabled={isSaving}
+              >
+                <img src="/images/icons/Draft.svg" alt="Revert to draft" className="w-5 h-5" />
+                <span className="whitespace-nowrap font-normal text-sm text-gray-900">
+                  Revert to Draft
+                </span>
+              </button>
+              
+              <button 
+                className="flex items-center justify-center gap-2 w-40 h-8 rounded bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Updating...' : 'Update'}
+              </button>
+            </>
+          ) : existingBlogStatus === 'trash' ? (
+            <>
+              <button 
+                className="flex items-center justify-center gap-3 w-40 h-8 rounded border border-gray-200 bg-gray-100 px-6 py-2 text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
+                onClick={handleRevertFromTrash}
+                disabled={isSaving}
+              >
+                <img src="/images/icons/Draft.svg" alt="Revert to draft" className="w-5 h-5" />
+                <span className="whitespace-nowrap font-normal text-sm text-gray-900">
+                  Revert to Draft
+                </span>
+              </button>
+            </>
+          ) : existingBlogStatus === 'scheduled' ? (
+            <>
+              <button 
+                className="flex items-center justify-center gap-2 w-40 h-8 rounded bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+                onClick={handlePublish}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Publishing...' : 'Publish Now'}
+                <img src="/images/icons/Publish.svg" alt="Publish" className="w-4 h-4 brightness-0 invert" />
+              </button>
 
-          <div 
-            className="flex items-center h-8 border border-gray-200 rounded overflow-hidden"
-          >
-            <input 
-              type="text" 
-              placeholder="dd-mm-yyyy"
-              value={getDisplayDate()}
-              onChange={handleManualInput}
-              maxLength={10}
-              className="h-[21px] w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
-            />
-            <input 
-              type="text" 
-              placeholder="--:--"
-              value={getDisplayTime()}
-              onChange={handleTimeInput}
-              maxLength={5}
-              className="h-[21px] w-[40px] flex-shrink-0 text-sm bg-transparent outline-none ml-2"
-            />
-            <svg 
-              className="w-4 h-4 text-gray-400 flex-shrink-0 cursor-pointer mx-2" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-              onClick={() => setShowCalendar(!showCalendar)}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span 
-              className="text-sm text-gray-400 flex-shrink-0 h-full flex items-center justify-center bg-gray-100 border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
-              onClick={() => {
-                // If date and time are already set, schedule directly
-                if (selectedDate && (manualDate || manualTime)) {
-                  handleSchedule()
-                } else {
-                  setShowCalendar(!showCalendar)
-                }
-              }}
-            >
-              Schedule
-            </span>
-          </div>
+              <div 
+                className="flex items-center h-8 border border-gray-200 rounded overflow-hidden"
+              >
+                <input 
+                  type="text" 
+                  placeholder="dd-mm-yyyy"
+                  value={getDisplayDate()}
+                  onChange={handleManualInput}
+                  maxLength={10}
+                  className="h-[21px] w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
+                />
+                <input 
+                  type="text" 
+                  placeholder="--:--"
+                  value={getDisplayTime()}
+                  onChange={handleTimeInput}
+                  maxLength={5}
+                  className="h-[21px] w-[40px] flex-shrink-0 text-sm bg-transparent outline-none ml-2"
+                />
+                <svg 
+                  className="w-4 h-4 text-gray-400 flex-shrink-0 cursor-pointer mx-2" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                  onClick={() => setShowCalendar(!showCalendar)}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span 
+                  className="text-sm text-gray-400 flex-shrink-0 h-full flex items-center justify-center bg-gray-100 border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
+                  onClick={() => {
+                    if (selectedDate && (manualDate || manualTime)) {
+                      handleSchedule()
+                    } else {
+                      setShowCalendar(!showCalendar)
+                    }
+                  }}
+                >
+                  Reschedule
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* For editors/authors in joined publications, show "Send for Review" button */}
+              {publicationId && currentPublication && !currentPublication.isOwner && (currentPublication.role === 'editor' || currentPublication.role === 'author') ? (
+                <button 
+                  className="flex items-center justify-center gap-2 w-40 h-8 rounded bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+                  onClick={handleSendForReview}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Sending...' : 'Send for Review'}
+                </button>
+              ) : (
+                <>
+                  <button 
+                    className="flex items-center justify-center gap-2 w-40 h-8 rounded bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+                    onClick={handlePublish}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Publishing...' : 'Publish'}
+                    <img src="/images/icons/Publish.svg" alt="Publish" className="w-4 h-4 brightness-0 invert" />
+                  </button>
+
+                  <div 
+                    className="flex items-center h-8 border border-gray-200 rounded overflow-hidden"
+                  >
+                    <input 
+                      type="text" 
+                      placeholder="dd-mm-yyyy"
+                      value={getDisplayDate()}
+                      onChange={handleManualInput}
+                      maxLength={10}
+                      className="h-[21px] w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="--:--"
+                      value={getDisplayTime()}
+                      onChange={handleTimeInput}
+                      maxLength={5}
+                      className="h-[21px] w-[40px] flex-shrink-0 text-sm bg-transparent outline-none ml-2"
+                    />
+                    <svg 
+                      className="w-4 h-4 text-gray-400 flex-shrink-0 cursor-pointer mx-2" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                      onClick={() => setShowCalendar(!showCalendar)}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span 
+                      className="text-sm text-gray-400 flex-shrink-0 h-full flex items-center justify-center bg-gray-100 border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
+                      onClick={() => {
+                        // If date and time are already set, schedule directly
+                        if (selectedDate && (manualDate || manualTime)) {
+                          handleSchedule()
+                        } else {
+                          setShowCalendar(!showCalendar)
+                        }
+                      }}
+                    >
+                      Schedule
+                    </span>
+                  </div>
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
 
