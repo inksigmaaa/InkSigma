@@ -226,6 +226,8 @@ router.get("/", async (req, res) => {
             includeUnpublished // Only for authenticated requests
         } = req.query;
 
+        console.log('[GET /api/blogs] Query params:', { published, status, authorId, publicationId, includeUnpublished });
+
         // Check if user is authenticated (for viewing their own unpublished posts)
         let currentUserId = null;
         try {
@@ -233,8 +235,10 @@ router.get("/", async (req, res) => {
                 headers: fromNodeHeaders(req.headers),
             });
             currentUserId = session?.user?.id;
+            console.log('[GET /api/blogs] Current user ID:', currentUserId);
         } catch (e) {
             // Not authenticated, that's fine for public requests
+            console.log('[GET /api/blogs] Not authenticated');
         }
 
         let query = db
@@ -303,6 +307,8 @@ router.get("/", async (req, res) => {
 
         let blogs = await query.limit(parseInt(limit)).offset(parseInt(offset));
 
+        console.log('[GET /api/blogs] Raw blogs count:', blogs.length);
+
         // Filter by categories if provided (since categories is an array field)
         if (categories) {
             const categoryArray = Array.isArray(categories) ? categories : [categories];
@@ -315,14 +321,34 @@ router.get("/", async (req, res) => {
 
         // Security: If not authenticated or not the author, filter out non-published posts
         // This is a safety net in case someone bypasses the query filters
+        console.log('[GET /api/blogs] Security check - currentUserId:', currentUserId, 'authorId:', authorId, 'includeUnpublished:', includeUnpublished);
+        
         if (!currentUserId) {
+            console.log('[GET /api/blogs] No user - filtering to published only');
             blogs = blogs.filter(b => b.status === 'published');
-        } else if (!includeUnpublished || includeUnpublished !== 'true') {
+        } else if (includeUnpublished === 'true') {
+            // User is requesting with includeUnpublished
+            if (authorId && authorId === currentUserId) {
+                // User is requesting their own blogs - show all
+                console.log('[GET /api/blogs] User requesting own blogs with includeUnpublished - showing all');
+                // No filtering needed
+            } else {
+                // User is requesting all blogs with includeUnpublished - show published + own posts
+                console.log('[GET /api/blogs] includeUnpublished but not own blogs - showing published + own');
+                blogs = blogs.filter(b => 
+                    b.status === 'published' || b.authorId === currentUserId
+                );
+            }
+        } else {
             // Authenticated but not requesting unpublished - show published + own posts
+            console.log('[GET /api/blogs] Filtering to published + own posts');
             blogs = blogs.filter(b => 
                 b.status === 'published' || b.authorId === currentUserId
             );
         }
+
+        console.log('[GET /api/blogs] Final blogs count:', blogs.length);
+        console.log('[GET /api/blogs] Blog statuses:', blogs.map(b => ({ id: b.id, status: b.status, authorId: b.authorId })));
 
         res.json(blogs);
     } catch (error) {
@@ -633,6 +659,53 @@ router.post("/", getCurrentUser, async (req, res) => {
     } catch (error) {
         console.error("Error creating blog:", error);
         res.status(500).json({ error: "Failed to create blog" });
+    }
+});
+
+// POST /api/blogs/auto-save - Auto-save blog as draft (for sendBeacon)
+router.post("/auto-save", async (req, res) => {
+    try {
+        // Get session from cookies
+        const session = await auth.api.getSession({
+            headers: fromNodeHeaders(req.headers),
+        });
+
+        if (!session?.user) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const { title, description, content, categories } = req.body;
+        
+        // Only save if there's meaningful content
+        if (!title || !description || !content) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        const slug = await ensureUniqueSlug(generateSlug(title));
+
+        const blogData = {
+            slug,
+            title,
+            description,
+            content,
+            categories: categories || [],
+            status: 'draft',
+            published: false,
+            authorId: session.user.id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+
+        const [newBlog] = await db
+            .insert(blog)
+            .values(blogData)
+            .returning();
+
+        console.log('[AUTO-SAVE] Blog saved as draft:', newBlog.id);
+        res.status(201).json(newBlog);
+    } catch (error) {
+        console.error("Error auto-saving blog:", error);
+        res.status(500).json({ error: "Failed to auto-save blog" });
     }
 });
 
