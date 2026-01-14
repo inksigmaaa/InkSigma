@@ -1,5 +1,5 @@
 "use client"
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -10,59 +10,19 @@ export default function NavbarLoggedin() {
     const [notificationOpen, setNotificationOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [, forceUpdate] = useState(0);
     const wrapperRef = useRef(null);
     const notificationRef = useRef(null);
-    const previousNotificationCount = useRef(0);
+    const notificationIntervalRef = useRef(null);
     const router = useRouter();
     
     // Get current user session
     const { data: session, isPending } = useSession();
     const user = session?.user;
 
-    // Fetch notifications when user is available
-    useEffect(() => {
-        if (user?.id) {
-            fetchNotifications();
-        }
-    }, [user?.id]);
-
-    // Auto-refresh notifications every 30 seconds for real-time updates
-    useEffect(() => {
-        if (!user?.id) return;
-
-        const interval = setInterval(() => {
-            fetchNotifications();
-        }, 30000); // 30 seconds
-
-        return () => clearInterval(interval);
-    }, [user?.id]);
-
-    // Force re-render every minute to update "time ago" displays
-    useEffect(() => {
-        const tick = setInterval(() => forceUpdate(v => v + 1), 60000);
-        return () => clearInterval(tick);
-    }, []);
-
-    // Close dropdowns when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-                setOpen(false);
-            }
-            if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-                setNotificationOpen(false);
-            }
-        };
-
-        document.addEventListener("click", handleClickOutside);
-        return () => document.removeEventListener("click", handleClickOutside);
-    }, []);
-
-    const fetchNotifications = async () => {
+    // Fetch notifications with useCallback to prevent unnecessary re-renders
+    const fetchNotifications = useCallback(async () => {
         if (!user?.id) return;
         
-        // Don't show loading spinner on background refreshes
         const isInitialLoad = notifications.length === 0;
         if (isInitialLoad) {
             setLoading(true);
@@ -79,7 +39,44 @@ export default function NavbarLoggedin() {
                 setLoading(false);
             }
         }
-    };
+    }, [user?.id, notifications.length]);
+
+    // Fetch notifications when user is available
+    useEffect(() => {
+        if (user?.id) {
+            fetchNotifications();
+        }
+    }, [user?.id, fetchNotifications]);
+
+    // Auto-refresh notifications every 30 seconds for real-time updates
+    useEffect(() => {
+        if (!user?.id) return;
+
+        notificationIntervalRef.current = setInterval(() => {
+            fetchNotifications();
+        }, 30000);
+
+        return () => {
+            if (notificationIntervalRef.current) {
+                clearInterval(notificationIntervalRef.current);
+            }
+        };
+    }, [user?.id, fetchNotifications]);
+
+    // Close dropdowns when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+                setOpen(false);
+            }
+            if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+                setNotificationOpen(false);
+            }
+        };
+
+        document.addEventListener("click", handleClickOutside);
+        return () => document.removeEventListener("click", handleClickOutside);
+    }, []);
 
     const markAsRead = async (notificationId) => {
         try {

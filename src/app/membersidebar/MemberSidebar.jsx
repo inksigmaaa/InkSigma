@@ -2,13 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { memo, useMemo } from 'react';
 import UserAvatar from "@/components/ui/UserAvatar";
 import { usePublication } from '@/contexts/PublicationContext';
 
-export default function MemberSidebar() {
-  const pathname = usePathname();
-  const { currentPublication } = usePublication();
-  
+const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, currentPublication }) {
   const getRoute = (label) => {
     const routes = {
       "Home": "/posts/home",
@@ -19,6 +17,14 @@ export default function MemberSidebar() {
     };
     return routes[label] || "/dashboard";
   };
+
+  const navItems = useMemo(() => [
+    { label: "Home", icon: "/images/icons/home.svg", route: "/posts/home" },
+    { label: "Members", icon: "/images/icons/Member.svg", route: "/posts/members" },
+    { label: "Published", icon: "/images/icons/Publish.svg", route: "/posts/published" },
+    { label: "Review", icon: "/images/icons/Review.svg", route: "/author-review" },
+    { label: "My Blogs", icon: "/images/icons/all_articles.svg", route: "/posts/my-blogs" },
+  ], []);
 
   return (
     <>
@@ -163,4 +169,11 @@ export default function MemberSidebar() {
       </div>
     </>
   );
+});
+
+export default function MemberSidebar() {
+  const pathname = usePathname();
+  const { currentPublication } = usePublication();
+  
+  return <MemberSidebarContent pathname={pathname} currentPublication={currentPublication} />;
 }

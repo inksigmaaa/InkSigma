@@ -31,7 +31,28 @@ export default function PostsPublished() {
             )
 
             if (articlesRes.ok) {
-                const articlesData = await articlesRes.json()
+                let articlesData = await articlesRes.json()
+                
+                // Ensure articles have stats fields, fetch them if missing
+                articlesData = await Promise.all(articlesData.map(async (article) => {
+                    // If article doesn't have stats, try to fetch them
+                    if (!article.views && !article.revisits && !article.comments && !article.shares) {
+                        try {
+                            const statsRes = await fetch(
+                                `http://localhost:5000/api/blogs/${article.id}/stats`,
+                                { credentials: "include" }
+                            )
+                            if (statsRes.ok) {
+                                const stats = await statsRes.json()
+                                return { ...article, ...stats }
+                            }
+                        } catch (error) {
+                            console.warn(`Failed to fetch stats for article ${article.id}:`, error)
+                        }
+                    }
+                    return article
+                }))
+                
                 setArticles(articlesData)
             } else {
                 console.error('Failed to fetch publication articles:', articlesRes.status)
@@ -73,20 +94,30 @@ export default function PostsPublished() {
                                 <p className="font-['Public_Sans'] font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">No published articles found</p>
                             </div>
                         ) : (
-                            articles.map(article => (
-                                <ArticleContainer
-                                    key={article.id}
-                                    id={article.id}
-                                    status={article.status}
-                                    title={article.title}
-                                    description={article.description}
-                                    categories={article.categories || []}
-                                    postedTime={article.createdAt}
-                                    isSelected={false}
-                                    onSelect={() => {}}
-                                    showActions={false}
-                                />
-                            ))
+                            articles.map(article => {
+                                const articleStats = [
+                                    { label: 'Views', value: article.views ?? 0 },
+                                    { label: 'Revisits', value: article.revisits ?? 0 },
+                                    { label: 'Comments', value: article.comments ?? 0 },
+                                    { label: 'Shares', value: article.shares ?? 0 }
+                                ]
+                                
+                                return (
+                                    <ArticleContainer
+                                        key={article.id}
+                                        id={article.id}
+                                        status={article.status}
+                                        title={article.title}
+                                        description={article.description}
+                                        categories={article.categories || []}
+                                        postedTime={article.createdAt}
+                                        isSelected={false}
+                                        onSelect={() => {}}
+                                        showActions={false}
+                                        stats={articleStats}
+                                    />
+                                )
+                            })
                         )}
                     </div>
                 </div>
