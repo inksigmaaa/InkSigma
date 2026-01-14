@@ -17,7 +17,6 @@ import { corsMiddleware } from "./middleware/cors.js";
 import { emailService } from "./services/emailService.js";
 import schedulerService from "./services/schedulerService.js";
 import InvitationService from "./services/invitationService.js";
-import { runMigrations } from "./config/migrate.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -78,11 +77,15 @@ app.use((err, req, res, next) => {
 app.listen(PORT, async () => {
     console.log(`Server running on http://localhost:${PORT}`);
     
-    // Run database migrations automatically
+    // Check database connection
+    console.log("🔄 Checking database connection...");
     try {
-        await runMigrations();
+        const { db } = await import("./config/database.js");
+        await db.execute("SELECT 1");
+        console.log("✅ Database connection verified!");
+        console.log("💡 Run 'npm run db:push' to sync schema changes");
     } catch (error) {
-        console.error("Failed to run migrations. Server will continue but database may be out of sync.");
+        console.error("❌ Database connection failed:", error.message);
     }
     
     // Verify SMTP connection
