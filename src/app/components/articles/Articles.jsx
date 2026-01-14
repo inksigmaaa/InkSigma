@@ -254,24 +254,36 @@ export default function Articles(props) {
                             <p className="font-['Public_Sans'] font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">No articles found</p>
                         </div>
                     ) : (
-                        filteredArticles.map(article => (
-                            <ArticleContainer
-                                key={article.id}
-                                id={article.id}
-                                status={article.status}
-                                title={article.title}
-                                description={article.description}
-                                categories={article.categories || []}
-                                postedTime={article.postedTime}
-                                image={article.image}
-                                isSelected={selectedArticles.has(article.id)}
-                                onSelect={handleArticleSelect}
-                                onDelete={() => handleDeleteArticle(article.id)}
-                                onDraft={() => handleDraftArticle(article.id)}
-                                onPublish={() => handlePublishArticle(article.id)}
-                                onUnpublish={() => handleUnpublishArticle(article.id)}
-                            />
-                        ))
+                        filteredArticles.map(article => {
+                            // Only create stats array if article has any non-zero stat values
+                            const hasAnyStats = article.views || article.revisits || article.comments || article.shares
+                            const articleStats = hasAnyStats ? (article.stats || [
+                                { label: 'Views', value: article.views || 0, color: '#8B5CF6' },
+                                { label: 'Revisits', value: article.revisits || 0, color: '#8B5CF6' },
+                                { label: 'Comments', value: article.comments || 0, color: '#8B5CF6' },
+                                { label: 'Shares', value: article.shares || 0, color: '#8B5CF6' }
+                            ]) : undefined
+                            
+                            return (
+                                <ArticleContainer
+                                    key={article.id}
+                                    id={article.id}
+                                    status={article.status}
+                                    title={article.title}
+                                    description={article.description}
+                                    categories={article.categories || []}
+                                    postedTime={article.postedTime}
+                                    image={article.image}
+                                    isSelected={selectedArticles.has(article.id)}
+                                    onSelect={handleArticleSelect}
+                                    onDelete={() => handleDeleteArticle(article.id)}
+                                    onDraft={() => handleDraftArticle(article.id)}
+                                    onPublish={() => handlePublishArticle(article.id)}
+                                    onUnpublish={() => handleUnpublishArticle(article.id)}
+                                    stats={articleStats}
+                                />
+                            )
+                        })
                     )}
                 </div>
             </div>

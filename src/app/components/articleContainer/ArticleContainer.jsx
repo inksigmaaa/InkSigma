@@ -8,11 +8,14 @@ import {
 import { useRouter } from 'next/navigation'
 import StatsPopup from './StatsPopup'
 
-export default function ArticleContainer({ id, status, title, description, categories, postedTime, isSelected, onSelect, onDelete, onPublish, onUnpublish, onDraft, publicationId, image, showActions = true }) {
+export default function ArticleContainer({ id, status, title, description, categories, postedTime, isSelected, onSelect, onDelete, onPublish, onUnpublish, onDraft, publicationId, image, showActions = true, stats }) {
     const router = useRouter()
     const [showStats, setShowStats] = useState(false)
     const [statsPosition, setStatsPosition] = useState({ top: 0, left: 0 })
     const statsButtonRef = useRef(null)
+
+    // Check if there are any non-zero stats
+    const hasStats = stats && stats.some(stat => stat.value > 0)
 
     const handleEdit = () => {
         const params = new URLSearchParams({ status, id: id.toString() })
@@ -31,7 +34,7 @@ export default function ArticleContainer({ id, status, title, description, categ
         if (statsButtonRef.current) {
             const rect = statsButtonRef.current.getBoundingClientRect()
             setStatsPosition({
-                top: rect.top - 68,
+                top: rect.top - 88,
                 left: rect.right
             })
         }
@@ -97,14 +100,16 @@ export default function ArticleContainer({ id, status, title, description, categ
 
                     {showActions && (
                         <div className="hidden md:flex gap-2 shrink-0">
-                            <button
-                                ref={statsButtonRef}
-                                className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-1 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
-                                title="Stats"
-                                onClick={handleStatsClick}
-                            >
-                                <img src="/images/icons/stats1.svg" alt="Stats" className="w-5 h-5" />
-                            </button>
+                            {hasStats && (
+                                <button
+                                    ref={statsButtonRef}
+                                    className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-1 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
+                                    title="Stats"
+                                    onClick={handleStatsClick}
+                                >
+                                    <img src="/images/icons/stats1.svg" alt="Stats" className="w-5 h-5" />
+                                </button>
+                            )}
                             
                             {/* Publish/Unpublish/Draft buttons based on status */}
                             {status === 'draft' && (
@@ -188,10 +193,12 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 <DropdownMenuItem className="gap-2 text-sm" onClick={handleDraft}>
                                     <img src="/images/icons/clip.svg" className="w-4 h-4" /> Send to draft
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="gap-2 text-sm" onClick={handleStatsClick}>
-                                    <img src="/images/icons/statistics.svg" className="w-4 h-4" />
-                                    Statistics
-                                </DropdownMenuItem>
+                                {hasStats && (
+                                    <DropdownMenuItem className="gap-2 text-sm" onClick={handleStatsClick}>
+                                        <img src="/images/icons/statistics.svg" className="w-4 h-4" />
+                                        Statistics
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem className="gap-2 text-sm" onClick={handleEdit}>
                                     <img src="/images/icons/edit.svg" className="w-4 h-4" /> Edit
                                 </DropdownMenuItem>
@@ -226,6 +233,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                 isOpen={showStats}
                 onClose={() => setShowStats(false)}
                 position={statsPosition}
+                stats={stats}
             />
         </div>
     )
