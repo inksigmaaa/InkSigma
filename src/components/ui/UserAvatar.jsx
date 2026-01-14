@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const UserAvatar = ({ 
     user, 
@@ -8,6 +8,11 @@ const UserAvatar = ({
     className = '' 
 }) => {
     const [imageError, setImageError] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Size classes
     const sizeClasses = {
@@ -60,8 +65,8 @@ const UserAvatar = ({
 
     const { initial, colorClass } = getInitialAndColor();
 
-    // Always render the same structure to avoid hydration mismatch
-    if (!hasAvatar) {
+    // Show fallback during SSR and when there's no avatar
+    if (!mounted || !hasAvatar) {
         return (
             <div className={`${sizeClass} rounded-full ${colorClass} flex items-center justify-center text-white font-semibold ${className}`}>
                 {initial}
@@ -69,7 +74,7 @@ const UserAvatar = ({
         );
     }
 
-    // For users with avatars, show the image
+    // For users with avatars, show the image (only after client-side mount)
     return (
         <img
             src={avatarUrl}

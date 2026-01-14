@@ -6,71 +6,40 @@ import MemberSidebar from "../../membersidebar/MemberSidebar"
 import Verify from "../../components/verify/Verify"
 import ArticleContainer from "../../components/articleContainer/ArticleContainer"
 import { useSession } from "@/lib/auth-client"
+import { usePublication } from "@/contexts/PublicationContext"
 
 export default function PostsPublished() {
     const [articles, setArticles] = useState([])
     const [loading, setLoading] = useState(true)
-    const [publicationId, setPublicationId] = useState(null)
     const { data: session } = useSession()
+    const { currentPublication } = usePublication()
 
     useEffect(() => {
-        if (session?.user?.id) {
+        if (session?.user?.id && currentPublication?.id) {
             loadPublishedArticles()
         }
-    }, [session?.user?.id])
+    }, [session?.user?.id, currentPublication?.id])
 
     const loadPublishedArticles = async () => {
         try {
             setLoading(true)
             
-            // First, try to get user's joined publications
-            const membershipsRes = await fetch("http://localhost:5000/api/publication-members/my-publications", {
-                credentials: "include",
-            })
+            // Fetch articles for the current publication context
+            const articlesRes = await fetch(
+                `http://localhost:5000/api/blogs?publicationId=${currentPublication.id}&status=published`,
+                { credentials: "include" }
+            )
 
-            let articlesData = []
-
-            if (membershipsRes.ok) {
-                const memberships = await membershipsRes.json()
-                
-                // If user has joined publications, fetch articles for the first one
-                // API returns flat array of publications, not nested structure
-                if (memberships.length > 0) {
-                    const firstPub = memberships[0]
-                    setPublicationId(firstPub.id)
-
-                    const articlesRes = await fetch(
-                        `http://localhost:5000/api/blogs?publicationId=${firstPub.id}&status=published`,
-                        { credentials: "include" }
-                    )
-
-                    if (articlesRes.ok) {
-                        articlesData = await articlesRes.json()
-                        console.log('Published articles from publication:', articlesData)
-                    } else {
-                        console.error('Failed to fetch publication articles:', articlesRes.status)
-                    }
-                }
+            if (articlesRes.ok) {
+                const articlesData = await articlesRes.json()
+                setArticles(articlesData)
+            } else {
+                console.error('Failed to fetch publication articles:', articlesRes.status)
+                setArticles([])
             }
-
-            // If no publication articles, fetch user's personal published articles
-            if (articlesData.length === 0 && session?.user?.id) {
-                const personalArticlesRes = await fetch(
-                    `http://localhost:5000/api/blogs?authorId=${session.user.id}&status=published`,
-                    { credentials: "include" }
-                )
-
-                if (personalArticlesRes.ok) {
-                    articlesData = await personalArticlesRes.json()
-                    console.log('Published personal articles:', articlesData)
-                } else {
-                    console.error('Failed to fetch personal articles:', personalArticlesRes.status)
-                }
-            }
-
-            setArticles(articlesData)
         } catch (error) {
             console.error("Error loading published articles:", error)
+            setArticles([])
         } finally {
             setLoading(false)
         }

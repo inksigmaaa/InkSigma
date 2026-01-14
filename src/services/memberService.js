@@ -182,6 +182,25 @@ export const memberService = {
     }
   },
 
+  // Get invitation details
+  async getInvitationDetails(token) {
+    const response = await fetch(`${API_URL}/api/members/invite/${token}`, {
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to fetch invitation details");
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
+    }
+
+    return response.json();
+  },
+
   // Accept invitation
   async acceptInvitation(token) {
     const response = await fetch(`${API_URL}/api/members/invite/${token}/accept`, {

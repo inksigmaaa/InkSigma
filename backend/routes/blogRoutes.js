@@ -9,7 +9,6 @@ import { eq, desc, and, or, ilike } from "drizzle-orm";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 import notificationService from "../services/notificationService.js";
-import schedulerService from "../services/schedulerService.js";
 
 const router = express.Router();
 
@@ -576,38 +575,42 @@ router.post("/", getCurrentUser, async (req, res) => {
             });
         }
 
-        // publicationId is optional - verify access only if provided
-        if (publicationId) {
-            // Verify user has access to this publication
-            const [pub] = await db
+        // publicationId is now required
+        if (!publicationId) {
+            return res.status(400).json({ 
+                error: "Publication ID is required" 
+            });
+        }
+
+        // Verify user has access to this publication
+        const [pub] = await db
+            .select()
+            .from(publication)
+            .where(eq(publication.id, parseInt(publicationId)));
+
+        if (!pub) {
+            return res.status(404).json({ error: "Publication not found" });
+        }
+
+        // Check if user is owner or member
+        const isOwner = pub.userId === req.user.id;
+        let isMember = false;
+        
+        if (!isOwner) {
+            const [member] = await db
                 .select()
-                .from(publication)
-                .where(eq(publication.id, parseInt(publicationId)));
+                .from(publicationMember)
+                .where(
+                    and(
+                        eq(publicationMember.publicationId, parseInt(publicationId)),
+                        eq(publicationMember.userId, req.user.id)
+                    )
+                );
+            isMember = !!member;
+        }
 
-            if (!pub) {
-                return res.status(404).json({ error: "Publication not found" });
-            }
-
-            // Check if user is owner or member
-            const isOwner = pub.userId === req.user.id;
-            let isMember = false;
-            
-            if (!isOwner) {
-                const [member] = await db
-                    .select()
-                    .from(publicationMember)
-                    .where(
-                        and(
-                            eq(publicationMember.publicationId, parseInt(publicationId)),
-                            eq(publicationMember.userId, req.user.id)
-                        )
-                    );
-                isMember = !!member;
-            }
-
-            if (!isOwner && !isMember) {
-                return res.status(403).json({ error: "You don't have access to this publication" });
-            }
+        if (!isOwner && !isMember) {
+            return res.status(403).json({ error: "You don't have access to this publication" });
         }
 
         const slug = await ensureUniqueSlug(generateSlug(title));
@@ -632,14 +635,10 @@ router.post("/", getCurrentUser, async (req, res) => {
             categories: categories || [],
             ...syncedFields, // This ensures both status and published are always in sync
             authorId: req.user.id,
+            publicationId: parseInt(publicationId),
             createdAt: new Date(),
             updatedAt: new Date(),
         };
-
-        // Add publicationId only if provided
-        if (publicationId) {
-            blogData.publicationId = parseInt(publicationId);
-        }
 
         // Add scheduledAt if provided
         if (scheduledAt) {

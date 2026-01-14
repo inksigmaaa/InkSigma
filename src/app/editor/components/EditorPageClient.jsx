@@ -1,31 +1,59 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { ThumbnailModal } from './ThumbnailModal'
-import { TiptapEditor } from './TiptapEditor'
+import { useState, useEffect, useRef, useCallback } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { CategoryDropdown } from "./CategoryDropdown"
+import { ThumbnailModal } from "./ThumbnailModal"
+import { DateTimePicker } from "./DateTimePicker"
+import PublishSuccessModal from "./PublishSuccessModal"
+import { useArticles } from "@/contexts/ArticlesContext"
+import { useSession } from "@/lib/auth-client"
+import { usePublication } from "@/contexts/PublicationContext"
 
-const categories = [
-  "Fashion",
-  "Space", 
-  "Sports",
-  "Art",
-  "Humor",
-  "Climate & Environment",
-  "Technology",
-  "Business",
-  "Health",
-  "Education"
-]
+import { 
+  Image as ImageIcon,
+  Calendar,
+  ChevronLeft,
+  FileText,
+} from "lucide-react"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+import { TiptapEditor } from "./TiptapEditor"
 
 export default function EditorPageClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const blogId = searchParams.get('id')
+  const { data: session } = useSession()
+  const { createArticle, updateArticle, uploadArticleImage, getArticleById, loadUserArticles } = useArticles()
+  const { currentPublication } = usePublication()
   
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+  // Prevent hydration mismatch by ensuring client-side rendering
+  const [isMounted, setIsMounted] = useState(false)
+  
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+  
+  // Get status and ID from URL parameters
+  const articleStatus = searchParams.get('status')
+  const articleId = searchParams.get('id')
+  const publicationId = searchParams.get('publicationId') // For joined publications
+  
+  // Determine if user is owner or member
+  const isPublicationOwner = currentPublication?.isOwner ?? true // Default to true if no publication context
+  
+  // Debug log
+  useEffect(() => {
+    console.log('Editor - publicationId:', publicationId)
+    console.log('Editor - articleStatus:', articleStatus)
+    console.log('Editor - isPublicationOwner:', isPublicationOwner)
+    console.log('Editor - currentPublication:', currentPublication)
+  }, [publicationId, articleStatus, isPublicationOwner, currentPublication])
+  
+  // State management
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
   const [selectedCategories, setSelectedCategories] = useState([])
   const [categorySearch, setCategorySearch] = useState('')
   const [showThumbnailModal, setShowThumbnailModal] = useState(false)
@@ -717,248 +745,335 @@ export default function EditorPageClient() {
         </div>
       </div>
 
-      {/* Calendar Popup */}
-      {showCalendar && (
-        <div 
-          ref={calendarRef}
-          className="fixed z-[1001] bg-white rounded flex"
-          style={{
-            gap: '15px',
-            bottom: '88px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            border: '0.75px solid #B0B0B0',
-            boxShadow: '8px 4px 30px 0px rgba(0,0,0,0.15)',
-            padding: '16px'
-          }}
-        >
-          {/* Calendar Section */}
-          <div className="flex flex-col" style={{ width: '220px', gap: '8px' }}>
-            {/* Month Navigation */}
-            <div className="flex items-center justify-between">
-              <span className="text-base font-medium text-gray-800">
-                {monthNames[currentMonth]}, {currentYear}
-              </span>
-              <div className="flex items-center gap-1">
-                <button 
-                  onClick={handlePrevMonth}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <svg className="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-                  </svg>
-                </button>
-                <button 
-                  onClick={handleNextMonth}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <svg className="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            
-            {/* Calendar Grid */}
-            <div className="grid grid-cols-7 gap-1 flex-1">
-              {renderCalendarDays()}
-            </div>
-            
-            {/* Clear and Today buttons */}
-            <div className="flex justify-between">
-              <button 
-                onClick={handleClearDate}
-                className="text-sm text-blue-500 hover:text-blue-600"
-              >
-                Clear
-              </button>
-              <button 
-                onClick={handleToday}
-                className="text-sm text-blue-500 hover:text-blue-600"
-              >
-                Today
-              </button>
+      {/* Character/Word Count and Publish Controls */}
+      <div className={`fixed bottom-0 left-0 right-0 bg-[#fff] border-t border-gray-200 ${(isThumbnailModalOpen || isImageModalOpen) ? 'hidden' : ''}`} style={{zIndex:999}}>
+        <div className="w-full max-w-5xl mx-auto px-4 md:px-6 py-4 space-y-4">
+          {/* Character/Word Count */}
+          <div className="flex justify-end">
+            <div className="text-sm text-gray-400">
+              <span>Chars <span className="text-gray-600">{charCount}</span></span>
+              <span className="mx-2">|</span>
+              <span>Words <span className="text-gray-600">{wordCount}</span></span>
             </div>
           </div>
-          
-          {/* Divider */}
-          <div className="w-px bg-gray-200" />
-          
-          {/* Time Picker Section */}
-          <div 
-            className="flex flex-col"
-            style={{ 
-              width: '90px', 
-              gap: '8px',
-              paddingRight: '8px',
-              paddingLeft: '8px'
-            }}
-          >
-            {/* Headers - aligned with day labels row (Su, Mo, Tu...) */}
-            <div className="flex justify-between h-6 items-center" style={{ marginTop: '34px' }}>
-              <span className="text-xs text-gray-500 w-7 text-center">Hour</span>
-              <span className="text-xs text-gray-500 w-7 text-center">Min</span>
-            </div>
-            
-            {/* Time columns - 4 rows visible */}
-            <div className="flex justify-between" style={{ height: '104px', gap: '16px' }}>
-              {/* Hours - 4 rows */}
-              <div className="flex flex-col items-center overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-                {[...Array(24)].map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setSelectedHour(i)
-                      const minuteStr = String(selectedMinute).padStart(2, '0')
-                      setManualTime(`${String(i).padStart(2, '0')}:${minuteStr}`)
-                    }}
-                    className={`w-7 h-6 text-xs rounded-md ${selectedHour === i ? 'text-white' : 'text-gray-700 hover:bg-gray-100'}`}
-                    style={{ marginBottom: '2px', flexShrink: 0, ...(selectedHour === i ? { backgroundColor: '#4B6CFB' } : {}) }}
+
+          {/* Publish Controls */}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-center gap-3">
+            {/* Mobile Layout */}
+            <div className="flex md:hidden items-center gap-2 w-full">
+              {articleStatus === 'trash' ? (
+                <Button 
+                  onClick={handleRevertToDraft}
+                  disabled={isLoading}
+                  className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
+                >
+                  {isLoading ? 'Reverting...' : 'Revert to draft'}
+                </Button>
+              ) : articleStatus === 'review' ? (
+                <Button 
+                  onClick={handleSendForReview}
+                  disabled={isLoading}
+                  className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
+                >
+                  {isLoading ? 'Sending...' : 'Send for Review'}
+                </Button>
+              ) : articleStatus === 'published' ? (
+                <Button 
+                  onClick={handleUpdate}
+                  disabled={isLoading}
+                  className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium flex-1"
+                >
+                  {isLoading ? 'Updating...' : 'Update'}
+                </Button>
+              ) : articleStatus === 'scheduled' ? (
+                <>
+                  <Button 
+                    onClick={handlePublish}
+                    disabled={isLoading}
+                    className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium"
                   >
-                    {String(i).padStart(2, '0')}
-                  </button>
-                ))}
-              </div>
-              
-              {/* Minutes - 4 rows */}
-              <div className="flex flex-col items-center overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-                {[...Array(60)].map((_, m) => (
-                  <button
-                    key={m}
-                    onClick={() => {
-                      setSelectedMinute(m)
-                      const hourStr = String(selectedHour).padStart(2, '0')
-                      setManualTime(`${hourStr}:${String(m).padStart(2, '0')}`)
-                    }}
-                    className={`w-7 h-6 text-xs rounded-md ${selectedMinute === m ? 'text-white' : 'text-gray-700 hover:bg-gray-100'}`}
-                    style={{ marginBottom: '2px', flexShrink: 0, ...(selectedMinute === m ? { backgroundColor: '#4B6CFB' } : {}) }}
+                    {isLoading ? 'Publishing...' : 'Publish Now'}
+                  </Button>
+                  <div className="flex items-center gap-2 bg-white px-3 border border-gray-200 rounded-lg flex-1">
+                    <Input
+                      type="text"
+                      value={publishDate}
+                      onChange={handleDateChange}
+                      placeholder="dd-mm-yyyy" maxLength={10}
+                      className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                    />
+                    <Input
+                      type="text"
+                      value={publishTime}
+                      onChange={handleTimeChange}
+                      placeholder="--:--" maxLength={5}
+                      className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
+                    />
+                    <button
+                      onClick={() => setIsDateTimePickerOpen(true)}
+                      className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                    >
+                      <Calendar className="h-4 w-4 text-gray-700" />
+                    </button>
+                  </div>
+                  <button 
+                    onClick={handleReschedule}
+                    disabled={isLoading}
+                    className="bg-gray-200 text-gray-400 text-sm font-medium px-4 py-2.5 rounded-lg"
                   >
-                    {String(m).padStart(2, '0')}
+                    {isLoading ? 'Rescheduling...' : 'Reschedule'}
                   </button>
-                ))}
-              </div>
+                </>
+              ) : (
+                <>
+                  {!isPublicationOwner ? (
+                    // For joined publications where user is NOT owner - only show Send for Review button
+                    <Button 
+                      onClick={handleSendForReview}
+                      disabled={isLoading}
+                      className="bg-black text-white hover:bg-gray-800 px-6 py-2.5 rounded-lg text-sm font-medium"
+                    >
+                      {isLoading ? 'Sending...' : 'Send for Review'}
+                    </Button>
+                  ) : (
+                    // For owned publications - show all buttons
+                    <>
+                      <Button 
+                        onClick={handlePublish}
+                        disabled={isLoading}
+                        className="bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-lg text-sm font-medium"
+                      >
+                        {isLoading ? 'Publishing...' : 'Publish'}
+                      </Button>
+                      <div className="flex items-center gap-2 bg-white px-3 border border-gray-200 rounded-lg flex-1">
+                        <Input
+                          type="text"
+                          value={publishDate}
+                          onChange={handleDateChange}
+                          placeholder="dd-mm-yyyy" maxLength={10}
+                          className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700"
+                        />
+                        <Input
+                          type="text"
+                          value={publishTime}
+                          onChange={handleTimeChange}
+                          placeholder="--:--" maxLength={5}
+                          className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center"
+                        />
+                        <button
+                          onClick={() => setIsDateTimePickerOpen(true)}
+                          className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                        >
+                          <Calendar className="h-4 w-4 text-gray-700" />
+                        </button>
+                      </div>
+                      <button 
+                        onClick={handleSchedule}
+                        disabled={isLoading}
+                        className="bg-gray-200 text-gray-400 text-sm font-medium px-4 py-2.5 rounded-lg"
+                      >
+                        {isLoading ? 'Scheduling...' : 'Schedule'}
+                      </button>
+                      <Button 
+                        onClick={handleSaveDraft}
+                        disabled={isLoading}
+                        className="bg-gray-200 text-gray-700 hover:bg-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium"
+                      >
+                        {isLoading ? 'Saving...' : 'Save as Draft'}
+                      </Button>
+                    </>
+                  )}
+                </>
+              )}
             </div>
-            
-            {/* Apply Button */}
-            <button 
-              onClick={handleSchedule}
-              disabled={isSaving || !selectedDate}
-              className="w-full py-1.5 text-sm text-white bg-black rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ marginTop: '20px' }}
-            >
-              {isSaving ? 'Scheduling...' : 'Schedule'}
-            </button>
+
+            {/* Desktop Layout */}
+            <div className="hidden md:flex items-center justify-center gap-2">
+              {articleStatus === 'trash' ? (
+                <button 
+                  onClick={handleRevertToDraft}
+                  disabled={isLoading}
+                  className="bg-black text-white hover:bg-gray-800 px-6 py-2 rounded text-sm font-medium h-8"
+                  style={{ width: '160px' }}
+                >
+                  {isLoading ? 'Reverting...' : 'Revert to draft'}
+                </button>
+              ) : articleStatus === 'review' ? (
+                <button 
+                  onClick={handleSendForReview}
+                  disabled={isLoading}
+                  className="bg-black text-white hover:bg-gray-800 flex items-center justify-center px-6 py-2 rounded text-sm font-medium h-8"
+                  style={{ width: '160px' }}
+                >
+                  {isLoading ? 'Sending...' : 'Send for Review'}
+                </button>
+              ) : articleStatus === 'published' ? (
+                <button 
+                  onClick={handleUpdate}
+                  disabled={isLoading}
+                  className="bg-black text-white hover:bg-gray-800 flex justify-center items-center gap-2 px-6 py-2 rounded text-sm font-medium h-8"
+                  style={{ width: '160px' }}
+                >
+                  {isLoading ? 'Updating...' : 'Update'}
+                  <img src="/editor-icons/publish.svg" alt="Update" className="h-4 w-4" />
+                </button>
+              ) : articleStatus === 'scheduled' ? (
+                <>
+                  <button 
+                    onClick={handleSaveDraft}
+                    disabled={isLoading}
+                    className="bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
+                    style={{ width: '160px', padding: '8px 24px' }}
+                  >
+                    <FileText className="h-4 w-4" />
+                    {isLoading ? 'Saving...' : 'Save to draft'}
+                  </button>
+                  <button 
+                    onClick={handlePublish}
+                    disabled={isLoading}
+                    className="bg-black text-white hover:bg-gray-800 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
+                    style={{ width: '160px', padding: '8px 24px' }}
+                  >
+                    {isLoading ? 'Publishing...' : 'Publish Now'}
+                    <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
+                  </button>
+                  <div className="flex items-center bg-white px-3 py-1 border border-gray-200 rounded text-sm text-gray-700 h-8" style={{ width: '200px' }}>
+                    <Input
+                      type="text"
+                      value={publishDate}
+                      onChange={handleDateChange}
+                      placeholder="dd-mm-yyyy" maxLength={10}
+                      className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 p-0"
+                    />
+                    <Input
+                      type="text"
+                      value={publishTime}
+                      onChange={handleTimeChange}
+                      placeholder="--:--" maxLength={5}
+                      className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center p-0"
+                    />
+                    <button
+                      onClick={() => setIsDateTimePickerOpen(true)}
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <Calendar className="h-4 w-4 text-gray-700" />
+                    </button>
+                  </div>
+                  <button 
+                    onClick={handleReschedule}
+                    disabled={isLoading}
+                    className="bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-medium h-8 rounded"
+                    style={{ width: '80px', padding: '8px 5px' }}
+                  >
+                    {isLoading ? 'Rescheduling...' : 'Schedule'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  {!isPublicationOwner ? (
+                    // For joined publications where user is NOT owner - only show Send for Review button
+                    <button 
+                      onClick={handleSendForReview}
+                      disabled={isLoading}
+                      className="bg-black text-white hover:bg-gray-800 flex items-center justify-center text-sm font-medium h-8 rounded"
+                      style={{ width: '160px', padding: '8px 24px' }}
+                    >
+                      {isLoading ? 'Sending...' : 'Send for Review'}
+                    </button>
+                  ) : (
+                    // For owned publications - show all buttons
+                    <>
+                      <button 
+                        onClick={handleSaveDraft}
+                        disabled={isLoading}
+                        className="bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
+                        style={{ width: '160px', padding: '8px 24px' }}
+                      >
+                        <FileText className="h-4 w-4" />
+                        {isLoading ? 'Saving...' : 'Save to draft'}
+                      </button>
+                      <button 
+                        onClick={handlePublish}
+                        disabled={isLoading}
+                        className="bg-black text-white hover:bg-gray-800 flex items-center justify-center gap-2 text-sm font-medium h-8 rounded"
+                        style={{ width: '160px', padding: '8px 24px' }}
+                      >
+                        {isLoading ? 'Publishing...' : 'Publish'}
+                        <img src="/editor-icons/publish.svg" alt="Publish" className="h-4 w-4" />
+                      </button>
+                      <div className="flex items-center bg-white px-3 py-1 border border-gray-200 rounded text-sm text-gray-700 h-8" style={{ width: '200px' }}>
+                        <Input
+                          type="text"
+                          value={publishDate}
+                          onChange={handleDateChange}
+                          placeholder="dd-mm-yyyy" maxLength={10}
+                          className="flex-1 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 p-0"
+                        />
+                        <Input
+                          type="text"
+                          value={publishTime}
+                          onChange={handleTimeChange}
+                          placeholder="--:--" maxLength={5}
+                          className="w-12 text-sm border-0 bg-transparent focus-visible:ring-0 focus:outline-none shadow-none outline-none text-gray-700 text-center p-0"
+                        />
+                        <button
+                          onClick={() => setIsDateTimePickerOpen(true)}
+                          className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        >
+                          <Calendar className="h-4 w-4 text-gray-700" />
+                        </button>
+                      </div>
+                      <button 
+                        onClick={handleSchedule}
+                        disabled={isLoading}
+                        className="bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-medium h-8 rounded"
+                        style={{ width: '80px', padding: '8px 5px' }}
+                      >
+                        {isLoading ? 'Scheduling...' : 'Schedule'}
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Thumbnail Modal */}
-      <ThumbnailModal 
-        isOpen={showThumbnailModal}
-        onClose={() => setShowThumbnailModal(false)}
+      <ThumbnailModal
+        isOpen={isThumbnailModalOpen}
+        onClose={() => setIsThumbnailModalOpen(false)}
         onImageAdd={handleThumbnailAdd}
       />
 
+      {/* Date Time Picker */}
+      <DateTimePicker
+        isOpen={isDateTimePickerOpen}
+        onClose={() => setIsDateTimePickerOpen(false)}
+        onDateTimeSelect={handleDateTimeSelect}
+        selectedDate={publishDate}
+        selectedTime={publishTime}
+      />
+
       {/* Publish Success Modal */}
-      {showPublishSuccess && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000]">
-          <div 
-            className="relative flex flex-col items-center"
-            style={{
-              width: '489px',
-              height: '323.63px',
-              borderRadius: '4px',
-              padding: '56px 40px',
-              gap: '32px',
-              background: '#FEFEFE'
-            }}
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => {
-                setShowPublishSuccess(false)
-                window.location.href = '/published?refresh=true'
-              }}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round"/>
+      <PublishSuccessModal
+        isOpen={showPublishSuccessModal}
+        onClose={() => setShowPublishSuccessModal(false)}
+        blogSlug={publishedBlogSlug}
+        blogTitle={title}
+      />
+
+      {/* Draft Saved Toast */}
+      {showDraftSavedToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
-            </button>
-
-            {/* Content Area - Icon + Text */}
-            <div 
-              className="flex flex-col items-center"
-              style={{
-                width: '357px',
-                height: '147.63px',
-                gap: '16px'
-              }}
-            >
-              {/* Paper Plane Icon with Checkmark */}
-              <div className="relative">
-                <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-                  <path d="M52 12L28 36M52 12L36 52L28 36M52 12L12 28L28 36" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                  <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              </div>
-
-              {/* Success Message */}
-              <div className="text-center">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Successfully Published</h2>
-                <p className="text-gray-500 text-sm leading-relaxed">Your blog is successfully Published, Click the below<br/>button to view in site</p>
-              </div>
             </div>
-
-            {/* Action Buttons */}
-            <div 
-              className="flex items-center"
-              style={{
-                width: '229px',
-                height: '32px',
-                gap: '8px'
-              }}
-            >
-              <button
-                onClick={() => {
-                  setShowPublishSuccess(false)
-                  window.location.href = '/published?refresh=true'
-                }}
-                style={{
-                  width: '111px',
-                  height: '32px',
-                  borderRadius: '4px',
-                  background: '#F4F4F4',
-                  border: '1px solid #ECECEC'
-                }}
-                className="flex items-center justify-center text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors whitespace-nowrap"
-              >
-                See Later
-              </button>
-              <button
-                onClick={() => {
-                  setShowPublishSuccess(false)
-                  if (publishedBlogSlug) {
-                    window.location.href = `/blog/${publishedBlogSlug}`
-                  } else {
-                    window.location.href = '/published?refresh=true'
-                  }
-                }}
-                style={{
-                  width: '110px',
-                  height: '32px',
-                  borderRadius: '4px',
-                  background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)'
-                }}
-                className="flex items-center justify-center text-sm font-medium text-white hover:opacity-90 transition-opacity whitespace-nowrap"
-              >
-                View in Site
-              </button>
-            </div>
+            <span className="text-sm font-medium">Blog saved as draft</span>
           </div>
         </div>
       )}

@@ -10,8 +10,40 @@ export default function DeclineInvitation() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const [loading, setLoading] = useState(false);
+  const [fetchingDetails, setFetchingDetails] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [invitationDetails, setInvitationDetails] = useState(null);
+
+  useEffect(() => {
+    if (!isPending && !session) {
+      // Redirect to login with return URL
+      router.push(`/login?redirect=/invite/${token}/decline`);
+    }
+  }, [session, isPending, token, router]);
+
+  // Fetch invitation details when user is logged in
+  useEffect(() => {
+    const fetchInvitationDetails = async () => {
+      if (!session || !token) return;
+
+      setFetchingDetails(true);
+      setError("");
+
+      try {
+        const details = await memberService.getInvitationDetails(token);
+        setInvitationDetails(details);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setFetchingDetails(false);
+      }
+    };
+
+    if (session) {
+      fetchInvitationDetails();
+    }
+  }, [session, token]);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -36,7 +68,7 @@ export default function DeclineInvitation() {
     }
   };
 
-  if (isPending) {
+  if (isPending || fetchingDetails) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-gray-500">Loading...</div>
@@ -86,10 +118,59 @@ export default function DeclineInvitation() {
           </div>
         )}
 
+        {invitationDetails && (
+          <div className="mb-6 p-6 bg-gray-50 border border-gray-200 rounded-lg">
+            {/* Publication Info */}
+            <div className="flex items-start space-x-4 mb-4">
+              {invitationDetails.publication.logoUrl ? (
+                <img
+                  src={invitationDetails.publication.logoUrl}
+                  alt={invitationDetails.publication.name}
+                  className="w-16 h-16 rounded-lg object-cover"
+                />
+              ) : (
+                <div className="w-16 h-16 bg-violet-100 rounded-lg flex items-center justify-center">
+                  <span className="text-2xl font-bold text-violet-600">
+                    {invitationDetails.publication.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+              <div className="flex-1">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {invitationDetails.publication.name}
+                </h2>
+                {invitationDetails.publication.description && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    {invitationDetails.publication.description}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Invitation Details */}
+            <div className="space-y-2 pt-4 border-t border-gray-200">
+              {invitationDetails.inviter && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Invited by:</span>
+                  <span className="font-medium text-gray-900">
+                    {invitationDetails.inviter.name}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Role:</span>
+                <span className="font-medium text-gray-900 capitalize">
+                  {invitationDetails.invitation.role}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-4">
           <button
             onClick={handleDecline}
-            disabled={loading}
+            disabled={loading || !invitationDetails}
             className="w-full bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Declining..." : "Yes, Decline Invitation"}

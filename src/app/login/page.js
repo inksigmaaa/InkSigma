@@ -61,7 +61,13 @@ function LoginForm() {
         return
       }
 
-      // Check if user has a publication
+      // If there's a specific redirect (like invitation), go there directly
+      if (redirectTo !== "/dashboard") {
+        router.push(redirectTo)
+        return
+      }
+
+      // Check if user has a publication (only for dashboard redirect)
       try {
         const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
           credentials: "include",
@@ -107,9 +113,14 @@ function LoginForm() {
 
   const handleGoogleLogin = async () => {
     try {
+      // Preserve redirect parameter in callback URL
+      const callbackURL = redirectTo !== "/dashboard" 
+        ? `http://localhost:3000/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+        : `http://localhost:3000/auth-callback`
+      
       await signIn.social({
         provider: "google",
-        callbackURL: `http://localhost:3000/auth-callback`,
+        callbackURL,
       })
     } catch (err) {
       setError("Failed to login with Google")
