@@ -39,13 +39,20 @@ export default function StatsPopup({ isOpen, onClose, position, stats }) {
         >
             <div className="flex items-center gap-8">
                 {stats.map((stat, index) => (
-                    <div key={index} className="flex flex-col items-center">
-                        <div className="text-4xl font-bold text-gray-900 mb-1">
-                            {stat.value}
+                    <div key={index} className="flex items-center gap-8">
+                        <div className="flex flex-col items-center">
+                            <div className="text-4xl font-bold text-gray-900 mb-1">
+                                {stat.value}
+                            </div>
+                            <div className="text-sm text-purple-500">
+                                {stat.label}
+                            </div>
                         </div>
-                        <div className="text-sm text-purple-500">
-                            {stat.label}
-                        </div>
+                        {index < stats.length - 1 && (
+                            <div className="text-2xl text-gray-300 h-12 flex items-center">
+                                /
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>

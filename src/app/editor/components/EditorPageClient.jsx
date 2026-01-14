@@ -310,6 +310,15 @@ export default function EditorPageClient() {
     }
   }
 
+  // Handle Send for Review (for editors/authors in joined publications)
+  const handleSendForReview = async () => {
+    const result = await saveBlog('review', null, true)
+    if (result) {
+      alert('Article sent for review!')
+      window.location.href = '/posts/drafts?refresh=true'
+    }
+  }
+
   // Handle Schedule
   const handleSchedule = async () => {
     if (!selectedDate) {
@@ -613,14 +622,15 @@ export default function EditorPageClient() {
               <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200 w-fit">
                 <div className={`w-2 h-2 rounded-full ${
                   existingBlogStatus === 'published' ? 'bg-green-500' : 
-                  existingBlogStatus === 'scheduled' ? 'bg-[#70D2FC]' : 
-                  existingBlogStatus === 'trash' ? 'bg-[#F13434]' :
+                  existingBlogStatus === 'scheduled' ? 'bg-blue-400' : 
+                  existingBlogStatus === 'trash' ? 'bg-red-500' :
                   'bg-orange-400'
-                }`} style={{ backgroundColor: '#70D2FC' }}></div>
+                }`}></div>
                 <span className="text-gray-500 text-sm">
                   {existingBlogStatus === 'published' ? 'Published' : 
                    existingBlogStatus === 'scheduled' ? 'Scheduled' : 
                    existingBlogStatus === 'trash' ? 'Trash' :
+                   existingBlogStatus === 'review' ? 'In Review' :
                    'Drafts'}
                 </span>
               </div>
@@ -844,57 +854,70 @@ export default function EditorPageClient() {
             </>
           ) : (
             <>
-              <button 
-                className="flex items-center justify-center gap-2 w-40 h-8 rounded bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
-                onClick={handlePublish}
-                disabled={isSaving}
-              >
-                {isSaving ? 'Publishing...' : 'Publish'}
-                <img src="/images/icons/Publish.svg" alt="Publish" className="w-4 h-4 brightness-0 invert" />
-              </button>
+              {/* For editors/authors in joined publications, show "Send for Review" button */}
+              {publicationId && currentPublication && !currentPublication.isOwner && (currentPublication.role === 'editor' || currentPublication.role === 'author') ? (
+                <button 
+                  className="flex items-center justify-center gap-2 w-40 h-8 rounded bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+                  onClick={handleSendForReview}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Sending...' : 'Send for Review'}
+                </button>
+              ) : (
+                <>
+                  <button 
+                    className="flex items-center justify-center gap-2 w-40 h-8 rounded bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+                    onClick={handlePublish}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Publishing...' : 'Publish'}
+                    <img src="/images/icons/Publish.svg" alt="Publish" className="w-4 h-4 brightness-0 invert" />
+                  </button>
 
-              <div 
-                className="flex items-center h-8 border border-gray-200 rounded overflow-hidden"
-              >
-                <input 
-                  type="text" 
-                  placeholder="dd-mm-yyyy"
-                  value={getDisplayDate()}
-                  onChange={handleManualInput}
-                  maxLength={10}
-                  className="h-[21px] w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
-                />
-                <input 
-                  type="text" 
-                  placeholder="--:--"
-                  value={getDisplayTime()}
-                  onChange={handleTimeInput}
-                  maxLength={5}
-                  className="h-[21px] w-[40px] flex-shrink-0 text-sm bg-transparent outline-none ml-2"
-                />
-                <svg 
-                  className="w-4 h-4 text-gray-400 flex-shrink-0 cursor-pointer mx-2" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                  onClick={() => setShowCalendar(!showCalendar)}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span 
-                  className="text-sm text-gray-400 flex-shrink-0 h-full flex items-center justify-center bg-gray-100 border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
-                  onClick={() => {
-                    // If date and time are already set, schedule directly
-                    if (selectedDate && (manualDate || manualTime)) {
-                      handleSchedule()
-                    } else {
-                      setShowCalendar(!showCalendar)
-                    }
-                  }}
-                >
-                  Schedule
-                </span>
-              </div>
+                  <div 
+                    className="flex items-center h-8 border border-gray-200 rounded overflow-hidden"
+                  >
+                    <input 
+                      type="text" 
+                      placeholder="dd-mm-yyyy"
+                      value={getDisplayDate()}
+                      onChange={handleManualInput}
+                      maxLength={10}
+                      className="h-[21px] w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="--:--"
+                      value={getDisplayTime()}
+                      onChange={handleTimeInput}
+                      maxLength={5}
+                      className="h-[21px] w-[40px] flex-shrink-0 text-sm bg-transparent outline-none ml-2"
+                    />
+                    <svg 
+                      className="w-4 h-4 text-gray-400 flex-shrink-0 cursor-pointer mx-2" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                      onClick={() => setShowCalendar(!showCalendar)}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span 
+                      className="text-sm text-gray-400 flex-shrink-0 h-full flex items-center justify-center bg-gray-100 border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
+                      onClick={() => {
+                        // If date and time are already set, schedule directly
+                        if (selectedDate && (manualDate || manualTime)) {
+                          handleSchedule()
+                        } else {
+                          setShowCalendar(!showCalendar)
+                        }
+                      }}
+                    >
+                      Schedule
+                    </span>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

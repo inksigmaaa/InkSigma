@@ -9,6 +9,7 @@ import { eq, desc, and, or, ilike } from "drizzle-orm";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 import notificationService from "../services/notificationService.js";
+import schedulerService from "../services/schedulerService.js";
 
 const router = express.Router();
 
