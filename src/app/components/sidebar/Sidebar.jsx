@@ -1,6 +1,5 @@
 'use client';
 
-import { FileClock } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from '@/lib/auth-client';
@@ -117,7 +116,7 @@ export default function Sidebar() {
               items: [
                 ["all_articles.svg", "All Articles"],
                 ["Publish.svg", "Published"],
-                ["Publish.svg", "Unpublished"],
+                ["unpublished.svg", "Unpublished"],
                 ["Schedule.svg", "Schedule"],
                 ["Review.svg", "Review"],
               ]
@@ -149,18 +148,10 @@ export default function Sidebar() {
                     className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isActive(label) ? '' : 'hover:bg-gray-100'}`}
                   >
                     <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                      {label === "Unpublished" ? (
-                        <FileClock
-                          className="w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6"
-                          style={{ color: isActive(label) ? '#000000' : '#B0B0B0' }}
-                          strokeWidth={isActive(label) ? 2.5 : 2}
-                        />
-                      ) : (
-                        <img
-                          src={label === "Settings" ? `/icons/${icon}` : `/images/icons/${icon}`}
-                          className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${isActive(label) ? 'opacity-100 brightness-0' : 'opacity-60'}`}
-                        />
-                      )}
+                      <img
+                        src={label === "Settings" ? `/icons/${icon}` : `/images/icons/${icon}`}
+                        className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${isActive(label) ? 'opacity-100 brightness-0' : 'opacity-60'}`}
+                      />
                       <p
                         className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${isActive(label) ? 'font-bold text-black' : 'font-normal text-gray-500'}`}
                       >
