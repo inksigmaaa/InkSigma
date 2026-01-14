@@ -196,42 +196,9 @@ export const memberService = {
       } else {
         throw new Error(`Server error (${response.status}): ${response.statusText}`);
       }
-
-      const url = `${API_URL}/api/publication-members/my-publications`;
-      console.log('[memberService] API_URL:', API_URL);
-      console.log('[memberService] Fetching user publications from:', url);
-      
-      const response = await fetch(url, {
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      console.log('[memberService] Response status:', response.status);
-
-      if (!response.ok) {
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          const error = await response.json();
-          throw new Error(error.error || "Failed to fetch user publications");
-        } else {
-          throw new Error(`Server error (${response.status}): ${response.statusText}`);
-        }
-      }
-
-      return response.json();
-    } catch (error) {
-      console.error('[memberService] Error in getUserPublications:', error);
-      console.error('[memberService] Error type:', error.constructor.name);
-      console.error('[memberService] Error message:', error.message);
-      
-      // If it's a network error (Failed to fetch), provide more context
-      if (error.message === 'Failed to fetch') {
-        throw new Error(`Cannot connect to backend at ${API_URL}. Make sure the backend server is running.`);
-      }
-      throw error;
     }
+
+    return response.json();
   },
 
   // Accept invitation
