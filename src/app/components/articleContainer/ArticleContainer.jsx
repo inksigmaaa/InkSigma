@@ -14,8 +14,10 @@ export default function ArticleContainer({ id, status, title, description, categ
     const [statsPosition, setStatsPosition] = useState({ top: 0, left: 0 })
     const statsButtonRef = useRef(null)
 
-    // Check if there are any non-zero stats
-    const hasStats = stats && stats.some(stat => stat.value > 0)
+    // Check if stats exist and have values
+    const hasStats = stats && Array.isArray(stats) && stats.length > 0
+    
+    console.log('ArticleContainer:', { id, title, stats, hasStats })
 
     const handleEdit = () => {
         const params = new URLSearchParams({ status, id: id.toString() })
@@ -31,13 +33,15 @@ export default function ArticleContainer({ id, status, title, description, categ
 
     const handleStatsClick = (e) => {
         e.stopPropagation()
-        if (statsButtonRef.current) {
-            const rect = statsButtonRef.current.getBoundingClientRect()
-            setStatsPosition({
-                top: rect.top - 88,
-                left: rect.right
-            })
-        }
+        console.log('Stats clicked!', { showStats, stats })
+        if (!statsButtonRef.current) return
+        
+        const rect = statsButtonRef.current.getBoundingClientRect()
+        console.log('Button rect:', rect)
+        setStatsPosition({
+            top: rect.bottom + 8,
+            left: rect.left
+        })
         setShowStats(!showStats)
     }
 
