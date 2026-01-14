@@ -205,7 +205,8 @@ export default function SchedulePage() {
     setActionArticleId(null);
   }, []);
 
-  if (loading) {
+  // Only show loading state if we're loading AND have no articles yet
+  if (loading && articles.length === 0) {
     return (
       <AuthGuard>
         <NavbarLoggedin />

@@ -42,6 +42,7 @@ export default function EditorPageClient() {
   const [blogTitle, setBlogTitle] = useState('')
   const [blogDescription, setBlogDescription] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [saveStatus, setSaveStatus] = useState('idle') // 'idle' | 'saving' | 'saved'
   const [showPublishSuccess, setShowPublishSuccess] = useState(false)
   const [publishedBlogSlug, setPublishedBlogSlug] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -49,7 +50,14 @@ export default function EditorPageClient() {
   const [existingBlogStatus, setExistingBlogStatus] = useState(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const calendarRef = useRef(null)
-  const autoSaveRef = useRef(false)
+  const savedSuccessfullyRef = useRef(false)
+
+  // Reset save status to idle when content changes
+  useEffect(() => {
+    if (saveStatus === 'saved') {
+      setSaveStatus('idle')
+    }
+  }, [blogTitle, blogDescription, editorContent.html])
 
   // Track unsaved changes
   useEffect(() => {
@@ -58,11 +66,11 @@ export default function EditorPageClient() {
     }
   }, [blogTitle, blogDescription, editorContent.html])
 
-  // Auto-save as draft when leaving the page (only for new blogs)
+  // Show warning when leaving the page with unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e) => {
-      // Only show warning if there are unsaved changes and it's a new blog
-      if (hasUnsavedChanges && !blogId && blogTitle.trim()) {
+      // Only show warning if there are unsaved changes, it's a new blog, and not already saved
+      if (hasUnsavedChanges && !blogId && blogTitle.trim() && !savedSuccessfullyRef.current) {
         e.preventDefault()
         e.returnValue = 'You have unsaved changes. Are you sure you want to leave?'
         return e.returnValue
@@ -73,25 +81,6 @@ export default function EditorPageClient() {
     
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload)
-      
-      // Auto-save as draft when component unmounts (user navigates away)
-      if (hasUnsavedChanges && !blogId && !autoSaveRef.current && blogTitle.trim() && blogDescription.trim() && editorContent.html && editorContent.html !== '<p></p>') {
-        autoSaveRef.current = true
-        // Use sendBeacon for reliable save on page unload
-        const blogData = {
-          title: blogTitle,
-          description: blogDescription,
-          content: editorContent.html,
-          categories: selectedCategories,
-          status: 'draft',
-          published: false
-        }
-        
-        navigator.sendBeacon(
-          `${API_URL}/api/blogs/auto-save`,
-          new Blob([JSON.stringify(blogData)], { type: 'application/json' })
-        )
-      }
     }
   }, [hasUnsavedChanges, blogId, blogTitle, blogDescription, editorContent.html, selectedCategories])
 
@@ -156,6 +145,7 @@ export default function EditorPageClient() {
     }
 
     setIsSaving(true)
+    setSaveStatus('saving')
     try {
       const blogData = {
         title: blogTitle,
@@ -197,10 +187,13 @@ export default function EditorPageClient() {
 
       // Mark as saved to prevent auto-save on exit
       setHasUnsavedChanges(false)
+      savedSuccessfullyRef.current = true
+      setSaveStatus('saved')
       
       return responseData
     } catch (error) {
       console.error('Error saving blog:', error)
+      setSaveStatus('idle')
       alert(error.message || 'Failed to save blog')
       return false
     } finally {
@@ -208,7 +201,12 @@ export default function EditorPageClient() {
     }
   }
 
-  // Handle Save to Draft
+  // Handle Save to Draft (without redirect - just save)
+  const handleSave = async () => {
+    await saveBlog(existingBlogStatus || 'draft')
+  }
+
+  // Handle Save to Draft (with redirect)
   const handleSaveDraft = async () => {
     const result = await saveBlog('draft')
     if (result) {
@@ -708,8 +706,15 @@ export default function EditorPageClient() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <span 
-              className="text-sm text-gray-400 flex-shrink-0 h-full flex items-center justify-center bg-gray-100 border-l border-gray-200 cursor-pointer px-3"
-              onClick={() => setShowCalendar(!showCalendar)}
+              className="text-sm text-gray-400 flex-shrink-0 h-full flex items-center justify-center bg-gray-100 border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
+              onClick={() => {
+                // If date and time are already set, schedule directly
+                if (selectedDate && (manualDate || manualTime)) {
+                  handleSchedule()
+                } else {
+                  setShowCalendar(!showCalendar)
+                }
+              }}
             >
               Schedule
             </span>
