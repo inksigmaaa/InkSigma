@@ -5,64 +5,22 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1767181678078,
-      "tag": "0000_wild_microbe",
+      "when": 1768196553128,
+      "tag": "0000_productive_stardust",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1767423258252,
-      "tag": "0001_sturdy_gressill",
+      "when": 1768314671506,
+      "tag": "0001_wandering_senator_kelly",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "7",
-      "when": 1767589996204,
-      "tag": "0002_colorful_hannibal_king",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1767699071087,
-      "tag": "0003_absent_morlocks",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1767779961873,
-      "tag": "0004_moaning_orphan",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1767873538425,
-      "tag": "0005_opposite_abomination",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1736499600000,
-      "tag": "0008_add_publication_members_invitation",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1768196553128,
-      "tag": "0007_productive_stardust",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1768314671506,
-      "tag": "0008_wandering_senator_kelly",
+      "when": 1768314671600,
+      "tag": "0002_fix_notification_timezone",
       "breakpoints": true
     }
   ]
