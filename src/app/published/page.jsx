@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
@@ -9,7 +10,22 @@ import ConfirmModal from "../components/confirmModal/ConfirmModal";
 import { useArticles } from "@/contexts/ArticlesContext";
 
 export default function Published() {
-    const { articles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, unpublishArticle } = useArticles();
+    const { articles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, unpublishArticle, loadUserArticles } = useArticles();
+    const searchParams = useSearchParams();
+    const router = useRouter();
+
+    // Always load articles on mount
+    useEffect(() => {
+        console.log('[PublishedPage] Loading articles on mount...');
+        loadUserArticles();
+    }, [loadUserArticles]);
+
+    // Clean up refresh param from URL if present
+    useEffect(() => {
+        if (searchParams.get('refresh') === 'true') {
+            router.replace('/published', { scroll: false });
+        }
+    }, [searchParams, router]);
     const [selectedArticles, setSelectedArticles] = useState([]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showDraftModal, setShowDraftModal] = useState(false);
@@ -17,8 +33,17 @@ export default function Published() {
     const [actionArticleId, setActionArticleId] = useState(null);
     const [isBulkAction, setIsBulkAction] = useState(false);
 
+    // Debug logging
+    console.log('[PublishedPage] All articles:', articles);
+    console.log('[PublishedPage] Articles count:', articles?.length);
+    console.log('[PublishedPage] Loading state:', loading);
+
     const publishedArticles = articles
-        .filter(article => article.status === 'published')
+        .filter(article => {
+            const isPublished = article.status === 'published';
+            console.log('[PublishedPage] Article:', article.id, 'title:', article.title, 'status:', article.status, 'isPublished:', isPublished);
+            return isPublished;
+        })
         .map(article => ({
             ...article,
             onDelete: () => {
@@ -37,6 +62,8 @@ export default function Published() {
                 setShowUnpublishModal(true);
             }
         }));
+
+    console.log('[PublishedPage] Filtered published articles count:', publishedArticles.length);
 
     const handleArticleSelect = (id, isSelected) => {
         setSelectedArticles(prev => 

@@ -45,6 +45,13 @@ export default function DeclineInvitation() {
     }
   }, [session, token]);
 
+  useEffect(() => {
+    if (!isPending && !session) {
+      // Redirect to login with return URL
+      router.push(`/login?redirect=/invite/${token}/decline`);
+    }
+  }, [session, isPending, token, router]);
+
   const handleDecline = async () => {
     if (!session) return;
 
