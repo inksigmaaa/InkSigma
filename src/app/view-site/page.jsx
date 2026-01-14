@@ -10,6 +10,8 @@ import AllArticles from './components/AllArticles/AllArticles';
 import Footer from './components/Footer/Footer';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
 function ViewSiteContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -30,23 +32,30 @@ function ViewSiteContent() {
   // Fetch publication details if publicationId is in URL
   useEffect(() => {
     const fetchPublicationDetails = async () => {
-      if (pubIdFromUrl) {
+      // Use publicationId from URL or currentPublication
+      const publicationId = pubIdFromUrl || currentPublication?.id;
+      
+      if (publicationId) {
         try {
-          const response = await fetch(`http://localhost:5000/api/publications/${pubIdFromUrl}`, {
+          console.log('[ViewSite] Fetching publication:', publicationId);
+          const response = await fetch(`${API_URL}/api/publications/${publicationId}`, {
             credentials: 'include'
           });
           if (response.ok) {
             const data = await response.json();
+            console.log('[ViewSite] Publication data:', data);
             setPublicationData(data);
+          } else {
+            console.error('[ViewSite] Failed to fetch publication:', response.status);
           }
         } catch (error) {
-          console.error('Error fetching publication:', error);
+          console.error('[ViewSite] Error fetching publication:', error);
         }
       }
     };
 
     fetchPublicationDetails();
-  }, [pubIdFromUrl]);
+  }, [pubIdFromUrl, currentPublication?.id]);
 
   // Fetch published blogs
   useEffect(() => {
@@ -54,28 +63,31 @@ function ViewSiteContent() {
       try {
         setLoading(true);
         // Use publicationId from URL query parameter if available, otherwise use currentPublication
-        const pubIdFromUrl = searchParams.get('publicationId');
         const publicationId = pubIdFromUrl ? parseInt(pubIdFromUrl) : currentPublication?.id;
         
+        console.log('[ViewSite] Fetching blogs for publication:', publicationId);
+        
         if (!publicationId) {
+          console.log('[ViewSite] No publicationId, skipping blog fetch');
           setBlogs([]);
           return;
         }
 
         const response = await fetch(
-          `http://localhost:5000/api/blogs?publicationId=${publicationId}&status=published`,
+          `${API_URL}/api/blogs?publicationId=${publicationId}&status=published`,
           { credentials: 'include' }
         );
 
         if (response.ok) {
           const data = await response.json();
+          console.log('[ViewSite] Blogs fetched:', data.length);
           setBlogs(data);
         } else {
-          console.error('Failed to fetch blogs:', response.status);
+          console.error('[ViewSite] Failed to fetch blogs:', response.status);
           setBlogs([]);
         }
       } catch (error) {
-        console.error('Error fetching blogs:', error);
+        console.error('[ViewSite] Error fetching blogs:', error);
         setBlogs([]);
       } finally {
         setLoading(false);
@@ -83,7 +95,7 @@ function ViewSiteContent() {
     };
 
     fetchBlogs();
-  }, [currentPublication?.id, searchParams]);
+  }, [currentPublication?.id, pubIdFromUrl]);
 
   // Get unique categories from blogs, limit to 3
   const categories = [...new Set(blogs.map(blog => blog.categories?.[0]).filter(Boolean))].slice(0, 3);
@@ -111,7 +123,7 @@ function ViewSiteContent() {
   }, []);
 
   const publicationLogoUrl = publicationData?.logoUrl || publication?.logoUrl || currentPublication?.logoUrl;
-  const avatarUrl = publicationLogoUrl ? `http://localhost:5000${publicationLogoUrl}` : null;
+  const avatarUrl = publicationLogoUrl ? `${API_URL}${publicationLogoUrl}` : null;
   const publicationName = publicationData?.name || publication?.name || currentPublication?.name || "Your Publication Name";
 
   return (

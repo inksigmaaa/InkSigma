@@ -78,7 +78,7 @@ export const blog = pgTable("blog", {
     content: text("content").notNull(),
     image: text("image"),
     authorId: text("authorId").notNull().references(() => user.id, { onDelete: "cascade" }),
-    publicationId: integer("publicationId").notNull().references(() => publication.id, { onDelete: "cascade" }),
+    publicationId: integer("publicationId").references(() => publication.id, { onDelete: "set null" }),
     categories: text("categories").array(),
     status: blogStatusEnum("status").notNull().default("draft"),
     published: boolean("published").notNull().default(false),
