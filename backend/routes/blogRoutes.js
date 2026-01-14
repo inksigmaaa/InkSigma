@@ -575,42 +575,38 @@ router.post("/", getCurrentUser, async (req, res) => {
             });
         }
 
-        // publicationId is now required
-        if (!publicationId) {
-            return res.status(400).json({ 
-                error: "Publication ID is required" 
-            });
-        }
-
-        // Verify user has access to this publication
-        const [pub] = await db
-            .select()
-            .from(publication)
-            .where(eq(publication.id, parseInt(publicationId)));
-
-        if (!pub) {
-            return res.status(404).json({ error: "Publication not found" });
-        }
-
-        // Check if user is owner or member
-        const isOwner = pub.userId === req.user.id;
-        let isMember = false;
-        
-        if (!isOwner) {
-            const [member] = await db
+        // publicationId is optional - verify access only if provided
+        if (publicationId) {
+            // Verify user has access to this publication
+            const [pub] = await db
                 .select()
-                .from(publicationMember)
-                .where(
-                    and(
-                        eq(publicationMember.publicationId, parseInt(publicationId)),
-                        eq(publicationMember.userId, req.user.id)
-                    )
-                );
-            isMember = !!member;
-        }
+                .from(publication)
+                .where(eq(publication.id, parseInt(publicationId)));
 
-        if (!isOwner && !isMember) {
-            return res.status(403).json({ error: "You don't have access to this publication" });
+            if (!pub) {
+                return res.status(404).json({ error: "Publication not found" });
+            }
+
+            // Check if user is owner or member
+            const isOwner = pub.userId === req.user.id;
+            let isMember = false;
+            
+            if (!isOwner) {
+                const [member] = await db
+                    .select()
+                    .from(publicationMember)
+                    .where(
+                        and(
+                            eq(publicationMember.publicationId, parseInt(publicationId)),
+                            eq(publicationMember.userId, req.user.id)
+                        )
+                    );
+                isMember = !!member;
+            }
+
+            if (!isOwner && !isMember) {
+                return res.status(403).json({ error: "You don't have access to this publication" });
+            }
         }
 
         const slug = await ensureUniqueSlug(generateSlug(title));
@@ -635,15 +631,21 @@ router.post("/", getCurrentUser, async (req, res) => {
             categories: categories || [],
             ...syncedFields, // This ensures both status and published are always in sync
             authorId: req.user.id,
-            publicationId: parseInt(publicationId),
             createdAt: new Date(),
             updatedAt: new Date(),
         };
+
+        // Add publicationId only if provided
+        if (publicationId) {
+            blogData.publicationId = parseInt(publicationId);
+        }
 
         // Add scheduledAt if provided
         if (scheduledAt) {
             blogData.scheduledAt = new Date(scheduledAt);
         }
+
+        console.log('[CREATE BLOG] Creating blog with data:', blogData);
 
         const [newBlog] = await db
             .insert(blog)
@@ -658,7 +660,7 @@ router.post("/", getCurrentUser, async (req, res) => {
         res.status(201).json(newBlog);
     } catch (error) {
         console.error("Error creating blog:", error);
-        res.status(500).json({ error: "Failed to create blog" });
+        res.status(500).json({ error: "Failed to create blog", details: error.message });
     }
 });
 

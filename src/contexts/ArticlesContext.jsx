@@ -156,12 +156,8 @@ export function ArticlesProvider({ children }) {
     try {
       const currentPub = currentPublicationRef.current;
       
-      // publicationId is now required
+      // publicationId is optional
       const publicationId = articleData.publicationId || currentPub?.id;
-      
-      if (!publicationId) {
-        throw new Error('Publication ID is required to create an article');
-      }
 
       // Determine status based on published flag, defaulting to draft
       let status = 'draft';
@@ -177,8 +173,12 @@ export function ArticlesProvider({ children }) {
         content: articleData.content,
         categories: articleData.categories || [],
         status: status,
-        scheduledAt: articleData.scheduledAt,
-        publicationId: publicationId
+        scheduledAt: articleData.scheduledAt
+      }
+      
+      // Add publicationId only if available
+      if (publicationId) {
+        blogData.publicationId = publicationId
       }
 
       const blog = await blogService.createBlog(blogData)
