@@ -6,6 +6,7 @@ import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
 import PersonalArticles from "../components/personalArticles/personalArticles";
 import ConfirmModal from "../components/confirmModal/ConfirmModal";
+import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 
 export default function Unpublished() {
@@ -155,7 +156,7 @@ export default function Unpublished() {
         <NavbarLoggedin />
         <Sidebar />
         <Verify />
-        <div className="flex justify-center items-center min-h-[400px]">
+        <div className="flex justify-center items-center min-h-[400px] animate-pulse">
           <div className="text-gray-500">Loading unpublished articles...</div>
         </div>
       </>
@@ -168,7 +169,7 @@ export default function Unpublished() {
         <NavbarLoggedin />
         <Sidebar />
         <Verify />
-        <div className="flex justify-center items-center min-h-[400px]">
+        <div className="flex justify-center items-center min-h-[400px] animate-fadeIn">
           <div className="text-red-500">Error: {error}</div>
         </div>
       </>
@@ -203,18 +204,20 @@ export default function Unpublished() {
       <NavbarLoggedin />
       <Sidebar />
       <Verify />
-      <PersonalArticles
-        title="Unpublished"
-        titleColor="#D97706"
-        articles={articlesWithHandlers}
-        emptyMessage="No unpublished articles yet"
-        showSelectAll={true}
-        showActions={true}
-        actionButtons={actionButtons}
-        selectedArticles={selectedArticles}
-        onSelectAll={handleSelectAll}
-        onArticleSelect={handleArticleSelect}
-      />
+      <PageTransition>
+        <PersonalArticles
+          title="Unpublished"
+          titleColor="#D97706"
+          articles={articlesWithHandlers}
+          emptyMessage="No unpublished articles yet"
+          showSelectAll={true}
+          showActions={true}
+          actionButtons={actionButtons}
+          selectedArticles={selectedArticles}
+          onSelectAll={handleSelectAll}
+          onArticleSelect={handleArticleSelect}
+        />
+      </PageTransition>
 
       <ConfirmModal
         isOpen={showRepublishModal}
@@ -250,7 +253,7 @@ export default function Unpublished() {
         }}
         onConfirm={confirmTrash}
         title="Are you sure you want to put it in trash?"
-        message={isBulkAction 
+        message={isBulkAction
           ? `${selectedArticles.length} article(s) will be put into trash and can be restored later`
           : "This will be put into trash and can be restored later"
         }

@@ -7,6 +7,7 @@ import Sidebar from "../components/sidebar/Sidebar"
 import Verify from "../components/verify/Verify"
 import PersonalArticles from "../components/personalArticles/personalArticles"
 import ConfirmModal from "../components/confirmModal/ConfirmModal"
+import PageTransition from "@/components/PageTransition"
 import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function TrashPage() {
@@ -78,7 +79,7 @@ export default function TrashPage() {
         await bulkMoveToTrash(selectedArticles)
         setSelectedArticles([])
       }
-      
+
       setShowDeleteModal(false)
       setDeleteArticleId(null)
     } catch (error) {
@@ -92,7 +93,7 @@ export default function TrashPage() {
       for (const articleId of selectedArticles) {
         await moveToDraft(articleId)
       }
-      
+
       setSelectedArticles([])
       setShowRestoreModal(false)
     } catch (error) {
@@ -106,7 +107,7 @@ export default function TrashPage() {
         <NavbarLoggedin />
         <Sidebar />
         <Verify />
-        <div className="flex justify-center items-center min-h-[400px]">
+        <div className="flex justify-center items-center min-h-[400px] animate-pulse">
           <div className="text-gray-500">Loading trash articles...</div>
         </div>
       </>
@@ -119,7 +120,7 @@ export default function TrashPage() {
         <NavbarLoggedin />
         <Sidebar />
         <Verify />
-        <div className="flex justify-center items-center min-h-[400px]">
+        <div className="flex justify-center items-center min-h-[400px] animate-fadeIn">
           <div className="text-red-500">Error: {error}</div>
         </div>
       </>
@@ -148,18 +149,20 @@ export default function TrashPage() {
       <NavbarLoggedin />
       <Sidebar />
       <Verify />
-      <PersonalArticles
-        title="Trash"
-        titleColor="#EF4444"
-        articles={articlesWithHandlers}
-        emptyMessage="No trash articles yet"
-        showSelectAll={true}
-        showActions={true}
-        actionButtons={actionButtons}
-        selectedArticles={selectedArticles}
-        onSelectAll={handleSelectAll}
-        onArticleSelect={handleArticleSelect}
-      />
+      <PageTransition>
+        <PersonalArticles
+          title="Trash"
+          titleColor="#EF4444"
+          articles={articlesWithHandlers}
+          emptyMessage="No trash articles yet"
+          showSelectAll={true}
+          showActions={true}
+          actionButtons={actionButtons}
+          selectedArticles={selectedArticles}
+          onSelectAll={handleSelectAll}
+          onArticleSelect={handleArticleSelect}
+        />
+      </PageTransition>
 
       <ConfirmModal
         isOpen={showDeleteModal}
