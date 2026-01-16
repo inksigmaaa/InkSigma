@@ -66,6 +66,31 @@ export default function EditorPageClient() {
     console.log('Editor - isPublicationOwner:', isPublicationOwner)
     console.log('Editor - currentPublication:', currentPublication)
   }, [publicationId, articleStatus, isPublicationOwner, currentPublication])
+
+  // Check if user has a publication, redirect to create one if not
+  useEffect(() => {
+    const checkPublication = async () => {
+      if (!session?.user?.id) return
+      
+      // If we already have a publication from context or URL, no need to check
+      if (currentPublication?.id || publicationId) return
+      
+      try {
+        const response = await fetch(`${API_URL}/api/publications/user/${session.user.id}`, {
+          credentials: 'include'
+        })
+        
+        if (response.status === 404) {
+          // User has no publication, redirect to create one
+          router.push('/create-publication')
+        }
+      } catch (error) {
+        console.error('Error checking publication:', error)
+      }
+    }
+    
+    checkPublication()
+  }, [session?.user?.id, currentPublication?.id, publicationId, router])
   
   // State management
   const [title, setTitle] = useState('')
