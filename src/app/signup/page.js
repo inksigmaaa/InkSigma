@@ -70,6 +70,7 @@ function SignupForm() {
         callbackURL: redirectTo !== "/dashboard"
           ? `http://localhost:3000/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
           : "http://localhost:3000/auth-callback",
+        prompt: "select_account",
       })
     } catch (err) {
       setError("Failed to sign up with Google")
