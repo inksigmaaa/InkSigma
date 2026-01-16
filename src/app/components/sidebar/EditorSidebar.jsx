@@ -14,17 +14,15 @@ export default function Sidebar() {
   const getRoute = (label) => {
     const routes = {
       "Home": "/home",
-      "Domain": "/domain",
       "Members": "/members",
-      "Settings": "/dashboard/settings",
       "All Articles": "/posts",
       "Published": "/published",
       "Unpublished": "/unpublished",
       "Schedule": "/schedule",
       "Review": "/review",
-      "My Blogs": "/my-blogs",
-      "Draft": "/draft",
-      "Trash": "/trash",
+      "My Blogs": "/404",
+      "Draft": "/404",
+      "Trash": "/404",
     };
     return routes[label] || "/dashboard";
   };
@@ -106,9 +104,7 @@ export default function Sidebar() {
               title: "PUBLICATION",
               items: [
                 ["home.svg", "Home", "/home"],
-                ["domain.svg", "Domain", "/domain"],
                 ["Member.svg", "Members", "/members"],
-                ["settings.svg", "Settings", "/settings"],
               ]
             },
             {
