@@ -112,7 +112,7 @@ function PublicationProviderInner({ children }) {
       // Set current publication based on context
       if (publications.length > 0) {
         // Only set initial publication if none is set
-        if (!currentPublication) {
+        if (!currentPub) {
           let pubToSet = null;
           
           // Check if we have a publication ID from URL
@@ -147,7 +147,7 @@ function PublicationProviderInner({ children }) {
           }
         } else {
           // If current publication exists, make sure it's still valid
-          const stillExists = publications.find(pub => pub.id === currentPublication.id);
+          const stillExists = publications.find(pub => pub.id === currentPub.id);
           if (!stillExists) {
             // Current publication no longer exists, set a new one using same logic as above
             let pubToSet = null;

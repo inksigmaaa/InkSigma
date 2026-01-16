@@ -21,11 +21,10 @@ export default function Members() {
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     
     // Memoized admin check to prevent flickering during state updates
+    // Only rely on context's isCurrentUserAdmin() to avoid showing admin view when switching publications
     const isAdmin = useMemo(() => {
-        const contextAdmin = isCurrentUserAdmin();
-        const localAdmin = userRole === "admin";
-        return contextAdmin || localAdmin;
-    }, [isCurrentUserAdmin, userRole]);
+        return isCurrentUserAdmin();
+    }, [isCurrentUserAdmin]);
     
     // Toast visibility states for smooth animations
     const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -66,6 +65,14 @@ export default function Members() {
             };
         }
     }, [error]);
+
+    // Reset state when switching publications to prevent showing stale data
+    useEffect(() => {
+        // Clear old data when publication changes
+        setMembers([]);
+        setPendingInvitations([]);
+        setUserRole(null);
+    }, [currentPublication?.id]);
 
     // Initial and periodic data loading
     useEffect(() => {
