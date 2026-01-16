@@ -9,6 +9,7 @@ import PersonalArticles from "../components/personalArticles/personalArticles";
 import ConfirmModal from "../components/confirmModal/ConfirmModal";
 import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
+   
 
 export default function Published() {
     const { articles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, unpublishArticle, loadUserArticles } = useArticles();
@@ -152,6 +153,7 @@ export default function Published() {
     if (loading && articles.length === 0) {
         return (
             <>
+          
                 <NavbarLoggedin />
                 <Sidebar />
                 <Verify />
