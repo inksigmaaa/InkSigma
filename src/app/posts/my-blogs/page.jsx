@@ -154,10 +154,10 @@ export default function PostsMyBlogsPage() {
                   publicationId={currentPublication?.id}
                   showActions={true}
                   stats={[
-                    { label: 'Views', value: article.views || 0 },
-                    { label: 'Revisits', value: article.revisits || 0 },
-                    { label: 'Comments', value: article.comments || 0 },
-                    { label: 'Shares', value: article.shares || 0 }
+                    { label: 'Views', value: article.views ?? 0 },
+                    { label: 'Revisits', value: article.revisits ?? 0 },
+                    { label: 'Comments', value: article.comments ?? 0 },
+                    { label: 'Shares', value: article.shares ?? 0 }
                   ]}
                 />
               ))

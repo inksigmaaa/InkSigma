@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { authService } from '@/services/auth.service';
 
 interface User {
@@ -27,9 +27,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const sessionLoadedRef = useRef(false);
 
-  // Load current session on mount
+  // Load current session on mount only once
   useEffect(() => {
+    // Prevent multiple session loads
+    if (sessionLoadedRef.current) return;
+    sessionLoadedRef.current = true;
+
     const loadSession = async () => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/get-session`, {

@@ -754,10 +754,13 @@ export default function EditorPageClient() {
 
       {/* Bottom Stats Bar */}
       <div className="fixed flex items-center justify-end bg-white border-t border-gray-200 w-[916px] h-[39px] z-[100]" style={{ bottom: '72px', left: 'calc(50% - 448px)' }}>
-        <div className="flex items-center w-[180px] h-[39px] gap-3.5 py-2.5 px-3.5 bg-gray-100 border border-gray-200 text-sm text-gray-700 whitespace-nowrap">
-          <span>Chars <strong>{editorContent.charCount}</strong></span>
-          <span className="border-l border-gray-300 h-5"></span>
-          <span>Words <strong>{editorContent.wordCount}</strong></span>
+        <div className="flex items-center h-[39px]">
+          <div className="flex items-center px-4 py-2 bg-gray-50 border border-gray-300 text-sm text-gray-700 whitespace-nowrap">
+            <span>Chars <strong className="ml-1">{editorContent.charCount}</strong></span>
+          </div>
+          <div className="flex items-center px-4 py-2 bg-gray-50 border border-gray-300 text-sm text-gray-700 whitespace-nowrap">
+            <span>Words <strong className="ml-1">{editorContent.wordCount}</strong></span>
+          </div>
         </div>
       </div>
 
