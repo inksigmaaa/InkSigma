@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
 import Verify from "../components/verify/Verify"
@@ -14,7 +15,12 @@ import { usePublication } from "@/contexts/PublicationContext"
 export default function HomePage() {
   const router = useRouter()
   const { currentPublication, publicationDetails, loading } = usePublication()
-  const { articles: allArticles } = useArticles()
+  const { articles: allArticles, loadUserArticles } = useArticles()
+
+  // Refresh articles when home page loads
+  useEffect(() => {
+    loadUserArticles()
+  }, [loadUserArticles])
 
   // Get recent published articles (limit to 4)
   const recentArticles = allArticles

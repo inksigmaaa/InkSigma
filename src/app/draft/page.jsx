@@ -7,6 +7,7 @@ import Sidebar from "../components/sidebar/Sidebar"
 import Verify from "../components/verify/Verify"
 import PersonalArticles from "../components/personalArticles/personalArticles"
 import ConfirmModal from "../components/confirmModal/ConfirmModal"
+import PageTransition from "@/components/PageTransition"
 import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function DraftPage() {
@@ -18,7 +19,7 @@ export default function DraftPage() {
   // Only load articles if they haven't been loaded yet or if refresh param is present
   useEffect(() => {
     const needsRefresh = searchParams.get('refresh') === 'true';
-    
+
     if (needsRefresh || (articles.length === 0 && !loading && !hasLoadedRef.current)) {
       console.log('[DraftPage] Loading articles...');
       hasLoadedRef.current = true;
@@ -107,22 +108,19 @@ export default function DraftPage() {
       console.log('Is bulk action:', isBulkAction)
       console.log('Action article ID:', actionArticleId)
       console.log('Selected articles:', selectedArticles)
-      
+
       if (isBulkAction) {
         console.log('Calling bulkPublish with IDs:', selectedArticles)
         await bulkPublish(selectedArticles)
         setSelectedArticles([])
-        alert(`${selectedArticles.length} article(s) published successfully!`)
       } else if (actionArticleId) {
         console.log('Calling publishArticle with ID:', actionArticleId)
         const result = await publishArticle(actionArticleId)
         console.log('Publish result:', result)
-        alert('Article published successfully!')
       } else {
         console.error('No article ID to publish!')
-        alert('Error: No article selected to publish')
       }
-      
+
       setShowPublishModal(false)
       setActionArticleId(null)
       console.log('=== PUBLISH FLOW END ===')
@@ -130,7 +128,6 @@ export default function DraftPage() {
       console.error('=== PUBLISH ERROR ===')
       console.error('Error publishing:', error)
       console.error('Error details:', error.message, error.stack)
-      alert(`Failed to publish: ${error.message}`)
     }
   }
 
@@ -154,18 +151,20 @@ export default function DraftPage() {
       <NavbarLoggedin />
       <Sidebar />
       <Verify />
-      <PersonalArticles
-        title="Drafts"
-        titleColor="#F97316"
-        articles={draftArticles}
-        emptyMessage="No Articles Drafted yet"
-        showSelectAll={true}
-        showActions={true}
-        actionButtons={actionButtons}
-        selectedArticles={selectedArticles}
-        onSelectAll={handleSelectAll}
-        onArticleSelect={handleArticleSelect}
-      />
+      <PageTransition>
+        <PersonalArticles
+          title="Drafts"
+          titleColor="#F97316"
+          articles={draftArticles}
+          emptyMessage="No Articles Drafted yet"
+          showSelectAll={true}
+          showActions={true}
+          actionButtons={actionButtons}
+          selectedArticles={selectedArticles}
+          onSelectAll={handleSelectAll}
+          onArticleSelect={handleArticleSelect}
+        />
+      </PageTransition>
 
       <ConfirmModal
         isOpen={showDeleteModal}
