@@ -121,6 +121,7 @@ function LoginForm() {
       await signIn.social({
         provider: "google",
         callbackURL,
+        prompt: "select_account",
       })
     } catch (err) {
       setError("Failed to login with Google")
