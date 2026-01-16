@@ -43,7 +43,9 @@ function SignupForm() {
         email: formData.email,
         password: formData.password,
         name: formData.name,
-        callbackURL: "http://localhost:3000/login",
+        callbackURL: redirectTo !== "/dashboard" 
+          ? `http://localhost:3000/login?redirect=${encodeURIComponent(redirectTo)}`
+          : "http://localhost:3000/login",
       })
 
       if (result.error) {
@@ -65,7 +67,9 @@ function SignupForm() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: `http://localhost:3000/auth-callback`,
+        callbackURL: redirectTo !== "/dashboard"
+          ? `http://localhost:3000/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+          : "http://localhost:3000/auth-callback",
       })
     } catch (err) {
       setError("Failed to sign up with Google")
