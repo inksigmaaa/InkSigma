@@ -41,8 +41,9 @@ export default function ConditionalLayout({ children }) {
     const issignup = pathname === "/signup"
     const isforgot = pathname === "/forgot-password"
     const isreset = pathname === "/reset-password"
+    const iseditordashboard = pathname === "/editor-dashboard"
 
-    const customLayout = isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished || islogin || issignup || isforgot || isreset
+    const customLayout = isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished || islogin || issignup || isforgot || isreset || iseditordashboard 
 
     const showButtons = !isCreatePublicationPage && !isPreview && !isDashboardPage && !isprofilesettings && !isPostsSettingsPage && !isEditorPage
 
