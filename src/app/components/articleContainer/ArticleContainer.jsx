@@ -69,10 +69,13 @@ export default function ArticleContainer({ id, status, title, description, categ
         published: { bg: '#D5F2D4', color: '#267F24', text: 'Published' },
         draft: { bg: '#FFEADB', color: '#A34200', text: 'Draft' },
         scheduled: { bg: '#D6EEFB', color: '#0048B5', text: 'Scheduled' },
-        review: { bg: '#FFEADB', color: '#A34200', text: 'Draft' }, // Show as Draft for individual writers
+        trash: { bg: '#FEE2E2', color: '#DC2626', text: 'Trash' },
+        review: { bg: '#E9D5FF', color: '#7C3AED', text: 'Review' },
+        unpublished: { bg: '#FEF3C7', color: '#D97706', text: 'Unpublished' }
     }
 
-    const config = statusConfig[status] || statusConfig.published
+    // Default to draft if status is unknown/missing, rather than published which is misleading
+    const config = statusConfig[status] || statusConfig.draft
 
     return (
         <div className="relative bg-white border border-gray-200 rounded-lg p-4 mb-4">
@@ -115,58 +118,67 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 </button>
                             )}
                             
-                            {/* Publish/Unpublish/Draft buttons based on status */}
-                            {status === 'draft' && (
-                                <button
-                                    className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
-                                    title="Publish"
-                                    onClick={handlePublish}
-                                >
-                                    <img src="/images/icons/share.svg" alt="Publish" className="w-5 h-5" />
-                                </button>
+                            {status === 'trash' ? (
+                                <>
+                                    {/* Restore not strictly supported in Articles view yet, but adding for consistency if enabled */}
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Delete Permanently" onClick={handleDelete}>
+                                        <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
+                                    </button>
+                                </>
+                            ) : status === 'draft' ? (
+                                <>
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Publish" onClick={handlePublish}>
+                                        <img src="/images/icons/share.svg" alt="publish" className="w-4 h-4" />
+                                    </button>
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
+                                        <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
+                                    </button>
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={handleDelete}>
+                                        <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
+                                    </button>
+                                </>
+                            ) : status === 'review' ? (
+                                <>
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Copy" onClick={() => {}}>
+                                        <img src="/images/icons/copy.svg" alt="copy" className="w-4 h-4" />
+                                    </button>
+                                </>
+                            ) : status === 'unpublished' ? (
+                                <>
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Republish" onClick={handlePublish}>
+                                        <img src="/images/icons/publish.svg" alt="republish" className="w-4 h-4" />
+                                    </button>
+                                     <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
+                                        <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
+                                    </button>
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Move to Draft" onClick={handleDraft}>
+                                        <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
+                                    </button>
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={handleDelete}>
+                                        <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    {status === 'published' && (
+                                        <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Unpublish" onClick={handleUnpublish}>
+                                            <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Preview" onClick={handlePreview}>
+                                        <img src="/images/icons/preview.svg" alt="preview" className="w-4 h-4" />
+                                    </button>
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
+                                        <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
+                                    </button>
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Draft" onClick={handleDraft}>
+                                        <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
+                                    </button>
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={handleDelete}>
+                                        <img src="/images/icons/delete.svg" alt="delete" className="w-4 h-4" />
+                                    </button>
+                                </>
                             )}
-                            
-                            {status === 'published' && (
-                                <button
-                                    className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
-                                    title="Unpublish"
-                                    onClick={handleUnpublish}
-                                >
-                                    <img src="/images/icons/unpublished.svg" alt="Unpublish" className="w-5 h-5" />
-                                </button>
-                            )}
-                            
-                            {status === 'unpublished' && (
-                                <button
-                                    className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
-                                    title="Republish"
-                                    onClick={handlePublish}
-                                >
-                                    <img src="/images/icons/publish.svg" alt="Republish" className="w-5 h-5" />
-                                </button>
-                            )}
-                            
-                            <button
-                                className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
-                                title="Edit"
-                                onClick={handleEdit}
-                            >
-                                <img src="/images/icons/edit.svg" alt="Edit" className="w-5 h-5" />
-                            </button>
-                            <button
-                                className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
-                                title="Copy"
-                            >
-                                <img src="/images/icons/copy.svg" alt="Copy" className="w-5 h-5" />
-                            </button>
-
-                            <button
-                                className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
-                                title="Delete"
-                                onClick={handleDelete}
-                            >
-                                <img src="/images/icons/trash2.svg" alt="Delete" className="w-5 h-5" />
-                            </button>
                         </div>
                     )}
 
