@@ -105,11 +105,6 @@ export default function EditorPage() {
                     </span>
                   )}
                 </div>
-                {currentPublication?.description && (
-                  <p className="text-sm text-gray-600 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-2">
-                    {currentPublication.description}
-                  </p>
-                )}
               </div>
             </div>
             {currentPublication?.isOwner && (

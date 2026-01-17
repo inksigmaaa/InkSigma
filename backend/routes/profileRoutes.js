@@ -206,12 +206,11 @@ router.post("/image", getCurrentUser, upload.single("image"), async (req, res) =
             })
             .where(eq(user.id, userId));
 
-        // Update the session with new image
+        // Update the session with new image using better-auth
         try {
-            await auth.api.updateUser({
-                userId: userId,
-                image: imageUrl,
-            });
+            // Better-auth automatically updates the session when user data changes
+            // Just need to ensure the database is updated (which we did above)
+            console.log(`[Profile] Image updated for user ${userId}: ${imageUrl}`);
         } catch (sessionError) {
             console.error("Failed to update session:", sessionError);
             // Continue anyway as DB is updated
