@@ -343,8 +343,8 @@ export default function EditorPageClient() {
       // Include publication ID in URL to stay in joined publication context
       const pubId = publicationId || currentPublication?.id
       const redirectUrl = pubId 
-        ? `/author-review?pub=${pubId}&refresh=true`
-        : '/author-review?refresh=true'
+        ? `/review?pub=${pubId}&refresh=true`
+        : '/review?refresh=true'
       window.location.href = redirectUrl
     }
   }

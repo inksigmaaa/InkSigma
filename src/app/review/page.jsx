@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Clock } from "lucide-react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
+import EditorSidebar from "../components/sidebar/EditorSidebar"
 import Verify from "../components/verify/Verify"
 import PublishOptionsModal from "../components/review/PublishOptionsModal"
 import { useArticles } from "@/contexts/ArticlesContext"
@@ -186,7 +187,7 @@ export default function ReviewPage() {
     return (
       <>
         <NavbarLoggedin />
-        <Sidebar />
+        {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
         <Verify />
         <div className="flex justify-center items-center min-h-[400px] animate-pulse">
           <div className="text-gray-500">Loading review articles...</div>
@@ -199,7 +200,7 @@ export default function ReviewPage() {
     return (
       <>
         <NavbarLoggedin />
-        <Sidebar />
+        {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
         <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-red-500">Error: {reviewError}</div>
@@ -211,7 +212,7 @@ export default function ReviewPage() {
   return (
     <>
       <NavbarLoggedin />
-      <Sidebar />
+      {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
       <Verify />
       
       <div className={`absolute left-1/2 -translate-x-1/2 top-[160px] w-full max-w-[1034px] z-20 px-5 max-md:top-[120px]`}>

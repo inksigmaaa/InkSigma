@@ -201,7 +201,11 @@ export default function DashboardPage() {
                       <button
                         onClick={() => {
                           switchPublication(joinedPub);
-                          router.push(`/posts/home?pub=${joinedPub.id}`);
+                          if (joinedPub.role === 'editor') {
+                            router.push(`/editorpage?pub=${joinedPub.id}`);
+                          } else {
+                            router.push(`/posts/home?pub=${joinedPub.id}`);
+                          }
                         }}
                         className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
                       >

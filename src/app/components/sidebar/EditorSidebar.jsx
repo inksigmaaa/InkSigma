@@ -13,10 +13,8 @@ export default function Sidebar() {
     const routes = {
       "Home": "/home",
       "Members": "/members",
-      "All Articles": "/posts",
       "Published": "/published",
       "Unpublished": "/unpublished",
-      "Schedule": "/schedule",
       "Review": "/review",
       "My Blogs": "/404",
       "Draft": "/404",
@@ -106,17 +104,15 @@ export default function Sidebar() {
             {
               title: "PUBLICATION",
               items: [
-                ["home.svg", "Home", "/home"],
+                ["home.svg", "Home", "/editorpage"],
                 ["Member.svg", "Members", "/members"],
               ]
             },
             {
               title: "ARTICLES",
               items: [
-                ["all_articles.svg", "All Articles"],
                 ["Publish.svg", "Published"],
                 ["unpublished.svg", "Unpublished"],
-                ["Schedule.svg", "Schedule"],
                 ["Review.svg", "Review"],
               ]
             },

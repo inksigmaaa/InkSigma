@@ -5,13 +5,16 @@ import { useSearchParams, useRouter } from "next/navigation";
 import AuthGuard from "@/components/auth/AuthGuard";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
+import EditorSidebar from "../components/sidebar/EditorSidebar";
 import Verify from "../components/verify/Verify";
 import PersonalArticles from "../components/personalArticles/personalArticles";
 import ConfirmModal from "../components/confirmModal/ConfirmModal";
 import { useArticles } from "@/contexts/ArticlesContext";
+import { usePublication } from "@/contexts/PublicationContext";
 
 export default function SchedulePage() {
   const { articles, loading, error, loadUserArticles, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, bulkMoveToDraft } = useArticles();
+  const { currentPublication } = usePublication();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [selectedArticles, setSelectedArticles] = useState([]);
@@ -210,7 +213,7 @@ export default function SchedulePage() {
     return (
       <AuthGuard>
         <NavbarLoggedin />
-        <Sidebar />
+        {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
         <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-gray-500">Loading scheduled articles...</div>
@@ -223,7 +226,7 @@ export default function SchedulePage() {
     return (
       <AuthGuard>
         <NavbarLoggedin />
-        <Sidebar />
+        {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
         <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-red-500">Error: {error}</div>
@@ -235,7 +238,7 @@ export default function SchedulePage() {
   return (
     <AuthGuard>
       <NavbarLoggedin />
-      <Sidebar />
+      {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
       <Verify />
       <PersonalArticles
         title="Scheduled"
