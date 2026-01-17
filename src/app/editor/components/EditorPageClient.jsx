@@ -340,7 +340,12 @@ export default function EditorPageClient() {
     const result = await saveBlog('review', null, true)
     if (result) {
       alert('Article sent for review!')
-      window.location.href = '/posts/drafts?refresh=true'
+      // Include publication ID in URL to stay in joined publication context
+      const pubId = publicationId || currentPublication?.id
+      const redirectUrl = pubId 
+        ? `/author-review?pub=${pubId}&refresh=true`
+        : '/author-review?refresh=true'
+      window.location.href = redirectUrl
     }
   }
 

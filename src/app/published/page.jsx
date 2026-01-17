@@ -9,23 +9,68 @@ import PersonalArticles from "../components/personalArticles/personalArticles";
 import ConfirmModal from "../components/confirmModal/ConfirmModal";
 import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
+import { usePublication } from "@/contexts/PublicationContext";
 
 export default function Published() {
-    const { articles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, unpublishArticle, loadUserArticles } = useArticles();
+    const { 
+        articles, 
+        publicationArticles, 
+        loading, 
+        pubArticlesLoading,
+        error, 
+        moveToTrashStatus, 
+        bulkMoveToTrashStatus, 
+        moveToDraft, 
+        unpublishArticle, 
+        loadUserArticles,
+        loadPublicationArticles
+    } = useArticles();
+    
+    const { currentPublication, getCurrentUserRole } = usePublication();
     const searchParams = useSearchParams();
     const router = useRouter();
     const hasLoadedRef = useRef(false);
+    const loadedContextRef = useRef(null); // 'user' or 'publication'
 
-    // Only load articles if they haven't been loaded yet or if refresh param is present
+    // Determine user role and which articles to show
+    const userRole = getCurrentUserRole();
+    const isAdmin = userRole === 'admin' || userRole === 'editor' || currentPublication?.isOwner;
+    
+    // Use publicationArticles for admins/editors, otherwise use user articles
+    // Note: for published page, we might ideally want to use same data source
+    const displayArticles = (isAdmin && currentPublication) ? publicationArticles : articles;
+    const isLoading = (isAdmin && currentPublication) ? pubArticlesLoading : loading;
+
+    // Load appropriate articles
     useEffect(() => {
         const needsRefresh = searchParams.get('refresh') === 'true';
+        
+        // Target context based on current state
+        const targetContext = (isAdmin && currentPublication?.id) ? 'publication' : 'user';
 
-        if (needsRefresh || (articles.length === 0 && !loading && !hasLoadedRef.current)) {
-            console.log('[PublishedPage] Loading articles...');
+        // Helper to check if we need to load
+        // Re-load if:
+        // 1. Refresh requested
+        // 2. Data is empty AND not loading AND (not loaded OR loaded wrong context)
+        // 3. Context changed (e.g. from user to publication) - critical for switching to admin view
+        const isWrongContext = hasLoadedRef.current && loadedContextRef.current !== targetContext;
+        
+        const shouldLoad = needsRefresh || 
+                          (displayArticles.length === 0 && !isLoading && !hasLoadedRef.current) ||
+                          isWrongContext;
+
+        if (shouldLoad) {
+            console.log(`[PublishedPage] Loading articles... Target: ${targetContext}, Prev: ${loadedContextRef.current}`);
             hasLoadedRef.current = true;
-            loadUserArticles();
+            loadedContextRef.current = targetContext;
+            
+            if (targetContext === 'publication') {
+                loadPublicationArticles(currentPublication.id, 'published');
+            } else {
+                loadUserArticles();
+            }
         }
-    }, [searchParams, articles.length, loading, loadUserArticles]);
+    }, [searchParams, displayArticles.length, isLoading, loadUserArticles, loadPublicationArticles, isAdmin, currentPublication?.id]);
 
     // Clean up refresh param from URL if present
     useEffect(() => {
@@ -41,11 +86,10 @@ export default function Published() {
     const [isBulkAction, setIsBulkAction] = useState(false);
 
     // Debug logging
-    console.log('[PublishedPage] All articles:', articles);
-    console.log('[PublishedPage] Articles count:', articles?.length);
-    console.log('[PublishedPage] Loading state:', loading);
+    console.log('[PublishedPage] Display articles count:', displayArticles?.length);
+    console.log('[PublishedPage] Loading state:', isLoading);
 
-    const publishedArticles = articles
+    const publishedArticles = displayArticles
         .filter(article => {
             const isPublished = article.status === 'published';
             console.log('[PublishedPage] Article:', article.id, 'title:', article.title, 'status:', article.status, 'isPublished:', isPublished);

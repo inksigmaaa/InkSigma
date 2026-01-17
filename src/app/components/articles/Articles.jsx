@@ -17,7 +17,7 @@ const categories = [
 ]
 
 export default function Articles(props) {
-    const { articles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, publishArticle, unpublishArticle } = useArticles()
+    const { articles: contextArticles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, publishArticle, unpublishArticle } = useArticles()
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategories, setSelectedCategories] = useState([])
@@ -35,8 +35,11 @@ export default function Articles(props) {
     const filterStatus = props.filterStatus || null
     const showCreateButton = props.showCreateButton !== false
 
-    // Get real articles from context, excluding trash
-    const allArticles = articles.filter(article => article.status !== 'trash')
+    // Use passed articles or context articles
+    const sourceArticles = props.articles || contextArticles || []
+
+    // Get real articles, excluding trash
+    const allArticles = sourceArticles.filter(article => article.status !== 'trash')
     
     // Filter by status if specified
     const filteredArticles = filterStatus 
@@ -86,7 +89,7 @@ export default function Articles(props) {
             setSelectedArticles(new Set())
             setSelectAll(false)
         } else {
-            const allArticles = articles.filter(article => article.status !== 'trash')
+            const allArticles = sourceArticles.filter(article => article.status !== 'trash')
             const filteredArticles = filterStatus 
                 ? allArticles.filter(article => article.status === filterStatus)
                 : allArticles
@@ -179,7 +182,9 @@ export default function Articles(props) {
     const topPosition = 'top-[160px]'
     const mobileTopPosition = 'max-md:top-[120px]'
 
-    if (loading) {
+    const isLoading = props.loading !== undefined ? props.loading : loading
+
+    if (isLoading) {
         return (
             <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
                 <div className="ml-0 md:ml-[185px]">
@@ -256,12 +261,6 @@ export default function Articles(props) {
                     ) : (
                         filteredArticles.map(article => {
                             // Create stats array with mock data for now
-                            const articleStats = [
-                                { label: 'Views', value: article.views ?? 0 },
-                                { label: 'Revisits', value: article.revisits ?? 0 },
-                                { label: 'Comments', value: article.comments ?? 0 },
-                                { label: 'Shares', value: article.shares ?? 0 }
-                            ]
                             
                             return (
                                 <ArticleContainer
@@ -279,7 +278,7 @@ export default function Articles(props) {
                                     onDraft={() => handleDraftArticle(article.id)}
                                     onPublish={() => handlePublishArticle(article.id)}
                                     onUnpublish={() => handleUnpublishArticle(article.id)}
-                                    stats={articleStats}
+                                    // stats prop removed to hide stats button as requested
                                 />
                             )
                         })
