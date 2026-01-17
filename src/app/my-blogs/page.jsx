@@ -7,6 +7,7 @@ import Sidebar from "../components/sidebar/Sidebar"
 import Verify from "../components/verify/Verify"
 import PersonalArticles from "../components/personalArticles/personalArticles"
 import ConfirmModal from "../components/confirmModal/ConfirmModal"
+import PageTransition from "@/components/PageTransition"
 import { useArticles } from "@/contexts/ArticlesContext"
 
 export default function MyBlogsPage() {
@@ -125,16 +126,18 @@ export default function MyBlogsPage() {
       <NavbarLoggedin />
       <Sidebar />
       <Verify />
-      <PersonalArticles
-        title="My Blogs"
-        titleColor="#EC4899"
-        articles={myArticles}
-        emptyMessage="No Articles yet"
-        showSelectAll={false}
-        showActions={false}
-        selectedArticles={selectedArticles}
-        onArticleSelect={handleArticleSelect}
-      />
+      <PageTransition>
+        <PersonalArticles
+          title="My Blogs"
+          titleColor="#EC4899"
+          articles={myArticles}
+          emptyMessage="No Articles yet"
+          showSelectAll={false}
+          showActions={false}
+          selectedArticles={selectedArticles}
+          onArticleSelect={handleArticleSelect}
+        />
+      </PageTransition>
 
       <ConfirmModal
         isOpen={showDeleteModal}

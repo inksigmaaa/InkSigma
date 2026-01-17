@@ -49,11 +49,11 @@ module.exports = {
             },
             keyframes: {
                 'slide-down': {
-                    '0%': { 
+                    '0%': {
                         opacity: '0',
                         transform: 'translate(-50%, -20px)'
                     },
-                    '100%': { 
+                    '100%': {
                         opacity: '1',
                         transform: 'translate(-50%, 0)'
                     },
@@ -62,10 +62,26 @@ module.exports = {
                     '0%': { opacity: '0' },
                     '100%': { opacity: '1' },
                 },
+                'fadeIn': {
+                    '0%': { opacity: '0' },
+                    '100%': { opacity: '1' },
+                },
+                'slideUp': {
+                    '0%': {
+                        opacity: '0',
+                        transform: 'translateY(10px)'
+                    },
+                    '100%': {
+                        opacity: '1',
+                        transform: 'translateY(0)'
+                    },
+                },
             },
             animation: {
                 'slide-down': 'slide-down 0.3s ease-out',
                 'fade-in': 'fade-in 0.3s ease-out',
+                'fadeIn': 'fadeIn 0.3s ease-out forwards',
+                'slideUp': 'slideUp 0.3s ease-out forwards',
             },
         },
     },

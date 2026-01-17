@@ -7,7 +7,9 @@ import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
 import PersonalArticles from "../components/personalArticles/personalArticles";
 import ConfirmModal from "../components/confirmModal/ConfirmModal";
+import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
+   
 
 export default function Published() {
     const { articles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, unpublishArticle, loadUserArticles } = useArticles();
@@ -18,7 +20,7 @@ export default function Published() {
     // Only load articles if they haven't been loaded yet or if refresh param is present
     useEffect(() => {
         const needsRefresh = searchParams.get('refresh') === 'true';
-        
+
         if (needsRefresh || (articles.length === 0 && !loading && !hasLoadedRef.current)) {
             console.log('[PublishedPage] Loading articles...');
             hasLoadedRef.current = true;
@@ -72,8 +74,8 @@ export default function Published() {
     console.log('[PublishedPage] Filtered published articles count:', publishedArticles.length);
 
     const handleArticleSelect = (id, isSelected) => {
-        setSelectedArticles(prev => 
-            isSelected 
+        setSelectedArticles(prev =>
+            isSelected
                 ? [...prev, id]
                 : prev.filter(articleId => articleId !== id)
         );
@@ -151,10 +153,11 @@ export default function Published() {
     if (loading && articles.length === 0) {
         return (
             <>
+          
                 <NavbarLoggedin />
                 <Sidebar />
                 <Verify />
-                <div className="flex justify-center items-center min-h-[400px]">
+                <div className="flex justify-center items-center min-h-[400px] animate-pulse">
                     <div className="text-gray-500">Loading published articles...</div>
                 </div>
             </>
@@ -167,7 +170,7 @@ export default function Published() {
                 <NavbarLoggedin />
                 <Sidebar />
                 <Verify />
-                <div className="flex justify-center items-center min-h-[400px]">
+                <div className="flex justify-center items-center min-h-[400px] animate-fadeIn">
                     <div className="text-red-500">Error: {error}</div>
                 </div>
             </>
@@ -177,17 +180,17 @@ export default function Published() {
     const hasSelectedArticles = selectedArticles.length > 0;
 
     const actionButtons = [
-        { 
-            icon: "/images/icons/draft1.svg", 
-            title: "Move to Draft", 
+        {
+            icon: "/images/icons/draft1.svg",
+            title: "Move to Draft",
             onClick: handleBulkDraft,
-            disabled: !hasSelectedArticles 
+            disabled: !hasSelectedArticles
         },
-        { 
-            icon: "/images/icons/trash2.svg", 
-            title: "Delete", 
+        {
+            icon: "/images/icons/trash2.svg",
+            title: "Delete",
             onClick: handleBulkDelete,
-            disabled: !hasSelectedArticles 
+            disabled: !hasSelectedArticles
         },
     ];
 
@@ -196,18 +199,20 @@ export default function Published() {
             <NavbarLoggedin />
             <Sidebar />
             <Verify />
-            <PersonalArticles
-                title="Published"
-                titleColor="#267F24"
-                articles={publishedArticles}
-                emptyMessage="No published articles yet"
-                showSelectAll={true}
-                showActions={true}
-                actionButtons={actionButtons}
-                selectedArticles={selectedArticles}
-                onSelectAll={handleSelectAll}
-                onArticleSelect={handleArticleSelect}
-            />
+            <PageTransition>
+                <PersonalArticles
+                    title="Published"
+                    titleColor="#267F24"
+                    articles={publishedArticles}
+                    emptyMessage="No published articles yet"
+                    showSelectAll={true}
+                    showActions={true}
+                    actionButtons={actionButtons}
+                    selectedArticles={selectedArticles}
+                    onSelectAll={handleSelectAll}
+                    onArticleSelect={handleArticleSelect}
+                />
+            </PageTransition>
 
             <ConfirmModal
                 isOpen={showDeleteModal}

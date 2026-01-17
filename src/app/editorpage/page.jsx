@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
-import Sidebar from "../components/sidebar/Sidebar"
+import EditorSidebar from "../components/sidebar/EditorSidebar"
 import Verify from "../components/verify/Verify"
 import BlogStatsComponent from "../components/BlogStatsComponent/BlogStatsComponent"
 import { Pencil } from "lucide-react"
@@ -12,12 +12,12 @@ import { useArticles } from "@/contexts/ArticlesContext"
 import { usePublication } from "@/contexts/PublicationContext"
 
 
-export default function HomePage() {
+export default function EditorPage() {
   const router = useRouter()
-  const { currentPublication, publicationDetails, loading } = usePublication()
+  const { currentPublication, loading } = usePublication()
   const { articles: allArticles, loadUserArticles } = useArticles()
 
-  // Refresh articles when home page loads
+  // Refresh articles when page loads
   useEffect(() => {
     loadUserArticles()
   }, [loadUserArticles])
@@ -28,7 +28,6 @@ export default function HomePage() {
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 4)
     .map(article => {
-      // Check if article has an image - use fallback if not
       const thumbnailUrl = (article.image && article.image.trim() !== '') 
         ? article.image 
         : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
@@ -43,7 +42,6 @@ export default function HomePage() {
     })
 
   const handleStartWriting = () => {
-    // Pass current publication ID to editor
     if (currentPublication?.id) {
       router.push(`/editor?publicationId=${currentPublication.id}`)
     } else {
@@ -52,7 +50,6 @@ export default function HomePage() {
   }
 
   const handleVisitSite = () => {
-    // Pass the current publication ID to view-site
     if (currentPublication?.id) {
       window.open(`/view-site?publicationId=${currentPublication.id}`, "_blank")
     } else {
@@ -67,13 +64,13 @@ export default function HomePage() {
   return (
     <AuthGuard>
       <NavbarLoggedin />
-      <Sidebar />
+      <EditorSidebar />
       <Verify />
       
       {/* Main Content */}
       <div className="pt-[112px] min-h-screen max-md:pt-[90px]">
         <div className="max-w-[1034px] mx-auto px-5 max-md:p-0">
-          <div className={`ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0`}>
+          <div className="ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0">
           
           {/* Publication Header */}
           <div className="border-b border-gray-200 px-8 py-6 flex items-center justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
@@ -172,7 +169,6 @@ export default function HomePage() {
                       alt={article.title}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        // Prevent infinite loop
                         if (e.target.src !== "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop") {
                           e.target.onerror = null;
                           e.target.src = "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";

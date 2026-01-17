@@ -121,6 +121,7 @@ function LoginForm() {
       await signIn.social({
         provider: "google",
         callbackURL,
+        prompt: "select_account",
       })
     } catch (err) {
       setError("Failed to login with Google")
@@ -237,7 +238,7 @@ function LoginForm() {
       <div className="text-center text-sm text-gray-600">
         New to {APP_CONFIG.name}?{" "}
         <Link
-          href="/signup"
+          href={redirectTo !== "/dashboard" ? `/signup?redirect=${encodeURIComponent(redirectTo)}` : "/signup"}
           className="text-gray-900 underline hover:text-gray-700 transition-colors"
         >
           Create a Account
