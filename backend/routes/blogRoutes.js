@@ -509,6 +509,7 @@ router.get("/:id", async (req, res) => {
 router.get("/slug/:slug", async (req, res) => {
     try {
         const { slug } = req.params;
+        const { incrementView } = req.query;
 
         // Check if user is authenticated
         let currentUserId = null;
@@ -535,6 +536,7 @@ router.get("/slug/:slug", async (req, res) => {
                 scheduledAt: blog.scheduledAt,
                 createdAt: blog.createdAt,
                 updatedAt: blog.updatedAt,
+                views: blog.views,
                 authorId: blog.authorId,
                 author: {
                     id: user.id,
@@ -556,6 +558,15 @@ router.get("/slug/:slug", async (req, res) => {
             if (!currentUserId || blogData.authorId !== currentUserId) {
                 return res.status(404).json({ error: "Blog not found" });
             }
+        }
+
+        // Increment view count if requested
+        if (incrementView === 'true' && blogData.status === 'published') {
+            await db
+                .update(blog)
+                .set({ views: (blogData.views || 0) + 1 })
+                .where(eq(blog.id, blogData.id));
+            blogData.views = (blogData.views || 0) + 1;
         }
 
         res.json(blogData);
@@ -887,7 +898,7 @@ router.put("/:id", getCurrentUser, async (req, res) => {
 router.patch("/:id/review-action", getCurrentUser, async (req, res) => {
     try {
         const { id } = req.params;
-        const { action } = req.body; // 'accept' or 'reject'
+        const { action, targetStatus: requestedTargetStatus } = req.body; // 'accept' or 'reject', optional targetStatus for accept
 
         if (!['accept', 'reject'].includes(action)) {
             return res.status(400).json({ error: "Action must be 'accept' or 'reject'" });
@@ -909,8 +920,20 @@ router.patch("/:id/review-action", getCurrentUser, async (req, res) => {
             return res.status(403).json({ error: "Not authorized to review this blog" });
         }
 
-        // Update blog status
-        const targetStatus = action === 'accept' ? 'published' : 'draft';
+        // Determine target status based on action and optional targetStatus parameter
+        let targetStatus;
+        if (action === 'accept') {
+            // If targetStatus is provided and valid, use it. Otherwise default to 'unpublished'
+            // This allows admin to choose 'published' or 'unpublished', while editors typically use 'unpublished'
+            if (requestedTargetStatus && ['published', 'unpublished'].includes(requestedTargetStatus)) {
+                targetStatus = requestedTargetStatus;
+            } else {
+                targetStatus = 'unpublished'; // Default to unpublished for safety
+            }
+        } else {
+            // Reject action returns to draft
+            targetStatus = 'draft';
+        }
         const syncedFields = syncStatusAndPublished(targetStatus);
 
         const [updatedBlog] = await db

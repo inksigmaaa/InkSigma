@@ -291,4 +291,82 @@ export const blogService = {
   async getPublishedBlogsByAuthor(authorId) {
     return this.getBlogs({ authorId, published: true });
   },
+
+  // Get articles with 'review' status for a publication
+  async getReviewArticles(publicationId) {
+    const response = await fetch(`${API_URL}/api/blogs/publication/${publicationId}?status=review`, {
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to fetch review articles');
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
+    }
+
+    return response.json();
+  },
+
+  // Accept a review article - admin can choose 'published' or 'unpublished', editor only 'unpublished'
+  async acceptReviewArticle(id, targetStatus = 'unpublished') {
+    console.log(`[blogService] Accepting review article ${id} with target status: ${targetStatus}`);
+    
+    const response = await fetch(`${API_URL}/api/blogs/${id}/review-action`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ action: 'accept', targetStatus }),
+    });
+
+    if (!response.ok) {
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to accept review article');
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
+    }
+
+    return response.json();
+  },
+
+  // Reject a review article - returns it to author's draft
+  async rejectReviewArticle(id) {
+    console.log(`[blogService] Rejecting review article ${id}`);
+    
+    const response = await fetch(`${API_URL}/api/blogs/${id}/review-action`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ action: 'reject' }),
+    });
+
+    if (!response.ok) {
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to reject review article');
+      } else {
+        throw new Error(`Server error (${response.status}): ${response.statusText}`);
+      }
+    }
+
+    return response.json();
+  },
+
+  // Revert article from review back to draft (for author/editor)
+  async revertReviewToDraft(id) {
+    console.log(`[blogService] Reverting review article ${id} to draft`);
+    
+    return this.updateBlogStatus(id, 'draft');
+  },
 };

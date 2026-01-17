@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
@@ -8,9 +8,23 @@ import PersonalArticles from "../components/personalArticles/personalArticles";
 import ConfirmModal from "../components/confirmModal/ConfirmModal";
 import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
+import { usePublication } from "@/contexts/PublicationContext";
 
 export default function Unpublished() {
-  const { articles, loading, error, publishArticle, moveToDraft, moveToTrashStatus } = useArticles();
+  const { 
+    articles, 
+    publicationArticles, 
+    loading, 
+    pubArticlesLoading,
+    error, 
+    publishArticle, 
+    moveToDraft, 
+    moveToTrashStatus,
+    loadUserArticles,
+    loadPublicationArticles
+  } = useArticles();
+  
+  const { currentPublication, getCurrentUserRole } = usePublication();
   const [selectedArticles, setSelectedArticles] = useState([]);
   const [showRepublishModal, setShowRepublishModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
@@ -18,8 +32,25 @@ export default function Unpublished() {
   const [actionArticleId, setActionArticleId] = useState(null);
   const [isBulkAction, setIsBulkAction] = useState(false);
 
-  // Filter unpublished articles and add individual action handlers
-  const unpublishedArticles = articles
+  // Determine user role and which articles to show
+  const userRole = getCurrentUserRole();
+  const isAdmin = userRole === 'admin' || userRole === 'editor' || currentPublication?.isOwner;
+  
+  // Use publicationArticles for admins/editors, otherwise use user articles
+  const displayArticles = (isAdmin && currentPublication) ? publicationArticles : articles;
+  const isLoading = (isAdmin && currentPublication) ? pubArticlesLoading : loading;
+
+  // Load appropriate articles on mount or when publication changes
+  useEffect(() => {
+    if (isAdmin && currentPublication?.id) {
+      loadPublicationArticles(currentPublication.id, 'unpublished');
+    } else {
+      loadUserArticles();
+    }
+  }, [isAdmin, currentPublication?.id, loadPublicationArticles, loadUserArticles]);
+
+  // Filter unpublished articles (api already filters for pubArticles, but safety check)
+  const unpublishedArticles = displayArticles
     .filter(article => article.status === 'unpublished')
     .map(article => ({
       ...article,
@@ -39,7 +70,7 @@ export default function Unpublished() {
         setShowTrashModal(true);
       }
     }));
-
+    
   // Add handlers to articles
   const articlesWithHandlers = unpublishedArticles.map(article => ({
     ...article,

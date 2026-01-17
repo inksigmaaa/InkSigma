@@ -65,8 +65,11 @@ const convertBlogToArticle = (blog) => {
 
 export function ArticlesProvider({ children }) {
   const [articles, setArticles] = useState([])
+  const [reviewArticles, setReviewArticles] = useState([])
   const [loading, setLoading] = useState(false)
+  const [reviewLoading, setReviewLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [reviewError, setReviewError] = useState(null)
   const { data: session } = useSession()
   
   // Refs to track current values without causing re-renders
@@ -219,6 +222,11 @@ export function ArticlesProvider({ children }) {
       setArticles(prev => prev.map(article =>
         article.id === id ? updatedArticle : article
       ))
+      
+      setPublicationArticles(prev => prev.map(article =>
+        article.id === id ? updatedArticle : article
+      ))
+      
       return updatedArticle
     } catch (err) {
       console.error('Error updating article:', err)
@@ -230,11 +238,13 @@ export function ArticlesProvider({ children }) {
     try {
       await blogService.deleteBlog(id)
       setArticles(prev => prev.filter(article => article.id !== id))
+      setPublicationArticles(prev => prev.filter(article => article.id !== id))
     } catch (err) {
       console.error('Error deleting article:', err)
       // Still remove from local state if it's a "not found" error
       if (err.message?.includes('not found')) {
         setArticles(prev => prev.filter(article => article.id !== id))
+        setPublicationArticles(prev => prev.filter(article => article.id !== id))
       } else {
         throw err
       }
@@ -245,9 +255,15 @@ export function ArticlesProvider({ children }) {
     try {
       const blog = await blogService.updateBlogStatus(id, 'draft')
       const updatedArticle = convertBlogToArticle(blog)
+      
       setArticles(prev => prev.map(article =>
         article.id === id ? updatedArticle : article
       ))
+      
+      setPublicationArticles(prev => prev.map(article =>
+        article.id === id ? updatedArticle : article
+      ))
+      
       return updatedArticle
     } catch (err) {
       console.error('Error moving article to draft:', err)
@@ -259,9 +275,15 @@ export function ArticlesProvider({ children }) {
     try {
       const blog = await blogService.updateBlogStatus(id, 'trash')
       const updatedArticle = convertBlogToArticle(blog)
+      
       setArticles(prev => prev.map(article =>
         article.id === id ? updatedArticle : article
       ))
+      
+      setPublicationArticles(prev => prev.map(article =>
+        article.id === id ? updatedArticle : article
+      ))
+      
       return updatedArticle
     } catch (err) {
       console.error('Error moving article to trash:', err)
@@ -275,9 +297,15 @@ export function ArticlesProvider({ children }) {
       const blog = await blogService.updateBlogStatus(id, 'published')
       console.log('Article published successfully:', blog)
       const updatedArticle = convertBlogToArticle(blog)
+      
       setArticles(prev => prev.map(article =>
         article.id === id ? updatedArticle : article
       ))
+      
+      setPublicationArticles(prev => prev.map(article =>
+        article.id === id ? updatedArticle : article
+      ))
+      
       return updatedArticle
     } catch (err) {
       console.error('Error publishing article:', err)
@@ -289,12 +317,111 @@ export function ArticlesProvider({ children }) {
     try {
       const blog = await blogService.updateBlogStatus(id, 'unpublished')
       const updatedArticle = convertBlogToArticle(blog)
+      
       setArticles(prev => prev.map(article =>
         article.id === id ? updatedArticle : article
       ))
+      
+      setPublicationArticles(prev => prev.map(article =>
+        article.id === id ? updatedArticle : article
+      ))
+      
       return updatedArticle
     } catch (err) {
       console.error('Error unpublishing article:', err)
+      throw err
+    }
+  }, [])
+
+  // Load articles with 'review' status for a publication
+  const loadReviewArticles = useCallback(async (publicationId) => {
+    if (!publicationId) {
+      console.warn('[ArticlesContext] No publicationId provided for loadReviewArticles')
+      return []
+    }
+
+    try {
+      setReviewLoading(true)
+      setReviewError(null)
+      console.log('[ArticlesContext] Loading review articles for publication:', publicationId)
+      
+      const blogs = await blogService.getReviewArticles(publicationId)
+      const convertedArticles = blogs.map(convertBlogToArticle)
+      
+      console.log('[ArticlesContext] Review articles loaded:', convertedArticles.length)
+      setReviewArticles(convertedArticles)
+      return convertedArticles
+    } catch (err) {
+      console.error('Error loading review articles:', err)
+      setReviewError(err.message)
+      throw err
+    } finally {
+      setReviewLoading(false)
+    }
+  }, [])
+
+  // Accept a review article (admin: choose published/unpublished, editor: unpublished only)
+  const acceptReviewArticle = useCallback(async (id, targetStatus = 'unpublished') => {
+    try {
+      console.log('[ArticlesContext] Accepting review article:', id, 'with target status:', targetStatus)
+      const blog = await blogService.acceptReviewArticle(id, targetStatus)
+      const updatedArticle = convertBlogToArticle(blog)
+      
+      // Remove from review articles
+      setReviewArticles(prev => prev.filter(article => article.id !== id))
+      
+      // Update in main articles if present
+      setArticles(prev => prev.map(article =>
+        article.id === id ? updatedArticle : article
+      ))
+      
+      return updatedArticle
+    } catch (err) {
+      console.error('Error accepting review article:', err)
+      throw err
+    }
+  }, [])
+
+  // Reject a review article (returns to author's draft)
+  const rejectReviewArticle = useCallback(async (id) => {
+    try {
+      console.log('[ArticlesContext] Rejecting review article:', id)
+      const blog = await blogService.rejectReviewArticle(id)
+      const updatedArticle = convertBlogToArticle(blog)
+      
+      // Remove from review articles
+      setReviewArticles(prev => prev.filter(article => article.id !== id))
+      
+      // Update in main articles if present
+      setArticles(prev => prev.map(article =>
+        article.id === id ? updatedArticle : article
+      ))
+      
+      return updatedArticle
+    } catch (err) {
+      console.error('Error rejecting review article:', err)
+      throw err
+    }
+  }, [])
+
+  // Revert article from review back to draft (for author)
+  const revertReviewToDraft = useCallback(async (id) => {
+    try {
+      console.log('[ArticlesContext] Reverting review article to draft:', id)
+      const blog = await blogService.revertReviewToDraft(id)
+      const updatedArticle = convertBlogToArticle(blog)
+      
+      // Remove from review articles
+      setReviewArticles(prev => prev.filter(article => article.id !== id))
+      
+      // Update in main articles
+      setArticles(prev => prev.map(article =>
+        article.id === id ? updatedArticle : article
+      ))
+      
+      return updatedArticle
+    } catch (err) {
+      console.error('Error reverting review article to draft:', err)
       throw err
     }
   }, [])
@@ -410,12 +537,40 @@ export function ArticlesProvider({ children }) {
     setArticles(prev => prev.filter(article => !ids.includes(article.id)))
   }, [])
 
+  // Publication articles state (for admins/editors to see all articles in publication)
+  const [publicationArticles, setPublicationArticles] = useState([])
+  const [pubArticlesLoading, setPubArticlesLoading] = useState(false)
+
+  // Load all articles for a publication (for admins/editors)
+  const loadPublicationArticles = useCallback(async (publicationId, status = null) => {
+    try {
+      setPubArticlesLoading(true)
+      const filters = status ? { status } : {}
+      const blogs = await blogService.getPublicationBlogs(publicationId, filters)
+      const convertedArticles = blogs.map(convertBlogToArticle)
+      setPublicationArticles(convertedArticles)
+      return convertedArticles
+    } catch (err) {
+      console.error('Error loading publication articles:', err)
+      throw err
+    } finally {
+      setPubArticlesLoading(false)
+    }
+  }, [])
+
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
     articles,
+    reviewArticles,
+    publicationArticles, // New
     loading,
+    reviewLoading,
+    pubArticlesLoading, // New
     error,
+    reviewError,
     loadUserArticles,
+    loadReviewArticles,
+    loadPublicationArticles, // New
     getArticleById,
     createArticle,
     updateArticle,
@@ -426,6 +581,9 @@ export function ArticlesProvider({ children }) {
     deleteArticle,
     publishArticle,
     unpublishArticle,
+    acceptReviewArticle,
+    rejectReviewArticle,
+    revertReviewToDraft,
     bulkMoveToTrash,
     bulkMoveToTrashStatus,
     bulkMoveToDraft,
@@ -434,20 +592,30 @@ export function ArticlesProvider({ children }) {
     bulkPublish,
     uploadArticleImage
   }), [
-    articles,
-    loading,
-    error,
-    loadUserArticles,
-    getArticleById,
-    createArticle,
-    updateArticle,
-    moveToTrash,
-    moveToDraft,
+    articles, 
+    reviewArticles, 
+    publicationArticles, // New
+    loading, 
+    reviewLoading, 
+    pubArticlesLoading, // New
+    error, 
+    reviewError, 
+    loadUserArticles, 
+    loadReviewArticles,
+    loadPublicationArticles, // New
+    getArticleById, 
+    createArticle, 
+    updateArticle, 
+    moveToTrash, 
+    moveToDraft, 
     moveToTrashStatus,
     restoreFromTrash,
     deleteArticle,
-    publishArticle,
+    publishArticle, 
     unpublishArticle,
+    acceptReviewArticle,
+    rejectReviewArticle,
+    revertReviewToDraft,
     bulkMoveToTrash,
     bulkMoveToTrashStatus,
     bulkMoveToDraft,
