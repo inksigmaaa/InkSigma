@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useSession } from '@/lib/auth-client';
 
@@ -8,7 +8,9 @@ export default function AuthGuard({ children }) {
     const { data: session, isPending } = useSession();
     const router = useRouter();
     const pathname = usePathname();
-    const [checkingPublication, setCheckingPublication] = useState(true);
+    const [isAuthorized, setIsAuthorized] = useState(false);
+    const hasCheckedRef = useRef(false);
+    const lastUserIdRef = useRef(null);
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -21,19 +23,29 @@ export default function AuthGuard({ children }) {
                 return;
             }
 
-            // Skip publication check if already on create-publication page or invitation pages
-            if (pathname === '/create-publication' || pathname?.startsWith('/invite/')) {
-                setCheckingPublication(false);
+            // If we've already checked for this user, skip
+            if (hasCheckedRef.current && lastUserIdRef.current === session.user.id) {
+                setIsAuthorized(true);
                 return;
             }
 
-            // Check cache first (but allow cache to be cleared)
+            // Skip publication check if already on create-publication page or invitation pages
+            if (pathname === '/create-publication' || pathname?.startsWith('/invite/')) {
+                setIsAuthorized(true);
+                hasCheckedRef.current = true;
+                lastUserIdRef.current = session.user.id;
+                return;
+            }
+
+            // Check cache first
             const cacheKey = `publication-check-${session.user.id}`;
             const cached = sessionStorage.getItem(cacheKey);
             
-            if (cached && cached !== 'false') {
+            if (cached === 'true') {
                 console.log('[AuthGuard] Using cached publication check result');
-                setCheckingPublication(false);
+                setIsAuthorized(true);
+                hasCheckedRef.current = true;
+                lastUserIdRef.current = session.user.id;
                 return;
             }
 
@@ -58,21 +70,21 @@ export default function AuthGuard({ children }) {
                     }
                 } else {
                     console.error('[AuthGuard] Failed to check publication:', pubResponse.status);
-                    // If the check fails, allow access to prevent blocking the user
                 }
             } catch (error) {
                 console.error('[AuthGuard] Error checking publication:', error);
-                // If there's an error, allow access to prevent blocking the user
             }
 
-            setCheckingPublication(false);
+            setIsAuthorized(true);
+            hasCheckedRef.current = true;
+            lastUserIdRef.current = session.user.id;
         };
 
         checkAuth();
     }, [session, isPending, pathname, router]);
 
-    // Show loading while checking authentication or publication
-    if (isPending || checkingPublication) {
+    // Show loading only on initial auth check, not on navigation
+    if (isPending || (!isAuthorized && !hasCheckedRef.current)) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>

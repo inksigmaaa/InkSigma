@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
-import Sidebar from "../components/sidebar/Sidebar"
+import EditorSidebar from "../components/sidebar/EditorSidebar"
 import Verify from "../components/verify/Verify"
 import BlogStatsComponent from "../components/BlogStatsComponent/BlogStatsComponent"
 import { Pencil } from "lucide-react"
@@ -11,15 +11,13 @@ import AuthGuard from "@/components/auth/AuthGuard"
 import { useArticles } from "@/contexts/ArticlesContext"
 import { usePublication } from "@/contexts/PublicationContext"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-export default function HomePage() {
+export default function EditorPage() {
   const router = useRouter()
-  const { currentPublication, publicationDetails, loading } = usePublication()
+  const { currentPublication, loading } = usePublication()
   const { articles: allArticles, loadUserArticles } = useArticles()
-  const [commentCounts, setCommentCounts] = useState({})
 
-  // Refresh articles when home page loads
+  // Refresh articles when page loads
   useEffect(() => {
     loadUserArticles()
   }, [loadUserArticles])
@@ -30,7 +28,6 @@ export default function HomePage() {
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 4)
     .map(article => {
-      // Check if article has an image - use fallback if not
       const thumbnailUrl = (article.image && article.image.trim() !== '') 
         ? article.image 
         : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
@@ -40,53 +37,11 @@ export default function HomePage() {
         title: article.title,
         description: article.description,
         category: article.categories?.[0] || 'Uncategorized',
-        thumbnail: thumbnailUrl,
-        views: article.views || 0
+        thumbnail: thumbnailUrl
       };
     })
 
-  // Fetch comment counts for recent articles
-  useEffect(() => {
-    const fetchCommentCounts = async () => {
-      console.log('[Home] allArticles:', allArticles);
-      console.log('[Home] allArticles length:', allArticles.length);
-      
-      // Get published article IDs
-      const publishedArticles = allArticles.filter(article => article.status === 'published');
-      console.log('[Home] Published articles:', publishedArticles);
-      
-      if (publishedArticles.length === 0) {
-        console.log('[Home] No published articles found');
-        return;
-      }
-      
-      try {
-        const blogIds = publishedArticles.map(a => a.id);
-        console.log('[Home] Fetching comment counts for:', blogIds);
-        
-        const response = await fetch(`${API_URL}/api/comments/counts`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ blogIds })
-        });
-        
-        if (response.ok) {
-          const counts = await response.json();
-          console.log('[Home] Comment counts:', counts);
-          setCommentCounts(counts);
-        } else {
-          console.error('[Home] Failed to fetch comment counts:', response.status);
-        }
-      } catch (err) {
-        console.error('Error fetching comment counts:', err);
-      }
-    };
-
-    fetchCommentCounts();
-  }, [allArticles]);
-
   const handleStartWriting = () => {
-    // Pass current publication ID to editor
     if (currentPublication?.id) {
       router.push(`/editor?publicationId=${currentPublication.id}`)
     } else {
@@ -95,7 +50,6 @@ export default function HomePage() {
   }
 
   const handleVisitSite = () => {
-    // Pass the current publication ID to view-site
     if (currentPublication?.id) {
       window.open(`/view-site?publicationId=${currentPublication.id}`, "_blank")
     } else {
@@ -110,13 +64,13 @@ export default function HomePage() {
   return (
     <AuthGuard>
       <NavbarLoggedin />
-      <Sidebar />
+      <EditorSidebar />
       <Verify />
       
       {/* Main Content */}
       <div className="pt-[112px] min-h-screen max-md:pt-[90px]">
         <div className="max-w-[1034px] mx-auto px-5 max-md:p-0">
-          <div className={`ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0`}>
+          <div className="ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0">
           
           {/* Publication Header */}
           <div className="border-b border-gray-200 px-8 py-6 flex items-center justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
@@ -215,7 +169,6 @@ export default function HomePage() {
                       alt={article.title}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        // Prevent infinite loop
                         if (e.target.src !== "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop") {
                           e.target.onerror = null;
                           e.target.src = "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
@@ -243,23 +196,6 @@ export default function HomePage() {
                       >
                         <Pencil className="w-5 h-5" />
                       </button>
-                    </div>
-                    
-                    {/* Views and Comments */}
-                    <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
-                      <div className="flex items-center gap-1.5 text-gray-400 text-xs">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        <span>{article.views} views</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-gray-400 text-xs">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                        <span>{commentCounts[article.id] || 0} comments</span>
-                      </div>
                     </div>
                   </div>
                 </div>

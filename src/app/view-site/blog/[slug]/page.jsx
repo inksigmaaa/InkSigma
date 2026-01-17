@@ -9,6 +9,7 @@ import TableOfContents from '../../components/TableOfContents/TableOfContents';
 import BackToHomeButton from '../../components/BackToHomeButton/BackToHomeButton';
 import ScrollToTop from '../../components/ScrollToTop/ScrollToTop';
 import MobileBottomNav from '../../components/MobileBottomNav/MobileBottomNav';
+import CommentSection from '../../components/CommentSection/CommentSection';
 import ClockIcon from '../../components/icons/ClockIcon';
 
 export default function BlogDetailPage({ params }) {
@@ -21,17 +22,16 @@ export default function BlogDetailPage({ params }) {
     const fetchBlog = async () => {
       try {
         setLoading(true);
-        // Fetch all published blogs and find by slug
-        const response = await fetch('http://localhost:5000/api/blogs?status=published');
+        // Fetch blog by slug and increment view
+        const response = await fetch(`http://localhost:5000/api/blogs/slug/${slug}?incrementView=true`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch blog');
         }
         
-        const blogs = await response.json();
-        const foundBlog = blogs.find(b => b.slug === slug);
+        const foundBlog = await response.json();
         
-        if (!foundBlog) {
+        if (!foundBlog || foundBlog.error) {
           setError('Blog not found');
         } else {
           // Fetch publication details if publicationId exists
@@ -45,10 +45,6 @@ export default function BlogDetailPage({ params }) {
               foundBlog.publication = pubData;
             }
           }
-          
-          // Debug: Log author information
-          console.log('Blog author data:', foundBlog.author);
-          console.log('Author image path:', foundBlog.author?.image);
           
           setBlog(foundBlog);
         }
@@ -219,6 +215,9 @@ export default function BlogDetailPage({ params }) {
             className="prose prose-sm md:prose-lg max-w-none prose-headings:font-bold prose-headings:text-black prose-p:text-gray-700 prose-p:leading-relaxed break-words"
             dangerouslySetInnerHTML={{ __html: blog.content }}
           />
+
+          {/* Comment Section */}
+          <CommentSection blogId={blog.id} />
         </div>
         </div>
       </section>

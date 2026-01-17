@@ -196,6 +196,7 @@ export default function Published() {
     if (loading && articles.length === 0) {
         return (
             <>
+          
                 <NavbarLoggedin />
                 <Sidebar />
                 <Verify />

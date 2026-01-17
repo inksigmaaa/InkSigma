@@ -9,6 +9,7 @@ import PersonalArticles from "../components/personalArticles/personalArticles"
 import ConfirmModal from "../components/confirmModal/ConfirmModal"
 import PageTransition from "@/components/PageTransition"
 import { useArticles } from "@/contexts/ArticlesContext"
+import AuthGuard from "@/components/auth/AuthGuard" 
 
 export default function DraftPage() {
   const { articles, loading, moveToTrashStatus, bulkMoveToTrashStatus, bulkPublish, publishArticle, loadUserArticles } = useArticles()
@@ -148,6 +149,7 @@ export default function DraftPage() {
 
   return (
     <>
+    <AuthGuard />
       <NavbarLoggedin />
       <Sidebar />
       <Verify />

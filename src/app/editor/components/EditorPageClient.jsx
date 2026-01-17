@@ -349,6 +349,20 @@ export default function EditorPageClient() {
     }
   }
 
+  // Handle Back - Auto-save as draft and go back
+  const handleBack = async () => {
+    // If there's content to save, auto-save as draft
+    if (blogTitle.trim() || blogDescription.trim() || (editorContent.html && editorContent.html !== '<p></p>')) {
+      const result = await saveBlog('draft', null, true)
+      if (result) {
+        router.push('/draft?refresh=true')
+        return
+      }
+    }
+    // If nothing to save or save failed, just go back
+    router.push('/draft?refresh=true')
+  }
+
   // Handle Schedule
   const handleSchedule = async () => {
     if (!selectedDate) {
@@ -634,6 +648,23 @@ export default function EditorPageClient() {
     <div className="overflow-x-hidden">
       {/* Fixed Left Vertical Line */}
       <div className="hidden md:block fixed top-0 bottom-0 w-px bg-gray-200 z-[150]" style={{ left: 'calc(50% - 448px)' }} />
+      
+      {/* Fixed Back Button - Left of vertical line */}
+      <button 
+        onClick={handleBack}
+        className="hidden md:flex fixed items-center text-gray-500 hover:text-gray-700 transition-colors z-[151]"
+        style={{ 
+          left: 'calc(50% - 560px)', 
+          top: '24px',
+          width: '83.5px',
+          height: '24px',
+          padding: '4px 8px',
+          gap: '8px'
+        }}
+      >
+        <ChevronLeft className="w-4 h-4" />
+        <span className="text-sm font-medium">Back</span>
+      </button>
       
       {/* Fixed Right Vertical Line */}
       <div className="hidden md:block fixed top-0 bottom-0 w-px bg-gray-200 z-[150]" style={{ left: 'calc(50% + 468px)' }} />
