@@ -113,10 +113,13 @@ export default function ProfileSettingsPage() {
       setImage(data.imageUrl)
       setImagePreview(data.imageUrl)
       
-      // Wait a moment for session to update on backend, then reload
+      // Show success message
+      setShowUpdateMessage(true)
+      
+      // Reload page to refresh session with updated image
       setTimeout(() => {
-        window.location.href = window.location.pathname
-      }, 500)
+        window.location.reload()
+      }, 1500)
     } catch (error) {
       console.error("Error uploading image:", error)
       setError("Failed to upload image")
@@ -144,10 +147,13 @@ export default function ProfileSettingsPage() {
       setImage("")
       setImagePreview("")
       
-      // Wait a moment for session to update on backend, then reload
+      // Show success message
+      setShowUpdateMessage(true)
+      
+      // Reload page to refresh session with updated image
       setTimeout(() => {
-        window.location.href = window.location.pathname
-      }, 500)
+        window.location.reload()
+      }, 1500)
     } catch (error) {
       console.error("Error removing image:", error)
       setError("Failed to remove image")

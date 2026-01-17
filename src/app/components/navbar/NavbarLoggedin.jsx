@@ -1,7 +1,7 @@
 "use client"
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useSession, signOut } from "@/lib/auth-client";
+import { useSession, signOut, authClient } from "@/lib/auth-client";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { formatTimeAgo } from "@/utils/timeFormatter";
 
@@ -76,6 +76,19 @@ export default function NavbarLoggedin() {
 
         document.addEventListener("click", handleClickOutside);
         return () => document.removeEventListener("click", handleClickOutside);
+    }, []);
+
+    // Listen for profile updates from other tabs/windows
+    useEffect(() => {
+        const handleStorageChange = (e) => {
+            if (e.key === 'profileUpdated') {
+                // Reload page when profile is updated in another tab
+                window.location.reload();
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
     }, []);
 
     const markAsRead = async (notificationId) => {
@@ -201,10 +214,10 @@ export default function NavbarLoggedin() {
                                                 className={`flex items-start gap-3 p-4 hover:bg-[#F8F9FA] border-b border-[#F0F0F0] last:border-b-0 max-md:p-3 max-md:gap-2.5 cursor-pointer ${!notification.isRead ? 'bg-blue-50' : ''}`}
                                                 onClick={() => handleNotificationClick(notification)}
                                             >
-                                                <img 
-                                                    src={notification.avatar} 
-                                                    alt="avatar" 
-                                                    className="w-10 h-10 rounded-full object-cover flex-shrink-0 max-md:w-9 max-md:h-9"
+                                                <UserAvatar 
+                                                    user={notification.avatarUser || { image: notification.avatar }}
+                                                    size="sm"
+                                                    className="flex-shrink-0"
                                                 />
                                                 <div className="flex-1 min-w-0">
                                                     <h4 className="text-[14px] font-semibold text-[#333] mb-1 max-md:text-[13px]">

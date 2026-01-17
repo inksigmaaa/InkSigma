@@ -114,6 +114,13 @@ export default function CreatePublication() {
       return;
     }
 
+    // Validate subdomain format more strictly (no leading/trailing hyphens)
+    if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(subdomain)) {
+      setErrorMessage("Subdomain cannot start or end with hyphens!");
+      setShowErrors(true);
+      return;
+    }
+
     // Check if subdomain is available
     if (subdomainAvailable === false) {
       setErrorMessage("This subdomain is already taken. Please choose another one.");
@@ -130,11 +137,26 @@ export default function CreatePublication() {
     setLoading(true);
 
     try {
+      // First, verify authentication with the backend
+      const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      console.log("Verifying authentication with backend...");
+      
+      const authCheckResponse = await fetch(`${API_URL}/api/publications/debug/auth-check`, {
+        credentials: "include",
+      });
+      
+      if (!authCheckResponse.ok) {
+        console.error("Authentication check failed:", authCheckResponse.status);
+        throw new Error("Authentication failed. Please log in again.");
+      }
+      
+      const authCheckData = await authCheckResponse.json();
+      console.log("Authentication verified:", authCheckData);
+
       // Create publication
       const publication = await publicationService.createPublication({
         name: publicationName,
         subdomain: subdomain.toLowerCase(),
-        description: "",
       });
 
       console.log('Publication created:', publication);
@@ -224,7 +246,24 @@ export default function CreatePublication() {
       }
     } catch (error) {
       console.error('Error creating publication:', error);
-      setErrorMessage(error.message || "Failed to create publication. Please try again.");
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        data: error.data,
+      });
+      
+      // Provide more helpful error messages
+      let displayMessage = "Failed to create publication. Please try again.";
+      
+      if (error.status === 401) {
+        displayMessage = "You are not authenticated. Please log in again.";
+      } else if (error.status === 400) {
+        displayMessage = error.message || "Invalid input. Please check your publication name and subdomain.";
+      } else if (error.message) {
+        displayMessage = error.message;
+      }
+      
+      setErrorMessage(displayMessage);
       setShowErrors(true);
     } finally {
       setLoading(false);
@@ -373,7 +412,11 @@ export default function CreatePublication() {
                   type="text"
                   placeholder="your-subdomain"
                   value={subdomain}
-                  onChange={(e) => setSubdomain(e.target.value)}
+                  onChange={(e) => {
+                    // Only allow alphanumeric and hyphens
+                    const value = e.target.value.replace(/[^a-zA-Z0-9-]/g, '');
+                    setSubdomain(value);
+                  }}
                   minLength={3}
                   maxLength={63}
                   disabled={loading}

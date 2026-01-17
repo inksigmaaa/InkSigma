@@ -360,13 +360,16 @@ export default function SettingsPage() {
 
           {/* Publication Description */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Publication Description</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-semibold text-gray-900">Publication Description</label>
+              <span className="text-xs text-gray-500">{(description || "").length}/50</span>
+            </div>
             <textarea
               placeholder="Write publication Description"
               value={description || ""}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => setDescription(e.target.value.slice(0, 50))}
               rows={3}
-              maxLength={200}
+              maxLength={50}
               className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:border-purple-500 resize-none"
             />
           </div>

@@ -87,9 +87,23 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
 
           {/* PUBLICATION SECTION */}
           <div className="flex flex-col gap-[3px] max-md:flex-row max-md:gap-2 max-md:p-0">
-            <h1 className="text-[11px] font-semibold text-gray-400 tracking-[0.5px] uppercase mb-[3px] max-md:hidden">
-              PUBLICATION
-            </h1>
+            <div className="max-md:hidden">
+              <h1 className="text-[11px] font-semibold text-gray-400 tracking-[0.5px] uppercase mb-[3px]">
+                PUBLICATION
+              </h1>
+              {currentPublication?.name && (
+                <div className="mb-[8px] px-2">
+                  <p className="text-[13px] font-semibold text-gray-900 leading-[150%]">
+                    {currentPublication.name}
+                  </p>
+                  {currentPublication?.description && (
+                    <p className="text-[12px] text-gray-500 leading-[140%] mt-[2px]">
+                      {currentPublication.description}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Home */}
             <Link href={getRoute("Home")}>
