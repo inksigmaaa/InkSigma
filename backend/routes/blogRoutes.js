@@ -509,6 +509,7 @@ router.get("/:id", async (req, res) => {
 router.get("/slug/:slug", async (req, res) => {
     try {
         const { slug } = req.params;
+        const { incrementView } = req.query;
 
         // Check if user is authenticated
         let currentUserId = null;
@@ -535,6 +536,7 @@ router.get("/slug/:slug", async (req, res) => {
                 scheduledAt: blog.scheduledAt,
                 createdAt: blog.createdAt,
                 updatedAt: blog.updatedAt,
+                views: blog.views,
                 authorId: blog.authorId,
                 author: {
                     id: user.id,
@@ -556,6 +558,15 @@ router.get("/slug/:slug", async (req, res) => {
             if (!currentUserId || blogData.authorId !== currentUserId) {
                 return res.status(404).json({ error: "Blog not found" });
             }
+        }
+
+        // Increment view count if requested
+        if (incrementView === 'true' && blogData.status === 'published') {
+            await db
+                .update(blog)
+                .set({ views: (blogData.views || 0) + 1 })
+                .where(eq(blog.id, blogData.id));
+            blogData.views = (blogData.views || 0) + 1;
         }
 
         res.json(blogData);
