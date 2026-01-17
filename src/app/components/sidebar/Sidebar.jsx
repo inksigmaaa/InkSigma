@@ -10,6 +10,19 @@ export default function Sidebar() {
 
   // Route mapping for navigation
   const getRoute = (label) => {
+    // Determine review route based on role
+    let reviewRoute = "/review";
+    if (currentPublication) {
+      const role = currentPublication.role;
+      const isOwner = currentPublication.isOwner;
+      const isReviewer = isOwner || role === 'editor' || role === 'admin';
+      if (!isReviewer) {
+        reviewRoute = "/author-review";
+      }
+      // Ensure we preserve the publication context
+      reviewRoute = `${reviewRoute}?pub=${currentPublication.id}`;
+    }
+
     const routes = {
       "Home": "/home",
       "Domain": "/domain",
@@ -19,7 +32,7 @@ export default function Sidebar() {
       "Published": "/published",
       "Unpublished": "/unpublished",
       "Schedule": "/schedule",
-      "Review": "/review",
+      "Review": reviewRoute,
       "My Blogs": "/my-blogs",
       "Draft": "/draft",
       "Trash": "/trash",

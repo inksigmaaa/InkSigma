@@ -11,7 +11,7 @@ import Verify from "../components/verify/Verify"
 import PublishOptionsModal from "../components/review/PublishOptionsModal"
 import { useArticles } from "@/contexts/ArticlesContext"
 import { usePublication } from "@/contexts/PublicationContext"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 const categories = [
   "Agriculture", "Art & Illustration", "Business", "Climate & Environment",
@@ -26,6 +26,7 @@ const categories = [
 
 export default function ReviewPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [selectedPosts, setSelectedPosts] = useState([])
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -49,8 +50,15 @@ export default function ReviewPage() {
   useEffect(() => {
     if (currentPublication?.id) {
       loadReviewArticles(currentPublication.id)
+      
+      // Ensure URL has the publication ID so refresh works correctly
+      if (searchParams && !searchParams.get('pub')) {
+        const urlArgs = new URLSearchParams(window.location.search)
+        urlArgs.set('pub', currentPublication.id)
+        window.history.replaceState(null, '', `/review?${urlArgs.toString()}`)
+      }
     }
-  }, [currentPublication?.id, loadReviewArticles])
+  }, [currentPublication?.id, loadReviewArticles, searchParams])
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -119,14 +127,13 @@ export default function ReviewPage() {
         console.log('[ReviewPage] acceptReviewArticle succeeded')
         setShowPublishModal(false)
         setSelectedArticleForPublish(null)
-        alert('Article published successfully!')
+        console.log('Article published successfully!')
         // Refresh the review articles list
         if (currentPublication?.id) {
           loadReviewArticles(currentPublication.id)
         }
       } catch (error) {
         console.error('[ReviewPage] Error publishing article:', error)
-        alert('Failed to publish article: ' + error.message)
       }
     }
   }
@@ -140,14 +147,13 @@ export default function ReviewPage() {
         console.log('[ReviewPage] acceptReviewArticle succeeded')
         setShowPublishModal(false)
         setSelectedArticleForPublish(null)
-        alert('Article stored to unpublished!')
+        console.log('Article stored to unpublished!')
         // Refresh the review articles list
         if (currentPublication?.id) {
           loadReviewArticles(currentPublication.id)
         }
       } catch (error) {
         console.error('[ReviewPage] Error storing to unpublished:', error)
-        alert('Failed to store article: ' + error.message)
       }
     }
   }
@@ -156,14 +162,13 @@ export default function ReviewPage() {
     if (confirm('Are you sure you want to reject this article? It will be returned to the author\'s drafts.')) {
       try {
         await rejectReviewArticle(articleId)
-        alert('Article rejected and returned to draft.')
+        console.log('Article rejected and returned to draft.')
         // Refresh the review articles list
         if (currentPublication?.id) {
           loadReviewArticles(currentPublication.id)
         }
       } catch (error) {
         console.error('Error rejecting article:', error)
-        alert('Failed to reject article: ' + error.message)
       }
     }
   }
@@ -461,6 +466,7 @@ export default function ReviewPage() {
         onPublish={handlePublish}
         onUnpublish={handleUnpublish}
         articleTitle={selectedArticleForPublish?.title}
+        userRole={currentPublication?.role}
       />
     </>
   )

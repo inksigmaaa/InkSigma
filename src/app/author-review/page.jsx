@@ -147,14 +147,14 @@ export default function AuthorReviewPage() {
     try {
       if (actionType === 'revert') {
         await revertReviewToDraft(selectedArticleForAction.id)
-        alert('Article reverted to draft successfully!')
+        console.log('Article reverted to draft successfully!')
       } else if (actionType === 'accept') {
         // Editor can only unpublish, not publish
         await acceptReviewArticle(selectedArticleForAction.id, 'unpublished')
-        alert('Article accepted and stored to unpublished!')
+        console.log('Article accepted and stored to unpublished!')
       } else if (actionType === 'reject') {
         await rejectReviewArticle(selectedArticleForAction.id)
-        alert('Article rejected and returned to author\'s draft.')
+        console.log('Article rejected and returned to author\'s draft.')
       }
       // Refresh the review articles list
       if (currentPublication?.id) {
@@ -162,7 +162,6 @@ export default function AuthorReviewPage() {
       }
     } catch (error) {
       console.error('Error performing action:', error)
-      alert('Failed to perform action: ' + error.message)
     } finally {
       setShowConfirmModal(false)
       setSelectedArticleForAction(null)

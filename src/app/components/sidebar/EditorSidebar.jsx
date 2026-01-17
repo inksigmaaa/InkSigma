@@ -11,7 +11,7 @@ export default function Sidebar() {
   // Route mapping for navigation
   const getRoute = (label) => {
     const routes = {
-      "Home": "/home",
+      "Home": "/editorpage",
       "Members": "/members",
       "Published": "/published",
       "Unpublished": "/unpublished",
@@ -20,7 +20,15 @@ export default function Sidebar() {
       "Draft": "/404",
       "Trash": "/404",
     };
-    return routes[label] || "/dashboard";
+    
+    let route = routes[label] || "/dashboard";
+    
+    // Append publication ID to all publication-specific routes to preserve context
+    if (currentPublication?.id && route !== "/dashboard" && route !== "/404") {
+      route = `${route}?pub=${currentPublication.id}`;
+    }
+    
+    return route;
   };
 
   // Check if the current route is active
