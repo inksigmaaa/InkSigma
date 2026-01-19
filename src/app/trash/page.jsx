@@ -9,8 +9,12 @@ import PersonalArticles from "../components/personalArticles/personalArticles"
 import ConfirmModal from "../components/confirmModal/ConfirmModal"
 import PageTransition from "@/components/PageTransition"
 import { useArticles } from "@/contexts/ArticlesContext"
+import { usePublication } from "@/contexts/PublicationContext"
+import EditorSidebar from "../components/sidebar/EditorSidebar"
 
 export default function TrashPage() {
+  const { currentPublication } = usePublication()
+  const isSidebarAdmin = currentPublication?.isOwner || currentPublication?.role === 'admin'
   const { articles, loading, error, moveToDraft, moveToTrash, bulkMoveToTrash } = useArticles()
   const [selectedArticles, setSelectedArticles] = useState([])
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -147,7 +151,7 @@ export default function TrashPage() {
   return (
     <AuthGuard>
       <NavbarLoggedin />
-      <Sidebar />
+      {isSidebarAdmin ? <Sidebar /> : <EditorSidebar />}
       <Verify />
       <PageTransition>
         <PersonalArticles

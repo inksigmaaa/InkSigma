@@ -4,11 +4,13 @@ import { useState, useMemo, useEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
+import EditorSidebar from "../components/sidebar/EditorSidebar"
 import Verify from "../components/verify/Verify"
 import PersonalArticles from "../components/personalArticles/personalArticles"
 import ConfirmModal from "../components/confirmModal/ConfirmModal"
 import PageTransition from "@/components/PageTransition"
 import { useArticles } from "@/contexts/ArticlesContext"
+import { usePublication } from "@/contexts/PublicationContext"
 import AuthGuard from "@/components/auth/AuthGuard" 
 
 export default function DraftPage() {
@@ -132,13 +134,16 @@ export default function DraftPage() {
     }
   }
 
+  const { currentPublication } = usePublication()
+  const canPublish = currentPublication?.isOwner || currentPublication?.role === 'admin'
+
   const actionButtons = [
-    {
+    ...(canPublish ? [{
       title: "Publish",
       icon: "/images/icons/share.svg",
       onClick: handleBulkPublish,
       disabled: selectedArticles.length === 0
-    },
+    }] : []),
     {
       title: "Delete",
       icon: "/images/icons/trash2.svg",
@@ -151,7 +156,7 @@ export default function DraftPage() {
     <>
     <AuthGuard />
       <NavbarLoggedin />
-      <Sidebar />
+      {canPublish ? <Sidebar /> : <EditorSidebar />}
       <Verify />
       <PageTransition>
         <PersonalArticles

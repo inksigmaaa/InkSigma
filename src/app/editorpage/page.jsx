@@ -19,8 +19,8 @@ export default function EditorPage() {
 
   // Refresh articles when page loads
   useEffect(() => {
-    loadUserArticles()
-  }, [loadUserArticles])
+    loadUserArticles(currentPublication?.id)
+  }, [loadUserArticles, currentPublication?.id])
 
   // Get recent published articles (limit to 4)
   const recentArticles = allArticles
