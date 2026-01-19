@@ -16,9 +16,9 @@ export default function Sidebar() {
       "Published": "/published",
       "Unpublished": "/unpublished",
       "Review": "/review",
-      "My Blogs": "/404",
-      "Draft": "/404",
-      "Trash": "/404",
+      "My Blogs": "/my-blogs",
+      "Draft": "/draft",
+      "Trash": "/trash",
     };
     
     let route = routes[label] || "/dashboard";
