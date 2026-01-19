@@ -114,13 +114,21 @@ export default function CommentSection({ blogId }) {
         body.guestEmail = guestEmail.trim() || null;
       }
 
-      console.log('[CommentSection] Submitting comment:', { ...body, content: body.content.substring(0, 50) + '...' });
+      console.log('[CommentSection] Submitting comment to:', `${API_URL}/api/comments`);
+      console.log('[CommentSection] Request body:', { ...body, content: body.content.substring(0, 50) + '...' });
 
       const response = await fetch(`${API_URL}/api/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(body)
+      });
+
+      console.log('[CommentSection] Response status:', response.status);
+      console.log('[CommentSection] Response ok:', response.ok);
+      console.log('[CommentSection] Response headers:', {
+        contentType: response.headers.get('content-type'),
+        contentLength: response.headers.get('content-length')
       });
 
       if (response.ok) {
@@ -132,12 +140,27 @@ export default function CommentSection({ blogId }) {
         // Keep guest name for convenience
         setError(null);
       } else {
-        const data = await response.json();
-        console.error('[CommentSection] Failed to post comment:', data);
-        setError(data.error || 'Failed to post comment');
+        let errorMessage = 'Failed to post comment';
+        let responseData = null;
+        
+        try {
+          responseData = await response.json();
+          console.error('[CommentSection] Error response data:', responseData);
+          errorMessage = responseData.error || responseData.message || errorMessage;
+        } catch (parseErr) {
+          console.error('[CommentSection] Failed to parse error response:', parseErr);
+          const responseText = await response.text();
+          console.error('[CommentSection] Raw response text:', responseText);
+          errorMessage = `Error: ${response.status} ${response.statusText}`;
+        }
+        
+        console.error('[CommentSection] Failed to post comment:', errorMessage);
+        setError(errorMessage);
       }
     } catch (err) {
-      console.error('Error posting comment:', err);
+      console.error('[CommentSection] Fetch error:', err);
+      console.error('[CommentSection] Error type:', err?.constructor?.name);
+      console.error('[CommentSection] Error message:', err?.message);
       setError('Failed to post comment. Please try again.');
     } finally {
       setSubmitting(false);
@@ -195,9 +218,16 @@ export default function CommentSection({ blogId }) {
         setExpandedReplies(prev => ({ ...prev, [commentId]: true }));
         setError(null);
       } else {
-        const data = await response.json();
-        console.error('[CommentSection] Failed to post reply:', data);
-        setError(data.error || 'Failed to post reply');
+        let errorMessage = 'Failed to post reply';
+        try {
+          const data = await response.json();
+          console.error('[CommentSection] Failed to post reply:', data);
+          errorMessage = data.error || data.message || errorMessage;
+        } catch (parseErr) {
+          console.error('[CommentSection] Failed to parse error response:', parseErr);
+          errorMessage = `Error: ${response.status} ${response.statusText}`;
+        }
+        setError(errorMessage);
       }
     } catch (err) {
       console.error('Error posting reply:', err);

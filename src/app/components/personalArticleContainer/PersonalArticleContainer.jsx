@@ -176,7 +176,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                                     <img src="/images/icons/publish.svg" alt="republish" className="w-4 h-4" />
                                 </button>
                                 <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
-                                    <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
+                                    <img src="/images/icons/edit-ideal.svg" alt="edit" className="w-4 h-4" />
                                 </button>
                                 <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Move to Draft" onClick={onDraft}>
                                     <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
@@ -189,14 +189,14 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                             <>
                                 {status === 'published' && (
                                     <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Unpublish" onClick={onUnpublish}>
-                                        <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-4 h-4" />
+                                        <img src="/images/icons/unpublished-hover.svg" alt="unpublish" className="w-8 h-8" />
                                     </button>
                                 )}
                                 <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Preview">
                                     <img src="/images/icons/preview.svg" alt="preview" className="w-4 h-4" />
                                 </button>
                                 <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
-                                    <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
+                                    <img src="/images/icons/edit-ideal.svg" alt="edit" className="w-4 h-4" />
                                 </button>
                                 <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Draft" onClick={onDraft}>
                                     <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />

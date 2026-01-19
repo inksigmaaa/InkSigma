@@ -36,6 +36,8 @@ router.get("/blog/:blogId", async (req, res) => {
     try {
         const { blogId } = req.params;
 
+        console.log('[COMMENT] GET /blog/:blogId called with blogId:', blogId);
+
         // Verify blog exists
         const [blogExists] = await db
             .select({ id: blog.id })
@@ -103,6 +105,7 @@ router.get("/blog/:blogId", async (req, res) => {
             })
         );
 
+        console.log('[COMMENT] Returning', commentsWithReplies.length, 'comments');
         res.json(commentsWithReplies);
     } catch (error) {
         console.error("Error fetching comments:", error);
@@ -112,57 +115,65 @@ router.get("/blog/:blogId", async (req, res) => {
 
 // POST /api/comments - Create a new comment (allows anonymous)
 router.post("/", optionalAuth, async (req, res) => {
+    console.log('[COMMENT] ===== POST /api/comments START =====');
+    
     try {
         const { blogId, content, parentId, guestName, guestEmail } = req.body;
 
+        console.log('[COMMENT] Request body:', { blogId, contentLength: content?.length, parentId, guestName });
+
+        // Validation checks
         if (!blogId || !content) {
+            console.log('[COMMENT] Validation failed: missing blogId or content');
             return res.status(400).json({ error: "Blog ID and content are required" });
         }
 
+        const parsedBlogId = parseInt(blogId);
+        if (isNaN(parsedBlogId)) {
+            console.log('[COMMENT] Validation failed: invalid blogId');
+            return res.status(400).json({ error: "Invalid blog ID" });
+        }
+
         if (content.trim().length === 0) {
+            console.log('[COMMENT] Validation failed: empty content');
             return res.status(400).json({ error: "Comment content cannot be empty" });
         }
 
         if (content.length > 2000) {
+            console.log('[COMMENT] Validation failed: content too long');
             return res.status(400).json({ error: "Comment content too long (max 2000 characters)" });
         }
 
-        // If not logged in, require guest name
         if (!req.user && (!guestName || guestName.trim().length === 0)) {
+            console.log('[COMMENT] Validation failed: guest without name');
             return res.status(400).json({ error: "Name is required for guest comments" });
         }
 
-        // Verify blog exists
-        const [blogExists] = await db
+        console.log('[COMMENT] All validations passed');
+
+        // Check blog exists
+        console.log('[COMMENT] Checking if blog exists with ID:', parsedBlogId);
+        const blogCheckResult = await db
             .select({ id: blog.id })
             .from(blog)
-            .where(eq(blog.id, parseInt(blogId)));
-
-        if (!blogExists) {
+            .where(eq(blog.id, parsedBlogId));
+        
+        console.log('[COMMENT] Blog check result:', blogCheckResult);
+        
+        if (!blogCheckResult || blogCheckResult.length === 0) {
+            console.log('[COMMENT] Blog not found');
             return res.status(404).json({ error: "Blog not found" });
         }
 
-        // If parentId provided, verify parent comment exists
-        if (parentId) {
-            const [parentExists] = await db
-                .select({ id: comment.id })
-                .from(comment)
-                .where(eq(comment.id, parseInt(parentId)));
+        console.log('[COMMENT] Blog exists, proceeding with comment creation');
 
-            if (!parentExists) {
-                return res.status(404).json({ error: "Parent comment not found" });
-            }
-        }
-
+        // Build comment data - let database handle timestamps
         const commentData = {
             content: content.trim(),
-            blogId: parseInt(blogId),
+            blogId: parsedBlogId,
             parentId: parentId ? parseInt(parentId) : null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
         };
 
-        // Set author info based on authentication
         if (req.user) {
             commentData.authorId = req.user.id;
         } else {
@@ -170,15 +181,30 @@ router.post("/", optionalAuth, async (req, res) => {
             commentData.guestEmail = guestEmail?.trim() || null;
         }
 
-        const [newComment] = await db
+        console.log('[COMMENT] Comment data prepared:', { ...commentData, content: commentData.content.substring(0, 30) + '...' });
+
+        // Insert comment
+        console.log('[COMMENT] Inserting comment into database');
+        const insertResult = await db
             .insert(comment)
             .values(commentData)
             .returning();
 
-        // Fetch the comment with author info if logged in
-        let commentWithAuthor;
+        console.log('[COMMENT] Insert result:', insertResult);
+
+        if (!insertResult || insertResult.length === 0) {
+            console.log('[COMMENT] Insert returned empty result');
+            return res.status(500).json({ error: "Failed to create comment - no result returned" });
+        }
+
+        const newComment = insertResult[0];
+        console.log('[COMMENT] Comment created with ID:', newComment.id);
+
+        // Prepare response
+        let responseData;
         if (req.user) {
-            [commentWithAuthor] = await db
+            console.log('[COMMENT] Fetching comment with author info');
+            const fetchResult = await db
                 .select({
                     id: comment.id,
                     content: comment.content,
@@ -199,18 +225,35 @@ router.post("/", optionalAuth, async (req, res) => {
                 .from(comment)
                 .leftJoin(user, eq(comment.authorId, user.id))
                 .where(eq(comment.id, newComment.id));
+
+            responseData = fetchResult[0] || newComment;
         } else {
-            commentWithAuthor = {
-                ...newComment,
-                author: null
-            };
+            responseData = { ...newComment, author: null };
         }
 
-        res.status(201).json({ ...commentWithAuthor, replies: [] });
+        console.log('[COMMENT] Sending response:', { id: responseData.id, contentLength: responseData.content?.length });
+        res.status(201).json({ ...responseData, replies: [] });
+        console.log('[COMMENT] ===== POST /api/comments SUCCESS =====');
+
     } catch (error) {
-        console.error("Error creating comment:", error);
-        console.error("Error details:", error.message);
-        res.status(500).json({ error: "Failed to create comment", details: error.message });
+        console.error('[COMMENT] ===== ERROR CAUGHT =====');
+        console.error('[COMMENT] Error type:', error?.constructor?.name);
+        console.error('[COMMENT] Error message:', error?.message);
+        console.error('[COMMENT] Error code:', error?.code);
+        console.error('[COMMENT] Error detail:', error?.detail);
+        console.error('[COMMENT] Full error:', JSON.stringify(error, null, 2));
+        console.error('[COMMENT] Stack:', error?.stack);
+        
+        if (!res.headersSent) {
+            console.log('[COMMENT] Sending error response');
+            res.status(500).json({ 
+                error: "Failed to create comment", 
+                message: error?.message || "Unknown error",
+                code: error?.code || "UNKNOWN"
+            });
+        } else {
+            console.log('[COMMENT] Headers already sent, cannot send error response');
+        }
     }
 });
 

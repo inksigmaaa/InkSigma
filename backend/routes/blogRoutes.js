@@ -886,10 +886,11 @@ router.put("/:id", getCurrentUser, async (req, res) => {
         }
         
         if (content !== undefined) {
-            if (typeof content !== 'string' || content.trim() === '') {
-                return res.status(400).json({ error: "Content cannot be empty" });
+            // Only validate if content is being explicitly set to something
+            // Allow empty content for updates (user might be clearing it temporarily)
+            if (typeof content === 'string') {
+                updateData.content = content.trim();
             }
-            updateData.content = content.trim();
         }
         
         if (categories !== undefined) updateData.categories = categories;
