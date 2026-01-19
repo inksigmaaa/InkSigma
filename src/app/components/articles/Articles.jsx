@@ -230,6 +230,39 @@ export default function Articles(props) {
                                         <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                                     </svg>
                                 </button>
+                                {isDropdownOpen && (
+                                    <div className="absolute top-[calc(100%+8px)] left-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100] max-md:w-[260px] max-md:h-[220px] max-[480px]:w-60 max-[480px]:h-[200px]">
+                                        <div className="p-2.5 flex gap-3 border-b border-gray-200 max-md:p-3 max-md:gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Search Category..."
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                className="flex-1 font-['Public_Sans'] font-normal text-sm leading-[150%] px-3.5 py-2.5 border border-gray-200 rounded-lg bg-gray-50 outline-none focus:border-purple-600 focus:bg-white placeholder:text-gray-400 max-md:text-xs max-md:px-2.5 max-md:py-2 max-[480px]:text-[11px] max-[480px]:px-2 max-[480px]:py-1.5"
+                                            />
+                                            <button
+                                                onClick={() => setIsDropdownOpen(false)}
+                                                className="font-['Public_Sans'] font-medium text-sm leading-[150%] bg-purple-100 text-purple-600 border-none rounded-lg px-6 py-2.5 cursor-pointer whitespace-nowrap hover:bg-purple-200 max-md:text-xs max-md:px-4 max-md:py-2 max-[480px]:text-[11px] max-[480px]:px-3 max-[480px]:py-1.5"
+                                            >
+                                                Apply
+                                            </button>
+                                        </div>
+                                        <div className="p-3 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-50 hover:scrollbar-thumb-gray-400 max-md:p-2">
+                                            {filteredCategories.map(category => (
+                                                <label key={category} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer rounded-md hover:bg-gray-50 max-md:px-2.5 max-md:py-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedCategories.includes(category)}
+                                                        onChange={() => handleCategoryToggle(category)}
+                                                        className="cursor-pointer accent-purple-600 shrink-0"
+                                                        style={{ width: '16px', height: '16px' }}
+                                                    />
+                                                    <span className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-600 max-md:text-[13px]">{category}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -249,6 +282,39 @@ export default function Articles(props) {
                                         <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                                     </svg>
                                 </button>
+                                {isDropdownOpen && (
+                                    <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100]">
+                                        <div className="p-4 flex gap-3 border-b border-gray-200">
+                                            <input
+                                                type="text"
+                                                placeholder="Search Category..."
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 outline-none focus:border-violet-500 focus:bg-white placeholder:text-gray-400"
+                                            />
+                                            <button
+                                                onClick={() => setIsDropdownOpen(false)}
+                                                className="text-sm font-medium bg-violet-100 text-violet-600 rounded-lg px-6 py-2 whitespace-nowrap transition-colors hover:bg-violet-200"
+                                            >
+                                                Apply
+                                            </button>
+                                        </div>
+                                        <div className="p-3 overflow-y-auto flex-1">
+                                            {filteredCategories.map((category) => (
+                                                <label key={category} className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedCategories.includes(category)}
+                                                        onChange={() => handleCategoryToggle(category)}
+                                                        className="cursor-pointer accent-violet-500 shrink-0"
+                                                        style={{ width: '16px', height: '16px' }}
+                                                    />
+                                                    <span className="text-sm text-gray-600">{category}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
