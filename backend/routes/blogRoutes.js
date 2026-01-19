@@ -10,7 +10,7 @@ import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 import notificationService from "../services/notificationService.js";
 import schedulerService from "../services/schedulerService.js";
-import { trackBlogView } from "../services/viewTrackingService.js";
+import { trackBlogView, getBlogViewCount } from "../services/viewTrackingService.js";
 
 const router = express.Router();
 
@@ -537,7 +537,6 @@ router.get("/slug/:slug", async (req, res) => {
                 scheduledAt: blog.scheduledAt,
                 createdAt: blog.createdAt,
                 updatedAt: blog.updatedAt,
-                views: blog.views,
                 authorId: blog.authorId,
                 author: {
                     id: user.id,
@@ -553,6 +552,10 @@ router.get("/slug/:slug", async (req, res) => {
         if (!blogData) {
             return res.status(404).json({ error: "Blog not found" });
         }
+
+        // Get view count from blog_view table
+        const viewCount = await getBlogViewCount(blogData.id);
+        blogData.views = viewCount;
 
         // Security: Only show non-published blogs to the author
         if (blogData.status !== 'published') {
@@ -575,7 +578,7 @@ router.get("/slug/:slug", async (req, res) => {
             
             // Update the view count in response if it was a new view
             if (viewResult.isNewView) {
-                blogData.views = (blogData.views || 0) + 1;
+                blogData.views = blogData.views + 1;
             }
         }
 

@@ -1,7 +1,7 @@
 // services/viewTrackingService.js
 import { db } from "../config/database.js";
-import { blog, blogView, blogShare } from "../models/schema.js";
-import { eq, and, gte, sql } from "drizzle-orm";
+import { blogView, blogShare } from "../models/schema.js";
+import { eq, and, gte } from "drizzle-orm";
 import { getRedisClient, isRedisAvailable } from "../config/redis.js";
 import crypto from "crypto";
 
@@ -82,14 +82,6 @@ export const trackBlogView = async (blogId, ip, userAgent) => {
             createdAt: new Date(),
         });
 
-        // Increment view count in blog table
-        await db
-            .update(blog)
-            .set({ 
-                views: sql`${blog.views} + 1`
-            })
-            .where(eq(blog.id, blogId));
-
         console.log(`[VIEW TRACKING] New view recorded in database - COUNT INCREMENTED`);
         return { viewed: true, isNewView: true };
 
@@ -125,18 +117,18 @@ export const trackBlogShare = async (blogId, platform) => {
 };
 
 /**
- * Get view count for a blog
+ * Get view count for a blog by counting records in blogView table
  * @param {number} blogId - The blog ID
  * @returns {Promise<number>}
  */
 export const getBlogViewCount = async (blogId) => {
     try {
-        const [result] = await db
-            .select({ views: blog.views })
-            .from(blog)
-            .where(eq(blog.id, blogId));
+        const views = await db
+            .select()
+            .from(blogView)
+            .where(eq(blogView.blogId, blogId));
 
-        return result?.views || 0;
+        return views.length;
     } catch (error) {
         console.error('[VIEW TRACKING] Error getting view count:', error);
         return 0;

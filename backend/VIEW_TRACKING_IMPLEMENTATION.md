@@ -41,9 +41,33 @@ This implementation adds intelligent view and share tracking to your blog platfo
 
 ## Database Schema
 
-### New Tables
+### Blog Table (Updated)
+The `blog` table NO LONGER has a `views` column. Views are counted from the `blog_view` table.
 
-#### `blog_view`
+```sql
+CREATE TABLE blog (
+  id SERIAL PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  content TEXT NOT NULL,
+  image TEXT,
+  authorId TEXT NOT NULL REFERENCES user(id),
+  publicationId INTEGER REFERENCES publication(id),
+  categories TEXT[],
+  status blog_status NOT NULL DEFAULT 'draft',
+  published BOOLEAN NOT NULL DEFAULT false,
+  scheduledAt TIMESTAMP,
+  publishedAt TIMESTAMP,
+  readTime INTEGER,
+  createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
+  updatedAt TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+### View Tracking Tables
+
+#### `blog_view` (Primary view tracking table)
 ```sql
 CREATE TABLE blog_view (
   id SERIAL PRIMARY KEY,
@@ -52,6 +76,12 @@ CREATE TABLE blog_view (
   userAgent TEXT,
   createdAt TIMESTAMP NOT NULL DEFAULT NOW()
 );
+```
+
+**View Count Calculation:**
+```sql
+-- Get view count for a blog
+SELECT COUNT(*) FROM blog_view WHERE blogId = 1;
 ```
 
 #### `blog_share`
@@ -175,7 +205,7 @@ Get share count for a specific blog.
 5. **Record new view**
    - Store in Redis with 24-hour expiry (86400 seconds)
    - Insert record into `blog_view` table
-   - Increment `views` counter in `blog` table
+   - View count is calculated by counting records in `blog_view` table
 
 ### Share Tracking Flow
 

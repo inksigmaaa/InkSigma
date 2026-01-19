@@ -85,8 +85,6 @@ export const blog = pgTable("blog", {
     scheduledAt: timestamp("scheduledAt"),
     publishedAt: timestamp("publishedAt"),
     readTime: integer("readTime"),
-    views: integer("views").default(0),
-    likes: integer("likes").default(0),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
