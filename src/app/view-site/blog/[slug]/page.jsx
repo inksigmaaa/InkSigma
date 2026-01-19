@@ -22,8 +22,8 @@ export default function BlogDetailPage({ params }) {
     const fetchBlog = async () => {
       try {
         setLoading(true);
-        // Fetch blog by slug and increment view
-        const response = await fetch(`http://localhost:5000/api/blogs/slug/${slug}?incrementView=true`);
+        // Fetch blog by slug (without incrementing view here)
+        const response = await fetch(`http://localhost:5000/api/blogs/slug/${slug}`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch blog');
@@ -47,6 +47,22 @@ export default function BlogDetailPage({ params }) {
           }
           
           setBlog(foundBlog);
+          
+          // Track view separately using the new tracking system
+          if (foundBlog.status === 'published') {
+            try {
+              await fetch('http://localhost:5000/api/views/track', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ blogId: foundBlog.id }),
+              });
+            } catch (viewError) {
+              console.error('Error tracking view:', viewError);
+              // Don't fail the page load if view tracking fails
+            }
+          }
         }
       } catch (err) {
         console.error('Error fetching blog:', err);
@@ -232,6 +248,7 @@ export default function BlogDetailPage({ params }) {
         url={currentUrl}
         description={blog.description}
         sections={[]}
+        blogId={blog.id}
       />
     </div>
   );

@@ -7,7 +7,7 @@ import ShareIcon from '../icons/ShareIcon';
 import ArrowUpIcon from '../icons/ArrowUpIcon';
 import CloseIcon from '../icons/CloseIcon';
 
-export default function MobileBottomNav({ title, url, slug, description, sections = [] }) {
+export default function MobileBottomNav({ title, url, slug, description, sections = [], blogId }) {
   const [showTOC, setShowTOC] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
@@ -16,6 +16,23 @@ export default function MobileBottomNav({ title, url, slug, description, section
 
   const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/blog/${slug}` : '');
   const shareText = description ? `${title} - ${description}` : title;
+
+  // Track share action
+  const trackShare = async (platform) => {
+    if (!blogId) return;
+    
+    try {
+      await fetch('http://localhost:5000/api/views/share', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ blogId, platform }),
+      });
+    } catch (error) {
+      console.error('Error tracking share:', error);
+    }
+  };
 
   // Handle scroll to show/hide bottom nav
   useEffect(() => {
@@ -39,6 +56,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(blogUrl);
+      await trackShare('copy');
       alert('Link copied to clipboard!');
     } catch (err) {
       console.error('Failed to copy link:', err);
@@ -102,24 +120,28 @@ export default function MobileBottomNav({ title, url, slug, description, section
   const shareOnWhatsApp = () => {
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText + '\n\n' + blogUrl)}`;
     window.open(whatsappUrl, '_blank');
+    trackShare('whatsapp');
     setShowShareMenu(false);
   };
 
   const shareOnLinkedIn = () => {
     const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(blogUrl)}`;
     window.open(linkedinUrl, '_blank');
+    trackShare('linkedin');
     setShowShareMenu(false);
   };
 
   const shareOnFacebook = () => {
     const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(blogUrl)}`;
     window.open(facebookUrl, '_blank');
+    trackShare('facebook');
     setShowShareMenu(false);
   };
 
   const shareOnTwitter = () => {
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(blogUrl)}`;
     window.open(twitterUrl, '_blank');
+    trackShare('twitter');
     setShowShareMenu(false);
   };
 
