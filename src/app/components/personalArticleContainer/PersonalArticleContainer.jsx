@@ -9,7 +9,8 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
     const canPublish = (currentPublication?.isOwner || currentPublication?.role === 'admin') && currentPublication?.role !== 'author' && currentPublication?.role !== 'editor'
 
     const handleEdit = () => {
-        router.push(`/editor?status=${status}&id=${id}`)
+        const publicationQuery = currentPublication?.id ? `&publicationId=${currentPublication.id}` : ''
+        router.push(`/editor?status=${status}&id=${id}${publicationQuery}`)
     }
     const statusConfig = {
         published: { bg: '#D5F2D4', color: '#267F24', text: 'Published' },
