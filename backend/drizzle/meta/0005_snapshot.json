@@ -1,6 +1,6 @@
 {
-  "id": "6ea8d4e5-ee7b-48bb-a3f4-45745eade9c8",
-  "prevId": "64019217-6247-46a9-a141-f7ef84a7eef7",
+  "id": "425fe592-8089-4c12-8bbd-f22b5d337ca2",
+  "prevId": "6ea8d4e5-ee7b-48bb-a3f4-45745eade9c8",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -202,20 +202,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "views": {
-          "name": "views",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "likes": {
-          "name": "likes",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp",
@@ -274,6 +260,116 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.blog_share": {
+      "name": "blog_share",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "blogId": {
+          "name": "blogId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "platform": {
+          "name": "platform",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "blog_share_blogId_blog_id_fk": {
+          "name": "blog_share_blogId_blog_id_fk",
+          "tableFrom": "blog_share",
+          "tableTo": "blog",
+          "columnsFrom": [
+            "blogId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.blog_view": {
+      "name": "blog_view",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "blogId": {
+          "name": "blogId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "viewerIdentifier": {
+          "name": "viewerIdentifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userAgent": {
+          "name": "userAgent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "blog_view_blogId_blog_id_fk": {
+          "name": "blog_view_blogId_blog_id_fk",
+          "tableFrom": "blog_view",
+          "tableTo": "blog",
+          "columnsFrom": [
+            "blogId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.comment": {
       "name": "comment",
       "schema": "",
@@ -300,7 +396,19 @@
           "name": "authorId",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "guestName": {
+          "name": "guestName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guestEmail": {
+          "name": "guestEmail",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "parentId": {
           "name": "parentId",

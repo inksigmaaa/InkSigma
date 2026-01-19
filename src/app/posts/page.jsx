@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import AuthGuard from "@/components/auth/AuthGuard";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
+import EditorSidebar from "../components/sidebar/EditorSidebar";
 import Verify from "../components/verify/Verify";
 import Articles from "../components/articles/Articles";
 import { useArticles } from "@/contexts/ArticlesContext";
@@ -84,7 +85,7 @@ export default function Posts() {
     return (
         <AuthGuard>
             <NavbarLoggedin />
-            <Sidebar />
+            {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
             <Verify />
             <Articles 
                 title={"All Articles"} 

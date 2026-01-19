@@ -15,7 +15,15 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
       "Review": "/author-review",
       "My Blogs": "/posts/my-blogs",
     };
-    return routes[label] || "/dashboard";
+    
+    let route = routes[label] || "/dashboard";
+    
+    // Append publication ID to preserve context
+    if (currentPublication?.id && route !== "/dashboard") {
+      route = `${route}?pub=${currentPublication.id}`;
+    }
+    
+    return route;
   };
 
   const navItems = useMemo(() => [
