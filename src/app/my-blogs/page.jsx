@@ -1,17 +1,20 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import AuthGuard from "@/components/auth/AuthGuard"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
+import EditorSidebar from "../components/sidebar/EditorSidebar"
 import Verify from "../components/verify/Verify"
 import PersonalArticles from "../components/personalArticles/personalArticles"
 import ConfirmModal from "../components/confirmModal/ConfirmModal"
 import PageTransition from "@/components/PageTransition"
 import { useArticles } from "@/contexts/ArticlesContext"
+import { usePublication } from "@/contexts/PublicationContext"
 
 export default function MyBlogsPage() {
-  const { articles, moveToTrashStatus, publishArticle, moveToDraft, unpublishArticle } = useArticles()
+  const { articles, moveToTrashStatus, publishArticle, moveToDraft, unpublishArticle, loadUserArticles } = useArticles()
+  const { currentPublication } = usePublication()
   const [selectedArticles, setSelectedArticles] = useState([])
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPublishModal, setShowPublishModal] = useState(false)
@@ -19,6 +22,11 @@ export default function MyBlogsPage() {
   const [showUnpublishModal, setShowUnpublishModal] = useState(false)
   const [showRepublishModal, setShowRepublishModal] = useState(false)
   const [actionArticleId, setActionArticleId] = useState(null)
+
+  // Load articles filtered by current publication when page mounts or publication changes
+  useEffect(() => {
+    loadUserArticles(currentPublication?.id)
+  }, [loadUserArticles, currentPublication?.id])
 
   const myArticles = useMemo(() => {
     return articles.map(article => ({
@@ -124,7 +132,7 @@ export default function MyBlogsPage() {
   return (
     <AuthGuard>
       <NavbarLoggedin />
-      <Sidebar />
+      {currentPublication?.isOwner || currentPublication?.role === 'admin' ? <Sidebar /> : <EditorSidebar />}
       <Verify />
       <PageTransition>
         <PersonalArticles

@@ -152,7 +152,7 @@ export default function PostsMyBlogsPage() {
                   onSelect={() => {}}
                   onDelete={() => handleDeleteArticle(article.id)}
                   publicationId={currentPublication?.id}
-                  showActions={true}
+                  showActions={false}
                   stats={[
                     { label: 'Views', value: article.views ?? 0 },
                     { label: 'Revisits', value: article.revisits ?? 0 },

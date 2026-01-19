@@ -46,7 +46,7 @@ export default function Unpublished() {
     if (isAdmin && currentPublication?.id) {
       loadPublicationArticles(currentPublication.id, 'unpublished');
     } else {
-      loadUserArticles();
+      loadUserArticles(currentPublication?.id);
     }
   }, [isAdmin, currentPublication?.id, loadPublicationArticles, loadUserArticles]);
 

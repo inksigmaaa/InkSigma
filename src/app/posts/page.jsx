@@ -69,7 +69,7 @@ export default function Posts() {
             if (targetContext === 'publication') {
                 loadPublicationArticles(currentPublication.id); // No status filter for "All Articles"
             } else {
-                loadUserArticles();
+                loadUserArticles(currentPublication?.id);
             }
         }
     }, [
