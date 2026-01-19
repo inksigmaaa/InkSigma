@@ -64,6 +64,7 @@ class NotificationService {
 
     // Notify publication members about blog review request
     async notifyBlogReview({ recipientId, authorName, authorId, blogId }) {
+        console.log(`[NOTIFICATION] Creating blog_review notification for ${recipientId} from ${authorName} (${authorId}) for blog ${blogId}`);
         return this.createNotification({
             userId: recipientId,
             type: "blog_review",
@@ -71,6 +72,19 @@ class NotificationService {
             message: "Has sent you a Blog for a review.",
             relatedUserId: authorId,
             relatedBlogId: blogId,
+        });
+    }
+
+    // Notify author that their blog has been submitted for review
+    async notifyBlogSubmittedForReview({ authorId, publicationName, blogId, publicationId }) {
+        console.log(`[NOTIFICATION] Creating blog_submitted_review notification for ${authorId} from publication ${publicationName} (${publicationId}) for blog ${blogId}`);
+        return this.createNotification({
+            userId: authorId,
+            type: "blog_submitted_review",
+            title: publicationName,
+            message: "Your blog has been submitted for review.",
+            relatedBlogId: blogId,
+            relatedPublicationId: publicationId,
         });
     }
 

@@ -42,6 +42,8 @@ router.get("/:userId", async (req, res) => {
                     return notif.relatedBlogId ? `/home/preview/${notif.relatedBlogId}` : "/draft";
                 case "blog_review":
                     return "/review"; // Or `/author-review` for specific review page
+                case "blog_submitted_review":
+                    return notif.relatedBlogId ? `/home/preview/${notif.relatedBlogId}` : "/my-blogs";
                 case "blog_published":
                     return notif.relatedBlogId ? `/home/preview/${notif.relatedBlogId}` : "/published";
                 case "invitation_declined":

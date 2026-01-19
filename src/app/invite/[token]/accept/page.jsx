@@ -48,6 +48,20 @@ export default function AcceptInvitation() {
     }
   }, [session, token]);
 
+  // Add a timeout to prevent indefinite loading
+  useEffect(() => {
+    if (fetchingDetails) {
+      const timeout = setTimeout(() => {
+        setFetchingDetails(false);
+        if (!invitationDetails) {
+          setError("Failed to load invitation details. Please try again.");
+        }
+      }, 10000); // 10 second timeout
+
+      return () => clearTimeout(timeout);
+    }
+  }, [fetchingDetails, invitationDetails]);
+
   const handleAccept = async () => {
     if (!session) return;
 
@@ -88,10 +102,13 @@ export default function AcceptInvitation() {
     });
   };
 
-  if (isPending || fetchingDetails) {
+  if ((isPending && !session) || (fetchingDetails && !invitationDetails)) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-gray-200 border-t-violet-600 rounded-full animate-spin"></div>
+          <div className="text-gray-600 text-sm">Loading invitation details...</div>
+        </div>
       </div>
     );
   }

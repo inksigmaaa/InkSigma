@@ -169,7 +169,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 <>
                                     {status === 'published' && canPublish && (
                                         <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Unpublish" onClick={handleUnpublish}>
-                                            <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-4 h-4" />
+                                            <img src="/images/icons/unpublished-hover.svg" alt="unpublish" className="w-8 h-8" />
                                         </button>
                                     )}
                                     <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Preview" onClick={handlePreview}>
