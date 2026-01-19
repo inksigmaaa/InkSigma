@@ -5,6 +5,7 @@ import { useSession } from "@/lib/auth-client";
 import { memberService } from "@/services/memberService";
 import { usePublication } from "@/contexts/PublicationContext";
 import ConfirmModal from "../confirmModal/ConfirmModal";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 export default function Members() {
     const { data: session } = useSession();
@@ -302,10 +303,9 @@ export default function Members() {
                                     <div key={`member-${member.id}`}>
                                         <div className="flex items-center justify-between py-6 max-[767px]:py-4">
                                             <div className="flex items-center gap-4 flex-1 max-[767px]:gap-3">
-                                                <img
-                                                    src={member.userImage || "/images/icons/profileuser.svg"}
-                                                    alt={member.userName}
-                                                    className="w-12 h-12 rounded-full object-cover max-[767px]:w-10 max-[767px]:h-10 flex-shrink-0"
+                                                <UserAvatar 
+                                                    user={{ name: member.userName, email: member.userEmail, image: member.userImage }}
+                                                    size="md"
                                                 />
                                                 <p className="text-sm font-semibold text-gray-900">{member.userName}</p>
                                             </div>
@@ -423,10 +423,9 @@ export default function Members() {
                                 <div key={`member-${member.id}`}>
                                     <div className="flex items-center justify-between py-6 max-[767px]:py-4">
                                         <div className="flex items-center gap-4 w-1/3 max-[767px]:gap-2 max-[639px]:flex-1">
-                                            <img
-                                                src={member.userImage || "/images/icons/profileuser.svg"}
-                                                alt={member.userName}
-                                                className="w-12 h-12 rounded-full object-cover max-[767px]:w-10 max-[767px]:h-10 flex-shrink-0"
+                                            <UserAvatar 
+                                                user={{ name: member.userName, email: member.userEmail, image: member.userImage }}
+                                                size="md"
                                             />
                                             <div>
                                                 <p className="text-sm font-semibold text-gray-900">

@@ -22,6 +22,7 @@ router.get("/:userId", async (req, res) => {
                 relatedBlogId: notification.relatedBlogId,
                 relatedPublicationId: notification.relatedPublicationId,
                 relatedUserName: user.name,
+                relatedUserEmail: user.email,
                 relatedUserImage: user.image,
             })
             .from(notification)
@@ -60,6 +61,11 @@ router.get("/:userId", async (req, res) => {
             message: notif.message,
             isRead: notif.isRead,
             avatar: notif.relatedUserImage || "/images/icons/profileuser.svg",
+            avatarUser: {
+                name: notif.relatedUserName,
+                email: notif.relatedUserEmail,
+                image: notif.relatedUserImage,
+            },
             createdAt: notif.createdAt instanceof Date ? notif.createdAt.toISOString() : notif.createdAt,
             relatedBlogId: notif.relatedBlogId,
             relatedPublicationId: notif.relatedPublicationId,

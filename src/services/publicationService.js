@@ -90,8 +90,18 @@ export const publicationService = {
           errorData = { error: responseText || `HTTP ${response.status}: ${response.statusText}` };
         }
         
-        const errorMessage = errorData.error || errorData.message || errorData.details || `Server error (${response.status})`;
-        throw new Error(errorMessage);
+        // Extract error message with fallbacks
+        const errorMessage = 
+          errorData?.error || 
+          errorData?.message || 
+          errorData?.details || 
+          responseText || 
+          `Server error (${response.status}: ${response.statusText})`;
+        
+        const error = new Error(errorMessage);
+        error.status = response.status;
+        error.details = errorData;
+        throw error;
       }
 
       const result = await response.json();
@@ -101,6 +111,8 @@ export const publicationService = {
       console.error("Create publication error:", error);
       console.error("Error type:", error.constructor.name);
       console.error("Error message:", error.message);
+      console.error("Error status:", error.status);
+      console.error("Error details:", error.details);
       throw error;
     }
   },

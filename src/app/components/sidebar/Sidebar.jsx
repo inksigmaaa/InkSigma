@@ -2,12 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from '@/lib/auth-client';
 import { usePublication } from '@/contexts/PublicationContext';
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { data: session } = useSession();
   const { currentPublication, loading } = usePublication();
 
   // Route mapping for navigation
@@ -73,17 +71,22 @@ export default function Sidebar() {
               )}
             </div>
 
-            <a 
-              href={currentPublication?.id ? `/view-site?publicationId=${currentPublication.id}` : "/view-site"} 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              <button
-                className="w-full bg-violet-500 text-white px-[16px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:bg-violet-600"
+            <div className="flex-1 min-w-0">
+              <a 
+                href={currentPublication?.id ? `/view-site?publicationId=${currentPublication.id}` : "/view-site"} 
+                target="_blank" 
+                rel="noopener noreferrer"
               >
-                View Site
-              </button>
-            </a>
+                <button
+                  style={{
+                    background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)'
+                  }}
+                  className="w-full text-white px-[16px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:opacity-90 transition-opacity"
+                >
+                  View Site
+                </button>
+              </a>
+            </div>
           </div>
 
           {/* MY SPACE */}

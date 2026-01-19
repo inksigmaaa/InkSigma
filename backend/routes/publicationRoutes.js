@@ -63,11 +63,14 @@ const upload = multer({
 const getCurrentUser = async (req, res, next) => {
   try {
     console.log("[getCurrentUser] Checking authentication...");
+    console.log("[getCurrentUser] Request method:", req.method);
+    console.log("[getCurrentUser] Request path:", req.path);
     console.log("[getCurrentUser] Request headers:", JSON.stringify({
       cookie: req.headers.cookie ? "present" : "missing",
       authorization: req.headers.authorization ? "present" : "missing",
       origin: req.headers.origin,
-      referer: req.headers.referer
+      referer: req.headers.referer,
+      'content-type': req.headers['content-type']
     }));
     
     const session = await auth.api.getSession({
@@ -75,7 +78,10 @@ const getCurrentUser = async (req, res, next) => {
     });
 
     console.log("[getCurrentUser] Session result:", session ? "found" : "not found");
-    console.log("[getCurrentUser] User:", session?.user ? JSON.stringify(session.user) : "no user");
+    if (session?.user) {
+      console.log("[getCurrentUser] User ID:", session.user.id);
+      console.log("[getCurrentUser] User email:", session.user.email);
+    }
 
     if (!session?.user) {
       console.log("[getCurrentUser] Unauthorized - no session or user");
@@ -87,8 +93,9 @@ const getCurrentUser = async (req, res, next) => {
     next();
   } catch (error) {
     console.error("[getCurrentUser] Auth error:", error);
+    console.error("[getCurrentUser] Error message:", error.message);
     console.error("[getCurrentUser] Error stack:", error.stack);
-    return res.status(401).json({ error: "Unauthorized - Authentication failed" });
+    return res.status(401).json({ error: "Unauthorized - Authentication failed", details: error.message });
   }
 };
 
@@ -111,6 +118,37 @@ router.get("/check", getCurrentUser, async (req, res) => {
   } catch (error) {
     console.error("Error checking publication:", error);
     res.status(500).json({ error: "Failed to check publication" });
+  }
+});
+
+// Test endpoint to verify authentication
+router.get("/test-auth", getCurrentUser, async (req, res) => {
+  try {
+    res.json({ 
+      authenticated: true, 
+      userId: req.user?.id,
+      email: req.user?.email,
+      name: req.user?.name
+    });
+  } catch (error) {
+    console.error("Error in test-auth:", error);
+    res.status(500).json({ error: "Test failed" });
+  }
+});
+
+// Diagnostic endpoint to check authentication
+router.get("/debug/auth-check", getCurrentUser, async (req, res) => {
+  try {
+    res.json({
+      authenticated: true,
+      userId: req.user?.id,
+      userEmail: req.user?.email,
+      userName: req.user?.name,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error in auth check:", error);
+    res.status(500).json({ error: "Failed to check authentication" });
   }
 });
 
@@ -327,6 +365,12 @@ router.post("/", getCurrentUser, async (req, res) => {
       return res.status(400).json({ error: "Subdomain can only contain letters, numbers, and hyphens. Cannot start or end with hyphens or contain consecutive hyphens." });
     }
 
+    // Validate description length (max 50 characters)
+    if (description && description.length > 50) {
+      console.log("Validation failed: description too long");
+      return res.status(400).json({ error: "Description must not exceed 50 characters" });
+    }
+
     console.log("Checking for existing user publication...");
     // Check if user already has a publication
     const existingUserPub = await db
@@ -354,34 +398,47 @@ router.post("/", getCurrentUser, async (req, res) => {
     console.log("Creating publication in transaction...");
     // Create publication and add creator as admin member in a transaction
     const result = await db.transaction(async (tx) => {
-      // Create the publication
-      const [newPublication] = await tx
-        .insert(publication)
-        .values({
-          name,
-          subdomain: subdomain.toLowerCase(),
-          description: description || null,
-          userId,
-          logoUrl: null,
-          faviconUrl: null,
-          metaOgImageUrl: null,
-        })
-        .returning();
+      try {
+        // Create the publication
+        console.log("Inserting publication with data:", { name, subdomain: subdomain.toLowerCase(), userId });
+        const [newPublication] = await tx
+          .insert(publication)
+          .values({
+            name,
+            subdomain: subdomain.toLowerCase(),
+            description: description || null,
+            userId,
+            logoUrl: null,
+            faviconUrl: null,
+            metaOgImageUrl: null,
+          })
+          .returning();
 
-      console.log("Publication created:", newPublication);
+        console.log("Publication created:", newPublication);
 
-      // Add creator as admin member
-      await tx
-        .insert(publicationMember)
-        .values({
-          publicationId: newPublication.id,
-          userId: userId,
-          role: "admin",
+        // Add creator as admin member
+        console.log("Adding admin member:", { publicationId: newPublication.id, userId });
+        await tx
+          .insert(publicationMember)
+          .values({
+            publicationId: newPublication.id,
+            userId: userId,
+            role: "admin",
+          });
+
+        console.log("Admin member added for publication:", newPublication.id);
+
+        return newPublication;
+      } catch (txError) {
+        console.error("Transaction error:", txError);
+        console.error("Transaction error details:", {
+          message: txError.message,
+          code: txError.code,
+          detail: txError.detail,
+          name: txError.name,
         });
-
-      console.log("Admin member added for publication:", newPublication.id);
-
-      return newPublication;
+        throw txError;
+      }
     });
 
     console.log("Publication creation successful:", result);
@@ -396,10 +453,29 @@ router.post("/", getCurrentUser, async (req, res) => {
       name: error.name,
     });
     
+    // Provide more specific error messages based on error type
+    let statusCode = 500;
+    let errorMessage = "Failed to create publication";
+    
+    if (error.code === '23505') {
+      // Unique constraint violation
+      if (error.detail && error.detail.includes('subdomain')) {
+        errorMessage = "Subdomain already taken";
+        statusCode = 400;
+      } else if (error.detail && error.detail.includes('userId')) {
+        errorMessage = "User already has a publication";
+        statusCode = 400;
+      }
+    } else if (error.code === '23503') {
+      // Foreign key constraint violation
+      errorMessage = "Invalid user ID or publication reference";
+      statusCode = 400;
+    }
+    
     // Ensure we always return a JSON response
     if (!res.headersSent) {
-      return res.status(500).json({ 
-        error: "Failed to create publication", 
+      res.status(statusCode).json({ 
+        error: errorMessage, 
         details: error.message,
         code: error.code 
       });
@@ -412,6 +488,11 @@ router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { name, subdomain, description } = req.body;
+
+    // Validate description length (max 50 characters)
+    if (description && description.length > 50) {
+      return res.status(400).json({ error: "Description must not exceed 50 characters" });
+    }
 
     const updateData = {};
     if (name !== undefined) updateData.name = name;
