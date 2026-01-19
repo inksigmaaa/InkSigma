@@ -11,18 +11,24 @@ export default function Sidebar() {
   // Route mapping for navigation
   const getRoute = (label) => {
     const routes = {
-      "Home": "/home",
+      "Home": "/editorpage",
       "Members": "/members",
-      "All Articles": "/posts",
       "Published": "/published",
       "Unpublished": "/unpublished",
-      "Schedule": "/schedule",
       "Review": "/review",
       "My Blogs": "/404",
       "Draft": "/404",
       "Trash": "/404",
     };
-    return routes[label] || "/dashboard";
+    
+    let route = routes[label] || "/dashboard";
+    
+    // Append publication ID to all publication-specific routes to preserve context
+    if (currentPublication?.id && route !== "/dashboard" && route !== "/404") {
+      route = `${route}?pub=${currentPublication.id}`;
+    }
+    
+    return route;
   };
 
   // Check if the current route is active
@@ -106,17 +112,15 @@ export default function Sidebar() {
             {
               title: "PUBLICATION",
               items: [
-                ["home.svg", "Home", "/home"],
+                ["home.svg", "Home", "/editorpage"],
                 ["Member.svg", "Members", "/members"],
               ]
             },
             {
               title: "ARTICLES",
               items: [
-                ["all_articles.svg", "All Articles"],
                 ["Publish.svg", "Published"],
                 ["unpublished.svg", "Unpublished"],
-                ["Schedule.svg", "Schedule"],
                 ["Review.svg", "Review"],
               ]
             },

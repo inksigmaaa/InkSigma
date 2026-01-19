@@ -10,6 +10,17 @@ export default function Sidebar() {
 
   // Route mapping for navigation
   const getRoute = (label) => {
+    // Determine review route based on role
+    let reviewRoute = "/review";
+    if (currentPublication) {
+      const role = currentPublication.role;
+      const isOwner = currentPublication.isOwner;
+      const isReviewer = isOwner || role === 'editor' || role === 'admin';
+      if (!isReviewer) {
+        reviewRoute = "/author-review";
+      }
+    }
+
     const routes = {
       "Home": "/home",
       "Domain": "/domain",
@@ -19,12 +30,20 @@ export default function Sidebar() {
       "Published": "/published",
       "Unpublished": "/unpublished",
       "Schedule": "/schedule",
-      "Review": "/review",
+      "Review": reviewRoute,
       "My Blogs": "/my-blogs",
       "Draft": "/draft",
       "Trash": "/trash",
     };
-    return routes[label] || "/dashboard";
+    
+    let route = routes[label] || "/dashboard";
+    
+    // Append publication ID to all publication-specific routes to preserve context
+    if (currentPublication?.id && route !== "/dashboard" && route !== "/dashboard/settings") {
+      route = `${route}?pub=${currentPublication.id}`;
+    }
+    
+    return route;
   };
 
   // Check if the current route is active

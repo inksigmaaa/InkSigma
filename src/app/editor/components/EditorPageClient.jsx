@@ -193,7 +193,7 @@ export default function EditorPageClient() {
       }
     } catch (error) {
       console.error('Error loading blog:', error)
-      alert('Failed to load blog for editing')
+      // alert('Failed to load blog for editing')
     } finally {
       setIsLoading(false)
     }
@@ -205,11 +205,11 @@ export default function EditorPageClient() {
     // Also skip validation if blog already exists (updating)
     if (!skipValidation && !blogId) {
       if (!blogTitle.trim()) {
-        alert('Please enter a title for your blog')
+        console.warn('Validation failed: Missing title')
         return false
       }
       if (!blogDescription.trim()) {
-        alert('Please enter a description for your blog')
+        console.warn('Validation failed: Missing description')
         return false
       }
     }
@@ -282,7 +282,7 @@ export default function EditorPageClient() {
     } catch (error) {
       console.error('Error saving blog:', error)
       setSaveStatus('idle')
-      alert(error.message || 'Failed to save blog')
+      // alert(error.message || 'Failed to save blog')
       return false
     } finally {
       setIsSaving(false)
@@ -339,12 +339,19 @@ export default function EditorPageClient() {
   const handleSendForReview = async () => {
     const result = await saveBlog('review', null, true)
     if (result) {
-      alert('Article sent for review!')
+      console.log('Article sent for review!')
+      
+      // Determine redirection path based on role
+      const role = currentPublication?.role
+      const isOwner = currentPublication?.isOwner
+      const isReviewer = isOwner || role === 'editor' || role === 'admin'
+      const targetPath = isReviewer ? '/review' : '/author-review'
+      
       // Include publication ID in URL to stay in joined publication context
       const pubId = publicationId || currentPublication?.id
       const redirectUrl = pubId 
-        ? `/author-review?pub=${pubId}&refresh=true`
-        : '/author-review?refresh=true'
+        ? `${targetPath}?pub=${pubId}&refresh=true`
+        : `${targetPath}?refresh=true`
       window.location.href = redirectUrl
     }
   }
@@ -366,7 +373,7 @@ export default function EditorPageClient() {
   // Handle Schedule
   const handleSchedule = async () => {
     if (!selectedDate) {
-      alert('Please select a date and time to schedule')
+      console.warn('Validation failed: Missing scheduled date')
       return
     }
 
@@ -376,7 +383,7 @@ export default function EditorPageClient() {
 
     // Check if scheduled time is in the future
     if (scheduledDateTime <= new Date()) {
-      alert('Please select a future date and time')
+      console.warn('Validation failed: Scheduled time must be in future')
       return
     }
 

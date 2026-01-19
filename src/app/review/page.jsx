@@ -6,11 +6,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Clock } from "lucide-react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
+import EditorSidebar from "../components/sidebar/EditorSidebar"
 import Verify from "../components/verify/Verify"
 import PublishOptionsModal from "../components/review/PublishOptionsModal"
 import { useArticles } from "@/contexts/ArticlesContext"
 import { usePublication } from "@/contexts/PublicationContext"
-import { useRouter } from "next/navigation"
+import { useSession } from "@/lib/auth-client"
+import { useRouter, useSearchParams } from "next/navigation"
 
 const categories = [
   "Agriculture", "Art & Illustration", "Business", "Climate & Environment",
@@ -25,6 +27,8 @@ const categories = [
 
 export default function ReviewPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { data: session } = useSession()
   const [selectedPosts, setSelectedPosts] = useState([])
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -39,17 +43,30 @@ export default function ReviewPage() {
     reviewError, 
     loadReviewArticles, 
     acceptReviewArticle, 
-    rejectReviewArticle 
+    rejectReviewArticle,
+    revertReviewToDraft 
   } = useArticles()
   
-  const { currentPublication } = usePublication()
+  const { currentPublication, getCurrentUserRole } = usePublication()
+
+  // Get user role in this publication
+  const userRole = getCurrentUserRole()
+  const isEditor = userRole === 'editor'
+  const isAdmin = userRole === 'admin' || currentPublication?.isOwner
 
   // Load review articles when publication changes
   useEffect(() => {
     if (currentPublication?.id) {
       loadReviewArticles(currentPublication.id)
+      
+      // Ensure URL has the publication ID so refresh works correctly
+      if (searchParams && !searchParams.get('pub')) {
+        const urlArgs = new URLSearchParams(window.location.search)
+        urlArgs.set('pub', currentPublication.id)
+        window.history.replaceState(null, '', `/review?${urlArgs.toString()}`)
+      }
     }
-  }, [currentPublication?.id, loadReviewArticles])
+  }, [currentPublication?.id, loadReviewArticles, searchParams])
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -118,14 +135,13 @@ export default function ReviewPage() {
         console.log('[ReviewPage] acceptReviewArticle succeeded')
         setShowPublishModal(false)
         setSelectedArticleForPublish(null)
-        alert('Article published successfully!')
+        console.log('Article published successfully!')
         // Refresh the review articles list
         if (currentPublication?.id) {
           loadReviewArticles(currentPublication.id)
         }
       } catch (error) {
         console.error('[ReviewPage] Error publishing article:', error)
-        alert('Failed to publish article: ' + error.message)
       }
     }
   }
@@ -139,14 +155,13 @@ export default function ReviewPage() {
         console.log('[ReviewPage] acceptReviewArticle succeeded')
         setShowPublishModal(false)
         setSelectedArticleForPublish(null)
-        alert('Article stored to unpublished!')
+        console.log('Article stored to unpublished!')
         // Refresh the review articles list
         if (currentPublication?.id) {
           loadReviewArticles(currentPublication.id)
         }
       } catch (error) {
         console.error('[ReviewPage] Error storing to unpublished:', error)
-        alert('Failed to store article: ' + error.message)
       }
     }
   }
@@ -155,14 +170,28 @@ export default function ReviewPage() {
     if (confirm('Are you sure you want to reject this article? It will be returned to the author\'s drafts.')) {
       try {
         await rejectReviewArticle(articleId)
-        alert('Article rejected and returned to draft.')
+        console.log('Article rejected and returned to draft.')
         // Refresh the review articles list
         if (currentPublication?.id) {
           loadReviewArticles(currentPublication.id)
         }
       } catch (error) {
         console.error('Error rejecting article:', error)
-        alert('Failed to reject article: ' + error.message)
+      }
+    }
+  }
+
+  const handleRevertToDraft = async (articleId) => {
+    if (confirm('Are you sure you want to revert this article to draft?')) {
+      try {
+        await revertReviewToDraft(articleId)
+        console.log('Article reverted to draft successfully!')
+        // Refresh the review articles list
+        if (currentPublication?.id) {
+          loadReviewArticles(currentPublication.id)
+        }
+      } catch (error) {
+        console.error('Error reverting article to draft:', error)
       }
     }
   }
@@ -186,7 +215,7 @@ export default function ReviewPage() {
     return (
       <>
         <NavbarLoggedin />
-        <Sidebar />
+        {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
         <Verify />
         <div className="flex justify-center items-center min-h-[400px] animate-pulse">
           <div className="text-gray-500">Loading review articles...</div>
@@ -199,7 +228,7 @@ export default function ReviewPage() {
     return (
       <>
         <NavbarLoggedin />
-        <Sidebar />
+        {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
         <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-red-500">Error: {reviewError}</div>
@@ -211,7 +240,7 @@ export default function ReviewPage() {
   return (
     <>
       <NavbarLoggedin />
-      <Sidebar />
+      {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
       <Verify />
       
       <div className={`absolute left-1/2 -translate-x-1/2 top-[160px] w-full max-w-[1034px] z-20 px-5 max-md:top-[120px]`}>
@@ -345,26 +374,44 @@ export default function ReviewPage() {
                             </p>
                           </div>
                           <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleReject(article.id)
-                              }}
-                            >
-                              Reject
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleAccept(article)
-                              }}
-                            >
-                              Accept
-                            </Button>
+                            {/* Show different actions based on user role and article ownership */}
+                            {article.author?.id === session?.user?.id ? (
+                              /* If it's user's own article, only show Revert to Draft */
+                              <Button 
+                                variant="outline"
+                                className="text-gray-700 border-gray-300 hover:bg-gray-50"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleRevertToDraft(article.id)
+                                }}
+                              >
+                                Revert to Draft
+                              </Button>
+                            ) : (
+                              /* If it's another author's article, show Accept and Reject */
+                              <>
+                                <Button 
+                                  variant="outline" 
+                                  className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleReject(article.id)
+                                  }}
+                                >
+                                  Reject
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleAccept(article)
+                                  }}
+                                >
+                                  Accept
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </div>
                         
@@ -401,28 +448,47 @@ export default function ReviewPage() {
                         </div>
                         
                         <div className="flex gap-2 ml-4">
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700 h-12 w-12"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleReject(article.id)
-                            }}
-                          >
-                            ✕
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700 h-12 w-12"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleAccept(article)
-                            }}
-                          >
-                            ✓
-                          </Button>
+                          {/* Show different actions based on user role and article ownership */}
+                          {article.author?.id === session?.user?.id ? (
+                            /* If it's user's own article, only show Revert to Draft */
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              className="text-gray-700 border-gray-300 hover:bg-gray-50"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRevertToDraft(article.id)
+                              }}
+                            >
+                              Revert
+                            </Button>
+                          ) : (
+                            /* If it's another author's article, show Accept and Reject */
+                            <>
+                              <Button 
+                                variant="outline" 
+                                size="icon"
+                                className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700 h-12 w-12"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleReject(article.id)
+                                }}
+                              >
+                                ✕
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="icon"
+                                className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700 h-12 w-12"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleAccept(article)
+                                }}
+                              >
+                                ✓
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
                       
@@ -460,6 +526,7 @@ export default function ReviewPage() {
         onPublish={handlePublish}
         onUnpublish={handleUnpublish}
         articleTitle={selectedArticleForPublish?.title}
+        userRole={currentPublication?.role}
       />
     </>
   )

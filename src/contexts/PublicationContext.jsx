@@ -27,12 +27,31 @@ function PublicationProviderInner({ children }) {
 
   // Helper function to determine if we're on member dashboard routes
   const isMemberDashboard = () => {
-    return pathname?.startsWith('/posts/');
+    return pathname?.startsWith('/posts/') || 
+           pathname?.startsWith('/review') || 
+           pathname?.startsWith('/author-review') ||
+           pathname?.startsWith('/editorpage') ||
+           pathname?.startsWith('/published') ||
+           pathname?.startsWith('/unpublished') ||
+           pathname?.startsWith('/members');
   };
 
   // Get publication ID from URL params
   const getPublicationIdFromUrl = () => {
-    return searchParams?.get('pub') ? parseInt(searchParams.get('pub')) : null;
+    // Try searchParams first (client-side, when available)
+    if (searchParams?.get('pub')) {
+      return parseInt(searchParams.get('pub'));
+    }
+    
+    // Fallback to window.location.search if searchParams isn't ready yet
+    // This prevents flashing the wrong publication during initial load
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const pub = params.get('pub');
+      return pub ? parseInt(pub) : null;
+    }
+    
+    return null;
   };
 
   // Load user's publications (owned + joined)
@@ -117,14 +136,18 @@ function PublicationProviderInner({ children }) {
           
           // Check if we have a publication ID from URL
           const urlPubId = getPublicationIdFromUrl();
+          
           if (urlPubId) {
             // Try to find the URL publication (could be owned or joined)
-            pubToSet = publications.find(pub => pub.id === urlPubId);
+            // Use loose equality to handle string/number ID mismatches
+            pubToSet = publications.find(pub => pub.id == urlPubId);
           }
           
           // If no URL publication found, use route-based logic
           if (!pubToSet) {
-            if (isMemberDashboard()) {
+            const isMember = isMemberDashboard();
+            
+            if (isMember) {
               // On member dashboard, prioritize joined publications
               const joinedPub = publications.find(pub => !pub.isOwner);
               pubToSet = joinedPub || publications.find(pub => pub.isOwner) || publications[0];
@@ -330,7 +353,7 @@ function PublicationProviderInner({ children }) {
     
     // If URL has a publication ID and it's different from current, switch to it
     if (urlPubId && currentPublication && urlPubId !== currentPublication.id) {
-      const urlPub = userPublications.find(pub => pub.id === urlPubId);
+      const urlPub = userPublications.find(pub => pub.id == urlPubId); // Loose equality match
       if (urlPub) {
         setCurrentPublication(urlPub);
         loadPublicationDetails(urlPub.id).catch(error => {
@@ -339,8 +362,9 @@ function PublicationProviderInner({ children }) {
       }
     }
     
-    // On member dashboard routes, ensure we have a joined publication if available
-    else if (isMemberDashboard() && currentPublication?.isOwner && !urlPubId) {
+    // Only auto-switch publications if no URL parameter is present AND no current publication is set
+    // This prevents unwanted switching when user explicitly navigates with their current publication
+    else if (!urlPubId && !currentPublication && isMemberDashboard()) {
       const joinedPub = userPublications.find(pub => !pub.isOwner);
       if (joinedPub) {
         setCurrentPublication(joinedPub);
