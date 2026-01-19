@@ -160,6 +160,41 @@ router.post("/verify-email", async (req, res) => {
     }
 });
 
+// GET /api/custom/redis-health - Check Redis connection
+router.get("/redis-health", async (req, res) => {
+    try {
+        const { getRedisClient } = await import("../config/redis.js");
+        const client = getRedisClient();
+        
+        // Test Redis connection
+        const testKey = `health-check:${Date.now()}`;
+        await client.set(testKey, "OK", "EX", 10); // Expires in 10 seconds
+        const result = await client.get(testKey);
+        await client.del(testKey);
+        
+        if (result === "OK") {
+            res.json({ 
+                status: "healthy", 
+                redis: "connected",
+                message: "Redis is working properly"
+            });
+        } else {
+            res.status(500).json({ 
+                status: "unhealthy", 
+                redis: "error",
+                message: "Redis test failed"
+            });
+        }
+    } catch (error) {
+        console.error("[REDIS-HEALTH] Error:", error);
+        res.status(500).json({ 
+            status: "unhealthy", 
+            redis: "disconnected",
+            error: error.message 
+        });
+    }
+});
+
 export default router;
 
 // POST /api/custom/set-password - Set password for Google OAuth users

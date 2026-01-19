@@ -4,6 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "./database.js";
 import { emailService } from "../services/emailService.js";
 import { emailValidationService } from "../services/emailValidationService.js";
+import { redisSessionStorage } from "./redis.js";
 
 export const auth = betterAuth({
     baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5000",
@@ -21,6 +22,8 @@ export const auth = betterAuth({
         cookieCache: {
             enabled: false, // Disable cache to ensure fresh session data
         },
+        // Use Redis for session storage
+        storage: redisSessionStorage,
     },
 
     emailAndPassword: {
@@ -94,3 +97,4 @@ export const auth = betterAuth({
         },
     },
 });
+

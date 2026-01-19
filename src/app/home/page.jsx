@@ -18,6 +18,7 @@ export default function HomePage() {
   const { currentPublication, publicationDetails, loading } = usePublication()
   const { articles: allArticles, loadUserArticles } = useArticles()
   const [commentCounts, setCommentCounts] = useState({})
+  const [viewStats, setViewStats] = useState({})
 
   // Refresh articles when home page loads
   useEffect(() => {
@@ -41,13 +42,13 @@ export default function HomePage() {
         description: article.description,
         category: article.categories?.[0] || 'Uncategorized',
         thumbnail: thumbnailUrl,
-        views: article.views || 0
+        views: viewStats[article.id]?.views || article.views || 0
       };
     })
 
-  // Fetch comment counts for recent articles
+  // Fetch comment counts and view stats for recent articles
   useEffect(() => {
-    const fetchCommentCounts = async () => {
+    const fetchStats = async () => {
       console.log('[Home] allArticles:', allArticles);
       console.log('[Home] allArticles length:', allArticles.length);
       
@@ -62,27 +63,43 @@ export default function HomePage() {
       
       try {
         const blogIds = publishedArticles.map(a => a.id);
-        console.log('[Home] Fetching comment counts for:', blogIds);
+        console.log('[Home] Fetching stats for:', blogIds);
         
-        const response = await fetch(`${API_URL}/api/comments/counts`, {
+        // Fetch comment counts
+        const commentResponse = await fetch(`${API_URL}/api/comments/counts`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ blogIds })
         });
         
-        if (response.ok) {
-          const counts = await response.json();
+        if (commentResponse.ok) {
+          const counts = await commentResponse.json();
           console.log('[Home] Comment counts:', counts);
           setCommentCounts(counts);
         } else {
-          console.error('[Home] Failed to fetch comment counts:', response.status);
+          console.error('[Home] Failed to fetch comment counts:', commentResponse.status);
+        }
+
+        // Fetch view stats
+        const viewResponse = await fetch(`${API_URL}/api/views/stats`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ blogIds })
+        });
+        
+        if (viewResponse.ok) {
+          const stats = await viewResponse.json();
+          console.log('[Home] View stats:', stats);
+          setViewStats(stats);
+        } else {
+          console.error('[Home] Failed to fetch view stats:', viewResponse.status);
         }
       } catch (err) {
-        console.error('Error fetching comment counts:', err);
+        console.error('Error fetching stats:', err);
       }
     };
 
-    fetchCommentCounts();
+    fetchStats();
   }, [allArticles]);
 
   const handleStartWriting = () => {

@@ -5,6 +5,8 @@ import { useArticles } from '@/contexts/ArticlesContext'
 import { usePublication } from '@/contexts/PublicationContext'
 import { useToast } from '@/contexts/ToastContext'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
 const BlogStatsComponent = () => {
   const { articles } = useArticles()
   const { currentPublication } = usePublication()
@@ -16,6 +18,8 @@ const BlogStatsComponent = () => {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [commentCounts, setCommentCounts] = useState({})
+  const [viewStats, setViewStats] = useState({})
   
   const periodMenuRef = useRef(null)
   const datePickerRef = useRef(null)
@@ -28,6 +32,47 @@ const BlogStatsComponent = () => {
   const publicationArticles = currentPublication?.id 
     ? articles.filter(article => article.publicationId === currentPublication.id)
     : articles
+  
+  // Fetch comment counts and view stats for all articles
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (articles.length === 0) return;
+      
+      try {
+        const blogIds = articles.map(a => a.id);
+        
+        // Fetch comment counts
+        const commentResponse = await fetch(`${API_URL}/api/comments/counts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ blogIds })
+        });
+        
+        if (commentResponse.ok) {
+          const counts = await commentResponse.json();
+          console.log('[BlogStats] Comment counts:', counts);
+          setCommentCounts(counts);
+        }
+
+        // Fetch view stats
+        const viewResponse = await fetch(`${API_URL}/api/views/stats`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ blogIds })
+        });
+        
+        if (viewResponse.ok) {
+          const stats = await viewResponse.json();
+          console.log('[BlogStats] View stats:', stats);
+          setViewStats(stats);
+        }
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+      }
+    };
+
+    fetchStats();
+  }, [articles])
   
   // Filter articles based on selected period
   const getFilteredArticles = () => {
@@ -82,9 +127,15 @@ const BlogStatsComponent = () => {
   const calculateStats = () => {
     const filteredArticles = getFilteredArticles()
     const totalArticles = filteredArticles.length
-    const totalViews = filteredArticles.reduce((sum, article) => sum + (article.views || 0), 0)
-    const totalComments = filteredArticles.reduce((sum, article) => sum + (article.comments || 0), 0)
-    const totalShares = filteredArticles.reduce((sum, article) => sum + (article.shares || 0), 0)
+    const totalViews = filteredArticles.reduce((sum, article) => {
+      const views = viewStats[article.id]?.views || article.views || 0;
+      return sum + views;
+    }, 0)
+    const totalComments = filteredArticles.reduce((sum, article) => sum + (commentCounts[article.id] || 0), 0)
+    const totalShares = filteredArticles.reduce((sum, article) => {
+      const shares = viewStats[article.id]?.shares || article.shares || 0;
+      return sum + shares;
+    }, 0)
     
     return {
       totalArticles,

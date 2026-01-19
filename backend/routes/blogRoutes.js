@@ -10,6 +10,7 @@ import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 import notificationService from "../services/notificationService.js";
 import schedulerService from "../services/schedulerService.js";
+import { trackBlogView, getBlogViewCount } from "../services/viewTrackingService.js";
 
 const router = express.Router();
 
@@ -536,7 +537,6 @@ router.get("/slug/:slug", async (req, res) => {
                 scheduledAt: blog.scheduledAt,
                 createdAt: blog.createdAt,
                 updatedAt: blog.updatedAt,
-                views: blog.views,
                 authorId: blog.authorId,
                 author: {
                     id: user.id,
@@ -553,6 +553,10 @@ router.get("/slug/:slug", async (req, res) => {
             return res.status(404).json({ error: "Blog not found" });
         }
 
+        // Get view count from blog_view table
+        const viewCount = await getBlogViewCount(blogData.id);
+        blogData.views = viewCount;
+
         // Security: Only show non-published blogs to the author
         if (blogData.status !== 'published') {
             if (!currentUserId || blogData.authorId !== currentUserId) {
@@ -560,13 +564,22 @@ router.get("/slug/:slug", async (req, res) => {
             }
         }
 
-        // Increment view count if requested
+        // Track view with Redis and 24-hour deduplication
         if (incrementView === 'true' && blogData.status === 'published') {
-            await db
-                .update(blog)
-                .set({ views: (blogData.views || 0) + 1 })
-                .where(eq(blog.id, blogData.id));
-            blogData.views = (blogData.views || 0) + 1;
+            const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+                       req.headers['x-real-ip'] ||
+                       req.connection.remoteAddress ||
+                       req.socket.remoteAddress ||
+                       req.ip ||
+                       'unknown';
+            const userAgent = req.headers['user-agent'] || 'unknown';
+
+            const viewResult = await trackBlogView(blogData.id, ip, userAgent);
+            
+            // Update the view count in response if it was a new view
+            if (viewResult.isNewView) {
+                blogData.views = blogData.views + 1;
+            }
         }
 
         res.json(blogData);

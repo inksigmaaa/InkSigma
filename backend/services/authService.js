@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../config/database.js";
 import { user, account, verification } from "../models/schema.js";
 import { hashPassword as betterAuthHashPassword, verifyPassword as betterAuthVerifyPassword } from "better-auth/crypto";
+import { userCache } from "../config/redis.js";
 
 class AuthService {
     // Hash password using Better Auth's exact implementation
@@ -21,10 +22,78 @@ class AuthService {
         return crypto.randomBytes(length).toString("hex");
     }
 
-    // Find user by email
+    // Find user by email with Redis caching
     async findUserByEmail(email) {
-        const users = await db.select().from(user).where(eq(user.email, email));
-        return users[0] || null;
+        try {
+            // Try to get from cache first
+            const cacheKey = `user:email:${email}`;
+            const cached = await userCache.get(cacheKey);
+            
+            if (cached) {
+                console.log(`[AUTH-CACHE] User found in cache: ${email}`);
+                return cached;
+            }
+
+            // If not in cache, get from database
+            console.log(`[AUTH-CACHE] User not in cache, fetching from DB: ${email}`);
+            const users = await db.select().from(user).where(eq(user.email, email));
+            const foundUser = users[0] || null;
+
+            // Cache the result if user found
+            if (foundUser) {
+                await userCache.set(cacheKey, foundUser, 3600); // Cache for 1 hour
+            }
+
+            return foundUser;
+        } catch (error) {
+            console.error('[AUTH-CACHE] Error in findUserByEmail:', error);
+            // Fallback to database only
+            const users = await db.select().from(user).where(eq(user.email, email));
+            return users[0] || null;
+        }
+    }
+
+    // Find user by ID with Redis caching
+    async findUserById(userId) {
+        try {
+            // Try to get from cache first
+            const cached = await userCache.get(userId);
+            
+            if (cached) {
+                console.log(`[AUTH-CACHE] User found in cache: ${userId}`);
+                return cached;
+            }
+
+            // If not in cache, get from database
+            console.log(`[AUTH-CACHE] User not in cache, fetching from DB: ${userId}`);
+            const users = await db.select().from(user).where(eq(user.id, userId));
+            const foundUser = users[0] || null;
+
+            // Cache the result if user found
+            if (foundUser) {
+                await userCache.set(userId, foundUser, 3600); // Cache for 1 hour
+            }
+
+            return foundUser;
+        } catch (error) {
+            console.error('[AUTH-CACHE] Error in findUserById:', error);
+            // Fallback to database only
+            const users = await db.select().from(user).where(eq(user.id, userId));
+            return users[0] || null;
+        }
+    }
+
+    // Invalidate user cache when user data changes
+    async invalidateUserCache(userId, email) {
+        try {
+            await userCache.delete(userId);
+            if (email) {
+                await userCache.delete(`user:email:${email}`);
+            }
+            console.log(`[AUTH-CACHE] Cache invalidated for user: ${userId}`);
+        } catch (error) {
+            console.error('[AUTH-CACHE] Error invalidating cache:', error);
+        }
     }
 
     // Find credential account for user
@@ -101,6 +170,12 @@ class AuthService {
         await db.update(user)
             .set({ emailVerified: true, updatedAt: new Date() })
             .where(eq(user.email, email));
+        
+        // Invalidate cache after email verification
+        const foundUser = await this.findUserByEmail(email);
+        if (foundUser) {
+            await this.invalidateUserCache(foundUser.id, email);
+        }
     }
 
     // Get all users (for debug)
@@ -141,6 +216,9 @@ class AuthService {
             updatedAt: new Date(),
         });
 
+        // Invalidate cache after creating credential account
+        await this.invalidateUserCache(userId, email);
+
         return accountId;
     }
 
@@ -180,6 +258,8 @@ class AuthService {
                 await db.delete(verification).where(eq(verification.identifier, `verify:${u.email}`));
                 // Delete user
                 await db.delete(user).where(eq(user.id, u.id));
+                // Invalidate cache
+                await this.invalidateUserCache(u.id, u.email);
             }
         }
 
@@ -188,3 +268,4 @@ class AuthService {
 }
 
 export const authService = new AuthService();
+
