@@ -472,6 +472,7 @@ router.get("/:id", async (req, res) => {
                 categories: blog.categories,
                 status: blog.status,
                 published: blog.published,
+                publicationId: blog.publicationId,
                 scheduledAt: blog.scheduledAt,
                 createdAt: blog.createdAt,
                 updatedAt: blog.updatedAt,
@@ -491,10 +492,43 @@ router.get("/:id", async (req, res) => {
             return res.status(404).json({ error: "Blog not found" });
         }
 
-        // Security: Only show non-published blogs to the author
+        // Security: Only show non-published blogs to the author or reviewers
         if (blogData.status !== 'published') {
-            if (!currentUserId || blogData.authorId !== currentUserId) {
+            if (!currentUserId || (blogData.authorId !== currentUserId && blogData.status !== 'review')) {
                 return res.status(404).json({ error: "Blog not found" });
+            }
+
+            // If blog is in review status, check if user is a reviewer (admin/editor) in the publication
+            if (blogData.status === 'review' && blogData.authorId !== currentUserId) {
+                // Need to fetch the blog with publication info to check reviewer status
+                const [blogWithPub] = await db
+                    .select({
+                        publicationId: blog.publicationId,
+                    })
+                    .from(blog)
+                    .where(eq(blog.id, parseInt(id)));
+
+                if (blogWithPub?.publicationId) {
+                    const [member] = await db
+                        .select()
+                        .from(publicationMember)
+                        .where(
+                            and(
+                                eq(publicationMember.publicationId, blogWithPub.publicationId),
+                                eq(publicationMember.userId, currentUserId),
+                                or(
+                                    eq(publicationMember.role, 'admin'),
+                                    eq(publicationMember.role, 'editor')
+                                )
+                            )
+                        );
+
+                    if (!member) {
+                        return res.status(404).json({ error: "Blog not found" });
+                    }
+                } else {
+                    return res.status(404).json({ error: "Blog not found" });
+                }
             }
         }
 
@@ -669,6 +703,72 @@ router.post("/", getCurrentUser, async (req, res) => {
             schedulerService.onBlogScheduled(newBlog.id);
         }
 
+        // Send notifications if blog is created with review status
+        if (newBlog.status === 'review' && newBlog.publicationId) {
+            console.log(`[CREATE BLOG] Blog created with review status, sending notifications for blog ${newBlog.id}`);
+            try {
+                const [pub] = await db
+                    .select()
+                    .from(publication)
+                    .where(eq(publication.id, newBlog.publicationId));
+
+                console.log(`[CREATE BLOG] Found publication: ${pub?.name}`);
+
+                if (pub) {
+                    // Notify author that their blog has been submitted for review
+                    console.log(`[CREATE BLOG] Notifying author ${newBlog.authorId} about review submission`);
+                    await notificationService.notifyBlogSubmittedForReview({
+                        authorId: newBlog.authorId,
+                        publicationName: pub.name,
+                        blogId: newBlog.id,
+                        publicationId: newBlog.publicationId,
+                    });
+
+                    // Notify publication owner/admins
+                    const admins = await db
+                        .select({ userId: publicationMember.userId })
+                        .from(publicationMember)
+                        .where(
+                            and(
+                                eq(publicationMember.publicationId, newBlog.publicationId),
+                                or(
+                                    eq(publicationMember.role, 'admin'),
+                                    eq(publicationMember.role, 'editor')
+                                )
+                            )
+                        );
+
+                    console.log(`[CREATE BLOG] Found ${admins.length} admins/editors to notify`);
+
+                    // Notify each admin/editor
+                    for (const admin of admins) {
+                        if (admin.userId !== req.user.id) { // Don't notify yourself
+                            console.log(`[CREATE BLOG] Notifying admin/editor ${admin.userId} about review`);
+                            await notificationService.notifyBlogReview({
+                                recipientId: admin.userId,
+                                authorName: req.user.name,
+                                authorId: req.user.id,
+                                blogId: newBlog.id,
+                            });
+                        }
+                    }
+
+                    // Also notify publication owner if not already notified
+                    if (pub.userId !== req.user.id && !admins.some(a => a.userId === pub.userId)) {
+                        console.log(`[CREATE BLOG] Notifying publication owner ${pub.userId} about review`);
+                        await notificationService.notifyBlogReview({
+                            recipientId: pub.userId,
+                            authorName: req.user.name,
+                            authorId: req.user.id,
+                            blogId: newBlog.id,
+                        });
+                    }
+                }
+            } catch (notifError) {
+                console.error("Failed to create review notifications:", notifError);
+            }
+        }
+
         res.status(201).json(newBlog);
     } catch (error) {
         console.error("Error creating blog:", error);
@@ -727,7 +827,9 @@ router.post("/auto-save", async (req, res) => {
 router.put("/:id", getCurrentUser, async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, content, categories, published, status, scheduledAt } = req.body;
+        const { title, description, content, categories, published, status, scheduledAt, publicationId } = req.body;
+
+        console.log(`[PUT BLOG] Updating blog ${id} with status: ${status}, publicationId: ${publicationId}, existing status will be checked`);
 
         // Check if blog exists
         const [existingBlog] = await db
@@ -783,6 +885,12 @@ router.put("/:id", getCurrentUser, async (req, res) => {
             console.log(`[BLOG] Scheduling blog ${id} for: ${updateData.scheduledAt.toISOString()}`);
         }
         
+        // Handle publicationId update
+        if (publicationId !== undefined) {
+            updateData.publicationId = publicationId ? parseInt(publicationId) : null;
+            console.log(`[PUT BLOG] Setting publicationId to: ${updateData.publicationId}`);
+        }
+        
         // Handle status update with strict synchronization
         if (status !== undefined) {
             const syncedFields = syncStatusAndPublished(status);
@@ -814,15 +922,28 @@ router.put("/:id", getCurrentUser, async (req, res) => {
 
         // Create notifications based on status change
         if (status !== undefined && status !== existingBlog.status) {
+            console.log(`[PUT BLOG] Status changed from ${existingBlog.status} to ${status}, checking for notifications`);
             try {
                 // If blog was submitted for review
                 if (status === 'review' && existingBlog.publicationId) {
+                    console.log(`[PUT BLOG] Blog submitted for review, publicationId: ${existingBlog.publicationId}`);
                     const [pub] = await db
                         .select()
                         .from(publication)
                         .where(eq(publication.id, existingBlog.publicationId));
 
+                    console.log(`[PUT BLOG] Found publication: ${pub?.name}`);
+
                     if (pub) {
+                        // Notify author that their blog has been submitted for review
+                        console.log(`[PUT BLOG] Notifying author ${existingBlog.authorId} about review submission`);
+                        await notificationService.notifyBlogSubmittedForReview({
+                            authorId: existingBlog.authorId,
+                            publicationName: pub.name,
+                            blogId: parseInt(id),
+                            publicationId: existingBlog.publicationId,
+                        });
+
                         // Notify publication owner/admins
                         const admins = await db
                             .select({ userId: publicationMember.userId })
@@ -837,9 +958,12 @@ router.put("/:id", getCurrentUser, async (req, res) => {
                                 )
                             );
 
+                        console.log(`[PUT BLOG] Found ${admins.length} admins/editors to notify`);
+
                         // Notify each admin/editor
                         for (const admin of admins) {
                             if (admin.userId !== req.user.id) { // Don't notify yourself
+                                console.log(`[PUT BLOG] Notifying admin/editor ${admin.userId} about review`);
                                 await notificationService.notifyBlogReview({
                                     recipientId: admin.userId,
                                     authorName: req.user.name,
@@ -851,6 +975,7 @@ router.put("/:id", getCurrentUser, async (req, res) => {
 
                         // Also notify publication owner if not already notified
                         if (pub.userId !== req.user.id && !admins.some(a => a.userId === pub.userId)) {
+                            console.log(`[PUT BLOG] Notifying publication owner ${pub.userId} about review`);
                             await notificationService.notifyBlogReview({
                                 recipientId: pub.userId,
                                 authorName: req.user.name,
@@ -1068,6 +1193,14 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
                         .where(eq(publication.id, existingBlog.publicationId));
 
                     if (pub) {
+                        // Notify author that their blog has been submitted for review
+                        await notificationService.notifyBlogSubmittedForReview({
+                            authorId: existingBlog.authorId,
+                            publicationName: pub.name,
+                            blogId: parseInt(id),
+                            publicationId: existingBlog.publicationId,
+                        });
+
                         // Notify publication owner/admins
                         const admins = await db
                             .select({ userId: publicationMember.userId })

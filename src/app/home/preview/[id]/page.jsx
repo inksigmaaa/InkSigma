@@ -16,7 +16,9 @@ export default function PreviewPage({ params }) {
     const fetchArticle = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5000/api/blogs/${id}`);
+        const response = await fetch(`http://localhost:5000/api/blogs/${id}`, {
+          credentials: 'include'
+        });
         
         if (!response.ok) {
           throw new Error('Failed to fetch article');
