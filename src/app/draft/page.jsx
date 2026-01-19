@@ -4,15 +4,18 @@ import { useState, useMemo, useEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
+import EditorSidebar from "../components/sidebar/EditorSidebar"
 import Verify from "../components/verify/Verify"
 import PersonalArticles from "../components/personalArticles/personalArticles"
 import ConfirmModal from "../components/confirmModal/ConfirmModal"
 import PageTransition from "@/components/PageTransition"
 import { useArticles } from "@/contexts/ArticlesContext"
+import { usePublication } from "@/contexts/PublicationContext"
 import AuthGuard from "@/components/auth/AuthGuard" 
 
 export default function DraftPage() {
   const { articles, loading, moveToTrashStatus, bulkMoveToTrashStatus, bulkPublish, publishArticle, loadUserArticles } = useArticles()
+  const { currentPublication } = usePublication()
   const searchParams = useSearchParams()
   const router = useRouter()
   const hasLoadedRef = useRef(false)
@@ -42,7 +45,17 @@ export default function DraftPage() {
 
   const draftArticles = useMemo(() => {
     return articles
-      .filter(article => article.status === 'draft')
+      .filter(article => {
+        const isDraft = article.status === 'draft'
+        
+        // If we are in a publication context, only show articles for that publication
+        if (currentPublication?.id) {
+          return isDraft && article.publicationId === currentPublication.id
+        }
+        
+        // If not in a publication context (e.g. dashboard), show all drafts
+        return isDraft
+      })
       .map(article => ({
         ...article,
         onDelete: () => {
@@ -56,7 +69,7 @@ export default function DraftPage() {
           setShowPublishModal(true)
         }
       }))
-  }, [articles])
+  }, [articles, currentPublication])
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -132,13 +145,16 @@ export default function DraftPage() {
     }
   }
 
+
+  const canPublish = currentPublication?.isOwner || currentPublication?.role === 'admin'
+
   const actionButtons = [
-    {
+    ...(canPublish ? [{
       title: "Publish",
       icon: "/images/icons/share.svg",
       onClick: handleBulkPublish,
       disabled: selectedArticles.length === 0
-    },
+    }] : []),
     {
       title: "Delete",
       icon: "/images/icons/trash2.svg",
@@ -151,7 +167,7 @@ export default function DraftPage() {
     <>
     <AuthGuard />
       <NavbarLoggedin />
-      <Sidebar />
+      {canPublish ? <Sidebar /> : <EditorSidebar />}
       <Verify />
       <PageTransition>
         <PersonalArticles

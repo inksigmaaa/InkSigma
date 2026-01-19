@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { memo, useMemo } from 'react';
-import UserAvatar from "@/components/ui/UserAvatar";
+import { memo } from 'react';
 import { usePublication } from '@/contexts/PublicationContext';
 
 const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, currentPublication }) {
@@ -14,6 +13,7 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
       "Published": "/posts/published",
       "Review": "/author-review",
       "My Blogs": "/posts/my-blogs",
+      "Draft": "/posts/draft",
     };
     
     let route = routes[label] || "/dashboard";
@@ -25,14 +25,6 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
     
     return route;
   };
-
-  const navItems = useMemo(() => [
-    { label: "Home", icon: "/images/icons/home.svg", route: "/posts/home" },
-    { label: "Members", icon: "/images/icons/Member.svg", route: "/posts/members" },
-    { label: "Published", icon: "/images/icons/Publish.svg", route: "/posts/published" },
-    { label: "Review", icon: "/images/icons/Review.svg", route: "/author-review" },
-    { label: "My Blogs", icon: "/images/icons/all_articles.svg", route: "/posts/my-blogs" },
-  ], []);
 
   return (
     <>
@@ -170,6 +162,18 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
                   <img src="/images/icons/all_articles.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/my-blogs' ? 'opacity-100 brightness-0' : 'opacity-60'}`} />
                   <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/my-blogs' ? 'font-bold text-black' : 'font-normal text-gray-400'}`}>
                     My Blogs
+                  </p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Draft */}
+            <Link href={getRoute("Draft")}>
+              <div className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${pathname === '/posts/draft' ? 'bg-gray-100' : ''}`}>
+                <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+                  <img src="/images/icons/draft.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/draft' ? 'opacity-100 brightness-0' : 'opacity-60'}`} />
+                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/draft' ? 'font-bold text-black' : 'font-normal text-gray-400'}`}>
+                    Draft
                   </p>
                 </div>
               </div>

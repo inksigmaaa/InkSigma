@@ -9,8 +9,12 @@ import PersonalArticles from "../components/personalArticles/personalArticles"
 import ConfirmModal from "../components/confirmModal/ConfirmModal"
 import PageTransition from "@/components/PageTransition"
 import { useArticles } from "@/contexts/ArticlesContext"
+import { usePublication } from "@/contexts/PublicationContext"
+import EditorSidebar from "../components/sidebar/EditorSidebar"
 
 export default function TrashPage() {
+  const { currentPublication } = usePublication()
+  const isSidebarAdmin = currentPublication?.isOwner || currentPublication?.role === 'admin'
   const { articles, loading, error, moveToDraft, moveToTrash, bulkMoveToTrash } = useArticles()
   const [selectedArticles, setSelectedArticles] = useState([])
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -18,7 +22,17 @@ export default function TrashPage() {
   const [deleteArticleId, setDeleteArticleId] = useState(null)
 
   // Filter trash articles
-  const trashArticles = articles.filter(article => article.status === 'trash')
+  const trashArticles = articles.filter(article => {
+    const isTrash = article.status === 'trash'
+    
+    // If we are in a publication context, only show articles for that publication
+    if (currentPublication?.id) {
+      return isTrash && article.publicationId === currentPublication.id
+    }
+    
+    // If not in a publication context (e.g. dashboard), show all trash
+    return isTrash
+  })
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -147,7 +161,7 @@ export default function TrashPage() {
   return (
     <AuthGuard>
       <NavbarLoggedin />
-      <Sidebar />
+      {isSidebarAdmin ? <Sidebar /> : <EditorSidebar />}
       <Verify />
       <PageTransition>
         <PersonalArticles

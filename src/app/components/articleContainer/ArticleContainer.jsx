@@ -6,10 +6,13 @@ import {
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
 import { useRouter } from 'next/navigation'
+import { usePublication } from '@/contexts/PublicationContext'
 import StatsPopup from './StatsPopup'
 
 export default function ArticleContainer({ id, status, title, description, categories, postedTime, isSelected, onSelect, onDelete, onPublish, onUnpublish, onDraft, publicationId, image, showActions = true, stats }) {
     const router = useRouter()
+    const { currentPublication } = usePublication()
+    const canPublish = currentPublication?.isOwner || currentPublication?.role === 'admin'
     const [showStats, setShowStats] = useState(false)
     const [statsPosition, setStatsPosition] = useState({ top: 0, left: 0 })
     const statsButtonRef = useRef(null)
@@ -127,9 +130,11 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 </>
                             ) : status === 'draft' ? (
                                 <>
-                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Publish" onClick={handlePublish}>
-                                        <img src="/images/icons/share.svg" alt="publish" className="w-4 h-4" />
-                                    </button>
+                                    {canPublish && (
+                                        <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Publish" onClick={handlePublish}>
+                                            <img src="/images/icons/share.svg" alt="publish" className="w-4 h-4" />
+                                        </button>
+                                    )}
                                     <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
                                         <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
                                     </button>
@@ -145,9 +150,11 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 </>
                             ) : status === 'unpublished' ? (
                                 <>
-                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Republish" onClick={handlePublish}>
-                                        <img src="/images/icons/publish.svg" alt="republish" className="w-4 h-4" />
-                                    </button>
+                                    {canPublish && (
+                                        <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Republish" onClick={handlePublish}>
+                                            <img src="/images/icons/publish.svg" alt="republish" className="w-4 h-4" />
+                                        </button>
+                                    )}
                                      <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
                                         <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
                                     </button>
@@ -160,7 +167,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 </>
                             ) : (
                                 <>
-                                    {status === 'published' && (
+                                    {status === 'published' && canPublish && (
                                         <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Unpublish" onClick={handleUnpublish}>
                                             <img src="/images/icons/unpublished-hover.svg" alt="unpublish" className="w-8 h-8" />
                                         </button>
@@ -191,17 +198,17 @@ export default function ArticleContainer({ id, status, title, description, categ
                             </DropdownMenuTrigger>
 
                             <DropdownMenuContent align="end" className="w-40 rounded-lg border border-gray-200 bg-white shadow-lg md:hidden">
-                                {status === 'draft' && (
+                                {status === 'draft' && canPublish && (
                                     <DropdownMenuItem className="gap-2 text-sm" onClick={handlePublish}>
                                         <img src="/images/icons/share.svg" className="w-4 h-4" /> Publish
                                     </DropdownMenuItem>
                                 )}
-                                {status === 'published' && (
+                                {status === 'published' && canPublish && (
                                     <DropdownMenuItem className="gap-2 text-sm" onClick={handleUnpublish}>
                                         <img src="/images/icons/unpublished.svg" className="w-4 h-4" /> Unpublish
                                     </DropdownMenuItem>
                                 )}
-                                {status === 'unpublished' && (
+                                {status === 'unpublished' && canPublish && (
                                     <DropdownMenuItem className="gap-2 text-sm" onClick={handlePublish}>
                                         <img src="/images/icons/publish.svg" className="w-4 h-4" /> Republish
                                     </DropdownMenuItem>
