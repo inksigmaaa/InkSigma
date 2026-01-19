@@ -230,6 +230,11 @@ export default function EditorPageClient() {
       const pubId = publicationId || currentPublication?.id
       if (pubId) {
         blogData.publicationId = parseInt(pubId)
+        console.log('Blog will be assigned to publication:', pubId)
+      } else {
+        console.warn('No publication ID available - blog may not be assigned to correct publication')
+        console.warn('publicationId from URL:', publicationId)
+        console.warn('currentPublication:', currentPublication)
       }
 
       // Add scheduledAt if scheduling

@@ -1,8 +1,12 @@
 import ArticleDropdown from '../articleDropdown/ArticleDropdown.jsx'
 import { useRouter } from 'next/navigation'
+import { usePublication } from '@/contexts/PublicationContext'
 
 export default function PersonalArticleContainer({ id, status, title, description, categories, postedTime, onRestore, onDelete, onDraft, onUnpublish, onRepublish, onPublish, isSelected, onSelect }) {
     const router = useRouter()
+    const { currentPublication } = usePublication()
+    // Explicitly ensure 'author' and 'editor' cannot publish, even if isOwner is somehow true (edge case)
+    const canPublish = (currentPublication?.isOwner || currentPublication?.role === 'admin') && currentPublication?.role !== 'author' && currentPublication?.role !== 'editor'
 
     const handleEdit = () => {
         router.push(`/editor?status=${status}&id=${id}`)
@@ -44,6 +48,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     onEdit={handleEdit}
                     onDelete={onDelete}
                     onRestore={onRestore}
+                    canPublish={canPublish}
                 />
             </div>
 
@@ -67,9 +72,11 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                         </>
                     ) : status === 'draft' ? (
                         <>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Publish" onClick={onPublish}>
-                                <img src="/images/icons/share.svg" alt="publish" className="w-4 h-4" />
-                            </button>
+                            {canPublish && (
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Publish" onClick={onPublish}>
+                                    <img src="/images/icons/share.svg" alt="publish" className="w-4 h-4" />
+                                </button>
+                            )}
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
                                 <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
                             </button>
@@ -85,9 +92,11 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                         </>
                     ) : status === 'unpublished' ? (
                         <>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Republish" onClick={onRepublish}>
-                                <img src="/images/icons/publish.svg" alt="republish" className="w-4 h-4" />
-                            </button>
+                            {canPublish && (
+                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Republish" onClick={onRepublish}>
+                                    <img src="/images/icons/publish.svg" alt="republish" className="w-4 h-4" />
+                                </button>
+                            )}
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
                                 <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
                             </button>
@@ -100,7 +109,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                         </>
                     ) : (
                         <>
-                            {status === 'published' && (
+                            {status === 'published' && canPublish && (
                                 <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Unpublish" onClick={onUnpublish}>
                                     <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-4 h-4" />
                                 </button>
@@ -108,15 +117,19 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Preview">
                                 <img src="/images/icons/preview.svg" alt="preview" className="w-4 h-4" />
                             </button>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
-                                <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
-                            </button>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Draft" onClick={onDraft}>
-                                <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
-                            </button>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
-                                <img src="/images/icons/delete.svg" alt="delete" className="w-4 h-4" />
-                            </button>
+                            {canPublish && (
+                                <>
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
+                                        <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
+                                    </button>
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Draft" onClick={onDraft}>
+                                        <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
+                                    </button>
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
+                                        <img src="/images/icons/delete.svg" alt="delete" className="w-4 h-4" />
+                                    </button>
+                                </>
+                            )}
                         </>
                     )}
                 </div>
@@ -154,9 +167,11 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                             </>
                         ) : status === 'draft' ? (
                             <>
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Publish" onClick={onPublish}>
-                                    <img src="/images/icons/share.svg" alt="publish" className="w-4 h-4" />
-                                </button>
+                                {canPublish && (
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Publish" onClick={onPublish}>
+                                        <img src="/images/icons/share.svg" alt="publish" className="w-4 h-4" />
+                                    </button>
+                                )}
                                 <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
                                     <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
                                 </button>
@@ -172,9 +187,11 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                             </>
                         ) : status === 'unpublished' ? (
                             <>
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Republish" onClick={onRepublish}>
-                                    <img src="/images/icons/publish.svg" alt="republish" className="w-4 h-4" />
-                                </button>
+                                {canPublish && (
+                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Republish" onClick={onRepublish}>
+                                        <img src="/images/icons/publish.svg" alt="republish" className="w-4 h-4" />
+                                    </button>
+                                )}
                                 <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
                                     <img src="/images/icons/edit-ideal.svg" alt="edit" className="w-4 h-4" />
                                 </button>
@@ -187,7 +204,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                             </>
                         ) : (
                             <>
-                                {status === 'published' && (
+                                {status === 'published' && canPublish && (
                                     <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Unpublish" onClick={onUnpublish}>
                                         <img src="/images/icons/unpublished-hover.svg" alt="unpublish" className="w-8 h-8" />
                                     </button>

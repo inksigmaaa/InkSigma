@@ -68,7 +68,7 @@ export default function Published() {
             if (targetContext === 'publication') {
                 loadPublicationArticles(currentPublication.id, 'published');
             } else {
-                loadUserArticles();
+                loadUserArticles(currentPublication?.id);
             }
         }
     }, [searchParams, displayArticles.length, isLoading, loadUserArticles, loadPublicationArticles, isAdmin, currentPublication?.id]);
