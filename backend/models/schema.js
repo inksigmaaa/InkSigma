@@ -155,3 +155,18 @@ export const notification = pgTable("notification", {
     createdAt: timestamp("createdAt", { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 });
+
+export const blogView = pgTable("blog_view", {
+    id: serial("id").primaryKey(),
+    blogId: integer("blogId").notNull().references(() => blog.id, { onDelete: "cascade" }),
+    viewerIdentifier: text("viewerIdentifier").notNull(), // IP address or user ID
+    userAgent: text("userAgent"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export const blogShare = pgTable("blog_share", {
+    id: serial("id").primaryKey(),
+    blogId: integer("blogId").notNull().references(() => blog.id, { onDelete: "cascade" }),
+    platform: text("platform").notNull(), // twitter, facebook, linkedin, copy
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+});

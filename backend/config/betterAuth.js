@@ -4,6 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "./database.js";
 import { emailService } from "../services/emailService.js";
 import { emailValidationService } from "../services/emailValidationService.js";
+import { redisSessionStorage } from "./redis.js";
 
 export const auth = betterAuth({
     baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5000",
@@ -22,6 +23,8 @@ export const auth = betterAuth({
             enabled: true,
             maxAge: 60 * 60 * 24 * 7, // 7 days
         },
+        // Use Redis for session storage
+        storage: redisSessionStorage,
     },
 
     emailAndPassword: {
@@ -95,3 +98,4 @@ export const auth = betterAuth({
         },
     },
 });
+

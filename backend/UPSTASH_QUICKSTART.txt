@@ -1,0 +1,40 @@
+UPSTASH REDIS SETUP - 5 MINUTES
+
+Step 1: Create Upstash Account
+- Go to https://upstash.com
+- Sign up (free)
+
+Step 2: Create Redis Database
+- Click "Create Database"
+- Name: blog-sessions
+- Type: Regional
+- Region: Choose closest to you
+- Click "Create"
+
+Step 3: Get Credentials
+After creating, you'll see:
+- UPSTASH_REDIS_REST_URL
+- UPSTASH_REDIS_REST_TOKEN
+
+Copy both values!
+
+Step 4: Update .env File
+Add to backend/.env:
+
+UPSTASH_REDIS_REST_URL=https://your-url.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-token-here
+
+Step 5: Install Package
+cd backend
+npm install
+
+Step 6: Test
+npm run test:redis
+
+Step 7: Start Server
+npm run dev
+
+You should see:
+[REDIS] Upstash Redis client initialized successfully
+
+Done! Your sessions are now stored in Upstash Redis.

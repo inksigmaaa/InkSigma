@@ -9,9 +9,11 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "migrate:data": "node migrate-existing-data.js"
+    "migrate:data": "node migrate-existing-data.js",
+    "test:redis": "node test-redis.js"
   },
   "dependencies": {
+    "@upstash/redis": "^1.34.3",
     "bcrypt": "^5.1.1",
     "better-auth": "^1.4.9",
     "cors": "^2.8.5",
