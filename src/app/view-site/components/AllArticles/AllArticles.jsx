@@ -121,6 +121,7 @@ export default function AllArticles({ searchQuery = '', selectedCategory = '', b
                 <ShareMenu 
                   title={article.title}
                   slug={article.slug}
+                  blogId={article.id}
                 />
               </div>
 
