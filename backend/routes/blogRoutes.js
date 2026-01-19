@@ -420,6 +420,8 @@ router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
             offset = 0 
         } = req.query;
 
+        console.log('[Publication Blogs] Request:', { publicationId, status, limit, offset, userId: req.user.id });
+
         // Check if user has access to this publication
         const [pub] = await db
             .select()
@@ -427,6 +429,7 @@ router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
             .where(eq(publication.id, parseInt(publicationId)));
 
         if (!pub) {
+            console.log('[Publication Blogs] Publication not found:', publicationId);
             return res.status(404).json({ error: "Publication not found" });
         }
 
@@ -447,7 +450,10 @@ router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
             isMember = !!member;
         }
 
+        console.log('[Publication Blogs] Access check:', { isOwner, isMember });
+
         if (!isOwner && !isMember) {
+            console.log('[Publication Blogs] Access denied for user:', req.user.id);
             return res.status(403).json({ error: "Access denied" });
         }
 
@@ -458,6 +464,8 @@ router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
         if (status) {
             conditions.push(eq(blog.status, status));
         }
+
+        console.log('[Publication Blogs] Query conditions:', { publicationId, status });
 
         const blogs = await db
             .select({
@@ -487,6 +495,8 @@ router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
             .orderBy(desc(blog.createdAt))
             .limit(parseInt(limit))
             .offset(parseInt(offset));
+
+        console.log('[Publication Blogs] Blogs found:', blogs.length);
 
         // Add stats to each blog
         const blogsWithStats = await Promise.all(blogs.map(async (b) => {

@@ -33,13 +33,16 @@ export default function PostsHomePage() {
 
       // Fetch recent published articles for this publication using the publication-specific endpoint
       const articlesRes = await fetch(
-        `http://localhost:5000/api/blogs/publication/${pubId}?status=published&limit=4`,
+        `http://localhost:5000/api/blogs/publication/${pubId}?status=published&limit=4&offset=0`,
         { credentials: "include" }
       )
 
       if (articlesRes.ok) {
         const articlesData = await articlesRes.json()
+        console.log('[Home] Recent articles fetched:', articlesData.length, articlesData)
         setRecentArticles(articlesData)
+      } else {
+        console.error('[Home] Failed to fetch articles:', articlesRes.status, articlesRes.statusText)
       }
     } catch (error) {
       console.error("Error loading publication data:", error)
@@ -49,15 +52,22 @@ export default function PostsHomePage() {
   }, [])
 
   useEffect(() => {
-    if (currentPublication && !publicationLoading) {
-      // Only load if publication ID changed
-      if (lastPublicationIdRef.current !== currentPublication.id) {
-        lastPublicationIdRef.current = currentPublication.id
-        setLoading(true)
-        loadPublicationData(currentPublication.id)
-      }
+    console.log('[Home] useEffect triggered:', { currentPublication: currentPublication?.id, publicationLoading });
+    
+    if (!currentPublication?.id) {
+      console.log('[Home] No publication ID');
+      return;
     }
-  }, [currentPublication?.id, publicationLoading, loadPublicationData])
+
+    if (publicationLoading) {
+      console.log('[Home] Publication still loading');
+      return;
+    }
+
+    console.log('[Home] Loading publication data for:', currentPublication.id);
+    setLoading(true);
+    loadPublicationData(currentPublication.id);
+  }, [currentPublication?.id, publicationLoading])
 
   const handleStartWriting = () => {
     // Pass publicationId to editor so blogs are created for this publication
