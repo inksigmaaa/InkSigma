@@ -4,13 +4,15 @@ import { useState } from "react"
 
 /**
  * Modal for admin to choose between publishing or storing to unpublished when accepting a review article
+ * For editors, only the unpublish option is shown
  */
 export default function PublishOptionsModal({ 
   isOpen, 
   onClose, 
   onPublish, 
   onUnpublish,
-  articleTitle = "this article"
+  articleTitle = "this article",
+  userRole = "admin"
 }) {
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -88,20 +90,22 @@ export default function PublishOptionsModal({
           <button
             onClick={handleUnpublish}
             disabled={isProcessing}
-            className="flex-1 h-10 rounded-lg bg-gray-100 border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-50"
+            className={`${userRole === 'editor' ? 'w-full' : 'flex-1'} h-10 rounded-lg bg-gray-100 border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-50`}
           >
             {isProcessing ? 'Processing...' : 'Store to Unpublished'}
           </button>
-          <button
-            onClick={handlePublish}
-            disabled={isProcessing}
-            className="flex-1 h-10 rounded-lg text-sm font-medium text-white transition-opacity disabled:opacity-50"
-            style={{
-              background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)'
-            }}
-          >
-            {isProcessing ? 'Publishing...' : 'Publish Now'}
-          </button>
+          {userRole !== 'editor' && (
+            <button
+              onClick={handlePublish}
+              disabled={isProcessing}
+              className="flex-1 h-10 rounded-lg text-sm font-medium text-white transition-opacity disabled:opacity-50"
+              style={{
+                background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)'
+              }}
+            >
+              {isProcessing ? 'Publishing...' : 'Publish Now'}
+            </button>
+          )}
         </div>
       </div>
     </div>

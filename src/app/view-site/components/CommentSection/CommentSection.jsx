@@ -87,9 +87,16 @@ export default function CommentSection({ blogId }) {
   };
 
   const handleSubmitComment = async () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim()) {
+      setError('Please enter a comment');
+      return;
+    }
     if (!currentUser && !guestName.trim()) {
       setError('Please enter your name');
+      return;
+    }
+    if (!currentUser && guestName.trim().length < 2) {
+      setError('Name must be at least 2 characters');
       return;
     }
 
@@ -107,6 +114,8 @@ export default function CommentSection({ blogId }) {
         body.guestEmail = guestEmail.trim() || null;
       }
 
+      console.log('[CommentSection] Submitting comment:', { ...body, content: body.content.substring(0, 50) + '...' });
+
       const response = await fetch(`${API_URL}/api/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -119,23 +128,33 @@ export default function CommentSection({ blogId }) {
         console.log('[CommentSection] New comment created:', comment);
         setComments(prev => [comment, ...prev]);
         setNewComment('');
+        setGuestEmail(''); // Clear email after successful post
         // Keep guest name for convenience
+        setError(null);
       } else {
         const data = await response.json();
+        console.error('[CommentSection] Failed to post comment:', data);
         setError(data.error || 'Failed to post comment');
       }
     } catch (err) {
       console.error('Error posting comment:', err);
-      setError('Failed to post comment');
+      setError('Failed to post comment. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleSubmitReply = async (commentId) => {
-    if (!replyContent.trim()) return;
+    if (!replyContent.trim()) {
+      setError('Please enter a reply');
+      return;
+    }
     if (!currentUser && !replyGuestName.trim()) {
       setError('Please enter your name');
+      return;
+    }
+    if (!currentUser && replyGuestName.trim().length < 2) {
+      setError('Name must be at least 2 characters');
       return;
     }
 
@@ -153,6 +172,8 @@ export default function CommentSection({ blogId }) {
         body.guestName = replyGuestName.trim();
       }
 
+      console.log('[CommentSection] Submitting reply:', { ...body, content: body.content.substring(0, 50) + '...' });
+
       const response = await fetch(`${API_URL}/api/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -162,6 +183,7 @@ export default function CommentSection({ blogId }) {
 
       if (response.ok) {
         const reply = await response.json();
+        console.log('[CommentSection] New reply created:', reply);
         setComments(comments.map(c => 
           c.id === commentId 
             ? { ...c, replies: [...(c.replies || []), reply] }
@@ -171,13 +193,15 @@ export default function CommentSection({ blogId }) {
         setReplyGuestName('');
         setReplyingTo(null);
         setExpandedReplies(prev => ({ ...prev, [commentId]: true }));
+        setError(null);
       } else {
         const data = await response.json();
+        console.error('[CommentSection] Failed to post reply:', data);
         setError(data.error || 'Failed to post reply');
       }
     } catch (err) {
       console.error('Error posting reply:', err);
-      setError('Failed to post reply');
+      setError('Failed to post reply. Please try again.');
     } finally {
       setSubmitting(false);
     }

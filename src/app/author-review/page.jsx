@@ -84,7 +84,7 @@ export default function AuthorReviewPage() {
 
   // Filter articles based on user role
   // - Author: sees only their own articles
-  // - Editor: sees all author articles (not their own if they're author)
+  // - Editor: sees all articles (own articles show "Revert to Draft", others show "Accept/Reject")
   // - Admin: handled in /review page, but if accessed here, show all
   const getFilteredArticles = () => {
     let articles = reviewArticles
@@ -93,7 +93,7 @@ export default function AuthorReviewPage() {
     if (isAuthor) {
       articles = articles.filter(a => a.author?.id === session?.user?.id)
     }
-    // Editors see all articles (including their own if submitted for review)
+    // Editors see all articles (but actions differ based on ownership)
     // Admins should use /review page, but show all if they come here
 
     // Apply category filter
@@ -147,14 +147,14 @@ export default function AuthorReviewPage() {
     try {
       if (actionType === 'revert') {
         await revertReviewToDraft(selectedArticleForAction.id)
-        alert('Article reverted to draft successfully!')
+        console.log('Article reverted to draft successfully!')
       } else if (actionType === 'accept') {
         // Editor can only unpublish, not publish
         await acceptReviewArticle(selectedArticleForAction.id, 'unpublished')
-        alert('Article accepted and stored to unpublished!')
+        console.log('Article accepted and stored to unpublished!')
       } else if (actionType === 'reject') {
         await rejectReviewArticle(selectedArticleForAction.id)
-        alert('Article rejected and returned to author\'s draft.')
+        console.log('Article rejected and returned to author\'s draft.')
       }
       // Refresh the review articles list
       if (currentPublication?.id) {
@@ -162,7 +162,6 @@ export default function AuthorReviewPage() {
       }
     } catch (error) {
       console.error('Error performing action:', error)
-      alert('Failed to perform action: ' + error.message)
     } finally {
       setShowConfirmModal(false)
       setSelectedArticleForAction(null)
@@ -403,29 +402,46 @@ export default function AuthorReviewPage() {
                         </Button>
                       )}
                       
-                      {/* Editor sees Accept (unpublish only) and Reject */}
+                      {/* Editor sees different actions based on article ownership */}
                       {isEditor && (
                         <>
-                          <Button 
-                            variant="outline" 
-                            className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleReject(article)
-                            }}
-                          >
-                            Reject
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleAccept(article)
-                            }}
-                          >
-                            Accept
-                          </Button>
+                          {/* If it's editor's own article, only show Revert to Draft */}
+                          {article.author?.id === session?.user?.id ? (
+                            <Button 
+                              variant="outline"
+                              className="text-gray-700 border-gray-300 hover:bg-gray-50 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRevertToDraft(article)
+                              }}
+                            >
+                              Revert to Draft
+                            </Button>
+                          ) : (
+                            /* If it's another author's article, show Accept and Reject */
+                            <>
+                              <Button 
+                                variant="outline" 
+                                className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleReject(article)
+                                }}
+                              >
+                                Reject
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleAccept(article)
+                                }}
+                              >
+                                Accept
+                              </Button>
+                            </>
+                          )}
                         </>
                       )}
                     </div>
@@ -464,28 +480,46 @@ export default function AuthorReviewPage() {
                       )}
                       {isEditor && (
                         <>
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 h-10 w-10"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleReject(article)
-                            }}
-                          >
-                            ✕
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 h-10 w-10"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleAccept(article)
-                            }}
-                          >
-                            ✓
-                          </Button>
+                          {/* If it's editor's own article, only show Revert to Draft */}
+                          {article.author?.id === session?.user?.id ? (
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              className="text-gray-700 border-gray-300 hover:bg-gray-50"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRevertToDraft(article)
+                              }}
+                            >
+                              Revert
+                            </Button>
+                          ) : (
+                            /* If it's another author's article, show Accept and Reject */
+                            <>
+                              <Button 
+                                variant="outline" 
+                                size="icon"
+                                className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 h-10 w-10"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleReject(article)
+                                }}
+                              >
+                                ✕
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="icon"
+                                className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 h-10 w-10"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleAccept(article)
+                                }}
+                              >
+                                ✓
+                              </Button>
+                            </>
+                          )}
                         </>
                       )}
                     </div>
