@@ -140,15 +140,20 @@ export default function BlogDetailPage({ params }) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <ViewSiteHeader 
-        userName={blog.publication?.name || "Your Publication"} 
-        userAvatar={blog.publication?.logoUrl ? `http://localhost:5000${blog.publication.logoUrl}` : null} 
-      />
+      {/* Header Section - Full Width */}
+      <div className="w-full h-[92px] bg-white flex items-center justify-center gap-2.5">
+        <div className="max-w-[1920px] w-full px-6 flex items-center justify-between">
+          <ViewSiteHeader 
+            userName={blog.publication?.name || "Your Publication"} 
+            userAvatar={blog.publication?.logoUrl ? `http://localhost:5000${blog.publication.logoUrl}` : null} 
+          />
+        </div>
+      </div>
 
-      <section className="flex-grow flex justify-center w-full px-4 md:px-6 md:pt-12">
+      <section className="flex-grow flex justify-center w-full px-4 md:px-6 pt-6 md:pt-8">
         <div className="flex max-w-[1400px] w-full ml-12 gap-8">
           {/* Left Sidebar - Back Button and Table of Contents */}
-          <aside className="hidden lg:block flex-shrink-0 pt-20 w-[300px]">
+          <aside className="hidden lg:block flex-shrink-0 pt-8 w-[300px]">
             <div className="sticky flex item-start top-28">
               <BackToHomeButton />
               <TableOfContents />
@@ -156,7 +161,7 @@ export default function BlogDetailPage({ params }) {
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1 max-w-[800px] pb-40 max-md:pb-12 pt-6 md:pt-20 lg:pl-12 lg:border-l-2 min-w-0">
+          <div className="flex-1 max-w-[800px] pb-40 max-md:pb-12 pt-0 md:pt-0 lg:pl-12 min-w-0">
           {/* Blog Title */}
           <h1 className="text-2xl leading-tight md:text-3xl font-bold text-black mb-4 md:mb-4 break-words">{blog.title}</h1>
 
@@ -171,7 +176,7 @@ export default function BlogDetailPage({ params }) {
           </div>
 
           {/* Author and Date */}
-          <div className="flex items-center justify-between gap-3 mb-6 md:mb-8 py-3 md:py-4 md:px-2 md:border-y md:border-gray-200">
+          <div className="flex items-center justify-between gap-3 mb-6 md:mb-8 py-3 md:py-4 md:px-2">
             {/* Left side - Author */}
             <div className="flex items-center gap-2 md:gap-3 min-w-0">
               <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
