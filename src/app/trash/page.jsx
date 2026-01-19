@@ -22,7 +22,17 @@ export default function TrashPage() {
   const [deleteArticleId, setDeleteArticleId] = useState(null)
 
   // Filter trash articles
-  const trashArticles = articles.filter(article => article.status === 'trash')
+  const trashArticles = articles.filter(article => {
+    const isTrash = article.status === 'trash'
+    
+    // If we are in a publication context, only show articles for that publication
+    if (currentPublication?.id) {
+      return isTrash && article.publicationId === currentPublication.id
+    }
+    
+    // If not in a publication context (e.g. dashboard), show all trash
+    return isTrash
+  })
 
   const handleSelectAll = (checked) => {
     if (checked) {
