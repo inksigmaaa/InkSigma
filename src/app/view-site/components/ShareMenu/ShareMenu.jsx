@@ -5,7 +5,9 @@ import Image from 'next/image';
 import LinkIcon from '../icons/LinkIcon';
 import CameraIcon from '../icons/CameraIcon';
 
-export default function ShareMenu({ title, url, slug }) {
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+export default function ShareMenu({ title, url, slug, blogId }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showCopied, setShowCopied] = useState(false);
   const menuRef = useRef(null);
@@ -29,9 +31,26 @@ export default function ShareMenu({ title, url, slug }) {
 
   const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/blog/${slug}` : '');
 
+  // Track share action
+  const trackShare = async (platform) => {
+    if (!blogId) return;
+    
+    try {
+      await fetch(`${API_URL}/api/views/share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blogId, platform }),
+      });
+      console.log(`[ShareMenu] Tracked ${platform} share for blog ${blogId}`);
+    } catch (error) {
+      console.error(`[ShareMenu] Failed to track ${platform} share:`, error);
+    }
+  };
+
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(blogUrl);
+      trackShare('copy');
       setShowCopied(true);
       setTimeout(() => {
         setShowCopied(false);
@@ -45,24 +64,28 @@ export default function ShareMenu({ title, url, slug }) {
   const shareOnWhatsApp = () => {
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(title + ' ' + blogUrl)}`;
     window.open(whatsappUrl, '_blank');
+    trackShare('whatsapp');
     setIsOpen(false);
   };
 
   const shareOnLinkedIn = () => {
     const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(blogUrl)}`;
     window.open(linkedinUrl, '_blank');
+    trackShare('linkedin');
     setIsOpen(false);
   };
 
   const shareOnFacebook = () => {
     const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(blogUrl)}`;
     window.open(facebookUrl, '_blank');
+    trackShare('facebook');
     setIsOpen(false);
   };
 
   const shareOnTwitter = () => {
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(blogUrl)}`;
     window.open(twitterUrl, '_blank');
+    trackShare('twitter');
     setIsOpen(false);
   };
 

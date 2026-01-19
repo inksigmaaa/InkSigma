@@ -128,6 +128,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
           <ShareMenu
             title={latestBlog.title}
             slug={latestBlog.slug}
+            blogId={latestBlog.id}
           />
         </div>
 
