@@ -91,7 +91,6 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
               <h1 className="text-[11px] font-semibold text-gray-400 tracking-[0.5px] uppercase mb-[3px]">
                 PUBLICATION
               </h1>
-              
             </div>
 
             {/* Home */}

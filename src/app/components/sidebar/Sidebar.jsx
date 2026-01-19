@@ -49,7 +49,9 @@ export default function Sidebar() {
   // Check if the current route is active
   const isActive = (label) => {
     const route = getRoute(label);
-    return pathname === route;
+    // Extract the base path without query parameters for comparison
+    const basePath = route.split('?')[0];
+    return pathname === basePath;
   };
 
   return (

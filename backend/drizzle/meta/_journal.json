@@ -43,6 +43,13 @@
       "when": 1768803205722,
       "tag": "0005_blue_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1768805221409,
+      "tag": "0006_peaceful_loki",
+      "breakpoints": true
     }
   ]
 }

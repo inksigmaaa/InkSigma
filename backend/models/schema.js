@@ -17,6 +17,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
     "blog_accepted",
     "blog_rejected",
     "blog_review",
+    "blog_submitted_review",
     "blog_published",
     "member_joined",
     "member_removed"

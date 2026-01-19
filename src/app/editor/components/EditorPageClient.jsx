@@ -298,8 +298,8 @@ export default function EditorPageClient() {
   const handleSave = async () => {
     const result = await saveBlog(existingBlogStatus || 'draft', null, true)
     if (result && existingBlogStatus === 'published') {
-      // For published articles, just reload to show updated content
-      window.location.reload()
+      // For published articles, redirect to published page
+      window.location.href = '/published?refresh=true'
     }
   }
 
