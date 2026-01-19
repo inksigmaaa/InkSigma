@@ -8,6 +8,7 @@ import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
 import EditorSidebar from "../components/sidebar/EditorSidebar"
 import Verify from "../components/verify/Verify"
+import { ConfirmationModal } from "@/components/ui/confirmation-modal"
 import PublishOptionsModal from "../components/review/PublishOptionsModal"
 import { useArticles } from "@/contexts/ArticlesContext"
 import { usePublication } from "@/contexts/PublicationContext"
@@ -35,6 +36,12 @@ export default function ReviewPage() {
   const [selectedCategories, setSelectedCategories] = useState([])
   const [showPublishModal, setShowPublishModal] = useState(false)
   const [selectedArticleForPublish, setSelectedArticleForPublish] = useState(null)
+  
+  // Confirmation Modal State
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [selectedArticleForAction, setSelectedArticleForAction] = useState(null)
+  const [actionType, setActionType] = useState(null) // 'reject' or 'revert'
+  
   const dropdownRef = useRef(null)
 
   const { 
@@ -96,21 +103,9 @@ export default function ReviewPage() {
       )
     : reviewArticles
 
-  const handleSelectAll = (checked) => {
-    if (checked) {
-      setSelectedPosts(filteredArticles.map(a => a.id))
-    } else {
-      setSelectedPosts([])
-    }
-  }
+  
 
-  const handleSelectPost = (postId, checked) => {
-    if (checked) {
-      setSelectedPosts([...selectedPosts, postId])
-    } else {
-      setSelectedPosts(selectedPosts.filter(id => id !== postId))
-    }
-  }
+  
 
   const handleCategoryToggle = (category) => {
     setSelectedCategories(prev =>
@@ -166,33 +161,40 @@ export default function ReviewPage() {
     }
   }
 
-  const handleReject = async (articleId) => {
-    if (confirm('Are you sure you want to reject this article? It will be returned to the author\'s drafts.')) {
-      try {
-        await rejectReviewArticle(articleId)
-        console.log('Article rejected and returned to draft.')
-        // Refresh the review articles list
-        if (currentPublication?.id) {
-          loadReviewArticles(currentPublication.id)
-        }
-      } catch (error) {
-        console.error('Error rejecting article:', error)
-      }
-    }
+  const handleReject = (articleId) => {
+    setSelectedArticleForAction(articleId)
+    setActionType('reject')
+    setShowConfirmModal(true)
   }
 
-  const handleRevertToDraft = async (articleId) => {
-    if (confirm('Are you sure you want to revert this article to draft?')) {
-      try {
-        await revertReviewToDraft(articleId)
+  const handleRevertToDraft = (articleId) => {
+    setSelectedArticleForAction(articleId)
+    setActionType('revert')
+    setShowConfirmModal(true)
+  }
+
+  const handleConfirmAction = async () => {
+    if (!selectedArticleForAction) return
+
+    try {
+      if (actionType === 'reject') {
+        await rejectReviewArticle(selectedArticleForAction)
+        console.log('Article rejected and returned to draft.')
+      } else if (actionType === 'revert') {
+        await revertReviewToDraft(selectedArticleForAction)
         console.log('Article reverted to draft successfully!')
-        // Refresh the review articles list
-        if (currentPublication?.id) {
-          loadReviewArticles(currentPublication.id)
-        }
-      } catch (error) {
-        console.error('Error reverting article to draft:', error)
       }
+      
+      // Refresh the review articles list
+      if (currentPublication?.id) {
+        loadReviewArticles(currentPublication.id)
+      }
+    } catch (error) {
+      console.error('Error performing action:', error)
+    } finally {
+      setShowConfirmModal(false)
+      setSelectedArticleForAction(null)
+      setActionType(null)
     }
   }
 
@@ -311,13 +313,7 @@ export default function ReviewPage() {
                           key={category}
                           className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50"
                         >
-                          <input
-                            type="checkbox"
-                            checked={selectedCategories.includes(category)}
-                            onChange={() => handleCategoryToggle(category)}
-                            className="cursor-pointer accent-violet-500 shrink-0"
-                            style={{ width: '16px', height: '16px' }}
-                          />
+                         
                           <span className="text-sm text-gray-600">{category}</span>
                         </label>
                       ))}
@@ -327,21 +323,7 @@ export default function ReviewPage() {
               </div>
             </div>
 
-            {/* Select All */}
-            {filteredArticles.length > 0 && (
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedPosts.length === filteredArticles.length && filteredArticles.length > 0}
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                    className="cursor-pointer accent-violet-500"
-                    style={{ width: '16px', height: '16px', borderRadius: '4px' }}
-                  />
-                  <span className="font-bold text-base leading-6 text-gray-500">Select all</span>
-                </label>
-              </div>
-            )}
+            
 
             {/* Posts List */}
             <div className="space-y-4 mt-6">
@@ -358,10 +340,7 @@ export default function ReviewPage() {
                   >
                     {/* Desktop Layout */}
                     <div className="hidden md:flex items-start gap-4">
-                      <Checkbox 
-                        checked={selectedPosts.includes(article.id)}
-                        onCheckedChange={(checked) => handleSelectPost(article.id, checked)}
-                      />
+                      
                       
                       <div className="flex-1 mt-[-5px]">
                         <div className="flex items-start justify-between mb-4">
@@ -527,6 +506,25 @@ export default function ReviewPage() {
         onUnpublish={handleUnpublish}
         articleTitle={selectedArticleForPublish?.title}
         userRole={currentPublication?.role}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false)
+          setSelectedArticleForAction(null)
+          setActionType(null)
+        }}
+        onConfirm={handleConfirmAction}
+        title={actionType === 'reject' ? 'Reject Article?' : 'Revert to Draft?'}
+        description={
+          actionType === 'reject' 
+            ? "This article will be returned to the author's drafts. They can edit and resubmit it."
+            : "This action will move the article back to your drafts. You can edit and resubmit it later."
+        }
+        confirmText="Confirm"
+        cancelText="Cancel"
       />
     </>
   )
