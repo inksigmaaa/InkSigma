@@ -7,6 +7,7 @@ import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { usePublication } from "@/contexts/PublicationContext"
 import { useArticles } from "@/contexts/ArticlesContext"
+import { getImageUrl } from "@/utils/imageUrl"
 
 export default function PostsHomePage() {
   const router = useRouter()
@@ -30,9 +31,9 @@ export default function PostsHomePage() {
         setStats(statsData)
       }
 
-      // Fetch recent published articles for this publication
+      // Fetch recent published articles for this publication using the publication-specific endpoint
       const articlesRes = await fetch(
-        `http://localhost:5000/api/blogs?publicationId=${pubId}&status=published&limit=4`,
+        `http://localhost:5000/api/blogs/publication/${pubId}?status=published&limit=4`,
         { credentials: "include" }
       )
 
@@ -215,7 +216,7 @@ export default function PostsHomePage() {
                     >
                       <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative">
                         <img
-                          src={article.image || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"}
+                          src={getImageUrl(article.image) || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"}
                           alt={article.title}
                           className="w-full h-full object-cover"
                           onError={(e) => {

@@ -1,8 +1,8 @@
 // routes/publicationStatsRoutes.js
 import express from "express";
 import { db } from "../config/database.js";
-import { blog, blogView, blogShare } from "../models/schema.js";
-import { eq, and, count, countDistinct } from "drizzle-orm";
+import { blog, blogView, blogShare, comment } from "../models/schema.js";
+import { eq, and, count } from "drizzle-orm";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 
@@ -32,7 +32,7 @@ router.get("/:publicationId", getCurrentUser, async (req, res) => {
     try {
         const { publicationId } = req.params;
 
-        // Get total articles count
+        // Get total articles count (all statuses)
         const [totalResult] = await db
             .select({ count: count() })
             .from(blog)
@@ -49,23 +49,25 @@ router.get("/:publicationId", getCurrentUser, async (req, res) => {
                 )
             );
 
-        // Get total views from blog_view table
-        // First get all blog IDs for this publication
+        // Get only PUBLISHED blog IDs for this publication (for stats calculation)
         const publicationBlogs = await db
             .select({ id: blog.id })
             .from(blog)
-            .where(eq(blog.publicationId, parseInt(publicationId)));
+            .where(
+                and(
+                    eq(blog.publicationId, parseInt(publicationId)),
+                    eq(blog.status, 'published')
+                )
+            );
         
         const blogIds = publicationBlogs.map(b => b.id);
         
         let totalViews = 0;
+        let totalComments = 0;
+        let totalShares = 0;
+        
         if (blogIds.length > 0) {
-            const [viewsResult] = await db
-                .select({ count: count() })
-                .from(blogView)
-                .where(eq(blogView.blogId, blogIds[0])); // This needs to be improved for multiple blogs
-            
-            // Better approach: count all views for all blogs in this publication
+            // Get total views from blog_view table for published blogs only
             const viewCounts = await Promise.all(
                 blogIds.map(async (blogId) => {
                     const [result] = await db
@@ -76,11 +78,20 @@ router.get("/:publicationId", getCurrentUser, async (req, res) => {
                 })
             );
             totalViews = viewCounts.reduce((sum, count) => sum + count, 0);
-        }
 
-        // Get total shares from blog_share table
-        let totalShares = 0;
-        if (blogIds.length > 0) {
+            // Get total comments from comment table for published blogs only
+            const commentCounts = await Promise.all(
+                blogIds.map(async (blogId) => {
+                    const [result] = await db
+                        .select({ count: count() })
+                        .from(comment)
+                        .where(eq(comment.blogId, blogId));
+                    return result.count || 0;
+                })
+            );
+            totalComments = commentCounts.reduce((sum, count) => sum + count, 0);
+
+            // Get total shares from blog_share table for published blogs only
             const shareCounts = await Promise.all(
                 blogIds.map(async (blogId) => {
                     const [result] = await db
@@ -97,6 +108,7 @@ router.get("/:publicationId", getCurrentUser, async (req, res) => {
             totalArticles: totalResult.count || 0,
             publishedArticles: publishedResult.count || 0,
             totalViews: totalViews,
+            totalLikes: totalComments,
             totalShares: totalShares
         });
     } catch (error) {
