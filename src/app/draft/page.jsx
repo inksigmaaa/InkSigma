@@ -15,6 +15,7 @@ import AuthGuard from "@/components/auth/AuthGuard"
 
 export default function DraftPage() {
   const { articles, loading, moveToTrashStatus, bulkMoveToTrashStatus, bulkPublish, publishArticle, loadUserArticles } = useArticles()
+  const { currentPublication } = usePublication()
   const searchParams = useSearchParams()
   const router = useRouter()
   const hasLoadedRef = useRef(false)
@@ -44,7 +45,17 @@ export default function DraftPage() {
 
   const draftArticles = useMemo(() => {
     return articles
-      .filter(article => article.status === 'draft')
+      .filter(article => {
+        const isDraft = article.status === 'draft'
+        
+        // If we are in a publication context, only show articles for that publication
+        if (currentPublication?.id) {
+          return isDraft && article.publicationId === currentPublication.id
+        }
+        
+        // If not in a publication context (e.g. dashboard), show all drafts
+        return isDraft
+      })
       .map(article => ({
         ...article,
         onDelete: () => {
@@ -58,7 +69,7 @@ export default function DraftPage() {
           setShowPublishModal(true)
         }
       }))
-  }, [articles])
+  }, [articles, currentPublication])
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -134,7 +145,7 @@ export default function DraftPage() {
     }
   }
 
-  const { currentPublication } = usePublication()
+
   const canPublish = currentPublication?.isOwner || currentPublication?.role === 'admin'
 
   const actionButtons = [
