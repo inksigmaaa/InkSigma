@@ -19,8 +19,6 @@ export default function Sidebar() {
       if (!isReviewer) {
         reviewRoute = "/author-review";
       }
-      // Ensure we preserve the publication context
-      reviewRoute = `${reviewRoute}?pub=${currentPublication.id}`;
     }
 
     const routes = {
@@ -37,7 +35,15 @@ export default function Sidebar() {
       "Draft": "/draft",
       "Trash": "/trash",
     };
-    return routes[label] || "/dashboard";
+    
+    let route = routes[label] || "/dashboard";
+    
+    // Append publication ID to all publication-specific routes to preserve context
+    if (currentPublication?.id && route !== "/dashboard" && route !== "/dashboard/settings") {
+      route = `${route}?pub=${currentPublication.id}`;
+    }
+    
+    return route;
   };
 
   // Check if the current route is active

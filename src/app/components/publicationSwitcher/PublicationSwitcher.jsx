@@ -34,8 +34,11 @@ export default function PublicationSwitcher() {
   const handlePublicationSwitch = (publication) => {
     switchPublication(publication);
     setIsOpen(false);
-    // Optionally refresh the current page to load new publication data
-    window.location.reload();
+    
+    // Navigate to the current page with the new publication ID
+    const currentPath = window.location.pathname;
+    const newUrl = `${currentPath}?pub=${publication.id}`;
+    router.push(newUrl);
   };
 
   const handleViewMySpace = () => {

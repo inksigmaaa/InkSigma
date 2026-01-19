@@ -362,8 +362,9 @@ function PublicationProviderInner({ children }) {
       }
     }
     
-    // On member dashboard routes, ensure we have a joined publication if available
-    else if (isMemberDashboard() && currentPublication?.isOwner && !urlPubId) {
+    // Only auto-switch publications if no URL parameter is present AND no current publication is set
+    // This prevents unwanted switching when user explicitly navigates with their current publication
+    else if (!urlPubId && !currentPublication && isMemberDashboard()) {
       const joinedPub = userPublications.find(pub => !pub.isOwner);
       if (joinedPub) {
         setCurrentPublication(joinedPub);
