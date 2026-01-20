@@ -8,7 +8,7 @@ export default function FeaturesSection() {
   return (
     <section id="features" className="py-16 px-3 bg-white">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-5xl font-bold text-center text-gray-900 mb-16">
+        <h2 className="w-[207px] h-12 mx-auto mb-16 flex items-center justify-center text-center text-[48px] font-[800] leading-[100%] tracking-[0%] text-[#2E2E2E]" style={{ fontFamily: 'Public Sans, sans-serif' }}>
           Features
         </h2>
         
