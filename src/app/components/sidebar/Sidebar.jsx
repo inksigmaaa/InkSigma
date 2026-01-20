@@ -100,11 +100,7 @@ export default function Sidebar() {
                 rel="noopener noreferrer"
               >
                 <button
-                  style={{
-                    background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
-                    boxShadow: '0px 4px 8px 0px #EADBF9'
-                  }}
-                  className="w-[94px] h-[32px] text-white px-[16px] py-[8px] rounded-[4px] text-[14px] font-semibold leading-[100%] whitespace-nowrap hover:opacity-90 transition-opacity flex items-center justify-center"
+                  className="w-[94px] h-[32px] text-white px-[16px] py-[8px] rounded-[4px] text-[14px] font-semibold leading-[100%] whitespace-nowrap hover:opacity-90 transition-opacity flex items-center justify-center bg-gradient-to-br from-[#A941FB] to-[#7864F0] shadow-[0px_4px_8px_0px_#EADBF9]"
                 >
                   View Site
                 </button>
@@ -119,14 +115,7 @@ export default function Sidebar() {
             >
               <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 ${pathname === '/dashboard' ? 'brightness-0' : ''}`} />
               <Link href="/dashboard">
-                <p style={{
-                  fontFamily: 'Public Sans',
-                  fontWeight: 400,
-                  fontSize: '14px',
-                  lineHeight: '150%',
-                  letterSpacing: '0%',
-                  color: '#B0B0B0'
-                }} className={`max-md:text-[11px] max-md:text-center ${pathname === '/dashboard' ? 'font-bold text-black' : ''}`}>
+                <p className={`font-sans font-normal text-[14px] leading-[150%] text-[#B0B0B0] max-md:text-[11px] max-md:text-center ${pathname === '/dashboard' ? 'font-bold text-black' : ''}`}>
                   My Space
                 </p>
               </Link>
@@ -169,10 +158,7 @@ export default function Sidebar() {
             >
               {/* SECTION HEADING */}
               <h1
-                style={{
-                  color: '#A4A4A4'
-                }}
-                className="text-[11px] font-semibold tracking-[0.5px] uppercase mb-[3px] max-md:hidden"
+                className="text-[11px] font-semibold text-[#A4A4A4] tracking-[0.5px] uppercase mb-[3px] max-md:hidden"
               >
                 {section.title}
               </h1>
@@ -193,15 +179,7 @@ export default function Sidebar() {
                         className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${isActive(label) || isHovered ? 'opacity-100 brightness-0' : 'opacity-60'}`}
                       />
                       <p
-                        style={{
-                          fontFamily: 'Public Sans',
-                          fontWeight: isActive(label) ? 600 : 400,
-                          fontSize: '14px',
-                          lineHeight: isActive(label) ? '100%' : '150%',
-                          letterSpacing: '0%',
-                          color: isActive(label) || isHovered ? '#2E2E2E' : '#B0B0B0'
-                        }}
-                        className="m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors"
+                        className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors ${isActive(label) ? 'font-semibold leading-[100%] text-[#2E2E2E]' : 'font-normal leading-[150%] text-[#B0B0B0]'} ${isHovered && !isActive(label) ? 'text-[#2E2E2E]' : ''}`}
                       >
                         {label}
                       </p>
