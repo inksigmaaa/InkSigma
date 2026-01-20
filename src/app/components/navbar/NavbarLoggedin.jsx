@@ -262,8 +262,8 @@ export default function NavbarLoggedin() {
                                                             </div>
                                                         </div>
 
-                                                        {/* 448px and above (Tab and Desktop) - time on right with message */}
-                                                        <div className="hidden sm-448:block">
+                                                        {/* 448px to 768px (Tablet) - time on right with message */}
+                                                        <div className="hidden sm-448:block md-768:hidden">
                                                             <h4 
                                                                 className="font-sans font-semibold text-sm leading-none text-black mb-1"
                                                             >
@@ -277,6 +277,30 @@ export default function NavbarLoggedin() {
                                                                 </p>
                                                                 <span 
                                                                     className="font-sans font-normal text-xs leading-[150%] text-[#808080] flex-shrink-0 whitespace-nowrap"
+                                                                >
+                                                                    {formatTimeAgo(notification.createdAt)}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 768px and above (Desktop) - time below with dot separator */}
+                                                        <div className="hidden md-768:block">
+                                                            <h4 
+                                                                className="font-sans font-semibold text-sm leading-none text-black mb-1"
+                                                            >
+                                                                {notification.title}
+                                                            </h4>
+                                                            <p 
+                                                                className="font-sans font-normal text-sm leading-[150%] text-[#808080] mb-1"
+                                                            >
+                                                                {notification.message}
+                                                            </p>
+                                                            <div className="flex items-center gap-1 h-[18px]">
+                                                                <span 
+                                                                    className="w-1 h-1 rounded-full bg-[#A4A4A4] flex-shrink-0"
+                                                                ></span>
+                                                                <span 
+                                                                    className="font-sans font-normal text-xs leading-[150%] text-[#808080]"
                                                                 >
                                                                     {formatTimeAgo(notification.createdAt)}
                                                                 </span>
