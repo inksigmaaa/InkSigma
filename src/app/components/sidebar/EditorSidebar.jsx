@@ -94,16 +94,23 @@ export default function Sidebar() {
 
           {/* MY SPACE */}
           <div className="pb-2 max-md:pb-0 max-md:border-none max-md:flex-shrink-0">
+            {(() => {
+              const [isHovered, setIsHovered] = useState(false);
+              return (
             <div
-              className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${pathname === '/dashboard' ? '' : 'hover:bg-gray-100'}`}
+              className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${isHovered ? 'bg-[#F6F6F6]' : ''}`}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
             >
-              <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 ${pathname === '/dashboard' ? 'brightness-0' : ''}`} />
+              <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${pathname === '/dashboard' ? 'brightness-0' : isHovered ? 'brightness-50' : ''}`} />
               <Link href="/dashboard">
-                <p className={`font-sans font-normal text-[14px] leading-[150%] text-[#B0B0B0] max-md:text-[11px] max-md:text-center ${pathname === '/dashboard' ? 'font-bold text-black' : ''}`}>
+                <p className={`font-sans text-[14px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center font-[\'Public Sans\'] tracking-[0%] font-normal ${pathname === '/dashboard' ? 'font-bold text-black' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
                   My Space
                 </p>
               </Link>
             </div>
+              );
+            })()}
           </div>
 
           {/* SECTION BLOCK COMPONENT */}
