@@ -233,7 +233,26 @@ export default function BlogDetailPage({ params }) {
           {/* Blog Content */}
           <article
             className="prose prose-sm md:prose-lg max-w-none prose-headings:font-bold prose-headings:text-black prose-p:text-gray-700 prose-p:leading-relaxed break-words"
-            dangerouslySetInnerHTML={{ __html: blog.content }}
+            dangerouslySetInnerHTML={{ __html: (() => {
+              // Convert relative image URLs to full URLs for display
+              const apiUrl = 'http://localhost:5000';
+              return blog.content.replace(/src="([^"]*)"/g, (match, src) => {
+                if (!src) return match;
+                
+                // If it's already a full URL, return as is
+                if (src.startsWith('http://') || src.startsWith('https://')) {
+                  return match;
+                }
+                
+                // If it's a relative path starting with /, prepend the API URL
+                if (src.startsWith('/')) {
+                  return `src="${apiUrl}${src}"`;
+                }
+                
+                // Otherwise, assume it's a relative path and prepend API URL with /
+                return `src="${apiUrl}/${src}"`;
+              });
+            })() }}
           />
 
           {/* Comment Section */}

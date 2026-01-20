@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import AuthGuard from "@/components/auth/AuthGuard"
 import { useArticles } from "@/contexts/ArticlesContext"
 import { usePublication } from "@/contexts/PublicationContext"
+import { getImageUrl } from "@/utils/imageUrl"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -33,8 +34,8 @@ export default function HomePage() {
     .slice(0, 4)
     .map(article => {
       // Check if article has an image - use fallback if not
-      const thumbnailUrl = (article.image && article.image.trim() !== '') 
-        ? article.image 
+      const thumbnailUrl = article.image 
+        ? getImageUrl(article.image)
         : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
       
       return {

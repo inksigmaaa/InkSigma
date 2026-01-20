@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation"
 import AuthGuard from "@/components/auth/AuthGuard"
 import { useArticles } from "@/contexts/ArticlesContext"
 import { usePublication } from "@/contexts/PublicationContext"
+import { getImageUrl } from "@/utils/imageUrl"
 
 
 export default function EditorPage() {
@@ -28,8 +29,8 @@ export default function EditorPage() {
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 4)
     .map(article => {
-      const thumbnailUrl = (article.image && article.image.trim() !== '') 
-        ? article.image 
+      const thumbnailUrl = article.image 
+        ? getImageUrl(article.image)
         : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
       
       return {
