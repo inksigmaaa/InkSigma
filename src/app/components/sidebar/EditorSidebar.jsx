@@ -51,7 +51,7 @@ export default function Sidebar() {
 
           {/* PROFILE */}
           <div
-            className="flex items-center gap-2 pb-[10px] border-b border-gray-200 max-md:hidden"
+            className="flex items-center gap-2 pb-[10px] max-md:hidden"
           >
             <div className="w-[34px] h-[34px] rounded-full overflow-hidden border-2 border-violet-500 flex-shrink-0 bg-gray-100 flex items-center justify-center">
               {loading ? (
@@ -94,7 +94,7 @@ export default function Sidebar() {
           </div>
 
           {/* MY SPACE */}
-          <div className="pb-2 border-b border-gray-200 max-md:pb-0 max-md:border-none max-md:flex-shrink-0">
+          <div className="pb-2 max-md:pb-0 max-md:border-none max-md:flex-shrink-0">
             <div
               className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${pathname === '/dashboard' ? '' : 'hover:bg-gray-100'}`}
             >
