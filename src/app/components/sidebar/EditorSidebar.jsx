@@ -35,7 +35,8 @@ export default function Sidebar() {
   // Check if the current route is active
   const isActive = (label) => {
     const route = getRoute(label);
-    return pathname === route;
+    const basePath = route.split('?')[0];
+    return pathname === basePath;
   };
 
   return (
@@ -155,10 +156,10 @@ export default function Sidebar() {
                     <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
                       <img
                         src={label === "Settings" ? `/icons/${icon}` : `/images/icons/${icon}`}
-                        className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${isActive(label) || isHovered ? 'opacity-100 brightness-0' : 'opacity-60'}`}
+                        className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive(label) ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`}
                       />
                       <p
-                        className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors ${isActive(label) ? 'font-semibold leading-[100%] text-[#2E2E2E]' : 'font-normal leading-[150%] text-[#B0B0B0]'} ${isHovered && !isActive(label) ? 'text-[#2E2E2E]' : ''}`}
+                        className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive(label) ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}
                       >
                         {label}
                       </p>
