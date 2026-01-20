@@ -17,12 +17,14 @@
     "bcrypt": "^5.1.1",
     "better-auth": "^1.4.9",
     "cors": "^2.8.5",
+    "disposable-email-domains": "^1.0.62",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.44.2",
     "express": "^4.21.2",
     "multer": "^2.0.2",
     "nodemailer": "^6.9.16",
-    "pg": "^8.13.1"
+    "pg": "^8.13.1",
+    "validator": "^13.15.26"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
