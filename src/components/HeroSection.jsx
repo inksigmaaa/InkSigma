@@ -5,22 +5,24 @@ import { ArrowRight } from "lucide-react"
 export default function HeroSection() {
   return (
     <section 
-      className="relative flex items-center justify-center bg-no-repeat bg-cover"
+      className="relative flex items-center justify-center bg-no-repeat bg-cover pt-20"
       style={{
         backgroundImage: 'url(/images/background/bg.svg)',
         height: '600px',
         backgroundPosition: 'right'
       }}
     >
-      <div className="relative z-10 text-center px-3 max-w-4xl mx-auto">
+      <div className="w-[642px] h-[169px] absolute top-[331px] left-[639px] gap-4 opacity-100 text-center">
         <h1 className="mb-6">
           <span className="font-[family-name:var(--font-allison)] text-[96px] font-normal text-black">{HERO_CONFIG.title.italic}</span>
-          <span className="text-[48px] font-extrabold leading-[68px]" style={{ color: '#2E2E2E', wordSpacing: '12px' }}>{HERO_CONFIG.title.bold}</span>
+          <span className="text-[48px] font-extrabold leading-[68px] text-text-primary" style={{ wordSpacing: '12px' }}>
+            {HERO_CONFIG.title.bold}
+          </span>
         </h1>
         
-        <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          {HERO_CONFIG.subtitle}
-        </p>
+        <div className="w-[531px] h-[57px] text-text-primary font-light text-base leading-none tracking-normal text-center flex items-center justify-center mb-8 mx-auto">
+          Welcome to the home of writers - pen down your innermost musings, ideas, stories, and inspire others to grow through words that connect. Write daily, inspire & be heard
+        </div>
         
         <Button 
           size="lg"

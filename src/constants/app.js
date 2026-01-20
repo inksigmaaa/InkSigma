@@ -7,7 +7,7 @@ export const APP_CONFIG = {
 }
 
 export const LOGOS = {
-  main: '/images/logo/Logo.svg',
+  main: '/icons/inksigma-logo-new.svg',
   auth: '/images/logo/logo-2.svg'
 }
 
