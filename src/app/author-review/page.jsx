@@ -323,13 +323,7 @@ export default function AuthorReviewPage() {
                         key={category}
                         className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50"
                       >
-                        <input
-                          type="checkbox"
-                          checked={selectedCategories.includes(category)}
-                          onChange={() => handleCategoryToggle(category)}
-                          className="cursor-pointer accent-violet-500 shrink-0"
-                          style={{ width: '16px', height: '16px' }}
-                        />
+                        
                         <span className="text-sm text-gray-600">{category}</span>
                       </label>
                     ))}
@@ -360,11 +354,7 @@ export default function AuthorReviewPage() {
                 {/* Desktop Layout */}
                 <div className="hidden md:flex items-start justify-between gap-6">
                   {/* Left side - Article info */}
-                  <div className="flex items-start gap-4 flex-1">
-                    <Checkbox 
-                      checked={selectedArticles[article.id] || false}
-                      onCheckedChange={(checked) => handleSelectionChange(article.id, checked)}
-                    />
+                  <div className="flex items-start gap-4 flex-1">                 
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">
                         {article.title}
