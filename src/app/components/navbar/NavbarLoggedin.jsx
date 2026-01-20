@@ -177,7 +177,7 @@ export default function NavbarLoggedin() {
                         {notificationOpen && (
                             <div
                                 onClick={(e) => e.stopPropagation()}
-                                className="absolute top-[35px] right-0 w-[392px] h-[511px] bg-white overflow-hidden z-[99999] rounded-[10px] border border-[#e5e5e5] shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex flex-col max-md:fixed max-md:top-[80px] max-md:left-4 max-md:right-4 max-md:w-auto max-md:shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
+                                className="absolute top-[35px] right-0 w-[392px] max-h-[511px] bg-white overflow-hidden z-[99999] rounded-[10px] border border-[#e5e5e5] shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex flex-col max-md:fixed max-md:top-[80px] max-md:left-4 max-md:right-4 max-md:w-auto max-md:shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
                             >
                                 {/* Header */}
                                 <div 
@@ -229,7 +229,7 @@ export default function NavbarLoggedin() {
                                             return (
                                                 <div 
                                                     key={notification.id} 
-                                                    className={`flex items-start gap-3 p-4 hover:bg-[#F8F9FA] border-b border-[#F0F0F0] last:border-b-0 cursor-pointer max-md:p-3 max-md:gap-2.5 ${!notification.isRead ? 'bg-blue-50' : ''}`}
+                                                    className={`flex items-start gap-3 p-4 hover:bg-[#F8F9FA] border-b border-[#F0F0F0] last:border-b-0 cursor-pointer max-sm-448:p-3 max-sm-448:gap-2.5 ${!notification.isRead ? 'bg-blue-50' : ''}`}
                                                     onClick={() => handleNotificationClick(notification)}
                                                 >
                                                     <UserAvatar 
@@ -238,25 +238,73 @@ export default function NavbarLoggedin() {
                                                         className="flex-shrink-0"
                                                     />
                                                     <div className="flex-1 min-w-0">
-                                                        <h4 
-                                                            className="font-sans font-semibold text-sm leading-none text-black mb-1"
-                                                        >
-                                                            {notification.title}
-                                                        </h4>
-                                                        <p 
-                                                            className="font-sans font-normal text-sm leading-[150%] text-[#808080] mb-1"
-                                                        >
-                                                            {notification.message}
-                                                        </p>
-                                                        <div className="flex items-center gap-1 h-[18px]">
-                                                            <span 
-                                                                className="w-1 h-1 rounded-full bg-[#A4A4A4] flex-shrink-0"
-                                                            ></span>
-                                                            <span 
-                                                                className="font-sans font-normal text-xs leading-[150%] text-[#808080]"
+                                                        {/* Below 448px - time below with dot separator */}
+                                                        <div className="sm-448:hidden">
+                                                            <h4 
+                                                                className="font-sans font-semibold text-sm leading-none text-black mb-1"
                                                             >
-                                                                {formatTimeAgo(notification.createdAt)}
-                                                            </span>
+                                                                {notification.title}
+                                                            </h4>
+                                                            <p 
+                                                                className="font-sans font-normal text-sm leading-[150%] text-[#808080] mb-1"
+                                                            >
+                                                                {notification.message}
+                                                            </p>
+                                                            <div className="flex items-center gap-1 h-[18px]">
+                                                                <span 
+                                                                    className="w-1 h-1 rounded-full bg-[#A4A4A4] flex-shrink-0"
+                                                                ></span>
+                                                                <span 
+                                                                    className="font-sans font-normal text-xs leading-[150%] text-[#808080]"
+                                                                >
+                                                                    {formatTimeAgo(notification.createdAt)}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 448px to 768px (Tablet) - time on right with message */}
+                                                        <div className="hidden sm-448:block md-768:hidden">
+                                                            <h4 
+                                                                className="font-sans font-semibold text-sm leading-none text-black mb-1"
+                                                            >
+                                                                {notification.title}
+                                                            </h4>
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <p 
+                                                                    className="font-sans font-normal text-sm leading-[150%] text-[#808080]"
+                                                                >
+                                                                    {notification.message}
+                                                                </p>
+                                                                <span 
+                                                                    className="font-sans font-normal text-xs leading-[150%] text-[#808080] flex-shrink-0 whitespace-nowrap"
+                                                                >
+                                                                    {formatTimeAgo(notification.createdAt)}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 768px and above (Desktop) - time below with dot separator */}
+                                                        <div className="hidden md-768:block">
+                                                            <h4 
+                                                                className="font-sans font-semibold text-sm leading-none text-black mb-1"
+                                                            >
+                                                                {notification.title}
+                                                            </h4>
+                                                            <p 
+                                                                className="font-sans font-normal text-sm leading-[150%] text-[#808080] mb-1"
+                                                            >
+                                                                {notification.message}
+                                                            </p>
+                                                            <div className="flex items-center gap-1 h-[18px]">
+                                                                <span 
+                                                                    className="w-1 h-1 rounded-full bg-[#A4A4A4] flex-shrink-0"
+                                                                ></span>
+                                                                <span 
+                                                                    className="font-sans font-normal text-xs leading-[150%] text-[#808080]"
+                                                                >
+                                                                    {formatTimeAgo(notification.createdAt)}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
