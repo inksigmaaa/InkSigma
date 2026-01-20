@@ -27,6 +27,28 @@ import {
   AlignJustify 
 } from "lucide-react"
 import { ImageModal } from './ImageModal'
+import { getImageUrl } from '@/utils/imageUrl'
+
+// Helper function to convert full URLs back to relative paths for storage
+const stripImageUrls = (html) => {
+  if (!html) return html
+  
+  const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+  
+  // Match img tags with src attributes
+  return html.replace(/src="([^"]*)"/g, (match, src) => {
+    if (!src) return match
+    
+    // If it's a full URL pointing to our API, convert to relative path
+    if (src.startsWith(apiUrl)) {
+      const relativePath = src.substring(apiUrl.length)
+      return `src="${relativePath}"`
+    }
+    
+    // Otherwise return as is
+    return match
+  })
+}
 
 export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle }) {
   const [showHeadingMenu, setShowHeadingMenu] = useState(false)
@@ -108,8 +130,10 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     onUpdate: ({ editor }) => {
       const html = editor.getHTML()
       const text = editor.getText()
+      // Strip full URLs back to relative paths before saving
+      const strippedHtml = stripImageUrls(html)
       onUpdate?.({
-        html,
+        html: strippedHtml,
         text,
         charCount: text.length,
         wordCount: text.trim() ? text.trim().split(/\s+/).length : 0
@@ -125,8 +149,29 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
   // Update editor content when initialContent changes (must be after useEditor)
   useEffect(() => {
-    if (editor && initialContent && editor.getHTML() !== initialContent) {
-      editor.commands.setContent(initialContent)
+    if (editor && initialContent) {
+      // Convert relative image URLs to full URLs for display in editor
+      const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+      const processedContent = initialContent.replace(/src="([^"]*)"/g, (match, src) => {
+        if (!src) return match
+        
+        // If it's already a full URL, return as is
+        if (src.startsWith('http://') || src.startsWith('https://')) {
+          return match
+        }
+        
+        // If it's a relative path starting with /, prepend the API URL
+        if (src.startsWith('/')) {
+          return `src="${apiUrl}${src}"`
+        }
+        
+        // Otherwise, assume it's a relative path and prepend API URL with /
+        return `src="${apiUrl}/${src}"`
+      })
+      
+      if (editor.getHTML() !== processedContent) {
+        editor.commands.setContent(processedContent)
+      }
     }
   }, [editor, initialContent])
 
@@ -173,8 +218,21 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
   const handleImageAdd = (imageData) => {
     if (editor && imageData.src) {
+      // Convert relative path to full URL for display in editor
+      const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+      let fullImageUrl = imageData.src
+      
+      // If it's a relative path, convert to full URL
+      if (!fullImageUrl.startsWith('http://') && !fullImageUrl.startsWith('https://')) {
+        if (fullImageUrl.startsWith('/')) {
+          fullImageUrl = `${apiUrl}${fullImageUrl}`
+        } else {
+          fullImageUrl = `${apiUrl}/${fullImageUrl}`
+        }
+      }
+      
       const attributes = {
-        src: imageData.src,
+        src: fullImageUrl,
         alt: imageData.alt || '',
       }
       

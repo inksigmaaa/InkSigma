@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import { usePublication } from '@/contexts/PublicationContext';
 
 export default function Sidebar() {
@@ -34,7 +35,8 @@ export default function Sidebar() {
   // Check if the current route is active
   const isActive = (label) => {
     const route = getRoute(label);
-    return pathname === route;
+    const basePath = route.split('?')[0];
+    return pathname === basePath;
   };
 
   return (
@@ -51,7 +53,7 @@ export default function Sidebar() {
 
           {/* PROFILE */}
           <div
-            className="flex items-center gap-2 pb-[10px] border-b border-gray-200 max-md:hidden"
+            className="flex items-center gap-2 pb-[10px] max-md:hidden"
           >
             <div className="w-[34px] h-[34px] rounded-full overflow-hidden border-2 border-violet-500 flex-shrink-0 bg-gray-100 flex items-center justify-center">
               {loading ? (
@@ -82,10 +84,7 @@ export default function Sidebar() {
                 rel="noopener noreferrer"
               >
                 <button
-                  style={{
-                    background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)'
-                  }}
-                  className="w-full text-white px-[16px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:opacity-90 transition-opacity"
+                  className="w-[94px] h-[32px] text-white px-[16px] py-[8px] rounded-[4px] text-[14px] font-semibold leading-[100%] whitespace-nowrap hover:opacity-90 transition-opacity flex items-center justify-center bg-gradient-to-br from-[#A941FB] to-[#7864F0] shadow-[0px_4px_8px_0px_#EADBF9]"
                 >
                   View Site
                 </button>
@@ -94,17 +93,24 @@ export default function Sidebar() {
           </div>
 
           {/* MY SPACE */}
-          <div className="pb-2 border-b border-gray-200 max-md:pb-0 max-md:border-none max-md:flex-shrink-0">
+          <div className="pb-2 max-md:pb-0 max-md:border-none max-md:flex-shrink-0">
+            {(() => {
+              const [isHovered, setIsHovered] = useState(false);
+              return (
             <div
-              className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${pathname === '/dashboard' ? '' : 'hover:bg-gray-100'}`}
+              className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${isHovered ? 'bg-[#F6F6F6]' : ''}`}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
             >
-              <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 ${pathname === '/dashboard' ? 'brightness-0' : ''}`} />
+              <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${pathname === '/dashboard' ? 'brightness-0' : isHovered ? 'brightness-50' : ''}`} />
               <Link href="/dashboard">
-                <p className={`text-[14px] leading-[150%] max-md:text-[11px] max-md:text-center ${pathname === '/dashboard' ? 'font-bold text-black' : 'font-normal text-gray-700'}`}>
+                <p className={`font-sans text-[14px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center font-[\'Public Sans\'] tracking-[0%] font-normal ${pathname === '/dashboard' ? 'font-bold text-black' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
                   My Space
                 </p>
               </Link>
             </div>
+              );
+            })()}
           </div>
 
           {/* SECTION BLOCK COMPONENT */}
@@ -139,31 +145,36 @@ export default function Sidebar() {
             >
               {/* SECTION HEADING */}
               <h1
-                className="text-[11px] font-semibold text-gray-400 tracking-[0.5px] uppercase mb-[3px] max-md:hidden"
+                className="text-[11px] font-semibold text-[#A4A4A4] tracking-[0.5px] uppercase mb-[3px] max-md:hidden"
               >
                 {section.title}
               </h1>
 
               {/* SECTION ITEMS */}
-              {section.items.map(([icon, label]) => (
+              {section.items.map(([icon, label]) => {
+                const [isHovered, setIsHovered] = useState(false);
+                return (
                 <Link key={label} href={getRoute(label)}>
                   <div
-                    className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isActive(label) ? '' : 'hover:bg-gray-100'}`}
+                    className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive(label) ? 'bg-[#F6F6F6]' : ''}`}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
                   >
                     <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
                       <img
                         src={label === "Settings" ? `/icons/${icon}` : `/images/icons/${icon}`}
-                        className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${isActive(label) ? 'opacity-100 brightness-0' : 'opacity-60'}`}
+                        className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive(label) ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`}
                       />
                       <p
-                        className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${isActive(label) ? 'font-bold text-black' : 'font-normal text-gray-500'}`}
+                        className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive(label) ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}
                       >
                         {label}
                       </p>
                     </div>
                   </div>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           ))}
         </div>

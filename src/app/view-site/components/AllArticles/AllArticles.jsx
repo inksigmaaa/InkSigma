@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ShareMenu from '../ShareMenu/ShareMenu';
+import { getImageUrl } from '@/utils/imageUrl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -77,9 +78,7 @@ export default function AllArticles({ searchQuery = '', selectedCategory = '', b
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-20 md:mb-40 pb-10">
           {filteredArticles.map((article) => {
             const dateFormatted = formatDate(article.createdAt);
-            const thumbnailUrl = (article.image && article.image.trim() !== '') 
-              ? article.image 
-              : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
+            const thumbnailUrl = getImageUrl(article.image) || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
             
             return (
               <div key={article.id} className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5 flex flex-col">

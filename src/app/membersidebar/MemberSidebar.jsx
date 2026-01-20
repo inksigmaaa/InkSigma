@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { usePublication } from '@/contexts/PublicationContext';
 
 const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, currentPublication }) {
@@ -24,6 +24,12 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
     }
     
     return route;
+  };
+
+  const isActive = (label) => {
+    const route = getRoute(label);
+    const basePath = route.split('?')[0];
+    return pathname === basePath;
   };
 
   return (
@@ -66,7 +72,7 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
               rel="noopener noreferrer"
             >
               <button
-                className="w-full bg-violet-500 text-white px-[16px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:bg-violet-600"
+                className="w-[94px] h-[32px] text-white px-[16px] py-[8px] rounded-[4px] text-[14px] font-semibold leading-[100%] whitespace-nowrap hover:opacity-90 transition-opacity flex items-center justify-center bg-gradient-to-br from-[#A941FB] to-[#7864F0] shadow-[0px_4px_8px_0px_#EADBF9]"
               >
                 View Site
               </button>
@@ -75,109 +81,171 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
 
           {/* MY SPACE */}
           <div className="pb-2 border-b border-gray-200 max-md:pb-0 max-md:border-none max-md:flex-shrink-0">
-            <div className="flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1">
-              <img src="/images/icons/myspace.svg" className="w-6 h-6 max-md:w-6 max-md:h-6" />
+            {(() => {
+              const [isHovered, setIsHovered] = useState(false);
+              return (
+            <div className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${isHovered ? 'bg-[#F6F6F6]' : ''}`}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+            >
+              <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${isHovered ? 'brightness-50' : ''}`} />
               <Link href="/dashboard">
-                <p className="text-[14px] font-normal leading-[150%] text-gray-400 max-md:text-[11px] max-md:text-center">
+                <p className={`font-sans text-[14px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center font-[\'Public Sans\'] tracking-[0%] font-normal ${isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
                   My Space
                 </p>
               </Link>
             </div>
+              );
+            })()}
           </div>
 
           {/* PUBLICATION SECTION */}
           <div className="flex flex-col gap-[3px] max-md:flex-row max-md:gap-2 max-md:p-0">
             <div className="max-md:hidden">
-              <h1 className="text-[11px] font-semibold text-gray-400 tracking-[0.5px] uppercase mb-[3px]">
+              <h1 className="text-[11px] font-semibold text-[#A4A4A4] tracking-[0.5px] uppercase mb-[3px]">
                 PUBLICATION
               </h1>
             </div>
 
             {/* Home */}
-            <Link href={getRoute("Home")}>
-              <div className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${pathname === '/posts/home' ? 'bg-gray-100' : ''}`}>
-                <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/home.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/home' ? 'opacity-100 brightness-0' : 'opacity-60'}`} />
-                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/home' ? 'font-bold text-black' : 'font-normal text-gray-400'}`}>
-                    Home
-                  </p>
+            {(() => {
+              const [isHovered, setIsHovered] = useState(false);
+              return (
+              <Link href={getRoute("Home")}>
+                <div 
+                  className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Home') ? 'bg-[#F6F6F6]' : ''}`}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                >
+                  <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+                    <img src="/images/icons/home.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Home') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
+                    <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Home') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
+                      Home
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+              );
+            })()}
 
             {/* Members */}
-            <Link href={getRoute("Members")}>
-              <div className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${pathname === '/posts/members' ? 'bg-gray-100' : ''}`}>
-                <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/Member.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/members' ? 'opacity-100 brightness-0' : 'opacity-60'}`} />
-                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/members' ? 'font-bold text-black' : 'font-normal text-gray-400'}`}>
-                    Members
-                  </p>
+            {(() => {
+              const [isHovered, setIsHovered] = useState(false);
+              return (
+              <Link href={getRoute("Members")}>
+                <div 
+                  className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Members') ? 'bg-[#F6F6F6]' : ''}`}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                >
+                  <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+                    <img src="/images/icons/Member.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Members') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
+                    <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Members') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
+                      Members
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+              );
+            })()}
           </div>
 
           {/* ARTICLES SECTION */}
           <div className="flex flex-col gap-[3px] max-md:flex-row max-md:gap-2 max-md:p-0">
-            <h1 className="text-[11px] font-semibold text-gray-400 tracking-[0.5px] uppercase mb-[3px] max-md:hidden">
+            <h1 className="text-[11px] font-semibold text-[#A4A4A4] tracking-[0.5px] uppercase mb-[3px] max-md:hidden">
               ARTICLES
             </h1>
 
             {/* Published */}
-            <Link href={getRoute("Published")}>
-              <div className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${pathname === '/posts/published' ? 'bg-gray-100' : ''}`}>
-                <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/Publish.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/published' ? 'opacity-100 brightness-0' : 'opacity-60'}`} />
-                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/published' ? 'font-bold text-black' : 'font-normal text-gray-400'}`}>
-                    Published
-                  </p>
+            {(() => {
+              const [isHovered, setIsHovered] = useState(false);
+              return (
+              <Link href={getRoute("Published")}>
+                <div 
+                  className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Published') ? 'bg-[#F6F6F6]' : ''}`}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                >
+                  <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+                    <img src="/images/icons/Publish.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Published') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
+                    <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Published') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
+                      Published
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+              );
+            })()}
 
             {/* Review */}
-            <Link href={getRoute("Review")}>
-              <div className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${pathname === '/author-review' ? 'bg-gray-100' : ''}`}>
-                <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/Review.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/author-review' ? 'opacity-100 brightness-0' : 'opacity-60'}`} />
-                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/author-review' ? 'font-bold text-black' : 'font-normal text-gray-400'}`}>
-                    Review
-                  </p>
+            {(() => {
+              const [isHovered, setIsHovered] = useState(false);
+              return (
+              <Link href={getRoute("Review")}>
+                <div 
+                  className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Review') ? 'bg-[#F6F6F6]' : ''}`}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                >
+                  <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+                    <img src="/images/icons/Review.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Review') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
+                    <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Review') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
+                      Review
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+              );
+            })()}
           </div>
 
           {/* PERSONAL SECTION */}
           <div className="flex flex-col gap-[3px] max-md:flex-row max-md:gap-2 max-md:p-0">
-            <h1 className="text-[11px] font-semibold text-gray-400 tracking-[0.5px] uppercase mb-[3px] max-md:hidden">
+            <h1 className="text-[11px] font-semibold text-[#A4A4A4] tracking-[0.5px] uppercase mb-[3px] max-md:hidden">
               PERSONAL
             </h1>
 
             {/* My Blogs */}
-            <Link href={getRoute("My Blogs")}>
-              <div className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${pathname === '/posts/my-blogs' ? 'bg-gray-100' : ''}`}>
-                <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/all_articles.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/my-blogs' ? 'opacity-100 brightness-0' : 'opacity-60'}`} />
-                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/my-blogs' ? 'font-bold text-black' : 'font-normal text-gray-400'}`}>
-                    My Blogs
-                  </p>
+            {(() => {
+              const [isHovered, setIsHovered] = useState(false);
+              return (
+              <Link href={getRoute("My Blogs")}>
+                <div 
+                  className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('My Blogs') ? 'bg-[#F6F6F6]' : ''}`}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                >
+                  <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+                    <img src="/images/icons/all_articles.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('My Blogs') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
+                    <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('My Blogs') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
+                      My Blogs
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+              );
+            })()}
 
             {/* Draft */}
-            <Link href={getRoute("Draft")}>
-              <div className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${pathname === '/posts/draft' ? 'bg-gray-100' : ''}`}>
-                <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/draft.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${pathname === '/posts/draft' ? 'opacity-100 brightness-0' : 'opacity-60'}`} />
-                  <p className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${pathname === '/posts/draft' ? 'font-bold text-black' : 'font-normal text-gray-400'}`}>
-                    Draft
-                  </p>
+            {(() => {
+              const [isHovered, setIsHovered] = useState(false);
+              return (
+              <Link href={getRoute("Draft")}>
+                <div 
+                  className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Draft') ? 'bg-[#F6F6F6]' : ''}`}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                >
+                  <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+                    <img src="/images/icons/draft.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Draft') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
+                    <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Draft') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
+                      Draft
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+              );
+            })()}
           </div>
         </div>
       </div>

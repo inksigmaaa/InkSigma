@@ -11,6 +11,7 @@ export function ImageModal({ isOpen, onClose, onImageAdd }) {
   const [altText, setAltText] = useState("")
   const [selectedFile, setSelectedFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
+  const [serverImageUrl, setServerImageUrl] = useState(null)
   const fileInputRef = useRef(null)
 
   const handleFileSelect = (event) => {
@@ -34,15 +35,55 @@ export function ImageModal({ isOpen, onClose, onImageAdd }) {
     fileInputRef.current?.click()
   }
 
-  const handleAddImage = () => {
+  const handleAddImage = async () => {
     if (selectedFile && previewUrl) {
-      onImageAdd({
-        src: previewUrl,
-        alt: altText,
-        width: imageWidth,
-        height: imageHeight,
-        file: selectedFile
-      })
+      try {
+        // Upload image to server
+        const formData = new FormData()
+        formData.append('image', selectedFile)
+        
+        const response = await fetch('http://localhost:5000/api/upload-image', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          // Store only the relative path, not the full URL
+          const relativePath = data.imageUrl || data.url
+          setServerImageUrl(relativePath)
+          
+          // Use the relative path instead of full URL
+          onImageAdd({
+            src: relativePath,
+            alt: altText,
+            width: imageWidth,
+            height: imageHeight,
+            file: selectedFile
+          })
+        } else {
+          console.error('Failed to upload image:', response.statusText)
+          // Fallback to blob URL if upload fails
+          onImageAdd({
+            src: previewUrl,
+            alt: altText,
+            width: imageWidth,
+            height: imageHeight,
+            file: selectedFile
+          })
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error)
+        // Fallback to blob URL if upload fails
+        onImageAdd({
+          src: previewUrl,
+          alt: altText,
+          width: imageWidth,
+          height: imageHeight,
+          file: selectedFile
+        })
+      }
       handleClose()
     }
   }
@@ -53,6 +94,7 @@ export function ImageModal({ isOpen, onClose, onImageAdd }) {
     setAltText("")
     setSelectedFile(null)
     setPreviewUrl(null)
+    setServerImageUrl(null)
     onClose()
   }
 

@@ -7,6 +7,7 @@ import debugRoutes from "./routes/debugRoutes.js";
 import emailDebugRoutes from "./routes/emailDebugRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 import publicationRoutes from "./routes/publicationRoutes.js";
 import publicationMemberRoutes from "./routes/publicationMemberRoutes.js";
 import publicationStatsRoutes from "./routes/publicationStatsRoutes.js";
@@ -44,6 +45,7 @@ try {
 app.use("/api/custom", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/blogs", blogRoutes);
+app.use("/api/upload-image", uploadRoutes);
 app.use("/api/publications", publicationRoutes);
 app.use("/api/publication-members", publicationMemberRoutes);
 app.use("/api/publication-stats", publicationStatsRoutes);
