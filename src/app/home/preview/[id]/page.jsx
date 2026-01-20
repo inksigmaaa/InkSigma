@@ -227,7 +227,26 @@ export default function PreviewPage({ params }) {
             {/* Article Body */}
             <article
               className="prose prose-sm md:prose-lg max-w-none prose-headings:font-bold prose-headings:text-black prose-h2:text-xl md:prose-h2:text-2xl prose-h2:mt-0 prose-h2:mb-3 md:prose-h2:mb-4 prose-p:text-gray-600 md:prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-4 md:prose-p:mb-6 prose-img:rounded-lg prose-img:my-6 md:prose-img:my-8 prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-600"
-              dangerouslySetInnerHTML={{ __html: article.content }}
+              dangerouslySetInnerHTML={{ __html: (() => {
+                // Convert relative image URLs to full URLs for display
+                const apiUrl = 'http://localhost:5000';
+                return article.content.replace(/src="([^"]*)"/g, (match, src) => {
+                  if (!src) return match;
+                  
+                  // If it's already a full URL, return as is
+                  if (src.startsWith('http://') || src.startsWith('https://')) {
+                    return match;
+                  }
+                  
+                  // If it's a relative path starting with /, prepend the API URL
+                  if (src.startsWith('/')) {
+                    return `src="${apiUrl}${src}"`;
+                  }
+                  
+                  // Otherwise, assume it's a relative path and prepend API URL with /
+                  return `src="${apiUrl}/${src}"`;
+                });
+              })() }}
             />
           </div>
 

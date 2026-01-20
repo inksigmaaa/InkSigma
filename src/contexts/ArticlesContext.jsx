@@ -372,10 +372,30 @@ export function ArticlesProvider({ children }) {
       // Remove from review articles
       setReviewArticles(prev => prev.filter(article => article.id !== id))
       
-      // Update in main articles if present
-      setArticles(prev => prev.map(article =>
-        article.id === id ? updatedArticle : article
-      ))
+      // Add to main articles list (or update if already exists)
+      setArticles(prev => {
+        const exists = prev.some(article => article.id === id)
+        if (exists) {
+          return prev.map(article =>
+            article.id === id ? updatedArticle : article
+          )
+        } else {
+          // Add to the beginning of the list
+          return [updatedArticle, ...prev]
+        }
+      })
+      
+      // Also update publication articles if they exist
+      setPublicationArticles(prev => {
+        const exists = prev.some(article => article.id === id)
+        if (exists) {
+          return prev.map(article =>
+            article.id === id ? updatedArticle : article
+          )
+        } else {
+          return [updatedArticle, ...prev]
+        }
+      })
       
       return updatedArticle
     } catch (err) {
@@ -394,10 +414,29 @@ export function ArticlesProvider({ children }) {
       // Remove from review articles
       setReviewArticles(prev => prev.filter(article => article.id !== id))
       
-      // Update in main articles if present
-      setArticles(prev => prev.map(article =>
-        article.id === id ? updatedArticle : article
-      ))
+      // Add to main articles list (or update if already exists)
+      setArticles(prev => {
+        const exists = prev.some(article => article.id === id)
+        if (exists) {
+          return prev.map(article =>
+            article.id === id ? updatedArticle : article
+          )
+        } else {
+          return [updatedArticle, ...prev]
+        }
+      })
+      
+      // Also update publication articles if they exist
+      setPublicationArticles(prev => {
+        const exists = prev.some(article => article.id === id)
+        if (exists) {
+          return prev.map(article =>
+            article.id === id ? updatedArticle : article
+          )
+        } else {
+          return [updatedArticle, ...prev]
+        }
+      })
       
       return updatedArticle
     } catch (err) {

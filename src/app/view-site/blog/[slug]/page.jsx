@@ -11,6 +11,7 @@ import ScrollToTop from '../../components/ScrollToTop/ScrollToTop';
 import MobileBottomNav from '../../components/MobileBottomNav/MobileBottomNav';
 import CommentSection from '../../components/CommentSection/CommentSection';
 import ClockIcon from '../../components/icons/ClockIcon';
+import { getImageUrl } from '@/utils/imageUrl';
 
 export default function BlogDetailPage({ params }) {
   const { slug } = use(params);
@@ -134,9 +135,7 @@ export default function BlogDetailPage({ params }) {
   }
 
   const dateFormatted = formatDate(blog.createdAt);
-  const thumbnailUrl = (blog.image && blog.image.trim() !== '') 
-    ? blog.image 
-    : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
+  const thumbnailUrl = getImageUrl(blog.image) || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -234,7 +233,26 @@ export default function BlogDetailPage({ params }) {
           {/* Blog Content */}
           <article
             className="prose prose-sm md:prose-lg max-w-none prose-headings:font-bold prose-headings:text-black prose-p:text-gray-700 prose-p:leading-relaxed break-words"
-            dangerouslySetInnerHTML={{ __html: blog.content }}
+            dangerouslySetInnerHTML={{ __html: (() => {
+              // Convert relative image URLs to full URLs for display
+              const apiUrl = 'http://localhost:5000';
+              return blog.content.replace(/src="([^"]*)"/g, (match, src) => {
+                if (!src) return match;
+                
+                // If it's already a full URL, return as is
+                if (src.startsWith('http://') || src.startsWith('https://')) {
+                  return match;
+                }
+                
+                // If it's a relative path starting with /, prepend the API URL
+                if (src.startsWith('/')) {
+                  return `src="${apiUrl}${src}"`;
+                }
+                
+                // Otherwise, assume it's a relative path and prepend API URL with /
+                return `src="${apiUrl}/${src}"`;
+              });
+            })() }}
           />
 
           {/* Comment Section */}

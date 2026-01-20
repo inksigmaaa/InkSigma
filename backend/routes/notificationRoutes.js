@@ -1,6 +1,6 @@
 import express from "express";
 import { db } from "../config/database.js";
-import { notification, user } from "../models/schema.js";
+import { notification, user, publication } from "../models/schema.js";
 import { eq, desc, and } from "drizzle-orm";
 
 const router = express.Router();
@@ -24,9 +24,11 @@ router.get("/:userId", async (req, res) => {
                 relatedUserName: user.name,
                 relatedUserEmail: user.email,
                 relatedUserImage: user.image,
+                publicationLogoUrl: publication.logoUrl,
             })
             .from(notification)
             .leftJoin(user, eq(notification.relatedUserId, user.id))
+            .leftJoin(publication, eq(notification.relatedPublicationId, publication.id))
             .where(eq(notification.userId, userId))
             .orderBy(desc(notification.createdAt))
             .limit(50);
@@ -56,23 +58,38 @@ router.get("/:userId", async (req, res) => {
         };
 
         // Format notifications - ensure createdAt is ISO string with timezone
-        const formattedNotifications = notifications.map(notif => ({
-            id: notif.id,
-            type: notif.type,
-            title: notif.title,
-            message: notif.message,
-            isRead: notif.isRead,
-            avatar: notif.relatedUserImage || "/images/icons/profileuser.svg",
-            avatarUser: {
-                name: notif.relatedUserName,
-                email: notif.relatedUserEmail,
-                image: notif.relatedUserImage,
-            },
-            createdAt: notif.createdAt instanceof Date ? notif.createdAt.toISOString() : notif.createdAt,
-            relatedBlogId: notif.relatedBlogId,
-            relatedPublicationId: notif.relatedPublicationId,
-            navigationUrl: getNavigationUrl(notif),
-        }));
+        const formattedNotifications = notifications.map(notif => {
+            // For publication-related notifications, use publication logo
+            let avatar = notif.relatedUserImage || "/images/icons/profileuser.svg";
+            
+            if (notif.relatedPublicationId && notif.publicationLogoUrl) {
+                // Use publication logo for publication-related notifications
+                avatar = `http://localhost:5000${notif.publicationLogoUrl}`;
+            } else if (notif.relatedUserImage) {
+                // Use user image for user-related notifications
+                avatar = notif.relatedUserImage.startsWith('http') 
+                    ? notif.relatedUserImage 
+                    : `http://localhost:5000${notif.relatedUserImage}`;
+            }
+            
+            return {
+                id: notif.id,
+                type: notif.type,
+                title: notif.title,
+                message: notif.message,
+                isRead: notif.isRead,
+                avatar: avatar,
+                avatarUser: {
+                    name: notif.relatedUserName,
+                    email: notif.relatedUserEmail,
+                    image: notif.relatedUserImage,
+                },
+                createdAt: notif.createdAt instanceof Date ? notif.createdAt.toISOString() : notif.createdAt,
+                relatedBlogId: notif.relatedBlogId,
+                relatedPublicationId: notif.relatedPublicationId,
+                navigationUrl: getNavigationUrl(notif),
+            };
+        });
 
         res.json({ notifications: formattedNotifications });
     } catch (error) {
