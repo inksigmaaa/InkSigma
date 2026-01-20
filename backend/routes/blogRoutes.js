@@ -1106,6 +1106,7 @@ router.put("/:id", getCurrentUser, async (req, res) => {
                         authorId: existingBlog.authorId,
                         blogTitle: updatedBlog.title,
                         blogId: parseInt(id),
+                        publicationId: updatedBlog.publicationId,
                     });
                 }
             } catch (notifError) {
@@ -1192,12 +1193,23 @@ router.patch("/:id/review-action", getCurrentUser, async (req, res) => {
                     .where(eq(publication.id, existingBlog.publicationId));
 
                 if (action === 'accept') {
-                    await notificationService.notifyBlogAccepted({
-                        authorId: existingBlog.authorId,
-                        publicationName: pub.name,
-                        blogId: parseInt(id),
-                        publicationId: existingBlog.publicationId,
-                    });
+                    // If blog is being published, send published notification
+                    if (targetStatus === 'published') {
+                        await notificationService.notifyBlogPublished({
+                            authorId: existingBlog.authorId,
+                            blogTitle: updatedBlog.title,
+                            blogId: parseInt(id),
+                            publicationId: existingBlog.publicationId,
+                        });
+                    } else {
+                        // Otherwise send accepted notification
+                        await notificationService.notifyBlogAccepted({
+                            authorId: existingBlog.authorId,
+                            publicationName: pub.name,
+                            blogId: parseInt(id),
+                            publicationId: existingBlog.publicationId,
+                        });
+                    }
                 } else {
                     await notificationService.notifyBlogRejected({
                         authorId: existingBlog.authorId,
@@ -1294,6 +1306,7 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
                         authorId: existingBlog.authorId,
                         blogTitle: updatedBlog.title,
                         blogId: parseInt(id),
+                        publicationId: updatedBlog.publicationId,
                     });
                     console.log('[Notification] Blog published notification created successfully');
                 }

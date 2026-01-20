@@ -101,13 +101,14 @@ class NotificationService {
     }
 
     // Notify when blog is published
-    async notifyBlogPublished({ authorId, blogTitle, blogId }) {
+    async notifyBlogPublished({ authorId, blogTitle, blogId, publicationId }) {
         return this.createNotification({
             userId: authorId,
             type: "blog_published",
             title: "Blog Published",
             message: `Your blog "${blogTitle}" has been published.`,
             relatedBlogId: blogId,
+            relatedPublicationId: publicationId,
         });
     }
 

@@ -208,33 +208,47 @@ export default function NavbarLoggedin() {
                                             No notifications yet
                                         </div>
                                     ) : (
-                                        notifications.map((notification) => (
-                                            <div 
-                                                key={notification.id} 
-                                                className={`flex items-start gap-3 p-4 hover:bg-[#F8F9FA] border-b border-[#F0F0F0] last:border-b-0 max-md:p-3 max-md:gap-2.5 cursor-pointer ${!notification.isRead ? 'bg-blue-50' : ''}`}
-                                                onClick={() => handleNotificationClick(notification)}
-                                            >
-                                                <UserAvatar 
-                                                    user={notification.avatarUser || { image: notification.avatar }}
-                                                    size="sm"
-                                                    className="flex-shrink-0"
-                                                />
-                                                <div className="flex-1 min-w-0">
-                                                    <h4 className="text-[14px] font-semibold text-[#333] mb-1 max-md:text-[13px]">
-                                                        {notification.title}
-                                                    </h4>
-                                                    <p className="text-[13px] text-[#666] mb-2 leading-relaxed max-md:text-[12px] max-md:mb-1.5">
-                                                        {notification.message}
-                                                    </p>
-                                                    <div className="flex items-center gap-2 text-[12px] text-[#999] max-md:text-[11px]">
-                                                        {!notification.isRead && (
-                                                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                                        )}
-                                                        <span>{formatTimeAgo(notification.createdAt)}</span>
+                                        notifications.map((notification) => {
+                                            // For publication-related notifications, create an avatar object with publication logo
+                                            let avatarUser = notification.avatarUser || { image: notification.avatar };
+                                            
+                                            // If this is a publication notification and we have a publication logo, use it
+                                            if (notification.relatedPublicationId && notification.avatar && notification.avatar.includes('localhost:5000')) {
+                                                avatarUser = {
+                                                    name: notification.title,
+                                                    image: notification.avatar,
+                                                    email: notification.title
+                                                };
+                                            }
+                                            
+                                            return (
+                                                <div 
+                                                    key={notification.id} 
+                                                    className={`flex items-start gap-3 p-4 hover:bg-[#F8F9FA] border-b border-[#F0F0F0] last:border-b-0 max-md:p-3 max-md:gap-2.5 cursor-pointer ${!notification.isRead ? 'bg-blue-50' : ''}`}
+                                                    onClick={() => handleNotificationClick(notification)}
+                                                >
+                                                    <UserAvatar 
+                                                        user={avatarUser}
+                                                        size="sm"
+                                                        className="flex-shrink-0"
+                                                    />
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="text-[14px] font-semibold text-[#333] mb-1 max-md:text-[13px]">
+                                                            {notification.title}
+                                                        </h4>
+                                                        <p className="text-[13px] text-[#666] mb-2 leading-relaxed max-md:text-[12px] max-md:mb-1.5">
+                                                            {notification.message}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 text-[12px] text-[#999] max-md:text-[11px]">
+                                                            {!notification.isRead && (
+                                                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                            )}
+                                                            <span>{formatTimeAgo(notification.createdAt)}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))
+                                            );
+                                        })
                                     )}
                                 </div>
                             </div>
