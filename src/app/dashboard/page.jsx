@@ -1,37 +1,57 @@
 "use client"
 
-import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
-import { ChevronRight, AlertCircle } from "lucide-react"
+import Verify from "../components/verify/Verify"
+import { ChevronRight } from "lucide-react"
+import { usePublication } from "@/contexts/PublicationContext"
+import AuthGuard from "@/components/auth/AuthGuard"
 
 
 export default function DashboardPage() {
-  const { data: session, isPending } = useSession()
   const router = useRouter()
+  const {
+    currentPublication,
+    getOwnedPublications,
+    getJoinedPublications,
+    switchPublication,
+    loadUserPublications,
+    loading: publicationLoading
+  } = usePublication()
 
+  // Effect to handle potential context refresh issues
   useEffect(() => {
-    if (!isPending && !session) {
-      router.push("/login")
+    // If we're not loading and have no publications, try refreshing once
+    // This handles the case where a user just created a publication but context wasn't updated
+    if (!publicationLoading) {
+      const ownedPublications = getOwnedPublications()
+      const joinedPublications = getJoinedPublications()
+
+      if (ownedPublications.length === 0 && joinedPublications.length === 0) {
+        const hasRefreshed = sessionStorage.getItem('dashboard-refreshed');
+        if (!hasRefreshed) {
+          console.log('No publications found, refreshing context...');
+          sessionStorage.setItem('dashboard-refreshed', 'true');
+          loadUserPublications();
+        }
+      } else {
+        // Clear the refresh flag when publications are found
+        sessionStorage.removeItem('dashboard-refreshed');
+      }
     }
-  }, [session, isPending, router])
+  }, [publicationLoading, loadUserPublications, getOwnedPublications, getJoinedPublications]);
 
-  if (isPending) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    )
-  }
-
-  if (!session) {
+  if (publicationLoading) {
     return null
   }
 
+  const ownedPublications = getOwnedPublications()
+  const joinedPublications = getJoinedPublications()
+
   return (
-    <>
+    <AuthGuard>
       <NavbarLoggedin />
       <DashboardSimpleSidebar />
       <main className="flex-1 bg-white px-4 sm:px-8 py-6 sm:py-10 mt-[120px] md:mt-[120px] pb-24 md:pb-0 md:ml-[165px]">
@@ -51,77 +71,170 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Verification Alert */}
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-4 h-4 text-purple-500 flex-shrink-0" />
-              <p className="text-xs text-purple-900">Your Account hasn't been verified yet.</p>
-            </div>
-            <button className="bg-purple-500 hover:bg-purple-600 text-white px-5 py-2 rounded-md text-xs transition-colors whitespace-nowrap w-full sm:w-auto">
-              Verify your Account
-            </button>
-          </div>
+          {/* Verification Alert - Only shows for unverified email/password users */}
+          <Verify />
 
           {/* Your Publication Section */}
           <section>
             <h2 className="text-sm font-bold text-gray-900 mb-5">Your Publication</h2>
-            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex gap-4 items-center flex-1 w-full">
-                  <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <img src="/icons/nib.svg" alt="publication" className="w-14 h-14 rounded-full" />
+            {ownedPublications.length > 0 ? (
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex gap-4 items-center flex-1 w-full">
+                    <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {ownedPublications[0]?.logoUrl ? (
+                        <img
+                          src={`http://localhost:5000${ownedPublications[0].logoUrl}`}
+                          alt="publication logo"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "/icons/nib.svg";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-violet-100 rounded-full flex items-center justify-center">
+                          <span className="text-violet-600 font-bold text-lg">
+                            {ownedPublications[0]?.name?.charAt(0).toUpperCase() || "P"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                        {ownedPublications[0]?.name || "Publication Name"}
+                      </h3>
+                      <p className="text-xs text-gray-400 leading-relaxed">
+                        {ownedPublications[0]?.description || "Note: Edit/Upload your logo, Favicon & Publication Description inside the publication settings. Start with clicking this Publication card"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1">Publication Name</h3>
-                    <p className="text-xs text-gray-400 leading-relaxed">
-                      Note: Edit/Upload your logo, Favicon & Publication Description inside the publication settings. Start with clicking this Publication card
+                  <button
+                    onClick={() => {
+                      // Switch to owned publication first
+                      switchPublication(ownedPublications[0]);
+                      router.push(`/home?pub=${ownedPublications[0].id}`);
+                    }}
+                    className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
+                  >
+                    Go to Publication
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center  mb-3">
+                    <img src="/icons/nib.svg" alt="publication" className="w-12 h-12" />
+                  </div>
+                  <div className="mx-auto">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">No Publication Yet</h3>
+                    <p className="text-xs text-gray-400">
+                      Create your first publication to get started.
                     </p>
                   </div>
+
+                  <button
+                    onClick={() => router.push('/create-publication')}
+                    className="mt-4 bg-violet-600 text-white px-6 py-2 rounded-lg text-xs font-medium hover:bg-violet-700 transition-colors"
+                  >
+                    Create Publication
+                  </button>
                 </div>
-                <button
-                  onClick={() => router.push('/home')}
-                  className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
-                >
-                  Go to Publication
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
               </div>
-            </div>
+            )}
           </section>
 
           {/* Joined Publication Section */}
           <section>
-            <h2 className="text-sm font-bold text-gray-900 mb-5">Joined Publication</h2>
-            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex gap-4 items-center flex-1 w-full">
-                  <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <img src="/icons/pen.svg" alt="publication" className="w-14 h-14 rounded-full" />
+            <h2 className="text-sm font-bold text-gray-900 mb-5">Joined Publications</h2>
+            {joinedPublications.length > 0 ? (
+              <div className="space-y-4">
+                {joinedPublications.map((joinedPub) => (
+                  <div key={joinedPub.id} className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex gap-4 items-center flex-1 w-full">
+                        <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {joinedPub.logoUrl ? (
+                            <img
+                              src={`http://localhost:5000${joinedPub.logoUrl}`}
+                              alt={`${joinedPub.name} logo`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "/icons/pen.svg";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-blue-600 font-bold text-lg">
+                                {joinedPub.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-gray-900 mb-1">{joinedPub.name}</h3>
+                          <p className="text-xs text-gray-400 leading-relaxed">
+                            {joinedPub.description || "No description provided"}
+                          </p>
+                          <div className="flex items-center gap-4 mt-2">
+                            <span className={`text-xs font-medium ${joinedPub.role === 'editor' ? 'text-green-600' : 'text-blue-600'
+                              }`}>
+                              {joinedPub.role.charAt(0).toUpperCase() + joinedPub.role.slice(1)}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {joinedPub.joinedAt ? (
+                                `Joined ${new Date(joinedPub.joinedAt).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}`
+                              ) : (
+                                'Joined Recently'
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          switchPublication(joinedPub);
+                          if (joinedPub.role === 'editor') {
+                            router.push(`/editorpage?pub=${joinedPub.id}`);
+                          } else {
+                            router.push(`/posts/home?pub=${joinedPub.id}`);
+                          }
+                        }}
+                        className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
+                      >
+                        Go to Publication
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1">Publication Name</h3>
-                    <p className="text-xs text-gray-400 leading-relaxed">
-                      Note: Edit/Upload your logo, Favicon & Publication Description inside the publication settings. Start with clicking this Publication card
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                <div className="text-center flex py-2">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center  mb-3">
+                    <img src="/icons/pen.svg" alt="publication" className="w-12 h-12" />
+                  </div>
+                  <div className="mx-auto">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">No Joined Publications</h3>
+                    <p className="text-xs text-gray-400">
+                      You haven't joined any publications yet. Accept an invitation to get started.
                     </p>
                   </div>
-                </div>
-                <button
-                  onClick={() => router.push('/posts/home')}
-                  className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
-                >
-                  Go to Publication
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          </section>
 
-          {/* Multiple Publication Coming Soon */}
-          <section className="bg-gray-50 rounded-lg py-16 text-center">
-            <p className="text-gray-400 text-xs">Multiple Publication coming soon!</p>
+                </div>
+              </div>
+            )}
           </section>
         </div>
       </main>
-    </>
+    </AuthGuard>
   )
 }

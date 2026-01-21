@@ -10,10 +10,10 @@ export default function ReviewHeader({ article, isSelected, onSelectionChange })
       />
       
       <div className="flex-1">
-        <h2 className="text-xl font-semibold text-gray-900 mb-1">
+        <h2 className="text-base font-semibold text-gray-900 mb-1">
           {article.title}
         </h2>
-        <p className="text-gray-600 text-sm mb-4">
+        <p className="text-gray-600 text-xs mb-4">
           {article.author}
         </p>
         
@@ -21,7 +21,7 @@ export default function ReviewHeader({ article, isSelected, onSelectionChange })
           {article.tags.map((tag, index) => (
             <span 
               key={index}
-              className="bg-gray-100 text-gray-600 text-sm px-3 py-1 rounded-full"
+              className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full"
             >
               {tag}
             </span>

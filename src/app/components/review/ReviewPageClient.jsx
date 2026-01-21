@@ -4,9 +4,17 @@ import { useState } from "react"
 import { ConfirmationModal } from "@/components/ui/confirmation-modal"
 import ReviewCard from "./ReviewCard"
 
-export default function ReviewPageClient({ article }) {
-  const [isSelected, setIsSelected] = useState(false)
+export default function ReviewPageClient({ articles }) {
+  const [selectedArticles, setSelectedArticles] = useState({})
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState("all")
+
+  const handleSelectionChange = (articleId, isSelected) => {
+    setSelectedArticles(prev => ({
+      ...prev,
+      [articleId]: isSelected
+    }))
+  }
 
   const handleRevertToDraft = () => {
     setShowConfirmModal(true)
@@ -23,16 +31,23 @@ export default function ReviewPageClient({ article }) {
     setShowConfirmModal(false)
   }
 
+  // Fixed top position (no verify banner)
+  const topPosition = 'top-[200px]';
+  const mobileTopPosition = 'max-md:top-[170px]';
+
   return (
     <>
-      <div className="absolute left-1/2 -translate-x-1/2 top-[220px] w-full max-w-[1034px] z-20 px-5">
-        <div className="ml-0 md:ml-[185px]">
-          <ReviewCard 
-            article={article}
-            isSelected={isSelected}
-            onSelectionChange={setIsSelected}
-            onRevertToDraft={handleRevertToDraft}
-          />
+      <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
+        <div className="ml-0 md:ml-[195px] space-y-4">
+          {articles && articles.map((article) => (
+            <ReviewCard 
+              key={article.id}
+              article={article}
+              isSelected={selectedArticles[article.id] || false}
+              onSelectionChange={(isSelected) => handleSelectionChange(article.id, isSelected)}
+              onRevertToDraft={handleRevertToDraft}
+            />
+          ))}
         </div>
       </div>
 

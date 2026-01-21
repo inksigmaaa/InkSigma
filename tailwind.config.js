@@ -7,6 +7,10 @@ module.exports = {
     ],
     theme: {
         extend: {
+            screens: {
+                'sm-448': '448px',
+                'md-768': '768px',
+            },
             colors: {
                 background: "var(--background)",
                 foreground: "var(--foreground)",
@@ -41,11 +45,52 @@ module.exports = {
                 border: "var(--border)",
                 input: "var(--input)",
                 ring: "var(--ring)",
+                // Custom text colors
+                'text-primary': '#2E2E2E',
+                'text-secondary': '#6b7280',
+                'text-accent': '#171717',
+                'text-muted': '#737373',
             },
             borderRadius: {
                 lg: "var(--radius)",
                 md: "calc(var(--radius) - 2px)",
                 sm: "calc(var(--radius) - 4px)",
+            },
+            keyframes: {
+                'slide-down': {
+                    '0%': {
+                        opacity: '0',
+                        transform: 'translate(-50%, -20px)'
+                    },
+                    '100%': {
+                        opacity: '1',
+                        transform: 'translate(-50%, 0)'
+                    },
+                },
+                'fade-in': {
+                    '0%': { opacity: '0' },
+                    '100%': { opacity: '1' },
+                },
+                'fadeIn': {
+                    '0%': { opacity: '0' },
+                    '100%': { opacity: '1' },
+                },
+                'slideUp': {
+                    '0%': {
+                        opacity: '0',
+                        transform: 'translateY(10px)'
+                    },
+                    '100%': {
+                        opacity: '1',
+                        transform: 'translateY(0)'
+                    },
+                },
+            },
+            animation: {
+                'slide-down': 'slide-down 0.3s ease-out',
+                'fade-in': 'fade-in 0.3s ease-out',
+                'fadeIn': 'fadeIn 0.3s ease-out forwards',
+                'slideUp': 'slideUp 0.3s ease-out forwards',
             },
         },
     },

@@ -1,10 +1,13 @@
 import { Suspense } from "react"
+import AuthGuard from "@/components/auth/AuthGuard"
 import EditorPageClient from "./components/EditorPageClient"
 
 export default function EditorPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <EditorPageClient />
-    </Suspense>
+    <AuthGuard>
+      <Suspense fallback={<div>Loading...</div>}>
+        <EditorPageClient />
+      </Suspense>
+    </AuthGuard>
   )
 }

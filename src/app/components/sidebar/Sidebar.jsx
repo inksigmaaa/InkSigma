@@ -1,14 +1,27 @@
 'use client';
 
-import { FileClock } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+import { usePublication } from '@/contexts/PublicationContext';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { currentPublication, loading } = usePublication();
 
   // Route mapping for navigation
   const getRoute = (label) => {
+    // Determine review route based on role
+    let reviewRoute = "/review";
+    if (currentPublication) {
+      const role = currentPublication.role;
+      const isOwner = currentPublication.isOwner;
+      const isReviewer = isOwner || role === 'editor' || role === 'admin';
+      if (!isReviewer) {
+        reviewRoute = "/author-review";
+      }
+    }
+
     const routes = {
       "Home": "/home",
       "Domain": "/domain",
@@ -18,18 +31,28 @@ export default function Sidebar() {
       "Published": "/published",
       "Unpublished": "/unpublished",
       "Schedule": "/schedule",
-      "Review": "/review",
+      "Review": reviewRoute,
       "My Blogs": "/my-blogs",
       "Draft": "/draft",
       "Trash": "/trash",
     };
-    return routes[label] || "/dashboard";
+    
+    let route = routes[label] || "/dashboard";
+    
+    // Append publication ID to all publication-specific routes to preserve context
+    if (currentPublication?.id && route !== "/dashboard" && route !== "/dashboard/settings") {
+      route = `${route}?pub=${currentPublication.id}`;
+    }
+    
+    return route;
   };
 
   // Check if the current route is active
   const isActive = (label) => {
     const route = getRoute(label);
-    return pathname === route;
+    // Extract the base path without query parameters for comparison
+    const basePath = route.split('?')[0];
+    return pathname === basePath;
   };
 
   return (
@@ -41,40 +64,69 @@ export default function Sidebar() {
 
         {/* SIDEBAR CONTAINER */}
         <div
-          className="relative w-[165px] h-[612px] bg-white border-r border-gray-200 p-[14px] pr-[10px] flex flex-col gap-[10px] overflow-hidden pointer-events-auto max-md:w-auto max-md:min-w-max max-md:h-[70px] max-md:px-4 max-md:py-2 max-md:flex-row max-md:gap-2 max-md:border-r-0 max-md:overflow-visible"
+          className="relative w-[165px] h-[612px] bg-white border-r border-gray-200 p-[14px] pr-[10px] flex flex-col gap-[10px] overflow-hidden pointer-events-auto max-md:w-auto max-md:min-w-max max-md:h-[70px] max-md:px-4 max-md:py-2 max-md:flex-row max-md:gap-2 max-md:border-r-0 max-md:overflow-visible "
         >
 
           {/* PROFILE */}
           <div
-            className="flex items-center justify-between gap-1 pb-[10px] border-b border-gray-200 max-md:hidden"
+            className="flex items-center gap-2 pb-[10px] max-md:hidden"
           >
-            <img
-              src="/images/icons/profileuser.svg"
-              alt="profileImg"
-              className="w-[34px] h-[34px] rounded-full object-cover border-2 border-violet-500 flex-shrink-0"
-            />
+            <div className="w-[34px] h-[34px] rounded-full overflow-hidden border-2 border-violet-500 flex-shrink-0 bg-gray-100 flex items-center justify-center">
+              {loading ? (
+                <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+              ) : currentPublication?.logoUrl ? (
+                <img
+                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${currentPublication.logoUrl}`}
+                  alt={currentPublication.name || "Publication"}
+                  className="w-full h-full object-cover"
+                />
+              ) : currentPublication?.name ? (
+                <span className="text-violet-600 font-bold text-sm">
+                  {currentPublication.name.charAt(0).toUpperCase()}
+                </span>
+              ) : (
+                <img
+                  src="/images/icons/profileuser.svg"
+                  alt="profileImg"
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
 
-            <a href="/view-site" target="_blank" rel="noopener noreferrer">
-              <button
-                className="bg-violet-500 text-white px-[10px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:bg-violet-600"
+            <div className="flex-1 min-w-0">
+              <a 
+                href={currentPublication?.id ? `/view-site?publicationId=${currentPublication.id}` : "/view-site"} 
+                target="_blank" 
+                rel="noopener noreferrer"
               >
-                view site
-              </button>
-            </a>
+                <button
+                  className="w-[94px] h-[32px] text-white px-[16px] py-[8px] rounded-[4px] text-[14px] font-semibold leading-[100%] whitespace-nowrap hover:opacity-90 transition-opacity flex items-center justify-center bg-gradient-to-br from-[#A941FB] to-[#7864F0] shadow-[0px_4px_8px_0px_#EADBF9]"
+                >
+                  View Site
+                </button>
+              </a>
+            </div>
           </div>
 
           {/* MY SPACE */}
-          <div className="pb-2 border-b border-gray-200 max-md:pb-0 max-md:border-none max-md:flex-shrink-0">
+          <div className="pb-2 max-md:pb-0 max-md:border-none max-md:flex-shrink-0">
+            {(() => {
+              const [isHovered, setIsHovered] = useState(false);
+              return (
             <div
-              className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${pathname === '/dashboard' ? '' : 'hover:bg-gray-100'}`}
+              className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${isHovered ? 'bg-[#F6F6F6]' : ''}`}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
             >
-              <img src="/images/icons/myspace.svg" className="w-6 h-6 max-md:w-6 max-md:h-6" />
+              <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${pathname === '/dashboard' ? 'brightness-0' : isHovered ? 'brightness-50' : ''}`} />
               <Link href="/dashboard">
-                <p className={`text-[14px] leading-[150%] max-md:text-[11px] max-md:text-center ${pathname === '/dashboard' ? 'font-bold text-black' : 'font-normal text-gray-700'}`}>
+                <p className={`font-sans text-[14px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center font-[\'Public Sans\'] tracking-[0%] font-normal ${pathname === '/dashboard' ? 'font-bold text-black' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
                   My Space
                 </p>
               </Link>
             </div>
+              );
+            })()}
           </div>
 
           {/* SECTION BLOCK COMPONENT */}
@@ -93,7 +145,7 @@ export default function Sidebar() {
               items: [
                 ["all_articles.svg", "All Articles"],
                 ["Publish.svg", "Published"],
-                ["Publish.svg", "Unpublished"],
+                ["unpublished.svg", "Unpublished"],
                 ["Schedule.svg", "Schedule"],
                 ["Review.svg", "Review"],
               ]
@@ -101,9 +153,9 @@ export default function Sidebar() {
             {
               title: "PERSONAL",
               items: [
-                ["all_articles.svg", "My Blogs", "/my blogs"],
-                ["Publish.svg", "Draft", "/drafts"],
-                ["trash1.svg", "Trash", "/trash"],
+                ["myblogs.svg", "My Blogs", "/my blogs"],
+                ["Draft.svg", "Draft", "/drafts"],
+                ["trash.svg", "Trash", "/trash"],
               ]
             }
           ].map((section, idx) => (
@@ -113,37 +165,36 @@ export default function Sidebar() {
             >
               {/* SECTION HEADING */}
               <h1
-                className="text-[11px] font-semibold text-gray-400 tracking-[0.5px] uppercase mb-[3px] max-md:hidden"
+                className="text-[11px] font-semibold text-[#A4A4A4] tracking-[0.5px] uppercase mb-[3px] max-md:hidden"
               >
                 {section.title}
               </h1>
 
               {/* SECTION ITEMS */}
-              {section.items.map(([icon, label]) => (
+              {section.items.map(([icon, label]) => {
+                const [isHovered, setIsHovered] = useState(false);
+                return (
                 <Link key={label} href={getRoute(label)}>
                   <div
-                    className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isActive(label) ? '' : 'hover:bg-gray-100'}`}
+                    className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive(label) ? 'bg-[#F6F6F6]' : ''}`}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
                   >
                     <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                      {label === "Unpublished" ? (
-                        <FileClock
-                          className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${isActive(label) ? 'opacity-100 text-black' : 'opacity-60 text-gray-500'}`}
-                        />
-                      ) : (
-                        <img
-                          src={label === "Settings" ? `/icons/${icon}` : `/images/icons/${icon}`}
-                          className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 ${isActive(label) ? 'opacity-100' : 'opacity-60'}`}
-                        />
-                      )}
+                      <img
+                        src={label === "Settings" ? `/icons/${icon}` : `/images/icons/${icon}`}
+                        className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive(label) ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`}
+                      />
                       <p
-                        className={`text-[13px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap ${isActive(label) ? 'font-bold text-black' : 'font-normal text-gray-500'}`}
+                        className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive(label) ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}
                       >
                         {label}
                       </p>
                     </div>
                   </div>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           ))}
         </div>

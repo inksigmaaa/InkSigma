@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1768196553128,
+      "tag": "0000_productive_stardust",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1768314671506,
+      "tag": "0001_wandering_senator_kelly",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768314671600,
+      "tag": "0002_fix_notification_timezone",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1768381933203,
+      "tag": "0003_amazing_the_hood",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1768554263417,
+      "tag": "0004_spicy_riptide",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1768803205722,
+      "tag": "0005_blue_hulk",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1768805221409,
+      "tag": "0006_peaceful_loki",
+      "breakpoints": true
+    }
+  ]
+}

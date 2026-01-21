@@ -1,9 +1,6 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { X, Upload } from "lucide-react"
 
 export function ThumbnailModal({ isOpen, onClose, onImageAdd }) {
   const [imageTitle, setImageTitle] = useState("")
@@ -45,15 +42,12 @@ export function ThumbnailModal({ isOpen, onClose, onImageAdd }) {
     onClose()
   }
 
-  // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'unset'
     }
-
-    // Cleanup function to restore scroll when component unmounts
     return () => {
       document.body.style.overflow = 'unset'
     }
@@ -62,49 +56,54 @@ export function ThumbnailModal({ isOpen, onClose, onImageAdd }) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-md mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">Add Thumbnail Image</h2>
-            <p className="text-sm text-gray-500 mt-1">This thumbnail will be your Articles display image</p>
+    <div 
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
+      onClick={handleClose}
+    >
+      <div 
+        className="w-[355px] h-[618px] rounded bg-white flex flex-col pt-6 pr-12 pb-12 pl-12"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Inner Content Area */}
+        <div className="w-[258.5px] flex flex-col">
+          {/* Title */}
+          <div className="mb-6">
+            <h2 className="font-['Public_Sans'] font-bold text-lg text-gray-900 mb-2">
+              Add Thumbnail Image
+            </h2>
+            <p className="font-['Public_Sans'] font-normal text-sm text-gray-500 leading-[150%]">
+              This thumbnail will be your Articles display image
+            </p>
           </div>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-6">
           {/* Upload Area */}
-          <div className="space-y-2">
-            <div 
-              onClick={handleUploadClick}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-gray-400 transition-colors"
-            >
-              {previewUrl ? (
-                <div className="space-y-2">
-                  <img 
-                    src={previewUrl} 
-                    alt="Preview" 
-                    className="max-w-full max-h-32 mx-auto rounded"
-                  />
-                  <p className="text-sm text-gray-600">Click to change image</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="w-12 h-12 bg-gray-200 rounded-lg mx-auto flex items-center justify-center">
-                    <Upload className="h-6 w-6 text-gray-400" />
-                  </div>
-                  <p className="text-gray-500 text-sm">+ Upload Thumbnail here</p>
-                </div>
-              )}
-            </div>
-            <p className="text-xs text-gray-400">Image Ratio: 1.9:1 (W: 1200px H: 630px)</p>
+          <div 
+            onClick={handleUploadClick}
+            className="w-[254px] h-[152px] border border-gray-200 rounded-lg flex flex-col items-center justify-center bg-gray-50 cursor-pointer mb-2 hover:border-gray-300 transition-colors"
+          >
+            {previewUrl ? (
+              <div className="text-center">
+                <img 
+                  src={previewUrl} 
+                  alt="Preview" 
+                  className="max-w-full max-h-[100px] rounded"
+                />
+                <p className="text-xs text-gray-500 mt-2">Click to change</p>
+              </div>
+            ) : (
+              <>
+                <svg 
+                  className="w-12 h-12 text-gray-300 mb-2"
+                  fill="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="font-['Public_Sans'] text-sm text-gray-400">
+                  + Upload Thumbnail here
+                </span>
+              </>
+            )}
           </div>
 
           {/* Hidden File Input */}
@@ -116,47 +115,56 @@ export function ThumbnailModal({ isOpen, onClose, onImageAdd }) {
             className="hidden"
           />
 
+          {/* Image Ratio */}
+          <p className="font-['Public_Sans'] text-xs text-gray-400 mb-6">
+            Image Ratio: 1.91:1 (W: 1200px H: 630px)
+          </p>
+
           {/* Image Title */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-900">Image Title</label>
-            <Input
+          <div className="w-[258.5px] flex flex-col mb-6">
+            <label className="font-['Public_Sans'] font-semibold text-sm text-gray-900 mb-2">
+              Image Title
+            </label>
+            <input
               type="text"
               placeholder="Enter your Image Title"
               value={imageTitle}
               onChange={(e) => setImageTitle(e.target.value)}
-              className="w-full"
+              className="w-full py-2 border-0 border-b border-gray-200 font-['Public_Sans'] text-sm text-gray-700 outline-none bg-transparent focus:border-gray-400 transition-colors"
             />
           </div>
 
           {/* Alt Text */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-900">Alt text</label>
-            <Input
+          <div className="w-[258.5px] flex flex-col mb-6">
+            <label className="font-['Public_Sans'] font-semibold text-sm text-gray-900 mb-2">
+              Alt text
+            </label>
+            <input
               type="text"
-              placeholder="Enter alt text"
+              placeholder="Enter alt Text"
               value={altText}
               onChange={(e) => setAltText(e.target.value)}
-              className="w-full"
+              className="w-full py-2 border-0 border-b border-gray-200 font-['Public_Sans'] text-sm text-gray-700 outline-none bg-transparent focus:border-gray-400 transition-colors"
             />
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
-          <Button
-            variant="outline"
+        {/* Buttons */}
+        <div className="flex w-[259px] h-8 gap-2 mt-auto">
+          <button
             onClick={handleClose}
-            className="px-6"
+            className="w-[104px] h-8 rounded bg-gray-100 border border-gray-200 font-['Public_Sans'] font-medium text-sm text-gray-600 cursor-pointer flex items-center justify-center hover:bg-gray-200 transition-colors"
           >
             Close
-          </Button>
-          <Button
+          </button>
+          <button
             onClick={handleAddImage}
             disabled={!selectedFile}
-            className="bg-black text-white hover:bg-gray-800 px-6"
+            className={`w-[151px] h-8 rounded border-none font-['Public_Sans'] font-medium text-sm text-white cursor-pointer flex items-center justify-center hover:opacity-80 transition-colors ${!selectedFile ? 'opacity-50 cursor-not-allowed' : ''}`}
+            style={{ backgroundColor: '#000000' }}
           >
             Add image
-          </Button>
+          </button>
         </div>
       </div>
     </div>

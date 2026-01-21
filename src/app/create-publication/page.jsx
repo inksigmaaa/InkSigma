@@ -1,60 +1,284 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
+import AuthGuard from "@/components/auth/AuthGuard";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import imagePlaceholder from "@/icons/image-placeholder.svg";
 import cameraIcon from "@/icons/camera.svg";
+import { publicationService } from "@/services/publicationService";
+import { usePublication } from "@/contexts/PublicationContext";
 
 export default function CreatePublication() {
+  const router = useRouter();
+  const { data: session } = useSession();
+  const { loadUserPublications, switchPublication } = usePublication();
   const [publicationName, setPublicationName] = useState("");
   const [subdomain, setSubdomain] = useState("");
   const [showErrors, setShowErrors] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [uploadedImage, setUploadedImage] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [checkingSubdomain, setCheckingSubdomain] = useState(false);
+  const [subdomainAvailable, setSubdomainAvailable] = useState(null);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
+  const subdomainCheckTimeout = useRef(null);
+
+  // Extract name from email on component mount
+  useEffect(() => {
+    if (session?.user?.email && !publicationName) {
+      const emailUsername = session.user.email.split('@')[0];
+      // Capitalize first letter and replace dots/underscores with spaces
+      const formattedName = emailUsername
+        .replace(/[._]/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      setPublicationName(formattedName);
+    }
+  }, [session, publicationName]);
+
+  // Check subdomain availability with debounce
+  useEffect(() => {
+    if (subdomainCheckTimeout.current) {
+      clearTimeout(subdomainCheckTimeout.current);
+    }
+
+    if (!subdomain || subdomain.length < 3) {
+      setSubdomainAvailable(null);
+      return;
+    }
+
+    // Validate subdomain format first
+    if (!/^[a-zA-Z0-9-]+$/.test(subdomain)) {
+      setSubdomainAvailable(null);
+      return;
+    }
+
+    setCheckingSubdomain(true);
+    
+    subdomainCheckTimeout.current = setTimeout(async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+        const response = await fetch(`${API_URL}/api/publications/check-subdomain/${subdomain.toLowerCase()}`, {
+          credentials: "include",
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setSubdomainAvailable(data.available);
+        } else {
+          setSubdomainAvailable(null);
+        }
+      } catch (error) {
+        console.error('Error checking subdomain:', error);
+        setSubdomainAvailable(null);
+      } finally {
+        setCheckingSubdomain(false);
+      }
+    }, 500);
+
+    return () => {
+      if (subdomainCheckTimeout.current) {
+        clearTimeout(subdomainCheckTimeout.current);
+      }
+    };
+  }, [subdomain]);
 
   const handleStartWriting = async () => {
     if (!publicationName.trim() || !subdomain.trim()) {
+      setErrorMessage("Please fill in all required fields!");
       setShowErrors(true);
       return;
     }
 
-    // Just redirect to home with any values
+    if (publicationName.length < 2 || publicationName.length > 50) {
+      setErrorMessage("Publication name must be between 2 and 50 characters!");
+      setShowErrors(true);
+      return;
+    }
+
+    if (subdomain.length < 3 || subdomain.length > 63) {
+      setErrorMessage("Subdomain must be between 3 and 63 characters!");
+      setShowErrors(true);
+      return;
+    }
+
+    // Validate subdomain format (alphanumeric and hyphens only)
+    if (!/^[a-zA-Z0-9-]+$/.test(subdomain)) {
+      setErrorMessage("Subdomain can only contain letters, numbers, and hyphens!");
+      setShowErrors(true);
+      return;
+    }
+
+    // Validate subdomain format more strictly (no leading/trailing hyphens)
+    if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(subdomain)) {
+      setErrorMessage("Subdomain cannot start or end with hyphens!");
+      setShowErrors(true);
+      return;
+    }
+
+    // Check if subdomain is available
+    if (subdomainAvailable === false) {
+      setErrorMessage("This subdomain is already taken. Please choose another one.");
+      setShowErrors(true);
+      return;
+    }
+
+    if (!session?.user?.id) {
+      setErrorMessage("User not authenticated!");
+      setShowErrors(true);
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      await fetch("/api/publication/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: publicationName,
-          subdomain: subdomain,
-          image: uploadedImage,
-        }),
+      // First, verify authentication with the backend
+      const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      console.log("Verifying authentication with backend...");
+      
+      const authCheckResponse = await fetch(`${API_URL}/api/publications/debug/auth-check`, {
+        credentials: "include",
+      });
+      
+      if (!authCheckResponse.ok) {
+        console.error("Authentication check failed:", authCheckResponse.status);
+        throw new Error("Authentication failed. Please log in again.");
+      }
+      
+      const authCheckData = await authCheckResponse.json();
+      console.log("Authentication verified:", authCheckData);
+
+      // Create publication
+      const publication = await publicationService.createPublication({
+        name: publicationName,
+        subdomain: subdomain.toLowerCase(),
       });
 
-      // Redirect to home page
-      window.location.href = "/home";
+      console.log('Publication created:', publication);
+
+      // Upload image if provided
+      if (uploadedImage && publication.id) {
+        try {
+          console.log('Uploading logo for publication:', publication.id);
+          
+          // Convert base64 to blob
+          const base64Response = await fetch(uploadedImage);
+          const blob = await base64Response.blob();
+          
+          // Determine the correct mime type from the base64 string
+          const mimeType = uploadedImage.match(/data:([^;]+);/)?.[1] || 'image/png';
+          
+          // Map MIME types to proper file extensions
+          const extensionMap = {
+            'image/jpeg': 'jpg',
+            'image/jpg': 'jpg',
+            'image/png': 'png',
+            'image/gif': 'gif',
+            'image/webp': 'webp',
+            'image/svg+xml': 'svg',
+            'image/svg': 'svg'
+          };
+          
+          const extension = extensionMap[mimeType] || 'png';
+          
+          console.log('Image details:', { mimeType, extension, size: blob.size });
+          
+          // Create file with correct mime type
+          const file = new File([blob], `publication-logo.${extension}`, { type: mimeType });
+          
+          const uploadResult = await publicationService.uploadLogo(publication.id, file);
+          console.log('Logo upload result:', uploadResult);
+          
+          // Wait a bit to ensure database is updated
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          console.error('Failed to upload logo:', error);
+          console.error('Error details:', error.message);
+          // Show error but don't block navigation
+          setErrorMessage('Publication created but logo upload failed. You can upload it later in settings.');
+          setShowErrors(true);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      } else {
+        console.log('No image to upload or publication ID missing');
+      }
+
+      // Redirect to dashboard
+      console.log('Refreshing user publications...');
+      
+      try {
+        // Refresh the publication context to include the new publication
+        await loadUserPublications();
+        
+        // Wait a bit to ensure the context is updated
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Switch to the newly created publication
+        const publicationWithMeta = {
+          ...publication,
+          isOwner: true,
+          role: "admin",
+          joinedAt: publication.createdAt,
+        };
+        
+        switchPublication(publicationWithMeta);
+        
+        // Clear any cached publication check to force AuthGuard to recheck
+        // This prevents the AuthGuard from redirecting back to create-publication
+        const cacheKey = `publication-check-${session.user.id}`;
+        sessionStorage.setItem(cacheKey, 'true');
+        sessionStorage.removeItem('publication-check-cache');
+        
+        // Redirect to dashboard (myspace) instead of directly to publication
+        router.push('/dashboard');
+      } catch (contextError) {
+        console.error('Failed to update context, redirecting to dashboard:', contextError);
+        // Clear cache and redirect to dashboard (myspace)
+        const cacheKey = `publication-check-${session.user.id}`;
+        sessionStorage.setItem(cacheKey, 'true');
+        sessionStorage.removeItem('publication-check-cache');
+        router.push('/dashboard');
+      }
     } catch (error) {
-      console.error("Error creating publication:", error);
-      // Still redirect even on error
-      window.location.href = "/home";
+      console.error('Error creating publication:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        data: error.data,
+      });
+      
+      // Provide more helpful error messages
+      let displayMessage = "Failed to create publication. Please try again.";
+      
+      if (error.status === 401) {
+        displayMessage = "You are not authenticated. Please log in again.";
+      } else if (error.status === 400) {
+        displayMessage = error.message || "Invalid input. Please check your publication name and subdomain.";
+      } else if (error.message) {
+        displayMessage = error.message;
+      }
+      
+      setErrorMessage(displayMessage);
+      setShowErrors(true);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Auto-hide error messages after 3 seconds
   useEffect(() => {
     if (showErrors) {
       const timer = setTimeout(() => {
         setShowErrors(false);
-      }, 2000);
-
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [showErrors]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -101,272 +325,140 @@ export default function CreatePublication() {
   };
 
   return (
-    <>
+    <AuthGuard>
       <NavbarLoggedin />
 
       <div className="min-h-screen bg-white px-4 flex items-center justify-center">
-        <div
-          style={{
-            width: '300px',
-            gap: '40px',
-            marginTop: '65px',
-            opacity: 1
-          }}
-        >
-
-          {/* Header */}
+        <div style={{ width: '300px', gap: '40px', marginTop: '65px', opacity: 1 }}>
           <div className="text-center mb-12">
             <h1
               className="text-[24px] font-bold leading-[100%] mb-2 bg-clip-text text-transparent"
               style={{
                 fontFamily: 'Public Sans',
-                fontWeight: 700,
-                fontSize: '24px',
-                lineHeight: '100%',
-                letterSpacing: '0%',
                 background: 'linear-gradient(244.98deg, #A941FB 16%, rgba(120, 100, 240, 0.92) 80.6%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent'
               }}
             >
-              Create Your Publication
+              Welcome to InkSigma!
             </h1>
-            <p
-              className="text-center"
-              style={{
-                fontFamily: 'Public Sans',
-                fontWeight: 400,
-                fontSize: '14px',
-                lineHeight: '150%',
-                letterSpacing: '0%',
-                color: '#404040'
-              }}
-            >
-              Set up a publication & Start Writing
+            <p className="text-center text-[14px] text-[#404040]">
+              Create your publication to get started
             </p>
           </div>
 
-          {/* Image Upload Section */}
           <div className="flex justify-center mb-10">
             <div className="relative">
               {uploadedImage ? (
-                <img
-                  src={uploadedImage}
-                  alt="Publication"
-                  style={{
-                    width: '114px',
-                    height: '114px',
-                    borderRadius: '96px',
-                    borderWidth: '1px',
-                    opacity: 1,
-                    objectFit: 'cover'
-                  }}
-                />
+                <img src={uploadedImage} alt="Publication" style={{ width: '114px', height: '114px', borderRadius: '96px', objectFit: 'cover' }} />
               ) : (
-                <img
-                  src={imagePlaceholder.src}
-                  alt="Upload placeholder"
-                  style={{
-                    width: '114px',
-                    height: '112px',
-                    borderRadius: '96px',
-                    borderWidth: '1px',
-                    objectFit: 'cover',
-                    opacity: 1
-                  }}
-                />
+                <img src={imagePlaceholder.src} alt="Upload placeholder" style={{ width: '114px', height: '112px', borderRadius: '96px', objectFit: 'cover' }} />
               )}
 
-              {/* Camera or Edit Icon */}
               <button
                 onClick={uploadedImage ? handleEditClick : handleCameraClick}
-                className="absolute bottom-0 right-0 w-[32px] h-[32px] rounded-full flex items-center justify-center cursor-pointer transition-opacity hover:opacity-90"
-                style={{
-                  background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)'
-                }}
+                className="absolute bottom-0 right-0 w-[32px] h-[32px] rounded-full flex items-center justify-center cursor-pointer"
+                style={{ background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)' }}
               >
                 {uploadedImage ? (
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M11.334 2.00004C11.5091 1.82494 11.7169 1.68605 11.9457 1.59129C12.1745 1.49653 12.4197 1.44775 12.6673 1.44775C12.9149 1.44775 13.1601 1.49653 13.3889 1.59129C13.6177 1.68605 13.8256 1.82494 14.0007 2.00004C14.1758 2.17513 14.3147 2.383 14.4094 2.61178C14.5042 2.84055 14.553 3.08575 14.553 3.33337C14.553 3.58099 14.5042 3.82619 14.4094 4.05497C14.3147 4.28374 14.1758 4.49161 14.0007 4.66671L5.00065 13.6667L1.33398 14.6667L2.33398 11L11.334 2.00004Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 ) : (
-                  <img
-                    src={cameraIcon.src}
-                    alt="Camera"
-                    className="w-4 h-4"
-                  />
+                  <img src={cameraIcon.src} alt="Camera" className="w-4 h-4" />
                 )}
               </button>
 
-              {/* Dropdown Menu */}
               {showDropdown && uploadedImage && (
-                <div
-                  ref={dropdownRef}
-                  className="absolute bottom-[35px] left-[100px] bg-white rounded shadow-lg overflow-hidden z-10"
-                  style={{
-                    width: '120px',
-                    border: '1px solid #E5E7EB'
-                  }}
-                >
-                  <button
-                    onClick={handleChangeImage}
-                    className="w-full px-2 py-1.5 text-left text-[11px] text-[#333] hover:bg-[#F9FAFB] transition-colors"
-                    style={{
-                      fontFamily: 'Public Sans',
-                      fontWeight: 400
-                    }}
-                  >
-                    Change Image
-                  </button>
-                  <button
-                    onClick={handleRemoveImage}
-                    className="w-full px-2 py-1.5 text-left text-[11px] text-[#DC2626] hover:bg-[#FEF2F2] transition-colors"
-                    style={{
-                      fontFamily: 'Public Sans',
-                      fontWeight: 400
-                    }}
-                  >
-                    Remove Image
-                  </button>
+                <div ref={dropdownRef} className="absolute bottom-[35px] left-[100px] bg-white rounded shadow-lg z-10" style={{ width: '120px', border: '1px solid #E5E7EB' }}>
+                  <button onClick={handleChangeImage} className="w-full px-2 py-1.5 text-left text-[11px] text-[#333] hover:bg-[#F9FAFB]">Change Image</button>
+                  <button onClick={handleRemoveImage} className="w-full px-2 py-1.5 text-left text-[11px] text-[#A30000] hover:bg-[#FEF2F2]">Remove Image</button>
                 </div>
               )}
 
-              {/* Hidden File Input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
             </div>
           </div>
+          <p className="text-center text-[12px] text-[#999] mb-8">Add a logo (optional)</p>
 
-          {/* Red Error Message */}
           {showErrors && (
             <div className="mb-6">
-              <div
-                className="text-center"
-                style={{
-                  width: '300px',
-                  height: '42px',
-                  gap: '428px',
-                  opacity: 1,
-                  borderRadius: '4px',
-                  paddingTop: '12px',
-                  paddingRight: '16px',
-                  paddingBottom: '12px',
-                  paddingLeft: '16px',
-                  background: '#FFD6D6'
-                }}
-              >
-                <p
-                  style={{
-                    fontFamily: 'Public Sans',
-                    fontWeight: 400,
-                    fontStyle: 'normal',
-                    fontSize: '12px',
-                    lineHeight: '150%',
-                    letterSpacing: '0%',
-                    color: '#A30000'
-                  }}
-                >
-                  Please fill in all required fields!
-                </p>
+              <div className="text-center" style={{ width: '300px', borderRadius: '4px', padding: '12px 16px', background: '#FFD6D6' }}>
+                <p style={{ fontSize: '12px', color: '#A30000' }}>{errorMessage}</p>
               </div>
             </div>
           )}
 
-          {/* Form */}
           <div className="space-y-8">
-            {/* Publication Name */}
             <div>
+              <label className="block text-[12px] text-[#666] mb-1">Publication Name</label>
               <input
                 type="text"
                 placeholder="Enter your Publication Name"
                 value={publicationName}
+                minLength={2}
+                maxLength={50}
                 onChange={(e) => setPublicationName(e.target.value)}
-                className="w-full px-0 py-2 border-0 border-b text-[14px] text-[#333] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#7C3AED] transition-colors bg-transparent"
-                style={{
-                  borderBottomWidth: '1.5px',
-                  borderBottomStyle: 'solid',
-                  borderBottomColor: '#CBCBCB'
-                }}
+                disabled={loading}
+                className="w-full px-0 py-2 border-0 border-b text-[14px] text-[#333] placeholder:text-[#CCCCCC] focus:outline-none bg-transparent disabled:opacity-50"
+                style={{ borderBottomWidth: '1.5px', borderBottomColor: '#CBCBCB' }}
               />
             </div>
 
-            {/* Subdomain */}
             <div>
+              <label className="block text-[12px] text-[#666] mb-1">Subdomain</label>
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Subdomain name"
+                  placeholder="your-subdomain"
                   value={subdomain}
-                  onChange={(e) => setSubdomain(e.target.value)}
-                  className="w-full px-0 py-2 pr-[130px] border-0 border-b text-[14px] text-[#333] placeholder:text-[#CCCCCC] focus:outline-none focus:border-[#7C3AED] transition-colors bg-transparent"
-                  style={{
-                    borderBottomWidth: '1.5px',
-                    borderBottomStyle: 'solid',
-                    borderBottomColor: '#CBCBCB'
+                  onChange={(e) => {
+                    // Only allow alphanumeric and hyphens
+                    const value = e.target.value.replace(/[^a-zA-Z0-9-]/g, '');
+                    setSubdomain(value);
                   }}
+                  minLength={3}
+                  maxLength={63}
+                  disabled={loading}
+                  className="w-full px-0 py-2 pr-[130px] border-0 border-b text-[14px] text-[#333] placeholder:text-[#CCCCCC] focus:outline-none bg-transparent disabled:opacity-50"
+                  style={{ borderBottomWidth: '1.5px', borderBottomColor: '#CBCBCB' }}
                 />
-                <span
-                  className="absolute right-0 bottom-2"
-                  style={{
-                    fontFamily: 'Public Sans',
-                    fontWeight: 400,
-                    height: '21px',
-                    width: '93px',
-                    fontStyle: 'regular',
-                    fontSize: '14px',
-                    lineHeight: '150%',
-                    letterSpacing: '0%',
-                    color: '#000000'
-                  }}
-                >
-                  .inksigma.com
-                </span>
+                <span className="absolute right-0 bottom-2 text-[14px] text-black">.inksigma.com</span>
               </div>
+              {subdomain.length >= 3 && (
+                <div className="mt-2 text-[11px]">
+                  {checkingSubdomain ? (
+                    <span className="text-[#666]">Checking availability...</span>
+                  ) : subdomainAvailable === true ? (
+                    <span className="text-green-600">✓ Subdomain available</span>
+                  ) : subdomainAvailable === false ? (
+                    <span className="text-red-600">✗ Subdomain already taken</span>
+                  ) : null}
+                </div>
+              )}
             </div>
 
-            {/* Start Writing Button */}
             <div className="pt-6">
               <button
                 onClick={handleStartWriting}
-                className="mx-auto text-[#7C3AED] text-[14px] font-medium hover:text-[#6D28D9] transition-colors flex items-center justify-center"
-                style={{
-                  gap: '8px',
-                  opacity: 1,
-                  paddingTop: '8px',
-                  paddingRight: '4px',
-                  paddingBottom: '8px',
-                  paddingLeft: '4px'
-                }}
+                disabled={loading}
+                className="mx-auto text-[#7C3AED] text-[14px] font-medium hover:text-[#6D28D9] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Start Writing
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
+                {loading ? "Creating Publication..." : "Continue to Dashboard"}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
               </button>
             </div>
           </div>
-
         </div>
       </div>
 
-      {/* Footer */}
       <div className="fixed bottom-0 left-0 w-full bg-white py-4 text-center border-t border-[#F3F4F6] px-4">
-        <p className="text-[12px] text-[#CCCCCC] max-md:text-[10px] max-sm:text-[9px]">
-          Copyright © 2023 designed & developed by <a href="#" className="text-[#CCCCCC] underline underline-offset-2 hover:text-[#999]">Inksigma</a>, a <a href="#" className="text-[#CCCCCC] underline underline-offset-2 hover:text-[#999]">Zemuria Inc.</a> brand
+        <p className="text-[12px] text-[#CCCCCC]">
+          Copyright © 2023 designed & developed by <a href="#" className="text-[#CCCCCC] underline">Inksigma</a>, a <a href="#" className="text-[#CCCCCC] underline">Zemuria Inc.</a> brand
         </p>
       </div>
-    </>
+    </AuthGuard>
   );
 }

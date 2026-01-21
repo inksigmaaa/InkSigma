@@ -1,55 +1,64 @@
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import Image from "next/image"
+import CategoryFilter from "../categoryFilter/CategoryFilter"
+import { Trash2 } from "lucide-react"
 
 export default function ScheduleControls({ 
   selectedPosts, 
   totalPosts, 
   onSelectAll, 
   category, 
-  onCategoryChange 
+  onCategoryChange,
+  onBulkDraft,
+  onBulkDelete
 }) {
   return (
-    <div className="hidden md:flex items-center justify-between">
+    <div className="hidden sm:flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Checkbox
+        <div className="flex items-center gap-2 cursor-pointer w-[123px] h-8 bg-[#F8F8F8] rounded px-3 py-2">
+          <input
+            type="checkbox"
             id="select-all"
-            checked={selectedPosts.length === totalPosts}
-            onCheckedChange={onSelectAll}
-            className="peer-checked:bg-violet-600 peer-checked:border-violet-600"
+            checked={selectedPosts.length === totalPosts && totalPosts > 0}
+            onChange={(e) => onSelectAll(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-white bg-white checked:bg-violet-600 checked:border-violet-600 focus:outline-none focus:ring-0"
+            style={{
+              accentColor: '#7c3aed'
+            }}
           />
-          <label htmlFor="select-all" className="text-sm text-gray-600 cursor-pointer">
+          <label htmlFor="select-all" className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-500">
             Select all
           </label>
         </div>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className={`${selectedPosts.length === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600'}`}
+        <button
+          title="Move to Draft"
           disabled={selectedPosts.length === 0}
+          onClick={onBulkDraft}
+          className={`w-8 h-8 border rounded flex items-center justify-center transition ${
+            selectedPosts.length > 0
+              ? "bg-white border-gray-300 cursor-pointer hover:bg-gray-50"
+              : "bg-gray-50 border-gray-200 cursor-not-allowed opacity-50"
+          }`}
         >
-          <Image src="/svg/delete.svg" alt="Delete" width={20} height={20} />
-        </Button>
+          <img src="/images/icons/draft1.svg" alt="Move to Draft" className={`w-4 h-4 ${selectedPosts.length === 0 ? "opacity-50" : ""}`} />
+        </button>
+        <button
+          title="Delete selected"
+          disabled={selectedPosts.length === 0}
+          onClick={onBulkDelete}
+          className={`w-8 h-8 border rounded flex items-center justify-center transition ${
+            selectedPosts.length > 0
+              ? "bg-white border-gray-300 cursor-pointer hover:bg-gray-50"
+              : "bg-gray-50 border-gray-200 cursor-not-allowed opacity-50"
+          }`}
+        >
+          <Trash2 className={`h-4 w-4 ${selectedPosts.length === 0 ? "text-gray-300" : "text-gray-600"}`} />
+        </button>
       </div>
 
-      <Select value={category} onValueChange={onCategoryChange}>
-        <SelectTrigger className="w-[200px] border-gray-300">
-          <SelectValue placeholder="Choose Category" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="sports">Sports</SelectItem>
-          <SelectItem value="humour">Humour</SelectItem>
-          <SelectItem value="history">History</SelectItem>
-        </SelectContent>
-      </Select>
+      <CategoryFilter 
+        selectedCategories={category ? [category] : []}
+        onCategoriesChange={(cats) => onCategoryChange(cats[0] || "")}
+        buttonText="Choose Category"
+      />
     </div>
   )
 }

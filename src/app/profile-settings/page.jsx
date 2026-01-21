@@ -1,50 +1,221 @@
 "use client"
 
-import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
+import UserAvatar from "@/components/ui/UserAvatar"
+import { useSession } from "@/lib/auth-client"
+
+const API_URL = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:5000"
 
 export default function ProfileSettingsPage() {
-  const { data: session, isPending } = useSession()
   const router = useRouter()
+  const { data: session, isPending } = useSession()
+  const fileInputRef = useRef(null)
   const [showResetModal, setShowResetModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [cachedUserImage, setCachedUserImage] = useState(null)
+  const [showUpdateMessage, setShowUpdateMessage] = useState(false)
+  const [bio, setBio] = useState("")
+  const [profileName, setProfileName] = useState("")
+  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
+  const [image, setImage] = useState("")
+  const [imagePreview, setImagePreview] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [error, setError] = useState("")
+  const [hasPasswordAccount, setHasPasswordAccount] = useState(false)
+  const [isResettingPassword, setIsResettingPassword] = useState(false)
 
+  // Fetch profile data on mount
   useEffect(() => {
-    if (!isPending && !session) {
-      router.push("/login")
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/profile`, {
+          credentials: "include",
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setEmail(data.email || "")
+          setProfileName(data.profileName || "")
+          setUsername(data.username || "")
+          setBio(data.bio || "")
+          setImage(data.image || "")
+          setImagePreview(data.image || "")
+          setHasPasswordAccount(data.hasPasswordAccount || false)
+        } else if (response.status === 401) {
+          router.push("/login")
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (!isPending) {
+      if (session?.user) {
+        fetchProfile()
+      } else {
+        router.push("/login")
+      }
     }
   }, [session, isPending, router])
 
-  useEffect(() => {
-    // Get cached image from localStorage on mount
-    const cached = localStorage.getItem('userImage');
-    if (cached) {
-      setCachedUserImage(cached);
-    }
-  }, []);
+  const handleImageChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
 
-  useEffect(() => {
-    // Update cache when session loads
-    if (session?.user?.image) {
-      setCachedUserImage(session.user.image);
-      localStorage.setItem('userImage', session.user.image);
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file")
+      return
     }
-  }, [session?.user?.image]);
 
-  if (isPending) {
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be less than 5MB")
+      return
+    }
+
+    setError("")
+    setIsUploadingImage(true)
+
+    try {
+      // Create preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result)
+      }
+      reader.readAsDataURL(file)
+
+      // Upload image
+      const formData = new FormData()
+      formData.append("image", file)
+
+      const response = await fetch(`${API_URL}/api/profile/image`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || "Failed to upload image")
+        setImagePreview(image) // Revert preview
+        return
+      }
+
+      setImage(data.imageUrl)
+      setImagePreview(data.imageUrl)
+      
+      // Show success message
+      setShowUpdateMessage(true)
+      
+      // Reload page to refresh session with updated image
+      setTimeout(() => {
+        window.location.reload()
+      }, 1500)
+    } catch (error) {
+      console.error("Error uploading image:", error)
+      setError("Failed to upload image")
+      setImagePreview(image) // Revert preview
+      setIsUploadingImage(false)
+    }
+  }
+
+  const handleRemoveImage = async () => {
+    setIsUploadingImage(true)
+    setError("")
+
+    try {
+      const response = await fetch(`${API_URL}/api/profile/image`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        setError(data.error || "Failed to remove image")
+        return
+      }
+
+      setImage("")
+      setImagePreview("")
+      
+      // Show success message
+      setShowUpdateMessage(true)
+      
+      // Reload page to refresh session with updated image
+      setTimeout(() => {
+        window.location.reload()
+      }, 1500)
+    } catch (error) {
+      console.error("Error removing image:", error)
+      setError("Failed to remove image")
+      setIsUploadingImage(false)
+    }
+  }
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true)
+      setError("")
+
+      const response = await fetch(`${API_URL}/api/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          profileName,
+          username,
+          bio,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || "Failed to save profile")
+        return
+      }
+
+      setShowUpdateMessage(true)
+      
+      // Reload page after a short delay to show success message
+      setTimeout(() => {
+        window.location.reload()
+      }, 1500)
+    } catch (error) {
+      console.error("Error saving profile:", error)
+      setError("Failed to save profile. Please try again.")
+      setIsSaving(false)
+    }
+  }
+
+  if (isPending || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
+      <>
+        <NavbarLoggedin />
+        <DashboardSimpleSidebar />
+        <div className="min-h-screen bg-white flex justify-center items-center p-4 pt-[140px] md:pt-32 md:pl-64">
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </>
     )
   }
 
-  if (!session) {
-    return null
+  // User object for avatar
+  const userForAvatar = {
+    email,
+    name: profileName,
+    image: imagePreview,
   }
 
   return (
@@ -54,33 +225,45 @@ export default function ProfileSettingsPage() {
       <div className="min-h-screen bg-white flex justify-center p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 md:pl-64 pb-24 md:pb-8">
         <div className="w-full max-w-[800px] min-h-[927px] space-y-8">
           <h1 className="text-lg font-bold text-gray-900 text-center">Profile Settings</h1>
-          
+
           <div className="flex flex-col items-center">
-            
             {/* Profile Image */}
             <div className="flex flex-col items-center">
-              <div 
-                style={{ 
-                  width: '100px', 
-                  height: '100px', 
-                  opacity: 1, 
+              <div
+                style={{
+                  width: '100px',
+                  height: '100px',
+                  opacity: isUploadingImage ? 0.5 : 1,
                   borderRadius: '52px',
                   overflow: 'hidden'
                 }}
               >
-                <img 
-                  src={cachedUserImage || "/icons/nib.svg"} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover"
-                />
+                <UserAvatar user={userForAvatar} size="xl" className="w-full h-full" />
               </div>
-              
+
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                accept="image/*"
+                className="hidden"
+              />
+
               {/* Change/Remove buttons */}
               <div className="flex gap-4 mt-4">
-                <button className="text-purple-500 hover:text-purple-600 text-sm font-medium">
-                  Change
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingImage}
+                  className="text-purple-500 hover:text-purple-600 text-sm font-medium disabled:opacity-50"
+                >
+                  {isUploadingImage ? "Uploading..." : "Change"}
                 </button>
-                <button className="text-gray-400 hover:text-gray-600 text-sm font-medium">
+                <button 
+                  onClick={handleRemoveImage}
+                  disabled={isUploadingImage || !imagePreview}
+                  className="text-gray-400 hover:text-gray-600 text-sm font-medium disabled:opacity-50"
+                >
                   Remove
                 </button>
               </div>
@@ -95,8 +278,12 @@ export default function ProfileSettingsPage() {
                 </label>
                 <input
                   type="text"
+                  minLength={3}
+                  maxLength={32}
                   placeholder="Enter your Profile name"
-                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
+                  value={profileName}
+                  onChange={(e) => setProfileName(e.target.value)}
+                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-500"
                 />
               </div>
 
@@ -107,20 +294,26 @@ export default function ProfileSettingsPage() {
                 </label>
                 <input
                   type="text"
+                  minLength={3}
+                  maxLength={20}
                   placeholder="Enter your username"
-                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-500"
                 />
               </div>
 
-              {/* Email ID */}
+              {/* Email ID - Read Only */}
               <div>
                 <label className="block text-black font-bold text-base mb-2">
                   Email ID
                 </label>
                 <input
                   type="email"
-                  placeholder="Enter your Email ID"
-                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
+                  value={email}
+                  readOnly
+                  disabled
+                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-500 placeholder-gray-300 focus:outline-none cursor-not-allowed bg-gray-50"
                 />
               </div>
 
@@ -133,35 +326,75 @@ export default function ProfileSettingsPage() {
                   <input
                     type="text"
                     placeholder="Write your bio"
-                    maxLength={120}
-                    className="w-full border-b border-gray-300 py-2 text-sm text-gray-400 placeholder-gray-300 focus:outline-none focus:border-gray-500"
+                    maxLength={200}
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    className="w-full border-b border-gray-300 py-2 pr-12 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-500"
                   />
-                  <span className="absolute right-0 bottom-2 text-xs text-gray-400">12/120</span>
+                  <span className="absolute right-0 bottom-2 text-xs text-gray-400">{bio.length}/200</span>
                 </div>
               </div>
 
               {/* Reset Account Password */}
-              <div className="flex justify-center mt-8">
-                <button 
-                  className="text-gray-500 hover:text-gray-700 border-b border-gray-500 text-sm"
-                  style={{ width: '162px', height: '16px' }}
-                  onClick={() => setShowResetModal(true)}
-                >
-                  Reset Account Password
-                </button>
-              </div>
+              {hasPasswordAccount && (
+                <div className="flex justify-center mt-8">
+                  <button
+                    className="text-gray-500 hover:text-gray-700 border-b border-gray-500 text-sm"
+                    style={{ width: '162px', height: '16px' }}
+                    onClick={() => setShowResetModal(true)}
+                  >
+                    Reset Account Password
+                  </button>
+                </div>
+              )}
+              {!hasPasswordAccount && (
+                <div className="flex justify-center mt-8">
+                  <p className="text-gray-400 text-sm text-center">
+                    You signed in with a social provider. Password reset is not available.
+                  </p>
+                </div>
+              )}
 
-              {/* Save Button */}
-              <div className="flex justify-center mt-8">
-                <button 
-                  className="bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center"
-                  style={{ 
-                    width: '259px', 
-                    height: '32px', 
-                    borderRadius: '4px' 
+              {/* Error Message */}
+              {error && (
+                <div className="flex justify-center" style={{ marginTop: '16px' }}>
+                  <div className="bg-red-100 text-red-800 text-center font-medium px-4 py-2 rounded text-sm">
+                    {error}
+                  </div>
+                </div>
+              )}
+
+              {/* Settings Updated Message */}
+              {showUpdateMessage && (
+                <div className="flex justify-center" style={{ marginTop: '32px', marginBottom: '8px' }}>
+                  <div
+                    className="bg-green-100 text-green-800 text-center font-medium flex items-center justify-center"
+                    style={{
+                      width: '259px',
+                      height: '32px',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                    }}
+                  >
+                    Settings Updated
+                  </div>
+                </div>
+              )}
+
+              {/* Update Button */}
+              <div className="flex justify-center" style={{ marginTop: showUpdateMessage ? '0' : '32px' }}>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    width: '259px',
+                    height: '32px',
+                    borderRadius: '4px',
+                    fontSize: '14px',
                   }}
                 >
-                  Save
+                  {isSaving ? 'Saving...' : 'Update'}
                 </button>
               </div>
             </div>
@@ -187,20 +420,46 @@ export default function ProfileSettingsPage() {
                 Close
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   setShowResetModal(false)
-                  setShowSuccessModal(true)
+                  setIsResettingPassword(true)
+                  try {
+                    const response = await fetch(`${API_URL}/api/auth/forget-password`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      credentials: "include",
+                      body: JSON.stringify({
+                        email: email,
+                        redirectTo: `${window.location.origin}/reset-password`,
+                      }),
+                    })
+
+                    if (response.ok) {
+                      setShowSuccessModal(true)
+                    } else {
+                      const data = await response.json()
+                      setError(data.error || "Failed to send reset email")
+                    }
+                  } catch (error) {
+                    console.error("Error sending reset email:", error)
+                    setError("Failed to send reset email. Please try again.")
+                  } finally {
+                    setIsResettingPassword(false)
+                  }
                 }}
-                className="flex-1 bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors"
+                disabled={isResettingPassword}
+                className="flex-1 bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50"
               >
-                Confirm
+                {isResettingPassword ? "Sending..." : "Confirm"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Success Modal */}
+      {/* Success Modal - Password Reset */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 relative">

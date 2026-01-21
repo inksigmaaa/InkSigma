@@ -2,6 +2,9 @@ import { Public_Sans, Allison } from "next/font/google";
 import "./globals.css";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import { ArticlesProvider } from "@/contexts/ArticlesContext";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { PublicationProvider } from "@/contexts/PublicationContext";
+import { ToastProvider } from "@/contexts/ToastContext";
 
 const publicSans = Public_Sans({
   variable: "--font-public-sans",
@@ -25,11 +28,17 @@ export default function RootLayout({ children }) {
       <body
         className={`${publicSans.variable} ${allison.variable} antialiased`}
       >
-        <ArticlesProvider>
-          <ConditionalLayout>
-            {children}
-          </ConditionalLayout>
-        </ArticlesProvider>
+        <AuthProvider>
+          <PublicationProvider>
+            <ArticlesProvider>
+              <ToastProvider>
+                <ConditionalLayout>
+                  {children}
+                </ConditionalLayout>
+              </ToastProvider>
+            </ArticlesProvider>
+          </PublicationProvider>
+        </AuthProvider>
       </body>
     </html>
   );

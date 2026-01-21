@@ -1,0 +1,60 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
+export const dynamic = "force-dynamic";
+
+export default async function InvitationPage({ params }) {
+  const { token } = await params;
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get("better-auth.session_token") || cookieStore.get("session_token");
+
+  // Optimistic Check: If no session token cookie exists, user is definitely logged out.
+  // Redirect immediately to avoid unnecessary backend fetch and potential timeouts.
+  if (!sessionToken) {
+    console.log("No session token found in cookies. Redirecting to login.");
+    redirect(`/login?redirect=/invite/${token}/accept`);
+  }
+
+  const cookieString = cookieStore.getAll().map((c) => `${c.name}=${c.value}`).join("; ");
+  let session = null;
+
+  try {
+    // Set a timeout for the fetch to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+
+    const res = await fetch("http://localhost:5000/api/auth/get-session", {
+      headers: {
+        Cookie: cookieString,
+      },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      session = await res.json();
+    }
+  } catch (error) {
+    console.error("Error checking session:", error);
+    // If backend check fails, assume logged out or err on safe side -> login
+    // But if we had a token and it failed, maybe we should let them try login again
+  }
+
+  if (session?.user) {
+    // User is logged in, redirect to accept page
+    console.log("Session verified. Redirecting to accept page.");
+    redirect(`/invite/${token}/accept`);
+  } else {
+    // User is not logged in or session invalid
+    console.log("No valid session verified. Redirecting to login.");
+    redirect(`/login?redirect=/invite/${token}/accept`);
+  }
+
+  return (
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
+      <div className="text-gray-500 mb-4">Processing invitation...</div>
+    </div>
+  );
+}
