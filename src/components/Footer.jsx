@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { APP_CONFIG, FOOTER_LINKS, LOGOS } from "@/constants"
+import { APP_CONFIG, FOOTER_LINKS } from "@/constants"
 
 export default function Footer() {
   return (
@@ -11,7 +11,7 @@ export default function Footer() {
           <div className="flex flex-col">
             <Link href="/" className="inline-block mb-6">
               <Image
-                src={LOGOS.main}
+                src="/icons/inksigma-logo.svg"
                 alt="InkSigma Logo"
                 width={120}
                 height={40}

@@ -2,8 +2,8 @@ export const MAIN_NAVIGATION = [
   {
     id: 'home',
     label: 'Home',
-    href: '#hero',
-    type: 'scroll'
+    href: '/',
+    type: 'link'
   },
   {
     id: 'features',
