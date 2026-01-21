@@ -38,7 +38,7 @@ export default function ReviewPageClient({ articles }) {
   return (
     <>
       <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
-        <div className="ml-0 md:ml-[185px] space-y-4">
+        <div className="ml-0 md:ml-[195px] space-y-4">
           {articles && articles.map((article) => (
             <ReviewCard 
               key={article.id}

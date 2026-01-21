@@ -213,7 +213,7 @@ export default function AuthorReviewPage() {
       {/* Review Header */}
       <div className={`fixed ${headerTopPosition} ${mobileHeaderTopPosition} left-0 right-0 bg-white `}>
         <div className="max-w-[1034px] mx-auto px-5">
-          <div className="ml-0 md:ml-[185px] py-4 flex items-center justify-between">
+          <div className="ml-0 md:ml-[195px] py-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <h1 className="text-lg font-semibold text-gray-900">Review</h1>
@@ -231,7 +231,7 @@ export default function AuthorReviewPage() {
 
       {/* Articles List */}
       <div className="absolute left-1/2 -translate-x-1/2 top-[200px] max-md:top-[170px] w-full max-w-[1034px] z-20 px-5">
-        <div className="ml-0 md:ml-[185px] space-y-4">
+        <div className="ml-0 md:ml-[195px] space-y-4">
           {filteredArticles.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               {isAuthor 
