@@ -42,10 +42,12 @@ export default function ConditionalLayout({ children }) {
     const isforgot = pathname === "/forgot-password"
     const isreset = pathname === "/reset-password"
     const iseditordashboard = pathname === "/editorpage"
+    const isviewsite = pathname === "/view-site"
+    const isviewblog = pathname?.startsWith("/view-site/blog")
 
     const customLayout = isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished || islogin || issignup || isforgot || isreset || iseditordashboard 
 
-    const showButtons = !isCreatePublicationPage && !isPreview && !isDashboardPage && !isprofilesettings && !isPostsSettingsPage && !isEditorPage
+    const showButtons = !isCreatePublicationPage && !isPreview && !isDashboardPage && !isprofilesettings && !isPostsSettingsPage && !isEditorPage && !isviewsite && !isviewblog
 
     return {
       useCustomLayout: customLayout,

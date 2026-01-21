@@ -60,12 +60,12 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
   const thumbnailUrl = getImageUrl(latestBlog.image) || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
 
   return (
-    <section className="w-full max-w-[90%] md:max-w-[70%] mx-auto py-6 md:py-12 px-4 md:px-0">
+    <section className="w-full max-w-[90%] md:max-w-[70%] mx-auto py-6 md:py-0 px-4 max-md:px-0 ">
       {/* Start Writing Button */}
-      <div className="mb-6 md:mb-8">
+      <div className="mt-10 max-md:mt-0">
         <a
           href="/editor"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-lg text-sm hover:bg-gray-800 transition-colors font-medium"
+          className="inline-flex justify-center items-center gap-2 px-6 h-[40px] bg-[#080808] text-[#EDEDED] rounded font-medium text-[14px] leading-[150%] max-md:w-full max-md:h-[32px] max-md:text-[12px]"
         >
           <svg
             className="w-4 h-4"
@@ -84,14 +84,14 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
         </a>
       </div>
 
-      <div className="mb-6 md:mb-8">
-        <h1 className="text-2xl md:text-4xl font-bold text-black">Latest Blog</h1>
-        <div className="w-full h-px bg-gray-200 mt-4"></div>
+      <div className="mt-6 max-md:mt-0">
+        <h1 className="font-extrabold text-[32px] leading-[120%] text-[#202020] max-md:text-[18px] max-md:mt-6">Latest Blog</h1>
+        <div className="w-full h-px bg-[#EDEDED] mt-4 max-md:hidden"></div>
       </div>
-      <div className="flex items-center justify-between mb-4">
-        {/* Author Info */}
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+      <div className="flex items-center justify-between mt-9 mb-4 max-md:hidden">
+        {/* Desktop View Author Info */}
+        <div className="hidden md:flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
             {latestBlog.author?.image ? (
               <img
                 src={latestBlog.author.image.startsWith('http') ? latestBlog.author.image : `http://localhost:5000${latestBlog.author.image}`} 
@@ -110,20 +110,21 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
               </div>
             )}
           </div>
-          <span className="text-gray-900 font-medium text-sm md:text-base">{latestBlog.author?.name || 'Anonymous'}</span>
+          <span className="text-[#000000] font-normal text-[16px] leading-[136%]">{latestBlog.author?.name || 'Anonymous'}</span>
         </div>
 
-        {/* Date */}
-        <div className="text-right">
-          <div className="text-gray-700 text-xs md:text-sm font-medium whitespace-nowrap">
+        {/* Desktop View Date */}
+        <div className="hidden md:block text-right">
+          <div className="text-[#808080] font-light text-[16px] leading-[136%] whitespace-nowrap">
             {dateFormatted}
           </div>
         </div>
       </div>
 
-      <div className="relative w-full h-[400px] md:h-[600px] rounded-xl md:rounded-2xl group">
+      {/* Desktop View Card */}
+      <div className="hidden md:block relative w-full h-[600px] rounded-lg group">
         {/* Share Button - Top Right */}
-        <div className="absolute top-3 right-3 md:top-4 md:right-4 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-50">
+        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
           <ShareMenu
             title={latestBlog.title}
             slug={latestBlog.slug}
@@ -131,8 +132,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
           />
         </div>
 
-        <Link href={`/view-site/blog/${latestBlog.slug}`} className="absolute inset-0 rounded-xl md:rounded-2xl overflow-hidden cursor-pointer block">
-
+        <Link href={`/view-site/blog/${latestBlog.slug}`} className="absolute inset-0 rounded-2xl overflow-hidden cursor-pointer block">
           {/* Background Image */}
           <div className="absolute inset-0">
             <Image
@@ -146,40 +146,23 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
           </div>
 
           {/* Bottom Section - Title, Description, Category and Read Button */}
-          <div className="absolute bottom-0 left-0 right-0 flex flex-col md:flex-row md:items-end md:justify-between p-4 md:p-6 gap-3 md:gap-0">
+          <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between p-12 gap-0">
             {/* Left - Title, Description and Category */}
             <div className="flex-1">
-              <h2 className="text-xl md:text-3xl font-bold mb-1 md:mb-2 text-white drop-shadow-lg line-clamp-2">{latestBlog.title}</h2>
-              <p className="text-white text-sm md:text-base drop-shadow-md line-clamp-2 md:line-clamp-none mb-3">{latestBlog.description}</p>
+              <h2 className="font-extrabold leading-none text-2xl text-[#FFFFFF] drop-shadow-lg line-clamp-2 mb-4">{latestBlog.title}</h2>
+              <p className="text-[#F4F4F4] font-light text-sm leading-[150%] drop-shadow-md line-clamp-none mb-4">{latestBlog.description}</p>
               {/* Category */}
               {latestBlog.categories && latestBlog.categories.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1.5 bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-md text-xs md:text-sm font-medium">
+                  <span className="px-4 py-2 bg-[#A4A4A4]/60 backdrop-blur-sm  border border-white/30 rounded-lg text-[#F8F8F8] font-normal text-sm leading-[150%]">
                     {latestBlog.categories[0]}
                   </span>
                 </div>
               )}
-              
-              {/* Views and Comments */}
-              <div className="flex items-center gap-4 mt-3">
-                <div className="flex items-center gap-1.5 text-white/80 text-xs md:text-sm">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <span>{latestBlog.views || 0} views</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-white/80 text-xs md:text-sm">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  <span>{commentCount} comments</span>
-                </div>
-              </div>
             </div>
 
             {/* Right - Read Article Button */}
-            <span className="flex items-center justify-center gap-2 bg-white text-black px-4 py-2 md:px-6 md:py-3 rounded-full font-medium hover:bg-gray-100 transition-colors text-sm md:text-base whitespace-nowrap self-start md:self-auto">
+            <span className="flex items-center justify-center gap-2 bg-white text-black px-6 py-3 rounded-full font-medium hover:bg-gray-100 transition-colors text-base whitespace-nowrap">
               Read Article
               <Image
                 src="/svg/arrow-right.svg"
@@ -191,6 +174,77 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
             </span>
           </div>
         </Link>
+      </div>
+
+      {/* Mobile View Card - Matches AllArticles style */}
+      <div className="block md:hidden border border-gray-200 rounded-md bg-white p-3.5 flex flex-col mt-4">
+        {/* Author and Date Row */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-[29px] h-[29px] rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+              {latestBlog.author?.image ? (
+                <img
+                  src={latestBlog.author.image.startsWith('http') ? latestBlog.author.image : `http://localhost:5000${latestBlog.author.image}`} 
+                  alt={latestBlog.author.name} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${latestBlog.author?.name?.charAt(0).toUpperCase() || 'A'}</span></div>`;
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full bg-purple-100 flex items-center justify-center">
+                  <span className="text-purple-600 font-semibold text-sm">
+                    {latestBlog.author?.name?.charAt(0).toUpperCase() || 'A'}
+                  </span>
+                </div>
+              )}
+            </div>
+            <span className="text-[#000000] font-medium text-[12px]">{latestBlog.author?.name || 'Anonymous'}</span>
+          </div>
+          <div className="text-right">
+            <div className="text-[#808080] text-xs font-medium whitespace-nowrap">
+              {dateFormatted}
+            </div>
+          </div>
+        </div>
+
+        {/* Image Card */}
+        <div className="relative w-full h-[200px] rounded-xl group mb-3">
+          {/* Share Button */}
+          <div className="absolute top-3 right-3 z-50">
+            <ShareMenu
+              title={latestBlog.title}
+              slug={latestBlog.slug}
+              blogId={latestBlog.id}
+            />
+          </div>
+
+          <Link href={`/view-site/blog/${latestBlog.slug}`} className="absolute inset-0 rounded-md overflow-hidden cursor-pointer block">
+            <Image
+              src={thumbnailUrl}
+              alt={latestBlog.title}
+              fill
+              className="object-cover"
+              unoptimized
+            />
+          </Link>
+        </div>
+
+        {/* Content */}
+        <div className="flex-grow mb-3">
+          <h3 className="text-[16px] font-bold text-[#080808] leading-none mb-1">{latestBlog.title}</h3>
+          <p className="text-[#808080] font-normal text-xs leading-[150%]">{latestBlog.description}</p>
+        </div>
+
+        {/* Category */}
+        {latestBlog.categories && latestBlog.categories.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-auto items-center">
+            <span className="px-3 py-1.5 bg-white text-gray-700 border border-gray-300 rounded-md text-xs hover:bg-gray-50 transition-colors cursor-pointer">
+              {latestBlog.categories[0]}
+            </span>
+          </div>
+        )}
       </div>
     </section>
   );
