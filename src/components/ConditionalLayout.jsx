@@ -43,6 +43,8 @@ export default function ConditionalLayout({ children }) {
     const isreset = pathname === "/reset-password"
     const ismagiclink = pathname === "/magic-link"
     const iseditordashboard = pathname === "/editorpage"
+    const isviewsite = pathname === "/view-site"
+    const isviewblog = pathname?.startsWith("/view-site/blog")
 
     const customLayout = isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished || islogin || issignup || isforgot || isreset || ismagiclink || iseditordashboard 
 
@@ -71,7 +73,7 @@ export default function ConditionalLayout({ children }) {
   return (
     <>
       <Header />
-      <main className="w-[1920px] mx-auto bg-white">
+      <main className="w-full max-w-[1920px] mx-auto bg-white">
         {children}
       </main>
       <Footer />

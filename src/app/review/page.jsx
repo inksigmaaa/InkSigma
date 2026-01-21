@@ -336,7 +336,7 @@ export default function ReviewPage() {
                   <div 
                     key={article.id} 
                     className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={(e) => handleCardClick(e, article.id)}
+                    
                   >
                     {/* Desktop Layout */}
                     <div className="hidden md:flex items-start gap-4">
