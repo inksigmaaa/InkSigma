@@ -263,3 +263,14 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: #a3a3a3;
 }
+
+/* Responsive Hero Background */
+.hero-bg {
+  background-image: url('/images/background/mg.png');
+}
+
+@media (min-width: 768px) {
+  .hero-bg {
+    background-image: url('/images/background/bg.png');
+  }
+}
