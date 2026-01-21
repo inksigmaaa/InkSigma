@@ -98,7 +98,7 @@ export default function EditorPage() {
                     {loading ? "Loading..." : currentPublication?.name || "Publication Name"}
                   </h1>
                   {currentPublication && !currentPublication.isOwner && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    <span className={`text-xs px-2 py-0.5 rounded-sm font-medium ${
                       currentPublication.role === 'editor' 
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-blue-100 text-blue-700'
@@ -107,6 +107,11 @@ export default function EditorPage() {
                     </span>
                   )}
                 </div>
+                {currentPublication?.description && (
+                  <p className="font-normal text-sm leading-normal tracking-normal text-[#A4A4A4] max-w-md max-md:text-xs max-md:line-clamp-2">
+                    {currentPublication.description}
+                  </p>
+                )}
               </div>
             </div>
             {currentPublication?.isOwner && (
