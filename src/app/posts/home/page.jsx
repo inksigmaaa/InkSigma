@@ -8,6 +8,7 @@ import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { usePublication } from "@/contexts/PublicationContext"
 import { useArticles } from "@/contexts/ArticlesContext"
+import { getImageUrl } from "@/utils/imageUrl"
 
 export default function PostsHomePage() {
   const router = useRouter()
@@ -22,13 +23,16 @@ export default function PostsHomePage() {
     try {
       // Fetch recent published articles for this publication
       const articlesRes = await fetch(
-        `http://localhost:5000/api/blogs?publicationId=${pubId}&status=published&limit=4`,
+        `http://localhost:5000/api/blogs/publication/${pubId}?status=published&limit=4&offset=0`,
         { credentials: "include" }
       )
 
       if (articlesRes.ok) {
         const articlesData = await articlesRes.json()
+        console.log('[Home] Recent articles fetched:', articlesData.length, articlesData)
         setRecentArticles(articlesData)
+      } else {
+        console.error('[Home] Failed to fetch articles:', articlesRes.status, articlesRes.statusText)
       }
     } catch (error) {
       console.error("Error loading publication data:", error)
@@ -38,15 +42,22 @@ export default function PostsHomePage() {
   }, [])
 
   useEffect(() => {
-    if (currentPublication && !publicationLoading) {
-      // Only load if publication ID changed
-      if (lastPublicationIdRef.current !== currentPublication.id) {
-        lastPublicationIdRef.current = currentPublication.id
-        setLoading(true)
-        loadPublicationData(currentPublication.id)
-      }
+    console.log('[Home] useEffect triggered:', { currentPublication: currentPublication?.id, publicationLoading });
+    
+    if (!currentPublication?.id) {
+      console.log('[Home] No publication ID');
+      return;
     }
-  }, [currentPublication?.id, publicationLoading, loadPublicationData])
+
+    if (publicationLoading) {
+      console.log('[Home] Publication still loading');
+      return;
+    }
+
+    console.log('[Home] Loading publication data for:', currentPublication.id);
+    setLoading(true);
+    loadPublicationData(currentPublication.id);
+  }, [currentPublication?.id, publicationLoading])
 
   const handleStartWriting = () => {
     // Pass publicationId to editor so blogs are created for this publication
@@ -180,7 +191,7 @@ export default function PostsHomePage() {
                     >
                       <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative">
                         <img
-                          src={article.image || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"}
+                          src={article.image ? getImageUrl(article.image) : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"}
                           alt={article.title}
                           className="w-full h-full object-cover rounded-sm"
                           onError={(e) => {
@@ -220,7 +231,11 @@ export default function PostsHomePage() {
       {/* Fixed Visit Site Button - Mobile Only */}
       <button
         onClick={handleVisitSite}
-        className="hidden max-md:flex fixed bottom-20 right-4 bg-purple-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors shadow-lg z-50"
+        style={{
+          background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
+          boxShadow: '0px 4px 8px 0px #EADBF9'
+        }}
+        className="hidden max-md:flex fixed bottom-20 right-4 w-[94px] h-[32px] text-white px-[16px] py-[8px] rounded-[4px] text-[14px] font-semibold leading-[100%] hover:opacity-90 transition-opacity items-center justify-center z-50"
       >
         View site
       </button>

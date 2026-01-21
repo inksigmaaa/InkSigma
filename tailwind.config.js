@@ -7,6 +7,10 @@ module.exports = {
     ],
     theme: {
         extend: {
+            screens: {
+                'sm-448': '448px',
+                'md-768': '768px',
+            },
             colors: {
                 background: "var(--background)",
                 foreground: "var(--foreground)",
@@ -41,6 +45,11 @@ module.exports = {
                 border: "var(--border)",
                 input: "var(--input)",
                 ring: "var(--ring)",
+                // Custom text colors
+                'text-primary': '#2E2E2E',
+                'text-secondary': '#6b7280',
+                'text-accent': '#171717',
+                'text-muted': '#737373',
             },
             borderRadius: {
                 lg: "var(--radius)",

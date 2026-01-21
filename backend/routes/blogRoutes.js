@@ -4,8 +4,8 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { db } from "../config/database.js";
-import { blog, user, publication, publicationMember } from "../models/schema.js";
-import { eq, desc, and, or, ilike } from "drizzle-orm";
+import { blog, user, publication, publicationMember, comment, blogShare } from "../models/schema.js";
+import { eq, desc, and, or, ilike, count } from "drizzle-orm";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 import notificationService from "../services/notificationService.js";
@@ -325,34 +325,83 @@ router.get("/", async (req, res) => {
         // This is a safety net in case someone bypasses the query filters
         console.log('[GET /api/blogs] Security check - currentUserId:', currentUserId, 'authorId:', authorId, 'includeUnpublished:', includeUnpublished);
         
-        if (!currentUserId) {
-            console.log('[GET /api/blogs] No user - filtering to published only');
-            blogs = blogs.filter(b => b.status === 'published');
-        } else if (includeUnpublished === 'true') {
-            // User is requesting with includeUnpublished
-            if (authorId && authorId === currentUserId) {
-                // User is requesting their own blogs - show all
-                console.log('[GET /api/blogs] User requesting own blogs with includeUnpublished - showing all');
-                // No filtering needed
+        // Only apply security filters if status is NOT explicitly set to 'published'
+        // If status=published is explicitly requested, trust the database filter
+        const statusExplicitlyPublished = status === 'published';
+        
+        if (!statusExplicitlyPublished) {
+            if (!currentUserId) {
+                console.log('[GET /api/blogs] No user - filtering to published only');
+                blogs = blogs.filter(b => b.status === 'published');
+            } else if (includeUnpublished === 'true') {
+                // User is requesting with includeUnpublished
+                if (authorId && authorId === currentUserId) {
+                    // User is requesting their own blogs - show all
+                    console.log('[GET /api/blogs] User requesting own blogs with includeUnpublished - showing all');
+                    // No filtering needed
+                } else {
+                    // User is requesting all blogs with includeUnpublished - show published + own posts
+                    console.log('[GET /api/blogs] includeUnpublished but not own blogs - showing published + own');
+                    blogs = blogs.filter(b => 
+                        b.status === 'published' || b.authorId === currentUserId
+                    );
+                }
             } else {
-                // User is requesting all blogs with includeUnpublished - show published + own posts
-                console.log('[GET /api/blogs] includeUnpublished but not own blogs - showing published + own');
+                // Authenticated but not requesting unpublished - show published + own posts
+                console.log('[GET /api/blogs] Filtering to published + own posts');
                 blogs = blogs.filter(b => 
                     b.status === 'published' || b.authorId === currentUserId
                 );
             }
         } else {
-            // Authenticated but not requesting unpublished - show published + own posts
-            console.log('[GET /api/blogs] Filtering to published + own posts');
-            blogs = blogs.filter(b => 
-                b.status === 'published' || b.authorId === currentUserId
-            );
+            console.log('[GET /api/blogs] Status explicitly set to published - trusting database filter');
         }
 
         console.log('[GET /api/blogs] Final blogs count:', blogs.length);
         console.log('[GET /api/blogs] Blog statuses:', blogs.map(b => ({ id: b.id, status: b.status, authorId: b.authorId })));
 
-        res.json(blogs);
+        // Add stats to each blog (limit to first 50 to avoid performance issues)
+        const blogsToProcess = blogs.slice(0, 50);
+        const blogsWithStats = await Promise.all(blogsToProcess.map(async (b) => {
+            try {
+                // Get view count
+                const viewCount = await getBlogViewCount(b.id);
+                
+                // Get comment count
+                const [commentData] = await db
+                    .select({ count: count() })
+                    .from(comment)
+                    .where(eq(comment.blogId, b.id));
+                const commentCount = parseInt(commentData?.count || 0);
+                
+                // Get share count
+                const [shareData] = await db
+                    .select({ count: count() })
+                    .from(blogShare)
+                    .where(eq(blogShare.blogId, b.id));
+                const shareCount = parseInt(shareData?.count || 0);
+                
+                return {
+                    ...b,
+                    views: viewCount,
+                    comments: commentCount,
+                    shares: shareCount,
+                    revisits: 0 // Not tracked separately, using 0
+                };
+            } catch (statsError) {
+                console.warn(`Failed to fetch stats for blog ${b.id}:`, statsError);
+                // Return blog without stats if there's an error
+                return {
+                    ...b,
+                    views: 0,
+                    comments: 0,
+                    shares: 0,
+                    revisits: 0
+                };
+            }
+        }));
+
+        res.json(blogsWithStats);
     } catch (error) {
         console.error("Error fetching blogs:", error);
         console.error("Error details:", error.message);
@@ -371,6 +420,8 @@ router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
             offset = 0 
         } = req.query;
 
+        console.log('[Publication Blogs] Request:', { publicationId, status, limit, offset, userId: req.user.id });
+
         // Check if user has access to this publication
         const [pub] = await db
             .select()
@@ -378,6 +429,7 @@ router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
             .where(eq(publication.id, parseInt(publicationId)));
 
         if (!pub) {
+            console.log('[Publication Blogs] Publication not found:', publicationId);
             return res.status(404).json({ error: "Publication not found" });
         }
 
@@ -398,7 +450,10 @@ router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
             isMember = !!member;
         }
 
+        console.log('[Publication Blogs] Access check:', { isOwner, isMember });
+
         if (!isOwner && !isMember) {
+            console.log('[Publication Blogs] Access denied for user:', req.user.id);
             return res.status(403).json({ error: "Access denied" });
         }
 
@@ -409,6 +464,8 @@ router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
         if (status) {
             conditions.push(eq(blog.status, status));
         }
+
+        console.log('[Publication Blogs] Query conditions:', { publicationId, status });
 
         const blogs = await db
             .select({
@@ -439,7 +496,49 @@ router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
             .limit(parseInt(limit))
             .offset(parseInt(offset));
 
-        res.json(blogs);
+        console.log('[Publication Blogs] Blogs found:', blogs.length);
+
+        // Add stats to each blog
+        const blogsWithStats = await Promise.all(blogs.map(async (b) => {
+            try {
+                // Get view count
+                const viewCount = await getBlogViewCount(b.id);
+                
+                // Get comment count
+                const [commentData] = await db
+                    .select({ count: count() })
+                    .from(comment)
+                    .where(eq(comment.blogId, b.id));
+                const commentCount = parseInt(commentData?.count || 0);
+                
+                // Get share count
+                const [shareData] = await db
+                    .select({ count: count() })
+                    .from(blogShare)
+                    .where(eq(blogShare.blogId, b.id));
+                const shareCount = parseInt(shareData?.count || 0);
+                
+                return {
+                    ...b,
+                    views: viewCount,
+                    comments: commentCount,
+                    shares: shareCount,
+                    revisits: 0 // Not tracked separately, using 0
+                };
+            } catch (statsError) {
+                console.warn(`Failed to fetch stats for blog ${b.id}:`, statsError);
+                // Return blog without stats if there's an error
+                return {
+                    ...b,
+                    views: 0,
+                    comments: 0,
+                    shares: 0,
+                    revisits: 0
+                };
+            }
+        }));
+
+        res.json(blogsWithStats);
     } catch (error) {
         console.error("Error fetching publication blogs:", error);
         res.status(500).json({ error: "Failed to fetch publication blogs" });
@@ -1007,6 +1106,7 @@ router.put("/:id", getCurrentUser, async (req, res) => {
                         authorId: existingBlog.authorId,
                         blogTitle: updatedBlog.title,
                         blogId: parseInt(id),
+                        publicationId: updatedBlog.publicationId,
                     });
                 }
             } catch (notifError) {
@@ -1093,12 +1193,23 @@ router.patch("/:id/review-action", getCurrentUser, async (req, res) => {
                     .where(eq(publication.id, existingBlog.publicationId));
 
                 if (action === 'accept') {
-                    await notificationService.notifyBlogAccepted({
-                        authorId: existingBlog.authorId,
-                        publicationName: pub.name,
-                        blogId: parseInt(id),
-                        publicationId: existingBlog.publicationId,
-                    });
+                    // If blog is being published, send published notification
+                    if (targetStatus === 'published') {
+                        await notificationService.notifyBlogPublished({
+                            authorId: existingBlog.authorId,
+                            blogTitle: updatedBlog.title,
+                            blogId: parseInt(id),
+                            publicationId: existingBlog.publicationId,
+                        });
+                    } else {
+                        // Otherwise send accepted notification
+                        await notificationService.notifyBlogAccepted({
+                            authorId: existingBlog.authorId,
+                            publicationName: pub.name,
+                            blogId: parseInt(id),
+                            publicationId: existingBlog.publicationId,
+                        });
+                    }
                 } else {
                     await notificationService.notifyBlogRejected({
                         authorId: existingBlog.authorId,
@@ -1195,6 +1306,7 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
                         authorId: existingBlog.authorId,
                         blogTitle: updatedBlog.title,
                         blogId: parseInt(id),
+                        publicationId: updatedBlog.publicationId,
                     });
                     console.log('[Notification] Blog published notification created successfully');
                 }

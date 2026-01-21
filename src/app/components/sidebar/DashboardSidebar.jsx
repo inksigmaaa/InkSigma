@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link';
+import { useState } from 'react';
 
 export default function DashboardSidebar() {
     return (
@@ -10,31 +11,47 @@ export default function DashboardSidebar() {
                 <div className="relative w-[165px] h-[612px] bg-white border-r border-gray-200 p-[14px] pr-[10px] flex flex-col gap-[10px] overflow-hidden pointer-events-auto max-md:w-auto max-md:min-w-max max-md:h-[70px] max-md:px-4 max-md:py-2 max-md:flex-row max-md:gap-2 max-md:border-r-0 max-md:overflow-visible">
                     {/* MY SPACE */}
                     <div className="max-md:pb-0 max-md:border-none max-md:flex-shrink-0">
-                        <div className="flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1">
-                            <img src="/images/icons/myspace.svg" className="w-6 h-6 max-md:w-6 max-md:h-6" />
+                        {(() => {
+                            const [isHovered, setIsHovered] = useState(false);
+                            return (
+                        <div className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${isHovered ? 'bg-[#F6F6F6]' : ''}`}
+                            onMouseEnter={() => setIsHovered(true)}
+                            onMouseLeave={() => setIsHovered(false)}
+                        >
+                            <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${isHovered ? 'brightness-0' : ''}`} />
                             <Link href="/dashboard">
-                                <p className="text-[14px] font-normal leading-[150%] text-gray-700 max-md:text-[11px] max-md:text-center">
+                                <p className={`text-[14px] font-normal leading-[150%] m-0 max-md:text-[11px] max-md:text-center font-[\'Public Sans\'] tracking-[0%] ${isHovered ? 'text-[#2E2E2E]' : 'text-gray-700'}`}>
                                     My Space
                                 </p>
                             </Link>
                         </div>
+                            );
+                        })()}
                     </div>
 
                     {/* SETTINGS */}
                     <div className="flex flex-col gap-[3px] max-md:flex-row max-md:gap-2 max-md:p-0">
+                        {(() => {
+                            const [isHovered, setIsHovered] = useState(false);
+                            return (
                         <a href="/profile-settings">
-                            <div className="flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0">
+                            <div className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered ? 'bg-[#F6F6F6]' : ''}`}
+                                onMouseEnter={() => setIsHovered(true)}
+                                onMouseLeave={() => setIsHovered(false)}
+                            >
                                 <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
                                     <img
                                         src="/images/icons/setings.svg"
-                                        className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6"
+                                        className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isHovered ? 'opacity-100 brightness-0' : 'opacity-60'}`}
                                     />
-                                    <p className="text-[13px] font-normal leading-[150%] text-gray-500 m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap">
+                                    <p className={`text-[13px] font-normal leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap font-[\'Public Sans\'] tracking-[0%] ${isHovered ? 'text-[#2E2E2E]' : 'text-gray-500'}`}>
                                         Settings
                                     </p>
                                 </div>
                             </div>
                         </a>
+                            );
+                        })()}
                     </div>
                 </div>
             </div>

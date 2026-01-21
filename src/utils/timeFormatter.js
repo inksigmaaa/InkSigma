@@ -35,8 +35,8 @@ export function formatTimeAgo(date) {
     const diffDays = Math.floor(diffHours / 24);
     
     if (diffMinutes < 1) return "Just now";
-    if (diffMinutes < 60) return diffMinutes === 1 ? "1 min" : `${diffMinutes} mins`;
-    if (diffHours < 24) return diffHours === 1 ? "1 hr" : `${diffHours} hrs`;
+    if (diffMinutes < 60) return diffMinutes === 1 ? "1 min ago" : `${diffMinutes} mins ago`;
+    if (diffHours < 24) return diffHours === 1 ? "1 hour ago" : `${diffHours} hours ago`;
     if (diffDays === 1) return "Yesterday";
     if (diffDays <= 6) return `${diffDays} days ago`;
     

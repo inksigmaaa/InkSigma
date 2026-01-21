@@ -31,28 +31,7 @@ export default function PostsPublished() {
             )
 
             if (articlesRes.ok) {
-                let articlesData = await articlesRes.json()
-                
-                // Ensure articles have stats fields, fetch them if missing
-                articlesData = await Promise.all(articlesData.map(async (article) => {
-                    // If article doesn't have stats, try to fetch them
-                    if (!article.views && !article.revisits && !article.comments && !article.shares) {
-                        try {
-                            const statsRes = await fetch(
-                                `http://localhost:5000/api/blogs/${article.id}/stats`,
-                                { credentials: "include" }
-                            )
-                            if (statsRes.ok) {
-                                const stats = await statsRes.json()
-                                return { ...article, ...stats }
-                            }
-                        } catch (error) {
-                            console.warn(`Failed to fetch stats for article ${article.id}:`, error)
-                        }
-                    }
-                    return article
-                }))
-                
+                const articlesData = await articlesRes.json()
                 setArticles(articlesData)
             } else {
                 console.error('Failed to fetch publication articles:', articlesRes.status)
