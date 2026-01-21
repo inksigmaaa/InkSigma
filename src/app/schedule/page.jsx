@@ -187,16 +187,14 @@ export default function SchedulePage() {
     {
       title: "Move to Draft",
       icon: "/images/icons/edit.svg",
-      onClick: handleBulkDraft,
-      disabled: selectedArticles.length === 0
+      onClick: handleBulkDraft
     },
     {
       title: "Delete",
       icon: "/images/icons/trash2.svg",
-      onClick: handleBulkDelete,
-      disabled: selectedArticles.length === 0
+      onClick: handleBulkDelete
     }
-  ], [handleBulkDraft, handleBulkDelete, selectedArticles.length]);
+  ], [handleBulkDraft, handleBulkDelete]);
 
   const handleCloseDeleteModal = useCallback(() => {
     setShowDeleteModal(false);

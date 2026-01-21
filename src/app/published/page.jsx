@@ -227,14 +227,12 @@ export default function Published() {
         {
             icon: "/images/icons/draft1.svg",
             title: "Move to Draft",
-            onClick: handleBulkDraft,
-            disabled: !hasSelectedArticles
+            onClick: handleBulkDraft
         },
         {
             icon: "/images/icons/trash2.svg",
             title: "Delete",
-            onClick: handleBulkDelete,
-            disabled: !hasSelectedArticles
+            onClick: handleBulkDelete
         },
     ];
 

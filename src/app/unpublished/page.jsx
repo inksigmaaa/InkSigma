@@ -214,20 +214,17 @@ export default function Unpublished() {
     {
       icon: "/images/icons/draft1.svg",
       title: "Move to Draft",
-      onClick: handleBulkDraft,
-      disabled: !hasSelectedArticles
+      onClick: handleBulkDraft
     },
     {
       icon: "/images/icons/publish.svg",
       title: "Republish",
-      onClick: handleBulkRepublish,
-      disabled: !hasSelectedArticles
+      onClick: handleBulkRepublish
     },
     {
       icon: "/images/icons/trash2.svg",
       title: "Delete",
-      onClick: handleBulkDelete,
-      disabled: !hasSelectedArticles
+      onClick: handleBulkDelete
     },
   ];
 
