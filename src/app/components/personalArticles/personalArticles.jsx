@@ -53,7 +53,7 @@ export default function PersonalArticles({
                     )}
                 </div>
 
-                {/* Controls Row - Only shown on desktop/tablet when showActions is true (Draft/Trash pages) */}
+                {/* Controls Row - Always shown on desktop/tablet when showActions is true */}
                 {showActions && (
                     <div className="flex items-center justify-between gap-5 mb-6 max-md:hidden">
                         <div className="flex items-center gap-2">
@@ -102,18 +102,14 @@ export default function PersonalArticles({
                                     }}>Select all</span>
                                 </label>
                             )}
-                            {actionButtons.map((button, index) => (
+                            {selectedArticles.length > 0 && actionButtons.filter(button => !button.hidden).map((button, index) => (
                                 <button
                                     key={index}
                                     title={button.title}
                                     onClick={button.onClick}
-                                    disabled={button.disabled}
-                                    className={`w-8 h-8 border rounded-lg p-2 flex items-center justify-center transition ${!button.disabled
-                                        ? "bg-white border-gray-200 cursor-pointer hover:bg-gray-50 hover:border-gray-300"
-                                        : "bg-gray-100 border-gray-200 cursor-not-allowed opacity-50"
-                                        }`}
+                                    className="w-8 h-8 border border-gray-200 rounded-lg p-2 flex items-center justify-center transition-all bg-white cursor-pointer hover:bg-gray-50 hover:border-gray-300"
                                 >
-                                    <img src={button.icon} alt={button.title} className={`w-5 h-5 ${button.disabled ? "opacity-50" : ""}`} />
+                                    <img src={button.icon} alt={button.title} className="w-5 h-5" />
                                 </button>
                             ))}
                         </div>
