@@ -8,6 +8,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { usePublication } from '@/contexts/PublicationContext'
 import StatsPopup from './StatsPopup'
+import styles from './ArticleContainer.module.css'
 
 export default function ArticleContainer({ id, status, title, description, categories, postedTime, isSelected, onSelect, onDelete, onPublish, onUnpublish, onDraft, publicationId, image, showActions = true, stats }) {
     const router = useRouter()
@@ -69,10 +70,10 @@ export default function ArticleContainer({ id, status, title, description, categ
     }
 
     const statusConfig = {
-        published: { bg: '#D5F2D4', color: '#267F24', text: 'Published' },
+        published: { bg: '#D5F2D4', color: '#267F42', text: 'Published' },
         draft: { bg: '#FFEADB', color: '#A34200', text: 'Draft' },
         scheduled: { bg: '#D6EEFB', color: '#0048B5', text: 'Scheduled' },
-        trash: { bg: '#FEE2E2', color: '#DC2626', text: 'Trash' },
+        trash: { bg: '#FFD6D6', color: '#A30000', text: 'Trash' },
         review: { bg: '#E9D5FF', color: '#7C3AED', text: 'Review' },
         unpublished: { bg: '#FEF3C7', color: '#D97706', text: 'Unpublished' }
     }
@@ -93,13 +94,22 @@ export default function ArticleContainer({ id, status, title, description, categ
                 <div className="flex w-[100%] gap-4">
                     <div className="flex gap-3 flex-1">
                         {showActions && (
-                            <input
-                                type="checkbox"
-                                checked={isSelected || false}
-                                onChange={(e) => onSelect && onSelect(id, e.target.checked)}
-                                className="mt-1 cursor-pointer accent-violet-500 shrink-0"
-                                style={{ width: '16px', height: '16px' }}
-                            />
+                            <label className={styles.customCheckboxLabel} onClick={(e) => e.stopPropagation()}>
+                                <input
+                                    type="checkbox"
+                                    checked={isSelected || false}
+                                    onChange={(e) => {
+                                        e.stopPropagation()
+                                        onSelect && onSelect(id, e.target.checked)
+                                    }}
+                                    className={styles.customCheckboxInput}
+                                />
+                                <span className={styles.customCheckboxBox} onClick={(e) => e.stopPropagation()}>
+                                    {isSelected && (
+                                        <img src="/images/icons/tick2.svg" alt="checked" className={styles.checkmarkIcon} style={{ marginTop: '-2px' }} />
+                                    )}
+                                </span>
+                            </label>
                         )}
 
                         <div className="flex-1 cursor-pointer" onClick={handlePreview}>
@@ -152,7 +162,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 <>
                                     {canPublish && (
                                         <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Republish" onClick={handlePublish}>
-                                            <img src="/images/icons/publish.svg" alt="republish" className="w-4 h-4" />
+                                            <img src="/images/icons/publish-ideal.svg" alt="republish" className="w-4 h-4" />
                                         </button>
                                     )}
                                      <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
@@ -210,7 +220,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 )}
                                 {status === 'unpublished' && canPublish && (
                                     <DropdownMenuItem className="gap-2 text-sm" onClick={handlePublish}>
-                                        <img src="/images/icons/publish.svg" className="w-4 h-4" /> Republish
+                                        <img src="/images/icons/publish-ideal.svg" className="w-4 h-4" /> Republish
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem className="gap-2 text-sm" onClick={handleDraft}>

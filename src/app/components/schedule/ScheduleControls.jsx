@@ -1,10 +1,4 @@
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import CategoryFilter from "../categoryFilter/CategoryFilter"
 import { Trash2 } from "lucide-react"
 
 export default function ScheduleControls({ 
@@ -60,18 +54,11 @@ export default function ScheduleControls({
         </button>
       </div>
 
-      <Select value={category} onValueChange={onCategoryChange}>
-        <SelectTrigger className="w-[180px] text-gray-600">
-          <SelectValue placeholder="Choose Category" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="sports">Sports</SelectItem>
-          <SelectItem value="humour">Humour</SelectItem>
-          <SelectItem value="history">History</SelectItem>
-          <SelectItem value="technology">Technology</SelectItem>
-          <SelectItem value="business">Business</SelectItem>
-        </SelectContent>
-      </Select>
+      <CategoryFilter 
+        selectedCategories={category ? [category] : []}
+        onCategoriesChange={(cats) => onCategoryChange(cats[0] || "")}
+        buttonText="Choose Category"
+      />
     </div>
   )
 }

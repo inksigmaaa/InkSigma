@@ -227,14 +227,12 @@ export default function Published() {
         {
             icon: "/images/icons/draft1.svg",
             title: "Move to Draft",
-            onClick: handleBulkDraft,
-            disabled: !hasSelectedArticles
+            onClick: handleBulkDraft
         },
         {
             icon: "/images/icons/trash2.svg",
             title: "Delete",
-            onClick: handleBulkDelete,
-            disabled: !hasSelectedArticles
+            onClick: handleBulkDelete
         },
     ];
 
@@ -246,7 +244,7 @@ export default function Published() {
             <PageTransition>
                 <PersonalArticles
                     title="Published"
-                    titleColor="#267F24"
+                    titleColor="#72D770"
                     articles={publishedArticles}
                     emptyMessage="No published articles yet"
                     showSelectAll={true}

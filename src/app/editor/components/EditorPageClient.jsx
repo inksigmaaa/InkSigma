@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { CategoryDropdown } from "./CategoryDropdown"
+import EditorCategoryDropdown from "./EditorCategoryDropdown"
 import { ThumbnailModal } from "./ThumbnailModal"
 import { DateTimePicker } from "./DateTimePicker"
 import PublishSuccessModal from "./PublishSuccessModal"
@@ -22,19 +22,6 @@ import {
 import { TiptapEditor } from "./TiptapEditor"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
-
-const categories = [
-  "Fashion",
-  "Space", 
-  "Sports",
-  "Art",
-  "Humor",
-  "Climate & Environment",
-  "Technology",
-  "Business",
-  "Health",
-  "Education"
-]
 
 export default function EditorPageClient() {
   const router = useRouter()
@@ -95,9 +82,7 @@ export default function EditorPageClient() {
   // State management
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState([])
-  const [categorySearch, setCategorySearch] = useState('')
   const [showThumbnailModal, setShowThumbnailModal] = useState(false)
   const [thumbnailData, setThumbnailData] = useState(null)
   const [showCalendar, setShowCalendar] = useState(false)
@@ -416,10 +401,6 @@ export default function EditorPageClient() {
     }
   }, [showCalendar])
 
-  const filteredCategories = categories.filter(cat =>
-    cat.toLowerCase().includes(categorySearch.toLowerCase())
-  )
-
   // Calendar helper functions
   const getDaysInMonth = (month, year) => {
     return new Date(year, month + 1, 0).getDate()
@@ -648,14 +629,6 @@ export default function EditorPageClient() {
     console.log('Thumbnail added:', data)
   }
 
-  const toggleCategory = (category) => {
-    setSelectedCategories(prev => 
-      prev.includes(category) 
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    )
-  }
-
   return (
     <div className="overflow-x-hidden">
       {/* Fixed Left Vertical Line */}
@@ -732,61 +705,11 @@ export default function EditorPageClient() {
           <div className="flex flex-col w-[916px] h-16 p-4 gap-2 bg-[#FEFEFE] border-b border-gray-200">
             {/* Category and Thumbnail Row */}
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <button 
-                  className="flex items-center w-[115px] h-8 gap-2.5 rounded border border-gray-200 bg-white text-sm px-4 py-2.5 hover:bg-gray-50 transition-colors"
-                  onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                >
-                  Category
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                
-                {/* Category Dropdown */}
-                {showCategoryDropdown && (
-                  <div className="absolute top-full left-0 mt-1 w-[283px] h-[244px] p-2 rounded-lg bg-[#FEFEFE] border border-gray-200 shadow-lg z-[1000] flex flex-col gap-1">
-                    {/* Search and Apply Row */}
-                    <div className="flex gap-2 mb-2">
-                      <input
-                        type="text"
-                        placeholder="Search Category..."
-                        value={categorySearch}
-                        onChange={(e) => setCategorySearch(e.target.value)}
-                        className="w-[204px] h-[30px] px-3 py-2 rounded border border-gray-200 text-sm outline-none bg-gray-50"
-                      />
-                      <button
-                        onClick={() => setShowCategoryDropdown(false)}
-                        className="w-[59px] h-[30px] p-2.5 rounded bg-purple-100 border-none cursor-pointer flex items-center justify-center"
-                      >
-                        <span className="font-medium text-sm bg-gradient-to-br from-purple-500 to-indigo-500 bg-clip-text text-transparent">
-                          Apply
-                        </span>
-                      </button>
-                    </div>
-                    
-                    {/* Category List */}
-                    <div className="flex-1 overflow-y-auto">
-                      {filteredCategories.map((category) => (
-                        <label 
-                          key={category}
-                          className="flex items-center w-[204px] h-[29px] gap-2.5 rounded px-2 py-1 bg-[#FEFEFE] cursor-pointer hover:bg-gray-50"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedCategories.includes(category)}
-                            onChange={() => toggleCategory(category)}
-                            className="w-4 h-4 rounded border border-gray-300 accent-purple-500"
-                          />
-                          <span className="font-normal text-sm text-gray-800">
-                            {category}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <EditorCategoryDropdown 
+                selectedCategories={selectedCategories}
+                onCategoriesChange={setSelectedCategories}
+                buttonText="Category"
+              />
 
               <button 
                 className="flex items-center w-[180px] h-8 gap-2 rounded border border-gray-200 bg-white text-sm px-4 py-2 hover:bg-gray-50 transition-colors whitespace-nowrap"

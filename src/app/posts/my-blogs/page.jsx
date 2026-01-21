@@ -121,7 +121,7 @@ export default function PostsMyBlogsPage() {
       <Verify />
       
       <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
-        <div className="ml-0 md:ml-[185px]">
+        <div className="ml-0 md:ml-[195px]">
           <div className="flex flex-col gap-4 mb-6 px-2 max-md:mt-3">
             <h1 className="font-bold text-lg leading-8 text-gray-800 m-0 flex items-center gap-3 max-md:text-base">
               <span className="w-3 h-3 bg-pink-500 rounded-full shrink-0"></span>

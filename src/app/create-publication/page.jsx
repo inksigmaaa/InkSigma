@@ -372,7 +372,7 @@ export default function CreatePublication() {
               {showDropdown && uploadedImage && (
                 <div ref={dropdownRef} className="absolute bottom-[35px] left-[100px] bg-white rounded shadow-lg z-10" style={{ width: '120px', border: '1px solid #E5E7EB' }}>
                   <button onClick={handleChangeImage} className="w-full px-2 py-1.5 text-left text-[11px] text-[#333] hover:bg-[#F9FAFB]">Change Image</button>
-                  <button onClick={handleRemoveImage} className="w-full px-2 py-1.5 text-left text-[11px] text-[#DC2626] hover:bg-[#FEF2F2]">Remove Image</button>
+                  <button onClick={handleRemoveImage} className="w-full px-2 py-1.5 text-left text-[11px] text-[#A30000] hover:bg-[#FEF2F2]">Remove Image</button>
                 </div>
               )}
 

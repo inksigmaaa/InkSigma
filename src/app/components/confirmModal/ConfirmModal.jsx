@@ -2,7 +2,7 @@ export default function ConfirmModal({ isOpen, onClose, onConfirm, title, messag
   if (!isOpen) return null
 
   // Red title for danger actions (trash/delete), black title for normal actions (restore/confirm)
-  const titleColor = confirmStyle === 'danger' ? 'text-[#DC2626]' : 'text-black'
+  const titleColor = confirmStyle === 'danger' ? 'text-[#A30000]' : 'text-black'
 
   return (
     <div
