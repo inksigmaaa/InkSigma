@@ -12,14 +12,12 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const scrollToFeatures = useScrollToSection('features')
   const scrollToRoadmap = useScrollToSection('roadmap')
-  const scrollToHero = useScrollToSection('hero')
 
   const handleNavClick = (item) => {
     if (item.type === 'scroll') {
       const sectionId = item.href.replace('#', '')
       if (sectionId === 'features') scrollToFeatures()
       if (sectionId === 'roadmap') scrollToRoadmap()
-      if (sectionId === 'hero') scrollToHero()
     }
     setMobileMenuOpen(false)
   }

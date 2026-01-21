@@ -12,17 +12,17 @@ import { LOGOS } from "@/constants/app"
  */
 export default function AuthLayout({ children, title, titleClassName }) {
   return (
-    <div className="bg-white flex flex-col items-center justify-center px-4 h-screen overflow-y-auto py-8">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
+    <div className="bg-white flex flex-col items-center justify-start pt-4 md:pt-12 h-screen overflow-hidden px-4">
+      <div className="w-full max-w-[260px] h-auto md:h-[525px] opacity-100 rotate-0 flex flex-col">
+        <div className="text-center mb-[16px] md:mb-[32px]">
           <Image
             src={LOGOS.auth}
             alt="InkSigma Logo"
-            width={200}
-            height={60}
-            className="mx-auto mb-4"
+            width={127}
+            height={41.843929290771484}
+            className="mx-auto mb-[16px] md:mb-[32px] w-[100px] md:w-[127px] h-auto"
           />
-          <h1 className={`text-2xl font-bold text-gray-900 ${titleClassName || ''}`}>
+          <h1 className={`${title === "Welcome, Sign up here!" ? "w-[179px] h-[28px]" : "w-auto md:w-[85px] h-auto md:h-[28px]"} font-bold text-[14px] md:text-[16px] leading-[28px] tracking-[0%] text-[#2E2E2E] opacity-100 rotate-0 mx-auto ${titleClassName || ''}`}>
             {title}
           </h1>
         </div>
