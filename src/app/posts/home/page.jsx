@@ -138,9 +138,20 @@ export default function PostsHomePage() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <h1 className="font-bold text-base  leading-normal tracking-normal text-[#2E2E2E] max-md:text-base max-md:font-bold">
-                    {currentPublication.name}
-                  </h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="font-bold text-base  leading-normal tracking-normal text-[#2E2E2E] max-md:text-base max-md:font-bold">
+                      {currentPublication.name}
+                    </h1>
+                    {currentPublication && !currentPublication.isOwner && (
+                      <span className={`text-xs px-2 py-0.5 rounded-sm font-medium ${
+                        currentPublication.role === 'editor' 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {currentPublication.role?.charAt(0).toUpperCase() + currentPublication.role?.slice(1)}
+                      </span>
+                    )}
+                  </div>
                   <p className="font-normal text-sm leading-normal tracking-normal text-[#A4A4A4] max-w-md max-md:text-xs max-md:line-clamp-2">
                     {currentPublication.description || `${currentPublication.subdomain}.inksigma.com`}
                   </p>

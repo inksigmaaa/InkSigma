@@ -21,7 +21,7 @@ export default function ReviewCard({
   return (
     <div 
       className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer" 
-      onClick={handleCardClick}
+      
     >
       <DesktopReviewLayout 
         article={article}
