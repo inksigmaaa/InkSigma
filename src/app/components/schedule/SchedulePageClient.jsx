@@ -73,7 +73,7 @@ export default function SchedulePageClient({ posts }) {
   return (
     <>
       <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
-        <div className="ml-0 md:ml-[185px]">
+        <div className="ml-0 md:ml-[195px]">
           <div className="space-y-6">
             <ScheduleHeader 
               category={category}
