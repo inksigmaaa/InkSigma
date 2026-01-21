@@ -6,9 +6,9 @@ export default function Footer() {
   return (
     <footer className="bg-[#F5F5F5] py-12">
       <div className="container mx-auto px-6 max-w-6xl">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-12 items-start">
           {/* Logo and Description */}
-          <div className="flex flex-col">
+          <div className="flex flex-col md:col-span-2">
             <Link href="/" className="inline-block mb-6">
               <Image
                 src={LOGOS.main}
@@ -18,7 +18,7 @@ export default function Footer() {
                 className="h-10 w-auto"
               />
             </Link>
-            <p className="text-gray-600 text-sm leading-relaxed mb-8">
+            <p className="text-gray-600 text-sm leading-relaxed mb-8 max-w-[320px]">
               Welcome to the home of writers - pen down your innermost musings, ideas, stories, and inspire others to grow through words that connect. Write daily, inspire & be heard
             </p>
             {/* Social Icons */}
@@ -34,26 +34,28 @@ export default function Footer() {
                   <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
                 </svg>
               </a>
+              {/* X (Twitter) */}
               <a 
                 href="#" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors"
-                aria-label="GitHub"
+                aria-label="X (Twitter)"
               >
                 <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                 </svg>
               </a>
+              {/* Telegram */}
               <a 
                 href="#" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors"
-                aria-label="Twitter"
+                aria-label="Telegram"
               >
                 <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .24z"/>
                 </svg>
               </a>
               <a 
@@ -71,8 +73,8 @@ export default function Footer() {
           </div>
 
           {/* Quick Links */}
-          <div className="mt-16">
-            <h3 className="font-bold text-gray-900 mb-4 text-sm">Quick Links</h3>
+          <div>
+            <h3 className="font-bold mt-16 text-gray-900 mb-4 text-sm">Quick Links</h3>
             <ul className="space-y-2">
               {FOOTER_LINKS.quickLinks.map((link, index) => (
                 <li key={index}>
@@ -88,8 +90,8 @@ export default function Footer() {
           </div>
 
           {/* Company */}
-          <div className="mt-16">
-            <h3 className="font-bold text-gray-900 mb-4 text-sm">Company</h3>
+          <div>
+            <h3 className="font-bold mt-16 text-gray-900 mb-4 text-sm">Company</h3>
             <ul className="space-y-2">
               {FOOTER_LINKS.company.map((link, index) => (
                 <li key={index}>
@@ -105,8 +107,8 @@ export default function Footer() {
           </div>
 
           {/* Contact */}
-          <div className="mt-16">
-            <h3 className="font-bold text-gray-900 mb-4 text-sm">Contact</h3>
+          <div>
+            <h3 className="font-bold mt-16 text-gray-900 mb-4 text-sm">Contact</h3>
             <Link 
               href={`mailto:${APP_CONFIG.email}`}
               className="text-gray-600 hover:text-gray-900 text-sm transition-colors"

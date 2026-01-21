@@ -25,9 +25,8 @@ export const FOOTER_LINKS = {
     { label: 'Features', href: '/features' }
   ],
   company: [
-    { label: 'Terms & Conditions', href: '/terms' },
-    { label: 'Privacy Policy', href: '/privacy' },
-    { label: 'Our Thesis', href: '/thesis' }
+    { label: 'Terms & Condition', href: '/terms' },
+    { label: 'Privacy Policy', href: '/privacy' }
   ]
 }
 
