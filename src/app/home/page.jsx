@@ -135,12 +135,12 @@ export default function HomePage() {
       {/* Main Content */}
       <div className="pt-[112px] min-h-screen max-md:pt-[90px]">
         <div className="max-w-[1034px] mx-auto px-5 max-md:p-0">
-          <div className={`ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0`}>
+          <div className={`ml-[165px] bg-white  p-8  max-md:ml-0 max-md:p-0`}>
           
           {/* Publication Header */}
-          <div className="border-b border-gray-200 px-8 py-6 flex items-center justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
-            <div className="flex items-center gap-4 max-md:gap-3">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
+          <div className=" px-8 py-12 flex items-center justify-between max-md:border-b max-md:border-[#EDEDED] max-md:mx-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
+            <div className="flex items-center gap-6 max-md:gap-3">
+              <div className="w-[66px] h-[68px] rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
                 {currentPublication?.logoUrl ? (
                   <img 
                     src={`http://localhost:5000${currentPublication.logoUrl}`} 
@@ -156,8 +156,8 @@ export default function HomePage() {
                 )}
               </div>
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-lg font-semibold text-gray-900 max-md:text-base max-md:font-bold">
+                <div className="flex items-center gap-2">
+                  <h1 className="font-bold text-base  leading-normal tracking-normal text-[#2E2E2E] max-md:text-base max-md:font-bold">
                     {loading ? "Loading..." : currentPublication?.name || "Publication Name"}
                   </h1>
                   {currentPublication && !currentPublication.isOwner && (
@@ -171,7 +171,7 @@ export default function HomePage() {
                   )}
                 </div>
                 {currentPublication?.description && (
-                  <p className="text-sm text-gray-600 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-2">
+                  <p className="font-normal text-sm leading-normal tracking-normal text-[#A4A4A4] max-w-md max-md:text-xs max-md:line-clamp-2">
                     {currentPublication.description}
                   </p>
                 )}
@@ -180,7 +180,7 @@ export default function HomePage() {
             {currentPublication?.isOwner && (
               <button 
                 onClick={handleEditPublication}
-                className="text-sm text-gray-600 bg-[#f4f4f4] hover:text-gray-900 px-4 py-2 border border-gray-200 rounded-md transition-colors max-md:px-3 max-md:py-1.5 max-md:text-xs flex-shrink-0 max-md:rounded-lg"
+                className="text-sm text-gray-600 bg-[#f4f4f4] hover:text-gray-900 px-4 py-2 border border-gray-200 rounded-sm transition-colors max-md:px-3 max-md:py-1.5 max-md:text-xs flex-shrink-0 max-md:rounded-lg"
               >
                 Edit
               </button>
@@ -188,23 +188,23 @@ export default function HomePage() {
           </div>
 
           {/* Statistics Section */}
-          <div className="relative py-6 border-b border-gray-200 max-md:px-4 max-md:py-0 max-md:pb-4 max-md:border-b-0">
+          <div className="relative py-6 border-y border-gray-200 max-md:px-4 max-md:py-0 max-md:pb-4 max-md:border-0">
             <BlogStatsComponent />
           </div>
 
           {/* What's on your mind Section */}
-          <div className="px-8 py-8 border-b border-gray-200 text-center max-md:p-0 max-md:border-b-0">
-            <div className="max-md:bg-gray-50 max-md:border max-md:border-gray-200 max-md:rounded-l max-md:p-6 max-md:mx-4 max-md:mb-4">
-              <h2 className="text-xl font-bold text-gray-900 mb-2 max-md:text-lg max-md:mb-3">
+          <div className="px-20 py-10 border border-gray-200 text-center mt-10 max-md:p-0 max-md:border-0">
+            <div className="max-md:bg-gray-50 flex flex-col items-center max-md:border max-md:border-gray-200 max-md:rounded-l max-md:p-6 max-md:mx-4 max-md:mb-4 gap-2">
+              <h2 className="font-bold text-[16px] leading-[28px] tracking-normal text-[#2E2E2E] max-md:text-lg max-md:mb-3">
                 What's on your mind?
               </h2>
-              <p className="text-sm text-gray-500 mb-6 leading-relaxed max-md:text-xs max-md:mb-5 max-md:text-gray-600">
+              <p className="text-sm text-[#A4A4A4] max-w-[425px] leading-normal max-md:text-xs max-md:mb-5 max-md:text-gray-600">
                 Craft persuasive articles showcasing your novel ideas by publishing them on your very own website
               </p>
               
               <button 
                 onClick={handleStartWriting}
-                className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition-colors max-md:px-6 max-md:py-2.5 max-md:text-sm max-md:rounded-lg"
+                className="inline-flex items-center gap-2 bg-[#080808] text-[#EDEDED] px-6 py-2 rounded-md hover:bg-gray-800 transition-colors max-md:px-6 max-md:py-2.5 max-md:text-sm max-md:rounded-lg"
               >
                 <Pencil className="w-4 h-4" />
                 Start Writing
@@ -213,26 +213,26 @@ export default function HomePage() {
           </div>
 
           {/* Recent Articles Section */}
-          <div className="px-8 py-6 pb-12 max-md:px-4 max-md:py-4 max-md:pb-20">
-            <h3 className="text-lg font-bold text-gray-900 mb-6 max-md:text-base max-md:mb-4">Recent Articles</h3>
+          <div className="my-10 pb-12 max-md:px-4 max-md:py-4 max-md:pb-20">
+            <h3 className="text-lg font-bold text-[#000000] mb-6 max-md:text-base max-md:mb-4">Recent Articles</h3>
             
             {recentArticles.length === 0 ? (
               <div className="flex items-center justify-center min-h-[200px] py-20 px-10 bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)]">
                 <p className="font-['Public_Sans'] font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">No published articles yet. Start writing to see them here!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-6 max-md:grid-cols-1 max-md:gap-4">
+              <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1 max-md:gap-4">
                 {recentArticles.map((article) => (
                 <div 
                   key={article.id} 
-                  className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5 cursor-pointer"
+                  className="border border-[#EAEAEA] rounded-lg hover:shadow-lg transition-shadow bg-white p-4 cursor-pointer"
                   onClick={() => router.push(`/home/preview/${article.id}`)}
                 >
                   <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative">
                     <img 
                       src={article.thumbnail} 
                       alt={article.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-sm"
                       onError={(e) => {
                         // Prevent infinite loop
                         if (e.target.src !== "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop") {
@@ -243,18 +243,18 @@ export default function HomePage() {
                     />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-3 text-lg leading-snug">
+                    <h4 className="font-semibold text-[#000000] mb-3 text-lg leading-snug">
                       {article.title}
                     </h4>
-                    <p className="text-sm text-gray-400 mb-4 leading-relaxed line-clamp-2">
+                    <p className="font-normal text-[14px] h-[42px] text-[#A4A4A4] mb-4 leading-normal line-clamp-2">
                       {article.description}
                     </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-400 bg-gray-50 px-4 py-2 rounded-lg">
+                    <div className="flex items-center  justify-between">
+                      <span className="text-sm text-[#808080] bg-[#F4F4F4] px-4 py-2 rounded">
                         {article.category}
                       </span>
                       <button 
-                        className="text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition-colors"
+                        className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
                           router.push(`/editor?status=published&id=${article.id}`);
@@ -264,22 +264,6 @@ export default function HomePage() {
                       </button>
                     </div>
                     
-                    {/* Views and Comments */}
-                    <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
-                      <div className="flex items-center gap-1.5 text-gray-400 text-xs">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        <span>{article.views} views</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-gray-400 text-xs">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                        <span>{commentCounts[article.id] || 0} comments</span>
-                      </div>
-                    </div>
                   </div>
                 </div>
               ))}

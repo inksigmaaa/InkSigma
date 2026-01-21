@@ -235,8 +235,8 @@ export default function SettingsPage() {
         throw new Error("Subdomain must be between 3 and 63 characters")
       }
       
-      if (description && description.length > 200) {
-        throw new Error("Description must be less than 200 characters")
+      if (description && description.length > 100) {
+        throw new Error("Description must be less than 100 characters")
       }
       
       const res = await fetch(`http://localhost:5000/api/publications/${publicationId}`, {
@@ -362,14 +362,14 @@ export default function SettingsPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-semibold text-gray-900">Publication Description</label>
-              <span className="text-xs text-gray-500">{(description || "").length}/50</span>
+              <span className="text-xs text-gray-500">{(description || "").length}/100</span>
             </div>
             <textarea
               placeholder="Write publication Description"
               value={description || ""}
-              onChange={(e) => setDescription(e.target.value.slice(0, 50))}
+              onChange={(e) => setDescription(e.target.value.slice(0, 100))}
               rows={3}
-              maxLength={50}
+              maxLength={100}
               className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:border-purple-500 resize-none"
             />
           </div>

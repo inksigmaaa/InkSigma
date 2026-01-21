@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import MemberSidebar from "../../membersidebar/MemberSidebar"
+import BlogStatsComponent from "../../components/BlogStatsComponent/BlogStatsComponent"
 import { Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { usePublication } from "@/contexts/PublicationContext"
@@ -12,7 +13,6 @@ import { getImageUrl } from "@/utils/imageUrl"
 export default function PostsHomePage() {
   const router = useRouter()
   const { currentPublication, publicationDetails, loading: publicationLoading } = usePublication()
-  const [stats, setStats] = useState({ totalArticles: 0, publishedArticles: 0, totalViews: 0, totalLikes: 0 })
   const [recentArticles, setRecentArticles] = useState([])
   const [loading, setLoading] = useState(true)
   const lastPublicationIdRef = useRef(null)
@@ -21,17 +21,7 @@ export default function PostsHomePage() {
     if (!pubId) return
     
     try {
-      // Fetch stats for this publication
-      const statsRes = await fetch(`http://localhost:5000/api/publication-stats/${pubId}`, {
-        credentials: "include",
-      })
-
-      if (statsRes.ok) {
-        const statsData = await statsRes.json()
-        setStats(statsData)
-      }
-
-      // Fetch recent published articles for this publication using the publication-specific endpoint
+      // Fetch recent published articles for this publication
       const articlesRes = await fetch(
         `http://localhost:5000/api/blogs/publication/${pubId}?status=published&limit=4&offset=0`,
         { credentials: "include" }
@@ -123,10 +113,10 @@ export default function PostsHomePage() {
       {/* Main Content */}
       <div className="pt-[112px] min-h-screen max-md:pt-[90px]">
         <div className="max-w-[1034px] mx-auto px-5 max-md:p-0">
-          <div className="ml-[165px] bg-white border-r p-8 border-gray-200 max-md:ml-0 max-md:border-r-0 max-md:p-0">
+          <div className="ml-[165px] bg-white  p-8  max-md:ml-0 max-md:p-0">
 
             {/* Publication Header */}
-            <div className="border-b border-gray-200 px-8 py-6 flex items-start justify-between max-md:border-b-0 max-md:px-4 max-md:py-4 max-md:pb-3">
+            <div className=" px-8 py-12 flex items-start justify-between max-md:border-b max-md:border-[#EDEDED] max-md:px-0 max-md:mx-6 max-md:py-4 max-md:pb-3 max-md:mt-4">
               <div className="flex items-start gap-4 max-md:gap-3">
                 <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
                   {currentPublication?.logoUrl ? (
@@ -148,10 +138,10 @@ export default function PostsHomePage() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-lg font-semibold text-gray-900 mb-1 max-md:text-base max-md:font-bold">
+                  <h1 className="font-bold text-base  leading-normal tracking-normal text-[#2E2E2E] max-md:text-base max-md:font-bold">
                     {currentPublication.name}
                   </h1>
-                  <p className="text-sm text-gray-400 leading-relaxed max-w-md max-md:text-xs max-md:line-clamp-1">
+                  <p className="font-normal text-sm leading-normal tracking-normal text-[#A4A4A4] max-w-md max-md:text-xs max-md:line-clamp-2">
                     {currentPublication.description || `${currentPublication.subdomain}.inksigma.com`}
                   </p>
                 </div>
@@ -159,48 +149,23 @@ export default function PostsHomePage() {
             </div>
 
             {/* Statistics Section */}
-            <div className="relative py-6 border-b border-gray-200 max-md:px-4 max-md:py-0 max-md:pb-4 max-md:border-b-0">
-              <div className="px-8 max-md:px-0 mb-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-sm text-gray-600">Monthly</span>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
-                    <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="text-left">
-                    <p className="text-4xl font-bold text-gray-900">{stats.totalArticles}</p>
-                    <p className="text-sm text-purple-500 mt-1">Total no. Articles</p>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-4xl font-bold text-gray-900">{stats.totalViews}</p>
-                    <p className="text-sm text-purple-500 mt-1">Views</p>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-4xl font-bold text-gray-900">{stats.totalLikes}</p>
-                    <p className="text-sm text-purple-500 mt-1">Comments</p>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-4xl font-bold text-gray-900">{stats.publishedArticles}</p>
-                    <p className="text-sm text-purple-500 mt-1">Shares</p>
-                  </div>
-                </div>
-              </div>
+            <div className="relative py-6 border-y border-gray-200 max-md:px-4 max-md:py-0 max-md:pb-4 max-md:border-0">
+              <BlogStatsComponent />
             </div>
 
             {/* What's on your mind Section */}
-            <div className="px-8 py-8 border-b border-gray-200 text-center max-md:p-0 max-md:border-b-0">
-              <div className="max-md:bg-gray-50 max-md:border max-md:border-gray-200 max-md:rounded-l max-md:p-6 max-md:mx-4 max-md:mb-4">
-                <h2 className="text-xl font-bold text-gray-900 mb-2 max-md:text-lg max-md:mb-3">
+            <div className="px-20 py-10 border border-gray-200 text-center mt-10 max-md:p-0 max-md:border-0">
+              <div className="max-md:bg-gray-50 flex flex-col items-center max-md:border max-md:border-gray-200 max-md:rounded-l max-md:p-6 max-md:mx-4 max-md:mb-4 gap-2">
+                <h2 className="font-bold text-[16px] leading-[28px] tracking-normal text-[#2E2E2E] max-md:text-lg max-md:mb-3">
                   What's on your mind?
                 </h2>
-                <p className="text-sm text-gray-500 mb-6 leading-relaxed max-md:text-xs max-md:mb-5 max-md:text-gray-600">
+                <p className="text-sm text-[#A4A4A4] max-w-[425px] leading-normal max-md:text-xs max-md:mb-5 max-md:text-gray-600">
                   Craft persuasive articles showcasing your novel ideas by publishing them on this publication
                 </p>
-
-                <button
+                
+                <button 
                   onClick={handleStartWriting}
-                  className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800 transition-colors max-md:px-6 max-md:py-2.5 max-md:text-sm max-md:rounded-lg"
+                  className="inline-flex items-center gap-2 bg-[#080808] text-[#EDEDED] px-6 py-2 rounded-md hover:bg-gray-800 transition-colors max-md:px-6 max-md:py-2.5 max-md:text-sm max-md:rounded-lg"
                 >
                   <Pencil className="w-4 h-4" />
                   Start Writing
@@ -209,7 +174,7 @@ export default function PostsHomePage() {
             </div>
 
             {/* Recent Articles Section */}
-            <div className="px-8 py-6 pb-12 max-md:px-4 max-md:py-4 max-md:pb-20">
+            <div className=" mt-10 pb-12 max-md:px-4 max-md:py-4 max-md:pb-20">
               <h3 className="text-lg font-bold text-gray-900 mb-6 max-md:text-base max-md:mb-4">Recent Published Articles</h3>
 
               {recentArticles.length === 0 ? (
@@ -217,18 +182,18 @@ export default function PostsHomePage() {
                   <p className="font-['Public_Sans'] font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">No published articles yet</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-6 max-md:grid-cols-1 max-md:gap-4">
+                <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1 max-md:gap-4">
                   {recentArticles.map((article) => (
                     <div 
                       key={article.id} 
-                      className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3.5 cursor-pointer"
+                      className="border border-[#EAEAEA] rounded-lg hover:shadow-lg transition-shadow bg-white p-4 cursor-pointer"
                       onClick={() => router.push(`/posts/published`)}
                     >
                       <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative">
                         <img
                           src={article.image ? getImageUrl(article.image) : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"}
                           alt={article.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover rounded-sm"
                           onError={(e) => {
                             // Prevent infinite loop
                             if (e.target.src !== "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop") {
@@ -239,21 +204,18 @@ export default function PostsHomePage() {
                         />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-gray-900 mb-3 text-lg leading-snug line-clamp-2">
+                        <h4 className="font-semibold text-[#000000] mb-3 text-lg leading-snug">
                           {article.title}
                         </h4>
-                        <p className="text-sm text-gray-400 mb-4 leading-relaxed line-clamp-2">
+                        <p className="font-normal text-[14px] h-[42px] text-[#A4A4A4] mb-4 leading-normal line-clamp-2">
                           {article.description}
                         </p>
                         <div className="flex items-center justify-between">
                           {article.categories && article.categories.length > 0 && (
-                            <span className="text-sm text-gray-400 bg-gray-50 px-4 py-2 rounded-lg">
+                            <span className="text-sm text-[#808080] bg-[#F4F4F4] px-4 py-2 rounded">
                               {article.categories[0]}
                             </span>
                           )}
-                          <span className="text-xs text-gray-400">
-                            by {article.author?.name || 'Unknown'}
-                          </span>
                         </div>
                       </div>
                     </div>
