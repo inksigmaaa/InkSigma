@@ -70,7 +70,7 @@ export default function ConditionalLayout({ children }) {
   return (
     <>
       <Header />
-      <main className="">
+      <main className="w-[1920px] mx-auto bg-white">
         {children}
       </main>
       <Footer />

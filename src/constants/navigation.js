@@ -2,8 +2,8 @@ export const MAIN_NAVIGATION = [
   {
     id: 'home',
     label: 'Home',
-    href: '/',
-    type: 'link'
+    href: '#hero',
+    type: 'scroll'
   },
   {
     id: 'features',
@@ -16,20 +16,13 @@ export const MAIN_NAVIGATION = [
     label: 'Roadmap',
     href: '#roadmap',
     type: 'scroll'
-  },
-  {
-    id: 'bugs-requests',
-    label: 'Bugs/Feature Requests',
-    href: 'https://inksigma.canny.io/',
-    type: 'link'
   }
 ]
 
 export const FOOTER_LINKS = {
   quickLinks: [
     { label: 'Home', href: '/' },
-    { label: 'Features', href: '/features' },
-    { label: 'Bugs/Feature Requests', href: 'https://inksigma.canny.io/' }
+    { label: 'Features', href: '/features' }
   ],
   company: [
     { label: 'Terms & Conditions', href: '/terms' },

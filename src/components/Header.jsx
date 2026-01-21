@@ -5,12 +5,6 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-} from "@/components/ui/navigation-menu"
 import { useScrollToSection } from "@/hooks/useScrollToSection"
 import { MAIN_NAVIGATION, LOGOS } from "@/constants"
 
@@ -18,19 +12,21 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const scrollToFeatures = useScrollToSection('features')
   const scrollToRoadmap = useScrollToSection('roadmap')
+  const scrollToHero = useScrollToSection('hero')
 
   const handleNavClick = (item) => {
     if (item.type === 'scroll') {
       const sectionId = item.href.replace('#', '')
       if (sectionId === 'features') scrollToFeatures()
       if (sectionId === 'roadmap') scrollToRoadmap()
+      if (sectionId === 'hero') scrollToHero()
     }
     setMobileMenuOpen(false)
   }
 
   return (
-    <header className="w-full bg-white">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between max-w-[1100px]">
+    <header className="fixed top-0 left-0 right-0 w-full max-w-[1920px] h-[84px] mx-auto z-50 pt-6 pb-6 border-b border-gray-200 opacity-100 overflow-hidden" style={{ background: '#FEFEFE' }}>
+      <div className="w-full flex items-center justify-between max-w-[1920px] mx-auto px-[151.63px]">
         {/* Mobile Menu Button - Left Side */}
         <button
           className="md:hidden p-2"
@@ -40,49 +36,90 @@ export default function Header() {
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
-        {/* Logo */}
+        {/* Logo - Left positioned */}
         <Link href="/" className="flex items-center">
           <Image
             src={LOGOS.main}
             alt="Sigma Logo"
-            width={120}
-            height={40}
-            className="h-10 w-auto"
+            width={109.74}
+            height={36.16}
+            className="w-[109.74px] h-[36.16px]"
           />
         </Link>
 
-        {/* Desktop Navigation */}
-        <NavigationMenu className="hidden md:flex">
-          <NavigationMenuList>
-            {MAIN_NAVIGATION.map((item) => (
-              <NavigationMenuItem key={item.id}>
-                <NavigationMenuLink asChild>
+        {/* Desktop Navigation - Centered */}
+        <nav className="hidden md:flex items-center justify-center flex-1">
+          <div className="flex items-center gap-[72px]">
+            {MAIN_NAVIGATION.map((item) => {
+              // Define specific dimensions for each nav item
+              const getItemStyle = (itemId) => {
+                switch(itemId) {
+                  case 'home':
+                    return { width: '39px', height: '21px', opacity: 1 };
+                  case 'features':
+                    return { width: '51px', height: '21px', opacity: 1 };
+                  case 'roadmap':
+                    return { width: '62px', height: '21px', opacity: 1 };
+                  default:
+                    return { height: '21px', opacity: 1 };
+                }
+              };
+
+              return (
+                <div key={item.id} className="flex items-center justify-center" style={getItemStyle(item.id)}>
                   {item.type === 'link' ? (
                     <Link 
                       href={item.href}
-                      className="inline-flex h-10 w-max items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                      className="flex items-center justify-center h-full text-text-primary"
+                      style={{
+                        fontFamily: 'Public Sans, sans-serif',
+                        fontWeight: 400,
+                        fontSize: '14px',
+                        lineHeight: '150%',
+                        letterSpacing: '0%'
+                      }}
                     >
                       {item.label}
                     </Link>
                   ) : (
                     <button
                       onClick={() => handleNavClick(item)}
-                      className="inline-flex h-10 w-max items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
+                      className="flex items-center justify-center h-full cursor-pointer text-text-primary"
+                      style={{
+                        fontFamily: 'Public Sans, sans-serif',
+                        fontWeight: 400,
+                        fontSize: '14px',
+                        lineHeight: '150%',
+                        letterSpacing: '0%'
+                      }}
                     >
                       {item.label}
                     </button>
                   )}
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            ))}
-          </NavigationMenuList>
-        </NavigationMenu>
+                </div>
+              );
+            })}
+          </div>
+        </nav>
 
-        {/* Login Button */}
-        <Link href="/login">
+        {/* Login Button - Right positioned */}
+        <Link href="/login" className="flex items-center">
           <Button 
-            variant="default" 
-            className="bg-black text-white hover:bg-gray-800"
+            style={{
+              width: '85px',
+              height: '32px',
+              opacity: 1,
+              paddingTop: '8px',
+              paddingRight: '24px',
+              paddingBottom: '8px',
+              paddingLeft: '24px',
+              gap: '10px',
+              borderRadius: '4px',
+              background: '#080808',
+              animationDuration: '0ms',
+              border: 'none'
+            }}
+            className="text-white hover:bg-gray-800 transition-none duration-0 text-sm font-medium border-0"
           >
             Login
           </Button>
@@ -105,9 +142,9 @@ export default function Header() {
               <Image
                 src={LOGOS.main}
                 alt="Sigma Logo"
-                width={120}
-                height={40}
-                className="h-10 w-auto"
+                width={109.74}
+                height={36.16}
+                className="w-[109.74px] h-[36.16px]"
               />
             </Link>
             
@@ -120,7 +157,7 @@ export default function Header() {
                 {item.type === 'link' ? (
                   <Link 
                     href={item.href}
-                    className="block text-2xl font-medium text-gray-700 hover:text-gray-900"
+                    className="block text-2xl font-medium text-text-primary hover:opacity-80"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {item.label}
@@ -128,7 +165,7 @@ export default function Header() {
                 ) : (
                   <button
                     onClick={() => handleNavClick(item)}
-                    className="text-2xl font-medium text-gray-700 hover:text-gray-900"
+                    className="text-2xl font-medium text-text-primary hover:opacity-80"
                   >
                     {item.label}
                   </button>
@@ -138,8 +175,21 @@ export default function Header() {
             
             <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
               <Button 
-                variant="default" 
-                className="bg-black text-white hover:bg-gray-800 px-12 py-6 text-lg rounded-lg"
+                style={{
+                  width: '85px',
+                  height: '32px',
+                  opacity: 1,
+                  paddingTop: '8px',
+                  paddingRight: '24px',
+                  paddingBottom: '8px',
+                  paddingLeft: '24px',
+                  gap: '10px',
+                  borderRadius: '4px',
+                  background: '#080808',
+                  animationDuration: '0ms',
+                  border: 'none'
+                }}
+                className="text-white hover:bg-gray-800 transition-none duration-0 text-sm font-medium border-0"
               >
                 Login
               </Button>

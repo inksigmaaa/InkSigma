@@ -45,6 +45,11 @@ module.exports = {
                 border: "var(--border)",
                 input: "var(--input)",
                 ring: "var(--ring)",
+                // Custom text colors
+                'text-primary': '#2E2E2E',
+                'text-secondary': '#6b7280',
+                'text-accent': '#171717',
+                'text-muted': '#737373',
             },
             borderRadius: {
                 lg: "var(--radius)",
