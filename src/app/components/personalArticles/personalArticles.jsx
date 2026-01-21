@@ -62,7 +62,7 @@ export default function PersonalArticles({
 
     return (
         <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
-            <div className="ml-[185px] max-md:ml-0">
+            <div className="ml-[195px] max-md:ml-0">
                 {/* Title Row */}
                 <div className="flex items-center justify-between gap-4 mb-4">
                     <h1 className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-800 m-0 flex items-center gap-2">
