@@ -8,6 +8,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { usePublication } from '@/contexts/PublicationContext'
 import StatsPopup from './StatsPopup'
+import styles from './ArticleContainer.module.css'
 
 export default function ArticleContainer({ id, status, title, description, categories, postedTime, isSelected, onSelect, onDelete, onPublish, onUnpublish, onDraft, publicationId, image, showActions = true, stats }) {
     const router = useRouter()
@@ -69,7 +70,7 @@ export default function ArticleContainer({ id, status, title, description, categ
     }
 
     const statusConfig = {
-        published: { bg: '#D5F2D4', color: '#267F24', text: 'Published' },
+        published: { bg: '#D5F2D4', color: '#267F42', text: 'Published' },
         draft: { bg: '#FFEADB', color: '#A34200', text: 'Draft' },
         scheduled: { bg: '#D6EEFB', color: '#0048B5', text: 'Scheduled' },
         trash: { bg: '#FEE2E2', color: '#DC2626', text: 'Trash' },
@@ -93,13 +94,19 @@ export default function ArticleContainer({ id, status, title, description, categ
                 <div className="flex w-[100%] gap-4">
                     <div className="flex gap-3 flex-1">
                         {showActions && (
-                            <input
-                                type="checkbox"
-                                checked={isSelected || false}
-                                onChange={(e) => onSelect && onSelect(id, e.target.checked)}
-                                className="mt-1 cursor-pointer accent-violet-500 shrink-0"
-                                style={{ width: '16px', height: '16px' }}
-                            />
+                            <label className={styles.customCheckboxLabel}>
+                                <input
+                                    type="checkbox"
+                                    checked={isSelected || false}
+                                    onChange={(e) => onSelect && onSelect(id, e.target.checked)}
+                                    className={styles.customCheckboxInput}
+                                />
+                                <span className={styles.customCheckboxBox}>
+                                    {isSelected && (
+                                        <img src="/images/icons/tick2.svg" alt="checked" className={styles.checkmarkIcon} />
+                                    )}
+                                </span>
+                            </label>
                         )}
 
                         <div className="flex-1 cursor-pointer" onClick={handlePreview}>

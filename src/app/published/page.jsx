@@ -246,7 +246,7 @@ export default function Published() {
             <PageTransition>
                 <PersonalArticles
                     title="Published"
-                    titleColor="#267F24"
+                    titleColor="#72D770"
                     articles={publishedArticles}
                     emptyMessage="No published articles yet"
                     showSelectAll={true}

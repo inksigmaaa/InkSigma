@@ -13,7 +13,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
         router.push(`/editor?status=${status}&id=${id}${publicationQuery}`)
     }
     const statusConfig = {
-        published: { bg: '#D5F2D4', color: '#267F24', text: 'Published' },
+        published: { bg: '#D5F2D4', color: '#267F42', text: 'Published' },
         draft: { bg: '#FFEADB', color: '#A34200', text: 'Draft' },
         scheduled: { bg: '#D6EEFB', color: '#0048B5', text: 'Scheduled' },
         trash: { bg: '#FEE2E2', color: '#DC2626', text: 'Trash' },
@@ -141,13 +141,36 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                 <div className="flex w-full">
                     {/* left side */}
                     <div className="flex gap-3 flex-1">
-                        <input
-                            type="checkbox"
-                            className="mt-1 cursor-pointer accent-purple-500 shrink-0 max-md:hidden"
-                            style={{ width: '16px', height: '16px' }}
-                            checked={isSelected || false}
-                            onChange={(e) => onSelect && onSelect(id, e.target.checked)}
-                        />
+                        <label style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            cursor: 'pointer',
+                            marginTop: '4px'
+                        }} className="max-md:hidden">
+                            <input
+                                type="checkbox"
+                                style={{ display: 'none' }}
+                                checked={isSelected || false}
+                                onChange={(e) => onSelect && onSelect(id, e.target.checked)}
+                            />
+                            <span style={{
+                                width: '16px',
+                                height: '16px',
+                                borderRadius: '4px',
+                                border: '1px solid #C0C0C0',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: (isSelected || false) ? '#000000' : 'transparent',
+                                borderColor: (isSelected || false) ? '#000000' : '#C0C0C0',
+                                transition: 'all 0.2s ease',
+                                flexShrink: 0
+                            }}>
+                                {(isSelected || false) && (
+                                    <img src="/images/icons/tick2.svg" alt="checked" style={{ width: '10px', height: '10px', filter: 'brightness(0) invert(1)' }} />
+                                )}
+                            </span>
+                        </label>
 
                         <div className="flex-1">
                             <h3 className="font-['Public_Sans'] font-semibold text-sm leading-none text-black mb-2 mt-2 max-md:text-sm">{title}</h3>

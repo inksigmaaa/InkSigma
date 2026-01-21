@@ -56,23 +56,50 @@ export default function PersonalArticles({
                 {/* Controls Row - Only shown on desktop/tablet when showActions is true (Draft/Trash pages) */}
                 {showActions && (
                     <div className="flex items-center justify-between gap-5 mb-6 max-md:hidden">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
                             {showSelectAll && (
-                                <label className="flex items-center gap-2 cursor-pointer w-[123px] h-8 bg-[#F8F8F8] rounded px-3 py-2">
+                                <label style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    cursor: 'pointer',
+                                    width: '110px',
+                                    height: '32px',
+                                    backgroundColor: '#F8F8F8',
+                                    borderRadius: '4px',
+                                    padding: '8px 12px'
+                                }}>
                                     <input
                                         type="checkbox"
                                         checked={selectAll}
                                         onChange={(e) => onSelectAll?.(e.target.checked)}
-                                        className="cursor-pointer accent-purple-600"
-                                        style={{
-                                            width: '16px',
-                                            height: '16px',
-                                            borderRadius: '4px',
-                                            borderWidth: '1px',
-                                            opacity: 1
-                                        }}
+                                        style={{ display: 'none' }}
                                     />
-                                    <span className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-500">Select all</span>
+                                    <span style={{
+                                        width: '16px',
+                                        height: '16px',
+                                        borderRadius: '4px',
+                                        border: '1px solid #C0C0C0',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: selectAll ? '#000000' : 'transparent',
+                                        borderColor: selectAll ? '#000000' : '#C0C0C0',
+                                        transition: 'all 0.2s ease'
+                                    }}>
+                                        {selectAll && (
+                                            <img src="/images/icons/tick2.svg" alt="checked" style={{ width: '10px', height: '10px', filter: 'brightness(0) invert(1)' }} />
+                                        )}
+                                    </span>
+                                    <span style={{
+                                        fontFamily: 'Public Sans',
+                                        fontWeight: '400',
+                                        fontStyle: 'normal',
+                                        fontSize: '14px',
+                                        lineHeight: '150%',
+                                        letterSpacing: '0%',
+                                        color: '#000000'
+                                    }}>Select all</span>
                                 </label>
                             )}
                             {actionButtons.map((button, index) => (

@@ -5,6 +5,7 @@ import ArticleContainer from '../articleContainer/ArticleContainer'
 import ConfirmModal from '../confirmModal/ConfirmModal'
 import CategoryFilter from '../categoryFilter/CategoryFilter'
 import { useArticles } from '@/contexts/ArticlesContext'
+import styles from './Articles.module.css'
 
 export default function Articles(props) {
     const { articles: contextArticles, loading, error, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, publishArticle, unpublishArticle } = useArticles()
@@ -177,6 +178,26 @@ export default function Articles(props) {
                             {props.title || "All Articles"}
                         </h1>
                         <div className="flex items-center justify-between gap-4 max-[410px]:gap-2">
+                            <div className="flex items-center gap-3">
+                                {filteredArticles.length > 0 && (
+                                    <label className={styles.selectAllContainer}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectAll}
+                                            onChange={handleSelectAll}
+                                            className={styles.selectAllCheckbox}
+                                        />
+                                        <span className={styles.selectAllCheckboxBox}>
+                                            {selectAll && (
+                                                <img src="/images/icons/tick2.svg" alt="checked" className={styles.selectAllCheckboxIcon} />
+                                            )}
+                                        </span>
+                                        <span className={styles.selectAllText}>
+                                            Select all
+                                        </span>
+                                    </label>
+                                )}
+                            </div>
                             {showCreateButton && (
                                 <button className="font-semibold text-base leading-6 text-white bg-black rounded-lg px-6 py-3 whitespace-nowrap transition-colors hover:bg-gray-800 active:bg-gray-900 max-[410px]:text-sm max-[410px]:px-4 max-[410px]:py-2.5 max-[360px]:text-xs max-[360px]:px-3 max-[360px]:py-2">
                                     + Create Article
@@ -191,13 +212,31 @@ export default function Articles(props) {
                     </div>
 
                     <div className="hidden md:flex flex-col gap-4">
-                        <div className="flex items-center">
+                        <div className="flex items-center justify-between">
                             <h1 className="m-0 font-bold text-base leading-6 text-gray-800 flex items-center gap-2">
                                 <span className="w-2 h-2 bg-violet-500 rounded-full"></span>
                                 {props.title || "All Articles"}
                             </h1>
                         </div>
-                        <div className="flex items-center justify-end gap-5">
+                        <div className="flex items-center justify-between gap-5">
+                            {filteredArticles.length > 0 && (
+                                <label className={styles.selectAllContainer}>
+                                    <input
+                                        type="checkbox"
+                                        checked={selectAll}
+                                        onChange={handleSelectAll}
+                                        className={styles.selectAllCheckbox}
+                                    />
+                                    <span className={styles.selectAllCheckboxBox}>
+                                        {selectAll && (
+                                            <img src="/images/icons/tick2.svg" alt="checked" className={styles.selectAllCheckboxIcon} />
+                                        )}
+                                    </span>
+                                    <span className={styles.selectAllText}>
+                                        Select all
+                                    </span>
+                                </label>
+                            )}
                             <CategoryFilter 
                                 selectedCategories={selectedCategories}
                                 onCategoriesChange={setSelectedCategories}
