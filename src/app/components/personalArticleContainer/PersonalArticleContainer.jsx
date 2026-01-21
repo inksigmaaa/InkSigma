@@ -95,7 +95,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                         <>
                             {canPublish && (
                                 <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Republish" onClick={onRepublish}>
-                                    <img src="/images/icons/publish.svg" alt="republish" className="w-4 h-4" />
+                                    <img src="/images/icons/publish-ideal.svg" alt="republish" className="w-4 h-4" />
                                 </button>
                             )}
                             <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
@@ -213,7 +213,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                             <>
                                 {canPublish && (
                                     <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Republish" onClick={onRepublish}>
-                                        <img src="/images/icons/publish.svg" alt="republish" className="w-4 h-4" />
+                                        <img src="/images/icons/publish-ideal.svg" alt="republish" className="w-4 h-4" />
                                     </button>
                                 )}
                                 <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
