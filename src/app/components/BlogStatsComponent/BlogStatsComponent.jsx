@@ -285,17 +285,17 @@ const BlogStatsComponent = () => {
   return (
     <div className="w-full">
       {/* Period Selector */}
-      <div ref={periodMenuRef} className="mb-8 relative -mt-10 max-lg:hidden">
+      <div ref={periodMenuRef} className="mb-4 relative -mt-10 max-lg:hidden">
         <button
           onClick={() => setShowPeriodMenu(!showPeriodMenu)}
-          className="flex items-center gap-2 text-gray-900 font-medium text-sm bg-white px-3 py-1.5 rounded hover:bg-gray-50 transition-colors border border-gray-200"
+          className="flex items-center gap-2 text-gray-900 font-medium text-sm bg-neutral-100 px-3 py-1.5 rounded hover:bg-gray-50 transition-colors border border-gray-200"
         >
           {selectedPeriod}
-          <span className="text-xs">▼</span>
+          <span className="text-xs text-neutral-400">▼</span>
         </button>
 
         {showPeriodMenu && (
-          <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border py-2 z-10 w-48">
+          <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border py-2 z-10 w-36">
             {periods.map((period) => (
               <button
                 key={period}
@@ -308,7 +308,7 @@ const BlogStatsComponent = () => {
                   setShowPeriodMenu(false)
                 }}
                 className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
-                  period === 'Custom Date' ? 'text-gray-400' : 'text-gray-700'
+                  period === 'Custom Date' ? 'text-[#B0B0B0] font-semibold' : 'text-[#696969]'
                 }`}
               >
                 {period}
@@ -329,7 +329,7 @@ const BlogStatsComponent = () => {
                 <div className="flex" style={{ gap: '32px' }}>
                   <div className="flex-1">
                     <label 
-                      className="block text-gray-900 font-semibold mb-2 cursor-pointer"
+                      className="block text-[#2E2E2E] font-semibold mb-2 cursor-pointer"
                       style={{ 
                         fontFamily: 'Public Sans',
                         fontSize: '14px',
@@ -345,7 +345,7 @@ const BlogStatsComponent = () => {
                       placeholder="DD/MM/YYYY"
                       value={fromDate}
                       readOnly
-                      className="w-full border-b border-gray-300 text-gray-400 outline-none cursor-pointer bg-transparent"
+                      className="w-full border-b-[2px] border-[#CBCBCB] text-[#C8C8C8] outline-none cursor-pointer bg-transparent"
                       style={{ 
                         fontFamily: 'Public Sans',
                         fontSize: '14px',
@@ -358,7 +358,7 @@ const BlogStatsComponent = () => {
                   </div>
                   <div className="flex-1">
                     <label 
-                      className="block text-gray-900 font-semibold mb-2 cursor-pointer"
+                      className="block text-[#2E2E2E] font-semibold mb-2 cursor-pointer"
                       style={{ 
                         fontFamily: 'Public Sans',
                         fontSize: '14px',
@@ -374,7 +374,7 @@ const BlogStatsComponent = () => {
                       placeholder="DD/MM/YYYY"
                       value={toDate}
                       readOnly
-                      className="w-full border-b border-gray-300 text-gray-400 outline-none cursor-pointer bg-transparent"
+                      className="w-full border-b-[2px] border-[#CBCBCB] text-[#C8C8C8] outline-none cursor-pointer bg-transparent"
                       style={{ 
                         fontFamily: 'Public Sans',
                         fontSize: '14px',
@@ -407,7 +407,7 @@ const BlogStatsComponent = () => {
                 >
                   <span
                     style={{
-                      backgroundImage: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
+                      backgroundImage: 'linear-gradient( #A941FB, #7864F0EB 92%',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       backgroundClip: 'text',
@@ -427,7 +427,7 @@ const BlogStatsComponent = () => {
           <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[9999]">
             <div 
               ref={calendarRef} 
-              className="bg-gray-100 rounded-2xl shadow-2xl relative z-[10000]"
+              className="bg-gray-100 rounded-2xl shadow-2xl relative z-[10000] font-['Public_Sans'] font-normal text-sm leading-normal tracking-normal text-[#696969]"
               style={{ width: '260px', padding: '20px' }}
             >
               {/* Calendar Header */}
@@ -440,7 +440,7 @@ const BlogStatsComponent = () => {
                     <polyline points="15 18 9 12 15 6"></polyline>
                   </svg>
                 </button>
-                <div className="text-gray-500 font-semibold" style={{ fontSize: '14px' }}>
+                <div className="font-['Public_Sans'] font-semibold text-sm leading-normal tracking-normal text-[#696969]">
                   {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                 </div>
                 <button
@@ -458,7 +458,7 @@ const BlogStatsComponent = () => {
                 {daysOfWeek.map(day => (
                   <div 
                     key={day} 
-                    className="text-center text-gray-400 font-bold flex items-center justify-center"
+                    className="font-['Public_Sans'] font-normal text-sm leading-normal tracking-normal text-[#696969] flex items-center justify-center"
                     style={{ width: '26px', height: '20px', fontSize: '12px' }}
                   >
                     {day}
@@ -499,22 +499,22 @@ const BlogStatsComponent = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-4 px-8 max-lg:hidden">
-        <div>
-          <div className="text-3xl font-bold text-gray-900 mb-1">{stats.totalArticles}</div>
-          <div className="text-xs text-purple-500">Total no. Articles</div>
+      <div className="grid  grid-cols-5 px-8   max-lg:hidden">
+        <div >
+          <div className="text-[32px]  font-extrabold text-[#292929] leading-none">{stats.totalArticles}</div>
+          <div className="text-xs font-semibold bg-[linear-gradient(#A941FB,#7864F0_92%)] bg-clip-text text-transparent">Total no. Articles</div>
         </div>
         <div>
-          <div className="text-3xl font-bold text-gray-900 mb-1">{stats.views}</div>
-          <div className="text-xs text-purple-500">Views</div>
+          <div className="text-[32px] font-extrabold text-[#292929] leading-none">{stats.views}</div>
+          <div className="text-xs font-semibold bg-[linear-gradient(#A941FB,#7864F0_92%)] bg-clip-text text-transparent">Views</div>
         </div>
         <div>
-          <div className="text-3xl font-bold text-gray-900 mb-1">{stats.comments}</div>
-          <div className="text-xs text-purple-500">Comments</div>
+          <div className="text-[32px] font-extrabold text-[#292929] leading-none">{stats.comments}</div>
+          <div className="text-xs font-semibold bg-[linear-gradient(#A941FB,#7864F0_92%)] bg-clip-text text-transparent">Comments</div>
         </div>
         <div>
-          <div className="text-3xl font-bold text-gray-900 mb-1">{stats.shares}</div>
-          <div className="text-xs text-purple-500">Shares</div>
+          <div className="text-[32px] font-extrabold text-[#292929] leading-none">{stats.shares}</div>
+          <div className="text-xs font-semibold bg-[linear-gradient(#A941FB,#7864F0_92%)] bg-clip-text text-transparent">Shares</div>
         </div>
       </div>
     </div>

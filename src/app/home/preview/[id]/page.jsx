@@ -79,7 +79,7 @@ export default function PreviewPage({ params }) {
   }
 
   return (
-    <div className="min-h-screen bg-white md:bg-gray-100">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="h-[80px] max-md:h-[50px] bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="h-full px-4 md:px-6 flex items-center justify-between">
@@ -140,67 +140,40 @@ export default function PreviewPage({ params }) {
       </div>
 
       {/* Main Layout */}
-      <div className="flex flex-col justify-center
- md:flex-row">
+      <div className="flex flex-col justify-center md:flex-row">
         {/* Left Sidebar - Close Preview Button */}
-        <div className="w-full md:w-[160px] bg-white md:bg-gray-100 px-4 py-4 md:p-6 flex-shrink-0  md:border-b-0 border-gray-200">
+        <div className="   px-6 py-2  flex-shrink-0  md:border-b-0 border-gray-200">
           <button
             onClick={handleClose}
-            className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
+            className="flex items-center px-2 py-1 gap-2 text-[#696969] hover:text-gray-900 transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span className="text-sm text-nowrap
- font-medium">Close Preview</span>
+            <span className="text-sm text-nowrap font-semibold leading-none">Close Preview</span>
           </button>
         </div>
 
         {/* Main Content Area */}
-        <div className=" bg-white md:shadow-lg min-h-screen">
+        <div className=" bg-white min-h-[calc(100vh-80px)] max-md:min-h-[calc(100vh-50px)] border-x border-[#EAEAEA] flex flex-col">
           {/* Preview Banner */}
-          <div className="bg-purple-50 border-b border-purple-100 px-4 md:px-8 py-3 mx-4 md:mx-0 mt-4 md:mt-0 rounded-lg md:rounded-none">
-            <div className="flex items-center gap-2 text-purple-700">
-              <Info className="w-5 h-5 flex-shrink-0" />
+          <div className="bg-[#F3EEFF] border-b border-purple-100 px-4 md:px-8 py-3 mx-4 md:mx-0 mt-4 md:mt-0 rounded-lg md:rounded-none">
+            <div className="flex items-center gap-2 text-[#7A37AE] font-medium text-[14px] leading-normal tracking-normal">
+              <img src="/svg/preview_icon.svg" alt="" className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm">This is a preview of your draft article</span>
             </div>
           </div>
 
           {/* Article Content */}
-          <div className="px-4 md:px-8 py-6 md:py-8 max-w-[900px]">
+          <div className="w-[900px] flex-grow">
             {/* Title */}
-            <h1 className="text-2xl md:text-4xl font-bold text-black mb-4 md:mb-8 leading-tight">
+            <h1 className="text-2xl md:text-4xl px-11 py-6 font-bold text-black leading-tight">
               {article.title}
             </h1>
 
-            {/* Categories and Date - Mobile */}
-            <div className="md:hidden mb-6">
-              {article.categories && article.categories.length > 0 && (
-                <div className="flex items-center gap-2 mb-3">
-                  {article.categories.map((category, index) => (
-                    <span key={index} className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded">
-                      {category}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-center gap-1.5 text-gray-400 text-sm">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span>Created {formatTimeAgo(article.createdAt)}</span>
-              </div>
-            </div>
-
-            {/* Categories and Date - Desktop */}
-            <div className="hidden md:flex items-center justify-between mb-10 pb-6 border-b border-gray-200">
-              {/* Left side - Categories */}
-              <div className="flex items-center gap-4">
+            <div className='pl-11 pr-6 py-4 border-y border-gray-200'>
+              {/* Categories and Date - Mobile */}
+              <div className="md:hidden mb-6">
                 {article.categories && article.categories.length > 0 && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mb-3">
                     {article.categories.map((category, index) => (
                       <span key={index} className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded">
                         {category}
@@ -208,27 +181,56 @@ export default function PreviewPage({ params }) {
                     ))}
                   </div>
                 )}
+                <div className="flex items-center gap-1.5 text-gray-400 text-sm">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>Created {formatTimeAgo(article.createdAt)}</span>
+                </div>
               </div>
 
-              {/* Right side - Created Date */}
-              <div className="flex items-center gap-1.5 text-gray-500 text-sm flex-shrink-0">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span className="whitespace-nowrap">Created {formatTimeAgo(article.createdAt)}</span>
+              {/* Categories and Date - Desktop */}
+              <div className="hidden md:flex items-center justify-between  ">
+                {/* Left side - Categories */}
+                <div className="flex items-center gap-4">
+                  {article.categories && article.categories.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      {article.categories.map((category, index) => (
+                        <span key={index} className="px-[12px] py-[6px] bg-gray-100 font-normal text-[#808080] text-sm leading-normal tracking-normal rounded">
+                          {category}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right side - Created Date */}
+                <div className="flex items-center gap-1 text-[#808080] font-normal text-xs leading-normal tracking-normal flex-shrink-0">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span className="whitespace-nowrap">Created {formatTimeAgo(article.createdAt)}</span>
+                </div>
               </div>
             </div>
 
-            {/* Article Body */}
+            <div className='px-11 py-8'>
+              {/* Article Body */}
             <article
-              className="prose prose-sm md:prose-lg max-w-none prose-headings:font-bold prose-headings:text-black prose-h2:text-xl md:prose-h2:text-2xl prose-h2:mt-0 prose-h2:mb-3 md:prose-h2:mb-4 prose-p:text-gray-600 md:prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-4 md:prose-p:mb-6 prose-img:rounded-lg prose-img:my-6 md:prose-img:my-8 prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-600"
+              className="prose prose-sm md:prose-lg max-w-none prose-headings:mt-0 prose-headings:mb-3 md:prose-headings:mb-4 [&_:is(h1,h2,h3,h4,h5,h6)]:!font-bold [&_:is(h1,h2,h3,h4,h5,h6)]:!text-[20px] [&_:is(h1,h2,h3,h4,h5,h6)]:!leading-[100%] [&_:is(h1,h2,h3,h4,h5,h6)]:!tracking-[0%] [&_:is(h1,h2,h3,h4,h5,h6)]:!text-black [&_:is(h1,h2,h3,h4,h5,h6)_span]:!font-bold [&_:is(h1,h2,h3,h4,h5,h6)_span]:!text-[20px] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!leading-[100%] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!tracking-[0%] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!text-black [&_p]:!text-[#404040] [&_p_span]:!text-[#404040] [&_p_span]:!font-normal [&_p_span]:!text-[16px] [&_p_span]:!leading-[28px] [&_p_span]:!tracking-[0.01em] prose-p:font-normal prose-p:text-[16px] prose-p:leading-[28px] prose-p:tracking-[0.01em] prose-p:mb-4 md:prose-p:mb-6 prose-img:rounded-lg prose-img:my-6 md:prose-img:my-8 prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-600 text-[#404040]"
               dangerouslySetInnerHTML={{ __html: article.content }}
             />
+            </div>
           </div>
 
           {/* Footer */}
