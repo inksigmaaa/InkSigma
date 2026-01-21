@@ -16,6 +16,7 @@ export default function MyBlogsPage() {
   const { articles, moveToTrashStatus, publishArticle, moveToDraft, unpublishArticle, loadUserArticles } = useArticles()
   const { currentPublication } = usePublication()
   const [selectedArticles, setSelectedArticles] = useState([])
+  const [selectedCategories, setSelectedCategories] = useState([])
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPublishModal, setShowPublishModal] = useState(false)
   const [showDraftModal, setShowDraftModal] = useState(false)
@@ -29,7 +30,16 @@ export default function MyBlogsPage() {
   }, [loadUserArticles, currentPublication?.id])
 
   const myArticles = useMemo(() => {
-    return articles.map(article => ({
+    let filtered = articles
+    
+    // Filter by selected categories
+    if (selectedCategories.length > 0) {
+      filtered = articles.filter(article =>
+        article.categories?.some(cat => selectedCategories.includes(cat))
+      )
+    }
+    
+    return filtered.map(article => ({
       ...article,
       onDelete: () => {
         setActionArticleId(article.id)
@@ -59,7 +69,7 @@ export default function MyBlogsPage() {
         }
       }
     }))
-  }, [articles, moveToDraft])
+  }, [articles, moveToDraft, selectedCategories])
 
   const handleArticleSelect = (id, checked) => {
     if (checked) {
@@ -137,12 +147,15 @@ export default function MyBlogsPage() {
       <PageTransition>
         <PersonalArticles
           title="My Blogs"
-          titleColor="#EC4899"
+          titleColor="#F452E8"
           articles={myArticles}
           emptyMessage="No Articles yet"
           showSelectAll={false}
           showActions={false}
+          showCategoryInTitle={true}
           selectedArticles={selectedArticles}
+          selectedCategories={selectedCategories}
+          onCategoriesChange={setSelectedCategories}
           onArticleSelect={handleArticleSelect}
         />
       </PageTransition>

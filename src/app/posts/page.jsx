@@ -61,7 +61,7 @@ export default function Posts() {
                           (displayArticles.length === 0 && !isLoading && !hasLoadedRef.current) ||
                           isWrongContext;
 
-        if (shouldLoad) {
+        if (shouldLoad) {l
             console.log(`[PostsPage] Loading articles... Target: ${targetContext}, Prev: ${loadedContextRef.current}`);
             hasLoadedRef.current = true;
             loadedContextRef.current = targetContext;
@@ -69,7 +69,7 @@ export default function Posts() {
             if (targetContext === 'publication') {
                 loadPublicationArticles(currentPublication.id); // No status filter for "All Articles"
             } else {
-                loadUserArticles(currentPublication?.id);
+                loadUserArticles();
             }
         }
     }, [

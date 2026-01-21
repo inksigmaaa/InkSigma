@@ -147,14 +147,12 @@ export default function TrashPage() {
     {
       title: "Restore",
       icon: "/images/icons/restore.svg",
-      onClick: handleBulkRestore,
-      disabled: !hasSelectedArticles
+      onClick: handleBulkRestore
     },
     {
       title: "Delete",
       icon: "/images/icons/trash2.svg",
-      onClick: handleBulkDelete,
-      disabled: !hasSelectedArticles
+      onClick: handleBulkDelete
     }
   ]
 
@@ -166,7 +164,7 @@ export default function TrashPage() {
       <PageTransition>
         <PersonalArticles
           title="Trash"
-          titleColor="#EF4444"
+          titleColor="#F13434"
           articles={articlesWithHandlers}
           emptyMessage="No trash articles yet"
           showSelectAll={true}

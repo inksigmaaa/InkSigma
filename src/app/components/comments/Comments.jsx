@@ -13,7 +13,7 @@ export default function Comments() {
     return (
         <div className={`absolute left-1/2 -translate-x-1/2 ${showVerifyBanner ? 'top-[215px]' : 'top-[160px]'} w-full max-w-[1034px] z-20 px-5 max-md:top-[120px]`}>
 
-            <div className="ml-0 md:ml-[185px]">
+            <div className="ml-0 md:ml-[195px]">
 
                 <div className="flex flex-col gap-4 mb-6">
 

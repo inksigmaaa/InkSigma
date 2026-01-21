@@ -152,14 +152,12 @@ export default function DraftPage() {
     ...(canPublish ? [{
       title: "Publish",
       icon: "/images/icons/share.svg",
-      onClick: handleBulkPublish,
-      disabled: selectedArticles.length === 0
+      onClick: handleBulkPublish
     }] : []),
     {
       title: "Delete",
       icon: "/images/icons/trash2.svg",
-      onClick: handleBulkDelete,
-      disabled: selectedArticles.length === 0
+      onClick: handleBulkDelete
     }
   ]
 
@@ -172,7 +170,7 @@ export default function DraftPage() {
       <PageTransition>
         <PersonalArticles
           title="Drafts"
-          titleColor="#F97316"
+          titleColor="#FF9247"
           articles={draftArticles}
           emptyMessage="No Articles Drafted yet"
           showSelectAll={true}
