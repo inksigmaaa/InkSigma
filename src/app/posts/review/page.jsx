@@ -3,21 +3,15 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Clock } from "lucide-react"
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import MemberSidebar from "../../membersidebar/MemberSidebar"
 import Verify from "../../components/verify/Verify"
+import CategoryFilter from "../../components/categoryFilter/CategoryFilter"
 
 export default function PostsReviewPage() {
   const [selectedPosts, setSelectedPosts] = useState([])
-  const [category, setCategory] = useState("")
+  const [selectedCategories, setSelectedCategories] = useState([])
 
   const posts = [
     {
@@ -68,16 +62,11 @@ export default function PostsReviewPage() {
               </div>
               
               {/* Category Select */}
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-[140px] md:w-[180px]">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sports">Sports</SelectItem>
-                  <SelectItem value="humour">Humour</SelectItem>
-                  <SelectItem value="history">History</SelectItem>
-                </SelectContent>
-              </Select>
+              <CategoryFilter 
+                selectedCategories={selectedCategories}
+                onCategoriesChange={setSelectedCategories}
+                buttonText="Category"
+              />
             </div>
 
             {/* Posts List */}

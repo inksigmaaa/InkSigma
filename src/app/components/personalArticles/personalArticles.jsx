@@ -2,19 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react'
 import PersonalArticleContainer from '../personalArticleContainer/PersonalArticleContainer'
-import { ChevronDownIcon } from "@/components/icons/SvgIcons"
+import CategoryFilter from '../categoryFilter/CategoryFilter'
 import { Button } from "@/components/ui/button"
 
-const categories = [
-    "Agriculture", "Art & Illustration", "Business", "Climate & Environment",
-    "Comics and Anime", "Crypto & Web-3", "Design", "Education",
-    "Entertainment", "Faith & Spiritual", "Fashion & Beauty", "Fiction",
-    "Finance & Economics", "Food & Drink", "Games", "Health & Wellness",
-    "History", "Humor", "Law", "Literature", "Marketing", "Music",
-    "News", "NSFW", "Parenting & Family", "Philosophy", "Poetry",
-    "Politics", "Psychology", "Relationships", "Romance", "Science",
-    "Space", "Sports", "Startups & Companies", "Technology", "Travel"
-]
+// Ensure CategoryFilter is imported
 
 export default function PersonalArticles({
     title = "All Articles",
@@ -23,38 +14,21 @@ export default function PersonalArticles({
     emptyMessage = "No Articles yet",
     showSelectAll = false,
     showActions = false,
+    showCategoryInTitle = false,
     actionButtons = [],
     selectedArticles = [],
+    selectedCategories = [],
+    onCategoriesChange,
     onSelectAll,
     onArticleSelect,
     onArticleAction
 }) {
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-    const [searchTerm, setSearchTerm] = useState('')
-    const dropdownRef = useRef(null)
-
-    const filteredCategories = categories.filter(cat =>
-        cat.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    // Use selectedCategories from props if provided, otherwise use local state
+    const [localCategories, setLocalCategories] = useState([])
+    const categories = selectedCategories && selectedCategories.length > 0 ? selectedCategories : localCategories
+    const handleCategoryChange = onCategoriesChange || setLocalCategories
 
     const selectAll = showSelectAll && selectedArticles.length === articles.length && articles.length > 0
-
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setIsDropdownOpen(false)
-            }
-        }
-
-        if (isDropdownOpen) {
-            document.addEventListener('mousedown', handleClickOutside)
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
-        }
-    }, [isDropdownOpen])
 
     // Fixed top position (no verify banner)
     const topPosition = 'top-[160px]';
@@ -69,77 +43,14 @@ export default function PersonalArticles({
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: titleColor || '#8B5CF6' }}></span>
                         {title}
                     </h1>
-                    {/* Category dropdown shows on mobile or when no actions */}
-                    <div ref={dropdownRef} className={`relative ${showActions ? 'md:hidden' : ''}`}>
-                        <button
-                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 max-md:min-w-[120px] max-md:text-xs max-md:px-2.5 max-[480px]:min-w-[100px] max-[480px]:text-[11px] max-[480px]:px-2 whitespace-nowrap"
-                            style={{
-                                minWidth: '163px',
-                                height: '32px',
-                                borderRadius: '4px',
-                                borderWidth: '1px',
-                                opacity: 1,
-                                gap: '10px',
-                                padding: '6px 16px'
-                            }}
-                        >
-                            <span
-                                style={{
-                                    fontFamily: 'Public Sans',
-                                    fontWeight: 400,
-                                    fontSize: '14px',
-                                    lineHeight: '150%',
-                                    letterSpacing: '0%',
-                                    color: '#6B7280'
-                                }}
-                            >
-                                Choose Category
-                            </span>
-                            <ChevronDownIcon
-                                className="transition-transform max-md:w-3.5 max-md:h-3.5 flex-shrink-0"
-                                style={{
-                                    width: '16px',
-                                    height: '16px',
-                                    strokeWidth: '1.4px',
-                                    opacity: 1,
-                                    color: '#9CA3AF',
-                                    transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'
-                                }}
-                            />
-                        </button>
-                        {isDropdownOpen && (
-                            <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100] max-md:w-[260px] max-md:h-[220px] max-[480px]:w-60 max-[480px]:h-[200px]">
-                                <div className="p-2.5 flex gap-3 border-b border-gray-200 max-md:p-3 max-md:gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="Search Category..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="flex-1 font-['Public_Sans'] font-normal text-sm leading-[150%] px-3.5 py-2.5 border border-gray-200 rounded-lg bg-gray-50 outline-none focus:border-purple-600 focus:bg-white placeholder:text-gray-400 max-md:text-xs max-md:px-2.5 max-md:py-2 max-[480px]:text-[11px] max-[480px]:px-2 max-[480px]:py-1.5"
-                                    />
-                                    <Button
-                                        className="font-['Public_Sans'] font-medium text-sm leading-[150%] bg-purple-100 text-purple-600 border-none rounded-lg px-6 py-2.5 cursor-pointer whitespace-nowrap hover:bg-purple-200 max-md:text-xs max-md:px-4 max-md:py-2 max-[480px]:text-[11px] max-[480px]:px-3 max-[480px]:py-1.5"
-                                        onClick={() => setIsDropdownOpen(false)}
-                                    >
-                                        Apply
-                                    </Button>
-                                </div>
-                                <div className="p-3 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-50 hover:scrollbar-thumb-gray-400 max-md:p-2">
-                                    {filteredCategories.map((category) => (
-                                        <label key={category} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer rounded-md hover:bg-gray-50 max-md:px-2.5 max-md:py-2">
-                                            <input
-                                                type="checkbox"
-                                                className="cursor-pointer accent-purple-600 shrink-0"
-                                                style={{ width: '16px', height: '16px' }}
-                                            />
-                                            <span className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-gray-600 max-md:text-[13px]">{category}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    {/* Category dropdown on right end - only if showCategoryInTitle is true */}
+                    {showCategoryInTitle && (
+                        <CategoryFilter 
+                            selectedCategories={categories}
+                            onCategoriesChange={handleCategoryChange}
+                            buttonText="Choose Category"
+                        />
+                    )}
                 </div>
 
                 {/* Controls Row - Only shown on desktop/tablet when showActions is true (Draft/Trash pages) */}
@@ -179,79 +90,12 @@ export default function PersonalArticles({
                                 </button>
                             ))}
                         </div>
-                        <div ref={dropdownRef} className="relative">
-                            <button
-                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 whitespace-nowrap"
-                                style={{
-                                    minWidth: '163px',
-                                    height: '32px',
-                                    borderRadius: '4px',
-                                    borderWidth: '1px',
-                                    opacity: 1,
-                                    gap: '10px',
-                                    padding: '6px 16px'
-                                }}
-                            >
-                                <span
-                                    style={{
-                                        fontFamily: 'Public Sans',
-                                        fontWeight: 400,
-                                        fontSize: '14px',
-                                        lineHeight: '150%',
-                                        letterSpacing: '0%',
-                                        color: '#6B7280'
-                                    }}
-                                >
-                                    Choose Category
-                                </span>
-                                <svg
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 16 16"
-                                    fill="none"
-                                    className="transition-transform flex-shrink-0"
-                                    style={{
-                                        strokeWidth: '1.4px',
-                                        opacity: 1,
-                                        color: '#9CA3AF',
-                                        transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'
-                                    }}
-                                >
-                                    <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                                </svg>
-                            </button>
-                            {isDropdownOpen && (
-                                <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100]">
-                                    <div className="p-4 flex gap-3 border-b border-gray-200">
-                                        <input
-                                            type="text"
-                                            placeholder="Search Category..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 outline-none focus:border-violet-500 focus:bg-white placeholder:text-gray-400"
-                                        />
-                                        <button
-                                            onClick={() => setIsDropdownOpen(false)}
-                                            className="text-sm font-medium bg-violet-100 text-violet-600 rounded-lg px-6 py-2 whitespace-nowrap transition-colors hover:bg-violet-200"
-                                        >
-                                            Apply
-                                        </button>
-                                    </div>
-                                    <div className="p-3 overflow-y-auto flex-1">
-                                        {filteredCategories.map((category) => (
-                                            <label key={category} className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50">
-                                                <input
-                                                    type="checkbox"
-                                                    className="cursor-pointer accent-violet-500 shrink-0"
-                                                    style={{ width: '16px', height: '16px' }}
-                                                />
-                                                <span className="text-sm text-gray-600">{category}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                        <div className="relative hidden md:block">
+                            <CategoryFilter 
+                                selectedCategories={categories}
+                                onCategoriesChange={handleCategoryChange}
+                                buttonText="Choose Category"
+                            />
                         </div>
                     </div>
                 )}

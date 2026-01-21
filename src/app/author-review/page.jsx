@@ -8,21 +8,11 @@ import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import MemberSidebar from "../membersidebar/MemberSidebar"
 import Verify from "../components/verify/Verify"
 import { ConfirmationModal } from "@/components/ui/confirmation-modal"
+import CategoryFilter from "../components/categoryFilter/CategoryFilter"
 import { useArticles } from "@/contexts/ArticlesContext"
 import { usePublication } from "@/contexts/PublicationContext"
 import { useSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
-
-const categories = [
-  "Agriculture", "Art & Illustration", "Business", "Climate & Environment",
-  "Comics and Anime", "Crypto & Web-3", "Design", "Education",
-  "Entertainment", "Faith & Spiritual", "Fashion & Beauty", "Fiction",
-  "Finance & Economics", "Food & Drink", "Games", "Health & Wellness",
-  "History", "Humor", "Law", "Literature", "Marketing", "Music",
-  "News", "NSFW", "Parenting & Family", "Philosophy", "Poetry",
-  "Politics", "Psychology", "Relationships", "Romance", "Science",
-  "Space", "Sports", "Startups & Companies", "Technology", "Travel"
-]
 
 export default function AuthorReviewPage() {
   const router = useRouter()
@@ -30,11 +20,6 @@ export default function AuthorReviewPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategories, setSelectedCategories] = useState([])
-  const [selectedArticles, setSelectedArticles] = useState({})
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [selectedArticleForAction, setSelectedArticleForAction] = useState(null)
-  const [actionType, setActionType] = useState(null) // 'revert', 'accept', 'reject'
-  const dropdownRef = useRef(null)
   
   const { 
     reviewArticles, 
@@ -60,27 +45,6 @@ export default function AuthorReviewPage() {
       loadReviewArticles(currentPublication.id)
     }
   }, [currentPublication?.id, loadReviewArticles])
-
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false)
-      }
-    }
-
-    if (isDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isDropdownOpen])
-
-  const filteredCategories = categories.filter(cat =>
-    cat.toLowerCase().includes(searchTerm.toLowerCase())
-  )
 
   // Filter articles based on user role
   // - Author: sees only their own articles
@@ -256,81 +220,11 @@ export default function AuthorReviewPage() {
               <span className="text-sm text-gray-500">({filteredArticles.length})</span>
             </div>
             
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 whitespace-nowrap"
-                style={{
-                  minWidth: '163px',
-                  height: '32px',
-                  borderRadius: '4px',
-                  borderWidth: '1px',
-                  opacity: 1,
-                  gap: '10px',
-                  padding: '6px 16px'
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: 'Public Sans',
-                    fontWeight: 400,
-                    fontSize: '14px',
-                    lineHeight: '150%',
-                    letterSpacing: '0%',
-                    color: '#6B7280'
-                  }}
-                >
-                  Choose Category
-                </span>
-                <svg 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 16 16" 
-                  fill="none"
-                  className="transition-transform flex-shrink-0"
-                  style={{
-                    strokeWidth: '1.4px',
-                    opacity: 1,
-                    color: '#9CA3AF',
-                    transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'
-                  }}
-                >
-                  <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                </svg>
-              </button>
-
-              {isDropdownOpen && (
-                <div className="absolute top-[calc(100%+8px)] right-0 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] w-80 h-64 flex flex-col z-[100]">
-                  <div className="p-4 flex gap-3 border-b border-gray-200">
-                    <input
-                      type="text"
-                      placeholder="Search Category..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 outline-none focus:border-violet-500 focus:bg-white placeholder:text-gray-400"
-                    />
-                    <button
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="text-sm font-medium bg-violet-100 text-violet-600 rounded-lg px-6 py-2 whitespace-nowrap transition-colors hover:bg-violet-200"
-                    >
-                      Apply
-                    </button>
-                  </div>
-
-                  <div className="p-3 overflow-y-auto flex-1">
-                    {filteredCategories.map((category) => (
-                      <label
-                        key={category}
-                        className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50"
-                      >
-                        
-                        <span className="text-sm text-gray-600">{category}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <CategoryFilter 
+              selectedCategories={selectedCategories}
+              onCategoriesChange={setSelectedCategories}
+              buttonText="Choose Category"
+            />
           </div>
         </div>
       </div>

@@ -1,10 +1,4 @@
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import CategoryFilter from "../categoryFilter/CategoryFilter"
 
 export default function ScheduleHeader({ category, onCategoryChange }) {
   return (
@@ -15,35 +9,13 @@ export default function ScheduleHeader({ category, onCategoryChange }) {
       </div>
 
       {/* Category Select - Mobile Only */}
-      <Select value={category} onValueChange={onCategoryChange}>
-        <SelectTrigger 
-          className="flex items-center justify-between bg-white border hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:hidden whitespace-nowrap"
-          style={{
-            minWidth: '120px',
-            height: '32px',
-            borderRadius: '4px',
-            borderWidth: '1px',
-            opacity: 1,
-            gap: '10px',
-            padding: '6px 16px',
-            fontFamily: 'Public Sans',
-            fontWeight: 400,
-            fontSize: '14px',
-            lineHeight: '150%',
-            letterSpacing: '0%',
-            color: '#6B7280'
-          }}
-        >
-          <SelectValue placeholder="Category" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="climate">Climate & Environment</SelectItem>
-          <SelectItem value="finance">Finance & Economics</SelectItem>
-          <SelectItem value="sports">Sports</SelectItem>
-          <SelectItem value="humour">Humour</SelectItem>
-          <SelectItem value="history">History</SelectItem>
-        </SelectContent>
-      </Select>
+      <div className="sm:hidden">
+        <CategoryFilter 
+          selectedCategories={category ? [category] : []}
+          onCategoriesChange={(cats) => onCategoryChange(cats[0] || "")}
+          buttonText="Category"
+        />
+      </div>
     </div>
   )
 }
