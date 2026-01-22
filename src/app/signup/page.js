@@ -175,10 +175,15 @@ function SignupForm() {
       </div>
 
       <div className="w-auto h-[16px] opacity-100 rotate-0 mt-8 mx-auto flex items-center justify-center gap-2">
-        <svg width="7" height="11" viewBox="0 0 7 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M5.48975 0.700195L0.989746 5.2002L5.48975 9.7002" stroke="#696969" strokeWidth="1.4" strokeLinecap="round"/>
-        </svg>
-        <span className="font-semibold text-[12px] md:text-[14px] leading-[100%] tracking-[0%] text-[#696969]">Go Back to website</span>
+        <Link
+          href="/"
+          className="flex items-center gap-2 hover:text-gray-500 transition-colors"
+        >
+          <svg width="7" height="11" viewBox="0 0 7 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5.48975 0.700195L0.989746 5.2002L5.48975 9.7002" stroke="#696969" strokeWidth="1.4" strokeLinecap="round"/>
+          </svg>
+          <span className="font-semibold text-[12px] md:text-[14px] leading-[100%] tracking-[0%] text-[#696969]">Go Back to website</span>
+        </Link>
       </div>
     </AuthLayout>
 
