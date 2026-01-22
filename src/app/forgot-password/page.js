@@ -163,9 +163,25 @@ export default function ForgotPasswordPage() {
               className="w-full md:w-[259px] h-[32px] opacity-100 rotate-0 gap-[10px] rounded-[4px] pt-[8px] pr-[20px] md:pr-[109px] pb-[8px] pl-[20px] md:pl-[109px] bg-[#080808] hover:bg-gray-800 disabled:opacity-50 mt-8 border-0 flex items-center justify-center mx-auto"
               disabled={loading}
             >
-              <span className="font-medium text-[12px] md:text-[14px] leading-[150%] tracking-[0%] text-[#EDEDED]" style={{ fontFamily: 'Public Sans' }}>
-                {loading ? "Sending..." : "Send to Mail"}
-              </span>
+              {loading ? (
+                <span className="font-medium text-[12px] md:text-[14px] leading-[150%] tracking-[0%] text-[#EDEDED]" style={{ fontFamily: 'Public Sans' }}>
+                  Sending...
+                </span>
+              ) : (
+                <>
+                  <span className="hidden md:inline font-medium text-[12px] md:text-[14px] leading-[150%] tracking-[0%] text-[#EDEDED]" style={{ fontFamily: 'Public Sans' }}>
+                    Send to Mail
+                  </span>
+                  <div className="md:hidden flex items-center gap-2">
+                    <span className="font-medium text-[12px] leading-[150%] tracking-[0%] text-[#EDEDED]" style={{ fontFamily: 'Public Sans' }}>
+                      Mail sent
+                    </span>
+                    <svg width="14" height="13" viewBox="0 0 16 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-100">
+                      <path d="M14.5996 0.629872L4.97461 9.27636V13.5996L7.59961 11.0057M0.599609 6.25009L14.5996 0.599609L12.1496 13.1673L0.599609 6.25009Z" stroke="#EDEDED" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </>
+              )}
             </Button>
           </form>
 
