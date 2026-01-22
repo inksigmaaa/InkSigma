@@ -20,7 +20,7 @@ export default function DashboardSidebar() {
                         >
                             <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${isHovered ? 'brightness-0' : ''}`} />
                             <Link href="/dashboard">
-                                <p className={`text-[14px] font-normal leading-[150%] m-0 max-md:text-[11px] max-md:text-center font-[\'Public Sans\'] tracking-[0%] ${isHovered ? 'text-[#2E2E2E]' : 'text-gray-700'}`}>
+                                <p className={`text-[14px] font-normal leading-[150%] m-0 max-md:text-[11px] max-md:text-center tracking-[0%] ${isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
                                     My Space
                                 </p>
                             </Link>
@@ -42,9 +42,9 @@ export default function DashboardSidebar() {
                                 <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
                                     <img
                                         src="/images/icons/setings.svg"
-                                        className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isHovered ? 'opacity-100 brightness-0' : 'opacity-60'}`}
+                                        className={`w-6 h-6 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isHovered ? 'opacity-100 brightness-0' : 'opacity-60'}`}
                                     />
-                                    <p className={`text-[13px] font-normal leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap font-[\'Public Sans\'] tracking-[0%] ${isHovered ? 'text-[#2E2E2E]' : 'text-gray-500'}`}>
+                                    <p className={`text-[14px] font-normal leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap  tracking-[0%] ${isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
                                         Settings
                                     </p>
                                 </div>
