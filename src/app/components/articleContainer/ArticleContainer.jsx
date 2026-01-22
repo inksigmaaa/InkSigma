@@ -82,7 +82,7 @@ export default function ArticleContainer({ id, status, title, description, categ
     const config = statusConfig[status] || statusConfig.draft
 
     return (
-        <div className="relative bg-white border border-gray-200 rounded-lg p-4 mb-4">
+        <div className="relative bg-white border border-[#EAEAEA] rounded-lg p-4 mb-4 hover:shadow-lg transition-shadow">
             <div
                 className="absolute top-0 left-0 w-22 h-[26px] py-1 px-4 rounded-tl-lg rounded-br-lg font-normal text-xs flex items-center justify-center"
                 style={{ background: config.bg, color: config.color }}

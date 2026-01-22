@@ -3,7 +3,7 @@ export const APP_CONFIG = {
   description: 'A platform for focussed and simple writing.',
   email: 'inksigma@zemuria.com',
   company: 'Zemuria Inc.',
-  copyright: 'Copyright © 2021-2025 Designed & Developed by Inksigma, a Zemuria Inc. brand.'
+  copyright: 'Copyright © 2023 designed & developed by Inksigma, a Zemuria Inc. brand'
 }
 
 export const LOGOS = {

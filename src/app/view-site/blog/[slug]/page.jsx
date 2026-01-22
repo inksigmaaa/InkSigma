@@ -150,7 +150,7 @@ export default function BlogDetailPage({ params }) {
       </div>
 
       <section className="flex-grow flex justify-center w-full px-4 md:px-6 pt-6 md:pt-8">
-        <div className="flex max-w-[1400px] w-full ml-12 gap-8">
+        <div className="flex max-w-[1400px] w-full ml-12 gap-8 max-md:ml-0">
           {/* Left Sidebar - Back Button and Table of Contents */}
           <aside className="hidden lg:block flex-shrink-0 pt-8 w-[300px]">
             <div className="sticky flex item-start top-28">

@@ -17,7 +17,6 @@ function SignupForm() {
   const redirectTo = searchParams.get("redirect") || "/dashboard"
   
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
     password: ""
   })
@@ -42,7 +41,6 @@ function SignupForm() {
       const result = await signUp.email({
         email: formData.email,
         password: formData.password,
-        name: formData.name,
         callbackURL: redirectTo !== "/dashboard" 
           ? `http://localhost:3000/login?redirect=${encodeURIComponent(redirectTo)}`
           : "http://localhost:3000/login",
@@ -80,7 +78,8 @@ function SignupForm() {
 
   if (verificationSent) {
     return (
-      <AuthLayout title="Verify Your Email">
+      <div className="relative min-h-screen">
+        <AuthLayout title="Verify Your Email">
         <div className="space-y-6 text-center">
           <div className="flex justify-center">
             <CheckCircle2 className="w-16 h-16 text-green-500" />
@@ -104,33 +103,22 @@ function SignupForm() {
           </div>
         </div>
       </AuthLayout>
+      </div>
     )
   }
 
   return (
-    <AuthLayout title="Welcome, Sign up here!">
+    <div className="relative min-h-screen">
+      <AuthLayout title="Welcome, Sign up here!">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
         <div className="space-y-2">
-          <Label htmlFor="name" className="text-gray-700">Name</Label>
-          <Input
-            id="name"
-            type="text"
-            placeholder="Enter your Name"
-            value={formData.name}
-            onChange={handleInputChange('name')}
-            className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-gray-900"
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="email" className="text-gray-700">Email</Label>
+          <Label htmlFor="email" className="text-gray-700 text-sm md:text-base">Email</Label>
           <Input
             id="email"
             type="email"
@@ -139,7 +127,7 @@ function SignupForm() {
             onChange={handleInputChange('email')}
             minLength={5}
             maxLength={254}
-            className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 focus-visible:ring-0 focus-visible:border-gray-900"
+            className="border-0 border-b border-gray-300 rounded-none bg-transparent px-2 py-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300 focus:ring-offset-0 w-full text-sm  placeholder:text-[#C8C8C8]"
             required
           />
         </div>
@@ -157,26 +145,50 @@ function SignupForm() {
         <Button
           type="submit"
           disabled={loading}
-          className="w-full bg-black text-white hover:bg-gray-800 rounded-md py-3 disabled:opacity-50"
+          className="w-full md:w-[259px] h-[32px] opacity-100 rotate-0 gap-[10px] rounded-[4px] pt-[8px] md:pt-[8px] pr-[20px] md:pr-[109px] pb-[8px] md:pb-[8px] pl-[20px] md:pl-[109px] bg-[#080808] hover:bg-gray-800 disabled:opacity-50 mt-8 md:mt-12 mx-auto border-0 flex items-center justify-center"
         >
-          {loading ? "Signing up..." : "Sign Up"}
+          <span className="w-auto md:w-[52px] h-[18px] md:h-[21px] opacity-100 rotate-0 font-medium text-[14px] leading-[150%] tracking-[0%] text-[#EDEDED]">
+            {loading ? "Signing up..." : "Sign Up"}
+          </span>
         </Button>
       </form>
 
-      <div className="text-center text-sm text-gray-600">
-        Already a User?{" "}
-        <Link href="/login" className="text-gray-900 underline hover:text-gray-700 transition-colors">
+      <div className="text-center mt-4 md:mt-6 flex items-center justify-center gap-1">
+        <span className="w-auto md:w-[102px] h-auto md:h-[21px] opacity-100 rotate-0 font-medium text-[12px] md:text-[14px] leading-[150%] tracking-[0%] text-[#2E2E2E]" style={{ fontFamily: 'Public Sans' }}>
+          Already a user?
+        </span>
+        <Link 
+          href="/login" 
+          className="w-auto md:w-[37px] h-auto md:h-[16px] opacity-100 rotate-0 font-medium text-[12px] md:text-[14px] leading-[100%] tracking-[0%] underline decoration-solid decoration-0 text-[#4B4B4B] hover:text-gray-600 transition-colors"
+        >
           Login
         </Link>
       </div>
 
-      <div className="text-center text-gray-400">or</div>
+      <div className="text-center text-gray-400 mt-4 md:mt-6 text-sm md:text-base">or</div>
 
-      <GoogleAuthButton
-        text="Signup With Google"
-        onClick={handleGoogleSignup}
-      />
+      <div className="mt-4 md:mt-6">
+        <GoogleAuthButton
+          text="Sign up with Google"
+          onClick={handleGoogleSignup}
+        />
+      </div>
+
+      <div className="w-auto h-[16px] opacity-100 rotate-0 mt-8 mx-auto flex items-center justify-center gap-2">
+        <svg width="7" height="11" viewBox="0 0 7 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5.48975 0.700195L0.989746 5.2002L5.48975 9.7002" stroke="#696969" strokeWidth="1.4" strokeLinecap="round"/>
+        </svg>
+        <span className="font-semibold text-[12px] md:text-[14px] leading-[100%] tracking-[0%] text-[#696969]">Go Back to website</span>
+      </div>
     </AuthLayout>
+
+    {/* Copyright - positioned 32px from bottom */}
+    <div className="absolute bottom-[32px] left-1/2 transform -translate-x-1/2 w-full h-[15px] opacity-100 rotate-0 flex items-center justify-center">
+      <p className="font-normal text-[10px] md:text-[12px] leading-[100%] tracking-[0%] text-[#A4A4A4] text-center whitespace-nowrap" style={{ fontFamily: 'Inter' }}>
+        Copyright © 2023 designed & developed by Inksigma, a Zemuria Inc. brand
+      </p>
+    </div>
+    </div>
   )
 }
 
