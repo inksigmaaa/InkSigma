@@ -142,6 +142,7 @@ export default function PersonalArticles({
                                     description={article.description}
                                     categories={article.categories}
                                     postedTime={article.postedTime}
+                                    createdAt={article.createdAt}
                                     onDelete={article.onDelete}
                                     onRestore={article.onRestore}
                                     onDraft={article.onDraft}
