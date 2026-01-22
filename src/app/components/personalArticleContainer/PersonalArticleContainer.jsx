@@ -62,7 +62,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
         if (window.innerWidth <= 768) { // Mobile only
             const timer = setTimeout(() => {
                 onSelect && onSelect(id, !isSelected)
-            }, 1000) // 1 second
+            }, 500) // 0.5 seconds
             setLongPressTimer(timer)
         }
     }
@@ -97,9 +97,9 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
             className="relative rounded-[8px] mb-4 cursor-pointer hover:shadow-md transition-shadow duration-200 md:bg-white max-md:bg-[#FEFEFE]"
             style={{ 
                 paddingTop: '40px', 
-                paddingRight: '24px', 
-                paddingBottom: '24px', 
-                paddingLeft: '24px',
+                paddingRight: window.innerWidth <= 768 ? '16px' : '24px', 
+                paddingBottom: window.innerWidth <= 768 ? '16px' : '24px', 
+                paddingLeft: window.innerWidth <= 768 ? '16px' : '24px',
                 borderWidth: '1px',
                 borderColor: isSelected && window.innerWidth <= 768 ? '#202020' : (window.innerWidth <= 768 ? '#EDEDED' : '#E5E7EB'),
                 borderStyle: 'solid'
@@ -135,7 +135,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                 {config.text}
             </div>
 
-            <div className="absolute top-2 right-2 hidden max-md:flex max-md:items-center max-md:justify-center" style={{ width: '26px', height: '26px' }}>
+            <div className="absolute right-2 hidden max-md:flex max-md:items-center max-md:justify-center max-md:right-4 max-md:top-[15px]" style={{ width: '26px', height: '26px' }}>
                 {isSelected ? (
                     /* Mobile selection checkbox */
                     <div 
@@ -167,6 +167,10 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                             onEdit={handleEdit}
                             onDelete={onDelete}
                             onRestore={onRestore}
+                            onPublish={onPublish}
+                            onUnpublish={onUnpublish}
+                            onRepublish={onRepublish}
+                            onDraft={onDraft}
                             canPublish={canPublish}
                         />
                     </div>
@@ -288,7 +292,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     </label>
 
                     {/* G1: Title, Description, Categories */}
-                    <div className="md:flex-1 flex flex-col md:w-[339px] max-md:w-[268px] max-md:max-w-[268px]" style={{ gap: window.innerWidth <= 768 ? '12px' : (categories && categories.length > 0 ? '20px' : '0') }}>
+                    <div className="md:flex-1 flex flex-col md:w-[339px] max-md:w-full" style={{ gap: window.innerWidth <= 768 ? '12px' : (categories && categories.length > 0 ? '20px' : '0') }}>
                         <div className="max-md:w-[196px] max-md:max-w-[196px] max-md:overflow-hidden">
                             <h3 className="font-['Public_Sans'] text-black mb-2 md:text-[14px] md:leading-[100%] max-md:text-[12px] max-md:leading-[150%] max-md:break-words max-md:overflow-wrap-anywhere" style={{ fontWeight: 600 }}>{title}</h3>
                             <p className="font-['Public_Sans'] text-[#A4A4A4] line-clamp-2 md:text-[14px] md:leading-[150%] max-md:text-[12px] max-md:leading-[150%] max-md:break-words max-md:overflow-wrap-anywhere" style={{ fontWeight: 400 }}>{description}</p>
@@ -297,10 +301,9 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                         {/* Categories - only show if there are categories */}
                         {categories && categories.length > 0 && (
                             <div 
-                                className="flex md:flex-wrap max-md:overflow-x-auto max-md:overflow-y-hidden scrollbar-hide" 
+                                className="flex md:flex-wrap max-md:overflow-x-auto max-md:overflow-y-hidden scrollbar-hide max-md:w-full" 
                                 style={{ 
                                     gap: window.innerWidth <= 768 ? '4px' : '10px',
-                                    width: window.innerWidth <= 768 ? '268px' : 'auto',
                                     height: window.innerWidth <= 768 ? '23px' : 'auto'
                                 }}
                             >
