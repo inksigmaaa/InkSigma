@@ -359,13 +359,14 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                                         <img src="/images/icons/unpublished-hover.svg" alt="unpublish" />
                                     </button>
                                 )}
-                                <button 
+                                {/* Stats/Preview button - commented out */}
+                                {/* <button 
                                     className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
                                     style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
                                     title="Preview"
                                 >
                                     <img src="/images/icons/preview.svg" alt="preview" />
-                                </button>
+                                </button> */}
                                 <button 
                                     className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
                                     style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
