@@ -36,9 +36,16 @@ export const ToastProvider = ({ children }) => {
           <div
             key={toast.id}
             className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px] animate-slide-in ${
-              toast.type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+              toast.type === 'error' ? 'bg-red-500 text-white' : 
+              toast.type === 'success-dark' ? 'bg-[#1F1F1F] text-white border border-[#333]' : 
+              'bg-green-500 text-white'
             }`}
           >
+            {toast.type === 'success-dark' && (
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16.6668 5L7.50016 14.1667L3.3335 10" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
             <span className="flex-1 text-sm">{toast.message}</span>
             <button
               onClick={() => removeToast(toast.id)}

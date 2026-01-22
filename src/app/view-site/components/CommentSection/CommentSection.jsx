@@ -261,10 +261,10 @@ export default function CommentSection({ blogId }) {
   const totalComments = comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0);
 
   return (
-    <div className="pt-8 md:pt-12">
-      <div className="my-6 md:my-12 border-t border-gray-200 pt-6 md:pt-8">
-        <h2 className="text-lg md:text-2xl font-bold text-black mb-6 md:mb-8">
-          Join the Discussion
+    <div className="mt-12">
+      <div className="my-6 ">
+        <h2 className="text-base font-semibold leading-6 tracking-normal text-[#14142D] mb-6 md:mb-8">
+          How useful was this blog?
         </h2>
 
         {error && (

@@ -4,13 +4,15 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import LinkIcon from '../icons/LinkIcon';
 import CameraIcon from '../icons/CameraIcon';
+import { useToast } from '@/contexts/ToastContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-export default function ShareMenu({ title, url, slug, blogId }) {
+export default function ShareMenu({ title, url, slug, blogId, variant = 'icon' }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showCopied, setShowCopied] = useState(false);
   const menuRef = useRef(null);
+  const { showToast } = useToast();
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -51,11 +53,16 @@ export default function ShareMenu({ title, url, slug, blogId }) {
     try {
       await navigator.clipboard.writeText(blogUrl);
       trackShare('copy');
-      setShowCopied(true);
-      setTimeout(() => {
-        setShowCopied(false);
-        setIsOpen(false);
-      }, 1500);
+      
+      if (variant === 'outline') {
+        showToast('Link copied', 'success-dark');
+      } else {
+        setShowCopied(true);
+        setTimeout(() => {
+          setShowCopied(false);
+          setIsOpen(false);
+        }, 1500);
+      }
     } catch (err) {
       console.error('Failed to copy link:', err);
     }
@@ -89,16 +96,35 @@ export default function ShareMenu({ title, url, slug, blogId }) {
     setIsOpen(false);
   };
 
-  return (
-    <div className="relative" ref={menuRef}>
-      {/* Share Button */}
+  const renderButton = () => {
+    if (variant === 'outline') {
+      return (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            copyLink();
+          }}
+          className="border-[1px] border-[#EAEAEA] text-[#4A4A4A] px-3 py-2 rounded-lg flex items-center gap-2"
+          aria-label="Share blog"
+        >
+          <svg width="16" height="16" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3.16602 8.49992V13.8333C3.16602 14.1869 3.30649 14.526 3.55654 14.7761C3.80659 15.0261 4.14573 15.1666 4.49935 15.1666H12.4993C12.853 15.1666 13.1921 15.0261 13.4422 14.7761C13.6922 14.526 13.8327 14.1869 13.8327 13.8333V8.49992M11.166 4.49992L8.49935 1.83325M8.49935 1.83325L5.83268 4.49992M8.49935 1.83325V10.4999" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span className="text-sm font-medium">Share</span>
+        </button>
+      );
+    }
+    
+    // Default 'icon' variant
+    return (
       <button
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
-        className="w-9 h-9 max-md:w-8 max-md:h-8 bg-[#999999]/60 text-[#FFFFFF]  rounded-full flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg"
+        className="w-9 h-9 max-md:w-8 max-md:h-8 bg-[#999999]/60 text-[#FFFFFF] rounded-full flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg"
         aria-label="Share blog"
       >
         <Image 
@@ -109,6 +135,13 @@ export default function ShareMenu({ title, url, slug, blogId }) {
           className="md:w-4 md:h-4"
         />
       </button>
+    );
+  };
+
+  return (
+    <div className="relative" ref={menuRef}>
+      {/* Share Button */}
+      {renderButton()}
 
       {/* Desktop Dropdown Menu */}
       {isOpen && (
