@@ -198,11 +198,6 @@ export default function Articles(props) {
                                     </label>
                                 )}
                             </div>
-                            {showCreateButton && (
-                                <button className="font-semibold text-base leading-6 text-white bg-black rounded-lg px-6 py-3 whitespace-nowrap transition-colors hover:bg-gray-800 active:bg-gray-900 max-[410px]:text-sm max-[410px]:px-4 max-[410px]:py-2.5 max-[360px]:text-xs max-[360px]:px-3 max-[360px]:py-2">
-                                    + Create Article
-                                </button>
-                            )}
                             <CategoryFilter 
                                 selectedCategories={selectedCategories}
                                 onCategoriesChange={setSelectedCategories}

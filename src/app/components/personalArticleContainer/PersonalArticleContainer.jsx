@@ -104,7 +104,8 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                 paddingLeft: window.innerWidth <= 767 ? '16px' : '24px',
                 borderWidth: '1px',
                 borderColor: isSelected && window.innerWidth <= 767 ? '#202020' : (window.innerWidth <= 767 ? '#EDEDED' : '#E5E7EB'),
-                borderStyle: 'solid'
+                borderStyle: 'solid',
+                maxWidth: '100%'
             }}
             onClick={handleCardClick}
             onTouchStart={handleTouchStart}
@@ -126,14 +127,12 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                 /* Tablet: 415-767px */
                 @media (min-width: 415px) and (max-width: 767px) {
                     div {
-                        width: 100%;
-                        max-width: 600px;
-                        height: auto;
-                        min-height: 188px;
-                        padding-top: 40px;
-                        padding-right: 16px;
-                        padding-bottom: 16px;
-                        padding-left: 16px;
+                        width: 598px;
+                        height: 177px;
+                        padding: 24px;
+                        gap: 14px;
+                        border-radius: 8px;
+                        border: 1px solid #EAEAEA;
                     }
                 }
                 .scrollbar-hide::-webkit-scrollbar {
@@ -145,7 +144,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                 }
             `}</style>
             <div
-                className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center min-[415px]:flex min-[415px]:min-w-[88px] min-[415px]:w-auto"
+                className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center min-[768px]:flex min-[768px]:min-w-[88px] min-[768px]:w-auto max-[414px]:flex max-[414px]:min-w-[88px] max-[414px]:w-auto min-[415px]:max-[767px]:hidden"
                 style={{ background: config.bg, color: config.color }}
             >
                 {config.text}
@@ -195,7 +194,9 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
             </div>
 
             {/* content */}
-            <div className="flex flex-col min-[415px]:flex-row justify-between items-start min-[415px]:gap-[93px]" style={{ width: window.innerWidth <= 414 ? '268px' : 'auto', gap: window.innerWidth <= 414 ? '24px' : undefined }}>
+            <div className="flex flex-col max-[414px]:gap-[24px] min-[415px]:max-[767px]:gap-[14px] min-[768px]:flex-row min-[768px]:justify-between min-[768px]:items-start min-[768px]:gap-[93px]" style={{ width: window.innerWidth <= 414 ? '268px' : 'auto' }}>
+                {/* Main content row */}
+                <div className="flex min-[415px]:max-[767px]:flex-row min-[768px]:flex-row max-[414px]:flex-col min-[415px]:max-[767px]:justify-between min-[415px]:max-[767px]:items-start min-[415px]:max-[767px]:w-full min-[415px]:max-[767px]:gap-[30px] min-[768px]:flex-1">
                 {/* Left side: Checkbox + G1 (title, description, categories) */}
                 <div className="flex max-[414px]:gap-0 min-[415px]:gap-3 flex-1 max-[414px]:w-full">
                     {/* Checkbox - Tablet and Desktop (415px+) */}
@@ -226,25 +227,94 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     </label>
 
                     {/* G1: Title, Description, Categories */}
-                    <div className="min-[415px]:flex-1 flex flex-col min-[768px]:w-[339px] max-[414px]:w-full" style={{ gap: window.innerWidth <= 414 ? '12px' : (categories && categories.length > 0 ? '20px' : '0') }}>
-                        <div className="max-[414px]:w-[196px] max-[414px]:max-w-[196px] max-[414px]:overflow-hidden">
-                            <h3 className="font-['Public_Sans'] text-black mb-2 min-[415px]:text-[14px] min-[415px]:leading-[100%] max-[414px]:text-[12px] max-[414px]:leading-[150%] max-[414px]:break-words max-[414px]:overflow-wrap-anywhere" style={{ fontWeight: 600 }}>{title}</h3>
-                            <p className="font-['Public_Sans'] text-[#A4A4A4] line-clamp-2 min-[415px]:text-[14px] min-[415px]:leading-[150%] max-[414px]:text-[12px] max-[414px]:leading-[150%] max-[414px]:break-words max-[414px]:overflow-wrap-anywhere" style={{ fontWeight: 400 }}>{description}</p>
+                    <div className="min-[415px]:flex-1 flex flex-col min-[768px]:w-[371px] max-[414px]:w-full" style={{ gap: window.innerWidth <= 414 ? '12px' : (categories && categories.length > 0 ? '20px' : '0') }}>
+                        <div className="max-[414px]:w-[196px] max-[414px]:max-w-[196px] max-[414px]:overflow-hidden min-[768px]:w-[371px]">
+                            <h3 
+                                className="font-['Public_Sans'] text-black mb-2 min-[768px]:text-[14px] min-[768px]:leading-[100%] min-[415px]:max-[767px]:text-[14px] min-[415px]:max-[767px]:leading-[100%] max-[414px]:text-[12px] max-[414px]:leading-[150%] max-[414px]:break-words max-[414px]:overflow-wrap-anywhere" 
+                                style={{ fontWeight: 600 }}
+                            >
+                                {title}
+                            </h3>
+                            <p 
+                                className="font-['Public_Sans'] text-[#A4A4A4] line-clamp-2 min-[768px]:text-[14px] min-[768px]:leading-[150%] min-[415px]:max-[767px]:text-[14px] min-[415px]:max-[767px]:leading-[150%] max-[414px]:text-[12px] max-[414px]:leading-[150%] max-[414px]:break-words max-[414px]:overflow-wrap-anywhere" 
+                                style={{ fontWeight: 400 }}
+                            >
+                                {description}
+                            </p>
                         </div>
                         
-                        {/* Categories - only show if there are categories */}
+                        {/* Categories - Tablet and Desktop (415px+) */}
+                        {categories && categories.length > 0 && (
+                            <>
+                                {/* Desktop: Wrap categories */}
+                                <div 
+                                    className="hidden min-[768px]:flex min-[768px]:flex-wrap" 
+                                    style={{ 
+                                        gap: '10px'
+                                    }}
+                                >
+                                    {categories.map((cat, index) => (
+                                        <span 
+                                            key={index} 
+                                            className="bg-[#F4F4F4] flex items-center h-[26px] text-[12px] text-[#808080]"
+                                            style={{
+                                                borderRadius: '4px',
+                                                paddingTop: '4px',
+                                                paddingRight: '12px',
+                                                paddingBottom: '4px',
+                                                paddingLeft: '12px',
+                                                fontFamily: 'Public Sans',
+                                                fontWeight: 400,
+                                                lineHeight: '150%'
+                                            }}
+                                        >{cat}</span>
+                                    ))}
+                                </div>
+                                {/* Tablet: Scroll categories */}
+                                <div 
+                                    className="hidden min-[415px]:max-[767px]:flex scrollbar-hide" 
+                                    style={{ 
+                                        gap: '10px',
+                                        width: '276px',
+                                        overflowX: 'auto',
+                                        overflowY: 'hidden'
+                                    }}
+                                >
+                                    {categories.map((cat, index) => (
+                                        <span 
+                                            key={index} 
+                                            className="bg-[#F4F4F4] flex items-center h-[26px] text-[12px] text-[#808080] whitespace-nowrap flex-shrink-0"
+                                            style={{
+                                                borderRadius: '4px',
+                                                paddingTop: '4px',
+                                                paddingRight: '12px',
+                                                paddingBottom: '4px',
+                                                paddingLeft: '12px',
+                                                fontFamily: 'Public Sans',
+                                                fontWeight: 400,
+                                                lineHeight: '150%'
+                                            }}
+                                        >{cat}</span>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {/* Categories - Mobile (0-414px) only */}
                         {categories && categories.length > 0 && (
                             <div 
-                                className="flex min-[415px]:flex-wrap max-[414px]:overflow-x-auto max-[414px]:overflow-y-hidden scrollbar-hide max-[414px]:w-full" 
+                                className="flex scrollbar-hide max-[414px]:w-full min-[415px]:hidden" 
                                 style={{ 
-                                    gap: window.innerWidth <= 414 ? '4px' : '10px',
-                                    height: window.innerWidth <= 414 ? '23px' : 'auto'
+                                    gap: '4px',
+                                    height: '23px',
+                                    overflowX: 'auto',
+                                    overflowY: 'hidden'
                                 }}
                             >
                                 {categories.map((cat, index) => (
                                     <span 
                                         key={index} 
-                                        className="bg-[#F4F4F4] flex items-center min-[415px]:h-[26px] max-[414px]:h-[23px] min-[415px]:text-[12px] max-[414px]:text-[10px] text-[#808080] max-[414px]:whitespace-nowrap max-[414px]:flex-shrink-0"
+                                        className="bg-[#F4F4F4] flex items-center h-[23px] text-[10px] text-[#808080] whitespace-nowrap flex-shrink-0"
                                         style={{
                                             borderRadius: '4px',
                                             paddingTop: '4px',
@@ -262,10 +332,49 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     </div>
                 </div>
 
+                {/* Middle: Status Badge - Tablet only (415-767px) */}
+                <div className="hidden min-[415px]:max-[767px]:flex min-[415px]:max-[767px]:items-start min-[415px]:max-[767px]:justify-center">
+                    <div 
+                        className="flex items-center justify-center"
+                        style={{
+                            width: '102px',
+                            height: '26px',
+                            borderRadius: '30px',
+                            border: '1px solid #EAEAEA',
+                            paddingTop: '4px',
+                            paddingRight: '16px',
+                            paddingBottom: '4px',
+                            paddingLeft: '16px',
+                            gap: '8px',
+                            background: '#FFFFFF',
+                            opacity: 1,
+                            marginTop: '3px'
+                        }}
+                    >
+                        <span 
+                            style={{
+                                width: '6px',
+                                height: '6px',
+                                borderRadius: '50%',
+                                backgroundColor: config.color,
+                                flexShrink: 0
+                            }}
+                        />
+                        <span style={{
+                            fontFamily: 'Public Sans',
+                            fontWeight: 400,
+                            fontSize: '12px',
+                            lineHeight: '150%',
+                            letterSpacing: '0%',
+                            color: '#808080'
+                        }}>{config.text}</span>
+                    </div>
+                </div>
+
                 {/* Right side: G2 (action icons + posted time) - Tablet and Desktop (415px+) */}
-                <div className="flex flex-col items-end max-[414px]:hidden min-[415px]:flex" style={{ gap: '54px' }}>
+                <div className="hidden min-[415px]:flex min-[415px]:flex-col min-[415px]:items-end" style={{ gap: '54px' }}>
                     {/* Action icons */}
-                    <div className="hidden min-[415px]:flex gap-[10px] shrink-0">
+                    <div className="flex gap-[10px] shrink-0">
                         {status === 'trash' ? (
                             <>
                                 <button 
@@ -411,7 +520,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
 
                     {/* Posted time */}
                     {(createdAt || postedTime) && (
-                        <div className="flex items-center gap-2 text-[#A4A4A4] md:text-[14px] max-md:text-[10px] max-md:mt-4" style={{ lineHeight: '150%' }}>
+                        <div className="flex items-center gap-2 text-[#A4A4A4] text-[14px]" style={{ lineHeight: '150%' }}>
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                                 <circle cx="8" cy="8" r="7" stroke="#A4A4A4" strokeWidth="1.5" />
                                 <path d="M8 4V8L11 10" stroke="#A4A4A4" strokeWidth="1.5" strokeLinecap="round" />
@@ -421,6 +530,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                             </span>
                         </div>
                     )}
+                </div>
                 </div>
                 
                 {/* Mobile: Posted time at bottom (0-414px only) */}

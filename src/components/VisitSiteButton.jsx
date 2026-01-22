@@ -4,7 +4,28 @@ export default function VisitSiteButton() {
       href="/" 
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-20 right-4 bg-purple-600 text-white px-7 py-3 rounded-lg font-['Public_Sans'] font-semibold text-sm no-underline shadow-[0_4px_12px_rgba(139,92,246,0.3)] z-[100] hidden md:hidden hover:bg-purple-700 hover:shadow-[0_6px_16px_rgba(139,92,246,0.4)] transition-all duration-300 max-[768px]:block"
+      style={{
+        width: '82px',
+        height: '32px',
+        borderRadius: '4px',
+        padding: '8px 16px',
+        gap: '10px',
+        background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
+        boxShadow: '0px 4px 8px 0px #EADBF9',
+        fontFamily: 'Public Sans',
+        fontWeight: 600,
+        fontSize: '12px',
+        lineHeight: '150%',
+        letterSpacing: '0%',
+        color: '#EDEDED',
+        opacity: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textDecoration: 'none',
+        whiteSpace: 'nowrap'
+      }}
+      className="hover:opacity-90 transition-opacity"
       title="Visit site"
     >
       View Site

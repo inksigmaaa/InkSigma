@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation"
 import { useMemo } from "react"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
-import VisitSiteButton from "@/components/VisitSiteButton"
 import FeedbackButton from "@/components/FeedbackButton"
 
 export default function ConditionalLayout({ children }) {
@@ -62,7 +61,6 @@ export default function ConditionalLayout({ children }) {
         {children}
         {showMobileButtons && (
           <>
-            <VisitSiteButton />
             <FeedbackButton />
           </>
         )}
@@ -79,7 +77,6 @@ export default function ConditionalLayout({ children }) {
       <Footer />
       {pathname !== "/" && (
         <>
-          <VisitSiteButton />
           <FeedbackButton />
         </>
       )}

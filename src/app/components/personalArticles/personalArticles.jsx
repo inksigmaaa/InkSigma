@@ -124,9 +124,9 @@ export default function PersonalArticles({
                     )}
                 </div>
 
-                {/* Controls Row - Always shown on desktop/tablet when showActions is true */}
+                {/* Controls Row - Tablet and Desktop (415px+) when showActions is true */}
                 {showActions && (
-                    <div className="flex items-center justify-between gap-5 mb-6 max-md:hidden">
+                    <div className="flex items-center justify-between gap-5 mb-6 max-[414px]:hidden min-[415px]:flex">
                         <div className="flex items-center gap-2">
                             {showSelectAll && (
                                 <label style={{
@@ -184,7 +184,7 @@ export default function PersonalArticles({
                                 </button>
                             ))}
                         </div>
-                        <div className="relative hidden md:block">
+                        <div className="relative hidden min-[415px]:block">
                             <CategoryFilter 
                                 selectedCategories={categories}
                                 onCategoriesChange={handleCategoryChange}
