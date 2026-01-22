@@ -1,16 +1,77 @@
 import ArticleDropdown from '../articleDropdown/ArticleDropdown.jsx'
 import { useRouter } from 'next/navigation'
 import { usePublication } from '@/contexts/PublicationContext'
+import React from 'react'
 
-export default function PersonalArticleContainer({ id, status, title, description, categories, postedTime, onRestore, onDelete, onDraft, onUnpublish, onRepublish, onPublish, isSelected, onSelect }) {
+// Helper function to format relative time
+const getRelativeTime = (dateString) => {
+    if (!dateString) return ''
+    
+    try {
+        const now = new Date()
+        const postDate = new Date(dateString)
+        
+        // Check if date is valid
+        if (isNaN(postDate.getTime())) {
+            return dateString // Return original string if invalid
+        }
+        
+        const diffInSeconds = Math.floor((now - postDate) / 1000)
+        const diffInMinutes = Math.floor(diffInSeconds / 60)
+        const diffInHours = Math.floor(diffInMinutes / 60)
+        const diffInDays = Math.floor(diffInHours / 24)
+
+        // Just now (less than 1 minute)
+        if (diffInMinutes < 1) {
+            return 'Posted just now'
+        }
+        
+        // Minutes ago (1-59 minutes)
+        if (diffInMinutes < 60) {
+            return `Posted ${diffInMinutes} min${diffInMinutes > 1 ? 's' : ''} ago`
+        }
+        
+        // Hours ago (1-23 hours)
+        if (diffInHours < 24) {
+            return `Posted ${diffInHours} hr${diffInHours > 1 ? 's' : ''} ago`
+        }
+        
+        // Show actual date after 24 hours
+        const options = { day: 'numeric', month: 'short', year: 'numeric' }
+        return `Posted ${postDate.toLocaleDateString('en-US', options)}`
+    } catch (error) {
+        return dateString // Return original string if error occurs
+    }
+}
+
+export default function PersonalArticleContainer({ id, status, title, description, categories, postedTime, createdAt, onRestore, onDelete, onDraft, onUnpublish, onRepublish, onPublish, isSelected, onSelect }) {
     const router = useRouter()
     const { currentPublication } = usePublication()
+    const [longPressTimer, setLongPressTimer] = React.useState(null)
+    
     // Explicitly ensure 'author' and 'editor' cannot publish, even if isOwner is somehow true (edge case)
     const canPublish = (currentPublication?.isOwner || currentPublication?.role === 'admin') && currentPublication?.role !== 'author' && currentPublication?.role !== 'editor'
 
     const handleEdit = () => {
         const publicationQuery = currentPublication?.id ? `&publicationId=${currentPublication.id}` : ''
         router.push(`/editor?status=${status}&id=${id}${publicationQuery}`)
+    }
+    
+    // Long press handlers for mobile
+    const handleTouchStart = (e) => {
+        if (window.innerWidth <= 767) { // Mobile and Tablet
+            const timer = setTimeout(() => {
+                onSelect && onSelect(id, !isSelected)
+            }, 500) // 0.5 seconds
+            setLongPressTimer(timer)
+        }
+    }
+
+    const handleTouchEnd = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer)
+            setLongPressTimer(null)
+        }
     }
     const statusConfig = {
         published: { bg: '#D5F2D4', color: '#267F42', text: 'Published' },
@@ -25,249 +86,460 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
 
     const handleCardClick = (e) => {
         // Don't navigate if clicking on buttons, checkboxes, or other interactive elements
-        if (e.target.closest('button') || e.target.closest('input[type="checkbox"]')) {
+        if (e.target.closest('button') || e.target.closest('input[type="checkbox"]') || e.target.closest('label')) {
             return
         }
-        handleEdit()
+        // Navigate to preview in same tab
+        const publicationQuery = currentPublication?.id ? `?publicationId=${currentPublication.id}` : ''
+        router.push(`/home/preview/${id}${publicationQuery}`)
     }
 
     return (
         <div
-            className="relative bg-white border border-gray-200 rounded-lg p-4 mb-4 max-md:pt-10 max-md:p-4 cursor-pointer hover:shadow-md transition-shadow duration-200"
+            className="relative rounded-[8px] mb-4 cursor-pointer hover:shadow-md transition-shadow duration-200 min-[768px]:bg-white max-[767px]:bg-[#FEFEFE]"
+            style={{ 
+                paddingTop: '40px', 
+                paddingRight: window.innerWidth <= 767 ? '16px' : '24px', 
+                paddingBottom: window.innerWidth <= 767 ? '16px' : '24px', 
+                paddingLeft: window.innerWidth <= 767 ? '16px' : '24px',
+                borderWidth: '1px',
+                borderColor: isSelected && window.innerWidth <= 767 ? '#202020' : (window.innerWidth <= 767 ? '#EDEDED' : '#E5E7EB'),
+                borderStyle: 'solid',
+                maxWidth: '100%'
+            }}
             onClick={handleCardClick}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
         >
+            <style jsx>{`
+                /* Mobile: 0-414px */
+                @media (max-width: 414px) {
+                    div {
+                        width: 300px;
+                        height: 188px;
+                        padding-top: 40px;
+                        padding-right: 16px;
+                        padding-bottom: 16px;
+                        padding-left: 16px;
+                    }
+                }
+                /* Tablet: 415-767px */
+                @media (min-width: 415px) and (max-width: 767px) {
+                    div {
+                        width: 598px;
+                        height: 177px;
+                        padding: 24px;
+                        gap: 14px;
+                        border-radius: 8px;
+                        border: 1px solid #EAEAEA;
+                    }
+                }
+                .scrollbar-hide::-webkit-scrollbar {
+                    display: none;
+                }
+                .scrollbar-hide {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+            `}</style>
             <div
-                className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center max-md:flex max-md:min-w-[88px] max-md:w-auto"
+                className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center min-[768px]:flex min-[768px]:min-w-[88px] min-[768px]:w-auto max-[414px]:flex max-[414px]:min-w-[88px] max-[414px]:w-auto min-[415px]:max-[767px]:hidden"
                 style={{ background: config.bg, color: config.color }}
             >
                 {config.text}
             </div>
 
-            <div className="absolute top-2 right-2 hidden max-md:block">
-                <ArticleDropdown
-                    status={status}
-                    onEdit={handleEdit}
-                    onDelete={onDelete}
-                    onRestore={onRestore}
-                    canPublish={canPublish}
-                />
-            </div>
-
-            {/* Tablet Status and Actions Row */}
-            <div className="hidden">
-                <div
-                    className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center"
-                    style={{ background: config.bg, color: config.color }}
-                >
-                    {config.text}
-                </div>
-                <div className="flex gap-[10px] shrink-0">
-                    {status === 'trash' ? (
-                        <>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Restore" onClick={onRestore}>
-                                <img src="/images/icons/restore.svg" alt="restore" className="w-4 h-4" />
-                            </button>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete Permanently" onClick={onDelete}>
-                                <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
-                            </button>
-                        </>
-                    ) : status === 'draft' ? (
-                        <>
-                            {canPublish && (
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Publish" onClick={onPublish}>
-                                    <img src="/images/icons/share.svg" alt="publish" className="w-4 h-4" />
-                                </button>
-                            )}
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
-                                <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
-                            </button>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
-                                <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
-                            </button>
-                        </>
-                    ) : status === 'review' ? (
-                        <>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Copy">
-                                <img src="/images/icons/copy.svg" alt="copy" className="w-4 h-4" />
-                            </button>
-                        </>
-                    ) : status === 'unpublished' ? (
-                        <>
-                            {canPublish && (
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Republish" onClick={onRepublish}>
-                                    <img src="/images/icons/publish-ideal.svg" alt="republish" className="w-4 h-4" />
-                                </button>
-                            )}
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
-                                <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
-                            </button>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Move to Draft" onClick={onDraft}>
-                                <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
-                            </button>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
-                                <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            {status === 'published' && canPublish && (
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Unpublish" onClick={onUnpublish}>
-                                    <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-4 h-4" />
-                                </button>
-                            )}
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Preview">
-                                <img src="/images/icons/preview.svg" alt="preview" className="w-4 h-4" />
-                            </button>
-                            {canPublish && (
-                                <>
-                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
-                                        <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
-                                    </button>
-                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Draft" onClick={onDraft}>
-                                        <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
-                                    </button>
-                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
-                                        <img src="/images/icons/delete.svg" alt="delete" className="w-4 h-4" />
-                                    </button>
-                                </>
-                            )}
-                        </>
-                    )}
-                </div>
+            {/* Mobile only (0-414px): Dropdown or Checkbox */}
+            <div className="absolute right-2 max-[414px]:flex max-[414px]:items-center max-[414px]:justify-center max-[414px]:right-4 max-[414px]:top-[15px] min-[415px]:hidden" style={{ width: '26px', height: '26px' }}>
+                {isSelected ? (
+                    /* Mobile selection checkbox */
+                    <div 
+                        className="flex items-center justify-center rounded-full"
+                        style={{
+                            width: '22px',
+                            height: '22px',
+                            backgroundColor: '#202020'
+                        }}
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onSelect && onSelect(id, false)
+                        }}
+                    >
+                        <img 
+                            src="/images/icons/tick2.svg" 
+                            alt="selected" 
+                            style={{ 
+                                width: '12px', 
+                                height: '12px', 
+                                filter: 'brightness(0) invert(1)' 
+                            }} 
+                        />
+                    </div>
+                ) : (
+                    <div style={{ transform: 'scale(0.8125)', transformOrigin: 'center' }}>
+                        <ArticleDropdown
+                            status={status}
+                            onEdit={handleEdit}
+                            onDelete={onDelete}
+                            onRestore={onRestore}
+                            onPublish={onPublish}
+                            onUnpublish={onUnpublish}
+                            onRepublish={onRepublish}
+                            onDraft={onDraft}
+                            canPublish={canPublish}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* content */}
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4 mt-5">
-                <div className="flex w-full">
-                    {/* left side */}
-                    <div className="flex gap-3 flex-1">
-                        <label style={{
+            <div className="flex flex-col max-[414px]:gap-[24px] min-[415px]:max-[767px]:gap-[14px] min-[768px]:flex-row min-[768px]:justify-between min-[768px]:items-start min-[768px]:gap-[93px]" style={{ width: window.innerWidth <= 414 ? '268px' : 'auto' }}>
+                {/* Main content row */}
+                <div className="flex min-[415px]:max-[767px]:flex-row min-[768px]:flex-row max-[414px]:flex-col min-[415px]:max-[767px]:justify-between min-[415px]:max-[767px]:items-start min-[415px]:max-[767px]:w-full min-[415px]:max-[767px]:gap-[30px] min-[768px]:flex-1">
+                {/* Left side: Checkbox + G1 (title, description, categories) */}
+                <div className="flex max-[414px]:gap-0 min-[415px]:gap-3 flex-1 max-[414px]:w-full">
+                    {/* Checkbox - Tablet and Desktop (415px+) */}
+                    <label className="hidden min-[415px]:flex items-start cursor-pointer mt-1">
+                        <input
+                            type="checkbox"
+                            style={{ display: 'none' }}
+                            checked={isSelected || false}
+                            onChange={(e) => onSelect && onSelect(id, e.target.checked)}
+                        />
+                        <span style={{
+                            width: '16px',
+                            height: '16px',
+                            borderRadius: '4px',
+                            border: '1px solid #C0C0C0',
                             display: 'flex',
-                            alignItems: 'flex-start',
-                            cursor: 'pointer',
-                            marginTop: '4px'
-                        }} className="max-md:hidden">
-                            <input
-                                type="checkbox"
-                                style={{ display: 'none' }}
-                                checked={isSelected || false}
-                                onChange={(e) => onSelect && onSelect(id, e.target.checked)}
-                            />
-                            <span style={{
-                                width: '16px',
-                                height: '16px',
-                                borderRadius: '4px',
-                                border: '1px solid #C0C0C0',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                backgroundColor: (isSelected || false) ? '#000000' : 'transparent',
-                                borderColor: (isSelected || false) ? '#000000' : '#C0C0C0',
-                                transition: 'all 0.2s ease',
-                                flexShrink: 0
-                            }}>
-                                {(isSelected || false) && (
-                                    <img src="/images/icons/tick2.svg" alt="checked" style={{ width: '10px', height: '10px', filter: 'brightness(0) invert(1)' }} />
-                                )}
-                            </span>
-                        </label>
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: (isSelected || false) ? '#000000' : 'transparent',
+                            borderColor: (isSelected || false) ? '#000000' : '#C0C0C0',
+                            transition: 'all 0.2s ease',
+                            flexShrink: 0
+                        }}>
+                            {(isSelected || false) && (
+                                <img src="/images/icons/tick2.svg" alt="checked" style={{ width: '10px', height: '10px', filter: 'brightness(0) invert(1)' }} />
+                            )}
+                        </span>
+                    </label>
 
-                        <div className="flex-1">
-                            <h3 className="font-['Public_Sans'] font-semibold text-sm leading-none text-black mb-2 mt-2 max-md:text-sm">{title}</h3>
-                            <p className="font-['Public_Sans'] font-normal text-sm leading-relaxed text-[#A4A4A4] mb-3">{description}</p>
+                    {/* G1: Title, Description, Categories */}
+                    <div className="min-[415px]:flex-1 flex flex-col min-[768px]:w-[371px] max-[414px]:w-full" style={{ gap: window.innerWidth <= 414 ? '12px' : (categories && categories.length > 0 ? '20px' : '0') }}>
+                        <div className="max-[414px]:w-[196px] max-[414px]:max-w-[196px] max-[414px]:overflow-hidden min-[768px]:w-[371px]">
+                            <h3 
+                                className="font-['Public_Sans'] text-black mb-2 min-[768px]:text-[14px] min-[768px]:leading-[100%] min-[415px]:max-[767px]:text-[14px] min-[415px]:max-[767px]:leading-[100%] max-[414px]:text-[12px] max-[414px]:leading-[150%] max-[414px]:break-words max-[414px]:overflow-wrap-anywhere" 
+                                style={{ fontWeight: 600 }}
+                            >
+                                {title}
+                            </h3>
+                            <p 
+                                className="font-['Public_Sans'] text-[#A4A4A4] line-clamp-2 min-[768px]:text-[14px] min-[768px]:leading-[150%] min-[415px]:max-[767px]:text-[14px] min-[415px]:max-[767px]:leading-[150%] max-[414px]:text-[12px] max-[414px]:leading-[150%] max-[414px]:break-words max-[414px]:overflow-wrap-anywhere" 
+                                style={{ fontWeight: 400 }}
+                            >
+                                {description}
+                            </p>
                         </div>
-                    </div>
+                        
+                        {/* Categories - Tablet and Desktop (415px+) */}
+                        {categories && categories.length > 0 && (
+                            <>
+                                {/* Desktop: Wrap categories */}
+                                <div 
+                                    className="hidden min-[768px]:flex min-[768px]:flex-wrap" 
+                                    style={{ 
+                                        gap: '10px'
+                                    }}
+                                >
+                                    {categories.map((cat, index) => (
+                                        <span 
+                                            key={index} 
+                                            className="bg-[#F4F4F4] flex items-center h-[26px] text-[12px] text-[#808080]"
+                                            style={{
+                                                borderRadius: '4px',
+                                                paddingTop: '4px',
+                                                paddingRight: '12px',
+                                                paddingBottom: '4px',
+                                                paddingLeft: '12px',
+                                                fontFamily: 'Public Sans',
+                                                fontWeight: 400,
+                                                lineHeight: '150%'
+                                            }}
+                                        >{cat}</span>
+                                    ))}
+                                </div>
+                                {/* Tablet: Scroll categories */}
+                                <div 
+                                    className="hidden min-[415px]:max-[767px]:flex scrollbar-hide" 
+                                    style={{ 
+                                        gap: '10px',
+                                        width: '276px',
+                                        overflowX: 'auto',
+                                        overflowY: 'hidden'
+                                    }}
+                                >
+                                    {categories.map((cat, index) => (
+                                        <span 
+                                            key={index} 
+                                            className="bg-[#F4F4F4] flex items-center h-[26px] text-[12px] text-[#808080] whitespace-nowrap flex-shrink-0"
+                                            style={{
+                                                borderRadius: '4px',
+                                                paddingTop: '4px',
+                                                paddingRight: '12px',
+                                                paddingBottom: '4px',
+                                                paddingLeft: '12px',
+                                                fontFamily: 'Public Sans',
+                                                fontWeight: 400,
+                                                lineHeight: '150%'
+                                            }}
+                                        >{cat}</span>
+                                    ))}
+                                </div>
+                            </>
+                        )}
 
-                    {/* desktop actions */}
-                    <div className="hidden md:flex gap-[10px] shrink-0">
+                        {/* Categories - Mobile (0-414px) only */}
+                        {categories && categories.length > 0 && (
+                            <div 
+                                className="flex scrollbar-hide max-[414px]:w-full min-[415px]:hidden" 
+                                style={{ 
+                                    gap: '4px',
+                                    height: '23px',
+                                    overflowX: 'auto',
+                                    overflowY: 'hidden'
+                                }}
+                            >
+                                {categories.map((cat, index) => (
+                                    <span 
+                                        key={index} 
+                                        className="bg-[#F4F4F4] flex items-center h-[23px] text-[10px] text-[#808080] whitespace-nowrap flex-shrink-0"
+                                        style={{
+                                            borderRadius: '4px',
+                                            paddingTop: '4px',
+                                            paddingRight: '12px',
+                                            paddingBottom: '4px',
+                                            paddingLeft: '12px',
+                                            fontFamily: 'Public Sans',
+                                            fontWeight: 400,
+                                            lineHeight: '150%'
+                                        }}
+                                    >{cat}</span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Middle: Status Badge - Tablet only (415-767px) */}
+                <div className="hidden min-[415px]:max-[767px]:flex min-[415px]:max-[767px]:items-start min-[415px]:max-[767px]:justify-center">
+                    <div 
+                        className="flex items-center justify-center"
+                        style={{
+                            width: '102px',
+                            height: '26px',
+                            borderRadius: '30px',
+                            border: '1px solid #EAEAEA',
+                            paddingTop: '4px',
+                            paddingRight: '16px',
+                            paddingBottom: '4px',
+                            paddingLeft: '16px',
+                            gap: '8px',
+                            background: '#FFFFFF',
+                            opacity: 1,
+                            marginTop: '3px'
+                        }}
+                    >
+                        <span 
+                            style={{
+                                width: '6px',
+                                height: '6px',
+                                borderRadius: '50%',
+                                backgroundColor: config.color,
+                                flexShrink: 0
+                            }}
+                        />
+                        <span style={{
+                            fontFamily: 'Public Sans',
+                            fontWeight: 400,
+                            fontSize: '12px',
+                            lineHeight: '150%',
+                            letterSpacing: '0%',
+                            color: '#808080'
+                        }}>{config.text}</span>
+                    </div>
+                </div>
+
+                {/* Right side: G2 (action icons + posted time) - Tablet and Desktop (415px+) */}
+                <div className="hidden min-[415px]:flex min-[415px]:flex-col min-[415px]:items-end" style={{ gap: '54px' }}>
+                    {/* Action icons */}
+                    <div className="flex gap-[10px] shrink-0">
                         {status === 'trash' ? (
                             <>
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Restore" onClick={onRestore}>
-                                    <img src="/images/icons/restore.svg" alt="restore" className="w-4 h-4" />
+                                <button 
+                                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
+                                    style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                    title="Restore" 
+                                    onClick={onRestore}
+                                >
+                                    <img src="/images/icons/restore.svg" alt="restore" />
                                 </button>
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete Permanently" onClick={onDelete}>
-                                    <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
+                                <button 
+                                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" 
+                                    style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                    title="Delete Permanently" 
+                                    onClick={onDelete}
+                                >
+                                    <img src="/images/icons/trash2.svg" alt="delete" />
                                 </button>
                             </>
                         ) : status === 'draft' ? (
                             <>
                                 {canPublish && (
-                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Publish" onClick={onPublish}>
-                                        <img src="/images/icons/share.svg" alt="publish" className="w-4 h-4" />
+                                    <button 
+                                        className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
+                                        style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                        title="Publish" 
+                                        onClick={onPublish}
+                                    >
+                                        <img src="/images/icons/share.svg" alt="publish" />
                                     </button>
                                 )}
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
-                                    <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
+                                <button 
+                                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
+                                    style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                    title="Edit" 
+                                    onClick={handleEdit}
+                                >
+                                    <img src="/images/icons/edit.svg" alt="edit" />
                                 </button>
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={onDelete}>
-                                    <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
+                                <button 
+                                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" 
+                                    style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                    title="Delete" 
+                                    onClick={onDelete}
+                                >
+                                    <img src="/images/icons/trash2.svg" alt="delete" />
                                 </button>
                             </>
                         ) : status === 'review' ? (
                             <>
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Copy">
-                                    <img src="/images/icons/copy.svg" alt="copy" className="w-4 h-4" />
+                                <button 
+                                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
+                                    style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                    title="Copy"
+                                >
+                                    <img src="/images/icons/copy.svg" alt="copy" />
                                 </button>
                             </>
                         ) : status === 'unpublished' ? (
                             <>
                                 {canPublish && (
-                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Republish" onClick={onRepublish}>
-                                        <img src="/images/icons/publish-ideal.svg" alt="republish" className="w-4 h-4" />
+                                    <button 
+                                        className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
+                                        style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                        title="Republish" 
+                                        onClick={onRepublish}
+                                    >
+                                        <img src="/images/icons/publish-ideal.svg" alt="republish" />
                                     </button>
                                 )}
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
-                                    <img src="/images/icons/edit-ideal.svg" alt="edit" className="w-4 h-4" />
+                                <button 
+                                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
+                                    style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                    title="Edit" 
+                                    onClick={handleEdit}
+                                >
+                                    <img src="/images/icons/edit-ideal.svg" alt="edit" />
                                 </button>
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Move to Draft" onClick={onDraft}>
-                                    <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
+                                <button 
+                                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
+                                    style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                    title="Move to Draft" 
+                                    onClick={onDraft}
+                                >
+                                    <img src="/images/icons/copy.svg" alt="draft" />
                                 </button>
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={onDelete}>
-                                    <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
+                                <button 
+                                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" 
+                                    style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                    title="Delete" 
+                                    onClick={onDelete}
+                                >
+                                    <img src="/images/icons/trash2.svg" alt="delete" />
                                 </button>
                             </>
                         ) : (
                             <>
                                 {status === 'published' && canPublish && (
-                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Unpublish" onClick={onUnpublish}>
-                                        <img src="/images/icons/unpublished-hover.svg" alt="unpublish" className="w-8 h-8" />
+                                    <button 
+                                        className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
+                                        style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                        title="Unpublish" 
+                                        onClick={onUnpublish}
+                                    >
+                                        <img src="/images/icons/unpublished-hover.svg" alt="unpublish" />
                                     </button>
                                 )}
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Preview">
-                                    <img src="/images/icons/preview.svg" alt="preview" className="w-4 h-4" />
+                                {/* Stats/Preview button - commented out */}
+                                {/* <button 
+                                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
+                                    style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                    title="Preview"
+                                >
+                                    <img src="/images/icons/preview.svg" alt="preview" />
+                                </button> */}
+                                <button 
+                                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
+                                    style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                    title="Edit" 
+                                    onClick={handleEdit}
+                                >
+                                    <img src="/images/icons/edit-ideal.svg" alt="edit" />
                                 </button>
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Edit" onClick={handleEdit}>
-                                    <img src="/images/icons/edit-ideal.svg" alt="edit" className="w-4 h-4" />
+                                <button 
+                                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
+                                    style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                    title="Draft" 
+                                    onClick={onDraft}
+                                >
+                                    <img src="/images/icons/copy.svg" alt="draft" />
                                 </button>
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" title="Draft" onClick={onDraft}>
-                                    <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
-                                </button>
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" title="Delete" onClick={onDelete}>
-                                    <img src="/images/icons/delete.svg" alt="delete" className="w-4 h-4" />
+                                <button 
+                                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300" 
+                                    style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                    title="Delete" 
+                                    onClick={onDelete}
+                                >
+                                    <img src="/images/icons/delete.svg" alt="delete" />
                                 </button>
                             </>
                         )}
                     </div>
-                </div>
-            </div>
 
-            {/* footer */}
-            <div className="flex flex-wrap justify-between items-center gap-3 mt-3">
-                {/* categories */}
-                <div className="flex flex-wrap gap-2">
-                    {categories.map((cat, index) => (
-                        <span key={index} className="h-[26px] px-3 py-1 bg-[#F4F4F4] rounded text-xs text-gray-500 flex items-center">{cat}</span>
-                    ))}
+                    {/* Posted time */}
+                    {(createdAt || postedTime) && (
+                        <div className="flex items-center gap-2 text-[#A4A4A4] text-[14px]" style={{ lineHeight: '150%' }}>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <circle cx="8" cy="8" r="7" stroke="#A4A4A4" strokeWidth="1.5" />
+                                <path d="M8 4V8L11 10" stroke="#A4A4A4" strokeWidth="1.5" strokeLinecap="round" />
+                            </svg>
+                            <span className="font-['Public_Sans']" style={{ fontWeight: 400 }}>
+                                {createdAt ? getRelativeTime(createdAt) : postedTime}
+                            </span>
+                        </div>
+                    )}
                 </div>
-
-                {/* posted time */}
-                {postedTime && (
-                    <div className="flex items-center gap-2 text-gray-400 text-sm">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <circle cx="8" cy="8" r="7" stroke="#A4A4A4" strokeWidth="1.5" />
-                            <path d="M8 4V8L11 10" stroke="#A4A4A4" strokeWidth="1.5" strokeLinecap="round" />
-                        </svg>
-                        <span>{postedTime}</span>
+                </div>
+                
+                {/* Mobile: Posted time at bottom (0-414px only) */}
+                {(createdAt || postedTime) && (
+                    <div className="min-[415px]:hidden flex items-center gap-1 text-[#A4A4A4]" style={{ fontSize: '10px', lineHeight: '150%', fontFamily: 'Public Sans', fontWeight: 400 }}>
+                        <img src="/images/icons/clock.svg" alt="clock" width="9" height="9" />
+                        <span>
+                            {createdAt ? getRelativeTime(createdAt) : postedTime}
+                        </span>
                     </div>
                 )}
             </div>

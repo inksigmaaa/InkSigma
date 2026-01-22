@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import PersonalArticleContainer from '../personalArticleContainer/PersonalArticleContainer'
 import CategoryFilter from '../categoryFilter/CategoryFilter'
 import { Button } from "@/components/ui/button"
@@ -25,6 +26,7 @@ export default function PersonalArticles({
 }) {
     // Use selectedCategories from props if provided, otherwise use local state
     const [localCategories, setLocalCategories] = useState([])
+    const [mounted, setMounted] = useState(false)
     const categories = selectedCategories && selectedCategories.length > 0 ? selectedCategories : localCategories
     const handleCategoryChange = onCategoriesChange || setLocalCategories
 
@@ -32,11 +34,80 @@ export default function PersonalArticles({
 
     // Fixed top position (no verify banner)
     const topPosition = 'top-[160px]';
-    const mobileTopPosition = 'max-md:top-[120px]';
+    const mobileTopPosition = selectedArticles.length > 0 ? 'max-md:top-[175px]' : 'max-md:top-[120px]';
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     return (
-        <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
-            <div className="ml-[195px] max-md:ml-0">
+        <>
+            {/* Mobile Action Bar - Fixed stripe below navbar using Portal */}
+            {mounted && showActions && selectedArticles.length > 0 && createPortal(
+                <div 
+                    className="md:hidden fixed left-0 right-0 z-[9999]"
+                    style={{
+                        top: '94px',
+                        width: '360px',
+                        height: '42px',
+                        paddingTop: '8px',
+                        paddingRight: '16px',
+                        paddingBottom: '8px',
+                        paddingLeft: '30px',
+                        background: '#FEFEFE',
+                        borderTop: '1px solid #EDEDED',
+                        borderBottom: '1px solid #EDEDED'
+                    }}
+                >
+                    <div className="flex items-center gap-1">
+                        <div 
+                            className="flex items-center cursor-pointer"
+                            style={{
+                                width: '69px',
+                                height: '26px',
+                                borderRadius: '4px',
+                                padding: '8px',
+                                background: '#F8F8F8',
+                                gap: '8px'
+                            }}
+                            onClick={() => onSelectAll?.(false)}
+                        >
+                            <span 
+                                style={{
+                                    fontFamily: 'Public Sans',
+                                    fontWeight: 400,
+                                    fontSize: '12px',
+                                    lineHeight: '150%',
+                                    color: '#000000'
+                                }}
+                            >
+                                Select all
+                            </span>
+                        </div>
+                        {actionButtons.filter(button => !button.hidden).map((button, index) => (
+                            <button
+                                key={index}
+                                title={button.title}
+                                onClick={button.onClick}
+                                className="flex items-center justify-center transition-all bg-white cursor-pointer active:bg-gray-50"
+                                style={{
+                                    width: '26px',
+                                    height: '26px',
+                                    border: '1px solid #EDEDED',
+                                    borderRadius: '4px',
+                                    marginLeft: index === 0 ? '4px' : '0'
+                                }}
+                            >
+                                <img src={button.icon} alt={button.title} className="w-4 h-4" />
+                            </button>
+                        ))}
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
+                <div className="ml-[195px] max-md:ml-0">
                 {/* Title Row */}
                 <div className="flex items-center justify-between gap-4 mb-4">
                     <h1 className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-800 m-0 flex items-center gap-2">
@@ -53,9 +124,9 @@ export default function PersonalArticles({
                     )}
                 </div>
 
-                {/* Controls Row - Always shown on desktop/tablet when showActions is true */}
+                {/* Controls Row - Tablet and Desktop (415px+) when showActions is true */}
                 {showActions && (
-                    <div className="flex items-center justify-between gap-5 mb-6 max-md:hidden">
+                    <div className="flex items-center justify-between gap-5 mb-6 max-[414px]:hidden min-[415px]:flex">
                         <div className="flex items-center gap-2">
                             {showSelectAll && (
                                 <label style={{
@@ -113,7 +184,7 @@ export default function PersonalArticles({
                                 </button>
                             ))}
                         </div>
-                        <div className="relative hidden md:block">
+                        <div className="relative hidden min-[415px]:block">
                             <CategoryFilter 
                                 selectedCategories={categories}
                                 onCategoriesChange={handleCategoryChange}
@@ -142,6 +213,7 @@ export default function PersonalArticles({
                                     description={article.description}
                                     categories={article.categories}
                                     postedTime={article.postedTime}
+                                    createdAt={article.createdAt}
                                     onDelete={article.onDelete}
                                     onRestore={article.onRestore}
                                     onDraft={article.onDraft}
@@ -155,7 +227,8 @@ export default function PersonalArticles({
                         ))
                     )}
                 </div>
+                </div>
             </div>
-        </div>
+        </>
     )
 }
