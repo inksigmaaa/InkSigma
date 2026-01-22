@@ -86,10 +86,12 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
 
     const handleCardClick = (e) => {
         // Don't navigate if clicking on buttons, checkboxes, or other interactive elements
-        if (e.target.closest('button') || e.target.closest('input[type="checkbox"]')) {
+        if (e.target.closest('button') || e.target.closest('input[type="checkbox"]') || e.target.closest('label')) {
             return
         }
-        handleEdit()
+        // Navigate to preview in same tab
+        const publicationQuery = currentPublication?.id ? `?publicationId=${currentPublication.id}` : ''
+        router.push(`/home/preview/${id}${publicationQuery}`)
     }
 
     return (
