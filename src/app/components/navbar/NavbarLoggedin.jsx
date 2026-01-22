@@ -181,21 +181,21 @@ export default function NavbarLoggedin() {
                             >
                                 {/* Header */}
                                 <div 
-                                    className="flex items-center justify-between w-full h-[50px] px-3 py-2 bg-white border-b border-[#e5e5e5] gap-2 max-md:p-3"
+                                    className="flex items-center justify-between w-full h-[50px] px-3 py-2 bg-white border-b border-[#e5e5e5] gap-2 max-md:h-[44px] max-md:p-2.5"
                                 >
                                     <h3 
-                                        className="font-sans font-semibold text-sm leading-none text-black max-md:text-base"
+                                        className="font-sans font-semibold text-sm leading-none text-black max-md:text-xs"
                                     >
                                         Notification
                                     </h3>
                                     <button 
                                         onClick={() => setNotificationOpen(false)}
-                                        className="flex items-center justify-center w-7 h-7 rounded hover:bg-[#f5f5f5] transition-colors bg-white border-none cursor-pointer"
+                                        className="flex items-center justify-center w-7 h-7 rounded hover:bg-[#f5f5f5] transition-colors bg-white border-none cursor-pointer max-md:w-6 max-md:h-6"
                                     >
                                         <img 
                                             src="/images/icons/close.svg" 
                                             alt="close"
-                                            className="w-3 h-3"
+                                            className="w-3 h-3 max-md:w-2.5 max-md:h-2.5"
                                         />
                                     </button>
                                 </div>
@@ -229,33 +229,33 @@ export default function NavbarLoggedin() {
                                             return (
                                                 <div 
                                                     key={notification.id} 
-                                                    className={`flex items-start gap-3 p-4 hover:bg-[#F8F9FA] border-b border-[#F0F0F0] last:border-b-0 cursor-pointer max-sm-448:p-3 max-sm-448:gap-2.5 ${!notification.isRead ? 'bg-blue-50' : ''}`}
+                                                    className={`flex items-start gap-3 p-4 hover:bg-[#F8F9FA] border-b border-[#F0F0F0] last:border-b-0 cursor-pointer max-md:p-2.5 max-md:gap-2 max-sm-448:p-3 max-sm-448:gap-2.5 ${!notification.isRead ? 'bg-blue-50' : ''}`}
                                                     onClick={() => handleNotificationClick(notification)}
                                                 >
                                                     <UserAvatar 
                                                         user={avatarUser}
                                                         size="sm"
-                                                        className="flex-shrink-0"
+                                                        className="flex-shrink-0 max-md:w-8 max-md:h-8"
                                                     />
                                                     <div className="flex-1 min-w-0">
                                                         {/* Below 448px - time below with dot separator */}
                                                         <div className="sm-448:hidden">
                                                             <h4 
-                                                                className="font-sans font-semibold text-sm leading-none text-black mb-1"
+                                                                className="font-sans font-semibold text-sm leading-none text-black mb-1 max-md:text-xs max-md:mb-0.5"
                                                             >
                                                                 {notification.title}
                                                             </h4>
                                                             <p 
-                                                                className="font-sans font-normal text-sm leading-[150%] text-[#808080] mb-1"
+                                                                className="font-sans font-normal text-sm leading-[150%] text-[#808080] mb-1 max-md:text-xs max-md:mb-0.5 max-md:line-clamp-2"
                                                             >
                                                                 {notification.message}
                                                             </p>
-                                                            <div className="flex items-center gap-1 h-[18px]">
+                                                            <div className="flex items-center gap-1 h-[18px] max-md:h-[14px]">
                                                                 <span 
                                                                     className="w-1 h-1 rounded-full bg-[#A4A4A4] flex-shrink-0"
                                                                 ></span>
                                                                 <span 
-                                                                    className="font-sans font-normal text-xs leading-[150%] text-[#808080]"
+                                                                    className="font-sans font-normal text-xs leading-[150%] text-[#808080] max-md:text-[10px]"
                                                                 >
                                                                     {formatTimeAgo(notification.createdAt)}
                                                                 </span>
