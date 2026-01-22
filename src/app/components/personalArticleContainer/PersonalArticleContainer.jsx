@@ -59,7 +59,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
     
     // Long press handlers for mobile
     const handleTouchStart = (e) => {
-        if (window.innerWidth <= 768) { // Mobile only
+        if (window.innerWidth <= 767) { // Mobile and Tablet
             const timer = setTimeout(() => {
                 onSelect && onSelect(id, !isSelected)
             }, 500) // 0.5 seconds
@@ -96,14 +96,14 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
 
     return (
         <div
-            className="relative rounded-[8px] mb-4 cursor-pointer hover:shadow-md transition-shadow duration-200 md:bg-white max-md:bg-[#FEFEFE]"
+            className="relative rounded-[8px] mb-4 cursor-pointer hover:shadow-md transition-shadow duration-200 min-[768px]:bg-white max-[767px]:bg-[#FEFEFE]"
             style={{ 
                 paddingTop: '40px', 
-                paddingRight: window.innerWidth <= 768 ? '16px' : '24px', 
-                paddingBottom: window.innerWidth <= 768 ? '16px' : '24px', 
-                paddingLeft: window.innerWidth <= 768 ? '16px' : '24px',
+                paddingRight: window.innerWidth <= 767 ? '16px' : '24px', 
+                paddingBottom: window.innerWidth <= 767 ? '16px' : '24px', 
+                paddingLeft: window.innerWidth <= 767 ? '16px' : '24px',
                 borderWidth: '1px',
-                borderColor: isSelected && window.innerWidth <= 768 ? '#202020' : (window.innerWidth <= 768 ? '#EDEDED' : '#E5E7EB'),
+                borderColor: isSelected && window.innerWidth <= 767 ? '#202020' : (window.innerWidth <= 767 ? '#EDEDED' : '#E5E7EB'),
                 borderStyle: 'solid'
             }}
             onClick={handleCardClick}
@@ -112,10 +112,24 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
             onTouchCancel={handleTouchEnd}
         >
             <style jsx>{`
-                @media (max-width: 768px) {
+                /* Mobile: 0-414px */
+                @media (max-width: 414px) {
                     div {
                         width: 300px;
                         height: 188px;
+                        padding-top: 40px;
+                        padding-right: 16px;
+                        padding-bottom: 16px;
+                        padding-left: 16px;
+                    }
+                }
+                /* Tablet: 415-767px */
+                @media (min-width: 415px) and (max-width: 767px) {
+                    div {
+                        width: 100%;
+                        max-width: 600px;
+                        height: auto;
+                        min-height: 188px;
                         padding-top: 40px;
                         padding-right: 16px;
                         padding-bottom: 16px;
@@ -131,13 +145,14 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                 }
             `}</style>
             <div
-                className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center max-md:flex max-md:min-w-[88px] max-md:w-auto"
+                className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center min-[415px]:flex min-[415px]:min-w-[88px] min-[415px]:w-auto"
                 style={{ background: config.bg, color: config.color }}
             >
                 {config.text}
             </div>
 
-            <div className="absolute right-2 hidden max-md:flex max-md:items-center max-md:justify-center max-md:right-4 max-md:top-[15px]" style={{ width: '26px', height: '26px' }}>
+            {/* Mobile only (0-414px): Dropdown or Checkbox */}
+            <div className="absolute right-2 max-[414px]:flex max-[414px]:items-center max-[414px]:justify-center max-[414px]:right-4 max-[414px]:top-[15px] min-[415px]:hidden" style={{ width: '26px', height: '26px' }}>
                 {isSelected ? (
                     /* Mobile selection checkbox */
                     <div 
@@ -179,95 +194,12 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                 )}
             </div>
 
-            {/* Tablet Status and Actions Row */}
-            <div className="hidden">
-                <div
-                    className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center"
-                    style={{ background: config.bg, color: config.color }}
-                >
-                    {config.text}
-                </div>
-                <div className="flex gap-[10px] shrink-0">
-                    {status === 'trash' ? (
-                        <>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Restore" onClick={onRestore}>
-                                <img src="/images/icons/restore.svg" alt="restore" className="w-4 h-4" />
-                            </button>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete Permanently" onClick={onDelete}>
-                                <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
-                            </button>
-                        </>
-                    ) : status === 'draft' ? (
-                        <>
-                            {canPublish && (
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Publish" onClick={onPublish}>
-                                    <img src="/images/icons/share.svg" alt="publish" className="w-4 h-4" />
-                                </button>
-                            )}
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
-                                <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
-                            </button>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
-                                <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
-                            </button>
-                        </>
-                    ) : status === 'review' ? (
-                        <>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Copy">
-                                <img src="/images/icons/copy.svg" alt="copy" className="w-4 h-4" />
-                            </button>
-                        </>
-                    ) : status === 'unpublished' ? (
-                        <>
-                            {canPublish && (
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Republish" onClick={onRepublish}>
-                                    <img src="/images/icons/publish-ideal.svg" alt="republish" className="w-4 h-4" />
-                                </button>
-                            )}
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
-                                <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
-                            </button>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Move to Draft" onClick={onDraft}>
-                                <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
-                            </button>
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
-                                <img src="/images/icons/trash2.svg" alt="delete" className="w-4 h-4" />
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            {status === 'published' && canPublish && (
-                                <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Unpublish" onClick={onUnpublish}>
-                                    <img src="/images/icons/unpublished.svg" alt="unpublish" className="w-4 h-4" />
-                                </button>
-                            )}
-                            <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Preview">
-                                <img src="/images/icons/preview.svg" alt="preview" className="w-4 h-4" />
-                            </button>
-                            {canPublish && (
-                                <>
-                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Edit" onClick={handleEdit}>
-                                        <img src="/images/icons/edit.svg" alt="edit" className="w-4 h-4" />
-                                    </button>
-                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Draft" onClick={onDraft}>
-                                        <img src="/images/icons/copy.svg" alt="draft" className="w-4 h-4" />
-                                    </button>
-                                    <button className="w-8 h-8 bg-white border border-[#EAEAEA] rounded-lg p-2 cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out" title="Delete" onClick={onDelete}>
-                                        <img src="/images/icons/delete.svg" alt="delete" className="w-4 h-4" />
-                                    </button>
-                                </>
-                            )}
-                        </>
-                    )}
-                </div>
-            </div>
-
             {/* content */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:gap-[93px]" style={{ width: window.innerWidth <= 768 ? '268px' : 'auto', gap: window.innerWidth <= 768 ? '24px' : undefined }}>
+            <div className="flex flex-col min-[415px]:flex-row justify-between items-start min-[415px]:gap-[93px]" style={{ width: window.innerWidth <= 414 ? '268px' : 'auto', gap: window.innerWidth <= 414 ? '24px' : undefined }}>
                 {/* Left side: Checkbox + G1 (title, description, categories) */}
-                <div className="flex max-md:gap-0 md:gap-3 flex-1 max-md:w-full">
-                    {/* Checkbox - Desktop only */}
-                    <label className="hidden md:flex items-start cursor-pointer mt-1">
+                <div className="flex max-[414px]:gap-0 min-[415px]:gap-3 flex-1 max-[414px]:w-full">
+                    {/* Checkbox - Tablet and Desktop (415px+) */}
+                    <label className="hidden min-[415px]:flex items-start cursor-pointer mt-1">
                         <input
                             type="checkbox"
                             style={{ display: 'none' }}
@@ -294,25 +226,25 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     </label>
 
                     {/* G1: Title, Description, Categories */}
-                    <div className="md:flex-1 flex flex-col md:w-[339px] max-md:w-full" style={{ gap: window.innerWidth <= 768 ? '12px' : (categories && categories.length > 0 ? '20px' : '0') }}>
-                        <div className="max-md:w-[196px] max-md:max-w-[196px] max-md:overflow-hidden">
-                            <h3 className="font-['Public_Sans'] text-black mb-2 md:text-[14px] md:leading-[100%] max-md:text-[12px] max-md:leading-[150%] max-md:break-words max-md:overflow-wrap-anywhere" style={{ fontWeight: 600 }}>{title}</h3>
-                            <p className="font-['Public_Sans'] text-[#A4A4A4] line-clamp-2 md:text-[14px] md:leading-[150%] max-md:text-[12px] max-md:leading-[150%] max-md:break-words max-md:overflow-wrap-anywhere" style={{ fontWeight: 400 }}>{description}</p>
+                    <div className="min-[415px]:flex-1 flex flex-col min-[768px]:w-[339px] max-[414px]:w-full" style={{ gap: window.innerWidth <= 414 ? '12px' : (categories && categories.length > 0 ? '20px' : '0') }}>
+                        <div className="max-[414px]:w-[196px] max-[414px]:max-w-[196px] max-[414px]:overflow-hidden">
+                            <h3 className="font-['Public_Sans'] text-black mb-2 min-[415px]:text-[14px] min-[415px]:leading-[100%] max-[414px]:text-[12px] max-[414px]:leading-[150%] max-[414px]:break-words max-[414px]:overflow-wrap-anywhere" style={{ fontWeight: 600 }}>{title}</h3>
+                            <p className="font-['Public_Sans'] text-[#A4A4A4] line-clamp-2 min-[415px]:text-[14px] min-[415px]:leading-[150%] max-[414px]:text-[12px] max-[414px]:leading-[150%] max-[414px]:break-words max-[414px]:overflow-wrap-anywhere" style={{ fontWeight: 400 }}>{description}</p>
                         </div>
                         
                         {/* Categories - only show if there are categories */}
                         {categories && categories.length > 0 && (
                             <div 
-                                className="flex md:flex-wrap max-md:overflow-x-auto max-md:overflow-y-hidden scrollbar-hide max-md:w-full" 
+                                className="flex min-[415px]:flex-wrap max-[414px]:overflow-x-auto max-[414px]:overflow-y-hidden scrollbar-hide max-[414px]:w-full" 
                                 style={{ 
-                                    gap: window.innerWidth <= 768 ? '4px' : '10px',
-                                    height: window.innerWidth <= 768 ? '23px' : 'auto'
+                                    gap: window.innerWidth <= 414 ? '4px' : '10px',
+                                    height: window.innerWidth <= 414 ? '23px' : 'auto'
                                 }}
                             >
                                 {categories.map((cat, index) => (
                                     <span 
                                         key={index} 
-                                        className="bg-[#F4F4F4] flex items-center md:h-[26px] max-md:h-[23px] md:text-[12px] max-md:text-[10px] text-[#808080] max-md:whitespace-nowrap max-md:flex-shrink-0"
+                                        className="bg-[#F4F4F4] flex items-center min-[415px]:h-[26px] max-[414px]:h-[23px] min-[415px]:text-[12px] max-[414px]:text-[10px] text-[#808080] max-[414px]:whitespace-nowrap max-[414px]:flex-shrink-0"
                                         style={{
                                             borderRadius: '4px',
                                             paddingTop: '4px',
@@ -330,10 +262,10 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     </div>
                 </div>
 
-                {/* Right side: G2 (action icons + posted time) - Desktop only */}
-                <div className="flex flex-col items-end max-md:hidden" style={{ gap: '54px' }}>
+                {/* Right side: G2 (action icons + posted time) - Tablet and Desktop (415px+) */}
+                <div className="flex flex-col items-end max-[414px]:hidden min-[415px]:flex" style={{ gap: '54px' }}>
                     {/* Action icons */}
-                    <div className="hidden md:flex gap-[10px] shrink-0">
+                    <div className="hidden min-[415px]:flex gap-[10px] shrink-0">
                         {status === 'trash' ? (
                             <>
                                 <button 
@@ -491,9 +423,9 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     )}
                 </div>
                 
-                {/* Mobile: Posted time at bottom */}
+                {/* Mobile: Posted time at bottom (0-414px only) */}
                 {(createdAt || postedTime) && (
-                    <div className="md:hidden flex items-center gap-1 text-[#A4A4A4]" style={{ fontSize: '10px', lineHeight: '150%', fontFamily: 'Public Sans', fontWeight: 400 }}>
+                    <div className="min-[415px]:hidden flex items-center gap-1 text-[#A4A4A4]" style={{ fontSize: '10px', lineHeight: '150%', fontFamily: 'Public Sans', fontWeight: 400 }}>
                         <img src="/images/icons/clock.svg" alt="clock" width="9" height="9" />
                         <span>
                             {createdAt ? getRelativeTime(createdAt) : postedTime}

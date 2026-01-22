@@ -177,25 +177,25 @@ export default function NavbarLoggedin() {
                         {notificationOpen && (
                             <div
                                 onClick={(e) => e.stopPropagation()}
-                                className="absolute top-[35px] right-0 w-[392px] max-h-[511px] bg-white overflow-hidden z-[99999] rounded-[10px] border border-[#e5e5e5] shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex flex-col max-md:fixed max-md:top-[80px] max-md:left-4 max-md:right-4 max-md:w-auto max-md:shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
+                                className="absolute top-[35px] right-0 w-[392px] max-h-[511px] bg-white overflow-hidden z-[99999] rounded-[10px] border border-[#e5e5e5] shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex flex-col max-[414px]:fixed max-[414px]:top-[80px] max-[414px]:left-4 max-[414px]:right-4 max-[414px]:w-auto max-[414px]:shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
                             >
                                 {/* Header */}
                                 <div 
-                                    className="flex items-center justify-between w-full h-[50px] px-3 py-2 bg-white border-b border-[#e5e5e5] gap-2 max-md:h-[44px] max-md:p-2.5"
+                                    className="flex items-center justify-between w-full h-[50px] px-3 py-2 bg-white border-b border-[#e5e5e5] gap-2 max-[414px]:h-[44px] max-[414px]:p-2.5"
                                 >
                                     <h3 
-                                        className="font-sans font-semibold text-sm leading-none text-black max-md:text-xs"
+                                        className="font-sans font-semibold text-sm leading-none text-black max-[414px]:text-xs"
                                     >
                                         Notification
                                     </h3>
                                     <button 
                                         onClick={() => setNotificationOpen(false)}
-                                        className="flex items-center justify-center w-7 h-7 rounded hover:bg-[#f5f5f5] transition-colors bg-white border-none cursor-pointer max-md:w-6 max-md:h-6"
+                                        className="flex items-center justify-center w-7 h-7 rounded hover:bg-[#f5f5f5] transition-colors bg-white border-none cursor-pointer max-[414px]:w-6 max-[414px]:h-6"
                                     >
                                         <img 
                                             src="/images/icons/close.svg" 
                                             alt="close"
-                                            className="w-3 h-3 max-md:w-2.5 max-md:h-2.5"
+                                            className="w-3 h-3 max-[414px]:w-2.5 max-[414px]:h-2.5"
                                         />
                                     </button>
                                 </div>
@@ -229,41 +229,41 @@ export default function NavbarLoggedin() {
                                             return (
                                                 <div 
                                                     key={notification.id} 
-                                                    className={`flex items-start gap-3 p-4 hover:bg-[#F8F9FA] border-b border-[#F0F0F0] last:border-b-0 cursor-pointer max-md:p-2.5 max-md:gap-2 max-sm-448:p-3 max-sm-448:gap-2.5 ${!notification.isRead ? 'bg-blue-50' : ''}`}
+                                                    className={`flex items-start gap-3 p-4 hover:bg-[#F8F9FA] border-b border-[#F0F0F0] last:border-b-0 cursor-pointer max-[414px]:p-2.5 max-[414px]:gap-2 ${!notification.isRead ? 'bg-blue-50' : ''}`}
                                                     onClick={() => handleNotificationClick(notification)}
                                                 >
                                                     <UserAvatar 
                                                         user={avatarUser}
                                                         size="sm"
-                                                        className="flex-shrink-0 max-md:w-8 max-md:h-8"
+                                                        className="flex-shrink-0 max-[414px]:w-8 max-[414px]:h-8"
                                                     />
                                                     <div className="flex-1 min-w-0">
-                                                        {/* Below 448px - time below with dot separator */}
-                                                        <div className="sm-448:hidden">
+                                                        {/* Mobile (0-414px) - time below with dot separator */}
+                                                        <div className="min-[415px]:hidden">
                                                             <h4 
-                                                                className="font-sans font-semibold text-sm leading-none text-black mb-1 max-md:text-xs max-md:mb-0.5"
+                                                                className="font-sans font-semibold text-xs leading-none text-black mb-0.5"
                                                             >
                                                                 {notification.title}
                                                             </h4>
                                                             <p 
-                                                                className="font-sans font-normal text-sm leading-[150%] text-[#808080] mb-1 max-md:text-xs max-md:mb-0.5 max-md:line-clamp-2"
+                                                                className="font-sans font-normal text-xs leading-[150%] text-[#808080] mb-0.5 line-clamp-2"
                                                             >
                                                                 {notification.message}
                                                             </p>
-                                                            <div className="flex items-center gap-1 h-[18px] max-md:h-[14px]">
+                                                            <div className="flex items-center gap-1 h-[14px]">
                                                                 <span 
                                                                     className="w-1 h-1 rounded-full bg-[#A4A4A4] flex-shrink-0"
                                                                 ></span>
                                                                 <span 
-                                                                    className="font-sans font-normal text-xs leading-[150%] text-[#808080] max-md:text-[10px]"
+                                                                    className="font-sans font-normal text-[10px] leading-[150%] text-[#808080]"
                                                                 >
                                                                     {formatTimeAgo(notification.createdAt)}
                                                                 </span>
                                                             </div>
                                                         </div>
 
-                                                        {/* 448px to 768px (Tablet) - time on right with message */}
-                                                        <div className="hidden sm-448:block md-768:hidden">
+                                                        {/* Tablet (415-767px) - time on right with message */}
+                                                        <div className="hidden min-[415px]:block min-[768px]:hidden">
                                                             <h4 
                                                                 className="font-sans font-semibold text-sm leading-none text-black mb-1"
                                                             >
@@ -283,8 +283,8 @@ export default function NavbarLoggedin() {
                                                             </div>
                                                         </div>
 
-                                                        {/* 768px and above (Desktop) - time below with dot separator */}
-                                                        <div className="hidden md-768:block">
+                                                        {/* Desktop (768px+) - time below with dot separator */}
+                                                        <div className="hidden min-[768px]:block">
                                                             <h4 
                                                                 className="font-sans font-semibold text-sm leading-none text-black mb-1"
                                                             >
