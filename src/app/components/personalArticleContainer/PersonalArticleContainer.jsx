@@ -1,6 +1,7 @@
 import ArticleDropdown from '../articleDropdown/ArticleDropdown.jsx'
 import { useRouter } from 'next/navigation'
 import { usePublication } from '@/contexts/PublicationContext'
+import React from 'react'
 
 // Helper function to format relative time
 const getRelativeTime = (dateString) => {
@@ -46,12 +47,31 @@ const getRelativeTime = (dateString) => {
 export default function PersonalArticleContainer({ id, status, title, description, categories, postedTime, createdAt, onRestore, onDelete, onDraft, onUnpublish, onRepublish, onPublish, isSelected, onSelect }) {
     const router = useRouter()
     const { currentPublication } = usePublication()
+    const [longPressTimer, setLongPressTimer] = React.useState(null)
+    
     // Explicitly ensure 'author' and 'editor' cannot publish, even if isOwner is somehow true (edge case)
     const canPublish = (currentPublication?.isOwner || currentPublication?.role === 'admin') && currentPublication?.role !== 'author' && currentPublication?.role !== 'editor'
 
     const handleEdit = () => {
         const publicationQuery = currentPublication?.id ? `&publicationId=${currentPublication.id}` : ''
         router.push(`/editor?status=${status}&id=${id}${publicationQuery}`)
+    }
+    
+    // Long press handlers for mobile
+    const handleTouchStart = (e) => {
+        if (window.innerWidth <= 768) { // Mobile only
+            const timer = setTimeout(() => {
+                onSelect && onSelect(id, !isSelected)
+            }, 1000) // 1 second
+            setLongPressTimer(timer)
+        }
+    }
+
+    const handleTouchEnd = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer)
+            setLongPressTimer(null)
+        }
     }
     const statusConfig = {
         published: { bg: '#D5F2D4', color: '#267F42', text: 'Published' },
@@ -74,16 +94,40 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
 
     return (
         <div
-            className="relative bg-white border rounded-[8px] mb-4 cursor-pointer hover:shadow-md transition-shadow duration-200 max-md:pt-10 max-md:px-6 max-md:pb-6"
+            className="relative rounded-[8px] mb-4 cursor-pointer hover:shadow-md transition-shadow duration-200 md:bg-white max-md:bg-[#FEFEFE]"
             style={{ 
                 paddingTop: '40px', 
                 paddingRight: '24px', 
                 paddingBottom: '24px', 
                 paddingLeft: '24px',
-                borderWidth: '1px'
+                borderWidth: '1px',
+                borderColor: isSelected && window.innerWidth <= 768 ? '#202020' : (window.innerWidth <= 768 ? '#EDEDED' : '#E5E7EB'),
+                borderStyle: 'solid'
             }}
             onClick={handleCardClick}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
         >
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    div {
+                        width: 300px;
+                        height: 188px;
+                        padding-top: 40px;
+                        padding-right: 16px;
+                        padding-bottom: 16px;
+                        padding-left: 16px;
+                    }
+                }
+                .scrollbar-hide::-webkit-scrollbar {
+                    display: none;
+                }
+                .scrollbar-hide {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+            `}</style>
             <div
                 className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center max-md:flex max-md:min-w-[88px] max-md:w-auto"
                 style={{ background: config.bg, color: config.color }}
@@ -91,14 +135,42 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                 {config.text}
             </div>
 
-            <div className="absolute top-2 right-2 hidden max-md:block">
-                <ArticleDropdown
-                    status={status}
-                    onEdit={handleEdit}
-                    onDelete={onDelete}
-                    onRestore={onRestore}
-                    canPublish={canPublish}
-                />
+            <div className="absolute top-2 right-2 hidden max-md:flex max-md:items-center max-md:justify-center" style={{ width: '26px', height: '26px' }}>
+                {isSelected ? (
+                    /* Mobile selection checkbox */
+                    <div 
+                        className="flex items-center justify-center rounded-full"
+                        style={{
+                            width: '22px',
+                            height: '22px',
+                            backgroundColor: '#202020'
+                        }}
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onSelect && onSelect(id, false)
+                        }}
+                    >
+                        <img 
+                            src="/images/icons/tick2.svg" 
+                            alt="selected" 
+                            style={{ 
+                                width: '12px', 
+                                height: '12px', 
+                                filter: 'brightness(0) invert(1)' 
+                            }} 
+                        />
+                    </div>
+                ) : (
+                    <div style={{ transform: 'scale(0.8125)', transformOrigin: 'center' }}>
+                        <ArticleDropdown
+                            status={status}
+                            onEdit={handleEdit}
+                            onDelete={onDelete}
+                            onRestore={onRestore}
+                            canPublish={canPublish}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Tablet Status and Actions Row */}
@@ -185,16 +257,11 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
             </div>
 
             {/* content */}
-            <div className="flex flex-col md:flex-row justify-between items-start" style={{ gap: '93px' }}>
+            <div className="flex flex-col md:flex-row justify-between items-start md:gap-[93px]" style={{ width: window.innerWidth <= 768 ? '268px' : 'auto', gap: window.innerWidth <= 768 ? '24px' : undefined }}>
                 {/* Left side: Checkbox + G1 (title, description, categories) */}
-                <div className="flex gap-3 flex-1">
-                    {/* Checkbox */}
-                    <label style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        cursor: 'pointer',
-                        marginTop: '4px'
-                    }} className="max-md:hidden">
+                <div className="flex max-md:gap-0 md:gap-3 flex-1 max-md:w-full">
+                    {/* Checkbox - Desktop only */}
+                    <label className="hidden md:flex items-start cursor-pointer mt-1">
                         <input
                             type="checkbox"
                             style={{ display: 'none' }}
@@ -221,35 +288,45 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     </label>
 
                     {/* G1: Title, Description, Categories */}
-                    <div className="flex-1 flex flex-col" style={{ width: '339px', gap: '20px' }}>
-                        <div>
-                            <h3 className="font-['Public_Sans'] text-black mb-2" style={{ fontWeight: 600, fontSize: '14px', lineHeight: '100%' }}>{title}</h3>
-                            <p className="font-['Public_Sans'] text-[#A4A4A4] line-clamp-2" style={{ fontWeight: 400, fontSize: '14px', lineHeight: '150%' }}>{description}</p>
+                    <div className="md:flex-1 flex flex-col md:w-[339px] max-md:w-[268px] max-md:max-w-[268px]" style={{ gap: window.innerWidth <= 768 ? '12px' : (categories && categories.length > 0 ? '20px' : '0') }}>
+                        <div className="max-md:w-[196px] max-md:max-w-[196px] max-md:overflow-hidden">
+                            <h3 className="font-['Public_Sans'] text-black mb-2 md:text-[14px] md:leading-[100%] max-md:text-[12px] max-md:leading-[150%] max-md:break-words max-md:overflow-wrap-anywhere" style={{ fontWeight: 600 }}>{title}</h3>
+                            <p className="font-['Public_Sans'] text-[#A4A4A4] line-clamp-2 md:text-[14px] md:leading-[150%] max-md:text-[12px] max-md:leading-[150%] max-md:break-words max-md:overflow-wrap-anywhere" style={{ fontWeight: 400 }}>{description}</p>
                         </div>
                         
-                        {/* Categories */}
-                        <div className="flex flex-wrap" style={{ gap: '10px' }}>
-                            {categories.map((cat, index) => (
-                                <span 
-                                    key={index} 
-                                    className="bg-[#F4F4F4] flex items-center"
-                                    style={{
-                                        height: '26px',
-                                        borderRadius: '4px',
-                                        paddingTop: '4px',
-                                        paddingRight: '12px',
-                                        paddingBottom: '4px',
-                                        paddingLeft: '12px',
-                                        fontSize: '12px'
-                                    }}
-                                >{cat}</span>
-                            ))}
-                        </div>
+                        {/* Categories - only show if there are categories */}
+                        {categories && categories.length > 0 && (
+                            <div 
+                                className="flex md:flex-wrap max-md:overflow-x-auto max-md:overflow-y-hidden scrollbar-hide" 
+                                style={{ 
+                                    gap: window.innerWidth <= 768 ? '4px' : '10px',
+                                    width: window.innerWidth <= 768 ? '268px' : 'auto',
+                                    height: window.innerWidth <= 768 ? '23px' : 'auto'
+                                }}
+                            >
+                                {categories.map((cat, index) => (
+                                    <span 
+                                        key={index} 
+                                        className="bg-[#F4F4F4] flex items-center md:h-[26px] max-md:h-[23px] md:text-[12px] max-md:text-[10px] text-[#808080] max-md:whitespace-nowrap max-md:flex-shrink-0"
+                                        style={{
+                                            borderRadius: '4px',
+                                            paddingTop: '4px',
+                                            paddingRight: '12px',
+                                            paddingBottom: '4px',
+                                            paddingLeft: '12px',
+                                            fontFamily: 'Public Sans',
+                                            fontWeight: 400,
+                                            lineHeight: '150%'
+                                        }}
+                                    >{cat}</span>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Right side: G2 (action icons + posted time) */}
-                <div className="flex flex-col items-end" style={{ gap: '54px' }}>
+                {/* Right side: G2 (action icons + posted time) - Desktop only */}
+                <div className="flex flex-col items-end max-md:hidden" style={{ gap: '54px' }}>
                     {/* Action icons */}
                     <div className="hidden md:flex gap-[10px] shrink-0">
                         {status === 'trash' ? (
@@ -397,7 +474,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
 
                     {/* Posted time */}
                     {(createdAt || postedTime) && (
-                        <div className="flex items-center gap-2 text-[#A4A4A4]" style={{ fontSize: '14px', lineHeight: '150%' }}>
+                        <div className="flex items-center gap-2 text-[#A4A4A4] md:text-[14px] max-md:text-[10px] max-md:mt-4" style={{ lineHeight: '150%' }}>
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                                 <circle cx="8" cy="8" r="7" stroke="#A4A4A4" strokeWidth="1.5" />
                                 <path d="M8 4V8L11 10" stroke="#A4A4A4" strokeWidth="1.5" strokeLinecap="round" />
@@ -408,6 +485,16 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                         </div>
                     )}
                 </div>
+                
+                {/* Mobile: Posted time at bottom */}
+                {(createdAt || postedTime) && (
+                    <div className="md:hidden flex items-center gap-1 text-[#A4A4A4]" style={{ fontSize: '10px', lineHeight: '150%', fontFamily: 'Public Sans', fontWeight: 400 }}>
+                        <img src="/images/icons/clock.svg" alt="clock" width="9" height="9" />
+                        <span>
+                            {createdAt ? getRelativeTime(createdAt) : postedTime}
+                        </span>
+                    </div>
+                )}
             </div>
         </div>
     )
