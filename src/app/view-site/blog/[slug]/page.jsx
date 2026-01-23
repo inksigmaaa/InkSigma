@@ -155,10 +155,10 @@ export default function BlogDetailPage({ params }) {
         }
       />
 
-      <section className="flex-grow flex justify-center w-full pt-20 pb-20">
+      <section className="flex-grow flex justify-center w-full pt-20">
         <div className="flex w-[90%] lg:w-[78%] max-w-[1600px] gap-6 relative">
           {/* Left Sidebar - Navigation & TOC */}
-          <aside className="hidden lg:block w-[240px] flex-shrink-0 pt-8 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto ">
+          <aside className="hidden lg:block w-[240px] flex-shrink-0 pt-5 sticky top-28 h-[calc(100vh-6rem)] overflow-y-auto z-30">
             <div className="flex flex-col gap-8">
               <Link 
                 href={
@@ -185,7 +185,7 @@ export default function BlogDetailPage({ params }) {
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1 max-w-[800px] w-full min-w-0 mx-auto pt-12 px-12 border-l border-[#EAEAEA]">
+          <div className="flex-1 max-w-[800px] w-full min-w-0 mx-auto pt-12 pb-20 px-12 border-l border-[#EAEAEA]">
             {/* Blog Title */}
             <h1 className="text-[#202020] text-[40px] font-extrabold leading-[1.09] mb-6 tracking-normal break-words">
               {blog.title}
@@ -275,7 +275,7 @@ export default function BlogDetailPage({ params }) {
           </div>
 
           {/* Right Sidebar - Social Share */}
-          <aside className="hidden xl:block w-16 pt-16 h-fit sticky top-0">
+          <aside className="hidden xl:block w-16 pt-6 h-fit sticky top-28 z-30">
              <SocialSidebar 
                title={blog.title}
                slug={blog.slug}
