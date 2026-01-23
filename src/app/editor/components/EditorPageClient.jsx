@@ -729,7 +729,7 @@ export default function EditorPageClient() {
           </div>
 
           {/* Editor Content Area */}
-          <div className="w-[917px] bg-white">
+          <div className="w-[917px] bg-white overflow-y-auto" style={{ maxHeight: 'calc(100vh - 280px)', minHeight: '400px' }}>
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
                 <span className="text-gray-500">Loading blog content...</span>
@@ -749,13 +749,57 @@ export default function EditorPageClient() {
       </div>
 
       {/* Bottom Stats Bar */}
-      <div className="fixed flex items-center justify-end bg-white border-t border-gray-200 w-[916px] h-[39px] z-[100]" style={{ bottom: '72px', left: 'calc(50% - 448px)' }}>
-        <div className="flex items-center h-[39px]">
-          <div className="flex items-center px-4 py-2 bg-gray-50 border border-gray-300 text-sm text-gray-700 whitespace-nowrap">
-            <span>Chars <strong className="ml-1">{editorContent.charCount}</strong></span>
+      <div className="fixed flex items-center w-[916px] h-[39px] z-[100]" style={{ bottom: '72px', left: 'calc(50% - 448px)', borderTop: '1px solid #EAEAEA', background: '#FFFFFF' }}>
+        <div 
+          className="flex items-center ml-auto"
+          style={{
+            height: '39px',
+            gap: '14px',
+            padding: '9px 14px',
+            background: '#F4F4F4',
+            border: '1px solid #F3F3F3'
+          }}
+        >
+          <div style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontFamily: 'Public Sans',
+            fontWeight: 400,
+            fontSize: '14px',
+            lineHeight: '150%',
+            letterSpacing: '0%',
+            whiteSpace: 'nowrap'
+          }}>
+            <span>Chars</span>
+            <strong style={{ 
+              fontFamily: 'Public Sans',
+              fontWeight: 600,
+              fontSize: '14px',
+              lineHeight: '100%',
+              letterSpacing: '0%'
+            }}>{editorContent.charCount}</strong>
           </div>
-          <div className="flex items-center px-4 py-2 bg-gray-50 border border-gray-300 text-sm text-gray-700 whitespace-nowrap">
-            <span>Words <strong className="ml-1">{editorContent.wordCount}</strong></span>
+          <div style={{ width: '1px', height: '21px', background: '#C0C0C0' }}></div>
+          <div style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontFamily: 'Public Sans',
+            fontWeight: 400,
+            fontSize: '14px',
+            lineHeight: '150%',
+            letterSpacing: '0%',
+            whiteSpace: 'nowrap'
+          }}>
+            <span>Words</span>
+            <strong style={{ 
+              fontFamily: 'Public Sans',
+              fontWeight: 600,
+              fontSize: '14px',
+              lineHeight: '100%',
+              letterSpacing: '0%'
+            }}>{editorContent.wordCount}</strong>
           </div>
         </div>
       </div>
@@ -812,6 +856,11 @@ export default function EditorPageClient() {
               <div 
                 className="flex items-center h-8 border border-gray-200 rounded overflow-hidden"
               >
+                <style jsx>{`
+                  input::placeholder {
+                    color: #2e2e2e;
+                  }
+                `}</style>
                 <input 
                   type="text" 
                   placeholder="dd-mm-yyyy"
@@ -819,6 +868,7 @@ export default function EditorPageClient() {
                   onChange={handleManualInput}
                   maxLength={10}
                   className="h-[21px] w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
+                  style={{ color: '#2e2e2e' }}
                 />
                 <input 
                   type="text" 
@@ -827,18 +877,20 @@ export default function EditorPageClient() {
                   onChange={handleTimeInput}
                   maxLength={5}
                   className="h-[21px] w-[40px] flex-shrink-0 text-sm bg-transparent outline-none ml-2"
+                  style={{ color: '#2e2e2e' }}
                 />
                 <svg 
-                  className="w-4 h-4 text-gray-400 flex-shrink-0 cursor-pointer mx-2" 
+                  className="w-4 h-4 flex-shrink-0 cursor-pointer mx-2" 
                   fill="none" 
-                  stroke="currentColor" 
+                  stroke="#2e2e2e" 
                   viewBox="0 0 24 24"
                   onClick={() => setShowCalendar(!showCalendar)}
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <span 
-                  className="text-sm text-gray-400 flex-shrink-0 h-full flex items-center justify-center bg-gray-100 border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
+                  className="text-sm flex-shrink-0 h-full flex items-center justify-center border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
+                  style={{ backgroundColor: '#F4F4F4', color: '#C8C8C8' }}
                   onClick={() => {
                     if (selectedDate && (manualDate || manualTime)) {
                       handleSchedule()
@@ -876,6 +928,11 @@ export default function EditorPageClient() {
                   <div 
                     className="flex items-center h-8 border border-gray-200 rounded overflow-hidden"
                   >
+                    <style jsx>{`
+                      input::placeholder {
+                        color: #2e2e2e;
+                      }
+                    `}</style>
                     <input 
                       type="text" 
                       placeholder="dd-mm-yyyy"
@@ -883,6 +940,7 @@ export default function EditorPageClient() {
                       onChange={handleManualInput}
                       maxLength={10}
                       className="h-[21px] w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
+                      style={{ color: '#2e2e2e' }}
                     />
                     <input 
                       type="text" 
@@ -891,18 +949,20 @@ export default function EditorPageClient() {
                       onChange={handleTimeInput}
                       maxLength={5}
                       className="h-[21px] w-[40px] flex-shrink-0 text-sm bg-transparent outline-none ml-2"
+                      style={{ color: '#2e2e2e' }}
                     />
                     <svg 
-                      className="w-4 h-4 text-gray-400 flex-shrink-0 cursor-pointer mx-2" 
+                      className="w-4 h-4 flex-shrink-0 cursor-pointer mx-2" 
                       fill="none" 
-                      stroke="currentColor" 
+                      stroke="#2e2e2e" 
                       viewBox="0 0 24 24"
                       onClick={() => setShowCalendar(!showCalendar)}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     <span 
-                      className="text-sm text-gray-400 flex-shrink-0 h-full flex items-center justify-center bg-gray-100 border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
+                      className="text-sm flex-shrink-0 h-full flex items-center justify-center border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
+                      style={{ backgroundColor: '#F4F4F4', color: '#C8C8C8' }}
                       onClick={() => {
                         // If date and time are already set, schedule directly
                         if (selectedDate && (manualDate || manualTime)) {
