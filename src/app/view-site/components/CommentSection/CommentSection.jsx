@@ -237,6 +237,40 @@ export default function CommentSection({ blogId }) {
     }
   };
 
+  const handleDeleteComment = async (commentId) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/comments/${commentId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        setComments(prev => {
+          if (prev.some(c => c.id === commentId)) {
+            return prev.filter(c => c.id !== commentId);
+          }
+          return prev.map(c => {
+            if (c.replies?.some(r => r.id === commentId)) {
+              return {
+                ...c,
+                replies: c.replies.filter(r => r.id !== commentId)
+              };
+            }
+            return c;
+          });
+        });
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to delete comment');
+      }
+    } catch (err) {
+      console.error('Error deleting comment:', err);
+      setError('Failed to delete comment');
+    }
+  };
+
   const toggleReplies = (commentId) => {
     setExpandedReplies(prev => ({ ...prev, [commentId]: !prev[commentId] }));
   };
@@ -263,7 +297,7 @@ export default function CommentSection({ blogId }) {
   return (
     <div className="mt-12">
       <div className="my-6 ">
-        <h2 className="text-base font-semibold leading-6 tracking-normal text-[#14142D] mb-6 md:mb-8">
+        <h2 className="text-base font-semibold leading-6 tracking-normal text-[#14142D] mb-6">
           How useful was this blog?
         </h2>
 
@@ -275,7 +309,7 @@ export default function CommentSection({ blogId }) {
         )}
 
         <div className="flex gap-3 md:gap-4 mb-6">
-          <div className="w-10 h-10 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
             {currentUser?.image ? (
               <img 
                 src={getAuthorAvatar(currentUser)} 
@@ -296,7 +330,7 @@ export default function CommentSection({ blogId }) {
                   placeholder="Your name *"
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-purple-300 text-black text-sm placeholder:text-gray-400"
+                  className="flex-1 px-4 py-2 border border-[#EAEAEA] rounded-lg focus:outline-none focus:border-purple-300 text-black text-sm placeholder:text-gray-400"
                   maxLength={100}
                 />
                 <input
@@ -304,7 +338,7 @@ export default function CommentSection({ blogId }) {
                   placeholder="Email (optional)"
                   value={guestEmail}
                   onChange={(e) => setGuestEmail(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-purple-300 text-black text-sm placeholder:text-gray-400"
+                  className="flex-1 px-4 py-2 border border-[#EAEAEA] rounded-lg focus:outline-none focus:border-purple-300 text-black text-sm placeholder:text-gray-400"
                   maxLength={200}
                 />
               </div>
@@ -313,37 +347,37 @@ export default function CommentSection({ blogId }) {
               placeholder="Share your thoughts..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              className="w-full min-h-[120px] md:min-h-[140px] p-4 border border-gray-200 rounded-lg focus:outline-none focus:border-purple-300 resize-none text-black text-sm md:text-base placeholder:text-gray-400"
+              className="w-full min-h-[94px] p-4 border-[1px] border-[#EAEAEA] rounded-l focus:outline-none focus:border-[#EAEAEA] resize-none text-black text-sm md:text-base placeholder:text-[#A4A4A4] placeholder:text-base placeholder:font-normal placeholder:leading-6 placeholder:tracking-normal placeholder:align-middle"
               maxLength={2000}
               disabled={submitting}
             />
-            <div className="flex justify-between items-center mt-3">
-              <span className="text-xs text-gray-400">{newComment.length}/2000</span>
+            <div className="flex justify-end items-center mt-1">
+              {/* <span className="text-xs text-gray-400">{newComment.length}/2000</span> */}
               <button
                 onClick={handleSubmitComment}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base transition-colors"
+                className="px-1 py-2 text-sm font-medium leading-normal tracking-normal bg-gradient-to-b from-[#A941FB] to-[#7864F0EB] bg-clip-text text-transparent disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
                 disabled={newComment.trim() === '' || submitting}
               >
-                {submitting ? 'Posting...' : 'Post Comment'}
+                {submitting ? 'Adding...' : 'Add Comment'}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-8 md:mt-12">
-        <h3 className="text-lg md:text-xl font-bold text-black mb-4 md:mb-6">
-          Comments ({totalComments})
+      <div className="mt-3.5">
+        <h3 className="text-base font-bold leading-6 tracking-normal text-[#14142D] mb-4">
+          Discussion ({totalComments})
         </h3>
 
         {loading ? (
-          <div className="text-center py-8 text-gray-500">Loading comments...</div>
+          <div className="text-center py-8 text-gray-500">Loading Discussion...</div>
         ) : (
           <div className="space-y-4 md:space-y-6">
             {comments.length > 0 ? comments.map((comment) => (
-              <div key={comment.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 md:p-6">
-                <div className="flex gap-3 md:gap-4">
-                  <div className="w-10 h-10 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+              <div key={comment.id} className="border border-[#EDEDED] rounded-lg px-10 py-4">
+                <div className="flex gap-2">
+                  <div className="w-8 h-8 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
                     {comment.author?.image ? (
                       <img 
                         src={getAuthorAvatar(comment.author)} 
@@ -355,25 +389,36 @@ export default function CommentSection({ blogId }) {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="font-semibold text-gray-900 text-sm md:text-base">
+                    <div className="flex items-center gap-2 my-1.5 flex-wrap">
+                      <span className="text-[#404040] text-sm font-semibold leading-5 tracking-normal ">
                         {getDisplayName(comment)}
                       </span>
-                      {!comment.authorId && <span className="text-xs text-gray-400 bg-gray-200 px-2 py-0.5 rounded">Guest</span>}
-                      <span className="text-xs md:text-sm text-gray-400">
+                      {!comment.authorId && <span className="text-[#404040] text-sm font-semibold leading-5 tracking-normal">Guest</span>}
+                      <span className="text-[#A4A4A4] text-xs font-normal leading-5 tracking-normal">
                         {getRelativeTime(comment.createdAt)}
                       </span>
                     </div>
                     
-                    <p className="text-gray-600 mb-3 text-sm md:text-base break-words whitespace-pre-wrap">{comment.content}</p>
+                    <p className="text-[#696969] text-sm font-normal leading-5 tracking-normal mt-1 break-words whitespace-pre-wrap">{comment.content}</p>
                     
-                    <div className="flex gap-3 text-sm items-center">
+                    <div className="flex gap-4 text-sm items-center my-3">
                       <button
                         onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                        className="text-gray-400 hover:text-purple-600 flex items-center gap-1.5 text-xs md:text-sm transition-colors"
+                        className="text-[#A4A4A4] text-sm font-normal tracking-normal gap-1 flex items-center"
                       >
+                        <img src="/svg/reply_icon.svg" alt="Reply" className="w-4 h-4" />
                         Reply
                       </button>
+                      
+                      {currentUser?.id === comment.authorId && (
+                        <button
+                          onClick={() => handleDeleteComment(comment.id)}
+                          className="text-[#A4A4A4] text-sm font-normal tracking-normal gap-1 flex items-center"
+                        >
+                          <img src="/svg/Commet_delete.svg" alt="Delete" className="w-4 h-4" />
+                          Delete
+                        </button>
+                      )}
                     </div>
 
                     {comment.replies?.length > 0 && (
@@ -381,7 +426,7 @@ export default function CommentSection({ blogId }) {
                         onClick={() => toggleReplies(comment.id)}
                         className="mt-4 flex items-center gap-2 text-sm font-semibold text-gray-900 hover:text-purple-600 transition-colors"
                       >
-                        {expandedReplies[comment.id] ? 'Hide' : 'Show'} Replies ({comment.replies.length})
+                        {expandedReplies[comment.id] } Replies ({comment.replies.length})
                         <span className={`transform transition-transform ${expandedReplies[comment.id] ? 'rotate-180' : 'rotate-0'}`}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M19 9l-7 7-7-7"/>
@@ -393,7 +438,7 @@ export default function CommentSection({ blogId }) {
                     {replyingTo === comment.id && (
                       <div className="mt-4 bg-white rounded-lg p-3 md:p-4 border border-gray-100">
                         <div className="flex gap-3">
-                          <div className="w-8 h-8 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center">
                             <span className="text-purple-600 font-semibold text-sm">
                               {currentUser?.name?.charAt(0).toUpperCase() || replyGuestName?.charAt(0).toUpperCase() || '?'}
                             </span>
@@ -438,10 +483,10 @@ export default function CommentSection({ blogId }) {
                     )}
 
                     {comment.replies?.length > 0 && expandedReplies[comment.id] && (
-                      <div className="mt-4 space-y-3 pl-3 md:pl-6 border-l-2 border-purple-200">
+                      <div className="space-y-3">
                         {comment.replies.map((reply) => (
-                          <div key={reply.id} className="flex gap-3 bg-white p-3 rounded-lg">
-                            <div className="w-8 h-8 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                          <div key={reply.id} className="flex gap-3 bg-white !mt-8 rounded-lg">
+                            <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center">
                               {reply.author?.image ? (
                                 <img src={getAuthorAvatar(reply.author)} alt={getDisplayName(reply)} className="w-full h-full object-cover" />
                               ) : (
@@ -449,12 +494,23 @@ export default function CommentSection({ blogId }) {
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <span className="font-semibold text-gray-900 text-sm">{getDisplayName(reply)}</span>
+                              <div className="flex items-center gap-2 my-1.5 flex-wrap">
+                                <span className="font-semibold text-[#14142D] text-sm">{getDisplayName(reply)}</span>
                                 {!reply.authorId && <span className="text-xs text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded">Guest</span>}
-                                <span className="text-xs text-gray-400">{getRelativeTime(reply.createdAt)}</span>
+                                <span className="text-xs text-[#A4A4A4]">{getRelativeTime(reply.createdAt)}</span>
                               </div>
-                              <p className="text-gray-600 text-sm break-words whitespace-pre-wrap">{reply.content}</p>
+                              <p className="text-[#696969] text-sm break-words whitespace-pre-wrap">{reply.content}</p>
+                              <div className="flex gap-3 text-sm items-center my-3">
+                                {currentUser?.id === reply.authorId && (
+                                  <button
+                                    onClick={() => handleDeleteComment(reply.id)}
+                                    className="text-[#A4A4A4] text-sm font-normal tracking-normal gap-1 flex items-center"
+                                  >
+                                    <img src="/svg/Commet_delete.svg" alt="Delete" className="w-4 h-4" />
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         ))}
