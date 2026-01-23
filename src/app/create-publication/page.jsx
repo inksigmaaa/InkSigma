@@ -444,7 +444,7 @@ export default function CreatePublication() {
               <button
                 onClick={handleStartWriting}
                 disabled={loading}
-                className="mx-auto text-[#7C3AED] text-[14px] font-medium hover:text-[#6D28D9] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mx-auto text-[#7C3AED] text-[14px] font-medium hover:text-[#6D28D9] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mb-8"
               >
                 {loading ? "Creating Publication..." : "Start Writing"}
                 <svg width="7" height="11" viewBox="0 0 7 11" fill="none" xmlns="http://www.w3.org/2000/svg">
