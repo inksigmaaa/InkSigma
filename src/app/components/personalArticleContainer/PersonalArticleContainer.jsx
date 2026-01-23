@@ -74,7 +74,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
     }
     const statusConfig = {
         published: { bg: '#D5F2D4', color: '#267F42', text: 'Published' },
-        draft: { bg: '#FFEADB', color: '#FF9247', text: 'Draft' },
+        draft: { bg: '#FFEADB', color: '#A34200', text: 'Draft' },
         scheduled: { bg: '#D6EEFB', color: '#0048B5', text: 'Scheduled' },
         trash: { bg: '#FFD6D6', color: '#A30000', text: 'Trash' },
         review: { bg: '#F3EEFF', color: '#3400A3', text: 'Under Review' },
