@@ -197,8 +197,19 @@ export default function BlogDetailPage({ params }) {
             </p>
 
             {/* Mobile Categories/Tags */}
+            {/* Mobile Categories/Tags */}
             <div className="flex flex-wrap gap-2 mb-6 max-md:mb-3">
-              <span className="text-[#7C7C7C] text-sm font-normal leading-normal tracking-normal px-4 py-1.5 border border-[#EAEAEA] rounded-lg max-md:text-[10px] max-md:px-3">Category</span>
+              {blog.categories && blog.categories.length > 0 ? (
+                blog.categories.map((category, index) => (
+                  <span key={index} className="text-[#7C7C7C] text-sm font-normal leading-normal tracking-normal px-4 py-1.5 border border-[#EAEAEA] rounded-lg max-md:text-[10px] max-md:px-3">
+                    {category}
+                  </span>
+                ))
+              ) : (
+                <span className="text-[#7C7C7C] text-sm font-normal leading-normal tracking-normal px-4 py-1.5 border border-[#EAEAEA] rounded-lg max-md:text-[10px] max-md:px-3">
+                  Uncategorized
+                </span>
+              )}
             </div>
 
             {/* Author and Date Meta */}

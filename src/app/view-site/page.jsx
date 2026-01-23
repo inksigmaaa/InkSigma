@@ -143,7 +143,11 @@ function ViewSiteContent() {
         ) : (
           <>
             <LatestBlog searchQuery={searchQuery} blogs={blogs} />
-            <AllArticles searchQuery={searchQuery} selectedCategory={selectedCategory} blogs={blogs} />
+            <AllArticles 
+              searchQuery={searchQuery} 
+              selectedCategory={selectedCategory} 
+              blogs={searchQuery ? blogs : blogs.slice(1)} 
+            />
           </>
         )}
       </div>
