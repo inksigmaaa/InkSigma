@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
 import ViewSiteHeader from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
@@ -20,6 +21,27 @@ export default function BlogDetailPage({ params }) {
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const handleBack = (e) => {
+    e.preventDefault();
+    const fromPub = searchParams.get('from');
+    
+    // Try browser history first
+    if (window.history.length > 1) {
+      router.back();
+    } 
+    // Fallback to explicit navigation
+    else if (fromPub) {
+      router.push(`/view-site?publicationId=${fromPub}`);
+    }
+    // Default fallback
+    else {
+      const pubId = blog?.publication?.id || blog?.publicationId || blog?.publication_id;
+      router.push(pubId ? `/view-site?publicationId=${pubId}` : '/view-site');
+    }
+  };
 
   useEffect(() => {
     const fetchBlog = async () => {
@@ -160,15 +182,10 @@ export default function BlogDetailPage({ params }) {
           {/* Left Sidebar - Navigation & TOC */}
           <aside className="hidden lg:block w-[240px] flex-shrink-0 pt-5 sticky top-28 h-[calc(100vh-6rem)] overflow-y-auto z-30">
             <div className="flex flex-col gap-8">
-              <Link 
-                href={
-                  blog?.publication?.id 
-                    ? `/view-site?publicationId=${blog.publication.id}` 
-                    : (blog?.publicationId || blog?.publication_id
-                        ? `/view-site?publicationId=${blog.publicationId || blog.publication_id}` 
-                        : '/view-site')
-                }
+              <button 
+                onClick={handleBack}
                 className="inline-flex items-center gap-1 px-4 py-3 bg-[#F4F4F4] hover:bg-[#EAEAEA] text-[#696969] text-sm font-semibold leading-none tracking-normal rounded-3xl w-fit transition-colors"
+                type="button"
               >
 
                 <Image
@@ -178,8 +195,8 @@ export default function BlogDetailPage({ params }) {
                   height={5}
                 />
                 
-                Go to homepage
-              </Link>
+                Go back
+              </button>
               <TableOfContents content={blog.content} />
             </div>
           </aside>

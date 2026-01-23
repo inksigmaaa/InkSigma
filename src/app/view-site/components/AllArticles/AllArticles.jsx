@@ -8,7 +8,7 @@ import { getImageUrl } from '@/utils/imageUrl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-export default function AllArticles({ searchQuery = '', selectedCategory = '', blogs = [] }) {
+export default function AllArticles({ searchQuery = '', selectedCategory = '', blogs = [], publicationId }) {
   const [commentCounts, setCommentCounts] = useState({});
 
   // Fetch comment counts for all blogs
@@ -124,7 +124,7 @@ export default function AllArticles({ searchQuery = '', selectedCategory = '', b
                 />
               </div>
 
-              <Link href={`/view-site/blog/${article.slug}`} className="absolute inset-0 rounded-md md:rounded-md overflow-hidden cursor-pointer block">
+              <Link href={`/view-site/blog/${article.slug}${publicationId ? `?from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-md md:rounded-md overflow-hidden cursor-pointer block">
                 {/* Background Image */}
                 <Image 
                   src={thumbnailUrl} 
