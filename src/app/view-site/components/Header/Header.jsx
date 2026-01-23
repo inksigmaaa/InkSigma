@@ -47,7 +47,7 @@ export default function ViewSiteHeader({ userName, userAvatar = null, shareButto
         <div>
           <Link 
             href="/editorpage" 
-            className="bg-[#080808] text-[#EDEDED] text-sm font-medium leading-normal tracking-normal px-6 py-2 rounded-lg max-md:text-[10px] max-md:px-4 max-md:py-1.5"
+            className="bg-[#080808] text-[#EDEDED] text-sm font-medium leading-normal tracking-normal px-6 py-2 rounded-sm max-md:text-[10px] max-md:px-4 max-md:py-1.5"
           >
             Start Writing
           </Link>

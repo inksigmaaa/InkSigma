@@ -307,7 +307,7 @@ export default function CommentSection({ blogId }) {
               placeholder="Share your thoughts..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              className="w-full min-h-[94px] p-4 border-[1px] border-[#EAEAEA] rounded-l focus:outline-none focus:border-[#EAEAEA] resize-none text-black text-sm md:text-base placeholder:text-[#A4A4A4] placeholder:text-base placeholder:font-normal placeholder:leading-6 placeholder:tracking-normal placeholder:align-middle max-md:text-xs max-md:py-2 placeholder:max-md:text-xs"
+              className="w-full min-h-[94px] p-4 border-[1px] border-[#EAEAEA] rounded-sm focus:outline-none focus:border-[#EAEAEA] resize-none text-black text-sm md:text-base placeholder:text-[#A4A4A4] placeholder:text-base placeholder:font-normal placeholder:leading-6 placeholder:tracking-normal placeholder:align-middle max-md:text-xs max-md:py-2 placeholder:max-md:text-xs"
               maxLength={2000}
               disabled={submitting}
             />
@@ -415,7 +415,7 @@ export default function CommentSection({ blogId }) {
                               placeholder="Write a reply..."
                               value={replyContent}
                               onChange={(e) => setReplyContent(e.target.value)}
-                              className="w-full min-h-[80px] p-3 text-black border border-gray-200 rounded-l  resize-none text-sm font-normal leading-6 tracking-normal align-middle placeholder:text-[#A4A4A4]"
+                              className="w-full min-h-[80px] p-3 text-black border border-gray-200 rounded-sm  resize-none text-sm font-normal leading-6 tracking-normal align-middle placeholder:text-[#A4A4A4]"
                               maxLength={2000}
                               disabled={submitting}
                             />
