@@ -34,7 +34,7 @@ export default function PersonalArticles({
 
     // Fixed top position (no verify banner)
     const topPosition = 'top-[160px]';
-    const mobileTopPosition = selectedArticles.length > 0 ? 'max-md:top-[175px]' : 'max-md:top-[120px]';
+    const mobileTopPosition = selectedArticles.length > 0 ? 'max-md:top-[160px]' : 'max-md:top-[120px]';
 
     useEffect(() => {
         setMounted(true)
@@ -47,8 +47,8 @@ export default function PersonalArticles({
                 <div 
                     className="md:hidden fixed left-0 right-0 z-[9999]"
                     style={{
-                        top: '94px',
-                        width: '360px',
+                        top: '110px',
+                        width: '390px',
                         height: '42px',
                         paddingTop: '8px',
                         paddingRight: '16px',
@@ -124,9 +124,9 @@ export default function PersonalArticles({
                     )}
                 </div>
 
-                {/* Controls Row - Tablet and Desktop (415px+) when showActions is true */}
+                {/* Controls Row - Tablet and Desktop (641px+) when showActions is true */}
                 {showActions && (
-                    <div className="flex items-center justify-between gap-5 mb-6 max-[414px]:hidden min-[415px]:flex">
+                    <div className="flex items-center justify-between gap-5 mb-6 max-[640px]:hidden min-[641px]:flex">
                         <div className="flex items-center gap-2">
                             {showSelectAll && (
                                 <label style={{
@@ -184,7 +184,7 @@ export default function PersonalArticles({
                                 </button>
                             ))}
                         </div>
-                        <div className="relative hidden min-[415px]:block">
+                        <div className="relative hidden min-[641px]:block">
                             <CategoryFilter 
                                 selectedCategories={categories}
                                 onCategoriesChange={handleCategoryChange}

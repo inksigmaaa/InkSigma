@@ -58,13 +58,12 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
     }
     
     // Long press handlers for mobile
-    const handleTouchStart = (e) => {
-        if (window.innerWidth <= 767) { // Mobile and Tablet
-            const timer = setTimeout(() => {
-                onSelect && onSelect(id, !isSelected)
-            }, 500) // 0.5 seconds
-            setLongPressTimer(timer)
-        }
+    const handleTouchStart = () => {
+        // Only on mobile - check will be done via CSS media query
+        const timer = setTimeout(() => {
+            onSelect && onSelect(id, !isSelected)
+        }, 500) // 0.5 seconds
+        setLongPressTimer(timer)
     }
 
     const handleTouchEnd = () => {
@@ -96,16 +95,9 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
 
     return (
         <div
-            className="relative rounded-[8px] mb-4 cursor-pointer hover:shadow-md transition-shadow duration-200 min-[768px]:bg-white max-[767px]:bg-[#FEFEFE]"
+            className={`relative rounded-[8px] mb-4 cursor-pointer hover:shadow-md transition-shadow duration-200 min-[768px]:bg-white max-[767px]:bg-[#FEFEFE] w-full max-[640px]:p-4 max-[640px]:pt-10 min-[641px]:p-6 min-[641px]:pt-10 border min-[641px]:border-[#EDEDED] ${isSelected ? 'max-[640px]:border-[#202020]' : 'max-[640px]:border-[#EDEDED]'}`}
             style={{ 
-                paddingTop: '40px', 
-                paddingRight: window.innerWidth <= 767 ? '16px' : '24px', 
-                paddingBottom: window.innerWidth <= 767 ? '16px' : '24px', 
-                paddingLeft: window.innerWidth <= 767 ? '16px' : '24px',
-                borderWidth: '1px',
-                borderColor: isSelected && window.innerWidth <= 767 ? '#202020' : (window.innerWidth <= 767 ? '#EDEDED' : '#E5E7EB'),
-                borderStyle: 'solid',
-                maxWidth: '100%'
+                overflow: 'hidden'
             }}
             onClick={handleCardClick}
             onTouchStart={handleTouchStart}
@@ -113,28 +105,6 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
             onTouchCancel={handleTouchEnd}
         >
             <style jsx>{`
-                /* Mobile: 0-414px */
-                @media (max-width: 414px) {
-                    div {
-                        width: 300px;
-                        height: 188px;
-                        padding-top: 40px;
-                        padding-right: 16px;
-                        padding-bottom: 16px;
-                        padding-left: 16px;
-                    }
-                }
-                /* Tablet: 415-767px */
-                @media (min-width: 415px) and (max-width: 767px) {
-                    div {
-                        width: 598px;
-                        height: 177px;
-                        padding: 24px;
-                        gap: 14px;
-                        border-radius: 8px;
-                        border: 1px solid #EAEAEA;
-                    }
-                }
                 .scrollbar-hide::-webkit-scrollbar {
                     display: none;
                 }
@@ -144,14 +114,14 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                 }
             `}</style>
             <div
-                className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center min-[768px]:flex min-[768px]:min-w-[88px] min-[768px]:w-auto max-[414px]:flex max-[414px]:min-w-[88px] max-[414px]:w-auto min-[415px]:max-[767px]:hidden"
+                className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center min-[768px]:flex min-[768px]:min-w-[88px] min-[768px]:w-auto max-[640px]:flex max-[640px]:min-w-[88px] max-[640px]:w-auto min-[641px]:max-[767px]:hidden"
                 style={{ background: config.bg, color: config.color }}
             >
                 {config.text}
             </div>
 
-            {/* Mobile only (0-414px): Dropdown or Checkbox */}
-            <div className="absolute right-2 max-[414px]:flex max-[414px]:items-center max-[414px]:justify-center max-[414px]:right-4 max-[414px]:top-[15px] min-[415px]:hidden" style={{ width: '26px', height: '26px' }}>
+            {/* Mobile only (0-640px): Dropdown or Checkbox */}
+            <div className="absolute right-2 max-[640px]:flex max-[640px]:items-center max-[640px]:justify-center max-[640px]:right-4 max-[640px]:top-[15px] min-[641px]:hidden" style={{ width: '26px', height: '26px' }}>
                 {isSelected ? (
                     /* Mobile selection checkbox */
                     <div 
@@ -194,13 +164,13 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
             </div>
 
             {/* content */}
-            <div className="flex flex-col max-[414px]:gap-[24px] min-[415px]:max-[767px]:gap-[14px] min-[768px]:flex-row min-[768px]:justify-between min-[768px]:items-start min-[768px]:gap-[93px]" style={{ width: window.innerWidth <= 414 ? '268px' : 'auto' }}>
+            <div className="flex flex-col max-[640px]:gap-[24px] min-[641px]:max-[767px]:gap-[14px] min-[768px]:flex-row min-[768px]:justify-between min-[768px]:items-start min-[768px]:gap-[93px] w-full" style={{ maxWidth: '100%' }}>
                 {/* Main content row */}
-                <div className="flex min-[415px]:max-[767px]:flex-row min-[768px]:flex-row max-[414px]:flex-col min-[415px]:max-[767px]:justify-between min-[415px]:max-[767px]:items-center min-[415px]:max-[767px]:w-full min-[415px]:max-[767px]:gap-[30px] min-[768px]:flex-1">
+                <div className="flex min-[641px]:max-[767px]:flex-row min-[768px]:flex-row max-[640px]:flex-col min-[641px]:max-[767px]:justify-between min-[641px]:max-[767px]:items-center min-[641px]:max-[767px]:w-full min-[641px]:max-[767px]:gap-[30px] min-[768px]:flex-1 overflow-hidden">
                 {/* Left side: Checkbox + G1 (title, description, categories) */}
-                <div className="flex max-[414px]:gap-0 min-[415px]:gap-3 flex-1 max-[414px]:w-full">
-                    {/* Checkbox - Tablet and Desktop (415px+) */}
-                    <label className="hidden min-[415px]:flex items-start cursor-pointer mt-1">
+                <div className="flex max-[640px]:gap-0 min-[641px]:gap-3 flex-1 max-[640px]:w-full min-[641px]:max-[767px]:min-w-0 overflow-hidden">
+                    {/* Checkbox - Tablet and Desktop (641px+) */}
+                    <label className="hidden min-[641px]:flex items-start cursor-pointer mt-1">
                         <input
                             type="checkbox"
                             style={{ display: 'none' }}
@@ -227,36 +197,39 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     </label>
 
                     {/* G1: Title, Description, Categories */}
-                    <div className="min-[415px]:flex-1 flex flex-col min-[768px]:w-[371px] max-[414px]:w-full" style={{ gap: window.innerWidth <= 414 ? '12px' : (categories && categories.length > 0 ? '20px' : '0') }}>
-                        <div className="max-[414px]:w-[196px] max-[414px]:max-w-[196px] max-[414px]:overflow-hidden min-[768px]:w-[371px]">
+                    <div className="min-[641px]:flex-1 flex flex-col min-[768px]:max-w-[371px] max-[640px]:w-full min-[641px]:max-[767px]:min-w-0 overflow-hidden max-[640px]:gap-3 min-[641px]:gap-5">
+                        <div className="w-full overflow-hidden">
                             <h3 
-                                className="font-['Public_Sans'] text-black mb-2 min-[768px]:text-[14px] min-[768px]:leading-[100%] min-[415px]:max-[767px]:text-[14px] min-[415px]:max-[767px]:leading-[100%] max-[414px]:text-[12px] max-[414px]:leading-[150%] max-[414px]:break-words max-[414px]:overflow-wrap-anywhere" 
-                                style={{ fontWeight: 600 }}
+                                className="font-['Public_Sans'] text-black mb-2 min-[768px]:text-[14px] min-[768px]:leading-[100%] min-[641px]:max-[767px]:text-[14px] min-[641px]:max-[767px]:leading-[100%] max-[640px]:text-[12px] max-[640px]:leading-[150%] break-words" 
+                                style={{ fontWeight: 600, wordBreak: 'break-word', overflowWrap: 'break-word' }}
                             >
                                 {title}
                             </h3>
                             <p 
-                                className="font-['Public_Sans'] text-[#A4A4A4] line-clamp-2 min-[768px]:text-[14px] min-[768px]:leading-[150%] min-[415px]:max-[767px]:text-[14px] min-[415px]:max-[767px]:leading-[150%] max-[414px]:text-[12px] max-[414px]:leading-[150%] max-[414px]:break-words max-[414px]:overflow-wrap-anywhere" 
-                                style={{ fontWeight: 400 }}
+                                className="font-['Public_Sans'] text-[#A4A4A4] line-clamp-2 min-[768px]:text-[14px] min-[768px]:leading-[150%] min-[641px]:max-[767px]:text-[14px] min-[641px]:max-[767px]:leading-[150%] max-[640px]:text-[12px] max-[640px]:leading-[150%] break-words" 
+                                style={{ fontWeight: 400, wordBreak: 'break-word', overflowWrap: 'break-word' }}
                             >
                                 {description}
                             </p>
                         </div>
                         
-                        {/* Categories - Tablet and Desktop (415px+) */}
+                        {/* Categories - All screen sizes */}
                         {categories && categories.length > 0 && (
                             <>
-                                {/* Desktop: Wrap categories */}
+                                {/* Desktop: Scrollable categories (changed from wrap) */}
                                 <div 
-                                    className="hidden min-[768px]:flex min-[768px]:flex-wrap" 
+                                    className="hidden min-[768px]:flex scrollbar-hide" 
                                     style={{ 
-                                        gap: '10px'
+                                        gap: '10px',
+                                        maxWidth: '371px',
+                                        overflowX: 'auto',
+                                        overflowY: 'hidden'
                                     }}
                                 >
                                     {categories.map((cat, index) => (
                                         <span 
                                             key={index} 
-                                            className="bg-[#F4F4F4] flex items-center h-[26px] text-[12px] text-[#808080]"
+                                            className="bg-[#F4F4F4] flex items-center h-[26px] text-[12px] text-[#808080] whitespace-nowrap flex-shrink-0"
                                             style={{
                                                 borderRadius: '4px',
                                                 paddingTop: '4px',
@@ -272,10 +245,10 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                                 </div>
                                 {/* Tablet: Scroll categories */}
                                 <div 
-                                    className="hidden min-[415px]:max-[767px]:flex scrollbar-hide" 
+                                    className="hidden min-[641px]:max-[767px]:flex scrollbar-hide" 
                                     style={{ 
                                         gap: '10px',
-                                        width: '276px',
+                                        maxWidth: '100%',
                                         overflowX: 'auto',
                                         overflowY: 'hidden'
                                     }}
@@ -300,10 +273,10 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                             </>
                         )}
 
-                        {/* Categories - Mobile (0-414px) only */}
+                        {/* Categories - Mobile (0-640px) only */}
                         {categories && categories.length > 0 && (
                             <div 
-                                className="flex scrollbar-hide max-[414px]:w-full min-[415px]:hidden" 
+                                className="flex scrollbar-hide max-[640px]:w-full min-[641px]:hidden" 
                                 style={{ 
                                     gap: '4px',
                                     height: '23px',
@@ -332,11 +305,12 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     </div>
                 </div>
 
-                {/* Middle: Status Badge - Tablet only (415-767px) */}
-                <div className="hidden min-[415px]:max-[767px]:flex min-[415px]:max-[767px]:items-start min-[415px]:max-[767px]:justify-center">
+                {/* Middle: Status Badge - Tablet only (641-767px) */}
+                <div className="hidden min-[641px]:max-[767px]:flex min-[641px]:max-[767px]:items-start min-[641px]:max-[767px]:justify-center min-[641px]:max-[767px]:flex-shrink-0">
                     <div 
-                        className="flex items-center justify-center"
+                        className="flex items-center justify-center flex-shrink-0"
                         style={{
+                            minWidth: '102px',
                             width: '102px',
                             height: '26px',
                             borderRadius: '30px',
@@ -371,10 +345,10 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     </div>
                 </div>
 
-                {/* Right side: G2 (action icons + posted time) - Tablet and Desktop (415px+) */}
-                <div className="hidden min-[415px]:flex min-[415px]:flex-col min-[415px]:items-end" style={{ gap: '54px' }}>
+                {/* Right side: G2 (action icons + posted time) - Tablet and Desktop (641px+) */}
+                <div className="hidden min-[641px]:flex min-[641px]:flex-col min-[641px]:items-end min-[641px]:flex-shrink-0" style={{ gap: '54px' }}>
                     {/* Action icons */}
-                    <div className="flex gap-[10px] shrink-0">
+                    <div className="flex gap-[10px] flex-shrink-0">
                         {status === 'trash' ? (
                             <>
                                 <button 
@@ -533,9 +507,9 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                 </div>
                 </div>
                 
-                {/* Mobile: Posted time at bottom (0-414px only) */}
+                {/* Mobile: Posted time at bottom (0-640px only) */}
                 {(createdAt || postedTime) && (
-                    <div className="min-[415px]:hidden flex items-center gap-1 text-[#A4A4A4]" style={{ fontSize: '10px', lineHeight: '150%', fontFamily: 'Public Sans', fontWeight: 400 }}>
+                    <div className="min-[641px]:hidden flex items-center gap-1 text-[#A4A4A4]" style={{ fontSize: '10px', lineHeight: '150%', fontFamily: 'Public Sans', fontWeight: 400 }}>
                         <img src="/images/icons/clock.svg" alt="clock" width="9" height="9" />
                         <span>
                             {createdAt ? getRelativeTime(createdAt) : postedTime}
