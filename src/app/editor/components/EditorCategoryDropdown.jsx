@@ -164,7 +164,7 @@ export default function EditorCategoryDropdown({
                     fontSize: '14px',
                     lineHeight: '150%',
                     letterSpacing: '0%',
-                    color: isSelected ? '#7C3AED' : '#2E2E2E'
+                    color: isSelected ? '#3400A3' : '#2E2E2E'
                   }}
                 >
                   <input
@@ -177,7 +177,7 @@ export default function EditorCategoryDropdown({
                       height: '16px',
                       borderRadius: '4px',
                       border: '1px solid #C0C0C0',
-                      accentColor: '#7C3AED',
+                      accentColor: '#3400A3',
                       flexShrink: 0
                     }}
                   />
