@@ -667,6 +667,7 @@ router.get("/slug/:slug", async (req, res) => {
                 categories: blog.categories,
                 status: blog.status,
                 published: blog.published,
+                publicationId: blog.publicationId,
                 scheduledAt: blog.scheduledAt,
                 createdAt: blog.createdAt,
                 updatedAt: blog.updatedAt,

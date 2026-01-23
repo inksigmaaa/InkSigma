@@ -6,12 +6,14 @@ import { use, useEffect, useState } from 'react';
 import ViewSiteHeader from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import TableOfContents from '../../components/TableOfContents/TableOfContents';
-import BackToHomeButton from '../../components/BackToHomeButton/BackToHomeButton';
+import SocialSidebar from '../../components/SocialSidebar/SocialSidebar';
+import ShareMenu from '../../components/ShareMenu/ShareMenu';
 import ScrollToTop from '../../components/ScrollToTop/ScrollToTop';
 import MobileBottomNav from '../../components/MobileBottomNav/MobileBottomNav';
 import CommentSection from '../../components/CommentSection/CommentSection';
 import ClockIcon from '../../components/icons/ClockIcon';
 import { getImageUrl } from '@/utils/imageUrl';
+
 
 export default function BlogDetailPage({ params }) {
   const { slug } = use(params);
@@ -139,125 +141,158 @@ export default function BlogDetailPage({ params }) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Header Section - Full Width */}
-      <div className="w-full h-[92px] bg-white flex items-center justify-center gap-2.5">
-        <div className="max-w-[1920px] w-full px-6 flex items-center justify-between">
-          <ViewSiteHeader 
-            userName={blog.publication?.name || "Your Publication"} 
-            userAvatar={blog.publication?.logoUrl ? `http://localhost:5000${blog.publication.logoUrl}` : null} 
+      {/* Header Section */}
+      <ViewSiteHeader 
+        userName={blog.publication?.name || (blog.author?.name ? `${blog.author.name}'s Blog` : "InkSigma")} 
+        userAvatar={blog.publication?.logoUrl ? `http://localhost:5000${blog.publication.logoUrl}` : (blog.author?.image ? (blog.author.image.startsWith('http') ? blog.author.image : `http://localhost:5000${blog.author.image}`) : null)} 
+        shareButton={
+          <ShareMenu 
+            title={blog.title}
+            slug={blog.slug}
+            blogId={blog.id}
+            variant="outline"
           />
-        </div>
-      </div>
+        }
+      />
 
-      <section className="flex-grow flex justify-center w-full px-4 md:px-6 pt-6 md:pt-8">
-        <div className="flex max-w-[1400px] w-full ml-12 gap-8 max-md:ml-0">
-          {/* Left Sidebar - Back Button and Table of Contents */}
-          <aside className="hidden lg:block flex-shrink-0 pt-8 w-[300px]">
-            <div className="sticky flex item-start top-28">
-              <BackToHomeButton />
-              <TableOfContents />
+      <section className="flex-grow flex justify-center w-full pt-20 ">
+        <div className="flex w-[90%] lg:w-[78%] max-w-[1600px] gap-6 relative">
+          {/* Left Sidebar - Navigation & TOC */}
+          <aside className="hidden lg:block w-[240px] flex-shrink-0 pt-5 sticky top-28 h-[calc(100vh-6rem)] overflow-y-auto z-30">
+            <div className="flex flex-col gap-8">
+              <Link 
+                href={
+                  blog?.publication?.id 
+                    ? `/view-site?publicationId=${blog.publication.id}` 
+                    : (blog?.publicationId || blog?.publication_id
+                        ? `/view-site?publicationId=${blog.publicationId || blog.publication_id}` 
+                        : '/view-site')
+                }
+                className="inline-flex items-center gap-1 px-4 py-3 bg-[#F4F4F4] hover:bg-[#EAEAEA] text-[#696969] text-sm font-semibold leading-none tracking-normal rounded-3xl w-fit transition-colors"
+              >
+
+                <Image
+                  src="/svg/arrow_back.svg"
+                  alt="Arrow Left"
+                  width={12}
+                  height={5}
+                />
+                
+                Go to homepage
+              </Link>
+              <TableOfContents content={blog.content} />
             </div>
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1 max-w-[800px] pb-40 max-md:pb-12 pt-0 md:pt-0 lg:pl-12 min-w-0">
-          {/* Blog Title */}
-          <h1 className="text-2xl leading-tight md:text-3xl font-bold text-black mb-4 md:mb-4 break-words">{blog.title}</h1>
+          <div className="flex-1 max-w-[800px] w-full min-w-0 mx-auto pt-12 pb-20 px-12 border-l border-[#EAEAEA] max-md:border-none max-md:px-2 max-md:pt-6">
+            {/* Blog Title */}
+            <h1 className="text-[#202020] text-[40px] font-extrabold leading-[1.09] mb-6 tracking-normal break-words max-md:text-[24px] max-md:leading-[1.2] max-md:mb-3 ">
+              {blog.title}
+            </h1>
 
-          {/* Blog Description */}
-          <p className="text-sm leading-relaxed md:text-xl text-gray-500 mb-6 md:mb-8 break-words">{blog.description}</p>
+            {/* Blog Description */}
+            <p className="text-base font-normal leading-7 tracking-[0.01em] text-[#696969] mb-6 break-words max-md:text-sm max-md:leading-[1.5] max-md:mb-3 max-md:text-[#808080]">
+              {blog.description}
+            </p>
 
-          {/* Categories - Mobile Only */}
-          <div className="flex flex-wrap gap-2 mb-6 md:hidden">
-            <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">Category</span>
-            <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">Category</span>
-            <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">Category</span>
-          </div>
+            {/* Mobile Categories/Tags */}
+            {/* Mobile Categories/Tags */}
+            <div className="flex flex-wrap gap-2 mb-6 max-md:mb-3">
+              {blog.categories && blog.categories.length > 0 ? (
+                blog.categories.map((category, index) => (
+                  <span key={index} className="text-[#7C7C7C] text-sm font-normal leading-normal tracking-normal px-4 py-1.5 border border-[#EAEAEA] rounded-lg max-md:text-[10px] max-md:px-3">
+                    {category}
+                  </span>
+                ))
+              ) : (
+                <span className="text-[#7C7C7C] text-sm font-normal leading-normal tracking-normal px-4 py-1.5 border border-[#EAEAEA] rounded-lg max-md:text-[10px] max-md:px-3">
+                  Uncategorized
+                </span>
+              )}
+            </div>
 
-          {/* Author and Date */}
-          <div className="flex items-center justify-between gap-3 mb-6 md:mb-8 py-3 md:py-4 md:px-2">
-            {/* Left side - Author */}
-            <div className="flex items-center gap-2 md:gap-3 min-w-0">
-              <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
-                {blog.author?.image ? (
-                  <img
-                    src={
-                      blog.author.image.startsWith('http') || blog.author.image.startsWith('https')
-                        ? blog.author.image 
-                        : blog.author.image.startsWith('/') 
-                          ? `http://localhost:5000${blog.author.image}`
-                          : `http://localhost:5000/${blog.author.image}`
-                    } 
-                    alt={blog.author?.name || 'Author'} 
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.style.display = 'none';
-                      const initial = blog.author?.name?.charAt(0).toUpperCase() || 'A';
-                      e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${initial}</span></div>`;
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-purple-100 flex items-center justify-center">
-                    <span className="text-purple-600 font-semibold text-sm">
-                      {blog.author?.name?.charAt(0).toUpperCase() || 'A'}
-                    </span>
-                  </div>
-                )}
+            {/* Author and Date Meta */}
+            <div className="flex items-center justify-between py-3 border-t border-b border-[#EAEAEA] mb-10 max-md:mb-6">
+              {/* Author */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 max-md:w-7 max-md:h-7 ">
+                  {blog.author?.image ? (
+                    <img
+                      src={
+                        blog.author.image.startsWith('http') || blog.author.image.startsWith('https')
+                          ? blog.author.image 
+                          : blog.author.image.startsWith('/') 
+                            ? `http://localhost:5000${blog.author.image}`
+                            : `http://localhost:5000/${blog.author.image}`
+                      } 
+                      alt={blog.author?.name || 'Author'} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${blog.author?.name?.charAt(0).toUpperCase() || 'A'}</span></div>`;
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-purple-100 flex items-center justify-center">
+                      <span className="text-purple-600 font-semibold text-sm">
+                        {blog.author?.name?.charAt(0).toUpperCase() || 'A'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <span className="text-[#404040] text-base font-normal italic leading-[1.88] tracking-normal max-md:text-[12px] max-md:leading-[1.5]">
+                  {blog.author?.name || 'Anonymous'}
+                </span>
               </div>
-              <span className="text-gray-800 font-medium text-sm md:text-base truncate">
-                {blog.author?.name || 'Anonymous'}
-              </span>
+              
+              {/* Date */}
+              <div className="flex items-center gap-2 text-[#808080] text-sm font-normal leading-normal tracking-normal max-md:text-[12px] max-md:leading-[1.5]">
+                <ClockIcon className="w-3.5 h-3.5 max-md:w-2.5 max-md:h-2.5" />
+                <span>Created on {dateFormatted.fullDate || dateFormatted.date}</span>
+              </div>
             </div>
-            
-            {/* Right side - Date */}
-            <div className="flex items-center gap-1.5 text-gray-400 flex-shrink-0">
-              <ClockIcon className="md:w-4 md:h-4 flex-shrink-0" />
-              <span className="text-xs md:text-sm whitespace-nowrap">
-                Created on {dateFormatted.fullDate || dateFormatted.date}
-              </span>
-            </div>
-          </div>
 
-          {/* Blog Image */}
-          <div className="relative w-full h-[220px] md:h-[400px] rounded-lg md:rounded-2xl mb-6 md:mb-12 overflow-hidden">
-            <Image
-              src={thumbnailUrl}
-              alt={blog.title}
-              fill
-              className="object-cover"
-              unoptimized
+            {/* Blog Image */}
+            <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden mb-10 bg-gray-100 max-md:rounded max-md:mb-[30px]">
+              <Image
+                src={thumbnailUrl}
+                alt={blog.title}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+
+            {/* Blog Content */}
+            <article
+              className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px]"
+              dangerouslySetInnerHTML={{ __html: (() => {
+                // Convert relative image URLs to full URLs for display
+                const apiUrl = 'http://localhost:5000';
+                return blog.content.replace(/src="([^"]*)"/g, (match, src) => {
+                  if (!src) return match;
+                  if (src.startsWith('http://') || src.startsWith('https://')) return match;
+                  if (src.startsWith('/')) return `src="${apiUrl}${src}"`;
+                  return `src="${apiUrl}/${src}"`;
+                });
+              })() }}
             />
+
+            {/* Comment Section */}
+            <div className="">
+              <CommentSection blogId={blog.id} />
+            </div>
           </div>
 
-          {/* Blog Content */}
-          <article
-            className="prose prose-sm md:prose-lg max-w-none prose-headings:font-bold prose-headings:text-black prose-p:text-gray-700 prose-p:leading-relaxed break-words"
-            dangerouslySetInnerHTML={{ __html: (() => {
-              // Convert relative image URLs to full URLs for display
-              const apiUrl = 'http://localhost:5000';
-              return blog.content.replace(/src="([^"]*)"/g, (match, src) => {
-                if (!src) return match;
-                
-                // If it's already a full URL, return as is
-                if (src.startsWith('http://') || src.startsWith('https://')) {
-                  return match;
-                }
-                
-                // If it's a relative path starting with /, prepend the API URL
-                if (src.startsWith('/')) {
-                  return `src="${apiUrl}${src}"`;
-                }
-                
-                // Otherwise, assume it's a relative path and prepend API URL with /
-                return `src="${apiUrl}/${src}"`;
-              });
-            })() }}
-          />
-
-          {/* Comment Section */}
-          <CommentSection blogId={blog.id} />
-        </div>
+          {/* Right Sidebar - Social Share */}
+          <aside className="hidden xl:block w-16 pt-6 h-fit sticky top-28 z-30">
+             <SocialSidebar 
+               title={blog.title}
+               slug={blog.slug}
+               blogId={blog.id}
+             />
+          </aside>
         </div>
       </section>
 

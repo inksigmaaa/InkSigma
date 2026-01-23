@@ -7,11 +7,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 export default function CommentSection({ blogId }) {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
-  const [guestName, setGuestName] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
+
+  // Guest fields removed as per requirement
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyContent, setReplyContent] = useState('');
-  const [replyGuestName, setReplyGuestName] = useState('');
   const [expandedReplies, setExpandedReplies] = useState({});
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [loading, setLoading] = useState(true);
@@ -91,12 +90,8 @@ export default function CommentSection({ blogId }) {
       setError('Please enter a comment');
       return;
     }
-    if (!currentUser && !guestName.trim()) {
-      setError('Please enter your name');
-      return;
-    }
-    if (!currentUser && guestName.trim().length < 2) {
-      setError('Name must be at least 2 characters');
+    if (!currentUser) {
+      setError('Please sign in to comment');
       return;
     }
 
@@ -108,11 +103,6 @@ export default function CommentSection({ blogId }) {
         blogId: parseInt(blogId),
         content: newComment.trim()
       };
-
-      if (!currentUser) {
-        body.guestName = guestName.trim();
-        body.guestEmail = guestEmail.trim() || null;
-      }
 
       console.log('[CommentSection] Submitting comment to:', `${API_URL}/api/comments`);
       console.log('[CommentSection] Request body:', { ...body, content: body.content.substring(0, 50) + '...' });
@@ -135,9 +125,8 @@ export default function CommentSection({ blogId }) {
         const comment = await response.json();
         console.log('[CommentSection] New comment created:', comment);
         setComments(prev => [comment, ...prev]);
+
         setNewComment('');
-        setGuestEmail(''); // Clear email after successful post
-        // Keep guest name for convenience
         setError(null);
       } else {
         let errorMessage = 'Failed to post comment';
@@ -172,12 +161,8 @@ export default function CommentSection({ blogId }) {
       setError('Please enter a reply');
       return;
     }
-    if (!currentUser && !replyGuestName.trim()) {
-      setError('Please enter your name');
-      return;
-    }
-    if (!currentUser && replyGuestName.trim().length < 2) {
-      setError('Name must be at least 2 characters');
+    if (!currentUser) {
+      setError('Please sign in to reply');
       return;
     }
 
@@ -190,10 +175,6 @@ export default function CommentSection({ blogId }) {
         content: replyContent.trim(),
         parentId: commentId
       };
-
-      if (!currentUser) {
-        body.guestName = replyGuestName.trim();
-      }
 
       console.log('[CommentSection] Submitting reply:', { ...body, content: body.content.substring(0, 50) + '...' });
 
@@ -213,7 +194,6 @@ export default function CommentSection({ blogId }) {
             : c
         ));
         setReplyContent('');
-        setReplyGuestName('');
         setReplyingTo(null);
         setExpandedReplies(prev => ({ ...prev, [commentId]: true }));
         setError(null);
@@ -237,6 +217,40 @@ export default function CommentSection({ blogId }) {
     }
   };
 
+  const handleDeleteComment = async (commentId) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/comments/${commentId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        setComments(prev => {
+          if (prev.some(c => c.id === commentId)) {
+            return prev.filter(c => c.id !== commentId);
+          }
+          return prev.map(c => {
+            if (c.replies?.some(r => r.id === commentId)) {
+              return {
+                ...c,
+                replies: c.replies.filter(r => r.id !== commentId)
+              };
+            }
+            return c;
+          });
+        });
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to delete comment');
+      }
+    } catch (err) {
+      console.error('Error deleting comment:', err);
+      setError('Failed to delete comment');
+    }
+  };
+
   const toggleReplies = (commentId) => {
     setExpandedReplies(prev => ({ ...prev, [commentId]: !prev[commentId] }));
   };
@@ -249,8 +263,7 @@ export default function CommentSection({ blogId }) {
 
   const getDisplayName = (comment) => {
     if (comment.author?.name) return comment.author.name;
-    if (comment.guestName) return comment.guestName;
-    return 'Anonymous';
+    return 'Guest'; // Fallback for old data if any
   };
 
   const getInitial = (comment) => {
@@ -261,10 +274,10 @@ export default function CommentSection({ blogId }) {
   const totalComments = comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0);
 
   return (
-    <div className="pt-8 md:pt-12">
-      <div className="my-6 md:my-12 border-t border-gray-200 pt-6 md:pt-8">
-        <h2 className="text-lg md:text-2xl font-bold text-black mb-6 md:mb-8">
-          Join the Discussion
+    <div className="mt-12">
+      <div className="my-6 ">
+        <h2 className="text-base font-semibold leading-6 tracking-normal text-[#14142D] mb-6 max-md:text-sm max-md:pt-5 max-md:border-t max-md:border-[#EDEDED] ">
+          How useful was this blog?
         </h2>
 
         {error && (
@@ -275,7 +288,7 @@ export default function CommentSection({ blogId }) {
         )}
 
         <div className="flex gap-3 md:gap-4 mb-6">
-          <div className="w-10 h-10 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center max-md:w-6 max-md:h-6">
             {currentUser?.image ? (
               <img 
                 src={getAuthorAvatar(currentUser)} 
@@ -284,66 +297,48 @@ export default function CommentSection({ blogId }) {
               />
             ) : (
               <span className="text-purple-600 font-semibold">
-                {currentUser?.name?.charAt(0).toUpperCase() || guestName?.charAt(0).toUpperCase() || '?'}
+                {currentUser?.name?.charAt(0).toUpperCase() || '?'}
               </span>
             )}
           </div>
           <div className="flex-1 min-w-0">
-            {!currentUser && (
-              <div className="flex gap-3 mb-3">
-                <input
-                  type="text"
-                  placeholder="Your name *"
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-purple-300 text-black text-sm placeholder:text-gray-400"
-                  maxLength={100}
-                />
-                <input
-                  type="email"
-                  placeholder="Email (optional)"
-                  value={guestEmail}
-                  onChange={(e) => setGuestEmail(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-purple-300 text-black text-sm placeholder:text-gray-400"
-                  maxLength={200}
-                />
-              </div>
-            )}
+            
             <textarea
               placeholder="Share your thoughts..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              className="w-full min-h-[120px] md:min-h-[140px] p-4 border border-gray-200 rounded-lg focus:outline-none focus:border-purple-300 resize-none text-black text-sm md:text-base placeholder:text-gray-400"
+              className="w-full min-h-[94px] p-4 border-[1px] border-[#EAEAEA] rounded-sm focus:outline-none focus:border-[#EAEAEA] resize-none text-black text-sm md:text-base placeholder:text-[#A4A4A4] placeholder:text-base placeholder:font-normal placeholder:leading-6 placeholder:tracking-normal placeholder:align-middle max-md:text-xs max-md:py-2 placeholder:max-md:text-xs"
               maxLength={2000}
               disabled={submitting}
             />
-            <div className="flex justify-between items-center mt-3">
-              <span className="text-xs text-gray-400">{newComment.length}/2000</span>
+            <div className="flex justify-end items-center mt-1">
+              {/* <span className="text-xs text-gray-400">{newComment.length}/2000</span> */}
               <button
                 onClick={handleSubmitComment}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base transition-colors"
+                className="px-1 py-2 text-sm font-medium leading-normal tracking-normal bg-gradient-to-b from-[#A941FB] to-[#7864F0EB] bg-clip-text text-transparent disabled:opacity-70 disabled:cursor-not-allowed transition-colors max-md:text-xs"
                 disabled={newComment.trim() === '' || submitting}
               >
-                {submitting ? 'Posting...' : 'Post Comment'}
+                {submitting ? 'Adding...' : 'Add Comment'}
               </button>
             </div>
+            
           </div>
         </div>
       </div>
 
-      <div className="mt-8 md:mt-12">
-        <h3 className="text-lg md:text-xl font-bold text-black mb-4 md:mb-6">
-          Comments ({totalComments})
+      <div className="mt-3.5">
+        <h3 className="text-base font-bold leading-6 tracking-normal text-[#14142D] mb-4 max-md:text-sm max-md:leading-7">
+          Discussion ({totalComments})
         </h3>
 
         {loading ? (
-          <div className="text-center py-8 text-gray-500">Loading comments...</div>
+          <div className="text-center py-8 text-gray-500">Loading Discussion...</div>
         ) : (
           <div className="space-y-4 md:space-y-6">
             {comments.length > 0 ? comments.map((comment) => (
-              <div key={comment.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 md:p-6">
-                <div className="flex gap-3 md:gap-4">
-                  <div className="w-10 h-10 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+              <div key={comment.id} className="border border-[#EDEDED] rounded-lg px-10 py-4 max-md:px-4">
+                <div className="flex gap-2">
+                  <div className="w-8 h-8 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center max-md:w-6 max-md:h-6">
                     {comment.author?.image ? (
                       <img 
                         src={getAuthorAvatar(comment.author)} 
@@ -355,33 +350,43 @@ export default function CommentSection({ blogId }) {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="font-semibold text-gray-900 text-sm md:text-base">
+                    <div className="flex items-center gap-2 my-1.5 flex-wrap max-md:my-0">
+                      <span className="text-[#404040] text-sm font-semibold leading-5 tracking-normal max-md:text-xs">
                         {getDisplayName(comment)}
                       </span>
-                      {!comment.authorId && <span className="text-xs text-gray-400 bg-gray-200 px-2 py-0.5 rounded">Guest</span>}
-                      <span className="text-xs md:text-sm text-gray-400">
+                      <span className="text-[#A4A4A4] text-xs font-normal leading-5 tracking-normal max-md:text-[10px]">
                         {getRelativeTime(comment.createdAt)}
                       </span>
                     </div>
                     
-                    <p className="text-gray-600 mb-3 text-sm md:text-base break-words whitespace-pre-wrap">{comment.content}</p>
+                    <p className="text-[#696969] text-sm font-normal leading-5 tracking-normal mt-1 break-words whitespace-pre-wrap max-md:text-xs max-md:leading-normal">{comment.content}</p>
                     
-                    <div className="flex gap-3 text-sm items-center">
+                    <div className="flex gap-4 text-sm items-center my-3">
                       <button
                         onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                        className="text-gray-400 hover:text-purple-600 flex items-center gap-1.5 text-xs md:text-sm transition-colors"
+                        className="text-[#A4A4A4] text-sm font-normal tracking-normal gap-1 flex items-center max-md:text-xs max-md:leading-normal"
                       >
+                        <img src="/svg/reply_icon.svg" alt="Reply" className="w-4 h-4 max-md:w-3 max-md:h-3" />
                         Reply
                       </button>
+                      
+                      {currentUser?.id === comment.authorId && (
+                        <button
+                          onClick={() => handleDeleteComment(comment.id)}
+                          className="text-[#A4A4A4] text-sm font-normal tracking-normal gap-1 flex items-center max-md:text-xs max-md:leading-normal"
+                        >
+                          <img src="/svg/Commet_delete.svg" alt="Delete" className="w-4 h-4 max-md:w-3 max-md:h-3" />
+                          Delete
+                        </button>
+                      )}
                     </div>
 
                     {comment.replies?.length > 0 && (
                       <button
                         onClick={() => toggleReplies(comment.id)}
-                        className="mt-4 flex items-center gap-2 text-sm font-semibold text-gray-900 hover:text-purple-600 transition-colors"
+                        className="mt-4 flex items-center gap-2 text-sm font-semibold leading-none tracking-normal text-[#000000] max-md:text-xs max-md:leading-normal  transition-colors"
                       >
-                        {expandedReplies[comment.id] ? 'Hide' : 'Show'} Replies ({comment.replies.length})
+                        {expandedReplies[comment.id] } Replies ({comment.replies.length})
                         <span className={`transform transition-transform ${expandedReplies[comment.id] ? 'rotate-180' : 'rotate-0'}`}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M19 9l-7 7-7-7"/>
@@ -391,57 +396,56 @@ export default function CommentSection({ blogId }) {
                     )}
 
                     {replyingTo === comment.id && (
-                      <div className="mt-4 bg-white rounded-lg p-3 md:p-4 border border-gray-100">
+                      <div className="mt-4 bg-white rounded-lg p-3 ">
                         <div className="flex gap-3">
-                          <div className="w-8 h-8 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center max-md:w-6 max-md:h-6">
                             <span className="text-purple-600 font-semibold text-sm">
-                              {currentUser?.name?.charAt(0).toUpperCase() || replyGuestName?.charAt(0).toUpperCase() || '?'}
+                              {currentUser?.name?.charAt(0).toUpperCase() || '?'}
                             </span>
                           </div>
                           <div className="flex-1 min-w-0">
                             {!currentUser && (
-                              <input
-                                type="text"
-                                placeholder="Your name *"
-                                value={replyGuestName}
-                                onChange={(e) => setReplyGuestName(e.target.value)}
-                                className="w-full mb-2 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-purple-300 text-black text-sm placeholder:text-gray-400"
-                                maxLength={100}
-                              />
+                               <div className="mb-2 p-2 bg-gray-50 border border-gray-200 rounded text-sm text-center">
+                                  <a href="/login" className="text-purple-600 font-semibold hover:underline">Sign in</a> to reply
+                               </div>
                             )}
+                            {currentUser && (
+                            <>
                             <textarea
                               placeholder="Write a reply..."
                               value={replyContent}
                               onChange={(e) => setReplyContent(e.target.value)}
-                              className="w-full min-h-[80px] p-3 text-black border border-gray-200 rounded-lg focus:outline-none focus:border-purple-300 resize-none text-sm placeholder:text-gray-400"
+                              className="w-full min-h-[80px] p-3 text-black border border-gray-200 rounded-sm  resize-none text-sm font-normal leading-6 tracking-normal align-middle placeholder:text-[#A4A4A4]"
                               maxLength={2000}
                               disabled={submitting}
                             />
-                            <div className="flex justify-end gap-2 mt-2">
+                            <div className="flex justify-end gap-5 mt-2 px-1 py-2">
                               <button
-                                onClick={() => { setReplyingTo(null); setReplyContent(''); setReplyGuestName(''); }}
-                                className="px-4 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+                                onClick={() => { setReplyingTo(null); setReplyContent(''); }}
+                                className="text-[#A4A4A4] text-sm font-medium leading-normal tracking-normal"
                               >
                                 Cancel
                               </button>
                               <button
                                 onClick={() => handleSubmitReply(comment.id)}
-                                className="px-4 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50 transition-colors"
+                                className="text-sm font-medium leading-normal tracking-normal bg-gradient-to-b from-[#A941FB] to-[#7864F0EB] bg-clip-text text-transparent disabled:opacity-70 transition-colors"
                                 disabled={replyContent.trim() === '' || submitting}
                               >
-                                {submitting ? 'Posting...' : 'Reply'}
+                                {submitting ? 'Posting...' : 'Submit Reply'}
                               </button>
                             </div>
+                            </>
+                            )}
                           </div>
                         </div>
                       </div>
                     )}
 
                     {comment.replies?.length > 0 && expandedReplies[comment.id] && (
-                      <div className="mt-4 space-y-3 pl-3 md:pl-6 border-l-2 border-purple-200">
+                      <div className="space-y-3">
                         {comment.replies.map((reply) => (
-                          <div key={reply.id} className="flex gap-3 bg-white p-3 rounded-lg">
-                            <div className="w-8 h-8 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                          <div key={reply.id} className="flex gap-3 bg-white !mt-8 rounded-lg max-md:!mt-4">
+                            <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center max-md:w-6 max-md:h-6">
                               {reply.author?.image ? (
                                 <img src={getAuthorAvatar(reply.author)} alt={getDisplayName(reply)} className="w-full h-full object-cover" />
                               ) : (
@@ -449,12 +453,22 @@ export default function CommentSection({ blogId }) {
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <span className="font-semibold text-gray-900 text-sm">{getDisplayName(reply)}</span>
-                                {!reply.authorId && <span className="text-xs text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded">Guest</span>}
-                                <span className="text-xs text-gray-400">{getRelativeTime(reply.createdAt)}</span>
+                              <div className="flex items-center gap-2 my-1.5 flex-wrap max-md:my-0">
+                                <span className="font-semibold text-[#14142D] text-sm max-md:text-xs">{getDisplayName(reply)}</span>
+                                <span className="text-xs text-[#A4A4A4] max-md:text-[10px]">{getRelativeTime(reply.createdAt)}</span>
                               </div>
-                              <p className="text-gray-600 text-sm break-words whitespace-pre-wrap">{reply.content}</p>
+                              <p className="text-[#696969] text-sm break-words whitespace-pre-wrap max-md:text-xs">{reply.content}</p>
+                              <div className="flex gap-3 text-sm items-center my-3">
+                                {currentUser?.id === reply.authorId && (
+                                  <button
+                                    onClick={() => handleDeleteComment(reply.id)}
+                                    className="text-[#A4A4A4] text-sm font-normal tracking-normal gap-1 flex items-center max-md:text-xs max-md:leading-normal"
+                                  >
+                                    <img src="/svg/Commet_delete.svg" alt="Delete" className="w-4 h-4" />
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         ))}
