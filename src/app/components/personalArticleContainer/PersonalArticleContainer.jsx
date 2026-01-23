@@ -196,7 +196,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
             {/* content */}
             <div className="flex flex-col max-[414px]:gap-[24px] min-[415px]:max-[767px]:gap-[14px] min-[768px]:flex-row min-[768px]:justify-between min-[768px]:items-start min-[768px]:gap-[93px]" style={{ width: window.innerWidth <= 414 ? '268px' : 'auto' }}>
                 {/* Main content row */}
-                <div className="flex min-[415px]:max-[767px]:flex-row min-[768px]:flex-row max-[414px]:flex-col min-[415px]:max-[767px]:justify-between min-[415px]:max-[767px]:items-start min-[415px]:max-[767px]:w-full min-[415px]:max-[767px]:gap-[30px] min-[768px]:flex-1">
+                <div className="flex min-[415px]:max-[767px]:flex-row min-[768px]:flex-row max-[414px]:flex-col min-[415px]:max-[767px]:justify-between min-[415px]:max-[767px]:items-center min-[415px]:max-[767px]:w-full min-[415px]:max-[767px]:gap-[30px] min-[768px]:flex-1">
                 {/* Left side: Checkbox + G1 (title, description, categories) */}
                 <div className="flex max-[414px]:gap-0 min-[415px]:gap-3 flex-1 max-[414px]:w-full">
                     {/* Checkbox - Tablet and Desktop (415px+) */}
