@@ -15,6 +15,7 @@ export default function CreatePublication() {
   const { data: session } = useSession();
   const { loadUserPublications, switchPublication } = usePublication();
   const [publicationName, setPublicationName] = useState("");
+  const [hasUserEditedName, setHasUserEditedName] = useState(false);
   const [subdomain, setSubdomain] = useState("");
   const [showErrors, setShowErrors] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -29,7 +30,7 @@ export default function CreatePublication() {
 
   // Extract name from email on component mount
   useEffect(() => {
-    if (session?.user?.email && !publicationName) {
+    if (session?.user?.email && !publicationName && !hasUserEditedName) {
       const emailUsername = session.user.email.split('@')[0];
       // Capitalize first letter and replace dots/underscores with spaces
       const formattedName = emailUsername
@@ -39,7 +40,7 @@ export default function CreatePublication() {
         .join(' ');
       setPublicationName(formattedName);
     }
-  }, [session, publicationName]);
+  }, [session, publicationName, hasUserEditedName]);
 
   // Check subdomain availability with debounce
   useEffect(() => {
@@ -343,7 +344,7 @@ export default function CreatePublication() {
               Welcome to InkSigma!
             </h1>
             <p className="text-center text-[14px] text-[#404040]">
-              Create your publication to get started
+             Set up a publication & Start Writing
             </p>
           </div>
 
@@ -352,7 +353,7 @@ export default function CreatePublication() {
               {uploadedImage ? (
                 <img src={uploadedImage} alt="Publication" style={{ width: '114px', height: '114px', borderRadius: '96px', objectFit: 'cover' }} />
               ) : (
-                <img src={imagePlaceholder.src} alt="Upload placeholder" style={{ width: '114px', height: '112px', borderRadius: '96px', objectFit: 'cover' }} />
+                <img src={imagePlaceholder.src} alt="Upload placeholder" style={{ width: '114px', height: '116px', borderRadius: '96px', objectFit: 'cover' }} />
               )}
 
               <button
@@ -391,14 +392,16 @@ export default function CreatePublication() {
 
           <div className="space-y-8">
             <div>
-              <label className="block text-[12px] text-[#666] mb-1">Publication Name</label>
               <input
                 type="text"
                 placeholder="Enter your Publication Name"
                 value={publicationName}
                 minLength={2}
                 maxLength={50}
-                onChange={(e) => setPublicationName(e.target.value)}
+                onChange={(e) => {
+                  setPublicationName(e.target.value);
+                  setHasUserEditedName(true);
+                }}
                 disabled={loading}
                 className="w-full px-0 py-2 border-0 border-b text-[14px] text-[#333] placeholder:text-[#CCCCCC] focus:outline-none bg-transparent disabled:opacity-50"
                 style={{ borderBottomWidth: '1.5px', borderBottomColor: '#CBCBCB' }}
@@ -406,11 +409,10 @@ export default function CreatePublication() {
             </div>
 
             <div>
-              <label className="block text-[12px] text-[#666] mb-1">Subdomain</label>
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="your-subdomain"
+                  placeholder="Subdomain name"
                   value={subdomain}
                   onChange={(e) => {
                     // Only allow alphanumeric and hyphens
@@ -444,17 +446,23 @@ export default function CreatePublication() {
                 disabled={loading}
                 className="mx-auto text-[#7C3AED] text-[14px] font-medium hover:text-[#6D28D9] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Creating Publication..." : "Continue to Dashboard"}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
+                {loading ? "Creating Publication..." : "Start Writing"}
+                <svg width="7" height="11" viewBox="0 0 7 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0.700012 9.7002L5.20001 5.2002L0.700012 0.700195" stroke="url(#paint0_linear_8797_4601)" strokeWidth="1.4" strokeLinecap="round"/>
+                  <defs>
+                    <linearGradient id="paint0_linear_8797_4601" x1="0.700012" y1="1.44182" x2="7.33046" y2="4.72725" gradientUnits="userSpaceOnUse">
+                       <stop stopColor="#A941FB"/>
+                       <stop offset="1" stopColor="#7864F0" stopOpacity="0.92"/>
+                    </linearGradient>
+                  </defs>
+                  </svg>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 w-full bg-white py-4 text-center border-t border-[#F3F4F6] px-4">
+      <div className="fixed bottom-0 left-0 w-full bg-white py-4 text-center  border-[#F3F4F6] px-4">
         <p className="text-[12px] text-[#CCCCCC]">
           Copyright © 2023 designed & developed by <a href="#" className="text-[#CCCCCC] underline">Inksigma</a>, a <a href="#" className="text-[#CCCCCC] underline">Zemuria Inc.</a> brand
         </p>
