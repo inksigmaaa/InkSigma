@@ -10,6 +10,8 @@ export default function NavbarLoggedin() {
     const [notificationOpen, setNotificationOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+    const [lastScrollY, setLastScrollY] = useState(0);
     const wrapperRef = useRef(null);
     const notificationRef = useRef(null);
     const notificationIntervalRef = useRef(null);
@@ -91,6 +93,32 @@ export default function NavbarLoggedin() {
         return () => window.removeEventListener('storage', handleStorageChange);
     }, []);
 
+    // Handle scroll behavior for mobile - hide on scroll down, show on scroll up
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            
+            // Only apply this behavior on mobile (screen width < 768px)
+            if (window.innerWidth < 768) {
+                if (currentScrollY > lastScrollY && currentScrollY > 50) {
+                    // Scrolling down & past 50px
+                    setIsVisible(false);
+                } else {
+                    // Scrolling up or at top
+                    setIsVisible(true);
+                }
+            } else {
+                // Always visible on desktop
+                setIsVisible(true);
+            }
+            
+            setLastScrollY(currentScrollY);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [lastScrollY]);
+
     const markAsRead = async (notificationId) => {
         try {
             await fetch(`http://localhost:5000/api/notifications/${notificationId}/read`, {
@@ -144,17 +172,18 @@ export default function NavbarLoggedin() {
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
     return (
-        <div className="fixed top-0 left-0 w-full flex justify-center bg-white p-5 z-[100]">
-            <div className="w-full max-w-[1034px] flex justify-between items-center h-[85px] px-6 py-4 bg-white shadow-[0_4px_25px_0_#00000012] rounded-lg max-md:px-4 max-md:py-3 max-md:h-[70px]">
+        <div className={`fixed left-0 right-0 top-0 z-[10000] transition-transform duration-300 sm:bg-white sm:border-b sm:border-gray-200 md:bg-transparent md:border-0 ${!isVisible ? 'sm:-translate-y-full' : 'sm:translate-y-0'}`}>
+            <div className="w-full max-w-[1034px] mx-auto mt-[22px] md:mt-[15px] sm:mt-0 px-4 md:px-2 sm:px-4 sm:pb-2 md:pb-0">
+                <div className="w-full h-[82px] flex justify-between items-center rounded-[8px] pt-[16px] pr-[24px] pb-[16px] pl-[24px] bg-[#FFFFFF] shadow-[0px_4px_25px_0px_rgba(0,0,0,0.07)] md:px-4 md:py-3 md:h-[70px] sm:px-6 sm:py-4 sm:h-[70px] sm:rounded-none sm:shadow-none sm:pt-4 sm:pb-4 md:rounded-[8px] md:shadow-[0px_4px_25px_0px_rgba(0,0,0,0.07)]">
 
                 {/* Logo */}
-                <a href="/" className="flex items-center">
+                <a href="/" className="flex items-center border-0 outline-none flex-shrink-0">
                     <img src="/icons/inksigma-logo.svg" alt="Inksigma logo"
-                        className="h-8 w-auto max-md:h-7" />
+                        className="h-8 w-auto md:h-8 sm:w-[76.79px] sm:h-[24.8px] border-0" />
                 </a>
 
                 {/* Profile Section */}
-                <div className="flex items-center gap-4 max-md:gap-3">
+                <div className="flex items-center gap-[16px] opacity-100 md:gap-4 sm:gap-6">
                     {/* Notification */}
                     <div ref={notificationRef} className="relative">
                         <div 
@@ -164,7 +193,7 @@ export default function NavbarLoggedin() {
                             <img
                                 src={notificationOpen ? "/svg/color-bell.svg" : "/images/icons/Notification.svg"}
                                 alt="notification"
-                                className="w-6 h-6 max-md:w-[22px] max-md:h-[22px]"
+                                className="w-6 h-6 md:w-6 md:h-6 sm:w-6 sm:h-6"
                             />
                             {unreadCount > 0 && (
                                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
@@ -319,20 +348,24 @@ export default function NavbarLoggedin() {
                     {/* Profile Dropdown */}
                     <div ref={wrapperRef} className="relative">
                         <div
-                            className="flex items-center gap-3 cursor-pointer"
+                            className="flex items-center gap-[12px] cursor-pointer px-[12px] py-[8px] rounded-[4px] opacity-100"
                             onClick={() => setOpen((prev) => !prev)}
                         >
                             <UserAvatar 
                                 user={user}
                                 size="md"
-                                className="max-md:w-9 max-md:h-9"
+                                className="w-[34px] h-[34px] opacity-100 md:w-[34px] md:h-[34px] sm:w-[40px] sm:h-[40px]"
                             />
 
-                            {/* Hide name on mobile */}
-                            <div className="flex items-center gap-2 text-sm font-medium text-[#333] max-md:hidden">
-                                {isPending ? "Loading..." : userName}
+                            {/* User name with dropdown arrow - Only show on desktop (1024px+) */}
+                            <div className="hidden xl:flex items-center gap-[8px]">
+                                <span className="font-bold text-[14px] leading-[100%] tracking-[0%] text-[#2E2E2E] whitespace-nowrap" style={{ fontFamily: 'Public Sans' }}>
+                                    {isPending ? "Loading..." : userName}
+                                </span>
                                 <span className="flex items-center">
-                                    <img src="/images/icons/down.svg" className="w-4 h-4" />
+                                    <svg width="9" height="4.5" viewBox="0 0 9 4.5" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-100">
+                                        <path d="M1 1L4.5 4L8 1" stroke="#2E2E2E" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
                                 </span>
                             </div>
                         </div>
@@ -341,22 +374,23 @@ export default function NavbarLoggedin() {
                         {open && (
                             <div
                                 onClick={(e) => e.stopPropagation()}
-                                className="absolute top-[50px] right-0 w-[200px] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.1)] border border-[#EDEDED] rounded-lg flex flex-col gap-1 p-2 z-[99999] max-md:fixed max-md:top-[80px] max-md:right-5 max-md:w-[180px] max-md:shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
+                                className="absolute top-[50px] right-0 w-[201px] h-[78px] bg-[#FEFEFE] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.07)] border border-[#EDEDED] rounded-[8px] flex flex-col gap-[4px] p-[8px] z-[99999] md:fixed md:top-[90px] md:right-5 md:shadow-[0_8px_32px_rgba(0,0,0,0.2)] sm:fixed sm:top-[90px] sm:right-4 sm:shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
                             >
                                 <a href="/profile-settings"
-                                    className="px-2 py-1 rounded text-xs font-normal text-gray-700 hover:text-black">
-                                    Profile Settings
+                                    className="w-[185px] h-[29px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#B0B0B0] hover:text-black rounded-[4px] gap-[10px] pt-[4px] pr-[8px] pb-[4px] pl-[8px] bg-[#FEFEFE] whitespace-nowrap flex items-center" style={{ fontFamily: 'Public Sans' }}>
+                                    My Profile
                                 </a>
 
                                 <button
                                     onClick={handleLogout}
-                                    className="px-2 py-1 rounded text-xs font-normal text-gray-700 hover:text-black text-left">
+                                    className="w-[185px] h-[29px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#B0B0B0] hover:text-black text-left rounded-[4px] gap-[10px] pt-[4px] pr-[8px] pb-[4px] pl-[8px] bg-[#FEFEFE] whitespace-nowrap flex items-center" style={{ fontFamily: 'Public Sans' }}>
                                     Logout
                                 </button>
                             </div>
                         )}
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     );

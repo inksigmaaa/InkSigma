@@ -13,7 +13,6 @@ import AuthGuard from "@/components/auth/AuthGuard"
 export default function DashboardPage() {
   const router = useRouter()
   const {
-    currentPublication,
     getOwnedPublications,
     getJoinedPublications,
     switchPublication,
@@ -54,20 +53,27 @@ export default function DashboardPage() {
     <AuthGuard>
       <NavbarLoggedin />
       <DashboardSimpleSidebar />
-      <main className="flex-1 bg-white px-4 sm:px-8 py-6 sm:py-10 mt-[120px] md:mt-[120px] pb-24 md:pb-0 md:ml-[165px]">
-        <div className="max-w-[600px] mx-auto space-y-6 sm:space-y-8">
+      <main className="flex-1 bg-white px-4 sm:px-8 pt-0 mt-[120px] md:mt-[120px] sm:mt-[80px] pb-24 md:pb-0 ml-0 md:ml-[197px] relative z-[1]">
+        <div className="w-full max-w-[819px] mx-auto space-y-6 sm:space-y-8">
           {/* Welcome Banner */}
-          <div className="text-center">
-            <h1 className="text-base sm:text-lg font-bold text-gray-900 mb-3">Welcome to InkSigma</h1>
-            <p className="text-xs text-gray-500 leading-relaxed mb-4 px-4">
+          <div className="w-full max-w-[819px] min-h-[184px] rounded-[4px] pt-[24px] px-4 sm:px-[155px] pb-[24px] gap-[5px] opacity-100 border border-[#EDEDED] flex flex-col items-center justify-center mx-auto">
+            <h1 className="w-full max-w-[166px] h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] text-center" style={{ fontFamily: 'Public Sans' }}>Welcome to InkSigma</h1>
+            <p className="w-full max-w-[536px] min-h-[42px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-center text-[#696969] px-4 sm:px-0" style={{ fontFamily: 'Public Sans' }}>
               Generate a publication and embark on crafting numerous articles showcasing your innovative ideas, thereby disseminating them to the global audience.
             </p>
             <button
               onClick={() => router.push('/profile-settings')}
-              className="text-purple-500 hover:text-purple-600 text-xs flex items-center gap-1 mx-auto"
+              className="min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center mt-2"
             >
-              Complete your profile
-              <ChevronRight className="w-3.5 h-3.5" />
+              <span 
+                className="opacity-100 font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
+                style={{ 
+                  fontFamily: 'Public Sans'
+                }}
+              >
+                Complete your profile
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-[#A941FB] ml-1"/>
             </button>
           </div>
 
@@ -76,12 +82,12 @@ export default function DashboardPage() {
 
           {/* Your Publication Section */}
           <section>
-            <h2 className="text-sm font-bold text-gray-900 mb-5">Your Publication</h2>
+            <h2 className="w-full max-w-[125px] h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-2" style={{ fontFamily: 'Public Sans' }}>Your Publication</h2>
             {ownedPublications.length > 0 ? (
-              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex gap-4 items-center flex-1 w-full">
-                    <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <div className="w-full max-w-[819px] min-h-[143px] rounded-[4px] gap-[16px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-0">
+                  <div className="flex gap-4 items-center flex-1 min-w-0 w-full">
+                    <div className="w-[72.42px] h-[74px] opacity-100 border border-gray-300 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                       {ownedPublications[0]?.logoUrl ? (
                         <img
                           src={`http://localhost:5000${ownedPublications[0].logoUrl}`}
@@ -100,11 +106,11 @@ export default function DashboardPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                    <div className="flex-1 min-w-0 w-full">
+                      <h3 className="font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-1 overflow-hidden text-ellipsis" style={{ fontFamily: 'Public Sans' }}>
                         {ownedPublications[0]?.name || "Publication Name"}
                       </h3>
-                      <p className="text-xs text-gray-400 leading-relaxed">
+                      <p className="w-full max-w-[414px] min-h-[63px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#A4A4A4]" style={{ fontFamily: 'Public Sans' }}>
                         {ownedPublications[0]?.description || "Note: Edit/Upload your logo, Favicon & Publication Description inside the publication settings. Start with clicking this Publication card"}
                       </p>
                     </div>
@@ -115,10 +121,17 @@ export default function DashboardPage() {
                       switchPublication(ownedPublications[0]);
                       router.push(`/home?pub=${ownedPublications[0].id}`);
                     }}
-                    className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
+                    className="flex-shrink-0 min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center w-full sm:w-auto"
                   >
-                    Go to Publication
-                    <ChevronRight className="w-3.5 h-3.5" />
+                    <span 
+                      className="font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
+                      style={{ 
+                        fontFamily: 'Public Sans'
+                      }}
+                    >
+                      Go to Publication
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#A941FB]" />
                   </button>
                 </div>
               </div>
@@ -148,12 +161,12 @@ export default function DashboardPage() {
 
           {/* Joined Publication Section */}
           <section>
-            <h2 className="text-sm font-bold text-gray-900 mb-5">Joined Publications</h2>
+            <h2 className="w-auto h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-2" style={{ fontFamily: 'Public Sans' }}>Joined Publications</h2>
             {joinedPublications.length > 0 ? (
               <div className="space-y-4">
                 {joinedPublications.map((joinedPub) => (
-                  <div key={joinedPub.id} className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div key={joinedPub.id} className="w-full max-w-[819px] min-h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-[88px]">
                       <div className="flex gap-4 items-center flex-1 w-full">
                         <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {joinedPub.logoUrl ? (
@@ -174,8 +187,8 @@ export default function DashboardPage() {
                             </div>
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-1">{joinedPub.name}</h3>
+                        <div className="flex-1 min-w-0 w-full">
+                          <h3 className="w-full max-w-[135px] h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-1 overflow-hidden text-ellipsis" style={{ fontFamily: 'Public Sans' }}>{joinedPub.name}</h3>
                           <p className="text-xs text-gray-400 leading-relaxed">
                             {joinedPub.description || "No description provided"}
                           </p>
@@ -209,26 +222,48 @@ export default function DashboardPage() {
                         }}
                         className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
                       >
-                        Go to Publication
-                        <ChevronRight className="w-3.5 h-3.5" />
+                        <span 
+                          className="font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
+                          style={{ 
+                            fontFamily: 'Public Sans'
+                          }}
+                        >
+                          Go to Publication
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-[#A941FB]"/>
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                <div className="text-center flex py-2">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center  mb-3">
-                    <img src="/icons/pen.svg" alt="publication" className="w-12 h-12" />
+              <div className="w-full max-w-[819px] min-h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-[16px] h-full w-full">
+                  <div className="flex gap-4 items-center flex-1 min-w-0 w-full">
+                    <div className="w-[66px] h-[68px] rounded-[112px] opacity-100 border border-[#EDEDED] bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <img src="/icons/pen.svg" alt="publication" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0 w-full">
+                      <h3 className="w-full max-w-[135px] h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-1 overflow-hidden text-ellipsis" style={{ fontFamily: 'Public Sans' }}>Publication Name</h3>
+                      <p className="w-full max-w-[414px] min-h-[63px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#A4A4A4]" style={{ fontFamily: 'Public Sans' }}>
+                       Note: Edit/Upload your logo, Favicon & Publication Description inside the publication settings. Start with clicking this Publication card
+                      </p>
+                    </div>
                   </div>
-                  <div className="mx-auto">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1">No Joined Publications</h3>
-                    <p className="text-xs text-gray-400">
-                      You haven't joined any publications yet. Accept an invitation to get started.
-                    </p>
-                  </div>
-
+                  <button
+                    onClick={() => router.push('/create-publication')}
+                    className="flex-shrink-0 min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] gap-[4px] opacity-100 flex items-center justify-center w-full sm:w-auto"
+                  >
+                    <span 
+                      className="font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
+                      style={{ 
+                        fontFamily: 'Public Sans'
+                      }}
+                    >
+                      Go to Publication
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#A941FB]"/>
+                  </button>
                 </div>
               </div>
             )}

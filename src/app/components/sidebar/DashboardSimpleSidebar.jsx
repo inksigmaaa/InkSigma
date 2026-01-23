@@ -24,7 +24,7 @@ export default function DashboardSimpleSidebar() {
                                     className={styles.spaceButton}
                                     style={{
                                         fontWeight: pathname === '/dashboard' ? 'bold' : '400',
-                                        color: pathname === '/dashboard' ? '#000' : '#374151'
+                                        color: pathname === '/dashboard' ? '#2E2E2E' : '#B0B0B0'
                                     }}
                                 >
                                     My Space
@@ -39,6 +39,8 @@ export default function DashboardSimpleSidebar() {
                                 alt="settingsicon"
                                 className={styles.sideLogo}
                                 style={{
+                                    height:'24px',
+                                    width:'24px',
                                     opacity: pathname === '/profile-settings' ? '1' : '0.6',
                                     filter: pathname === '/profile-settings' ? 'brightness(0)' : 'none'
                                 }}
@@ -47,8 +49,9 @@ export default function DashboardSimpleSidebar() {
                                 <p
                                     className={styles.pubText}
                                     style={{
+                                        fontSize:'14px',
                                         fontWeight: pathname === '/profile-settings' ? 'bold' : '400',
-                                        color: pathname === '/profile-settings' ? '#000' : '#6B7280'
+                                        color: pathname === '/profile-settings' ? '#2E2E2E' : '#B0B0B0'
                                     }}
                                 >
                                     Settings
