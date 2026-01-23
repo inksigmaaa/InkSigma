@@ -86,8 +86,8 @@ export default function DashboardPage() {
             {ownedPublications.length > 0 ? (
               <div className="w-full max-w-[819px] min-h-[143px] rounded-[4px] gap-[16px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-0">
-                  <div className="flex gap-4 items-center flex-1 min-w-0 w-full">
-                    <div className="w-[72.42px] h-[74px] opacity-100 border border-gray-300 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  <div className="flex gap-9 items-center flex-1 min-w-0 w-full">
+                    <div className="w-[74px] h-[75px] opacity-100 border border-gray-300 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                       {ownedPublications[0]?.logoUrl ? (
                         <img
                           src={`http://localhost:5000${ownedPublications[0].logoUrl}`}
@@ -167,7 +167,7 @@ export default function DashboardPage() {
                 {joinedPublications.map((joinedPub) => (
                   <div key={joinedPub.id} className="w-full max-w-[819px] min-h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-[88px]">
-                      <div className="flex gap-4 items-center flex-1 w-full">
+                      <div className="flex gap-9 items-center flex-1 w-full">
                         <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {joinedPub.logoUrl ? (
                             <img
@@ -239,8 +239,8 @@ export default function DashboardPage() {
             ) : (
               <div className="w-full max-w-[819px] min-h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-[16px] h-full w-full">
-                  <div className="flex gap-4 items-center flex-1 min-w-0 w-full">
-                    <div className="w-[66px] h-[68px] rounded-[112px] opacity-100 border border-[#EDEDED] bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  <div className="flex gap-9 items-center flex-1 min-w-0 w-full">
+                    <div className="w-[68px] h-[70px] rounded-[112px] opacity-100 border border-[#EDEDED] bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                       <img src="/icons/pen.svg" alt="publication" className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0 w-full">
