@@ -155,7 +155,7 @@ export default function BlogDetailPage({ params }) {
         }
       />
 
-      <section className="flex-grow flex justify-center w-full pt-20">
+      <section className="flex-grow flex justify-center w-full pt-20 ">
         <div className="flex w-[90%] lg:w-[78%] max-w-[1600px] gap-6 relative">
           {/* Left Sidebar - Navigation & TOC */}
           <aside className="hidden lg:block w-[240px] flex-shrink-0 pt-5 sticky top-28 h-[calc(100vh-6rem)] overflow-y-auto z-30">
@@ -185,27 +185,27 @@ export default function BlogDetailPage({ params }) {
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1 max-w-[800px] w-full min-w-0 mx-auto pt-12 pb-20 px-12 border-l border-[#EAEAEA]">
+          <div className="flex-1 max-w-[800px] w-full min-w-0 mx-auto pt-12 pb-20 px-12 border-l border-[#EAEAEA] max-md:border-none max-md:px-2 max-md:pt-6">
             {/* Blog Title */}
-            <h1 className="text-[#202020] text-[40px] font-extrabold leading-[1.09] mb-6 tracking-normal break-words">
+            <h1 className="text-[#202020] text-[40px] font-extrabold leading-[1.09] mb-6 tracking-normal break-words max-md:text-[24px] max-md:leading-[1.2] max-md:mb-3 ">
               {blog.title}
             </h1>
 
             {/* Blog Description */}
-            <p className="text-base font-normal leading-7 tracking-[0.01em] text-[#696969] mb-6 break-words">
+            <p className="text-base font-normal leading-7 tracking-[0.01em] text-[#696969] mb-6 break-words max-md:text-sm max-md:leading-[1.5] max-md:mb-3 max-md:text-[#808080]">
               {blog.description}
             </p>
 
             {/* Mobile Categories/Tags */}
-            <div className="flex flex-wrap gap-2 mb-6 md:hidden">
-              <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">Category</span>
+            <div className="flex flex-wrap gap-2 mb-6 max-md:mb-3">
+              <span className="text-[#7C7C7C] text-sm font-normal leading-normal tracking-normal px-4 py-1.5 border border-[#EAEAEA] rounded-lg max-md:text-[10px] max-md:px-3">Category</span>
             </div>
 
             {/* Author and Date Meta */}
-            <div className="flex items-center justify-between py-3 border-t border-b border-[#EAEAEA] mb-10">
+            <div className="flex items-center justify-between py-3 border-t border-b border-[#EAEAEA] mb-10 max-md:mb-6">
               {/* Author */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 max-md:w-7 max-md:h-7 ">
                   {blog.author?.image ? (
                     <img
                       src={
@@ -230,20 +230,20 @@ export default function BlogDetailPage({ params }) {
                     </div>
                   )}
                 </div>
-                <span className="text-[#404040] text-base font-normal italic leading-[1.88] tracking-normal">
+                <span className="text-[#404040] text-base font-normal italic leading-[1.88] tracking-normal max-md:text-[12px] max-md:leading-[1.5]">
                   {blog.author?.name || 'Anonymous'}
                 </span>
               </div>
               
               {/* Date */}
-              <div className="flex items-center gap-2 text-[#808080] text-sm font-normal leading-normal tracking-normal">
-                <ClockIcon className="w-3.5 h-3.5" />
+              <div className="flex items-center gap-2 text-[#808080] text-sm font-normal leading-normal tracking-normal max-md:text-[12px] max-md:leading-[1.5]">
+                <ClockIcon className="w-3.5 h-3.5 max-md:w-2.5 max-md:h-2.5" />
                 <span>Created on {dateFormatted.fullDate || dateFormatted.date}</span>
               </div>
             </div>
 
             {/* Blog Image */}
-            <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden mb-10 bg-gray-100">
+            <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden mb-10 bg-gray-100 max-md:rounded max-md:mb-[30px]">
               <Image
                 src={thumbnailUrl}
                 alt={blog.title}
@@ -255,7 +255,7 @@ export default function BlogDetailPage({ params }) {
 
             {/* Blog Content */}
             <article
-              className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl"
+              className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px]"
               dangerouslySetInnerHTML={{ __html: (() => {
                 // Convert relative image URLs to full URLs for display
                 const apiUrl = 'http://localhost:5000';
