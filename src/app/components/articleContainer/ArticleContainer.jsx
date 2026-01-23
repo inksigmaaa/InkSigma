@@ -80,7 +80,7 @@ export default function ArticleContainer({ id, status, title, description, categ
     }
 
     const statusConfig = {
-        published: { bg: '#D5F2D4', color: '#72D770', text: 'Published', dotColor: '#72D770' },
+        published: { bg: '#D5F2D4', color: '#267F24', text: 'Published', dotColor: '#72D770' },
         draft: { bg: '#FFEADB', color: '#A34200', text: 'Draft', dotColor: '#FF9247' },
         scheduled: { bg: '#D6EEFB', color: '#0048B5', text: 'Scheduled', dotColor: '#0048B5' },
         trash: { bg: '#FFD6D6', color: '#A30000', text: 'Trash', dotColor: '#F13434' },
