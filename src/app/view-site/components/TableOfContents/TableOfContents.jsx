@@ -2,28 +2,32 @@
 
 import { useEffect, useState } from 'react';
 
-export default function TableOfContents() {
+export default function TableOfContents({ content }) {
   const [sections, setSections] = useState([]);
   const [activeSection, setActiveSection] = useState('');
 
   useEffect(() => {
-    // Extract all h2 headings from the article content
-    const article = document.querySelector('article');
-    if (article) {
-      const headings = article.querySelectorAll('h2');
-      const extractedSections = Array.from(headings).map((heading, index) => {
-        // Create an ID if it doesn't exist
-        if (!heading.id) {
-          heading.id = `section-${index + 1}`;
-        }
-        return {
-          id: heading.id,
-          title: heading.textContent,
-        };
-      });
-      setSections(extractedSections);
-    }
-  }, []);
+    // Small timeout to ensure DOM is updated with dangerouslySetInnerHTML
+    const timer = setTimeout(() => {
+      const article = document.querySelector('article');
+      if (article) {
+        const headings = article.querySelectorAll('h2');
+        const extractedSections = Array.from(headings).map((heading, index) => {
+          // Create an ID if it doesn't exist
+          if (!heading.id) {
+            heading.id = `section-${index + 1}`;
+          }
+          return {
+            id: heading.id,
+            title: heading.textContent,
+          };
+        });
+        setSections(extractedSections);
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [content]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -70,17 +74,17 @@ export default function TableOfContents() {
       {/* Table of Contents - Only show if there are sections */}
       {sections.length > 0 && (
         <div>
-          <h3 className="text-lg font-bold text-black mb-4">Table of Contents</h3>
+          <h3 className="text-[#14142D] text-xl font-bold leading-[19.2px] tracking-normal mb-4">Table of Contents</h3>
           <nav>
             <ul className="space-y-3">
               {sections.map((section) => (
                 <li key={section.id}>
                   <button
                     onClick={() => scrollToSection(section.id)}
-                    className={`text-left text-sm transition-colors hover:text-black ${
+                    className={`text-left text-sm transition-colors font-normal leading-5 tracking-normal hover:text-[#202020] ${
                       activeSection === section.id
-                        ? 'text-black font-medium'
-                        : 'text-gray-600'
+                        ? 'text-[#202020] font-semibold leading-6'
+                        : 'text-[#696969]'
                     }`}
                   >
                     {section.title}

@@ -75,7 +75,10 @@ export default function CategoryFilter({
           transition: 'all 0.2s ease'
         }}
       >
-        <span>{displayText}</span>
+        <span className="md:inline max-md:hidden">{displayText}</span>
+        <span className="md:hidden max-md:inline">
+          {selectedCategories.length > 0 ? `${selectedCategories.length} selected` : 'Category'}
+        </span>
         <img 
           src="/images/icons/down.svg" 
           alt="dropdown" 
