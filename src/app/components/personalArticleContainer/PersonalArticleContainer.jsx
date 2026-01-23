@@ -76,7 +76,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
         published: { bg: '#D5F2D4', color: '#267F42', text: 'Published' },
         draft: { bg: '#FFEADB', color: '#FF9247', text: 'Draft' },
         scheduled: { bg: '#D6EEFB', color: '#0048B5', text: 'Scheduled' },
-        trash: { bg: '#FFD6D6', color: '#F13434', text: 'Trash' },
+        trash: { bg: '#FFD6D6', color: '#A30000', text: 'Trash' },
         review: { bg: '#F3EEFF', color: '#3400A3', text: 'Under Review' },
         unpublished: { bg: '#FEF3C7', color: '#D97706', text: 'Unpublished' }
     }
