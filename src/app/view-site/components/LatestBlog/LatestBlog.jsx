@@ -9,7 +9,7 @@ import { getImageUrl } from '@/utils/imageUrl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-export default function LatestBlog({ searchQuery = '', blogs = [] }) {
+export default function LatestBlog({ searchQuery = '', blogs = [], publicationId }) {
   const [commentCount, setCommentCount] = useState(0);
   
   // Get the latest blog (first one in the array, sorted by date)
@@ -132,7 +132,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
           />
         </div>
 
-        <Link href={`/view-site/blog/${latestBlog.slug}`} className="absolute inset-0 rounded-2xl overflow-hidden cursor-pointer block">
+        <Link href={`/view-site/blog/${latestBlog.slug}${publicationId ? `?from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-2xl overflow-hidden cursor-pointer block">
           {/* Background Image */}
           <div className="absolute inset-0">
             <Image
@@ -222,7 +222,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
             />
           </div>
 
-          <Link href={`/view-site/blog/${latestBlog.slug}`} className="absolute inset-0 rounded-md overflow-hidden cursor-pointer block">
+          <Link href={`/view-site/blog/${latestBlog.slug}${publicationId ? `?from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-md overflow-hidden cursor-pointer block">
             <Image
               src={thumbnailUrl}
               alt={latestBlog.title}
