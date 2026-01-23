@@ -40,6 +40,12 @@ export default function PersonalArticles({
         setMounted(true)
     }, [])
 
+    // Add titleColor to articles so the container can use it for the dot
+    const articlesWithTitleColor = articles.map(article => ({
+        ...article,
+        titleColor: titleColor
+    }))
+
     return (
         <>
             {/* Mobile Action Bar - Fixed stripe below navbar using Portal */}
@@ -195,12 +201,12 @@ export default function PersonalArticles({
                 )}
 
                 <div className="mt-6 space-y-4 pb-[85px] animate-fadeIn">
-                    {articles.length === 0 ? (
+                    {articlesWithTitleColor.length === 0 ? (
                         <div className="flex items-center justify-center min-h-[200px] py-20 px-10 bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)] animate-fadeIn">
                             <p className="font-['Public_Sans'] font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">{emptyMessage}</p>
                         </div>
                     ) : (
-                        articles.map((article, index) => (
+                        articlesWithTitleColor.map((article, index) => (
                             <div
                                 key={article.id}
                                 className="animate-slideUp"

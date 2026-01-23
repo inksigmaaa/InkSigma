@@ -44,7 +44,7 @@ const getRelativeTime = (dateString) => {
     }
 }
 
-export default function PersonalArticleContainer({ id, status, title, description, categories, postedTime, createdAt, onRestore, onDelete, onDraft, onUnpublish, onRepublish, onPublish, isSelected, onSelect }) {
+export default function PersonalArticleContainer({ id, status, title, description, categories, postedTime, createdAt, onRestore, onDelete, onDraft, onUnpublish, onRepublish, onPublish, isSelected, onSelect, titleColor }) {
     const router = useRouter()
     const { currentPublication } = usePublication()
     const [longPressTimer, setLongPressTimer] = React.useState(null)
@@ -74,10 +74,10 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
     }
     const statusConfig = {
         published: { bg: '#D5F2D4', color: '#267F42', text: 'Published' },
-        draft: { bg: '#FFEADB', color: '#A34200', text: 'Draft' },
+        draft: { bg: '#FFEADB', color: '#FF9247', text: 'Draft' },
         scheduled: { bg: '#D6EEFB', color: '#0048B5', text: 'Scheduled' },
-        trash: { bg: '#FFD6D6', color: '#A30000', text: 'Trash' },
-        review: { bg: '#E9D5FF', color: '#7C3AED', text: 'Review' },
+        trash: { bg: '#FFD6D6', color: '#F13434', text: 'Trash' },
+        review: { bg: '#F3EEFF', color: '#3400A3', text: 'Under Review' },
         unpublished: { bg: '#FEF3C7', color: '#D97706', text: 'Unpublished' }
     }
 
@@ -114,7 +114,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                 }
             `}</style>
             <div
-                className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center min-[768px]:flex min-[768px]:min-w-[88px] min-[768px]:w-auto max-[640px]:flex max-[640px]:min-w-[88px] max-[640px]:w-auto min-[641px]:max-[767px]:hidden"
+                className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center max-[640px]:flex max-[640px]:min-w-[88px] max-[640px]:w-auto min-[641px]:max-[767px]:hidden min-[768px]:flex min-[768px]:min-w-[88px] min-[768px]:w-auto"
                 style={{ background: config.bg, color: config.color }}
             >
                 {config.text}
@@ -310,8 +310,8 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     <div 
                         className="flex items-center justify-center flex-shrink-0"
                         style={{
-                            minWidth: '102px',
-                            width: '102px',
+                            minWidth: '120px',
+                            width: 'auto',
                             height: '26px',
                             borderRadius: '30px',
                             border: '1px solid #EAEAEA',
@@ -330,7 +330,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                                 width: '6px',
                                 height: '6px',
                                 borderRadius: '50%',
-                                backgroundColor: config.color,
+                                backgroundColor: titleColor || config.color,
                                 flexShrink: 0
                             }}
                         />
@@ -340,7 +340,8 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                             fontSize: '12px',
                             lineHeight: '150%',
                             letterSpacing: '0%',
-                            color: '#808080'
+                            color: '#808080',
+                            whiteSpace: 'nowrap'
                         }}>{config.text}</span>
                     </div>
                 </div>
