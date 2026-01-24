@@ -911,7 +911,7 @@ async function sendInvitationEmail(email, publicationName, role, token, inviterN
           <p><strong>${inviterName}</strong> has invited you to join <strong>${publicationName}</strong> as a <strong>${role}</strong>.</p>
           
           <div style="margin: 30px 0;">
-            <a href="${acceptUrl}" style="background-color: #7C3AED; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-right: 10px;">Accept Invitation</a>
+            <a href="${acceptUrl}" style="background-color: #3400A3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-right: 10px;">Accept Invitation</a>
             <a href="${declineUrl}" style="background-color: #6B7280; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Decline</a>
           </div>
           

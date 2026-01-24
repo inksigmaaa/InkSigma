@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Clock } from "lucide-react"
+import Image from "next/image"
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
 import EditorSidebar from "../components/sidebar/EditorSidebar"
@@ -161,9 +162,26 @@ export default function ReviewPage() {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)
-    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
-    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-    return `${days[date.getDay()]} | ${date.getDate()} ${months[date.getMonth()]}, ${date.getFullYear()}`
+    const now = new Date()
+    const diffTime = Math.abs(now - date)
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60))
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+    
+    // Less than 24 hours - show hours
+    if (diffHours < 1) return 'Sent less than an hour ago'
+    if (diffHours === 1) return 'Sent 1 hour ago'
+    if (diffHours < 24) return `Sent ${diffHours} hours ago`
+    
+    // 24 hours or more - show full date
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    
+    const dayName = days[date.getDay()]
+    const monthName = months[date.getMonth()]
+    const day = date.getDate()
+    const year = date.getFullYear()
+    
+    return `Sent on ${dayName}, ${monthName} ${day}, ${year}`
   }
 
   if (reviewLoading) {
@@ -204,7 +222,7 @@ export default function ReviewPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#267F24' }}></div>
                 <h1 className="text-base font-bold text-gray-800">Review</h1>
                 <span className="text-sm text-gray-500">({filteredArticles.length})</span>
               </div>
@@ -229,24 +247,66 @@ export default function ReviewPage() {
                 filteredArticles.map((article) => (
                   <div 
                     key={article.id} 
-                    className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
-                    
+                    className="bg-white border border-[#EDEDED] cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+                    style={{
+                      width: '786px',
+                      maxWidth: '100%',
+                      minHeight: '151px',
+                      borderRadius: '8px',
+                      padding: '24px'
+                    }}
                   >
                     {/* Desktop Layout */}
-                    <div className="hidden md:flex items-start gap-4">
-                      
-                      
-                      <div className="flex-1 mt-[-5px]">
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    <div className="hidden md:flex items-start h-full gap-4 min-h-[103px]">
+                      {/* Checkbox */}
+                      <div className="flex items-start pt-1">
+                        <Checkbox
+                          checked={selectedPosts.includes(article.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedPosts([...selectedPosts, article.id])
+                            } else {
+                              setSelectedPosts(selectedPosts.filter(id => id !== article.id))
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 flex flex-col justify-between min-h-[103px]">
+                        {/* Top row: Title, Author, and Buttons */}
+                        <div className="flex justify-between items-start">
+                          <div className="flex flex-col gap-1 flex-1 pr-4">
+                            <h3 
+                              className="font-semibold"
+                              style={{
+                                fontFamily: 'Public Sans, sans-serif',
+                                fontWeight: 600,
+                                fontSize: '14px',
+                                lineHeight: '100%',
+                                color: '#000000'
+                              }}
+                            >
                               {article.title}
                             </h3>
-                            <p className="text-gray-400 text-sm underline">
+                            <p 
+                              className="underline"
+                              style={{
+                                fontFamily: 'Public Sans, sans-serif',
+                                fontWeight: 400,
+                                fontSize: '14px',
+                                lineHeight: '150%',
+                                color: '#A4A4A4',
+                                textDecorationLine: 'underline'
+                              }}
+                            >
                               {article.author?.name || 'Unknown Author'}
                             </p>
                           </div>
-                          <div className="flex gap-2">
+
+                          {/* Buttons */}
+                          <div className="flex gap-2 flex-shrink-0">
                             {/* Show different actions based on user role and article ownership */}
                             {article.author?.id === session?.user?.id ? (
                               /* If it's user's own article, only show Revert to Draft */
@@ -263,122 +323,305 @@ export default function ReviewPage() {
                             ) : (
                               /* If it's another author's article, show Accept and Reject */
                               <>
-                                <Button 
-                                  variant="outline" 
-                                  className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700"
+                                <button
+                                  className="hover:opacity-80 transition-opacity flex items-center justify-center"
+                                  style={{
+                                    width: '66px',
+                                    height: '32px',
+                                    borderRadius: '4px',
+                                    padding: '8px',
+                                    backgroundColor: '#FEECEC',
+                                    fontFamily: 'Public Sans, sans-serif',
+                                    fontWeight: 400,
+                                    fontSize: '14px',
+                                    lineHeight: '20px',
+                                    color: '#F53D3D',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    textAlign: 'center'
+                                  }}
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     handleReject(article.id)
                                   }}
                                 >
                                   Reject
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700"
+                                </button>
+                                <button
+                                  className="hover:opacity-80 transition-opacity flex items-center justify-center"
+                                  style={{
+                                    width: '71px',
+                                    height: '32px',
+                                    borderRadius: '4px',
+                                    padding: '8px',
+                                    backgroundColor: '#E6F7EA',
+                                    fontFamily: 'Public Sans, sans-serif',
+                                    fontWeight: 400,
+                                    fontSize: '14px',
+                                    lineHeight: '20px',
+                                    color: '#06AD2B',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    textAlign: 'center'
+                                  }}
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     handleAccept(article)
                                   }}
                                 >
                                   Accept
-                                </Button>
+                                </button>
                               </>
                             )}
                           </div>
                         </div>
-                        
-                        <div className="flex items-center justify-between flex-wrap gap-4">
-                          <div className="flex gap-2 flex-wrap">
+
+                        {/* Bottom row: Categories and Date */}
+                        <div className="flex items-center justify-between gap-4 mt-auto">
+                          {/* Categories - Scrollable */}
+                          <div 
+                            className="flex gap-2 overflow-x-auto scrollbar-hide flex-1"
+                            style={{
+                              overflowY: 'hidden',
+                              maxWidth: 'calc(100% - 200px)'
+                            }}
+                          >
+                            <style jsx>{`
+                              .scrollbar-hide::-webkit-scrollbar {
+                                display: none;
+                              }
+                              .scrollbar-hide {
+                                -ms-overflow-style: none;
+                                scrollbar-width: none;
+                              }
+                            `}</style>
                             {(article.categories || []).map((tag, index) => (
                               <span 
                                 key={index}
-                                className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded"
+                                className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded whitespace-nowrap flex-shrink-0"
                               >
                                 {tag}
                               </span>
                             ))}
                           </div>
-                          
-                          <div className="flex items-center gap-2 text-gray-400 text-sm">
-                            <Clock className="h-4 w-4" />
-                            <span>{formatDate(article.createdAt)}</span>
+
+                          {/* Date - aligned to right edge */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Clock className="h-4 w-4" style={{ color: '#A4A4A4' }} />
+                            <span 
+                              style={{
+                                fontFamily: 'Public Sans, sans-serif',
+                                fontWeight: 400,
+                                fontSize: '14px',
+                                color: '#A4A4A4',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              {formatDate(article.createdAt)}
+                            </span>
                           </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Mobile Layout */}
-                    <div className="md:hidden">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                            {article.title}
-                          </h3>
-                          <p className="text-gray-400 text-sm underline">
-                            {article.author?.name || 'Unknown Author'}
-                          </p>
-                        </div>
-                        
-                        <div className="flex gap-2 ml-4">
-                          {/* Show different actions based on user role and article ownership */}
-                          {article.author?.id === session?.user?.id ? (
-                            /* If it's user's own article, only show Revert to Draft */
-                            <Button 
-                              variant="outline"
-                              size="sm"
-                              className="text-gray-700 border-gray-300 hover:bg-gray-50"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRevertToDraft(article.id)
+                    <div className="md:hidden overflow-hidden">
+                      <div className="flex flex-col gap-4">
+                        {/* Title, Author, and Buttons */}
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 
+                              className="font-semibold mb-1"
+                              style={{
+                                fontFamily: 'Public Sans, sans-serif',
+                                fontWeight: 600,
+                                fontSize: '14px',
+                                lineHeight: '100%',
+                                color: '#000000'
                               }}
                             >
-                              Revert
-                            </Button>
-                          ) : (
-                            /* If it's another author's article, show Accept and Reject */
-                            <>
+                              {article.title}
+                            </h3>
+                            <p 
+                              className="underline"
+                              style={{
+                                fontFamily: 'Public Sans, sans-serif',
+                                fontWeight: 400,
+                                fontSize: '14px',
+                                lineHeight: '150%',
+                                color: '#A4A4A4',
+                                textDecorationLine: 'underline'
+                              }}
+                            >
+                              {article.author?.name || 'Unknown Author'}
+                            </p>
+                          </div>
+                          
+                          <div className="flex gap-2 ml-4 flex-shrink-0">
+                            {/* Show different actions based on user role and article ownership */}
+                            {article.author?.id === session?.user?.id ? (
+                              /* If it's user's own article, only show Revert to Draft */
                               <Button 
-                                variant="outline" 
-                                size="icon"
-                                className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700 h-12 w-12"
+                                variant="outline"
+                                size="sm"
+                                className="text-gray-700 border-gray-300 hover:bg-gray-50"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  handleReject(article.id)
+                                  handleRevertToDraft(article.id)
                                 }}
                               >
-                                ✕
+                                Revert
                               </Button>
-                              <Button 
-                                variant="outline" 
-                                size="icon"
-                                className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700 h-12 w-12"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleAccept(article)
-                                }}
-                              >
-                                ✓
-                              </Button>
-                            </>
-                          )}
+                            ) : (
+                              /* If it's another author's article, show icon buttons for screens < 540px, text buttons for larger */
+                              <>
+                                {/* Icon buttons for mobile (< 540px) */}
+                                <div className="flex gap-2 max-[540px]:flex min-[540px]:hidden">
+                                  <button
+                                    className="hover:opacity-80 transition-opacity flex items-center justify-center"
+                                    style={{
+                                      width: '26px',
+                                      height: '26px',
+                                      borderRadius: '4px',
+                                      border: '1px solid #FFD6D6',
+                                      backgroundColor: 'transparent',
+                                      cursor: 'pointer',
+                                      padding: '0'
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleReject(article.id)
+                                    }}
+                                  >
+                                    <Image 
+                                      src="/images/icons/cross.svg" 
+                                      alt="Reject" 
+                                      width={14} 
+                                      height={14}
+                                    />
+                                  </button>
+                                  <button
+                                    className="hover:opacity-80 transition-opacity flex items-center justify-center"
+                                    style={{
+                                      width: '26px',
+                                      height: '26px',
+                                      borderRadius: '4px',
+                                      border: '1px solid #D5F2D4',
+                                      backgroundColor: 'transparent',
+                                      cursor: 'pointer',
+                                      padding: '0'
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleAccept(article)
+                                    }}
+                                  >
+                                    <Image 
+                                      src="/images/icons/tick3.svg" 
+                                      alt="Accept" 
+                                      width={14} 
+                                      height={14}
+                                    />
+                                  </button>
+                                </div>
+                                
+                                {/* Text buttons for tablet/desktop (>= 540px) */}
+                                <div className="hidden min-[540px]:flex gap-2">
+                                  <button
+                                    className="hover:opacity-80 transition-opacity flex items-center justify-center"
+                                    style={{
+                                      width: '66px',
+                                      height: '32px',
+                                      borderRadius: '4px',
+                                      padding: '8px',
+                                      backgroundColor: '#FEECEC',
+                                      fontFamily: 'Public Sans, sans-serif',
+                                      fontWeight: 400,
+                                      fontSize: '14px',
+                                      lineHeight: '20px',
+                                      color: '#F53D3D',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      textAlign: 'center'
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleReject(article.id)
+                                    }}
+                                  >
+                                    Reject
+                                  </button>
+                                  <button
+                                    className="hover:opacity-80 transition-opacity flex items-center justify-center"
+                                    style={{
+                                      width: '71px',
+                                      height: '32px',
+                                      borderRadius: '4px',
+                                      padding: '8px',
+                                      backgroundColor: '#E6F7EA',
+                                      fontFamily: 'Public Sans, sans-serif',
+                                      fontWeight: 400,
+                                      fontSize: '14px',
+                                      lineHeight: '20px',
+                                      color: '#06AD2B',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      textAlign: 'center'
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleAccept(article)
+                                    }}
+                                  >
+                                    Accept
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex gap-2 flex-wrap mb-4">
-                        {(article.categories || []).map((tag, index) => (
+                        
+                        {/* Categories - scrollable */}
+                        <div 
+                          className="flex gap-2 overflow-x-auto scrollbar-hide"
+                          style={{
+                            overflowY: 'hidden'
+                          }}
+                        >
+                          <style jsx>{`
+                            .scrollbar-hide::-webkit-scrollbar {
+                              display: none;
+                            }
+                            .scrollbar-hide {
+                              -ms-overflow-style: none;
+                              scrollbar-width: none;
+                            }
+                          `}</style>
+                          {(article.categories || []).map((tag, index) => (
+                            <span 
+                              key={index}
+                              className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded whitespace-nowrap flex-shrink-0"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Date */}
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" style={{ color: '#A4A4A4' }} />
                           <span 
-                            key={index}
-                            className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded"
+                            style={{
+                              fontFamily: 'Public Sans, sans-serif',
+                              fontWeight: 400,
+                              fontSize: '14px',
+                              color: '#A4A4A4',
+                              whiteSpace: 'nowrap'
+                            }}
                           >
-                            {tag}
+                            {formatDate(article.createdAt)}
                           </span>
-                        ))}
-                      </div>
-                      
-                      <div className="flex items-center gap-2 text-gray-400 text-sm">
-                        <Clock className="h-4 w-4" />
-                        <span>{formatDate(article.createdAt)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>

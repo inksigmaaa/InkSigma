@@ -121,7 +121,7 @@ export default function CategoryFilter({
                   fontSize: '14px',
                   lineHeight: '150%',
                   letterSpacing: '0%',
-                  color: selectedCategories.includes(category) ? '#7C3AED' : '#B0B0B0'
+                  color: selectedCategories.includes(category) ? '#3400A3' : '#B0B0B0'
                 }}
               >
                 <span className="flex-1">{category}</span>

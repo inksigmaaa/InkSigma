@@ -8,7 +8,7 @@ import { getImageUrl } from '@/utils/imageUrl';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-export default function AllArticles({ searchQuery = '', selectedCategory = '', blogs = [] }) {
+export default function AllArticles({ searchQuery = '', selectedCategory = '', blogs = [], publicationId }) {
   const [commentCounts, setCommentCounts] = useState({});
 
   // Fetch comment counts for all blogs
@@ -124,7 +124,7 @@ export default function AllArticles({ searchQuery = '', selectedCategory = '', b
                 />
               </div>
 
-              <Link href={`/view-site/blog/${article.slug}`} className="absolute inset-0 rounded-md md:rounded-md overflow-hidden cursor-pointer block">
+              <Link href={`/view-site/blog/${article.slug}${publicationId ? `?from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-md md:rounded-md overflow-hidden cursor-pointer block">
                 {/* Background Image */}
                 <Image 
                   src={thumbnailUrl} 
@@ -145,9 +145,14 @@ export default function AllArticles({ searchQuery = '', selectedCategory = '', b
             {/* Category - Always at bottom */}
             {article.categories && article.categories.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-auto items-center">
-                <span className="px-4 py-1.5  bg-white text-[#7C7C7C] border rounded-lg border-gray-300 max-md:rounded-md text-xs md:text-sm max-md:px-3 max-md:py-1.5 hover:bg-gray-50 transition-colors cursor-pointer">
-                  {article.categories[0]}
-                </span>
+                {article.categories.map((category, index) => (
+                  <span 
+                    key={index}
+                    className="px-4 py-1.5 bg-white text-[#7C7C7C] border rounded-lg border-gray-300 max-md:rounded-md text-xs md:text-sm max-md:px-3 max-md:py-1.5 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    {category}
+                  </span>
+                ))}
               </div>
             )}
 

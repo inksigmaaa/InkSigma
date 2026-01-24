@@ -6,7 +6,7 @@ export default function ConfirmModal({ isOpen, onClose, onConfirm, title, messag
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] px-4"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10001] px-4"
       onClick={onClose}
     >
       <div
