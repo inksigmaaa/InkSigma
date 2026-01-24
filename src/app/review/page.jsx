@@ -172,16 +172,14 @@ export default function ReviewPage() {
     if (diffHours === 1) return 'Sent 1 hour ago'
     if (diffHours < 24) return `Sent ${diffHours} hours ago`
     
-    // 24 hours or more - show full date
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    // 24 hours or more - show full date without day of week
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
     
-    const dayName = days[date.getDay()]
     const monthName = months[date.getMonth()]
     const day = date.getDate()
     const year = date.getFullYear()
     
-    return `Sent on ${dayName}, ${monthName} ${day}, ${year}`
+    return `Sent on ${monthName} ${day}, ${year}`
   }
 
   if (reviewLoading) {

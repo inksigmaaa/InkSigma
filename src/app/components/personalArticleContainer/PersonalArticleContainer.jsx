@@ -4,11 +4,10 @@ import { usePublication } from '@/contexts/PublicationContext'
 import React from 'react'
 
 // Helper function to format relative time
-const getRelativeTime = (dateString) => {
+const getRelativeTime = (dateString, status) => {
     if (!dateString) return ''
     
     try {
-        const now = new Date()
         const postDate = new Date(dateString)
         
         // Check if date is valid
@@ -16,6 +15,13 @@ const getRelativeTime = (dateString) => {
             return dateString // Return original string if invalid
         }
         
+        // For review status, show full date format
+        if (status === 'review') {
+            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
+            return `Sent on ${postDate.toLocaleDateString('en-US', options)}`
+        }
+        
+        const now = new Date()
         const diffInSeconds = Math.floor((now - postDate) / 1000)
         const diffInMinutes = Math.floor(diffInSeconds / 60)
         const diffInHours = Math.floor(diffInMinutes / 60)
@@ -355,6 +361,14 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                                 <button 
                                     className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
                                     style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
+                                    title="Edit" 
+                                    onClick={handleEdit}
+                                >
+                                    <img src="/images/icons/edit.svg" alt="edit" />
+                                </button>
+                                <button 
+                                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
+                                    style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
                                     title="Restore" 
                                     onClick={onRestore}
                                 >
@@ -501,7 +515,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                                 <path d="M8 4V8L11 10" stroke="#A4A4A4" strokeWidth="1.5" strokeLinecap="round" />
                             </svg>
                             <span className="font-['Public_Sans']" style={{ fontWeight: 400 }}>
-                                {createdAt ? getRelativeTime(createdAt) : postedTime}
+                                {createdAt ? getRelativeTime(createdAt, status) : postedTime}
                             </span>
                         </div>
                     )}
@@ -513,7 +527,7 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     <div className="min-[641px]:hidden flex items-center gap-1 text-[#A4A4A4]" style={{ fontSize: '10px', lineHeight: '150%', fontFamily: 'Public Sans', fontWeight: 400 }}>
                         <img src="/images/icons/clock.svg" alt="clock" width="9" height="9" />
                         <span>
-                            {createdAt ? getRelativeTime(createdAt) : postedTime}
+                            {createdAt ? getRelativeTime(createdAt, status) : postedTime}
                         </span>
                     </div>
                 )}

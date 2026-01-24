@@ -729,7 +729,7 @@ export default function EditorPageClient() {
           </div>
 
           {/* Editor Content Area */}
-          <div className="w-[917px] bg-white overflow-y-auto" style={{ maxHeight: 'calc(100vh - 280px)', minHeight: '400px' }}>
+          <div className="w-[917px] bg-white" style={{ minHeight: '400px', paddingBottom: '70px' }}>
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
                 <span className="text-gray-500">Loading blog content...</span>
@@ -811,35 +811,73 @@ export default function EditorPageClient() {
           {existingBlogStatus === 'published' ? (
             <>
               <button 
-                className="flex items-center justify-center gap-3 w-40 h-8 rounded border border-gray-200 bg-gray-100 px-6 py-2 text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
-                onClick={handleDraft}
+                className="flex items-center justify-center gap-2 h-8 rounded px-6 py-2 transition-colors disabled:opacity-50"
+                onClick={handleSave}
                 disabled={isSaving}
+                style={{
+                  width: '160px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  padding: '8px 24px',
+                  background: '#080808',
+                  fontFamily: 'Public Sans',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '150%',
+                  letterSpacing: '0%',
+                  color: '#EDEDED'
+                }}
               >
-                <img src="/images/icons/Draft.svg" alt="Revert to draft" className="w-5 h-5" />
-                <span className="whitespace-nowrap font-normal text-sm text-gray-900">
-                  Revert to Draft
-                </span>
+                {isSaving ? 'Updating...' : 'Update'}
               </button>
               
               <button 
-                className="flex items-center justify-center gap-2 w-40 h-8 rounded bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
-                onClick={handleSave}
+                className="flex items-center justify-center rounded transition-colors disabled:opacity-50"
+                onClick={handleDraft}
                 disabled={isSaving}
+                style={{
+                  width: '160px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  border: '1px solid #F3F3F3',
+                  padding: '8px 24px',
+                  gap: '4px',
+                  background: '#F4F4F4',
+                  fontFamily: 'Public Sans',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '150%',
+                  letterSpacing: '0%',
+                  color: '#2E2E2E'
+                }}
               >
-                {isSaving ? 'Updating...' : 'Update'}
+                <img src="/images/icons/Draft.svg" alt="Revert to draft" className="w-5 h-5" style={{ filter: 'brightness(0) saturate(100%)' }} />
+                <span className="whitespace-nowrap">
+                  Revert to Draft
+                </span>
               </button>
             </>
           ) : existingBlogStatus === 'trash' ? (
             <>
               <button 
-                className="flex items-center justify-center gap-3 w-40 h-8 rounded border border-gray-200 bg-gray-100 px-6 py-2 text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-2 h-8 rounded px-6 py-2 transition-colors disabled:opacity-50"
                 onClick={handleRevertFromTrash}
                 disabled={isSaving}
+                style={{
+                  width: '160px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  padding: '8px 24px',
+                  background: '#080808',
+                  fontFamily: 'Public Sans',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '150%',
+                  letterSpacing: '0%',
+                  color: '#EDEDED'
+                }}
               >
-                <img src="/images/icons/Draft.svg" alt="Revert to draft" className="w-5 h-5" />
-                <span className="whitespace-nowrap font-normal text-sm text-gray-900">
-                  Revert to Draft
-                </span>
+                {isSaving ? 'Reverting...' : 'Revert to Draft'}
               </button>
             </>
           ) : existingBlogStatus === 'scheduled' ? (
