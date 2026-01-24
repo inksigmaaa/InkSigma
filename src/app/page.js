@@ -77,16 +77,16 @@ export default function Home() {
       {/* Main content area */}
       <main className="w-full">
         {/* Features Section - Mobile Responsive */}
-        <section id="features" className="w-full flex items-center justify-center py-12 md:py-20">
+        <section id="features" className="w-full flex items-center justify-center py-8 md:py-16">
           <div className="w-full max-w-screen-xl px-4 md:px-8">
-            <h2 className="font-extrabold text-3xl md:text-5xl text-gray-800 text-center leading-none tracking-normal font-sans mb-8 md:mb-16">
+            <h2 className="font-extrabold text-3xl md:text-5xl text-gray-800 text-center leading-none tracking-normal font-sans mb-6 md:mb-12">
               Features
             </h2>
             
             {/* Features Grid - Mobile Responsive */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-x-[106px] md:gap-y-8 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-x-[106px] md:gap-y-6 max-w-4xl mx-auto">
               {/* Left Column */}
-              <div className="space-y-4 md:space-y-8">
+              <div className="space-y-3 md:space-y-6">
                 <div className="flex items-start gap-3">
                   <img src="/svg/tick.svg" alt="Check" className="w-8 h-8 md:w-11 md:h-11 flex-shrink-0" />
                   <div>
@@ -104,8 +104,8 @@ export default function Home() {
                 <div className="flex items-start gap-3">
                   <img src="/svg/tick.svg" alt="Check" className="w-8 h-8 md:w-11 md:h-11 flex-shrink-0" />
                   <div>
-                    <p className="font-normal text-sm md:text-base leading-[155%] text-[#2E2E2E] font-sans mb-2 md:mb-4">Search engine optimized</p>
-                    <ul className="ml-4 md:ml-6 space-y-1 md:space-y-2 font-normal text-sm md:text-base leading-[155%] text-[#2E2E2E] font-sans">
+                    <p className="font-normal text-sm md:text-base leading-[155%] text-[#2E2E2E] font-sans mb-1 md:mb-2">Search engine optimized</p>
+                    <ul className="ml-4 md:ml-6 space-y-0.5 md:space-y-1 font-normal text-sm md:text-base leading-[155%] text-[#2E2E2E] font-sans">
                       <li>• Meta title</li>
                       <li>• Meta description</li>
                       <li>• URL</li>
@@ -117,7 +117,7 @@ export default function Home() {
               </div>
               
               {/* Right Column */}
-              <div className="space-y-4 md:space-y-8">
+              <div className="space-y-3 md:space-y-6">
                 <div className="flex items-start gap-3">
                   <img src="/svg/tick.svg" alt="Check" className="w-8 h-8 md:w-11 md:h-11 flex-shrink-0" />
                   <div>
@@ -159,18 +159,18 @@ export default function Home() {
       </main>
       
       {/* Roadmap Section - Mobile Responsive */}
-      <section id="roadmap" className="w-full flex items-center justify-center py-12 md:py-20">
+      <section id="roadmap" className="w-full flex items-center justify-center py-8 md:py-16">
         <div className="w-full max-w-screen-xl px-4 md:px-8">
-          <h2 className="font-extrabold text-3xl md:text-5xl leading-[100%] text-center text-[#2E2E2E] font-sans mx-auto mb-8 md:mb-16">
+          <h2 className="font-extrabold text-3xl md:text-5xl leading-[100%] text-center text-[#2E2E2E] font-sans mx-auto mb-6 md:mb-12">
             Roadmap
           </h2>
           
           {/* Roadmap Content - Mobile Responsive */}
-          <div className="w-full max-w-[1094px] mx-auto p-4 md:p-8">
-            <div className="flex flex-col md:flex-row gap-6 md:gap-[59px] justify-center">
+          <div className="w-full max-w-[1094px] mx-auto p-4 md:p-6">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-[40px] justify-center">
               {/* V1 - Launched */}
-              <div className="w-full md:w-[325px] h-auto md:h-[325px] p-6 md:p-8 border border-[#EAEAEA] rounded-3xl flex flex-col">
-                <div className="flex items-center gap-2 md:gap-4 mb-4">
+              <div className="w-full md:w-[325px] h-auto md:h-[300px] p-4 md:p-6 border border-[#EAEAEA] rounded-3xl flex flex-col">
+                <div className="flex items-center gap-2 md:gap-4 mb-3">
                   <h3 className="font-bold text-2xl md:text-4xl leading-[100%] text-[#D3D3D3] font-sans">V1</h3>
                   <span className="font-medium text-sm md:text-base leading-[100%] text-black font-sans whitespace-nowrap">Launched right now</span>
                   <div className="w-5 h-5 md:w-6 md:h-6 bg-black rounded-full flex items-center justify-center">
@@ -179,9 +179,9 @@ export default function Home() {
                     </svg>
                   </div>
                 </div>
-                <hr className="border-t border-gray-200 mb-4 md:mb-6 -mx-6 md:-mx-8" />
+                <hr className="border-t border-gray-200 mb-3 md:mb-4 -mx-4 md:-mx-6" />
                 <div className="flex-1 flex flex-col justify-center items-center">
-                  <p className="font-medium text-sm leading-[100%] text-center text-[#2E2E2E] font-sans mb-4 md:mb-6">Experience the Product now</p>
+                  <p className="font-medium text-sm leading-[100%] text-center text-[#2E2E2E] font-sans mb-3 md:mb-4">Experience the Product now</p>
                   <Link href="/signup" className="w-[121px] h-[37px] py-2 rounded-[20px] border border-[#2E2E2E] bg-transparent hover:bg-gray-50 transition-colors flex items-center justify-center">
                     <span className="font-medium text-sm leading-[150%] text-[#2E2E2E] font-sans">Start here</span>
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" className="ml-1">
@@ -192,16 +192,16 @@ export default function Home() {
               </div>
               
               {/* V2 - Coming Soon */}
-              <div className="w-full md:w-[325px] h-auto md:h-[325px] p-6 md:p-8 border border-[#EAEAEA] rounded-3xl flex flex-col">
-                <div className="flex items-center gap-2 md:gap-[10px] mb-4">
+              <div className="w-full md:w-[325px] h-auto md:h-[300px] p-4 md:p-6 border border-[#EAEAEA] rounded-3xl flex flex-col">
+                <div className="flex items-center gap-2 md:gap-[10px] mb-3">
                   <h3 className="font-bold text-2xl md:text-4xl leading-[100%] text-[#D3D3D3] font-sans">V2</h3>
                   <div className="px-3 py-2 md:w-[124px] md:h-10 md:p-3 rounded-lg bg-[#F4F4F4] flex items-center justify-center">
                     <span className="font-medium text-sm md:text-base leading-[100%] text-center text-black font-sans">Coming Soon</span>
                   </div>
                 </div>
-                <hr className="border-t border-gray-200 mb-4 md:mb-6 -mx-6 md:-mx-8" />
-                <div className="flex-1 flex justify-center items-center">
-                  <ul className="font-normal text-sm md:text-base leading-[100%] text-black font-sans space-y-2 md:space-y-3">
+                <hr className="border-t border-gray-200 mb-3 md:mb-4 -mx-4 md:-mx-6" />
+                <div className="flex-1 flex justify-start items-center">
+                  <ul className="font-normal text-sm md:text-base leading-[100%] text-black font-sans space-y-1.5 md:space-y-2">
                     <li>• Infinite publications</li>
                     <li>• Roles for publication</li>
                     <li>• Custom domain hosting</li>
@@ -213,15 +213,15 @@ export default function Home() {
               </div>
               
               {/* V3 - Coming Soon */}
-              <div className="w-full md:w-[325px] h-auto md:h-[325px] p-6 md:p-8 border border-[#EAEAEA] rounded-3xl flex flex-col">
-                <div className="flex items-center gap-2 md:gap-[10px] mb-4">
+              <div className="w-full md:w-[325px] h-auto md:h-[300px] p-4 md:p-6 border border-[#EAEAEA] rounded-3xl flex flex-col">
+                <div className="flex items-center gap-2 md:gap-[10px] mb-3">
                   <h3 className="font-bold text-2xl md:text-4xl leading-[100%] text-[#D3D3D3] font-sans">V3</h3>
                   <div className="px-3 py-2 md:w-[124px] md:h-10 md:p-3 rounded-lg bg-[#F4F4F4] flex items-center justify-center">
                     <span className="font-medium text-sm md:text-base leading-[100%] text-center text-black font-sans">Coming Soon</span>
                   </div>
                 </div>
-                <hr className="border-t border-gray-200 mb-4 md:mb-6 -mx-6 md:-mx-8" />
-                <ul className="font-normal text-sm md:text-base leading-[100%] text-black font-sans space-y-2 md:space-y-3 flex-1">
+                <hr className="border-t border-gray-200 mb-3 md:mb-4 -mx-4 md:-mx-6" />
+                <ul className="font-normal text-sm md:text-base leading-[100%] text-black font-sans space-y-1.5 md:space-y-2 flex-1">
                   <li>• Advanced SEO</li>
                   <li>• Monetization</li>
                   <li>• AI search bar</li>
@@ -235,12 +235,12 @@ export default function Home() {
       </section>
       
       {/* Final CTA Section - Mobile Responsive */}
-      <section className="w-full flex items-center justify-center py-12 md:py-20">
+      <section className="w-full flex items-center justify-center py-8 md:py-16">
         <div className="w-full max-w-screen-xl px-4 md:px-8">
-          <h2 className="font-extrabold text-2xl md:text-5xl leading-[100%] text-center text-[#2E2E2E] font-sans mx-auto mb-6 md:mb-8">
+          <h2 className="font-extrabold text-2xl md:text-5xl leading-[100%] text-center text-[#2E2E2E] font-sans mx-auto mb-4 md:mb-6">
             Unleash your Creativity now
           </h2>
-          <div className="w-full max-w-[531px] mx-auto mb-6 md:mb-8 text-center px-4">
+          <div className="w-full max-w-[531px] mx-auto mb-4 md:mb-6 text-center px-4">
             <p className="font-[300] text-sm md:text-base leading-[120%] text-[#2E2E2E] opacity-100">
               Welcome to the home of writers - pen down your innermost musings, ideas, stories, and inspire others to grow through words that connect. Write daily, inspire & be heard
             </p>
