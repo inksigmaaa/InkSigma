@@ -53,6 +53,18 @@ export default function MobileBottomNav({ title, url, slug, description, section
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
+  // Lock body scroll when TOC is open
+  useEffect(() => {
+    if (showTOC) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showTOC]);
+
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(blogUrl);
@@ -191,7 +203,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
       {/* Table of Contents Modal */}
       {showTOC && (
         <div className="lg:hidden fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4" onClick={() => setShowTOC(false)}>
-          <div className=" px-8 pb-10 pt-6 bg-white rounded-lg w-full max-w-md max-h-[80vh] overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className=" px-8 pb-10 pt-6 bg-white rounded-lg w-full max-w-md max-h-[80vh] overflow-hidden shadow-2xl mt-auto" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="bg-white flex items-center justify-between ">
               <h3 className="text-sm font-bold leading-7 tracking-normal text-[#000000]">Table of Contents</h3>
