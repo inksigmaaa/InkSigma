@@ -77,7 +77,7 @@ export default function EditorPage() {
           <div className="ml-[165px] bg-white  p-8  max-md:ml-0 max-md:p-0">
           
           {/* Publication Header */}
-          <div className=" px-8 py-12 flex items-center justify-between max-md:border-b max-md:border-[#EDEDED] max-md:mx-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
+          <div className=" px-6 py-12 flex items-center justify-between max-md:border-b max-md:border-[#EDEDED] max-md:mx-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
             <div className="flex items-center gap-4 max-md:gap-3">
               <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
                 {currentPublication?.logoUrl ? (
