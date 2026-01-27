@@ -86,7 +86,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
     setShowTOC(false); // Close immediately
     const element = document.getElementById(id);
     if (element) {
-      const offset = 80;
+      const offset = 20;
       const elementPosition = element.offsetTop - offset;
       window.scrollTo({
         top: elementPosition,
