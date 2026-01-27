@@ -224,20 +224,12 @@ export default function ProfileSettingsPage() {
       <DashboardSimpleSidebar />
       <div className="min-h-screen bg-white flex justify-center p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 md:pl-64 pb-24 md:pb-8">
         <div className="w-full max-w-[800px] min-h-[927px] space-y-8">
-          <h1 className="text-lg font-bold text-gray-900 text-center">Profile Settings</h1>
+          <h1 className="h-[28px] opacity-100 font-bold text-[16px] text-center leading-[28px] tracking-[0%] text-[#000000]">Profile Settings</h1>
 
           <div className="flex flex-col items-center">
             {/* Profile Image */}
             <div className="flex flex-col items-center">
-              <div
-                style={{
-                  width: '100px',
-                  height: '100px',
-                  opacity: isUploadingImage ? 0.5 : 1,
-                  borderRadius: '52px',
-                  overflow: 'hidden'
-                }}
-              >
+              <div className={`w-[100px] h-[100px] rounded-[52px] overflow-hidden bg-gray-200 flex items-center justify-center border-gray-300 ${isUploadingImage ? 'opacity-50' : 'opacity-100'}`}>
                 <UserAvatar user={userForAvatar} size="xl" className="w-full h-full" />
               </div>
 
@@ -251,18 +243,18 @@ export default function ProfileSettingsPage() {
               />
 
               {/* Change/Remove buttons */}
-              <div className="flex gap-4 mt-4">
+              <div className="flex gap-2 mt-4">
                 <button 
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploadingImage}
-                  className="text-purple-500 hover:text-purple-600 text-sm font-medium disabled:opacity-50"
+                  className="w-[69px] h-[24px] opacity-100 gap-2 pt-[4px] pr-[8px] pb-[4px] pl-[8px] text-purple-500 hover:text-purple-600 text-sm font-medium disabled:opacity-50"
                 >
                   {isUploadingImage ? "Uploading..." : "Change"}
                 </button>
                 <button 
                   onClick={handleRemoveImage}
                   disabled={isUploadingImage || !imagePreview}
-                  className="text-gray-400 hover:text-gray-600 text-sm font-medium disabled:opacity-50"
+                  className="w-[69px] h-[24px] opacity-100 gap-2 pt-[4px] pr-[8px] pb-[4px] pl-[8px] text-gray-400 hover:text-gray-600 text-sm font-medium disabled:opacity-50"
                 >
                   Remove
                 </button>
@@ -273,7 +265,7 @@ export default function ProfileSettingsPage() {
             <div className="w-full max-w-[258.5px] mt-12 space-y-8">
               {/* Profile Name */}
               <div>
-                <label className="block text-black font-bold text-base mb-2">
+                <label className="block text-black font-bold text-sm mb-2">
                   Profile Name
                 </label>
                 <input
@@ -283,13 +275,13 @@ export default function ProfileSettingsPage() {
                   placeholder="Enter your Profile name"
                   value={profileName}
                   onChange={(e) => setProfileName(e.target.value)}
-                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-500"
+                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-900 placeholder-[#C8C8C8] placeholder:text-sm focus:outline-none focus:border-gray-500"
                 />
               </div>
 
               {/* Username */}
               <div>
-                <label className="block text-black font-bold text-base mb-2">
+                <label className="block text-black font-bold text-sm mb-2">
                   Username
                 </label>
                 <input
@@ -299,13 +291,13 @@ export default function ProfileSettingsPage() {
                   placeholder="Enter your username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-500"
+                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-900 placeholder-[#C8C8C8] placeholder:text-sm focus:outline-none focus:border-gray-500"
                 />
               </div>
 
               {/* Email ID - Read Only */}
               <div>
-                <label className="block text-black font-bold text-base mb-2">
+                <label className="block text-black font-bold text-sm mb-2">
                   Email ID
                 </label>
                 <input
@@ -313,13 +305,13 @@ export default function ProfileSettingsPage() {
                   value={email}
                   readOnly
                   disabled
-                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-500 placeholder-gray-300 focus:outline-none cursor-not-allowed bg-gray-50"
+                  className="w-full border-b border-gray-300 py-2 text-sm text-gray-500 placeholder-[#C8C8C8] placeholder:text-sm  focus:outline-none cursor-not-allowed bg-gray-50"
                 />
               </div>
 
               {/* Bio */}
               <div>
-                <label className="block text-black font-bold text-base mb-2">
+                <label className="block text-black font-bold text-sm mb-2">
                   Bio
                 </label>
                 <div className="relative">
@@ -329,7 +321,7 @@ export default function ProfileSettingsPage() {
                     maxLength={200}
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    className="w-full border-b border-gray-300 py-2 pr-12 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:border-gray-500"
+                    className="w-full border-b border-gray-300 py-2 pr-12 text-sm text-gray-900 placeholder-[#C8C8C8] placeholder:text-sm focus:outline-none focus:border-gray-500"
                   />
                   <span className="absolute right-0 bottom-2 text-xs text-gray-400">{bio.length}/200</span>
                 </div>
@@ -337,10 +329,9 @@ export default function ProfileSettingsPage() {
 
               {/* Reset Account Password */}
               {hasPasswordAccount && (
-                <div className="flex justify-center mt-8">
+                <div className="flex justify-center mt-16">
                   <button
-                    className="text-gray-500 hover:text-gray-700 border-b border-gray-500 text-sm"
-                    style={{ width: '162px', height: '16px' }}
+                    className="w-[162px] h-auto text-[#4B4B4B] hover:text-gray-700 border-b border-gray-500 text-sm"
                     onClick={() => setShowResetModal(true)}
                   >
                     Reset Account Password
@@ -348,7 +339,7 @@ export default function ProfileSettingsPage() {
                 </div>
               )}
               {!hasPasswordAccount && (
-                <div className="flex justify-center mt-8">
+                <div className="flex justify-center mt-16">
                   <p className="text-gray-400 text-sm text-center">
                     You signed in with a social provider. Password reset is not available.
                   </p>
@@ -357,7 +348,7 @@ export default function ProfileSettingsPage() {
 
               {/* Error Message */}
               {error && (
-                <div className="flex justify-center" style={{ marginTop: '16px' }}>
+                <div className="flex justify-center mt-4">
                   <div className="bg-red-100 text-red-800 text-center font-medium px-4 py-2 rounded text-sm">
                     {error}
                   </div>
@@ -366,35 +357,21 @@ export default function ProfileSettingsPage() {
 
               {/* Settings Updated Message */}
               {showUpdateMessage && (
-                <div className="flex justify-center" style={{ marginTop: '32px', marginBottom: '8px' }}>
-                  <div
-                    className="bg-green-100 text-green-800 text-center font-medium flex items-center justify-center"
-                    style={{
-                      width: '259px',
-                      height: '32px',
-                      borderRadius: '4px',
-                      fontSize: '14px',
-                    }}
-                  >
+                <div className="flex justify-center mt-8 mb-2">
+                  <div className="w-[259px] h-[32px] bg-green-100 text-green-800 text-center font-medium flex items-center justify-center rounded-md text-sm">
                     Settings Updated
                   </div>
                 </div>
               )}
 
               {/* Update Button */}
-              <div className="flex justify-center" style={{ marginTop: showUpdateMessage ? '0' : '32px' }}>
+              <div className={`flex justify-center ${showUpdateMessage ? 'mt-0' : 'mt-8'}`}>
                 <button
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    width: '259px',
-                    height: '32px',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                  }}
+                  className="w-[259px] h-[32px] rounded-[4px] bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 >
-                  {isSaving ? 'Saving...' : 'Update'}
+                  {isSaving ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </div>

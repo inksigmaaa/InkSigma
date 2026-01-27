@@ -40,10 +40,10 @@ export default function Footer({ publicationName = 'Jasmin blogs' }) {
     <footer className="w-full bg-white border-t border-gray-200 pt-10">
       <div className="flex flex-col items-center gap-4 pb-8">
         {/* Publication Name */}
-        <p className="text-gray-400 text-sm">© {currentYear} {publicationName}</p>
+        <p className="text-[#A4A4A4] text-xs font-normal leading-none tracking-normal">© {currentYear} {publicationName}</p>
         
         {/* CTA Text */}
-        <p className="text-gray-900 text-sm font-semibold leading-none">Eager to delve into the art of blog writing?</p>
+        <p className="text-[#202020] text-sm font-semibold leading-none tracking-normal">Eager to delve into the art of blog writing?</p>
         
         {/* Start Writing Button */}
         <button 
@@ -55,20 +55,20 @@ export default function Footer({ publicationName = 'Jasmin blogs' }) {
         </button>
         
         {/* Made with InkSigma */}
-        <p className="text-gray-400 text-xs font-normal leading-normal">
-          Made with <span className="text-purple-500">Inksigma</span>
+        <p className="text-[#A4A4A4] text-xs font-normal leading-normal">
+          Made with <span className="bg-[linear-gradient(90deg,#A941FB,#7864F0EB)] bg-clip-text text-transparent">Inksigma</span>
         </p>
       </div>
       
       {/* Bottom Links */}
       <div className="border-t border-b border-[#EDEDED] py-3">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-center gap-20 text-xs text-gray-400">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-center gap-20 text-xs text-[#A4A4A4] max-md:gap-10">
           <div className="flex items-center gap-2 flex-wrap justify-center">
-            <a href="#" className="hover:text-gray-600 transition-colors">Inksigma Website</a>
+            <a href="#" className="hover:text-[#C0C0C0] transition-colors">Inksigma Website</a>
             <span>•</span>
-            <a href="#" className="hover:text-gray-600 transition-colors">Terms and Conditions</a>
+            <a href="#" className="hover:text-[#C0C0C0] transition-colors">Terms and Conditions</a>
             <span>•</span>
-            <a href="#" className="hover:text-gray-600 transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-[#C0C0C0] transition-colors">Privacy Policy</a>
           </div>
           <p className="text-center">
             Copyright © {currentYear} designed & developed by Inksigma, a Zamurai Inc. brand

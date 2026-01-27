@@ -118,7 +118,7 @@ function SignupForm() {
 
       <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-gray-700 text-sm md:text-base">Email</Label>
+          <Label htmlFor="email" className="text-gray-700 text-sm md:text-sm">Email</Label>
           <Input
             id="email"
             type="email"

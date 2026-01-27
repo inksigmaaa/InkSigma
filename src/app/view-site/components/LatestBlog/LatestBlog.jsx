@@ -154,9 +154,11 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
               {/* Category */}
               {latestBlog.categories && latestBlog.categories.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  <span className="px-4 py-2 bg-[#A4A4A4]/60 backdrop-blur-sm  border border-white/30 rounded-lg text-[#F8F8F8] font-normal text-sm leading-[150%]">
-                    {latestBlog.categories[0]}
-                  </span>
+                  {latestBlog.categories.map((category, index) => (
+                    <span key={index} className="px-4 py-2 bg-[#A4A4A4]/60 backdrop-blur-sm  border border-white/30 rounded-lg text-[#F8F8F8] font-normal text-sm leading-[150%]">
+                      {category}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
@@ -240,9 +242,11 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
         {/* Category */}
         {latestBlog.categories && latestBlog.categories.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-auto items-center">
-            <span className="px-3 py-1.5 bg-white text-gray-700 border border-gray-300 rounded-md text-xs hover:bg-gray-50 transition-colors cursor-pointer">
-              {latestBlog.categories[0]}
-            </span>
+            {latestBlog.categories.map((category, index) => (
+              <span key={index} className="px-3 py-1.5 bg-white text-gray-700 border border-gray-300 rounded-md text-xs hover:bg-gray-50 transition-colors cursor-pointer">
+                {category}
+              </span>
+            ))}
           </div>
         )}
       </div>

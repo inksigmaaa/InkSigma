@@ -163,7 +163,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative h-screen overflow-hidden">
       <AuthLayout title="Login here!">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
@@ -187,8 +187,8 @@ function LoginForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="mb-[8px] md:mb-[12px]">
-        <div className="w-full md:w-[258.5px] h-auto md:h-[55px] gap-[12px] opacity-100 rotate-0 mb-6 md:mb-8">
+      <form onSubmit={handleSubmit} className="mb-[6px] md:mb-[8px]">
+        <div className="w-full md:w-[258.5px] h-auto md:h-[55px] gap-[12px] opacity-100 rotate-0 mb-4 md:mb-6">
           <Label htmlFor="email" className="w-auto md:w-[37px] h-auto md:h-[16px] font-semibold text-[12px] md:text-[14px] leading-[100%] tracking-[0%] text-[#2E2E2E] opacity-100 rotate-0">Email</Label>
           <Input
             id="email"
@@ -201,7 +201,7 @@ function LoginForm() {
           />
         </div>
 
-        <div className="mb-3 md:mb-6">
+        <div className="mb-2 md:mb-4">
           <PasswordField
             id="password"
             label="Password"
@@ -211,7 +211,7 @@ function LoginForm() {
           />
         </div>
 
-        <div className="text-right mb-[16px] md:mb-[20px]">
+        <div className="text-right mb-[12px] md:mb-[16px]">
           <Link
             href="/forgot-password"
             className="text-xs md:text-sm text-gray-500 hover:text-gray-700 transition-colors"
@@ -223,7 +223,7 @@ function LoginForm() {
         <Button
           type="submit"
           disabled={loading}
-          className="w-full md:w-[259px] h-[32px] opacity-100 rotate-0 gap-[10px] rounded-[4px] pt-[8px] pr-[20px] md:pr-[109px] pb-[8px] pl-[20px] md:pl-[109px] bg-[#080808] text-white hover:bg-gray-800 disabled:opacity-50 mb-3 md:mb-2 border-0 flex items-center justify-center mx-auto"
+          className="w-full md:w-[259px] h-[32px] opacity-100 rotate-0 gap-[10px] rounded-[4px] pt-[8px] pr-[20px] md:pr-[109px] pb-[8px] pl-[20px] md:pl-[109px] bg-[#080808] text-white hover:bg-gray-800 disabled:opacity-50 mb-2 md:mb-2 border-0 flex items-center justify-center mx-auto"
         >
           <span className="w-auto md:w-[32px] h-[18px] opacity-100 rotate-0 font-semibold text-[14px] max-md:text-[12px] leading-[150%] tracking-[0%] text-[#EDEDED]">
             {loading ? "Logging in..." : "Login"}
@@ -234,13 +234,13 @@ function LoginForm() {
           type="button"
           variant="outline"
           onClick={handleMagicLink}
-          className="w-full md:w-[259px] h-[28px] md:h-[32px] opacity-100 rotate-0 gap-[4px] rounded-[4px] pt-[6px] md:pt-[8px] pr-[20px] md:pr-[109px] pb-[6px] md:pb-[8px] pl-[20px] md:pl-[109px] border bg-[#F4F4F4] border-[#ECECEC] text-black hover:bg-gray-50 text-xs md:text-sm flex items-center justify-center mt-3"
+          className="w-full md:w-[259px] h-[28px] md:h-[32px] opacity-100 rotate-0 gap-[4px] rounded-[4px] pt-[6px] md:pt-[8px] pr-[20px] md:pr-[109px] pb-[6px] md:pb-[8px] pl-[20px] md:pl-[109px] border bg-[#F4F4F4] border-[#ECECEC] text-black hover:bg-gray-50 text-xs md:text-sm flex items-center justify-center mt-2"
         >
           <span className="h-[18px]">Login with Magic link</span>
         </Button>
       </form>
 
-      <div className="text-center mt-4 flex items-center justify-center gap-1 whitespace-nowrap">
+      <div className="text-center mt-3 flex items-center justify-center gap-1 whitespace-nowrap">
         <span className="w-[116px] h-[21px] opacity-100 rotate-0 font-medium text-[14px] leading-[150%] tracking-[0%] text-[#2E2E2E] whitespace-nowrap">
           New to InkSigma?
         </span>
@@ -252,14 +252,15 @@ function LoginForm() {
         </Link>
       </div>
 
-      <div className="text-center text-gray-400 mb-[8px] md:mb-[12px] text-xs md:text-sm">or</div>
+      <div className="text-center text-gray-400 mb-[6px] md:mb-[8px] text-xs md:text-sm">or</div>
 
       <GoogleAuthButton
         text="Login With Google"
         onClick={handleGoogleLogin}
       />
 
-      <div className="w-auto md:w-[260px] h-[16px] md:h-[24px] opacity-100 rotate-0 mt-4 md:mt-[32px] mx-auto flex items-center justify-center gap-2">
+      {/* Go Back to website - positioned with proper spacing */}
+      <div className="w-auto md:w-[260px] h-[16px] md:h-[24px] opacity-100 rotate-0 mt-2 md:mt-3 mb-4 mx-auto flex items-center justify-center gap-2">
         <Link
           href="/"
           className="flex items-center gap-2 hover:text-gray-500 transition-colors"
@@ -272,8 +273,8 @@ function LoginForm() {
       </div>
     </AuthLayout>
 
-    {/* Copyright - positioned 32px from bottom */}
-    <div className="absolute bottom-[32px] left-1/2 transform -translate-x-1/2 w-full h-[15px] opacity-100 rotate-0 flex items-center justify-center">
+    {/* Copyright - positioned at bottom with 32px spacing */}
+    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-full h-[15px] opacity-100 rotate-0 flex items-center justify-center">
       <p className="font-normal text-[10px] md:text-[12px] leading-[100%] tracking-[0%] text-[#A4A4A4] text-center whitespace-nowrap" style={{ fontFamily: 'Inter' }}>
         Copyright © 2023 designed & developed by Inksigma, a Zemuria Inc. brand
       </p>

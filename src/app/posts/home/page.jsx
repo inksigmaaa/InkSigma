@@ -166,7 +166,7 @@ export default function PostsHomePage() {
 
             {/* What's on your mind Section */}
             <div className="px-20 py-10 border border-gray-200 text-center mt-10 max-md:p-0 max-md:border-0">
-              <div className="max-md:bg-gray-50 flex flex-col items-center max-md:border max-md:border-gray-200 max-md:rounded-l max-md:p-6 max-md:mx-4 max-md:mb-4 gap-2">
+              <div className="max-md:bg-gray-50 flex flex-col items-center max-md:border max-md:border-gray-200 max-md:rounded-sm max-md:p-6 max-md:mx-4 max-md:mb-4 gap-2">
                 <h2 className="font-bold text-[16px] leading-[28px] tracking-normal text-[#2E2E2E] max-md:text-lg max-md:mb-3">
                   What's on your mind?
                 </h2>

@@ -63,7 +63,8 @@ function ViewSiteContent() {
       try {
         setLoading(true);
         // Use publicationId from URL query parameter if available, otherwise use currentPublication
-        const publicationId = pubIdFromUrl ? parseInt(pubIdFromUrl) : currentPublication?.id;
+        // Remove parseInt to support UUIDs and avoid NaN issues
+        const publicationId = pubIdFromUrl || currentPublication?.id;
         
         console.log('[ViewSite] Fetching blogs for publication:', publicationId);
         
@@ -142,7 +143,11 @@ function ViewSiteContent() {
         ) : (
           <>
             <LatestBlog searchQuery={searchQuery} blogs={blogs} />
-            <AllArticles searchQuery={searchQuery} selectedCategory={selectedCategory} blogs={blogs} />
+            <AllArticles 
+              searchQuery={searchQuery} 
+              selectedCategory={selectedCategory} 
+              blogs={searchQuery ? blogs : blogs.slice(1)} 
+            />
           </>
         )}
       </div>
