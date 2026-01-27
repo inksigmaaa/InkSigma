@@ -13,51 +13,36 @@ import { getImageUrl } from "@/utils/imageUrl"
 export default function PostsHomePage() {
   const router = useRouter()
   const { currentPublication, publicationDetails, loading: publicationLoading } = usePublication()
-  const [recentArticles, setRecentArticles] = useState([])
+  const { publicationArticles, loadPublicationArticles, pubArticlesLoading } = useArticles()
   const [loading, setLoading] = useState(true)
-  const lastPublicationIdRef = useRef(null)
-
-  const loadPublicationData = useCallback(async (pubId) => {
-    if (!pubId) return
-    
-    try {
-      // Fetch recent published articles for this publication
-      const articlesRes = await fetch(
-        `http://localhost:5000/api/blogs/publication/${pubId}?status=published&limit=4&offset=0`,
-        { credentials: "include" }
-      )
-
-      if (articlesRes.ok) {
-        const articlesData = await articlesRes.json()
-        console.log('[Home] Recent articles fetched:', articlesData.length, articlesData)
-        setRecentArticles(articlesData)
-      } else {
-        console.error('[Home] Failed to fetch articles:', articlesRes.status, articlesRes.statusText)
-      }
-    } catch (error) {
-      console.error("Error loading publication data:", error)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
 
   useEffect(() => {
-    console.log('[Home] useEffect triggered:', { currentPublication: currentPublication?.id, publicationLoading });
-    
-    if (!currentPublication?.id) {
-      console.log('[Home] No publication ID');
-      return;
+    const fetchArticles = async () => {
+      if (currentPublication?.id) {
+        setLoading(true)
+        try {
+          // Fetch published articles for this publication using context
+          // This populates publicationArticles which BlogStatsComponent also uses
+          await loadPublicationArticles(currentPublication.id, 'published')
+          console.log('[Home] Articles loaded via context')
+        } catch (error) {
+          console.error('[Home] Error loading articles:', error)
+        } finally {
+          setLoading(false)
+        }
+      }
     }
 
-    if (publicationLoading) {
-      console.log('[Home] Publication still loading');
-      return;
+    if (!publicationLoading && currentPublication?.id) {
+      fetchArticles()
     }
+  }, [currentPublication?.id, publicationLoading, loadPublicationArticles])
 
-    console.log('[Home] Loading publication data for:', currentPublication.id);
-    setLoading(true);
-    loadPublicationData(currentPublication.id);
-  }, [currentPublication?.id, publicationLoading])
+  // Get recent published articles (limit to 4)
+  const recentArticles = publicationArticles
+    .filter(article => article.status === 'published')
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 4)
 
   const handleStartWriting = () => {
     // Pass publicationId to editor so blogs are created for this publication
