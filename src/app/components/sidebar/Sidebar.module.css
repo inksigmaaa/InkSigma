@@ -80,7 +80,6 @@
     border-radius: 4px;
     cursor: pointer;
     transition: background 0.2s;
-    width: calc(100% - 20px);
     height: 32px;
     background: transparent;
 }
@@ -304,6 +303,7 @@
         box-shadow: 0px -4px 12px rgba(0, 0, 0, 0.08);
         overflow-x: auto;
         overflow-y: hidden;
+        min-height: unset;
     }
 
     .sidebarContainer {
@@ -326,6 +326,7 @@
         padding-bottom: 0;
         border-bottom: none;
         flex-shrink: 0;
+        white-space: nowrap;
     }
 
     .spaceIcon {
@@ -362,6 +363,8 @@
     .settings {
         padding: 4px 12px;
         flex-shrink: 0;
+        width: auto;
+        align-items: start;
     }
 
     .pubIcon {
