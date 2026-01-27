@@ -26,6 +26,15 @@ export const auth = betterAuth({
         storage: redisSessionStorage,
     },
 
+    user: {
+        additionalFields: {
+            name: {
+                type: "string",
+                required: false, // Make name field optional
+            }
+        }
+    },
+
     emailAndPassword: {
         enabled: true,
         requireEmailVerification: true,
@@ -49,7 +58,7 @@ export const auth = betterAuth({
             try {
                 await emailService.sendPasswordReset({
                     email: user.email,
-                    name: user.name,
+                    name: user.name || "User",
                     resetUrl: url,
                 });
                 console.log("[BETTER-AUTH] Reset password email sent successfully");
