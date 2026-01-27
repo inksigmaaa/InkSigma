@@ -7,35 +7,10 @@ const HEADER_OFFSET = 0; // Matches fixed header height
 const SCROLL_OFFSET = 180; // Offset for active section detection (must be > HEADER_OFFSET + padding)
 const STICKY_TOP_OFFSET = 100; // Sticky position from top
 
-export default function TableOfContents({ content }) {
-  const [sections, setSections] = useState([]);
+export default function TableOfContents({ sections = [] }) {
   const [activeSection, setActiveSection] = useState('');
 
-  // Extract headings from the article
-  useEffect(() => {
-    // Small timeout to ensure DOM is updated after content renders
-    const timer = setTimeout(() => {
-      const article = document.querySelector('article');
-      if (article) {
-        const headings = article.querySelectorAll('h2');
-        const extractedSections = Array.from(headings).map((heading, index) => {
-          // Create a consistent ID based on content or fallback to index
-          const id = heading.id || `section-${index + 1}`;
-          if (!heading.id) {
-            heading.id = id;
-          }
-          
-          return {
-            id,
-            title: heading.textContent,
-          };
-        });
-        setSections(extractedSections);
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [content]);
+  // Removed internal extraction logic as it's now handled by the parent
 
   // Handle scroll to highlight active section
   useEffect(() => {
@@ -107,10 +82,7 @@ export default function TableOfContents({ content }) {
           <ul className="space-y-4 relative pl-0 ml-0">
             {sections.map((section) => (
               <li key={section.id} className="relative pl-4">
-                 {/* Active Indicator Line */}
-                {activeSection === section.id && (
-                  <div className="absolute left-[-1px] top-0 h-full w-[2px] bg-[#202020] transition-all duration-300" />
-                )}
+                 
                 
                 <button
                   onClick={() => scrollToSection(section.id)}
