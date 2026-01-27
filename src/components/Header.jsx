@@ -23,7 +23,7 @@ export default function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 w-full max-w-[1920px] h-[84px] mx-auto z-50 pt-6 pb-6 border-b border-gray-200 opacity-100 overflow-hidden" style={{ background: '#FEFEFE' }}>
+    <header className="fixed top-0 left-0 right-0 w-full max-w-[1920px] h-[84px] mx-auto z-50 pt-6 pb-6 border-b border-gray-200 opacity-100 overflow-hidden max-md:h-16" style={{ background: '#FEFEFE' }}>
       <div className="w-full flex items-center justify-between max-w-[1920px] mx-auto px-[151.63px]">
         {/* Mobile Menu Button - Left Side */}
         <button

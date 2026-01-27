@@ -26,7 +26,16 @@ const MobileHeader = () => {
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId)
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' })
+      const offset = 60; // Adjust for header height
+      const bodyRect = document.body.getBoundingClientRect().top;
+      const elementRect = element.getBoundingClientRect().top;
+      const elementPosition = elementRect - bodyRect;
+      const offsetPosition = elementPosition - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     }
     closeMenu()
   }
@@ -34,7 +43,7 @@ const MobileHeader = () => {
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-white md:hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#EAEAEA]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#EAEAEA] ">
           {/* Hamburger Menu */}
           <button className="p-2 -ml-2" onClick={toggleMenu}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
