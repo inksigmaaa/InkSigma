@@ -38,7 +38,11 @@ function SignupForm() {
     setError("")
 
     try {
+      // Generate a default name from email (part before @)
+      const defaultName = formData.email.split('@')[0] || "User";
+      
       const result = await signUp.email({
+        name: defaultName,
         email: formData.email,
         password: formData.password,
         callbackURL: redirectTo !== "/dashboard" 

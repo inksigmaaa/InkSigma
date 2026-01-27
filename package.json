@@ -62,7 +62,8 @@
     "react-image-crop": "^11.0.10",
     "resend": "^6.4.2",
     "sharp": "^0.33.1",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "typography": "^0.16.24"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",

@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff } from "lucide-react"
 
 /**
  * Password input field with show/hide toggle
@@ -33,16 +32,17 @@ export default function PasswordField({
           onChange={onChange}
           minLength={minLength}
           maxLength={maxLength}
-          className="border-0 border-b border-gray-300 rounded-none bg-transparent px-2 py-2 pr-8 md:pr-12 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300 focus:ring-offset-0 w-full placeholder:text-[#C8C8C8]"
+          className="border-0 border-b border-gray-300 rounded-none bg-transparent px-2 py-2 pr-12 md:pr-16 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300 focus:ring-offset-0 w-full placeholder:text-[#C8C8C8]"
           required
           {...inputProps}
         />
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-0 top-1/2 -translate-y-1/2 w-[24px] md:w-[32px] h-[12px] md:h-[14px] opacity-100 rotate-0 font-medium text-[10px] md:text-[12px] leading-[100%] tracking-[0%] text-[#808080]"
+          className="absolute right-0 top-1/2 -translate-y-1/2 px-2 py-1  focus:outline-none  focus:ring-gray-300 focus:ring-opacity-50 font-medium text-[10px] md:text-[12px] leading-[100%] tracking-[0%] text-[#808080]"
+          aria-label={showPassword ? "Hide password" : "Show password"}
         >
-          Show
+          {showPassword ? "Hide" : "Show"}
         </button>
       </div>
     </div>
