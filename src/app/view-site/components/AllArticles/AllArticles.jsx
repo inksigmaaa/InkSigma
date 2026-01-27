@@ -81,7 +81,7 @@ export default function AllArticles({ searchQuery = '', selectedCategory = '', b
             const thumbnailUrl = getImageUrl(article.image) || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
             
             return (
-              <div key={article.id} className="border border-gray-200 rounded-md hover:shadow-lg transition-shadow bg-white p-3 flex flex-col">
+              <div key={article.id} className="border border-gray-200 rounded-lg hover:shadow-lg transition-shadow bg-white p-3 flex flex-col">
                 {/* Author and Date */}
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                   <div className="flex items-center gap-2 md:gap-3">
@@ -114,7 +114,7 @@ export default function AllArticles({ searchQuery = '', selectedCategory = '', b
                 </div>
 
             {/* Blog Card */}
-            <div className="relative w-full h-[200px] md:h-[280px] rounded-xl md:rounded-2xl group mb-3 md:mb-4">
+            <div className="relative w-full h-[200px] md:h-[280px] rounded-lg group mb-3 md:mb-4">
               {/* Share Button */}
               <div className="absolute top-3 right-3 md:top-4 md:right-4 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-50">
                 <ShareMenu 
@@ -124,7 +124,7 @@ export default function AllArticles({ searchQuery = '', selectedCategory = '', b
                 />
               </div>
 
-              <Link href={`/view-site/blog/${article.slug}${publicationId ? `?from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-md md:rounded-md overflow-hidden cursor-pointer block">
+              <Link href={`/view-site/blog/${article.slug}${publicationId ? `?from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block">
                 {/* Background Image */}
                 <Image 
                   src={thumbnailUrl} 
@@ -138,8 +138,8 @@ export default function AllArticles({ searchQuery = '', selectedCategory = '', b
 
             {/* Title and Description - Flex grow to push category down */}
             <div className="flex-grow mb-3 md:mb-4">
-              <h3 className="text-2xl font-bold mb-1 md:mb-2 text-[#080808] leading-none line-clamp-2 max-md:text-[16px]">{article.title}</h3>
-              <p className="text-[#696969] font-normal text-xs md:text-sm leading-[150%] line-clamp-2 max-md:text-[#808080] max-md:text-[12px]">{article.description}</p>
+              <h3 className="text-2xl font-extrabold mb-1 md:mb-2 text-[#080808] leading-8 line-clamp-2 max-md:text-[16px]">{article.title}</h3>
+              <p className="text-[#696969] font-light text-xs md:text-sm leading-[150%] line-clamp-2 max-md:text-[#808080] max-md:text-[12px]">{article.description}</p>
             </div>
 
             {/* Category - Always at bottom */}
@@ -148,7 +148,7 @@ export default function AllArticles({ searchQuery = '', selectedCategory = '', b
                 {article.categories.map((category, index) => (
                   <span 
                     key={index}
-                    className="px-4 py-1.5 bg-white text-[#7C7C7C] border rounded-lg border-gray-300 max-md:rounded-md text-xs md:text-sm max-md:px-3 max-md:py-1.5 hover:bg-gray-50 transition-colors cursor-pointer"
+                    className="px-4 py-1.5 text-[#7C7C7C] border rounded-lg border-[#ECECEC] max-md:rounded-md text-xs md:text-sm max-md:px-3 max-md:py-1.5 hover:bg-gray-50 transition-colors cursor-pointer text-sm font-normal leading-normal tracking-normal"
                   >
                     {category}
                   </span>

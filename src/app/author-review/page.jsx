@@ -20,6 +20,9 @@ export default function AuthorReviewPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategories, setSelectedCategories] = useState([])
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [selectedArticleForAction, setSelectedArticleForAction] = useState(null)
+  const [actionType, setActionType] = useState(null)
   
   const { 
     reviewArticles, 
