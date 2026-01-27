@@ -10,12 +10,14 @@ import { MAIN_NAVIGATION, LOGOS } from "@/constants"
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const scrollToHome = useScrollToSection('home')
   const scrollToFeatures = useScrollToSection('features')
   const scrollToRoadmap = useScrollToSection('roadmap')
 
   const handleNavClick = (item) => {
     if (item.type === 'scroll') {
       const sectionId = item.href.replace('#', '')
+      if (sectionId === 'home') scrollToHome()
       if (sectionId === 'features') scrollToFeatures()
       if (sectionId === 'roadmap') scrollToRoadmap()
     }
@@ -65,35 +67,19 @@ export default function Header() {
 
               return (
                 <div key={item.id} className="flex items-center justify-center" style={getItemStyle(item.id)}>
-                  {item.type === 'link' ? (
-                    <Link 
-                      href={item.href}
-                      className="flex items-center justify-center h-full text-text-primary"
-                      style={{
-                        fontFamily: 'Public Sans, sans-serif',
-                        fontWeight: 400,
-                        fontSize: '14px',
-                        lineHeight: '150%',
-                        letterSpacing: '0%'
-                      }}
-                    >
-                      {item.label}
-                    </Link>
-                  ) : (
-                    <button
-                      onClick={() => handleNavClick(item)}
-                      className="flex items-center justify-center h-full cursor-pointer text-text-primary"
-                      style={{
-                        fontFamily: 'Public Sans, sans-serif',
-                        fontWeight: 400,
-                        fontSize: '14px',
-                        lineHeight: '150%',
-                        letterSpacing: '0%'
-                      }}
-                    >
-                      {item.label}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleNavClick(item)}
+                    className="flex items-center justify-center h-full cursor-pointer text-text-primary hover:opacity-80 transition-opacity"
+                    style={{
+                      fontFamily: 'Public Sans, sans-serif',
+                      fontWeight: 400,
+                      fontSize: '14px',
+                      lineHeight: '150%',
+                      letterSpacing: '0%'
+                    }}
+                  >
+                    {item.label}
+                  </button>
                 </div>
               );
             })}
@@ -152,22 +138,12 @@ export default function Header() {
           <nav className="flex flex-col items-center justify-start h-[calc(100vh-80px)] space-y-12 mt-10">
             {MAIN_NAVIGATION.map((item) => (
               <div key={item.id}>
-                {item.type === 'link' ? (
-                  <Link 
-                    href={item.href}
-                    className="block text-2xl font-medium text-text-primary hover:opacity-80"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {item.label}
-                  </Link>
-                ) : (
-                  <button
-                    onClick={() => handleNavClick(item)}
-                    className="text-2xl font-medium text-text-primary hover:opacity-80"
-                  >
-                    {item.label}
-                  </button>
-                )}
+                <button
+                  onClick={() => handleNavClick(item)}
+                  className="text-2xl font-medium text-text-primary hover:opacity-80"
+                >
+                  {item.label}
+                </button>
               </div>
             ))}
             
