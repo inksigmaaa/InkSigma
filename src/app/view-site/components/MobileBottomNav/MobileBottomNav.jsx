@@ -71,6 +71,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
   };
 
   const scrollToSection = (id) => {
+    setShowTOC(false); // Close immediately
     const element = document.getElementById(id);
     if (element) {
       const offset = 80;
@@ -79,7 +80,6 @@ export default function MobileBottomNav({ title, url, slug, description, section
         top: elementPosition,
         behavior: 'smooth',
       });
-      setShowTOC(false);
     }
   };
 
@@ -211,6 +211,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
                   {sections.map((section, index) => (
                     <li key={section.id}>
                       <button
+                        type="button"
                         onClick={() => scrollToSection(section.id)}
                         className="text-left text-base leading-relaxed text-[#696969] hover:text-black transition-colors w-full py-4 font-medium"
                       >
