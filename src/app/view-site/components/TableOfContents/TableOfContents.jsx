@@ -104,7 +104,7 @@ export default function TableOfContents({ content }) {
           Table of Contents
         </h3>
         <nav>
-          <ul className="space-y-4 relative border-l border-[#EDEDED] pl-0 ml-0">
+          <ul className="space-y-4 relative pl-0 ml-0">
             {sections.map((section) => (
               <li key={section.id} className="relative pl-4">
                  {/* Active Indicator Line */}
