@@ -150,7 +150,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
             {/* Left - Title, Description and Category */}
             <div className="flex-1">
               <h2 className="font-extrabold leading-none text-2xl text-[#FFFFFF] drop-shadow-lg line-clamp-2 mb-4">{latestBlog.title}</h2>
-              <p className="text-[#F4F4F4] font-light text-sm leading-[150%] drop-shadow-md line-clamp-none mb-4">{latestBlog.description}</p>
+              <p className="text-[#F8F8F8] font-light text-sm leading-[150%] drop-shadow-md line-clamp-none mb-4">{latestBlog.description}</p>
               {/* Category */}
               {latestBlog.categories && latestBlog.categories.length > 0 && (
                 <div className="flex flex-wrap gap-2">

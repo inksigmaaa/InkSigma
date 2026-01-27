@@ -631,13 +631,94 @@ export default function EditorPageClient() {
 
   return (
     <div className="overflow-x-hidden">
-      {/* Fixed Left Vertical Line */}
-      <div className="hidden md:block fixed top-0 bottom-0 w-px bg-gray-200 z-[150]" style={{ left: 'calc(50% - 448px)' }} />
+      {/* Consolidated Styles */}
+      <style jsx>{`
+        input.title-input::placeholder,
+        input.desc-input::placeholder {
+          color: #D2D2D2;
+        }
+        
+        input.date-time-input::placeholder {
+          color: #2e2e2e;
+        }
+        
+        .stats-bar-container {
+          position: fixed;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          height: 39px;
+          z-index: 100;
+          bottom: 72px;
+          left: 0;
+          right: 0;
+          border-top: 1px solid #EAEAEA;
+          background: #FFFFFF;
+        }
+        
+        @media (min-width: 1280px) {
+          .stats-bar-container {
+            left: calc(50% - 448px);
+            right: auto;
+            width: 916px;
+          }
+        }
+        
+        @media (max-width: 767px) {
+          .mobile-publish-btn {
+            min-width: 74px;
+            padding: 8px 16px;
+            font-size: 12px;
+            line-height: 150%;
+          }
+          
+          .mobile-schedule-container {
+            min-width: 212px;
+            max-width: 212px;
+            flex-shrink: 0;
+          }
+          
+          .mobile-date-input {
+            font-size: 12px;
+            line-height: 150%;
+          }
+          
+          .mobile-date-input:first-of-type {
+            width: 80px;
+          }
+          
+          .mobile-date-input:nth-of-type(2) {
+            width: 35px;
+            margin-left: 4px;
+          }
+          
+          .mobile-schedule-container svg {
+            margin-left: 4px;
+            margin-right: 4px;
+          }
+          
+          .mobile-schedule-btn {
+            min-width: 69px;
+            max-width: 69px;
+            padding: 8px 5px;
+            font-size: 12px;
+            line-height: 150%;
+          }
+          
+          .mobile-footer-buttons {
+            gap: 8px;
+            flex-wrap: nowrap;
+          }
+        }
+      `}</style>
       
-      {/* Fixed Back Button - Left of vertical line */}
+      {/* Fixed Left Vertical Line - Desktop only (1200px+) */}
+      <div className="hidden xl:block fixed top-0 bottom-0 w-px bg-gray-200 z-[150]" style={{ left: 'calc(50% - 448px)' }} />
+      
+      {/* Fixed Back Button - Left of vertical line - Desktop only (1200px+) */}
       <button 
         onClick={handleBack}
-        className="hidden md:flex fixed items-center text-gray-500 hover:text-gray-700 transition-colors z-[151]"
+        className="hidden xl:flex fixed items-center text-gray-500 hover:text-gray-700 transition-colors z-[151]"
         style={{ 
           left: 'calc(50% - 560px)', 
           top: '24px',
@@ -651,21 +732,71 @@ export default function EditorPageClient() {
         <span className="text-sm font-medium">Back</span>
       </button>
       
-      {/* Fixed Right Vertical Line */}
-      <div className="hidden md:block fixed top-0 bottom-0 w-px bg-gray-200 z-[150]" style={{ left: 'calc(50% + 468px)' }} />
+      {/* Fixed Right Vertical Line - Desktop only (1200px+) */}
+      <div className="hidden xl:block fixed top-0 bottom-0 w-px bg-gray-200 z-[150]" style={{ left: 'calc(50% + 468px)' }} />
 
-      <div className="w-full min-h-screen bg-white flex justify-center overflow-x-hidden">
-        {/* Left Sidebar Area */}
-        <div className="hidden md:block w-[512px] flex-shrink-0" />
+      <div className="w-full min-h-screen bg-white flex justify-center overflow-x-hidden xl:px-0">
+        {/* Left Sidebar Area - Desktop only (1200px+) */}
+        <div className="hidden xl:block w-[512px] flex-shrink-0" />
 
         {/* Center Content Area */}
-        <div className="w-[916px] flex-shrink-0">
-          {/* Header Section */}
-          <div className="flex flex-col w-[916px] gap-2.5 pt-6 pr-8 pb-6 pl-8 border-b border-gray-200">
-            {/* Title Block */}
-            <div className="flex flex-col w-full gap-4">
+        <div className="w-full xl:w-[916px] flex-shrink-0 md:border-l md:border-r border-gray-200 xl:border-l-0 xl:border-r-0 min-h-screen pb-[150px]">
+          {/* Back Button - Tablet/Mobile only (below 1200px) */}
+          <div className="xl:hidden w-full border-b border-gray-200">
+            {/* Go Back Button and Status Badge Row - Mobile Only */}
+            <div className="flex md:hidden w-full border-b border-[#EAEAEA] items-center justify-between" style={{ paddingTop: '45px', paddingLeft: '25px', paddingRight: '25px', paddingBottom: '18px' }}>
+              <button 
+                onClick={handleBack}
+                className="flex items-center text-gray-500 hover:text-gray-700 transition-colors"
+                style={{ gap: '8px' }}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span className="text-sm font-medium">Go Back</span>
+              </button>
+              
               {/* Status Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200 w-fit">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200">
+                <div className={`w-2 h-2 rounded-full ${
+                  existingBlogStatus === 'published' ? 'bg-green-500' : 
+                  existingBlogStatus === 'scheduled' ? 'bg-blue-400' : 
+                  existingBlogStatus === 'trash' ? 'bg-red-500' :
+                  'bg-orange-400'
+                }`}></div>
+                <span className="text-gray-500 text-sm">
+                  {existingBlogStatus === 'published' ? 'Published' : 
+                   existingBlogStatus === 'scheduled' ? 'Scheduled' : 
+                   existingBlogStatus === 'trash' ? 'Trash' :
+                   existingBlogStatus === 'review' ? 'In Review' :
+                   'Drafts'}
+                </span>
+              </div>
+            </div>
+
+            {/* Go Back Button - Tablet Only */}
+            {/* Go Back Button - Tablet Only */}
+            <div className="hidden md:flex xl:hidden w-full border-b border-[#EAEAEA]">
+              <button 
+                onClick={handleBack}
+                className="flex items-center text-gray-500 hover:text-gray-700 transition-colors"
+                style={{ 
+                  gap: '8px',
+                  paddingTop: '45px',
+                  paddingLeft: '25px',
+                  paddingBottom: '18px'
+                }}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span className="text-sm font-medium">Go Back</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Header Section */}
+          <div className="flex flex-col w-full gap-2.5 px-8 xl:pr-8 xl:pl-8 border-b border-gray-200" style={{ paddingTop: '24px', paddingBottom: '24px' }}>
+            {/* Title Block */}
+            <div className="flex flex-col w-full">
+              {/* Status Badge - Desktop and Tablet Only */}
+              <div className="hidden md:inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200 w-fit mb-4">
                 <div className={`w-2 h-2 rounded-full ${
                   existingBlogStatus === 'published' ? 'bg-green-500' : 
                   existingBlogStatus === 'scheduled' ? 'bg-blue-400' : 
@@ -681,30 +812,33 @@ export default function EditorPageClient() {
                 </span>
               </div>
 
-              {/* Title Input */}
-              <input
-                type="text"
-                placeholder="Title of the Blog..."
-                value={blogTitle}
-                onChange={(e) => setBlogTitle(e.target.value)}
-                className="w-full text-3xl font-semibold bg-transparent placeholder:text-gray-300 focus:outline-none border-0 p-0"
-              />
+              {/* Title and Description with 8px gap */}
+              <div className="flex flex-col gap-2">
+                {/* Title Input */}
+                <input
+                  type="text"
+                  placeholder="Title of the Blog..."
+                  value={blogTitle}
+                  onChange={(e) => setBlogTitle(e.target.value)}
+                  className="title-input w-full text-3xl font-semibold bg-transparent focus:outline-none border-0 p-0"
+                />
 
-              {/* Description Input */}
-              <input
-                type="text"
-                placeholder="Write your Short Description for your Blog..."
-                value={blogDescription}
-                onChange={(e) => setBlogDescription(e.target.value)}
-                className="w-full text-sm text-gray-500 bg-transparent placeholder:text-gray-400 focus:outline-none border-0 p-0"
-              />
+                {/* Description Input */}
+                <input
+                  type="text"
+                  placeholder="Write your Short Description for your Blog..."
+                  value={blogDescription}
+                  onChange={(e) => setBlogDescription(e.target.value)}
+                  className="desc-input w-full text-sm text-gray-500 bg-transparent focus:outline-none border-0 p-0"
+                />
+              </div>
             </div>
           </div>
 
           {/* Category/Toolbar Section */}
-          <div className="flex flex-col w-[916px] h-16 p-4 gap-2 bg-[#FEFEFE] border-b border-gray-200">
+          <div className="flex flex-col w-full bg-[#FEFEFE] border-b border-gray-200" style={{ paddingTop: '16px', paddingBottom: '16px', paddingLeft: '32px', paddingRight: '12px' }}>
             {/* Category and Thumbnail Row */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <EditorCategoryDropdown 
                 selectedCategories={selectedCategories}
                 onCategoriesChange={setSelectedCategories}
@@ -721,15 +855,39 @@ export default function EditorPageClient() {
                 Thumbnail Image
               </button>
 
-              <div className="ml-auto flex items-center w-[78px] h-[33px] gap-2 rounded border border-gray-200 px-2 py-1.5">
-                <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
-                <span className="text-sm font-medium text-green-600">Saved</span>
+              <div className="flex-1 min-w-0"></div>
+
+              {/* Saved Status - Desktop and Tablet Only */}
+              <div 
+                className="hidden md:flex items-center flex-shrink-0"
+                style={{
+                  width: '78px',
+                  height: '33px',
+                  borderRadius: '4px',
+                  border: '1px solid #EAEAEA',
+                  padding: '6px 8px',
+                  gap: '8px'
+                }}
+              >
+                <img src="/images/icons/tick4.svg" alt="saved" style={{ width: '13px', height: '13px' }} />
+                <span 
+                  style={{
+                    fontFamily: 'Public Sans',
+                    fontWeight: 400,
+                    fontSize: '14px',
+                    lineHeight: '150%',
+                    letterSpacing: '0%',
+                    color: '#696969'
+                  }}
+                >
+                  Saved
+                </span>
               </div>
             </div>
           </div>
 
           {/* Editor Content Area */}
-          <div className="w-[917px] bg-white">
+          <div className="w-full bg-white" style={{ minHeight: '400px', paddingBottom: '150px' }}>
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
                 <span className="text-gray-500">Loading blog content...</span>
@@ -744,64 +902,150 @@ export default function EditorPageClient() {
           </div>
         </div>
 
-        {/* Right Sidebar Area */}
-        <div className="hidden md:block w-[490px] flex-shrink-0" />
+        {/* Right Sidebar Area - Desktop only (1200px+) */}
+        <div className="hidden xl:block w-[490px] flex-shrink-0" />
       </div>
 
       {/* Bottom Stats Bar */}
-      <div className="fixed flex items-center justify-end bg-white border-t border-gray-200 w-[916px] h-[39px] z-[100]" style={{ bottom: '72px', left: 'calc(50% - 448px)' }}>
-        <div className="flex items-center h-[39px]">
-          <div className="flex items-center px-4 py-2 bg-gray-50 border border-gray-300 text-sm text-gray-700 whitespace-nowrap">
-            <span>Chars <strong className="ml-1">{editorContent.charCount}</strong></span>
+      <div className="stats-bar-container">
+        <div 
+          className="flex items-center h-full"
+          style={{
+            gap: '14px',
+            padding: '9px 14px',
+            background: '#F8F8F8',
+            border: '1px solid #F3F3F3'
+          }}
+        >
+          <div style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontFamily: 'Public Sans',
+            fontWeight: 400,
+            fontSize: '14px',
+            lineHeight: '150%',
+            letterSpacing: '0%',
+            whiteSpace: 'nowrap'
+          }}>
+            <span>Chars</span>
+            <strong style={{ 
+              fontFamily: 'Public Sans',
+              fontWeight: 600,
+              fontSize: '14px',
+              lineHeight: '100%',
+              letterSpacing: '0%'
+            }}>{editorContent.charCount}</strong>
           </div>
-          <div className="flex items-center px-4 py-2 bg-gray-50 border border-gray-300 text-sm text-gray-700 whitespace-nowrap">
-            <span>Words <strong className="ml-1">{editorContent.wordCount}</strong></span>
+          <div style={{ width: '1px', height: '21px', background: '#C0C0C0' }}></div>
+          <div style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontFamily: 'Public Sans',
+            fontWeight: 400,
+            fontSize: '14px',
+            lineHeight: '150%',
+            letterSpacing: '0%',
+            whiteSpace: 'nowrap'
+          }}>
+            <span>Words</span>
+            <strong style={{ 
+              fontFamily: 'Public Sans',
+              fontWeight: 600,
+              fontSize: '14px',
+              lineHeight: '100%',
+              letterSpacing: '0%'
+            }}>{editorContent.wordCount}</strong>
           </div>
         </div>
       </div>
 
       {/* Footer */}
       <div className="fixed bottom-0 left-0 right-0 w-full h-[72px] flex items-center justify-center bg-white rounded-lg pt-4 pr-4 pb-6 pl-4 shadow-lg z-[100]">
-        <div className="flex items-center justify-center gap-4 h-8">
+        <div className="mobile-footer-buttons flex items-center justify-center md:gap-4 h-8 flex-wrap max-w-full">
           {/* Show different buttons based on article status */}
           {existingBlogStatus === 'published' ? (
             <>
               <button 
-                className="flex items-center justify-center gap-3 w-40 h-8 rounded border border-gray-200 bg-gray-100 px-6 py-2 text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
-                onClick={handleDraft}
+                className="flex items-center justify-center gap-2 h-8 rounded px-6 py-2 transition-colors disabled:opacity-50"
+                onClick={handleSave}
                 disabled={isSaving}
+                style={{
+                  width: '160px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  padding: '8px 24px',
+                  background: '#080808',
+                  fontFamily: 'Public Sans',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '150%',
+                  letterSpacing: '0%',
+                  color: '#EDEDED'
+                }}
               >
-                <img src="/images/icons/Draft.svg" alt="Revert to draft" className="w-5 h-5" />
-                <span className="whitespace-nowrap font-normal text-sm text-gray-900">
-                  Revert to Draft
-                </span>
+                {isSaving ? 'Updating...' : 'Update'}
               </button>
               
               <button 
-                className="flex items-center justify-center gap-2 w-40 h-8 rounded bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
-                onClick={handleSave}
+                className="flex items-center justify-center rounded transition-colors disabled:opacity-50"
+                onClick={handleDraft}
                 disabled={isSaving}
+                style={{
+                  width: '160px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  border: '1px solid #F3F3F3',
+                  padding: '8px 24px',
+                  gap: '4px',
+                  background: '#F8F8F8',
+                  fontFamily: 'Public Sans',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '150%',
+                  letterSpacing: '0%',
+                  color: '#2E2E2E'
+                }}
               >
-                {isSaving ? 'Updating...' : 'Update'}
+                <img src="/images/icons/Draft.svg" alt="Revert to draft" className="w-5 h-5" style={{ filter: 'brightness(0) saturate(100%)' }} />
+                <span className="whitespace-nowrap">
+                  Revert to Draft
+                </span>
               </button>
             </>
           ) : existingBlogStatus === 'trash' ? (
             <>
               <button 
-                className="flex items-center justify-center gap-3 w-40 h-8 rounded border border-gray-200 bg-gray-100 px-6 py-2 text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-2 h-8 rounded px-6 py-2 transition-colors disabled:opacity-50"
                 onClick={handleRevertFromTrash}
                 disabled={isSaving}
+                style={{
+                  width: '160px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  padding: '8px 24px',
+                  background: '#080808',
+                  fontFamily: 'Public Sans',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '150%',
+                  letterSpacing: '0%',
+                  color: '#EDEDED'
+                }}
               >
-                <img src="/images/icons/Draft.svg" alt="Revert to draft" className="w-5 h-5" />
-                <span className="whitespace-nowrap font-normal text-sm text-gray-900">
-                  Revert to Draft
-                </span>
+                {isSaving ? 'Reverting...' : 'Revert to Draft'}
               </button>
             </>
           ) : existingBlogStatus === 'scheduled' ? (
             <>
               <button 
-                className="flex items-center justify-center gap-2 w-40 h-8 rounded bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-2 h-8 rounded bg-gray-900 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+                style={{
+                  minWidth: '74px',
+                  width: 'auto',
+                  padding: '0 1rem'
+                }}
                 onClick={handlePublish}
                 disabled={isSaving}
               >
@@ -811,6 +1055,11 @@ export default function EditorPageClient() {
 
               <div 
                 className="flex items-center h-8 border border-gray-200 rounded overflow-hidden"
+                style={{
+                  minWidth: '180px',
+                  width: 'auto',
+                  maxWidth: '100%'
+                }}
               >
                 <input 
                   type="text" 
@@ -818,7 +1067,8 @@ export default function EditorPageClient() {
                   value={getDisplayDate()}
                   onChange={handleManualInput}
                   maxLength={10}
-                  className="h-[21px] w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
+                  className="date-time-input h-[21px] w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
+                  style={{ color: '#2e2e2e' }}
                 />
                 <input 
                   type="text" 
@@ -826,19 +1076,21 @@ export default function EditorPageClient() {
                   value={getDisplayTime()}
                   onChange={handleTimeInput}
                   maxLength={5}
-                  className="h-[21px] w-[40px] flex-shrink-0 text-sm bg-transparent outline-none ml-2"
+                  className="date-time-input h-[21px] w-[40px] flex-shrink-0 text-sm bg-transparent outline-none ml-2"
+                  style={{ color: '#2e2e2e' }}
                 />
                 <svg 
-                  className="w-4 h-4 text-gray-400 flex-shrink-0 cursor-pointer mx-2" 
+                  className="w-4 h-4 flex-shrink-0 cursor-pointer mx-2" 
                   fill="none" 
-                  stroke="currentColor" 
+                  stroke="#2e2e2e" 
                   viewBox="0 0 24 24"
                   onClick={() => setShowCalendar(!showCalendar)}
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <span 
-                  className="text-sm text-gray-400 flex-shrink-0 h-full flex items-center justify-center bg-gray-100 border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
+                  className="text-sm flex-shrink-0 h-full flex items-center justify-center border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
+                  style={{ backgroundColor: '#F8F8F8', color: '#C8C8C8' }}
                   onClick={() => {
                     if (selectedDate && (manualDate || manualTime)) {
                       handleSchedule()
@@ -856,7 +1108,12 @@ export default function EditorPageClient() {
               {/* For editors/authors in joined publications, show "Send for Review" button */}
               {publicationId && currentPublication && !currentPublication.isOwner && (currentPublication.role === 'editor' || currentPublication.role === 'author') ? (
                 <button 
-                  className="flex items-center justify-center gap-2 w-40 h-8 rounded bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 h-8 rounded bg-gray-900 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+                  style={{
+                    minWidth: '74px',
+                    width: 'auto',
+                    padding: '0 1rem'
+                  }}
                   onClick={handleSendForReview}
                   disabled={isSaving}
                 >
@@ -865,7 +1122,7 @@ export default function EditorPageClient() {
               ) : (
                 <>
                   <button 
-                    className="flex items-center justify-center gap-2 w-40 h-8 rounded bg-gray-900 px-6 py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+                    className="md:w-40 flex items-center justify-center gap-2 h-8 rounded bg-gray-900 md:px-6 md:py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50 whitespace-nowrap mobile-publish-btn"
                     onClick={handlePublish}
                     disabled={isSaving}
                   >
@@ -874,7 +1131,7 @@ export default function EditorPageClient() {
                   </button>
 
                   <div 
-                    className="flex items-center h-8 border border-gray-200 rounded overflow-hidden"
+                    className="flex items-center h-8 border border-gray-200 rounded overflow-hidden mobile-schedule-container"
                   >
                     <input 
                       type="text" 
@@ -882,7 +1139,8 @@ export default function EditorPageClient() {
                       value={getDisplayDate()}
                       onChange={handleManualInput}
                       maxLength={10}
-                      className="h-[21px] w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
+                      className="mobile-date-input date-time-input h-[21px] md:w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
+                      style={{ color: '#2e2e2e' }}
                     />
                     <input 
                       type="text" 
@@ -890,19 +1148,21 @@ export default function EditorPageClient() {
                       value={getDisplayTime()}
                       onChange={handleTimeInput}
                       maxLength={5}
-                      className="h-[21px] w-[40px] flex-shrink-0 text-sm bg-transparent outline-none ml-2"
+                      className="mobile-date-input date-time-input h-[21px] md:w-[40px] flex-shrink-0 text-sm bg-transparent outline-none md:ml-2"
+                      style={{ color: '#2e2e2e' }}
                     />
                     <svg 
-                      className="w-4 h-4 text-gray-400 flex-shrink-0 cursor-pointer mx-2" 
+                      className="w-4 h-4 flex-shrink-0 cursor-pointer md:mx-2" 
                       fill="none" 
-                      stroke="currentColor" 
+                      stroke="#2e2e2e" 
                       viewBox="0 0 24 24"
                       onClick={() => setShowCalendar(!showCalendar)}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     <span 
-                      className="text-sm text-gray-400 flex-shrink-0 h-full flex items-center justify-center bg-gray-100 border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
+                      className="mobile-schedule-btn md:text-sm text-xs flex-shrink-0 h-full flex items-center justify-center border-l border-gray-200 cursor-pointer md:px-3 hover:bg-gray-200 transition-colors"
+                      style={{ backgroundColor: '#F8F8F8', color: '#C8C8C8' }}
                       onClick={() => {
                         // If date and time are already set, schedule directly
                         if (selectedDate && (manualDate || manualTime)) {
@@ -1137,7 +1397,7 @@ export default function EditorPageClient() {
                   width: '111px',
                   height: '32px',
                   borderRadius: '4px',
-                  background: '#F4F4F4',
+                  background: '#F8F8F8',
                   border: '1px solid #ECECEC'
                 }}
                 className="flex items-center justify-center text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors whitespace-nowrap"
@@ -1172,3 +1432,4 @@ export default function EditorPageClient() {
     </div>
   )
 }
+

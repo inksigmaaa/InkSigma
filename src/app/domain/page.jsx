@@ -20,16 +20,16 @@ export default function DomainPage() {
       const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
         credentials: "include",
       })
-      
+
       if (!sessionRes.ok) return
-      
+
       const sessionData = await sessionRes.json()
       const userId = sessionData.user.id
-      
+
       const pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
         credentials: "include",
       })
-      
+
       if (pubRes.ok) {
         const pubData = await pubRes.json()
         setSubdomain(pubData.subdomain || "Subdomain")
@@ -60,8 +60,8 @@ export default function DomainPage() {
               <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Custom Domain Integration</h1>
               <p className="text-sm text-gray-600 px-4 md:px-0">
                 Connect your custom domain you already own with Inksigma.{" "}
-                <a 
-                  href="#instructions" 
+                <a
+                  href="#instructions"
                   onClick={(e) => {
                     e.preventDefault()
                     const element = document.getElementById('instructions')
@@ -152,10 +152,6 @@ export default function DomainPage() {
 
                 <p className="font-semibold">
                   If there is no existing A record, you can create your own A record by doing the following steps
-                </p>
-
-                <p>
-                  <span className="font-semibold">Step 1:</span> Click Add Record in your DNS
                 </p>
 
                 {/* Instructional Image - Different for mobile and desktop/tablet */}

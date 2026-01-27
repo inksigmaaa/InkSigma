@@ -105,9 +105,9 @@ export default function PostsHomePage() {
               <div className="flex items-start gap-4 max-md:gap-3">
                 <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
                   {currentPublication?.logoUrl ? (
-                    <img 
-                      src={`http://localhost:5000${currentPublication.logoUrl}`} 
-                      alt={currentPublication.name} 
+                    <img
+                      src={`http://localhost:5000${currentPublication.logoUrl}`}
+                      alt={currentPublication.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.onerror = null;
@@ -128,11 +128,10 @@ export default function PostsHomePage() {
                       {currentPublication.name}
                     </h1>
                     {currentPublication && !currentPublication.isOwner && (
-                      <span className={`text-xs px-2 py-0.5 rounded-sm font-medium ${
-                        currentPublication.role === 'editor' 
-                          ? 'bg-green-100 text-green-700' 
+                      <span className={`text-xs px-2 py-0.5 rounded-sm font-medium ${currentPublication.role === 'editor'
+                          ? 'bg-green-100 text-green-700'
                           : 'bg-blue-100 text-blue-700'
-                      }`}>
+                        }`}>
                         {currentPublication.role?.charAt(0).toUpperCase() + currentPublication.role?.slice(1)}
                       </span>
                     )}
@@ -158,8 +157,8 @@ export default function PostsHomePage() {
                 <p className="text-sm text-[#A4A4A4] max-w-[425px] leading-normal max-md:text-xs max-md:mb-5 max-md:text-gray-600">
                   Craft persuasive articles showcasing your novel ideas by publishing them on this publication
                 </p>
-                
-                <button 
+
+                <button
                   onClick={handleStartWriting}
                   className="inline-flex items-center gap-2 bg-[#080808] text-[#EDEDED] px-6 py-2 rounded-md hover:bg-gray-800 transition-colors max-md:px-6 max-md:py-2.5 max-md:text-sm max-md:rounded-lg"
                 >
@@ -180,8 +179,8 @@ export default function PostsHomePage() {
               ) : (
                 <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1 max-md:gap-4">
                   {recentArticles.map((article) => (
-                    <div 
-                      key={article.id} 
+                    <div
+                      key={article.id}
                       className="border border-[#EAEAEA] rounded-lg hover:shadow-lg transition-shadow bg-white p-4 cursor-pointer"
                       onClick={() => router.push(`/home/preview/${article.id}`)}
                     >
@@ -207,13 +206,11 @@ export default function PostsHomePage() {
                           {article.description}
                         </p>
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {article.categories && article.categories.length > 0 && article.categories.map((cat, idx) => (
-                              <span key={idx} className="text-sm text-[#808080] bg-[#F4F4F4] px-4 py-2 rounded">
-                                {cat}
-                              </span>
-                            ))}
-                          </div>
+                          {article.categories && article.categories.length > 0 && (
+                            <span className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
+                              {article.categories[0]}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

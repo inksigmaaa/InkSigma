@@ -100,7 +100,7 @@ export default function PublishSuccessModal({ isOpen, onClose, blogSlug, blogTit
             {/* See Later button */}
             <button
               onClick={handleSeeLateer}
-              className="bg-[#F4F4F4] border border-[#ECECEC] text-gray-700 hover:bg-gray-200 transition-colors rounded text-sm font-medium flex items-center justify-center"
+              className="bg-[#F8F8F8] border border-[#ECECEC] text-gray-700 hover:bg-gray-200 transition-colors rounded text-sm font-medium flex items-center justify-center"
               style={{
                 width: '111px',
                 height: '32px',
