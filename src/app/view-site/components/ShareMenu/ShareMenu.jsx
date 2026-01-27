@@ -8,7 +8,7 @@ import { useToast } from '@/contexts/ToastContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-export default function ShareMenu({ title, url, slug, blogId, variant = 'icon' }) {
+export default function ShareMenu({ title, url, slug, blogId, variant = 'icon', onSnapshot }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showCopied, setShowCopied] = useState(false);
   const menuRef = useRef(null);
@@ -241,6 +241,7 @@ export default function ShareMenu({ title, url, slug, blogId, variant = 'icon' }
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              if (onSnapshot) onSnapshot();
               setIsOpen(false);
             }}
             className="w-full flex items-center gap-2 py-1 my-2.5"
@@ -362,6 +363,7 @@ export default function ShareMenu({ title, url, slug, blogId, variant = 'icon' }
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  if (onSnapshot) onSnapshot();
                   setIsOpen(false);
                 }}
                 className="flex-1 flex items-center justify-center gap-2 p-2.5 border border-[#EAEAEA]  rounded-lg transition-colors"
