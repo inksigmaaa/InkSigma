@@ -69,6 +69,8 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
   const [headingButtonRef, setHeadingButtonRef] = useState(null)
   const [advancedButtonRef, setAdvancedButtonRef] = useState(null)
   const [linkButtonRef, setLinkButtonRef] = useState(null)
+  const [imageButtonRef, setImageButtonRef] = useState(null)
+  const [imageTooltipPos, setImageTooltipPos] = useState({ top: 0, left: 0 })
   const [dropdownPositions, setDropdownPositions] = useState({
     heading: { top: 0, left: 0 },
     list: { top: 0, left: 0 },
@@ -770,18 +772,36 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
         <div className="flex items-center gap-0.5 px-1 border-r border-gray-200">
           <div className="relative shrink-0">
             <button 
+              ref={setImageButtonRef}
               className="p-1.5 hover:bg-gray-100 rounded"
               onClick={insertImage}
-              onMouseEnter={() => setShowImageTooltip(true)}
+              onMouseEnter={() => {
+                if (imageButtonRef) {
+                  const rect = imageButtonRef.getBoundingClientRect()
+                  setImageTooltipPos({
+                    top: rect.bottom + 8,
+                    left: rect.left + rect.width / 2
+                  })
+                  setShowImageTooltip(true)
+                }
+              }}
               onMouseLeave={() => setShowImageTooltip(false)}
               title="Insert Image"
             >
               <img src="/editor-icons/image.svg" alt="Image" className="w-4 h-4" />
             </button>
-            {showImageTooltip && (
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-gray-800 text-white text-xs px-3 py-1.5 rounded whitespace-nowrap z-[200]">
+            {showImageTooltip && isMounted && createPortal(
+              <div 
+                className="fixed bg-gray-800 text-white text-xs px-3 py-1.5 rounded whitespace-nowrap z-[9999] pointer-events-none"
+                style={{
+                  top: `${imageTooltipPos.top}px`,
+                  left: `${imageTooltipPos.left}px`,
+                  transform: 'translate(-50%, 0)'
+                }}
+              >
                 Upload Image
-              </div>
+              </div>,
+              document.body
             )}
           </div>
           <button 

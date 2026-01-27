@@ -31,27 +31,41 @@ export const ToastProvider = ({ children }) => {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed top-4 right-4 z-[10001] flex flex-col gap-2">
+      <div className="fixed top-4 right-4 z-[10001] flex flex-col gap-3">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px] animate-slide-in ${
-              toast.type === 'error' ? 'bg-red-500 text-white' : 
-              toast.type === 'success-dark' ? 'bg-[#1F1F1F] text-white border border-[#333]' : 
-              'bg-green-500 text-white'
-            }`}
+            className="bg-white border border-[#EAEAEA] px-4 py-3 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex items-center gap-3 min-w-[300px] max-w-[400px] animate-slide-in pointer-events-auto"
           >
-            {toast.type === 'success-dark' && (
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M16.6668 5L7.50016 14.1667L3.3335 10" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )}
-            <span className="flex-1 text-sm">{toast.message}</span>
+            {/* Icon */}
+            <div className="flex-shrink-0">
+              {toast.type === 'error' ? (
+                <div className="w-8 h-8 rounded-full bg-[#FF5E5E] flex items-center justify-center">
+                  <svg width="4" height="14" viewBox="0 0 4 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="4" height="9" rx="2" fill="white"/>
+                    <rect y="11" width="4" height="3" rx="1.5" fill="white"/>
+                  </svg>
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-[#202020] flex items-center justify-center">
+                  <svg width="12" height="9" viewBox="0 0 12 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10.6666 1.5L4.24992 7.91667L1.33325 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              )}
+            </div>
+
+            {/* Message */}
+            <span className="flex-1 text-[15px] font-normal text-[#666666] leading-normal">{toast.message}</span>
+            
+            {/* Close Button */}
             <button
               onClick={() => removeToast(toast.id)}
-              className="text-white hover:opacity-80 transition-opacity"
+              className="text-[#999999] hover:text-[#666666] transition-colors p-1"
             >
-              ✕
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 1L1 9M1 1L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </button>
           </div>
         ))}
