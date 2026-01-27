@@ -16,15 +16,17 @@ import { getImageUrl } from "@/utils/imageUrl"
 export default function EditorPage() {
   const router = useRouter()
   const { currentPublication, loading } = usePublication()
-  const { articles: allArticles, loadUserArticles } = useArticles()
+  const { articles: allArticles, publicationArticles, loadUserArticles, loadPublicationArticles } = useArticles()
 
   // Refresh articles when page loads
   useEffect(() => {
-    loadUserArticles(currentPublication?.id)
-  }, [loadUserArticles, currentPublication?.id])
+    if (currentPublication?.id) {
+      loadPublicationArticles(currentPublication.id, 'published')
+    }
+  }, [loadPublicationArticles, currentPublication?.id])
 
   // Get recent published articles (limit to 4)
-  const recentArticles = allArticles
+  const recentArticles = publicationArticles
     .filter(article => article.status === 'published')
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 4)
@@ -37,7 +39,7 @@ export default function EditorPage() {
         id: article.id,
         title: article.title,
         description: article.description,
-        category: article.categories?.[0] || 'Uncategorized',
+        categories: article.categories?.length > 0 ? article.categories : ['Uncategorized'],
         thumbnail: thumbnailUrl,
         authorName: article.author?.name || 'Unknown'
       };
@@ -185,10 +187,12 @@ export default function EditorPage() {
                     <p className="font-normal text-[14px] h-[42px] text-[#A4A4A4] mb-4 leading-normal line-clamp-2">
                       {article.description}
                     </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
-                        {article.category}
-                      </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {article.categories.map((cat, idx) => (
+                        <span key={idx} className="text-sm text-[#808080] bg-[#F4F4F4] px-4 py-2 rounded">
+                          {cat}
+                        </span>
+                      ))}
                     </div>
                   </div>
                 </div>

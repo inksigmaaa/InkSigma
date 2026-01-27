@@ -365,10 +365,10 @@ router.post("/", getCurrentUser, async (req, res) => {
       return res.status(400).json({ error: "Subdomain can only contain letters, numbers, and hyphens. Cannot start or end with hyphens or contain consecutive hyphens." });
     }
 
-    // Validate description length (max 50 characters)
-    if (description && description.length > 50) {
+    // Validate description length (max 100 characters)
+    if (description && description.length > 100) {
       console.log("Validation failed: description too long");
-      return res.status(400).json({ error: "Description must not exceed 50 characters" });
+      return res.status(400).json({ error: "Description must not exceed 100 characters" });
     }
 
     console.log("Checking for existing user publication...");
@@ -489,9 +489,9 @@ router.put("/:id", async (req, res) => {
     const { id } = req.params;
     const { name, subdomain, description } = req.body;
 
-    // Validate description length (max 50 characters)
-    if (description && description.length > 50) {
-      return res.status(400).json({ error: "Description must not exceed 50 characters" });
+    // Validate description length (max 100 characters)
+    if (description && description.length > 100) {
+      return res.status(400).json({ error: "Description must not exceed 100 characters" });
     }
 
     const updateData = {};

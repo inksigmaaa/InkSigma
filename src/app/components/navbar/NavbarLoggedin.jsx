@@ -172,18 +172,18 @@ export default function NavbarLoggedin() {
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
     return (
-        <div className={`fixed left-0 right-0 top-0 z-[10000] transition-transform duration-300 sm:bg-white sm:border-b sm:border-gray-200 md:bg-transparent md:border-0 ${!isVisible ? 'sm:-translate-y-full' : 'sm:translate-y-0'}`}>
-            <div className="w-full max-w-[1034px] mx-auto mt-[22px] md:mt-[15px] sm:mt-0 px-4 md:px-2 sm:px-4 sm:pb-2 md:pb-0">
+        <div className={`fixed left-0 right-0 top-0 z-[10000] transition-transform duration-300 sm:bg-white sm:border-b sm:border-gray-200 md:bg-white/50 md:backdrop-blur-md md:border-0 ${!isVisible ? 'sm:-translate-y-full' : 'sm:translate-y-0'}`}>
+            <div className="w-full max-w-[1034px] mx-auto mt-[22px] md:mt-[15px] sm:mt-0 px-4 md:px-2 sm:px-4 sm:pb-2 md:pb-0 max-md:mt-0 max-md:px-0">
                 <div className="w-full h-[82px] flex justify-between items-center rounded-[8px] pt-[16px] pr-[24px] pb-[16px] pl-[24px] bg-[#FFFFFF] shadow-[0px_4px_25px_0px_rgba(0,0,0,0.07)] md:px-4 md:py-3 md:h-[70px] sm:px-6 sm:py-4 sm:h-[70px] sm:rounded-none sm:shadow-none sm:pt-4 sm:pb-4 md:rounded-[8px] md:shadow-[0px_4px_25px_0px_rgba(0,0,0,0.07)]">
 
                 {/* Logo */}
-                <a href="/" className="flex items-center border-0 outline-none flex-shrink-0">
+                <a href="/" className="flex items-center border-0 outline-none flex-shrink-0 ml-3">
                     <img src="/icons/inksigma-logo.svg" alt="Inksigma logo"
-                        className="h-8 w-auto md:h-8 sm:w-[76.79px] sm:h-[24.8px] border-0" />
+                        className="h-8 w-auto md:h-8 sm:w-[98px] sm:h-[32px] border-0" />
                 </a>
 
                 {/* Profile Section */}
-                <div className="flex items-center gap-[16px] opacity-100 md:gap-4 sm:gap-6">
+                <div className="flex items-center gap-[16px] opacity-100 md:gap-4 mr-3">
                     {/* Notification */}
                     <div ref={notificationRef} className="relative">
                         <div 
@@ -363,9 +363,10 @@ export default function NavbarLoggedin() {
                                     {isPending ? "Loading..." : userName}
                                 </span>
                                 <span className="flex items-center">
-                                    <svg width="9" height="4.5" viewBox="0 0 9 4.5" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-100">
-                                        <path d="M1 1L4.5 4L8 1" stroke="#2E2E2E" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                                    </svg>
+                                   <svg width="11" height="7" viewBox="0 0 11 7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <path d="M0.700195 0.700195L5.2002 5.2002L9.7002 0.700195" stroke="#2E2E2E" strokeWidth="1.4" strokeLinecap="round"/>
+                                   </svg>
+
                                 </span>
                             </div>
                         </div>
@@ -374,16 +375,16 @@ export default function NavbarLoggedin() {
                         {open && (
                             <div
                                 onClick={(e) => e.stopPropagation()}
-                                className="absolute top-[50px] right-0 w-[201px] h-[78px] bg-[#FEFEFE] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.07)] border border-[#EDEDED] rounded-[8px] flex flex-col gap-[4px] p-[8px] z-[99999] md:fixed md:top-[90px] md:right-5 md:shadow-[0_8px_32px_rgba(0,0,0,0.2)] sm:fixed sm:top-[90px] sm:right-4 sm:shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
+                                className="absolute top-full -right-6 mt-4 w-[201px] h-auto bg-[#FEFEFE] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.07)] border border-[#EDEDED] rounded-[8px] flex flex-col gap-[4px] p-[8px] z-50"
                             >
                                 <a href="/profile-settings"
-                                    className="w-[185px] h-[29px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#B0B0B0] hover:text-black rounded-[4px] gap-[10px] pt-[4px] pr-[8px] pb-[4px] pl-[8px] bg-[#FEFEFE] whitespace-nowrap flex items-center" style={{ fontFamily: 'Public Sans' }}>
+                                    className="w-[185px] h-[29px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#B0B0B0] hover:text-black rounded-[4px] gap-[10px] pt-[4px] pr-[8px] pb-[4px] pl-[8px] bg-[#FEFEFE] whitespace-nowrap flex items-center">
                                     My Profile
                                 </a>
 
                                 <button
                                     onClick={handleLogout}
-                                    className="w-[185px] h-[29px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#B0B0B0] hover:text-black text-left rounded-[4px] gap-[10px] pt-[4px] pr-[8px] pb-[4px] pl-[8px] bg-[#FEFEFE] whitespace-nowrap flex items-center" style={{ fontFamily: 'Public Sans' }}>
+                                    className="w-[185px] h-[29px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#B0B0B0] hover:text-black text-left rounded-[4px] gap-[10px] pt-[4px] pr-[8px] pb-[4px] pl-[8px] bg-[#FEFEFE] whitespace-nowrap flex items-center">
                                     Logout
                                 </button>
                             </div>

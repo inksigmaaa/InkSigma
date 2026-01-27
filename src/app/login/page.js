@@ -201,13 +201,14 @@ function LoginForm() {
           />
         </div>
 
-        <div className="mb-2 md:mb-4">
+        <div className="mb-2 md:mb-4 ">
           <PasswordField
             id="password"
             label="Password"
             placeholder="Enter your password"
             value={formData.password}
             onChange={handleInputChange('password')}
+        
           />
         </div>
 
@@ -234,7 +235,7 @@ function LoginForm() {
           type="button"
           variant="outline"
           onClick={handleMagicLink}
-          className="w-full md:w-[259px] h-[28px] md:h-[32px] opacity-100 rotate-0 gap-[4px] rounded-[4px] pt-[6px] md:pt-[8px] pr-[20px] md:pr-[109px] pb-[6px] md:pb-[8px] pl-[20px] md:pl-[109px] border bg-[#F4F4F4] border-[#ECECEC] text-black hover:bg-gray-50 text-xs md:text-sm flex items-center justify-center mt-2"
+          className="w-full md:w-[259px] h-[28px] md:h-[32px] opacity-100 rotate-0 gap-[4px] rounded-[4px] pt-[6px] md:pt-[8px] pr-[20px] md:pr-[109px] pb-[6px] md:pb-[8px] pl-[20px] md:pl-[109px] border bg-[#F4F4F4] border-[#ECECEC] text-black hover:bg-gray-50 text-xs md:text-sm flex items-center justify-center mt-4"
         >
           <span className="h-[18px]">Login with Magic link</span>
         </Button>
@@ -263,7 +264,7 @@ function LoginForm() {
       <div className="w-auto md:w-[260px] h-[16px] md:h-[24px] opacity-100 rotate-0 mt-2 md:mt-3 mb-4 mx-auto flex items-center justify-center gap-2">
         <Link
           href="/"
-          className="flex items-center gap-2 hover:text-gray-500 transition-colors"
+          className="flex items-center gap-2 hover:text-gray-500 transition-colors mt-10"
         >
           <svg width="7" height="11" viewBox="0 0 7 11" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M5.48975 0.700195L0.989746 5.2002L5.48975 9.7002" stroke="#696969" strokeWidth="1.4" strokeLinecap="round"/>
