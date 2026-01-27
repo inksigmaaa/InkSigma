@@ -18,13 +18,13 @@ import { Indent } from './extensions/Indent'
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, ChevronUp } from "lucide-react"
-import { 
-  List, 
-  ListOrdered, 
-  AlignLeft, 
-  AlignCenter, 
-  AlignRight, 
-  AlignJustify 
+import {
+  List,
+  ListOrdered,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify
 } from "lucide-react"
 import { ImageModal } from './ImageModal'
 import { getImageUrl } from '@/utils/imageUrl'
@@ -32,19 +32,19 @@ import { getImageUrl } from '@/utils/imageUrl'
 // Helper function to convert full URLs back to relative paths for storage
 const stripImageUrls = (html) => {
   if (!html) return html
-  
+
   const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
-  
+
   // Match img tags with src attributes
   return html.replace(/src="([^"]*)"/g, (match, src) => {
     if (!src) return match
-    
+
     // If it's a full URL pointing to our API, convert to relative path
     if (src.startsWith(apiUrl)) {
       const relativePath = src.substring(apiUrl.length)
       return `src="${relativePath}"`
     }
-    
+
     // Otherwise return as is
     return match
   })
@@ -69,6 +69,8 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
   const [headingButtonRef, setHeadingButtonRef] = useState(null)
   const [advancedButtonRef, setAdvancedButtonRef] = useState(null)
   const [linkButtonRef, setLinkButtonRef] = useState(null)
+  const [imageButtonRef, setImageButtonRef] = useState(null)
+  const [imageTooltipPos, setImageTooltipPos] = useState({ top: 0, left: 0 })
   const [dropdownPositions, setDropdownPositions] = useState({
     heading: { top: 0, left: 0 },
     list: { top: 0, left: 0 },
@@ -77,14 +79,14 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     link: { top: 0, left: 0 },
     lineSpacing: { top: 0, left: 0 }
   })
-  
+
   // Track if initial content has been set to prevent infinite loop
   const initialContentSetRef = useRef(false)
 
   useEffect(() => {
     setIsMounted(true)
   }, [])
-  
+
   // Update positions when dropdowns are shown
   useEffect(() => {
     if (showHeadingMenu || showListMenu || showAlignMenu || showAdvancedOptions || showLinkPopup) {
@@ -93,9 +95,9 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
   }, [showHeadingMenu, showListMenu, showAlignMenu, showAdvancedOptions, showLinkPopup, headingButtonRef, listButtonRef, alignButtonRef, advancedButtonRef, linkButtonRef])
 
   const fonts = [
-    "Arial", "Arial Black", "Brush Script MT", "Comic Sans MS", 
-    "Courier New", "Garamond", "Georgia", "Helvetica", "Impact", 
-    "Lucida Console", "Lucida Sans Unicode", "Palatino Linotype", 
+    "Arial", "Arial Black", "Brush Script MT", "Comic Sans MS",
+    "Courier New", "Garamond", "Georgia", "Helvetica", "Impact",
+    "Lucida Console", "Lucida Sans Unicode", "Palatino Linotype",
     "Roboto", "Tahoma", "Times New Roman", "Trebuchet MS", "Verdana"
   ]
 
@@ -108,7 +110,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
       Subscript,
       TextStyle,
       Color,
-      
+
       // Custom extensions
       LineHeight.configure({
         types: ['paragraph', 'heading'],
@@ -165,21 +167,21 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
       const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
       const processedContent = initialContent.replace(/src="([^"]*)"/g, (match, src) => {
         if (!src) return match
-        
+
         // If it's already a full URL, return as is
         if (src.startsWith('http://') || src.startsWith('https://')) {
           return match
         }
-        
+
         // If it's a relative path starting with /, prepend the API URL
         if (src.startsWith('/')) {
           return `src="${apiUrl}${src}"`
         }
-        
+
         // Otherwise, assume it's a relative path and prepend API URL with /
         return `src="${apiUrl}/${src}"`
       })
-      
+
       if (editor.getHTML() !== processedContent) {
         editor.commands.setContent(processedContent)
         initialContentSetRef.current = true
@@ -192,7 +194,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     const nextIndex = currentIndex > 0 ? currentIndex - 1 : fonts.length - 1
     const newFont = fonts[nextIndex]
     setCurrentFont(newFont)
-    
+
     // Apply font to editor
     if (editor) {
       const { view } = editor
@@ -205,7 +207,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     const nextIndex = currentIndex < fonts.length - 1 ? currentIndex + 1 : 0
     const newFont = fonts[nextIndex]
     setCurrentFont(newFont)
-    
+
     // Apply font to editor
     if (editor) {
       const { view } = editor
@@ -233,7 +235,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
       // Convert relative path to full URL for display in editor
       const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
       let fullImageUrl = imageData.src
-      
+
       // If it's a relative path, convert to full URL
       if (!fullImageUrl.startsWith('http://') && !fullImageUrl.startsWith('https://')) {
         if (fullImageUrl.startsWith('/')) {
@@ -242,12 +244,12 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
           fullImageUrl = `${apiUrl}/${fullImageUrl}`
         }
       }
-      
+
       const attributes = {
         src: fullImageUrl,
         alt: imageData.alt || '',
       }
-      
+
       // Add width and height if provided
       if (imageData.width) {
         attributes.width = imageData.width
@@ -255,7 +257,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
       if (imageData.height) {
         attributes.height = imageData.height
       }
-      
+
       editor.chain().focus().setImage(attributes).run()
     }
   }
@@ -265,7 +267,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     // Get selected text if any
     const { from, to } = editor.state.selection
     const selectedText = editor.state.doc.textBetween(from, to, '')
-    
+
     setLinkText(selectedText)
     setLinkUrl('')
     setShowLinkPopup(true)
@@ -276,7 +278,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     if (linkUrl.trim()) {
       const { from, to } = editor.state.selection
       const selectedText = editor.state.doc.textBetween(from, to, '')
-      
+
       if (selectedText) {
         // If text is selected, just add the link to it
         editor?.chain().focus().setLink({ href: linkUrl.trim() }).run()
@@ -286,7 +288,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
         editor?.chain().focus().insertContent(`<a href="${linkUrl.trim()}">${textToInsert}</a>`).run()
       }
     }
-    
+
     setShowLinkPopup(false)
     setLinkUrl('')
     setLinkText('')
@@ -311,7 +313,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
   const setTextColor = (color) => {
     if (editor) {
       const { from, to } = editor.state.selection
-      
+
       if (from === to) {
         // No selection - apply color as a mark for future text
         if (color === '') {
@@ -336,7 +338,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
       // Try to apply line height to current paragraph
       const { from } = editor.state.selection
       const $pos = editor.state.doc.resolve(from)
-      
+
       // Find the paragraph node
       let paragraphPos = null
       for (let i = $pos.depth; i >= 0; i--) {
@@ -346,7 +348,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
           break
         }
       }
-      
+
       if (paragraphPos !== null) {
         // Select the paragraph and apply line height
         const paragraphEnd = $pos.end($pos.depth - ($pos.depth - 1))
@@ -355,7 +357,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
           .setTextSelection({ from: paragraphPos, to: paragraphEnd })
           .setLineHeight(height)
           .run()
-        
+
         // Restore cursor position
         editor.chain().focus().setTextSelection(from).run()
       } else {
@@ -386,32 +388,32 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
   const updateDropdownPositions = () => {
     const newPositions = { ...dropdownPositions }
-    
+
     if (headingButtonRef) {
       const rect = headingButtonRef.getBoundingClientRect()
       newPositions.heading = { top: rect.bottom + 4, left: rect.left }
     }
-    
+
     if (listButtonRef) {
       const rect = listButtonRef.getBoundingClientRect()
       newPositions.list = { top: rect.bottom + 4, left: rect.left }
     }
-    
+
     if (alignButtonRef) {
       const rect = alignButtonRef.getBoundingClientRect()
       newPositions.align = { top: rect.bottom + 4, left: rect.left }
     }
-    
+
     if (advancedButtonRef) {
       const rect = advancedButtonRef.getBoundingClientRect()
       newPositions.advanced = { top: rect.bottom + 4, left: rect.left }
     }
-    
+
     if (linkButtonRef) {
       const rect = linkButtonRef.getBoundingClientRect()
       newPositions.link = { top: rect.bottom + 4, left: rect.left }
     }
-    
+
     setDropdownPositions(newPositions)
   }
 
@@ -427,16 +429,16 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     const handleClickOutside = (event) => {
       // Check if any dropdown is open
       const isAnyDropdownOpen = showHeadingMenu || showListMenu || showAlignMenu || showAdvancedOptions || showColorPicker || showLineSpacing || showLinkPopup
-      
+
       if (!isAnyDropdownOpen) return
-      
+
       // Check if click is inside any dropdown or button
-      const isInsideDropdown = event.target.closest('.dropdown-container') || 
-                              event.target.closest('.color-picker') || 
-                              event.target.closest('.line-spacing-picker') ||
-                              event.target.closest('.link-popup') ||
-                              event.target.closest('[role="dialog"]')
-      
+      const isInsideDropdown = event.target.closest('.dropdown-container') ||
+        event.target.closest('.color-picker') ||
+        event.target.closest('.line-spacing-picker') ||
+        event.target.closest('.link-popup') ||
+        event.target.closest('[role="dialog"]')
+
       if (!isInsideDropdown) {
         closeAllDropdowns()
       }
@@ -446,7 +448,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     const handleScroll = () => {
       // Immediately close dropdowns on any scroll
       closeAllDropdowns()
-      
+
       // Clear any existing timeout
       if (scrollTimeout) {
         clearTimeout(scrollTimeout)
@@ -466,22 +468,22 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     // Add event listeners to all possible scroll sources
     document.addEventListener('mousedown', handleClickOutside)
     document.addEventListener('click', handleClickOutside)
-    
+
     // Window scroll events
     window.addEventListener('scroll', handleScroll, { passive: true, capture: true })
     window.addEventListener('wheel', handleWheel, { passive: true })
     window.addEventListener('touchmove', handleTouchMove, { passive: true })
     window.addEventListener('resize', closeAllDropdowns)
-    
+
     // Document scroll events
     document.addEventListener('scroll', handleScroll, { passive: true, capture: true })
-    
+
     // Also listen for scroll on the editor container specifically
     const editorContainer = document.querySelector('.prose')
     if (editorContainer) {
       editorContainer.addEventListener('scroll', handleScroll, { passive: true })
     }
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('click', handleClickOutside)
@@ -490,11 +492,11 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
       window.removeEventListener('touchmove', handleTouchMove)
       window.removeEventListener('resize', closeAllDropdowns)
       document.removeEventListener('scroll', handleScroll, { capture: true })
-      
+
       if (editorContainer) {
         editorContainer.removeEventListener('scroll', handleScroll)
       }
-      
+
       if (scrollTimeout) {
         clearTimeout(scrollTimeout)
       }
@@ -508,9 +510,9 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     const handleLinkPopupClickOutside = (event) => {
       const linkPopupElement = document.querySelector('.link-popup')
       const linkButtonElement = linkButtonRef
-      
-      if (linkPopupElement && !linkPopupElement.contains(event.target) && 
-          linkButtonElement && !linkButtonElement.contains(event.target)) {
+
+      if (linkPopupElement && !linkPopupElement.contains(event.target) &&
+        linkButtonElement && !linkButtonElement.contains(event.target)) {
         setShowLinkPopup(false)
         setLinkUrl('')
         setLinkText('')
@@ -567,8 +569,8 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
         }
       `}</style>
       {/* Desktop Toolbar (xl: 1280px+) - Original with Font Selector */}
-      <div 
-        className="hidden xl:flex items-center gap-1 md:gap-2 px-4 bg-white overflow-x-auto scrollbar-hide whitespace-nowrap w-full xl:max-w-[917px]" 
+      <div
+        className="hidden xl:flex items-center gap-1 md:gap-2 px-4 bg-white overflow-x-auto scrollbar-hide whitespace-nowrap w-full xl:max-w-[917px]"
         style={{ height: '52px', borderBottom: '1px solid #E5E7EB' }}
       >
         {/* Font Selector */}
@@ -588,8 +590,8 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
         {/* Heading Selector */}
         <div className="flex items-center gap-1 dropdown-container shrink-0 px-1 border-r border-gray-200">
-          <button 
-            onClick={() => editor?.chain().focus().setParagraph().run()} 
+          <button
+            onClick={() => editor?.chain().focus().setParagraph().run()}
             className={`p-1.5 hover:bg-gray-100 rounded ${editor?.isActive('paragraph') ? 'bg-gray-200' : ''}`}
             title="Paragraph"
           >
@@ -609,7 +611,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
               <ChevronDown className="h-3 w-3 text-gray-600 ml-0.5" />
             </button>
             {showHeadingMenu && headingButtonRef && isMounted && dropdownPositions.heading.top > 0 && createPortal(
-              <div 
+              <div
                 className="fixed bg-white border rounded-md shadow-xl py-1 min-w-[80px] border-gray-300"
                 style={{
                   zIndex: 9999,
@@ -637,29 +639,29 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
         {/* Format Buttons - B, I, U, S */}
         <div className="flex items-center gap-0.5 px-1 border-r border-gray-200">
-          <button 
-            onClick={() => editor.chain().focus().toggleBold().run()} 
+          <button
+            onClick={() => editor.chain().focus().toggleBold().run()}
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('bold') ? 'bg-gray-200' : ''}`}
             title="Bold"
           >
             <img src="/editor-icons/B.svg" alt="Bold" className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => editor.chain().focus().toggleItalic().run()} 
+          <button
+            onClick={() => editor.chain().focus().toggleItalic().run()}
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('italic') ? 'bg-gray-200' : ''}`}
             title="Italic"
           >
             <img src="/editor-icons/italic.svg" alt="Italic" className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => editor.chain().focus().toggleUnderline().run()} 
+          <button
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('underline') ? 'bg-gray-200' : ''}`}
             title="Underline"
           >
             <img src="/editor-icons/underline.svg" alt="Underline" className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => editor.chain().focus().toggleStrike().run()} 
+          <button
+            onClick={() => editor.chain().focus().toggleStrike().run()}
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('strike') ? 'bg-gray-200' : ''}`}
             title="Strikethrough"
           >
@@ -669,7 +671,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
         {/* List Button with Dropdown */}
         <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
-          <button 
+          <button
             ref={setListButtonRef}
             className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
             onMouseDown={(e) => {
@@ -683,7 +685,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             <ChevronDown className="h-3 w-3 text-gray-700" />
           </button>
           {showListMenu && listButtonRef && isMounted && dropdownPositions.list.top > 0 && createPortal(
-            <div 
+            <div
               className="fixed bg-white border rounded-md shadow-xl py-1 min-w-[150px] border-gray-300"
               style={{
                 zIndex: 9999,
@@ -720,7 +722,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
         {/* Align Button with Dropdown */}
         <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
-          <button 
+          <button
             ref={setAlignButtonRef}
             className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
             onMouseDown={(e) => {
@@ -734,7 +736,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             <ChevronDown className="h-3 w-3 text-gray-700" />
           </button>
           {showAlignMenu && alignButtonRef && isMounted && dropdownPositions.align.top > 0 && createPortal(
-            <div 
+            <div
               className="fixed bg-white border rounded-md shadow-xl py-1 min-w-[150px] border-gray-300"
               style={{
                 zIndex: 9999,
@@ -794,30 +796,47 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
         {/* Insert Buttons - Image, Code, Quote, Link */}
         <div className="flex items-center gap-0.5 px-1 border-r border-gray-200">
           <div className="relative shrink-0">
-            <button 
-              className="p-1.5 hover:bg-gray-100 rounded focus:outline-none border-0"
-              style={{ border: 'none', borderBottom: 'none' }}
+            <button
+              ref={setImageButtonRef}
+              className="p-1.5 hover:bg-gray-100 rounded"
               onClick={insertImage}
-              onMouseEnter={() => setShowImageTooltip(true)}
+              onMouseEnter={() => {
+                if (imageButtonRef) {
+                  const rect = imageButtonRef.getBoundingClientRect()
+                  setImageTooltipPos({
+                    top: rect.bottom + 8,
+                    left: rect.left + rect.width / 2
+                  })
+                  setShowImageTooltip(true)
+                }
+              }}
               onMouseLeave={() => setShowImageTooltip(false)}
               title="Insert Image"
             >
               <img src="/editor-icons/image.svg" alt="Image" className="w-4 h-4" />
             </button>
-            {showImageTooltip && (
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-gray-800 text-white text-xs px-3 py-1.5 rounded whitespace-nowrap z-[200]">
+            {showImageTooltip && isMounted && createPortal(
+              <div
+                className="fixed bg-gray-800 text-white text-xs px-3 py-1.5 rounded whitespace-nowrap z-[9999] pointer-events-none"
+                style={{
+                  top: `${imageTooltipPos.top}px`,
+                  left: `${imageTooltipPos.left}px`,
+                  transform: 'translate(-50%, 0)'
+                }}
+              >
                 Upload Image
-              </div>
+              </div>,
+              document.body
             )}
           </div>
-          <button 
+          <button
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('codeBlock') ? 'bg-gray-200' : ''}`}
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             title="Code Block"
           >
             <img src="/editor-icons/block.svg" alt="Code Block" className="w-4 h-4" />
           </button>
-          <button 
+          <button
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('blockquote') ? 'bg-gray-200' : ''}`}
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             title="Quote"
@@ -825,7 +844,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             <img src="/editor-icons/''.svg" alt="Quote" className="w-4 h-4" />
           </button>
           <div className="relative dropdown-container shrink-0">
-            <button 
+            <button
               ref={setLinkButtonRef}
               className="p-1.5 hover:bg-gray-100 rounded"
               onClick={() => {
@@ -841,7 +860,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
         {/* Advanced Options */}
         <div className="relative dropdown-container shrink-0">
-          <button 
+          <button
             ref={setAdvancedButtonRef}
             className="text-sm text-gray-600 px-3 py-1.5 hover:bg-gray-200 rounded whitespace-nowrap"
             style={{ backgroundColor: '#F8F8F8' }}
@@ -853,7 +872,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             Advanced Options
           </button>
           {showAdvancedOptions && advancedButtonRef && isMounted && dropdownPositions.advanced.top > 0 && createPortal(
-            <div 
+            <div
               className="fixed bg-white border rounded-md shadow-xl py-2 px-3 border-gray-300"
               style={{
                 zIndex: 9999,
@@ -941,9 +960,9 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
       </div>
 
       {/* Mobile Toolbar (below md: 768px) - Desktop-style with Horizontal Scroll */}
-      <div 
-        className="flex md:hidden items-center gap-1 px-4 bg-white overflow-x-auto scrollbar-hide whitespace-nowrap w-full" 
-        style={{ 
+      <div
+        className="flex md:hidden items-center gap-1 px-4 bg-white overflow-x-auto scrollbar-hide whitespace-nowrap w-full"
+        style={{
           height: '52px',
           borderBottom: '1px solid #E5E7EB',
           scrollbarWidth: 'none',
@@ -960,8 +979,8 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
         {/* Heading Selector */}
         <div className="flex items-center gap-1 dropdown-container shrink-0 px-1 border-r border-gray-200">
-          <button 
-            onClick={() => editor?.chain().focus().setParagraph().run()} 
+          <button
+            onClick={() => editor?.chain().focus().setParagraph().run()}
             className={`p-1.5 hover:bg-gray-100 rounded ${editor?.isActive('paragraph') ? 'bg-gray-200' : ''}`}
             title="Paragraph"
           >
@@ -981,7 +1000,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
               <ChevronDown className="h-3 w-3 text-gray-600 ml-0.5" />
             </button>
             {showHeadingMenu && headingButtonRef && isMounted && dropdownPositions.heading.top > 0 && createPortal(
-              <div 
+              <div
                 className="fixed bg-white border rounded-md shadow-xl py-1 min-w-[80px] border-gray-300"
                 style={{
                   zIndex: 9999,
@@ -1009,29 +1028,29 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
         {/* Format Buttons - B, I, U, S */}
         <div className="flex items-center gap-0.5 px-1 border-r border-gray-200 shrink-0">
-          <button 
-            onClick={() => editor.chain().focus().toggleBold().run()} 
+          <button
+            onClick={() => editor.chain().focus().toggleBold().run()}
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('bold') ? 'bg-gray-200' : ''}`}
             title="Bold"
           >
             <img src="/editor-icons/B.svg" alt="Bold" className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => editor.chain().focus().toggleItalic().run()} 
+          <button
+            onClick={() => editor.chain().focus().toggleItalic().run()}
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('italic') ? 'bg-gray-200' : ''}`}
             title="Italic"
           >
             <img src="/editor-icons/italic.svg" alt="Italic" className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => editor.chain().focus().toggleUnderline().run()} 
+          <button
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('underline') ? 'bg-gray-200' : ''}`}
             title="Underline"
           >
             <img src="/editor-icons/underline.svg" alt="Underline" className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => editor.chain().focus().toggleStrike().run()} 
+          <button
+            onClick={() => editor.chain().focus().toggleStrike().run()}
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('strike') ? 'bg-gray-200' : ''}`}
             title="Strikethrough"
           >
@@ -1041,7 +1060,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
         {/* List Button with Dropdown */}
         <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
-          <button 
+          <button
             ref={setListButtonRef}
             className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
             onMouseDown={(e) => {
@@ -1055,7 +1074,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             <ChevronDown className="h-3 w-3 text-gray-700" />
           </button>
           {showListMenu && listButtonRef && isMounted && dropdownPositions.list.top > 0 && createPortal(
-            <div 
+            <div
               className="fixed bg-white border rounded-md shadow-xl py-1 min-w-[150px] border-gray-300"
               style={{
                 zIndex: 9999,
@@ -1092,7 +1111,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
         {/* Align Button with Dropdown */}
         <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
-          <button 
+          <button
             ref={setAlignButtonRef}
             className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
             onMouseDown={(e) => {
@@ -1106,7 +1125,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             <ChevronDown className="h-3 w-3 text-gray-700" />
           </button>
           {showAlignMenu && alignButtonRef && isMounted && dropdownPositions.align.top > 0 && createPortal(
-            <div 
+            <div
               className="fixed bg-white border rounded-md shadow-xl py-1 min-w-[150px] border-gray-300"
               style={{
                 zIndex: 9999,
@@ -1166,7 +1185,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
         {/* Insert Buttons - Image, Code, Quote, Link */}
         <div className="flex items-center gap-0.5 px-1 border-r border-gray-200 shrink-0">
           <div className="relative shrink-0">
-            <button 
+            <button
               className="p-1.5 hover:bg-gray-100 rounded focus:outline-none border-0"
               style={{ border: 'none', borderBottom: 'none' }}
               onClick={insertImage}
@@ -1175,14 +1194,14 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
               <img src="/editor-icons/image.svg" alt="Image" className="w-4 h-4" />
             </button>
           </div>
-          <button 
+          <button
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('codeBlock') ? 'bg-gray-200' : ''}`}
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             title="Code Block"
           >
             <img src="/editor-icons/block.svg" alt="Code Block" className="w-4 h-4" />
           </button>
-          <button 
+          <button
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('blockquote') ? 'bg-gray-200' : ''}`}
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             title="Quote"
@@ -1190,7 +1209,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             <img src="/editor-icons/''.svg" alt="Quote" className="w-4 h-4" />
           </button>
           <div className="relative dropdown-container shrink-0">
-            <button 
+            <button
               ref={setLinkButtonRef}
               className="p-1.5 hover:bg-gray-100 rounded"
               onClick={() => {
@@ -1224,7 +1243,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
         {/* Line Spacing */}
         <div className="relative shrink-0 px-1 border-r border-gray-200">
-          <button 
+          <button
             ref={(el) => {
               if (el && !dropdownPositions.lineSpacing) {
                 const rect = el.getBoundingClientRect()
@@ -1234,7 +1253,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
                 }))
               }
             }}
-            className="flex items-center gap-0.5 p-1.5 hover:bg-gray-100 rounded shrink-0" 
+            className="flex items-center gap-0.5 p-1.5 hover:bg-gray-100 rounded shrink-0"
             title="Line Spacing"
             onClick={() => {
               closeAllDropdowns()
@@ -1245,7 +1264,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             <ChevronDown className="h-3 w-3" />
           </button>
           {showLineSpacing && isMounted && dropdownPositions.lineSpacing?.top > 0 && createPortal(
-            <div className="line-spacing-picker fixed bg-white border rounded-md shadow-lg py-1 min-w-[100px]" 
+            <div className="line-spacing-picker fixed bg-white border rounded-md shadow-lg py-1 min-w-[100px]"
               style={{
                 zIndex: 10001,
                 top: `${dropdownPositions.lineSpacing?.top || 0}px`,
@@ -1286,9 +1305,9 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
       </div>
 
       {/* Tablet Toolbar (md to xl: 768px-1279px) - Simplified with Undo/Redo */}
-      <div 
-        className="hidden md:flex xl:hidden items-center gap-1 md:gap-2 px-4 bg-white overflow-x-auto scrollbar-hide whitespace-nowrap w-full" 
-        style={{ 
+      <div
+        className="hidden md:flex xl:hidden items-center gap-1 md:gap-2 px-4 bg-white overflow-x-auto scrollbar-hide whitespace-nowrap w-full"
+        style={{
           height: '52px',
           borderBottom: '1px solid #E5E7EB',
           scrollbarWidth: 'none',
@@ -1298,8 +1317,8 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
       >
         {/* Undo/Redo Buttons */}
         <div className="flex items-center gap-0.5 shrink-0 pr-2 border-r border-gray-200">
-          <button 
-            onClick={() => editor?.chain().focus().undo().run()} 
+          <button
+            onClick={() => editor?.chain().focus().undo().run()}
             disabled={!editor?.can().chain().focus().undo().run()}
             className="p-1.5 hover:bg-gray-100 rounded shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
             title="Undo"
@@ -1308,8 +1327,8 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
             </svg>
           </button>
-          <button 
-            onClick={() => editor?.chain().focus().redo().run()} 
+          <button
+            onClick={() => editor?.chain().focus().redo().run()}
             disabled={!editor?.can().chain().focus().redo().run()}
             className="p-1.5 hover:bg-gray-100 rounded shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
             title="Redo"
@@ -1333,17 +1352,17 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
           >
             <span className="text-gray-700">
               {editor?.isActive('heading', { level: 1 }) ? 'Heading 1' :
-               editor?.isActive('heading', { level: 2 }) ? 'Heading 2' :
-               editor?.isActive('heading', { level: 3 }) ? 'Heading 3' :
-               editor?.isActive('heading', { level: 4 }) ? 'Heading 4' :
-               editor?.isActive('heading', { level: 5 }) ? 'Heading 5' :
-               editor?.isActive('heading', { level: 6 }) ? 'Heading 6' :
-               'Normal text'}
+                editor?.isActive('heading', { level: 2 }) ? 'Heading 2' :
+                  editor?.isActive('heading', { level: 3 }) ? 'Heading 3' :
+                    editor?.isActive('heading', { level: 4 }) ? 'Heading 4' :
+                      editor?.isActive('heading', { level: 5 }) ? 'Heading 5' :
+                        editor?.isActive('heading', { level: 6 }) ? 'Heading 6' :
+                          'Normal text'}
             </span>
             <ChevronDown className="h-3 w-3 text-gray-600 ml-1" />
           </button>
           {showHeadingMenu && headingButtonRef && isMounted && dropdownPositions.heading.top > 0 && createPortal(
-            <div 
+            <div
               className="fixed bg-white border rounded-md shadow-xl py-1 min-w-[140px] border-gray-300"
               style={{
                 zIndex: 9999,
@@ -1379,29 +1398,29 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
         {/* Format Buttons - B, I, U, S */}
         <div className="flex items-center gap-0.5 px-1 border-r border-gray-200 shrink-0">
-          <button 
-            onClick={() => editor.chain().focus().toggleBold().run()} 
+          <button
+            onClick={() => editor.chain().focus().toggleBold().run()}
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('bold') ? 'bg-gray-200' : ''}`}
             title="Bold"
           >
             <img src="/editor-icons/B.svg" alt="Bold" className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => editor.chain().focus().toggleItalic().run()} 
+          <button
+            onClick={() => editor.chain().focus().toggleItalic().run()}
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('italic') ? 'bg-gray-200' : ''}`}
             title="Italic"
           >
             <img src="/editor-icons/italic.svg" alt="Italic" className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => editor.chain().focus().toggleUnderline().run()} 
+          <button
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('underline') ? 'bg-gray-200' : ''}`}
             title="Underline"
           >
             <img src="/editor-icons/underline.svg" alt="Underline" className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => editor.chain().focus().toggleStrike().run()} 
+          <button
+            onClick={() => editor.chain().focus().toggleStrike().run()}
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('strike') ? 'bg-gray-200' : ''}`}
             title="Strikethrough"
           >
@@ -1429,7 +1448,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
         {/* Align Button with Dropdown */}
         <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
-          <button 
+          <button
             ref={setAlignButtonRef}
             className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
             onMouseDown={(e) => {
@@ -1443,7 +1462,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             <ChevronDown className="h-3 w-3 text-gray-700" />
           </button>
           {showAlignMenu && alignButtonRef && isMounted && dropdownPositions.align.top > 0 && createPortal(
-            <div 
+            <div
               className="fixed bg-white border rounded-md shadow-xl py-1 min-w-[150px] border-gray-300"
               style={{
                 zIndex: 9999,
@@ -1503,7 +1522,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
         {/* Insert Buttons - Image, Code, Quote, Link */}
         <div className="flex items-center gap-0.5 px-1 border-r border-gray-200 shrink-0">
           <div className="relative shrink-0">
-            <button 
+            <button
               className="p-1.5 hover:bg-gray-100 rounded focus:outline-none border-0"
               style={{ border: 'none', borderBottom: 'none' }}
               onClick={insertImage}
@@ -1519,14 +1538,14 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
               </div>
             )}
           </div>
-          <button 
+          <button
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('codeBlock') ? 'bg-gray-200' : ''}`}
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             title="Code Block"
           >
             <img src="/editor-icons/block.svg" alt="Code Block" className="w-4 h-4" />
           </button>
-          <button 
+          <button
             className={`p-1.5 hover:bg-gray-100 rounded shrink-0 ${editor.isActive('blockquote') ? 'bg-gray-200' : ''}`}
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             title="Quote"
@@ -1534,7 +1553,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             <img src="/editor-icons/''.svg" alt="Quote" className="w-4 h-4" />
           </button>
           <div className="relative dropdown-container shrink-0">
-            <button 
+            <button
               ref={setLinkButtonRef}
               className="p-1.5 hover:bg-gray-100 rounded"
               onClick={() => {
@@ -1568,7 +1587,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
         {/* Line Spacing */}
         <div className="relative shrink-0 px-1 border-r border-gray-200">
-          <button 
+          <button
             ref={(el) => {
               if (el && !dropdownPositions.lineSpacing) {
                 const rect = el.getBoundingClientRect()
@@ -1578,7 +1597,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
                 }))
               }
             }}
-            className="flex items-center gap-0.5 p-1.5 hover:bg-gray-100 rounded shrink-0" 
+            className="flex items-center gap-0.5 p-1.5 hover:bg-gray-100 rounded shrink-0"
             title="Line Spacing"
             onClick={() => {
               closeAllDropdowns()
@@ -1589,7 +1608,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             <ChevronDown className="h-3 w-3" />
           </button>
           {showLineSpacing && isMounted && dropdownPositions.lineSpacing?.top > 0 && createPortal(
-            <div className="line-spacing-picker fixed bg-white border rounded-md shadow-lg py-1 min-w-[100px]" 
+            <div className="line-spacing-picker fixed bg-white border rounded-md shadow-lg py-1 min-w-[100px]"
               style={{
                 zIndex: 10001,
                 top: `${dropdownPositions.lineSpacing?.top || 0}px`,
@@ -1631,8 +1650,8 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
 
       {/* Editor Content */}
       <div className="bg-white" style={{ minHeight: '338px' }}>
-        <EditorContent 
-          editor={editor} 
+        <EditorContent
+          editor={editor}
           className="prose max-w-none focus:outline-none"
         />
       </div>

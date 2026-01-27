@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useState, useRef } from 'react';
 import ViewSiteHeader from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
 import TableOfContents from '../../components/TableOfContents/TableOfContents';
@@ -14,6 +14,7 @@ import MobileBottomNav from '../../components/MobileBottomNav/MobileBottomNav';
 import CommentSection from '../../components/CommentSection/CommentSection';
 import ClockIcon from '../../components/icons/ClockIcon';
 import { getImageUrl } from '@/utils/imageUrl';
+import { useSnapshot } from '@/hooks/useSnapshot';
 
 
 export default function BlogDetailPage({ params }) {
@@ -23,6 +24,42 @@ export default function BlogDetailPage({ params }) {
   const [error, setError] = useState(null);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { captureSnapshot, isSnapshotting } = useSnapshot();
+  const contentRef = useRef(null);
+
+  const handleSnapshot = () => {
+    if (contentRef.current) {
+       // Calculate the visible portion of the element
+       const rect = contentRef.current.getBoundingClientRect();
+       
+       // Calculate y offset relative to the element top
+       // If rect.top is negative, we have scrolled past the top, so offset is -rect.top
+       // If rect.top is positive, we are at the top (or element is further down), so starts at 0? 
+       // Usually we want to capture what is on screen.
+       // If the element starts below the top of the screen (e.g. under a header), we should start from 0 relative to element.
+       // If we scrolled past the element start, we start from the scroll offset.
+       
+       let yOffset = 0;
+       if (rect.top < 0) {
+         yOffset = Math.abs(rect.top);
+       }
+       
+       // Adjust for header height if the element is partially covered (unlikely given it's the main content, but good to be safe)
+       // Actually, we just want "Screen Height" worth of content starting from "Current Scroll Position relative to Element".
+       
+       // Ensure we don't go past the bottom
+       const maxOffset = contentRef.current.scrollHeight - window.innerHeight;
+       if (yOffset > maxOffset) yOffset = maxOffset;
+       if (yOffset < 0) yOffset = 0;
+
+       captureSnapshot(contentRef, blog?.title || 'blog-snapshot', { 
+         height: window.innerHeight,
+         width: contentRef.current.scrollWidth,
+         y: yOffset,
+         x: 0
+       });
+    }
+  };
 
   const handleBack = (e) => {
     e.preventDefault();
@@ -200,6 +237,7 @@ export default function BlogDetailPage({ params }) {
             slug={blog.slug}
             blogId={blog.id}
             variant="outline"
+            onSnapshot={handleSnapshot}
           />
         }
       />
@@ -229,7 +267,7 @@ export default function BlogDetailPage({ params }) {
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1 max-w-[800px] w-full min-w-0 mx-auto pt-12 pb-20 px-12 border-l border-[#EAEAEA] max-md:border-none max-md:px-2 max-md:pt-6">
+          <div ref={contentRef} className="flex-1 max-w-[800px] w-full min-w-0 mx-auto pt-12 pb-20 px-12 border-l border-[#EAEAEA] max-md:border-none max-md:px-2 max-md:pt-6">
             {/* Blog Title */}
             <h1 className="text-[#202020] text-[40px] font-extrabold leading-[1.09] mb-6 tracking-normal break-words max-md:text-[24px] max-md:leading-[1.2] max-md:mb-3 ">
               {blog.title}
@@ -292,7 +330,9 @@ export default function BlogDetailPage({ params }) {
               
               {/* Date */}
               <div className="flex items-center gap-2 text-[#808080] text-sm font-normal leading-normal tracking-normal max-md:text-[12px] max-md:leading-[1.5]">
-                <ClockIcon className="w-3.5 h-3.5 max-md:w-2.5 max-md:h-2.5" />
+                <div className="flex-shrink-0">
+                  <ClockIcon className="w-3.5 h-3.5 max-md:w-2.5 max-md:h-2.5" />
+                </div>
                 <span>Created on {dateFormatted.fullDate || dateFormatted.date}</span>
               </div>
             </div>
@@ -338,6 +378,7 @@ export default function BlogDetailPage({ params }) {
                title={blog.title}
                slug={blog.slug}
                blogId={blog.id}
+               onSnapshot={handleSnapshot}
              />
           </aside>
         </div>

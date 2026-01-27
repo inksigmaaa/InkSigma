@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-export default function SocialSidebar({ title, url, slug, blogId }) {
+export default function SocialSidebar({ title, url, slug, blogId, onSnapshot }) {
   const [showCopied, setShowCopied] = useState(false);
 
   const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/blog/${slug}` : '');
@@ -99,7 +99,11 @@ export default function SocialSidebar({ title, url, slug, blogId }) {
       </button>
 
       {/* Snapshot / Capture */}
-      <button className={buttonClass} aria-label="Save Snapshot">
+      <button 
+        onClick={() => onSnapshot && onSnapshot()} 
+        className={buttonClass} 
+        aria-label="Save Snapshot"
+      >
          <Image src="/svg/save_snapshot.svg" alt="Save Snapshot" width={16} height={16} />
       </button>
     </div>
