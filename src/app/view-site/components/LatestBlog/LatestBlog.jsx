@@ -132,7 +132,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
           />
         </div>
 
-        <Link href={`/view-site/blog/${latestBlog.slug}${publicationId ? `?from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-2xl overflow-hidden cursor-pointer block">
+        <Link href={`/view-site/blog/${latestBlog.slug}${publicationId ? `?from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block">
           {/* Background Image */}
           <div className="absolute inset-0">
             <Image
