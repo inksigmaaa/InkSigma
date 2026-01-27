@@ -44,7 +44,7 @@ export default function HomePage() {
         id: article.id,
         title: article.title,
         description: article.description,
-        category: article.categories?.[0] || 'Uncategorized',
+        categories: article.categories?.length > 0 ? article.categories : ['Uncategorized'],
         thumbnail: thumbnailUrl,
         views: viewStats[article.id]?.views || article.views || 0
       };
@@ -251,9 +251,13 @@ export default function HomePage() {
                       {article.description}
                     </p>
                     <div className="flex items-center  justify-between">
-                      <span className="text-sm text-[#808080] bg-[#F4F4F4] px-4 py-2 rounded">
-                        {article.category}
-                      </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {article.categories.map((cat, idx) => (
+                          <span key={idx} className="text-sm text-[#808080] bg-[#F4F4F4] px-4 py-2 rounded">
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
                       <button 
                         className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors"
                         onClick={(e) => {
