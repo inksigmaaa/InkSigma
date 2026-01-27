@@ -198,7 +198,7 @@ export default function PostsHomePage() {
                     <div 
                       key={article.id} 
                       className="border border-[#EAEAEA] rounded-lg hover:shadow-lg transition-shadow bg-white p-4 cursor-pointer"
-                      onClick={() => router.push(`/posts/published`)}
+                      onClick={() => router.push(`/home/preview/${article.id}`)}
                     >
                       <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative">
                         <img
