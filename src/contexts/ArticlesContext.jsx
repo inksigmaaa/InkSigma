@@ -121,8 +121,9 @@ export function ArticlesProvider({ children }) {
       console.log('[ArticlesContext] Loading user blogs for:', currentSession.user.id, 'publicationId:', publicationId)
       
       // If publicationId is provided, filter by that publication
-      // Otherwise, load all user blogs (for personal dashboard)
-      const filters = publicationId ? { publicationId } : {}
+      // If NOT provided, explicitly filter for PERSONAL articles (publicationId = null)
+      // This prevents "Joined Publication" articles from showing up in "My Blogs"
+      const filters = publicationId ? { publicationId } : { publicationId: 'null' }
       const blogs = await blogService.getUserBlogs(currentSession.user.id, filters)
       
       console.log('[ArticlesContext] Blogs received:', blogs?.length, blogs)

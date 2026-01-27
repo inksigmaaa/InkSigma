@@ -142,11 +142,12 @@ function ViewSiteContent() {
           </div>
         ) : (
           <>
-            <LatestBlog searchQuery={searchQuery} blogs={blogs} />
+            <LatestBlog searchQuery={searchQuery} blogs={blogs} publicationId={pubIdFromUrl || currentPublication?.id} />
             <AllArticles 
               searchQuery={searchQuery} 
               selectedCategory={selectedCategory} 
               blogs={searchQuery ? blogs : blogs.slice(1)} 
+              publicationId={pubIdFromUrl || currentPublication?.id}
             />
           </>
         )}

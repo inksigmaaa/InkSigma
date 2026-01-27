@@ -8,7 +8,8 @@ export const APP_CONFIG = {
 
 export const LOGOS = {
   main: '/icons/inksigma-logo-new.svg',
-  auth: '/images/logo/logo-2.svg'
+  auth: '/images/logo/logo-2.svg',
+  mobile: '/images/logo/logo-mobile.svg'
 }
 
 export const HERO_CONFIG = {

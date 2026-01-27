@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
 import ViewSiteHeader from '../../components/Header/Header';
 import Footer from '../../components/Footer/Footer';
@@ -20,6 +21,27 @@ export default function BlogDetailPage({ params }) {
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const handleBack = (e) => {
+    e.preventDefault();
+    const fromPub = searchParams.get('from');
+    
+    // Try browser history first
+    if (window.history.length > 1) {
+      router.back();
+    } 
+    // Fallback to explicit navigation
+    else if (fromPub) {
+      router.push(`/view-site?publicationId=${fromPub}`);
+    }
+    // Default fallback
+    else {
+      const pubId = blog?.publication?.id || blog?.publicationId || blog?.publication_id;
+      router.push(pubId ? `/view-site?publicationId=${pubId}` : '/view-site');
+    }
+  };
 
   useEffect(() => {
     const fetchBlog = async () => {
@@ -77,6 +99,33 @@ export default function BlogDetailPage({ params }) {
 
     fetchBlog();
   }, [slug]);
+
+  // Process content to inject IDs for Table of Contents
+  const [processedContent, setProcessedContent] = useState('');
+  const [sections, setSections] = useState([]);
+
+  useEffect(() => {
+    if (!blog?.content) return;
+
+    // Use DOMParser to parse and modify content safely
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(blog.content, 'text/html');
+    const headings = doc.querySelectorAll('h2');
+    
+    const extractedSections = Array.from(headings).map((heading, index) => {
+      // Create a consistent ID
+      const id = heading.id || `section-${index + 1}`;
+      heading.id = id; // Inject ID back into the DOM node
+      
+      return {
+        id,
+        title: heading.textContent,
+      };
+    });
+
+    setSections(extractedSections);
+    setProcessedContent(doc.body.innerHTML);
+  }, [blog?.content]);
 
   // Scroll to top when blog page loads
   useEffect(() => {
@@ -160,15 +209,10 @@ export default function BlogDetailPage({ params }) {
           {/* Left Sidebar - Navigation & TOC */}
           <aside className="hidden lg:block w-[240px] flex-shrink-0 pt-5 sticky top-28 h-[calc(100vh-6rem)] overflow-y-auto z-30">
             <div className="flex flex-col gap-8">
-              <Link 
-                href={
-                  blog?.publication?.id 
-                    ? `/view-site?publicationId=${blog.publication.id}` 
-                    : (blog?.publicationId || blog?.publication_id
-                        ? `/view-site?publicationId=${blog.publicationId || blog.publication_id}` 
-                        : '/view-site')
-                }
+              <button 
+                onClick={handleBack}
                 className="inline-flex items-center gap-1 px-4 py-3 bg-[#F4F4F4] hover:bg-[#EAEAEA] text-[#696969] text-sm font-semibold leading-none tracking-normal rounded-3xl w-fit transition-colors"
+                type="button"
               >
 
                 <Image
@@ -178,9 +222,9 @@ export default function BlogDetailPage({ params }) {
                   height={5}
                 />
                 
-                Go to homepage
-              </Link>
-              <TableOfContents content={blog.content} />
+                Go back
+              </button>
+              <TableOfContents sections={sections} />
             </div>
           </aside>
 
@@ -265,19 +309,22 @@ export default function BlogDetailPage({ params }) {
             </div>
 
             {/* Blog Content */}
-            <article
-              className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px]"
-              dangerouslySetInnerHTML={{ __html: (() => {
-                // Convert relative image URLs to full URLs for display
-                const apiUrl = 'http://localhost:5000';
-                return blog.content.replace(/src="([^"]*)"/g, (match, src) => {
-                  if (!src) return match;
-                  if (src.startsWith('http://') || src.startsWith('https://')) return match;
-                  if (src.startsWith('/')) return `src="${apiUrl}${src}"`;
-                  return `src="${apiUrl}/${src}"`;
-                });
-              })() }}
-            />
+              <article
+                className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px]"
+                dangerouslySetInnerHTML={{ __html: (() => {
+                  // Use processed content if available, otherwise original
+                  const contentToRender = processedContent || blog.content;
+                  
+                  // Convert relative image URLs to full URLs for display
+                  const apiUrl = 'http://localhost:5000';
+                  return contentToRender.replace(/src="([^"]*)"/g, (match, src) => {
+                    if (!src) return match;
+                    if (src.startsWith('http://') || src.startsWith('https://')) return match;
+                    if (src.startsWith('/')) return `src="${apiUrl}${src}"`;
+                    return `src="${apiUrl}/${src}"`;
+                  });
+                })() }}
+              />
 
             {/* Comment Section */}
             <div className="">
@@ -305,7 +352,7 @@ export default function BlogDetailPage({ params }) {
         slug={blog.slug}
         url={currentUrl}
         description={blog.description}
-        sections={[]}
+        sections={sections}
         blogId={blog.id}
       />
     </div>

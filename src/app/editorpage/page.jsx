@@ -16,15 +16,17 @@ import { getImageUrl } from "@/utils/imageUrl"
 export default function EditorPage() {
   const router = useRouter()
   const { currentPublication, loading } = usePublication()
-  const { articles: allArticles, loadUserArticles } = useArticles()
+  const { articles: allArticles, publicationArticles, loadUserArticles, loadPublicationArticles } = useArticles()
 
   // Refresh articles when page loads
   useEffect(() => {
-    loadUserArticles(currentPublication?.id)
-  }, [loadUserArticles, currentPublication?.id])
+    if (currentPublication?.id) {
+      loadPublicationArticles(currentPublication.id, 'published')
+    }
+  }, [loadPublicationArticles, currentPublication?.id])
 
   // Get recent published articles (limit to 4)
-  const recentArticles = allArticles
+  const recentArticles = publicationArticles
     .filter(article => article.status === 'published')
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 4)
@@ -37,7 +39,7 @@ export default function EditorPage() {
         id: article.id,
         title: article.title,
         description: article.description,
-        category: article.categories?.[0] || 'Uncategorized',
+        categories: article.categories?.length > 0 ? article.categories : ['Uncategorized'],
         thumbnail: thumbnailUrl,
         authorName: article.author?.name || 'Unknown'
       };

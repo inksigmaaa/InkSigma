@@ -5,7 +5,7 @@ import path from "path";
 import fs from "fs";
 import { db } from "../config/database.js";
 import { blog, user, publication, publicationMember, comment, blogShare } from "../models/schema.js";
-import { eq, desc, and, or, ilike, count } from "drizzle-orm";
+import { eq, desc, and, or, ilike, count, isNull } from "drizzle-orm";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 import notificationService from "../services/notificationService.js";
@@ -291,7 +291,11 @@ router.get("/", async (req, res) => {
         }
 
         if (publicationId) {
-            conditions.push(eq(blog.publicationId, parseInt(publicationId)));
+            if (publicationId === 'null') {
+                conditions.push(isNull(blog.publicationId));
+            } else {
+                conditions.push(eq(blog.publicationId, parseInt(publicationId)));
+            }
         }
         
         if (search) {
