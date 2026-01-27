@@ -197,10 +197,10 @@ export default function PersonalArticleContainer({ id, status, title, descriptio
                     </label>
 
                     {/* G1: Title, Description, Categories */}
-                    <div className="min-[641px]:flex-1 flex flex-col min-[768px]:max-w-[371px] max-[640px]:w-full min-[641px]:max-[767px]:min-w-0 overflow-hidden max-[640px]:gap-3 min-[641px]:gap-5">
+                    <div className="min-[641px]:flex-1 flex flex-col min-[768px]:max-w-[90%] max-[640px]:w-full min-[641px]:max-[767px]:min-w-0 overflow-hidden max-[640px]:gap-3 min-[641px]:gap-5">
                         <div className="w-full overflow-hidden">
                             <h3 
-                                className="font-['Public_Sans'] text-black mb-2 min-[768px]:text-[14px] min-[768px]:leading-[100%] min-[641px]:max-[767px]:text-[14px] min-[641px]:max-[767px]:leading-[100%] max-[640px]:text-[12px] max-[640px]:leading-[150%] break-words" 
+                                className="font-['Public_Sans'] text-black mb-2 min-[768px]:text-[14px] leading-[150%] min-[641px]:max-[767px]:text-[14px] min-[641px]:max-[767px]:leading-[100%] max-[640px]:text-[12px] max-[640px]:leading-[150%] break-words" 
                                 style={{ fontWeight: 600, wordBreak: 'break-word', overflowWrap: 'break-word' }}
                             >
                                 {title}
