@@ -100,6 +100,33 @@ export default function BlogDetailPage({ params }) {
     fetchBlog();
   }, [slug]);
 
+  // Process content to inject IDs for Table of Contents
+  const [processedContent, setProcessedContent] = useState('');
+  const [sections, setSections] = useState([]);
+
+  useEffect(() => {
+    if (!blog?.content) return;
+
+    // Use DOMParser to parse and modify content safely
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(blog.content, 'text/html');
+    const headings = doc.querySelectorAll('h2');
+    
+    const extractedSections = Array.from(headings).map((heading, index) => {
+      // Create a consistent ID
+      const id = heading.id || `section-${index + 1}`;
+      heading.id = id; // Inject ID back into the DOM node
+      
+      return {
+        id,
+        title: heading.textContent,
+      };
+    });
+
+    setSections(extractedSections);
+    setProcessedContent(doc.body.innerHTML);
+  }, [blog?.content]);
+
   // Scroll to top when blog page loads
   useEffect(() => {
     // Always scroll to top when opening a blog post
@@ -197,7 +224,7 @@ export default function BlogDetailPage({ params }) {
                 
                 Go back
               </button>
-              <TableOfContents content={blog.content} />
+              <TableOfContents sections={sections} />
             </div>
           </aside>
 
@@ -282,19 +309,22 @@ export default function BlogDetailPage({ params }) {
             </div>
 
             {/* Blog Content */}
-            <article
-              className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px]"
-              dangerouslySetInnerHTML={{ __html: (() => {
-                // Convert relative image URLs to full URLs for display
-                const apiUrl = 'http://localhost:5000';
-                return blog.content.replace(/src="([^"]*)"/g, (match, src) => {
-                  if (!src) return match;
-                  if (src.startsWith('http://') || src.startsWith('https://')) return match;
-                  if (src.startsWith('/')) return `src="${apiUrl}${src}"`;
-                  return `src="${apiUrl}/${src}"`;
-                });
-              })() }}
-            />
+              <article
+                className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px]"
+                dangerouslySetInnerHTML={{ __html: (() => {
+                  // Use processed content if available, otherwise original
+                  const contentToRender = processedContent || blog.content;
+                  
+                  // Convert relative image URLs to full URLs for display
+                  const apiUrl = 'http://localhost:5000';
+                  return contentToRender.replace(/src="([^"]*)"/g, (match, src) => {
+                    if (!src) return match;
+                    if (src.startsWith('http://') || src.startsWith('https://')) return match;
+                    if (src.startsWith('/')) return `src="${apiUrl}${src}"`;
+                    return `src="${apiUrl}/${src}"`;
+                  });
+                })() }}
+              />
 
             {/* Comment Section */}
             <div className="">
@@ -322,7 +352,7 @@ export default function BlogDetailPage({ params }) {
         slug={blog.slug}
         url={currentUrl}
         description={blog.description}
-        sections={[]}
+        sections={sections}
         blogId={blog.id}
       />
     </div>
