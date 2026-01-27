@@ -14,7 +14,9 @@ export default function EditorCategoryDropdown({
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
   const dropdownRef = useRef(null)
+  const buttonRef = useRef(null)
 
   const filteredCategories = CATEGORIES.filter(cat =>
     cat.toLowerCase().includes(searchTerm.toLowerCase())
@@ -27,10 +29,22 @@ export default function EditorCategoryDropdown({
     onCategoriesChange(updated)
   }
 
+  // Update dropdown position when opened
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        left: rect.left
+      })
+    }
+  }, [isOpen])
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+          buttonRef.current && !buttonRef.current.contains(event.target)) {
         setIsOpen(false)
       }
     }
@@ -49,8 +63,9 @@ export default function EditorCategoryDropdown({
     : buttonText
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative">
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-between bg-white border whitespace-nowrap"
         style={{
@@ -94,14 +109,18 @@ export default function EditorCategoryDropdown({
 
       {isOpen && (
         <div 
-          className="absolute top-[calc(100%+8px)] left-0 bg-white flex flex-col z-[100]"
+          ref={dropdownRef}
+          className="fixed bg-white flex flex-col"
           style={{
             width: '283px',
             borderRadius: '8px',
             border: '1px solid #EDEDED',
             boxShadow: '0px 4px 24px 0px rgba(0, 0, 0, 0.07)',
             padding: '8px',
-            gap: '4px'
+            gap: '4px',
+            zIndex: 9999,
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`
           }}
         >
           <div className="flex gap-1" style={{ width: '267px', height: '30px', gap: '4px' }}>

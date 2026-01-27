@@ -180,7 +180,7 @@ export default function HomePage() {
             {currentPublication?.isOwner && (
               <button 
                 onClick={handleEditPublication}
-                className="text-sm text-gray-600 bg-[#f4f4f4] hover:text-gray-900 px-4 py-2 border border-gray-200 rounded-sm transition-colors max-md:px-3 max-md:py-1.5 max-md:text-xs flex-shrink-0 max-md:rounded-lg"
+                className="text-sm text-gray-600 bg-[#F8F8F8] hover:text-gray-900 px-4 py-2 border border-gray-200 rounded-sm transition-colors max-md:px-3 max-md:py-1.5 max-md:text-xs flex-shrink-0 max-md:rounded-lg"
               >
                 Edit
               </button>
@@ -250,7 +250,7 @@ export default function HomePage() {
                       {article.description}
                     </p>
                     <div className="flex items-center  justify-between">
-                      <span className="text-sm text-[#808080] bg-[#F4F4F4] px-4 py-2 rounded">
+                      <span className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
                         {article.category}
                       </span>
                       <button 

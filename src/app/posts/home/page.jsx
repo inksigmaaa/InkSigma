@@ -223,7 +223,7 @@ export default function PostsHomePage() {
                         </p>
                         <div className="flex items-center justify-between">
                           {article.categories && article.categories.length > 0 && (
-                            <span className="text-sm text-[#808080] bg-[#F4F4F4] px-4 py-2 rounded">
+                            <span className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
                               {article.categories[0]}
                             </span>
                           )}

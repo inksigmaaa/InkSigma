@@ -238,7 +238,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                                     {categories.map((cat, index) => (
                                         <span 
                                             key={index} 
-                                            className="bg-[#F4F4F4] flex items-center h-[26px] text-[12px] text-[#808080] whitespace-nowrap flex-shrink-0"
+                                            className="bg-[#F8F8F8] flex items-center h-[26px] text-[12px] text-[#808080] whitespace-nowrap flex-shrink-0"
                                             style={{
                                                 borderRadius: '4px',
                                                 paddingTop: '4px',
@@ -265,7 +265,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                                     {categories.map((cat, index) => (
                                         <span 
                                             key={index} 
-                                            className="bg-[#F4F4F4] flex items-center h-[26px] text-[12px] text-[#808080] whitespace-nowrap flex-shrink-0"
+                                            className="bg-[#F8F8F8] flex items-center h-[26px] text-[12px] text-[#808080] whitespace-nowrap flex-shrink-0"
                                             style={{
                                                 borderRadius: '4px',
                                                 paddingTop: '4px',
@@ -296,7 +296,7 @@ export default function ArticleContainer({ id, status, title, description, categ
                                 {categories.map((cat, index) => (
                                     <span 
                                         key={index} 
-                                        className="bg-[#F4F4F4] flex items-center h-[23px] text-[10px] text-[#808080] whitespace-nowrap flex-shrink-0"
+                                        className="bg-[#F8F8F8] flex items-center h-[23px] text-[10px] text-[#808080] whitespace-nowrap flex-shrink-0"
                                         style={{
                                             borderRadius: '4px',
                                             paddingTop: '4px',
