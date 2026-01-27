@@ -1,39 +1,122 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { LOGOS } from "@/constants/app"
 
 // Mobile Header Component
-const MobileHeader = () => (
-  <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 md:hidden">
-    <div className="flex items-center justify-between px-4 py-3">
-      {/* Hamburger Menu */}
-      <button className="p-2">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 12H21M3 6H21M3 18H21" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </button>
-      
-      {/* Logo */}
-      <div className="flex-1 flex justify-center">
-        <Image
-          src={LOGOS.auth}
-          alt="InkSigma Logo"
-          width={360}
-          height={251}
-          className="h-auto w-[120px] md:w-[360px]"
-        />
-      </div>
-      
-      {/* Login Button */}
-      <Link 
-        href="/login"
-        className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium"
-      >
-        Login
-      </Link>
-    </div>
-  </header>
-)
+const MobileHeader = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen)
+  }
+
+  const closeMenu = () => {
+    setIsMenuOpen(false)
+  }
+
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' })
+    }
+    closeMenu()
+  }
+
+  return (
+    <>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white md:hidden">
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Hamburger Menu */}
+          <button className="p-2" onClick={toggleMenu}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 12H21M3 6H21M3 18H21" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          
+          {/* Logo */}
+          <div className="flex-1 flex justify-center">
+            <Image
+              src={LOGOS.mobile}
+              alt="InkSigma Logo"
+              width={77}
+              height={25}
+              className="h-auto w-[77px]"
+            />
+          </div>
+          
+          {/* Login Button */}
+          <Link 
+            href="/login"
+            className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium"
+          >
+            Login
+          </Link>
+        </div>
+      </header>
+
+      {/* Mobile Menu Overlay */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 md:hidden">
+          <div className="absolute top-16 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-lg w-[360px] h-[264px]">
+            <div className="flex flex-col h-full py-8 px-6">
+              {/* Close Button */}
+              <div className="flex justify-start">
+                <button onClick={closeMenu} className="p-1">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Menu Items */}
+              <div className="flex-1 flex flex-col justify-center divide-y divide-gray-300">
+                <div className="pb-4">
+                  <button 
+                    onClick={() => scrollToSection('home')}
+                    className="text-[12px] font-medium text-gray-700 hover:text-black transition-colors text-center w-full"
+                  >
+                    Home
+                  </button>
+                </div>
+                
+                <div className="pt-4">
+                  <button 
+                    onClick={() => scrollToSection('features')}
+                    className="text-[12px] font-medium text-gray-700 hover:text-black transition-colors text-center w-full"
+                  >
+                    Features
+                  </button>
+                </div>
+                
+                <div className="pt-4">
+                  <button 
+                    onClick={() => scrollToSection('roadmap')}
+                    className="text-[12px] font-medium text-gray-700 hover:text-black transition-colors text-center w-full"
+                  >
+                    Roadmap
+                  </button>
+                </div>
+                
+                <div className="pt-4">
+                  <Link 
+                    href="/login"
+                    onClick={closeMenu}
+                    className="bg-black text-white px-6 py-2 rounded-sm text-[12px] font-medium hover:bg-gray-800 transition-colors text-center mx-auto "
+                  >
+                    Login
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
 
 export default function Home() {
   return (
@@ -43,6 +126,7 @@ export default function Home() {
       
       {/* Hero Section */}
       <section 
+        id="home"
         className="w-full h-screen md:h-[719px] relative bg-cover bg-center bg-no-repeat hero-bg pt-16 md:pt-[68px]"
       >
         {/* Hero Content */}
