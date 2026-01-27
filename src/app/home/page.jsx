@@ -18,17 +18,19 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 export default function HomePage() {
   const router = useRouter()
   const { currentPublication, publicationDetails, loading } = usePublication()
-  const { articles: allArticles, loadUserArticles } = useArticles()
+  const { articles: allArticles, publicationArticles, loadUserArticles, loadPublicationArticles } = useArticles()
   const [commentCounts, setCommentCounts] = useState({})
   const [viewStats, setViewStats] = useState({})
 
   // Refresh articles when home page loads
   useEffect(() => {
-    loadUserArticles()
-  }, [loadUserArticles])
+    if (currentPublication?.id) {
+      loadPublicationArticles(currentPublication.id, 'published')
+    }
+  }, [currentPublication?.id, loadPublicationArticles])
 
   // Get recent published articles (limit to 4)
-  const recentArticles = allArticles
+  const recentArticles = publicationArticles
     .filter(article => article.status === 'published')
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 4)
@@ -42,7 +44,7 @@ export default function HomePage() {
         id: article.id,
         title: article.title,
         description: article.description,
-        category: article.categories?.[0] || 'Uncategorized',
+        categories: article.categories?.length > 0 ? article.categories : ['Uncategorized'],
         thumbnail: thumbnailUrl,
         views: viewStats[article.id]?.views || article.views || 0
       };
@@ -51,11 +53,10 @@ export default function HomePage() {
   // Fetch comment counts and view stats for recent articles
   useEffect(() => {
     const fetchStats = async () => {
-      console.log('[Home] allArticles:', allArticles);
-      console.log('[Home] allArticles length:', allArticles.length);
+      console.log('[Home] publicationArticles length:', publicationArticles.length);
       
       // Get published article IDs
-      const publishedArticles = allArticles.filter(article => article.status === 'published');
+      const publishedArticles = publicationArticles.filter(article => article.status === 'published');
       console.log('[Home] Published articles:', publishedArticles);
       
       if (publishedArticles.length === 0) {
@@ -102,7 +103,7 @@ export default function HomePage() {
     };
 
     fetchStats();
-  }, [allArticles]);
+  }, [publicationArticles]);
 
   const handleStartWriting = () => {
     // Pass current publication ID to editor
@@ -250,9 +251,13 @@ export default function HomePage() {
                       {article.description}
                     </p>
                     <div className="flex items-center  justify-between">
-                      <span className="text-sm text-[#808080] bg-[#F4F4F4] px-4 py-2 rounded">
-                        {article.category}
-                      </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {article.categories.map((cat, idx) => (
+                          <span key={idx} className="text-sm text-[#808080] bg-[#F4F4F4] px-4 py-2 rounded">
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
                       <button 
                         className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors"
                         onClick={(e) => {

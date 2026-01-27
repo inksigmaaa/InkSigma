@@ -8,7 +8,7 @@ import { useToast } from '@/contexts/ToastContext'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const BlogStatsComponent = () => {
-  const { articles } = useArticles()
+  const { articles, publicationArticles: contextPublicationArticles } = useArticles()
   const { currentPublication } = usePublication()
   const { showToast } = useToast()
   const [selectedPeriod, setSelectedPeriod] = useState('Monthly')
@@ -29,17 +29,20 @@ const BlogStatsComponent = () => {
   const periods = ['Today', 'Weekly', 'Monthly', 'Yearly', 'Custom Date']
   
   // Filter articles by current publication first
-  const publicationArticles = currentPublication?.id 
-    ? articles.filter(article => article.publicationId === currentPublication.id)
+  // Use context's publicationArticles if available and we have a current publication
+  const rawPublicationArticles = currentPublication?.id 
+    ? (contextPublicationArticles?.length > 0 ? contextPublicationArticles : articles.filter(article => article.publicationId === currentPublication.id))
     : articles
+
+  const publicationArticles = rawPublicationArticles.filter(article => article.status === 'published')
   
   // Fetch comment counts and view stats for all articles
   useEffect(() => {
     const fetchStats = async () => {
-      if (articles.length === 0) return;
+      if (publicationArticles.length === 0) return;
       
       try {
-        const blogIds = articles.map(a => a.id);
+        const blogIds = publicationArticles.map(a => a.id);
         
         // Fetch comment counts
         const commentResponse = await fetch(`${API_URL}/api/comments/counts`, {
@@ -72,7 +75,7 @@ const BlogStatsComponent = () => {
     };
 
     fetchStats();
-  }, [articles])
+  }, [publicationArticles])
   
   // Filter articles based on selected period
   const getFilteredArticles = () => {
