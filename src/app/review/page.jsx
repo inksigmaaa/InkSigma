@@ -25,22 +25,22 @@ export default function ReviewPage() {
   const [selectedCategories, setSelectedCategories] = useState([])
   const [showPublishModal, setShowPublishModal] = useState(false)
   const [selectedArticleForPublish, setSelectedArticleForPublish] = useState(null)
-  
+
   // Confirmation Modal State
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [selectedArticleForAction, setSelectedArticleForAction] = useState(null)
   const [actionType, setActionType] = useState(null) // 'reject' or 'revert'
-  
-  const { 
-    reviewArticles, 
-    reviewLoading, 
-    reviewError, 
-    loadReviewArticles, 
-    acceptReviewArticle, 
+
+  const {
+    reviewArticles,
+    reviewLoading,
+    reviewError,
+    loadReviewArticles,
+    acceptReviewArticle,
     rejectReviewArticle,
-    revertReviewToDraft 
+    revertReviewToDraft
   } = useArticles()
-  
+
   const { currentPublication, getCurrentUserRole } = usePublication()
 
   // Get user role in this publication
@@ -52,7 +52,7 @@ export default function ReviewPage() {
   useEffect(() => {
     if (currentPublication?.id) {
       loadReviewArticles(currentPublication.id)
-      
+
       // Ensure URL has the publication ID so refresh works correctly
       if (searchParams && !searchParams.get('pub')) {
         const urlArgs = new URLSearchParams(window.location.search)
@@ -64,9 +64,9 @@ export default function ReviewPage() {
 
   // Filter articles by selected categories
   const filteredArticles = selectedCategories.length > 0
-    ? reviewArticles.filter(article => 
-        article.categories?.some(cat => selectedCategories.includes(cat))
-      )
+    ? reviewArticles.filter(article =>
+      article.categories?.some(cat => selectedCategories.includes(cat))
+    )
     : reviewArticles
 
   const handleAccept = (article) => {
@@ -138,7 +138,7 @@ export default function ReviewPage() {
         await revertReviewToDraft(selectedArticleForAction)
         console.log('Article reverted to draft successfully!')
       }
-      
+
       // Refresh the review articles list
       if (currentPublication?.id) {
         loadReviewArticles(currentPublication.id)
@@ -166,22 +166,20 @@ export default function ReviewPage() {
     const diffTime = Math.abs(now - date)
     const diffHours = Math.floor(diffTime / (1000 * 60 * 60))
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-    
+
     // Less than 24 hours - show hours
     if (diffHours < 1) return 'Sent less than an hour ago'
     if (diffHours === 1) return 'Sent 1 hour ago'
     if (diffHours < 24) return `Sent ${diffHours} hours ago`
-    
-    // 24 hours or more - show full date
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+    // 24 hours or more - show full date without day of week
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-    
-    const dayName = days[date.getDay()]
+
     const monthName = months[date.getMonth()]
     const day = date.getDate()
     const year = date.getFullYear()
-    
-    return `Sent on ${dayName}, ${monthName} ${day}, ${year}`
+
+    return `Sent on ${monthName} ${day}, ${year}`
   }
 
   if (reviewLoading) {
@@ -215,7 +213,7 @@ export default function ReviewPage() {
       <NavbarLoggedin />
       {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
       <Verify />
-      
+
       <div className={`absolute left-1/2 -translate-x-1/2 top-[160px] w-full max-w-[1034px] z-20 px-5 max-md:top-[120px]`}>
         <div className="ml-0 md:ml-[195px]">
           <div className="space-y-6">
@@ -226,16 +224,16 @@ export default function ReviewPage() {
                 <h1 className="text-base font-bold text-gray-800">Review</h1>
                 <span className="text-sm text-gray-500">({filteredArticles.length})</span>
               </div>
-              
+
               {/* Category Select */}
-              <CategoryFilter 
+              <CategoryFilter
                 selectedCategories={selectedCategories}
                 onCategoriesChange={setSelectedCategories}
                 buttonText="Choose Category"
               />
             </div>
 
-            
+
 
             {/* Posts List */}
             <div className="space-y-4 mt-6">
@@ -245,8 +243,8 @@ export default function ReviewPage() {
                 </div>
               ) : (
                 filteredArticles.map((article) => (
-                  <div 
-                    key={article.id} 
+                  <div
+                    key={article.id}
                     className="bg-white border border-[#EDEDED] cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
                     style={{
                       width: '786px',
@@ -278,7 +276,7 @@ export default function ReviewPage() {
                         {/* Top row: Title, Author, and Buttons */}
                         <div className="flex justify-between items-start">
                           <div className="flex flex-col gap-1 flex-1 pr-4">
-                            <h3 
+                            <h3
                               className="font-semibold"
                               style={{
                                 fontFamily: 'Public Sans, sans-serif',
@@ -290,7 +288,7 @@ export default function ReviewPage() {
                             >
                               {article.title}
                             </h3>
-                            <p 
+                            <p
                               className="underline"
                               style={{
                                 fontFamily: 'Public Sans, sans-serif',
@@ -310,7 +308,7 @@ export default function ReviewPage() {
                             {/* Show different actions based on user role and article ownership */}
                             {article.author?.id === session?.user?.id ? (
                               /* If it's user's own article, only show Revert to Draft */
-                              <Button 
+                              <Button
                                 variant="outline"
                                 className="text-gray-700 border-gray-300 hover:bg-gray-50"
                                 onClick={(e) => {
@@ -379,7 +377,7 @@ export default function ReviewPage() {
                         {/* Bottom row: Categories and Date */}
                         <div className="flex items-center justify-between gap-4 mt-auto">
                           {/* Categories - Scrollable */}
-                          <div 
+                          <div
                             className="flex gap-2 overflow-x-auto scrollbar-hide flex-1"
                             style={{
                               overflowY: 'hidden',
@@ -396,7 +394,7 @@ export default function ReviewPage() {
                               }
                             `}</style>
                             {(article.categories || []).map((tag, index) => (
-                              <span 
+                              <span
                                 key={index}
                                 className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded whitespace-nowrap flex-shrink-0"
                               >
@@ -408,7 +406,7 @@ export default function ReviewPage() {
                           {/* Date - aligned to right edge */}
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <Clock className="h-4 w-4" style={{ color: '#A4A4A4' }} />
-                            <span 
+                            <span
                               style={{
                                 fontFamily: 'Public Sans, sans-serif',
                                 fontWeight: 400,
@@ -430,7 +428,7 @@ export default function ReviewPage() {
                         {/* Title, Author, and Buttons */}
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h3 
+                            <h3
                               className="font-semibold mb-1"
                               style={{
                                 fontFamily: 'Public Sans, sans-serif',
@@ -442,7 +440,7 @@ export default function ReviewPage() {
                             >
                               {article.title}
                             </h3>
-                            <p 
+                            <p
                               className="underline"
                               style={{
                                 fontFamily: 'Public Sans, sans-serif',
@@ -456,12 +454,12 @@ export default function ReviewPage() {
                               {article.author?.name || 'Unknown Author'}
                             </p>
                           </div>
-                          
+
                           <div className="flex gap-2 ml-4 flex-shrink-0">
                             {/* Show different actions based on user role and article ownership */}
                             {article.author?.id === session?.user?.id ? (
                               /* If it's user's own article, only show Revert to Draft */
-                              <Button 
+                              <Button
                                 variant="outline"
                                 size="sm"
                                 className="text-gray-700 border-gray-300 hover:bg-gray-50"
@@ -493,10 +491,10 @@ export default function ReviewPage() {
                                       handleReject(article.id)
                                     }}
                                   >
-                                    <Image 
-                                      src="/images/icons/cross.svg" 
-                                      alt="Reject" 
-                                      width={14} 
+                                    <Image
+                                      src="/images/icons/cross.svg"
+                                      alt="Reject"
+                                      width={14}
                                       height={14}
                                     />
                                   </button>
@@ -516,15 +514,15 @@ export default function ReviewPage() {
                                       handleAccept(article)
                                     }}
                                   >
-                                    <Image 
-                                      src="/images/icons/tick3.svg" 
-                                      alt="Accept" 
-                                      width={14} 
+                                    <Image
+                                      src="/images/icons/tick3.svg"
+                                      alt="Accept"
+                                      width={14}
                                       height={14}
                                     />
                                   </button>
                                 </div>
-                                
+
                                 {/* Text buttons for tablet/desktop (>= 540px) */}
                                 <div className="hidden min-[540px]:flex gap-2">
                                   <button
@@ -580,9 +578,9 @@ export default function ReviewPage() {
                             )}
                           </div>
                         </div>
-                        
+
                         {/* Categories - scrollable */}
-                        <div 
+                        <div
                           className="flex gap-2 overflow-x-auto scrollbar-hide"
                           style={{
                             overflowY: 'hidden'
@@ -598,7 +596,7 @@ export default function ReviewPage() {
                             }
                           `}</style>
                           {(article.categories || []).map((tag, index) => (
-                            <span 
+                            <span
                               key={index}
                               className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded whitespace-nowrap flex-shrink-0"
                             >
@@ -610,7 +608,7 @@ export default function ReviewPage() {
                         {/* Date */}
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4" style={{ color: '#A4A4A4' }} />
-                          <span 
+                          <span
                             style={{
                               fontFamily: 'Public Sans, sans-serif',
                               fontWeight: 400,
@@ -656,7 +654,7 @@ export default function ReviewPage() {
         onConfirm={handleConfirmAction}
         title={actionType === 'reject' ? 'Reject Article?' : 'Revert to Draft?'}
         description={
-          actionType === 'reject' 
+          actionType === 'reject'
             ? "This article will be returned to the author's drafts. They can edit and resubmit it."
             : "This action will move the article back to your drafts. You can edit and resubmit it later."
         }
