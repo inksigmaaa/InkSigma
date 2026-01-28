@@ -238,8 +238,8 @@ export default function ReviewPage() {
             {/* Posts List */}
             <div className="space-y-4 mt-6">
               {filteredArticles.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  No articles pending review
+                <div className="flex items-center justify-center min-h-[200px] py-20 px-10 bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)] animate-fadeIn">
+                  <p className="font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">No articles pending review</p>
                 </div>
               ) : (
                 filteredArticles.map((article) => (

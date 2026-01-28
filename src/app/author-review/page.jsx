@@ -214,7 +214,7 @@ export default function AuthorReviewPage() {
       <Verify />
       
       {/* Review Header */}
-      <div className={`fixed ${headerTopPosition} ${mobileHeaderTopPosition} left-0 right-0 bg-white `}>
+      <div className={`fixed ${headerTopPosition} ${mobileHeaderTopPosition} left-0 right-0 bg-white z-30`}>
         <div className="max-w-[1034px] mx-auto px-5">
           <div className="ml-0 md:ml-[195px] py-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -223,11 +223,13 @@ export default function AuthorReviewPage() {
               <span className="text-sm text-gray-500">({filteredArticles.length})</span>
             </div>
             
-            <CategoryFilter 
-              selectedCategories={selectedCategories}
-              onCategoriesChange={setSelectedCategories}
-              buttonText="Choose Category"
-            />
+            <div className="relative z-40">
+              <CategoryFilter 
+                selectedCategories={selectedCategories}
+                onCategoriesChange={setSelectedCategories}
+                buttonText="Choose Category"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -236,10 +238,12 @@ export default function AuthorReviewPage() {
       <div className="absolute left-1/2 -translate-x-1/2 top-[200px] max-md:top-[170px] w-full max-w-[1034px] z-20 px-5">
         <div className="ml-0 md:ml-[195px] space-y-4">
           {filteredArticles.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              {isAuthor 
-                ? "You have no articles pending review" 
-                : "No articles pending review"}
+            <div className="flex items-center justify-center min-h-[200px] py-20 px-10 bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)] animate-fadeIn">
+              <p className="font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">
+                {isAuthor 
+                  ? "You have no articles pending review" 
+                  : "No articles pending review"}
+              </p>
             </div>
           ) : (
             filteredArticles.map((article) => (
