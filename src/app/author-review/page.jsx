@@ -147,7 +147,7 @@ export default function AuthorReviewPage() {
     if (e.target.closest('button') || e.target.closest('input[type="checkbox"]') || e.target.closest('[role="checkbox"]')) {
       return
     }
-    router.push(`/editor?status=review&id=${articleId}`)
+    router.push(`/home/preview/${articleId}`)
   }
 
   const formatDate = (dateString) => {
@@ -246,6 +246,7 @@ export default function AuthorReviewPage() {
               <div 
                 key={article.id}
                 className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                onClick={(e) => handleCardClick(e, article.id)}
               >
                 {/* Desktop Layout */}
                 <div className="hidden md:flex items-start justify-between gap-6">

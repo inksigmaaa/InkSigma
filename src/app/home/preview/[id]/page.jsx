@@ -4,6 +4,7 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Info, Bell } from 'lucide-react';
 import { formatTimeAgo } from '@/utils/timeFormatter';
+import { getImageUrl } from '@/utils/imageUrl';
 
 export default function PreviewPage({ params }) {
   const { id } = use(params);
@@ -226,10 +227,10 @@ export default function PreviewPage({ params }) {
 
             <div className='px-11 py-8'>
               {/* Article Body */}
-            <article
-              className="prose prose-sm md:prose-lg max-w-none prose-headings:mt-0 prose-headings:mb-3 md:prose-headings:mb-4 [&_:is(h1,h2,h3,h4,h5,h6)]:!font-bold [&_:is(h1,h2,h3,h4,h5,h6)]:!text-[20px] [&_:is(h1,h2,h3,h4,h5,h6)]:!leading-[100%] [&_:is(h1,h2,h3,h4,h5,h6)]:!tracking-[0%] [&_:is(h1,h2,h3,h4,h5,h6)]:!text-black [&_:is(h1,h2,h3,h4,h5,h6)_span]:!font-bold [&_:is(h1,h2,h3,h4,h5,h6)_span]:!text-[20px] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!leading-[100%] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!tracking-[0%] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!text-black [&_p]:!text-[#404040] [&_p_span]:!text-[#404040] [&_p_span]:!font-normal [&_p_span]:!text-[16px] [&_p_span]:!leading-[28px] [&_p_span]:!tracking-[0.01em] prose-p:font-normal prose-p:text-[16px] prose-p:leading-[28px] prose-p:tracking-[0.01em] prose-p:mb-4 md:prose-p:mb-6 prose-img:rounded-lg prose-img:my-6 md:prose-img:my-8 prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-600 text-[#404040]"
-              dangerouslySetInnerHTML={{ __html: article.content }}
-            />
+              <article
+                className="prose prose-sm md:prose-lg max-w-none prose-headings:mt-0 prose-headings:mb-3 md:prose-headings:mb-4 [&_:is(h1,h2,h3,h4,h5,h6)]:!font-bold [&_:is(h1,h2,h3,h4,h5,h6)]:!text-[20px] [&_:is(h1,h2,h3,h4,h5,h6)]:!leading-[100%] [&_:is(h1,h2,h3,h4,h5,h6)]:!tracking-[0%] [&_:is(h1,h2,h3,h4,h5,h6)]:!text-black [&_:is(h1,h2,h3,h4,h5,h6)_span]:!font-bold [&_:is(h1,h2,h3,h4,h5,h6)_span]:!text-[20px] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!leading-[100%] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!tracking-[0%] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!text-black [&_p]:!text-[#404040] [&_p_span]:!text-[#404040] [&_p_span]:!font-normal [&_p_span]:!text-[16px] [&_p_span]:!leading-[28px] [&_p_span]:!tracking-[0.01em] prose-p:font-normal prose-p:text-[16px] prose-p:leading-[28px] prose-p:tracking-[0.01em] prose-p:mb-4 md:prose-p:mb-6 prose-img:rounded-lg prose-img:my-6 md:prose-img:my-8 prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-600 text-[#404040]"
+                dangerouslySetInnerHTML={{ __html: article.content }}
+              />
             </div>
           </div>
 

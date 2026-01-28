@@ -60,7 +60,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
   const thumbnailUrl = getImageUrl(latestBlog.image) || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
 
   return (
-    <section className="w-full max-w-[90%] md:max-w-[70%] mx-auto py-6 md:py-0 px-4 max-md:px-0 ">
+    <section className="w-full max-w-[90%] md:max-w-[70%] mx-auto py-6 md:py-0 max-md:px-0 ">
       {/* Start Writing Button */}
       <div className="mt-10 max-md:mt-0">
         <a

@@ -157,7 +157,7 @@ export default function ReviewPage() {
     if (e.target.closest('button') || e.target.closest('input[type="checkbox"]') || e.target.closest('[role="checkbox"]')) {
       return
     }
-    router.push(`/editor?status=review&id=${articleId}`)
+    router.push(`/home/preview/${articleId}`)
   }
 
   const formatDate = (dateString) => {
@@ -246,6 +246,7 @@ export default function ReviewPage() {
                   <div
                     key={article.id}
                     className="bg-white border border-[#EDEDED] cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+                    onClick={(e) => handleCardClick(e, article.id)}
                     style={{
                       width: '786px',
                       maxWidth: '100%',
