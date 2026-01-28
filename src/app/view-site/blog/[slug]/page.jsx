@@ -393,6 +393,7 @@ export default function BlogDetailPage({ params }) {
         description={blog.description}
         sections={sections}
         blogId={blog.id}
+        onSnapshot={handleSnapshot}
       />
     </div>
   );
