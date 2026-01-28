@@ -64,7 +64,13 @@ export const blogService = {
 
   // Get user's blogs (includes all statuses for the author)
   async getUserBlogs(authorId, filters = {}) {
-    return this.getBlogs({ ...filters, authorId, includeUnpublished: 'true' });
+    return this.getBlogs({ 
+      ...filters, 
+      authorId, 
+      includeUnpublished: 'true',
+      includeTrash: 'true',
+      includeReview: 'true'
+    });
   },
 
   // Get publication's blogs

@@ -5,6 +5,7 @@ import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import MemberSidebar from "../../membersidebar/MemberSidebar"
 import Verify from "../../components/verify/Verify"
 import ArticleContainer from "../../components/articleContainer/ArticleContainer"
+import ConfirmModal from "../../components/confirmModal/ConfirmModal"
 import { useSession } from "@/lib/auth-client"
 import { usePublication } from "@/contexts/PublicationContext"
 
@@ -13,6 +14,13 @@ export default function PostsMyBlogsPage() {
   const [loading, setLoading] = useState(true)
   const { data: session } = useSession()
   const { currentPublication } = usePublication()
+  const [showTrashModal, setShowTrashModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showDraftModal, setShowDraftModal] = useState(false)
+  const [showPublishModal, setShowPublishModal] = useState(false)
+  const [showUnpublishModal, setShowUnpublishModal] = useState(false)
+  const [showRestoreModal, setShowRestoreModal] = useState(false)
+  const [actionArticleId, setActionArticleId] = useState(null)
 
   useEffect(() => {
     if (session?.user?.id && currentPublication?.id) {
@@ -26,7 +34,7 @@ export default function PostsMyBlogsPage() {
       
       // Fetch user's blogs for the current publication context
       const articlesRes = await fetch(
-        `http://localhost:5000/api/blogs?publicationId=${currentPublication.id}&authorId=${session.user.id}`,
+        `http://localhost:5000/api/blogs?publicationId=${currentPublication.id}&authorId=${session.user.id}&includeUnpublished=true&includeTrash=true&includeReview=true`,
         { credentials: "include" }
       )
 
@@ -45,26 +53,167 @@ export default function PostsMyBlogsPage() {
     }
   }
 
-  const handleDeleteArticle = async (articleId) => {
-    if (!confirm('Are you sure you want to delete this article?')) {
-      return
-    }
+  const handleMoveToTrash = (articleId) => {
+    setActionArticleId(articleId)
+    setShowTrashModal(true)
+  }
 
+  const confirmMoveToTrash = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/blogs/${articleId}`, {
+      const response = await fetch(`http://localhost:5000/api/blogs/${actionArticleId}/publish`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'trash' }),
+      })
+
+      if (response.ok) {
+        await loadMyBlogs()
+      }
+      setShowTrashModal(false)
+      setActionArticleId(null)
+    } catch (error) {
+      console.error('Error moving to trash:', error)
+      setShowTrashModal(false)
+      setActionArticleId(null)
+    }
+  }
+
+  const handleDeleteArticle = (articleId) => {
+    setActionArticleId(articleId)
+    setShowDeleteModal(true)
+  }
+
+  const confirmDeleteArticle = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/blogs/${actionArticleId}`, {
         method: 'DELETE',
         credentials: 'include',
       })
 
       if (response.ok) {
-        // Refresh the articles list
         await loadMyBlogs()
-      } else {
-        alert('Failed to delete article')
       }
+      setShowDeleteModal(false)
+      setActionArticleId(null)
     } catch (error) {
       console.error('Error deleting article:', error)
-      alert('Failed to delete article')
+      setShowDeleteModal(false)
+      setActionArticleId(null)
+    }
+  }
+
+  const handleMoveToDraft = (articleId) => {
+    setActionArticleId(articleId)
+    setShowDraftModal(true)
+  }
+
+  const confirmMoveToDraft = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/blogs/${actionArticleId}/publish`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'draft' }),
+      })
+
+      if (response.ok) {
+        await loadMyBlogs()
+      }
+      setShowDraftModal(false)
+      setActionArticleId(null)
+    } catch (error) {
+      console.error('Error moving to draft:', error)
+      setShowDraftModal(false)
+      setActionArticleId(null)
+    }
+  }
+
+  const handlePublish = (articleId) => {
+    setActionArticleId(articleId)
+    setShowPublishModal(true)
+  }
+
+  const confirmPublish = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/blogs/${actionArticleId}/publish`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'published' }),
+      })
+
+      if (response.ok) {
+        await loadMyBlogs()
+      }
+      setShowPublishModal(false)
+      setActionArticleId(null)
+    } catch (error) {
+      console.error('Error publishing article:', error)
+      setShowPublishModal(false)
+      setActionArticleId(null)
+    }
+  }
+
+  const handleUnpublish = (articleId) => {
+    setActionArticleId(articleId)
+    setShowUnpublishModal(true)
+  }
+
+  const confirmUnpublish = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/blogs/${actionArticleId}/publish`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'unpublished' }),
+      })
+
+      if (response.ok) {
+        await loadMyBlogs()
+      }
+      setShowUnpublishModal(false)
+      setActionArticleId(null)
+    } catch (error) {
+      console.error('Error unpublishing article:', error)
+      setShowUnpublishModal(false)
+      setActionArticleId(null)
+    }
+  }
+
+  const handleRestore = (articleId) => {
+    setActionArticleId(articleId)
+    setShowRestoreModal(true)
+  }
+
+  const confirmRestore = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/blogs/${actionArticleId}/publish`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'draft' }),
+      })
+
+      if (response.ok) {
+        await loadMyBlogs()
+      }
+      setShowRestoreModal(false)
+      setActionArticleId(null)
+    } catch (error) {
+      console.error('Error restoring article:', error)
+      setShowRestoreModal(false)
+      setActionArticleId(null)
     }
   }
 
@@ -150,9 +299,13 @@ export default function PostsMyBlogsPage() {
                   postedTime={formatDate(article.createdAt)}
                   isSelected={false}
                   onSelect={() => {}}
-                  onDelete={() => handleDeleteArticle(article.id)}
+                  onDelete={article.status === 'trash' ? () => handleDeleteArticle(article.id) : () => handleMoveToTrash(article.id)}
+                  onRestore={() => handleRestore(article.id)}
+                  onDraft={() => handleMoveToDraft(article.id)}
+                  onPublish={() => handlePublish(article.id)}
+                  onUnpublish={() => handleUnpublish(article.id)}
                   publicationId={currentPublication?.id}
-                  showActions={false}
+                  showActions={true}
                   stats={[
                     { label: 'Views', value: article.views ?? 0 },
                     { label: 'Revisits', value: article.revisits ?? 0 },
@@ -165,6 +318,67 @@ export default function PostsMyBlogsPage() {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <ConfirmModal
+        isOpen={showTrashModal}
+        onClose={() => setShowTrashModal(false)}
+        onConfirm={confirmMoveToTrash}
+        title="Move to Trash"
+        message="Are you sure you want to move this article to trash?"
+        confirmText="Move to Trash"
+        confirmStyle="danger"
+      />
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDeleteArticle}
+        title="Delete Permanently"
+        message="Are you sure you want to permanently delete this article? This action cannot be undone."
+        confirmText="Delete"
+        confirmStyle="danger"
+      />
+
+      <ConfirmModal
+        isOpen={showDraftModal}
+        onClose={() => setShowDraftModal(false)}
+        onConfirm={confirmMoveToDraft}
+        title="Move to Draft"
+        message="Are you sure you want to move this article to draft?"
+        confirmText="Move to Draft"
+        confirmStyle="primary"
+      />
+
+      <ConfirmModal
+        isOpen={showPublishModal}
+        onClose={() => setShowPublishModal(false)}
+        onConfirm={confirmPublish}
+        title="Publish Article"
+        message="Are you sure you want to publish this article?"
+        confirmText="Publish"
+        confirmStyle="primary"
+      />
+
+      <ConfirmModal
+        isOpen={showUnpublishModal}
+        onClose={() => setShowUnpublishModal(false)}
+        onConfirm={confirmUnpublish}
+        title="Unpublish Article"
+        message="Are you sure you want to unpublish this article?"
+        confirmText="Unpublish"
+        confirmStyle="primary"
+      />
+
+      <ConfirmModal
+        isOpen={showRestoreModal}
+        onClose={() => setShowRestoreModal(false)}
+        onConfirm={confirmRestore}
+        title="Restore Article"
+        message="Are you sure you want to restore this article from trash?"
+        confirmText="Restore"
+        confirmStyle="primary"
+      />
     </>
   )
 }

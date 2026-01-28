@@ -151,7 +151,7 @@ export default function MyBlogsPage() {
           articles={myArticles}
           emptyMessage="No Articles yet"
           showSelectAll={false}
-          showActions={false}
+          showActions={true}
           showCategoryInTitle={true}
           selectedArticles={selectedArticles}
           selectedCategories={selectedCategories}

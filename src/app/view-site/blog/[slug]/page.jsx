@@ -337,17 +337,6 @@ export default function BlogDetailPage({ params }) {
               </div>
             </div>
 
-            {/* Blog Image */}
-            <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden mb-10 bg-gray-100 max-md:rounded max-md:mb-[30px]">
-              <Image
-                src={thumbnailUrl}
-                alt={blog.title}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            </div>
-
             {/* Blog Content */}
               <article
                 className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px]"
