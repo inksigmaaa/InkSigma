@@ -97,7 +97,7 @@ export function ArticlesProvider({ children }) {
   }, [currentPublication])
 
   // Memoized loadUserArticles to prevent unnecessary re-renders
-  const loadUserArticles = useCallback(async (publicationId = null) => {
+  const loadUserArticles = useCallback(async (publicationId = null, includeAllPublications = false) => {
     // Prevent concurrent loads
     if (isLoadingRef.current) return
     
@@ -118,12 +118,13 @@ export function ArticlesProvider({ children }) {
       setLoading(true)
       setError(null)
       
-      console.log('[ArticlesContext] Loading user blogs for:', currentSession.user.id, 'publicationId:', publicationId)
+      console.log('[ArticlesContext] Loading user blogs for:', currentSession.user.id, 'publicationId:', publicationId, 'includeAllPublications:', includeAllPublications)
       
+      // If includeAllPublications is true, don't filter by publicationId at all
       // If publicationId is provided, filter by that publication
       // If NOT provided, explicitly filter for PERSONAL articles (publicationId = null)
       // This prevents "Joined Publication" articles from showing up in "My Blogs"
-      const filters = publicationId ? { publicationId } : { publicationId: 'null' }
+      const filters = includeAllPublications ? {} : (publicationId ? { publicationId } : { publicationId: 'null' })
       const blogs = await blogService.getUserBlogs(currentSession.user.id, filters)
       
       console.log('[ArticlesContext] Blogs received:', blogs?.length, blogs)
