@@ -206,11 +206,19 @@ export default function PostsHomePage() {
                           {article.description}
                         </p>
                         <div className="flex items-center justify-between">
-                          {article.categories && article.categories.length > 0 && (
-                            <span className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
-                              {article.categories[0]}
-                            </span>
-                          )}
+                          <div className="flex flex-wrap gap-2">
+                            {article.categories && article.categories.length > 0 ? (
+                              article.categories.map((category, index) => (
+                                <span key={index} className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
+                                  {category}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
+                                Uncategorized
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
