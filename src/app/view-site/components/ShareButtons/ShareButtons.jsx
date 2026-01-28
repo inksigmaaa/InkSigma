@@ -5,7 +5,7 @@ import Image from 'next/image';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export default function ShareButtons({ title, url, slug, description, blogId }) {
-  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/blog/${slug}` : '');
+  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/view-site/blog/${slug}` : '');
   const shareText = description ? `${title} - ${description}` : title;
 
   // Track share action

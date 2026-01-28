@@ -14,7 +14,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
   const [lastScrollY, setLastScrollY] = useState(0);
   const isSharing = useRef(false);
 
-  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/blog/${slug}` : '');
+  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/view-site/blog/${slug}` : '');
   const shareText = description ? `${title} - ${description}` : title;
 
   // Track share action

@@ -8,7 +8,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 export default function SocialSidebar({ title, url, slug, blogId, onSnapshot }) {
   const [showCopied, setShowCopied] = useState(false);
 
-  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/blog/${slug}` : '');
+  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/view-site/blog/${slug}` : '');
 
   // Track share action
   const trackShare = async (platform) => {
@@ -38,7 +38,7 @@ export default function SocialSidebar({ title, url, slug, blogId, onSnapshot }) 
   };
 
   const shareOnWhatsApp = () => {
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(title + ' ' + blogUrl)}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(title + '\n\n' + blogUrl)}`;
     window.open(whatsappUrl, '_blank');
     trackShare('whatsapp');
   };
