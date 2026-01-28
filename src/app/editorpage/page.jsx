@@ -95,9 +95,14 @@ export default function EditorPage() {
                 )}
               </div>
               <div>
-                <h2 className="font-semibold text-xl leading-normal tracking-normal text-[#2E2E2E] max-md:text-lg">
-                  {currentPublication?.name || "My Publication"}
-                </h2>
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="font-semibold text-xl leading-normal tracking-normal text-[#2E2E2E] max-md:text-lg">
+                    {currentPublication?.name || "My Publication"}
+                  </h2>
+                  <span className="px-2.5 py-1 text-xs font-medium bg-green-100 text-green-600 rounded-md">
+                    Editor
+                  </span>
+                </div>
                 {currentPublication?.description && (
                   <p className="font-normal text-sm leading-normal tracking-normal text-[#A4A4A4] max-w-md max-md:text-xs max-md:line-clamp-2">
                     {currentPublication.description}

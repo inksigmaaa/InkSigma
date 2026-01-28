@@ -197,10 +197,10 @@ export default function ArticleDropdown({ status, onEdit, onDelete, onRestore, o
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                onClick={() => handleAction(() => console.log('Copy'))}
+                onClick={() => handleAction(onDraft || (() => console.log('Revert to Draft')))}
               >
-                <img src="/images/icons/copy.svg" alt="copy" className="shrink-0" width="16" height="16" />
-                Copy
+                <img src="/images/icons/copy.svg" alt="draft" className="shrink-0" width="16" height="16" />
+                Revert to Draft
               </button>
             )}
 
