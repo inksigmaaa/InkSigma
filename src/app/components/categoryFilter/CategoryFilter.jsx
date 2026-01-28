@@ -3,22 +3,16 @@
 import { useState, useRef, useEffect } from 'react'
 
 const CATEGORIES = [
-  "Sports", "Fashion", "Education", "Art", "Boxing", "Stocks"
-]
+  "Technology", "Education", "Health & Wellness", "Lifestyle","Finance","Entertainment","Business","Personal Development","Travel"
+,"Food & Recipes"]
 
 export default function CategoryFilter({ 
   selectedCategories = [], 
   onCategoriesChange,
-  buttonText = "Choose Category",
-  showLabel = false
+  buttonText = "Choose Category"
 }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
   const dropdownRef = useRef(null)
-
-  const filteredCategories = CATEGORIES.filter(cat =>
-    cat.toLowerCase().includes(searchTerm.toLowerCase())
-  )
 
   const handleCategoryToggle = (category) => {
     const updated = selectedCategories.includes(category)
@@ -52,28 +46,7 @@ export default function CategoryFilter({
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between bg-white border whitespace-nowrap"
-        style={{
-          width: '163px',
-          height: '32px',
-          borderRadius: '4px',
-          borderWidth: '1px',
-          borderColor: '#E5E7EB',
-          opacity: 1,
-          gap: '10px',
-          padding: '10px 16px',
-          fontFamily: 'Public Sans',
-          fontWeight: 400,
-          fontSize: '14px',
-          lineHeight: '150%',
-          letterSpacing: '0%',
-          color: '#2E2E2E',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease'
-        }}
+        className="flex items-center justify-between bg-white border border-gray-200 whitespace-nowrap w-[163px] h-8 rounded gap-[10px] px-4 py-[10px] font-normal text-sm leading-[150%] text-[#2E2E2E] cursor-pointer transition-all duration-200 ease-in-out hover:border-gray-300"
       >
         <span className="md:inline max-md:hidden">{displayText}</span>
         <span className="md:hidden max-md:inline">
@@ -82,63 +55,29 @@ export default function CategoryFilter({
         <img 
           src="/images/icons/down.svg" 
           alt="dropdown" 
-          style={{
-            width: '9px',
-            height: '9px',
-            opacity: 1,
-            transition: 'transform 0.2s ease',
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
+          className={`w-[9px] h-[9px] opacity-100 flex items-center justify-center transition-transform duration-200 ease-in-out ${
+            isOpen ? 'rotate-180' : 'rotate-0'
+          }`}
         />
       </button>
 
       {isOpen && (
-        <div 
-          className="absolute top-[calc(100%+8px)] right-0 bg-white flex flex-col z-[100]"
-          style={{
-            width: '201px',
-            borderRadius: '8px',
-            border: '1px solid #EDEDED',
-            boxShadow: '0px 4px 24px 0px rgba(0, 0, 0, 0.07)',
-            padding: '8px',
-            gap: '4px'
-          }}
-        >
-          <div 
-            className="flex flex-col gap-1"
-          >
-            {filteredCategories.map((category) => (
+        <div className="absolute top-[calc(100%+8px)] right-0 bg-white flex flex-col z-[100] w-[201px] rounded-lg border border-[#EDEDED] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.07)] p-2 gap-1">
+          <div className="flex flex-col gap-1">
+            {CATEGORIES.map((category) => (
               <div
                 key={category}
                 onClick={() => handleCategoryToggle(category)}
-                className="flex items-center justify-between px-2 py-1.5 rounded cursor-pointer hover:bg-gray-50 transition-colors"
-                style={{
-                  fontFamily: 'Public Sans',
-                  fontWeight: 400,
-                  fontSize: '14px',
-                  lineHeight: '150%',
-                  letterSpacing: '0%',
-                  color: selectedCategories.includes(category) ? '#3400A3' : '#B0B0B0'
-                }}
+                className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer hover:bg-gray-50 transition-colors font-normal text-sm leading-[150%] ${
+                  selectedCategories.includes(category) ? 'text-[#3400A3]' : 'text-[#B0B0B0]'
+                }`}
               >
                 <span className="flex-1">{category}</span>
               </div>
             ))}
             
-            {filteredCategories.length === 0 && (
-              <div 
-                className="text-center py-4"
-                style={{
-                  fontFamily: 'Public Sans',
-                  fontWeight: 400,
-                  fontSize: '14px',
-                  lineHeight: '150%',
-                  color: '#B0B0B0'
-                }}
-              >
+            {CATEGORIES.length === 0 && (
+              <div className="text-center py-4  font-normal text-sm leading-[150%] text-[#B0B0B0]">
                 No categories found
               </div>
             )}

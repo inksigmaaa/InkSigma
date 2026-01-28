@@ -3,14 +3,14 @@
 import { useState, useRef, useEffect } from 'react'
 
 const CATEGORIES = [
-  "Sports", "Fashion", "Education", "Art", "Boxing", "Stocks"
+  "Technology", "Education", "Health & Wellness", "Lifestyle","Finance","Entertainment","Business","Personal Development","Travel"
+,"Food & Recipes"
 ]
 
 export default function EditorCategoryDropdown({ 
   selectedCategories = [], 
   onCategoriesChange,
-  buttonText = "Choose Category",
-  showLabel = false
+  buttonText = "Choose Category"
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -67,138 +67,57 @@ export default function EditorCategoryDropdown({
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between bg-white border whitespace-nowrap"
-        style={{
-          width: '115px',
-          height: '32px',
-          borderRadius: '4px',
-          borderWidth: '1px',
-          borderColor: '#EAEAEA',
-          opacity: 1,
-          gap: '10px',
-          padding: '10px 16px',
-          fontFamily: 'Public Sans',
-          fontWeight: 400,
-          fontSize: '14px',
-          lineHeight: '150%',
-          letterSpacing: '0%',
-          color: '#2E2E2E',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease'
-        }}
+        className="flex items-center justify-between bg-white border border-[#EAEAEA] rounded whitespace-nowrap w-[115px] h-8 gap-[10px] px-4 py-[10px] text-sm font-normal leading-normal tracking-normal text-[#2E2E2E] cursor-pointer transition-all duration-200 ease-in-out hover:border-gray-300"
       >
         <span>{displayText}</span>
         <img 
           src="/images/icons/down.svg" 
           alt="dropdown" 
-          style={{
-            width: '9px',
-            height: '9px',
-            opacity: 1,
-            transition: 'transform 0.2s ease',
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
+          className={`flex items-center justify-center w-[9px] h-[9px] opacity-100 transition-transform duration-200 ease-in-out ${isOpen ? 'rotate-180' : 'rotate-0'}`}
         />
       </button>
 
       {isOpen && (
         <div 
           ref={dropdownRef}
-          className="fixed bg-white flex flex-col"
+          className="fixed bg-white flex flex-col w-[283px] rounded-lg border border-[#EDEDED] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.07)] p-2 gap-1 z-[9999]"
           style={{
-            width: '283px',
-            borderRadius: '8px',
-            border: '1px solid #EDEDED',
-            boxShadow: '0px 4px 24px 0px rgba(0, 0, 0, 0.07)',
-            padding: '8px',
-            gap: '4px',
-            zIndex: 9999,
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`
           }}
         >
-          <div className="flex gap-1" style={{ width: '267px', height: '30px', gap: '4px' }}>
+          <div className="flex gap-1 w-[267px] h-[30px]">
             <input
               type="text"
               placeholder="Search Category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 text-sm outline-none"
-              style={{
-                width: '204px',
-                height: '30px',
-                borderRadius: '4px',
-                border: '1px solid #EAEAEA',
-                padding: '4px 16px',
-                backgroundColor: '#F8F8F8',
-                fontFamily: 'Public Sans',
-                fontWeight: 400,
-                fontSize: '14px',
-                lineHeight: '150%',
-                letterSpacing: '0%',
-                color: '#2E2E2E'
-              }}
+              className="flex-1 w-[204px] h-[30px] rounded border border-[#EAEAEA] px-4 py-1 bg-[#F8F8F8] font-normal text-sm leading-[150%] text-[#2E2E2E] outline-none focus:border-gray-400 transition-colors"
             />
             <button
               onClick={() => setIsOpen(false)}
-              style={{
-                width: '59px',
-                height: '30px',
-                borderRadius: '4px',
-                padding: '10px',
-                backgroundColor: '#F3EEFF',
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: 'Public Sans',
-                fontWeight: 500,
-                fontSize: '14px',
-                lineHeight: '80%',
-                letterSpacing: '0%',
-                color: '#A941FB'
-              }}
+              className="w-[59px] h-[30px] rounded px-[10px] py-[10px] bg-[#F3EEFF] border-none cursor-pointer font-medium text-sm leading-[80%] text-[#A941FB] hover:bg-[#E8D5FF] transition-colors"
             >
               Apply
             </button>
           </div>
 
-          <div 
-            className="flex flex-col gap-1"
-          >
+          <div className="flex flex-col gap-1">
             {filteredCategories.map((category) => {
               const isSelected = selectedCategories.includes(category)
               return (
                 <div
                   key={category}
                   onClick={() => handleCategoryToggle(category)}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-gray-50 transition-colors"
-                  style={{
-                    fontFamily: 'Public Sans',
-                    fontWeight: 400,
-                    fontSize: '14px',
-                    lineHeight: '150%',
-                    letterSpacing: '0%',
-                    color: isSelected ? '#3400A3' : '#2E2E2E'
-                  }}
+                  className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-gray-50 transition-colors font-normal text-sm leading-[150%] ${
+                    isSelected ? 'text-[#3400A3]' : 'text-[#2E2E2E]'
+                  }`}
                 >
                   <input
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => handleCategoryToggle(category)}
-                    className="cursor-pointer"
-                    style={{
-                      width: '16px',
-                      height: '16px',
-                      borderRadius: '4px',
-                      border: '1px solid #C0C0C0',
-                      accentColor: '#3400A3',
-                      flexShrink: 0
-                    }}
+                    className="w-4 h-4 rounded border border-[#C0C0C0] accent-[#3400A3] flex-shrink-0 cursor-pointer"
                   />
                   <span className="flex-1">{category}</span>
                 </div>
@@ -206,16 +125,7 @@ export default function EditorCategoryDropdown({
             })}
             
             {filteredCategories.length === 0 && (
-              <div 
-                className="text-center py-4"
-                style={{
-                  fontFamily: 'Public Sans',
-                  fontWeight: 400,
-                  fontSize: '14px',
-                  lineHeight: '150%',
-                  color: '#2E2E2E'
-                }}
-              >
+              <div className="text-center py-4 font-normal text-sm leading-[150%] text-[#2E2E2E]">
                 No categories found
               </div>
             )}
