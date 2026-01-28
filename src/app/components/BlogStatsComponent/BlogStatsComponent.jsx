@@ -5,7 +5,7 @@ import { useArticles } from '@/contexts/ArticlesContext'
 import { usePublication } from '@/contexts/PublicationContext'
 import { useToast } from '@/contexts/ToastContext'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
 const BlogStatsComponent = () => {
   const { articles, publicationArticles: contextPublicationArticles } = useArticles()

@@ -10,7 +10,7 @@ import AllArticles from './components/AllArticles/AllArticles';
 import Footer from './components/Footer/Footer';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
 function ViewSiteContent() {
   const [searchQuery, setSearchQuery] = useState('');

@@ -6,7 +6,7 @@ import LinkIcon from '../icons/LinkIcon';
 import CameraIcon from '../icons/CameraIcon';
 import { useToast } from '@/contexts/ToastContext';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
 export default function ShareMenu({ title, url, slug, blogId, variant = 'icon', onSnapshot }) {
   const [isOpen, setIsOpen] = useState(false);

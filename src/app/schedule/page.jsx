@@ -13,8 +13,20 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 
 export default function SchedulePage() {
-  const { articles, loading, error, loadUserArticles, moveToTrashStatus, bulkMoveToTrashStatus, moveToDraft, bulkMoveToDraft } = useArticles();
-  const { currentPublication } = usePublication();
+  const { 
+    articles, 
+    publicationArticles,
+    loading, 
+    pubArticlesLoading,
+    error, 
+    loadUserArticles, 
+    loadPublicationArticles,
+    moveToTrashStatus, 
+    bulkMoveToTrashStatus, 
+    moveToDraft, 
+    bulkMoveToDraft 
+  } = useArticles();
+  const { currentPublication, getCurrentUserRole } = usePublication();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [selectedArticles, setSelectedArticles] = useState([]);
@@ -24,39 +36,66 @@ export default function SchedulePage() {
   const [isBulkAction, setIsBulkAction] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
+  // Determine user role and which articles to show
+  const userRole = getCurrentUserRole();
+  const isAdmin = userRole === 'admin' || userRole === 'editor' || currentPublication?.isOwner;
+  
+  // Use publicationArticles for admins/editors, otherwise use user articles
+  const allArticles = (isAdmin && currentPublication) ? publicationArticles : articles;
+  const isLoading = (isAdmin && currentPublication) ? pubArticlesLoading : loading;
+  
   // Refs to prevent stale closures and unnecessary re-renders
   const loadUserArticlesRef = useRef(loadUserArticles);
+  const loadPublicationArticlesRef = useRef(loadPublicationArticles);
   const hasMountedRef = useRef(false);
+  const loadedContextRef = useRef(null); // 'user' or 'publication'
   
-  // Update ref when loadUserArticles changes
+  // Update refs when functions change
   useEffect(() => {
     loadUserArticlesRef.current = loadUserArticles;
-  }, [loadUserArticles]);
+    loadPublicationArticlesRef.current = loadPublicationArticles;
+  }, [loadUserArticles, loadPublicationArticles]);
 
-  // Refresh articles when coming from editor with refresh param
+  // Refresh articles when coming from editor with refresh param or when component mounts
   useEffect(() => {
-    if (searchParams.get('refresh') === 'true') {
-      loadUserArticlesRef.current();
-      // Clean up the URL
-      router.replace('/schedule', { scroll: false });
-    }
-  }, [searchParams, router]);
-
-  // Refresh articles only once when component mounts
-  useEffect(() => {
-    if (!hasMountedRef.current) {
+    const needsRefresh = searchParams.get('refresh') === 'true';
+    
+    // Target context based on current state
+    const targetContext = (isAdmin && currentPublication?.id) ? 'publication' : 'user';
+    
+    // Check if context changed
+    const isWrongContext = hasMountedRef.current && loadedContextRef.current !== targetContext;
+    
+    const shouldLoad = needsRefresh || 
+                      !hasMountedRef.current ||
+                      isWrongContext;
+    
+    if (shouldLoad) {
+      console.log(`[SchedulePage] Loading articles... Target: ${targetContext}, Prev: ${loadedContextRef.current}`);
       hasMountedRef.current = true;
-      console.log('[SchedulePage] Loading articles on mount...');
-      loadUserArticlesRef.current();
+      loadedContextRef.current = targetContext;
+      
+      if (targetContext === 'publication') {
+        loadPublicationArticlesRef.current(currentPublication.id);
+      } else {
+        loadUserArticlesRef.current(null, true); // Load all publications for scheduled articles
+      }
+      
+      // Clean up the URL if refresh param was present
+      if (needsRefresh) {
+        router.replace('/schedule', { scroll: false });
+      }
     }
-  }, []);
+  }, [searchParams, router, isAdmin, currentPublication?.id]);
 
   // Filter scheduled articles - separate from action handlers to prevent re-renders
   const scheduledArticleIds = useMemo(() => {
-    return articles
-      .filter(article => article.status === 'scheduled')
-      .map(article => article.id);
-  }, [articles]);
+    console.log('[SchedulePage] All articles:', allArticles.length);
+    console.log('[SchedulePage] Articles statuses:', allArticles.map(a => ({ id: a.id, title: a.title, status: a.status })));
+    const scheduled = allArticles.filter(article => article.status === 'scheduled');
+    console.log('[SchedulePage] Scheduled articles:', scheduled.length);
+    return scheduled.map(article => article.id);
+  }, [allArticles]);
 
   // Memoized action handlers
   const handleDeleteAction = useCallback((articleId) => {
@@ -73,14 +112,17 @@ export default function SchedulePage() {
 
   // Create scheduled articles with stable action handlers
   const scheduledArticles = useMemo(() => {
-    return articles
-      .filter(article => article.status === 'scheduled')
-      .map(article => ({
+    const scheduled = allArticles.filter(article => article.status === 'scheduled');
+    console.log('[SchedulePage] Creating scheduledArticles array:', scheduled.length);
+    scheduled.forEach(a => {
+      console.log('[SchedulePage] Scheduled article:', { id: a.id, title: a.title, status: a.status, scheduledAt: a.scheduledAt });
+    });
+    return scheduled.map(article => ({
         ...article,
         onDelete: () => handleDeleteAction(article.id),
         onDraft: () => handleDraftAction(article.id)
       }));
-  }, [articles, handleDeleteAction, handleDraftAction]);
+  }, [allArticles, handleDeleteAction, handleDraftAction]);
 
   // Smart refresh: set a single timer for the next scheduled article to publish
   useEffect(() => {
@@ -107,25 +149,35 @@ export default function SchedulePage() {
     // Set a timer to refresh after the scheduled time + 2 seconds buffer
     const timer = setTimeout(() => {
       console.log(`[SCHEDULE] Article "${nextArticle.title}" should be published now, refreshing...`);
-      loadUserArticlesRef.current();
+      const targetContext = (isAdmin && currentPublication?.id) ? 'publication' : 'user';
+      if (targetContext === 'publication') {
+        loadPublicationArticlesRef.current(currentPublication.id);
+      } else {
+        loadUserArticlesRef.current(null, true); // Load all publications for scheduled articles
+      }
     }, timeUntilPublish + 2000);
 
     console.log(`[SCHEDULE] Next publish: "${nextArticle.title}" in ${Math.round(timeUntilPublish / 1000)}s`);
 
     return () => clearTimeout(timer);
-  }, [scheduledArticles]);
+  }, [scheduledArticles, isAdmin, currentPublication?.id]);
 
   // Manual refresh function
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await loadUserArticlesRef.current();
+      const targetContext = (isAdmin && currentPublication?.id) ? 'publication' : 'user';
+      if (targetContext === 'publication') {
+        await loadPublicationArticlesRef.current(currentPublication.id);
+      } else {
+        await loadUserArticlesRef.current(null, true); // Load all publications for scheduled articles
+      }
     } catch (error) {
       console.error('Error refreshing articles:', error);
     } finally {
       setIsRefreshing(false);
     }
-  }, []);
+  }, [isAdmin, currentPublication?.id]);
 
   const handleSelectAll = useCallback((checked) => {
     if (checked) {
@@ -207,7 +259,7 @@ export default function SchedulePage() {
   }, []);
 
   // Only show loading state if we're loading AND have no articles yet
-  if (loading && articles.length === 0) {
+  if (isLoading && allArticles.length === 0) {
     return (
       <AuthGuard>
         <NavbarLoggedin />
