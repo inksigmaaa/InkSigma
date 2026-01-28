@@ -124,7 +124,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
       {/* Desktop View Card */}
       <div className="hidden md:block relative w-full h-[600px] rounded-lg group">
         {/* Share Button - Top Right */}
-        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
+        <div className="absolute top-5 right-5 max-md:top-3 max-md:right-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
           <ShareMenu
             title={latestBlog.title}
             slug={latestBlog.slug}
