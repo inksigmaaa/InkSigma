@@ -31,7 +31,7 @@ export default function ShareMenu({ title, url, slug, blogId, variant = 'icon', 
     };
   }, [isOpen]);
 
-  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/blog/${slug}` : '');
+  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/view-site/blog/${slug}` : '');
 
   // Track share action
   const trackShare = async (platform) => {
@@ -69,7 +69,7 @@ export default function ShareMenu({ title, url, slug, blogId, variant = 'icon', 
   };
 
   const shareOnWhatsApp = () => {
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(title + ' ' + blogUrl)}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(title + '\n\n' + blogUrl)}`;
     window.open(whatsappUrl, '_blank');
     trackShare('whatsapp');
     setIsOpen(false);
