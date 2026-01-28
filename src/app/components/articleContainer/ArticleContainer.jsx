@@ -413,9 +413,10 @@ export default function ArticleContainer({ id, status, title, description, categ
                                         <button
                                             className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
                                             style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
-                                            title="Copy"
+                                            title="Revert to Draft"
+                                            onClick={onDraft}
                                         >
-                                            <img src="/images/icons/copy.svg" alt="copy" />
+                                            <img src="/images/icons/copy.svg" alt="draft" />
                                         </button>
                                     </>
                                 ) : status === 'unpublished' ? (
