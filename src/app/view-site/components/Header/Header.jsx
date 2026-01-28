@@ -64,11 +64,11 @@ export default function ViewSiteHeader({ userName, userAvatar = null, shareButto
           </div>
 
           {/* Share Button Slot */}
-          {shareButton && (
+          {/* {shareButton && (
             <div className="ml-2">
               {shareButton}
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Right Side: Start Writing CTA */}

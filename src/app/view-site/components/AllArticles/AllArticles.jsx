@@ -116,7 +116,7 @@ export default function AllArticles({ searchQuery = '', selectedCategory = '', b
             {/* Blog Card */}
             <div className="relative w-full h-[200px] md:h-[280px] rounded-lg group mb-3 md:mb-4">
               {/* Share Button */}
-              <div className="absolute top-3 right-3 md:top-4 md:right-4 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-50">
+              <div className="absolute top-5 right-4 max-md:top-3 max-md:right-2.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-50">
                 <ShareMenu 
                   title={article.title}
                   slug={article.slug}
