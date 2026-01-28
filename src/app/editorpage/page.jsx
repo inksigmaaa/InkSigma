@@ -92,13 +92,19 @@ export default function EditorPage() {
                       {currentPublication?.name?.charAt(0).toUpperCase() || "P"}
                     </span>
                   </div>
-                  {currentPublication?.description && (
-                    <p className="font-normal text-sm leading-normal tracking-normal text-[#A4A4A4] max-w-md max-md:text-xs max-md:line-clamp-2">
-                      {currentPublication.description}
-                    </p>
-                  )}
-                </div>
+                )}
               </div>
+              <div>
+                <h2 className="font-semibold text-xl leading-normal tracking-normal text-[#2E2E2E] max-md:text-lg">
+                  {currentPublication?.name || "My Publication"}
+                </h2>
+                {currentPublication?.description && (
+                  <p className="font-normal text-sm leading-normal tracking-normal text-[#A4A4A4] max-w-md max-md:text-xs max-md:line-clamp-2">
+                    {currentPublication.description}
+                  </p>
+                )}
+              </div>
+            </div>
               {currentPublication?.isOwner && (
                 <button
                   onClick={handleEditPublication}
@@ -171,9 +177,19 @@ export default function EditorPage() {
                           {article.description}
                         </p>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
-                            {article.category}
-                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {article.categories && article.categories.length > 0 ? (
+                              article.categories.map((category, index) => (
+                                <span key={index} className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
+                                  {category}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
+                                Uncategorized
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
