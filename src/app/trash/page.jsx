@@ -92,8 +92,14 @@ export default function TrashPage() {
   // Add handlers to articles
   const articlesWithHandlers = trashArticles.map((article) => ({
     ...article,
-    onDelete: () => handleIndividualDelete(article.id),
-    onRestore: () => handleIndividualRestore(article.id),
+    onDelete: (e) => {
+      e?.stopPropagation();
+      handleIndividualDelete(article.id);
+    },
+    onRestore: (e) => {
+      e?.stopPropagation();
+      handleIndividualRestore(article.id);
+    },
   }));
 
   const confirmDelete = async () => {

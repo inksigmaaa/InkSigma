@@ -1755,15 +1755,20 @@ router.delete("/:id", getCurrentUser, async (req, res) => {
     }
 
     // Delete associated image file if exists
-    if (
-      existingBlog.image &&
-      existingBlog.image.includes("/uploads/blog-images/")
-    ) {
-      const imagePath = existingBlog.image.split("/uploads/blog-images/")[1];
-      const filePath = `uploads/blog-images/${imagePath}`;
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+    try {
+      if (
+        existingBlog.image &&
+        existingBlog.image.includes("/uploads/blog-images/")
+      ) {
+        const imagePath = existingBlog.image.split("/uploads/blog-images/")[1];
+        const filePath = `uploads/blog-images/${imagePath}`;
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
       }
+    } catch (fileError) {
+      console.error("Error deleting image file:", fileError);
+      // Continue with blog deletion even if image deletion fails
     }
 
     await db.delete(blog).where(eq(blog.id, parseInt(id)));
