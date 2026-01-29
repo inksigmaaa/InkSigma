@@ -7,7 +7,7 @@ import ShareMenu from '../ShareMenu/ShareMenu';
 import { formatTimeAgo } from '@/utils/timeFormatter';
 import { getImageUrl } from '@/utils/imageUrl';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
 export default function LatestBlog({ searchQuery = '', blogs = [], publicationId }) {
   const [commentCount, setCommentCount] = useState(0);
@@ -60,7 +60,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
   const thumbnailUrl = getImageUrl(latestBlog.image) || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
 
   return (
-    <section className="w-full max-w-[90%] md:max-w-[70%] mx-auto py-6 md:py-0 px-4 max-md:px-0 ">
+    <section className="w-full max-w-[90%] md:max-w-[70%] mx-auto py-6 md:py-0 max-md:px-0 ">
       {/* Start Writing Button */}
       <div className="mt-10 max-md:mt-0">
         <a
@@ -124,7 +124,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
       {/* Desktop View Card */}
       <div className="hidden md:block relative w-full h-[600px] rounded-lg group">
         {/* Share Button - Top Right */}
-        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
+        <div className="absolute top-5 right-5 max-md:top-3 max-md:right-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
           <ShareMenu
             title={latestBlog.title}
             slug={latestBlog.slug}

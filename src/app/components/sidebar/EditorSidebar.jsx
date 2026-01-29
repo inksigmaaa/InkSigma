@@ -60,7 +60,7 @@ export default function Sidebar() {
                 <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
               ) : currentPublication?.logoUrl ? (
                 <img
-                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${currentPublication.logoUrl}`}
+                  src={`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}${currentPublication.logoUrl}`}
                   alt={currentPublication.name || "Publication"}
                   className="w-full h-full object-cover"
                 />

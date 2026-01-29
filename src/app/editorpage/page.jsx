@@ -75,46 +75,41 @@ export default function EditorPage() {
       <div className="pt-[112px] min-h-screen max-md:pt-[90px]">
         <div className="max-w-[1034px] mx-auto px-5 max-md:p-0">
           <div className="ml-[165px] bg-white  p-8  max-md:ml-0 max-md:p-0">
-
-            {/* Publication Header */}
-            <div className=" px-8 py-12 flex items-center justify-between max-md:border-b max-md:border-[#EDEDED] max-md:mx-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
-              <div className="flex items-center gap-4 max-md:gap-3">
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
-                  {currentPublication?.logoUrl ? (
-                    <img
-                      src={`http://localhost:5000${currentPublication.logoUrl}`}
-                      alt={currentPublication.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-violet-100 rounded-full flex items-center justify-center">
-                      <span className="text-violet-600 font-bold text-xl">
-                        {currentPublication?.name?.charAt(0).toUpperCase() || "P"}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h1 className="font-bold text-base  leading-normal tracking-normal text-[#2E2E2E] max-md:text-base max-md:font-bold">
-                      {loading ? "Loading..." : currentPublication?.name || "Publication Name"}
-                    </h1>
-                    {currentPublication && !currentPublication.isOwner && (
-                      <span className={`text-xs px-2 py-0.5 rounded-sm font-medium ${currentPublication.role === 'editor'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-blue-100 text-blue-700'
-                        }`}>
-                        {currentPublication.role?.charAt(0).toUpperCase() + currentPublication.role?.slice(1)}
-                      </span>
-                    )}
+          
+          {/* Publication Header */}
+          <div className=" px-6 py-12 flex items-center justify-between max-md:border-b max-md:border-[#EDEDED] max-md:mx-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
+            <div className="flex items-center gap-4 max-md:gap-3">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
+                {currentPublication?.logoUrl ? (
+                  <img 
+                    src={`http://localhost:5000${currentPublication.logoUrl}`} 
+                    alt={currentPublication.name} 
+                    className="w-full h-full object-cover" 
+                  />
+                ) : (
+                  <div className="w-full h-full bg-violet-100 rounded-full flex items-center justify-center">
+                    <span className="text-violet-600 font-bold text-xl">
+                      {currentPublication?.name?.charAt(0).toUpperCase() || "P"}
+                    </span>
                   </div>
-                  {currentPublication?.description && (
-                    <p className="font-normal text-sm leading-normal tracking-normal text-[#A4A4A4] max-w-md max-md:text-xs max-md:line-clamp-2">
-                      {currentPublication.description}
-                    </p>
-                  )}
-                </div>
+                )}
               </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="font-semibold text-xl leading-normal tracking-normal text-[#2E2E2E] max-md:text-lg">
+                    {currentPublication?.name || "My Publication"}
+                  </h2>
+                  <span className="px-2.5 py-1 text-xs font-medium bg-green-100 text-green-600 rounded-md">
+                    Editor
+                  </span>
+                </div>
+                {currentPublication?.description && (
+                  <p className="font-normal text-sm leading-normal tracking-normal text-[#A4A4A4] max-w-md max-md:text-xs max-md:line-clamp-2">
+                    {currentPublication.description}
+                  </p>
+                )}
+              </div>
+            </div>
               {currentPublication?.isOwner && (
                 <button
                   onClick={handleEditPublication}
@@ -187,9 +182,19 @@ export default function EditorPage() {
                           {article.description}
                         </p>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
-                            {article.category}
-                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {article.categories && article.categories.length > 0 ? (
+                              article.categories.map((category, index) => (
+                                <span key={index} className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
+                                  {category}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
+                                Uncategorized
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

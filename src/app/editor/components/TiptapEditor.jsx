@@ -603,8 +603,17 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
               className="flex items-center hover:bg-gray-100 rounded px-1 py-1.5"
               onMouseDown={(e) => {
                 e.preventDefault()
-                if (!showHeadingMenu) closeAllDropdowns()
-                setShowHeadingMenu(!showHeadingMenu)
+                if (!showHeadingMenu) {
+                  closeAllDropdowns()
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  setDropdownPositions(prev => ({
+                    ...prev,
+                    heading: { top: rect.bottom + 4, left: rect.left }
+                  }))
+                  setShowHeadingMenu(true)
+                } else {
+                  setShowHeadingMenu(false)
+                }
               }}
             >
               <img src="/editor-icons/H.svg" alt="H" className="w-5 h-5" />
@@ -676,8 +685,17 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
             onMouseDown={(e) => {
               e.preventDefault()
-              if (!showListMenu) closeAllDropdowns()
-              setShowListMenu(!showListMenu)
+              if (!showListMenu) {
+                closeAllDropdowns()
+                const rect = e.currentTarget.getBoundingClientRect()
+                setDropdownPositions(prev => ({
+                  ...prev,
+                  list: { top: rect.bottom + 4, left: rect.left }
+                }))
+                setShowListMenu(true)
+              } else {
+                setShowListMenu(false)
+              }
             }}
             title="Lists"
           >
@@ -727,8 +745,17 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
             onMouseDown={(e) => {
               e.preventDefault()
-              if (!showAlignMenu) closeAllDropdowns()
-              setShowAlignMenu(!showAlignMenu)
+              if (!showAlignMenu) {
+                closeAllDropdowns()
+                const rect = e.currentTarget.getBoundingClientRect()
+                setDropdownPositions(prev => ({
+                  ...prev,
+                  align: { top: rect.bottom + 4, left: rect.left }
+                }))
+                setShowAlignMenu(true)
+              } else {
+                setShowAlignMenu(false)
+              }
             }}
             title="Alignment"
           >
@@ -847,8 +874,13 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             <button
               ref={setLinkButtonRef}
               className="p-1.5 hover:bg-gray-100 rounded"
-              onClick={() => {
+              onClick={(e) => {
                 closeAllDropdowns()
+                const rect = e.currentTarget.getBoundingClientRect()
+                setDropdownPositions(prev => ({
+                  ...prev,
+                  link: { top: rect.bottom + 4, left: rect.left }
+                }))
                 insertLink()
               }}
               title="Insert Link"
@@ -864,9 +896,14 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             ref={setAdvancedButtonRef}
             className="text-sm text-gray-600 px-3 py-1.5 hover:bg-gray-200 rounded whitespace-nowrap"
             style={{ backgroundColor: '#F8F8F8' }}
-            onClick={() => {
+            onClick={(e) => {
               closeAllDropdowns()
-              setShowAdvancedOptions(!showAdvancedOptions)
+              const rect = e.currentTarget.getBoundingClientRect()
+              setDropdownPositions(prev => ({
+                ...prev,
+                advanced: { top: rect.bottom + 4, left: rect.right - 300 }
+              }))
+              setShowAdvancedOptions(true)
             }}
           >
             Advanced Options

@@ -29,31 +29,40 @@ export default function BlogDetailPage({ params }) {
 
   const handleSnapshot = () => {
     if (contentRef.current) {
-       // Calculate the visible portion of the element
+       // Get the bounding rectangle of the content element
        const rect = contentRef.current.getBoundingClientRect();
        
-       // Calculate y offset relative to the element top
-       // If rect.top is negative, we have scrolled past the top, so offset is -rect.top
-       // If rect.top is positive, we are at the top (or element is further down), so starts at 0? 
-       // Usually we want to capture what is on screen.
-       // If the element starts below the top of the screen (e.g. under a header), we should start from 0 relative to element.
-       // If we scrolled past the element start, we start from the scroll offset.
-       
+       // Calculate how much of the element is above the viewport
+       // If rect.top is negative, we've scrolled past the top of the element
        let yOffset = 0;
        if (rect.top < 0) {
          yOffset = Math.abs(rect.top);
        }
        
-       // Adjust for header height if the element is partially covered (unlikely given it's the main content, but good to be safe)
-       // Actually, we just want "Screen Height" worth of content starting from "Current Scroll Position relative to Element".
+       // Account for any fixed header (typically 80px on this site)
+       const headerHeight = 80;
        
-       // Ensure we don't go past the bottom
-       const maxOffset = contentRef.current.scrollHeight - window.innerHeight;
-       if (yOffset > maxOffset) yOffset = maxOffset;
+       // If the element starts below the viewport top (hasn't been scrolled yet),
+       // we need to adjust the offset to start from where it's visible
+       if (rect.top > 0) {
+         yOffset = 0;
+       } else {
+         // Add any additional scroll that happened past the element top
+         yOffset = Math.abs(rect.top);
+       }
+       
+       // Calculate the height to capture (viewport height minus header)
+       const captureHeight = window.innerHeight - headerHeight;
+       
+       // Ensure we don't try to capture beyond the element's total height
+       const maxOffset = contentRef.current.scrollHeight - captureHeight;
+       if (yOffset > maxOffset && maxOffset > 0) {
+         yOffset = maxOffset;
+       }
        if (yOffset < 0) yOffset = 0;
 
        captureSnapshot(contentRef, blog?.title || 'blog-snapshot', { 
-         height: window.innerHeight,
+         height: captureHeight,
          width: contentRef.current.scrollWidth,
          y: yOffset,
          x: 0
@@ -337,17 +346,6 @@ export default function BlogDetailPage({ params }) {
               </div>
             </div>
 
-            {/* Blog Image */}
-            <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden mb-10 bg-gray-100 max-md:rounded max-md:mb-[30px]">
-              <Image
-                src={thumbnailUrl}
-                alt={blog.title}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            </div>
-
             {/* Blog Content */}
               <article
                 className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px]"
@@ -395,6 +393,7 @@ export default function BlogDetailPage({ params }) {
         description={blog.description}
         sections={sections}
         blogId={blog.id}
+        onSnapshot={handleSnapshot}
       />
     </div>
   );

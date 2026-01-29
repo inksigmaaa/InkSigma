@@ -2,19 +2,19 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import CopyIcon from '../icons/CopyIcon';
+
 import ShareIcon from '../icons/ShareIcon';
 import ArrowUpIcon from '../icons/ArrowUpIcon';
 import CloseIcon from '../icons/CloseIcon';
 
-export default function MobileBottomNav({ title, url, slug, description, sections = [], blogId }) {
+export default function MobileBottomNav({ title, url, slug, description, sections = [], blogId, onSnapshot }) {
   const [showTOC, setShowTOC] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const isSharing = useRef(false);
 
-  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/blog/${slug}` : '');
+  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/view-site/blog/${slug}` : '');
   const shareText = description ? `${title} - ${description}` : title;
 
   // Track share action
@@ -65,15 +65,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
     };
   }, [showTOC]);
 
-  const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(blogUrl);
-      await trackShare('copy');
-      alert('Link copied to clipboard!');
-    } catch (err) {
-      console.error('Failed to copy link:', err);
-    }
-  };
+
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -162,13 +154,21 @@ export default function MobileBottomNav({ title, url, slug, description, section
       {/* Mobile Bottom Navigation Bar */}
       <div className={`lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 shadow-lg transition-transform duration-300 ${isVisible ? 'translate-y-0' : 'translate-y-full'}`}>
         <div className="flex items-center justify-between px-4 divide-x divide-[#EDEDED]">
-          {/* Copy Link Button */}
+          {/* Snapshot Button */}
           <button
-            onClick={copyLink}
+            onClick={(e) => {
+              e.preventDefault();
+              if (onSnapshot) onSnapshot();
+            }}
             className="flex flex-col items-center justify-center gap-1 text-[#C0C0C0] hover:text-[#404040] my-3 flex-1"
-            aria-label="Copy link"
+            aria-label="Save snapshot"
           >
-            <CopyIcon />
+             <Image 
+              src="/svg/save_snapshot_mobile.svg" 
+              alt="Save Snapshot"
+              width={24}
+              height={24}
+            />
           </button>
 
           {/* Share Button */}

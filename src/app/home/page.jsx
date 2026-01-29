@@ -13,7 +13,7 @@ import { useArticles } from "@/contexts/ArticlesContext"
 import { usePublication } from "@/contexts/PublicationContext"
 import { getImageUrl } from "@/utils/imageUrl"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
 export default function HomePage() {
   const router = useRouter()
@@ -137,46 +137,36 @@ export default function HomePage() {
       <div className="pt-[112px] min-h-screen max-md:pt-[90px]">
         <div className="max-w-[1034px] mx-auto px-5 max-md:p-0">
           <div className={`ml-[165px] bg-white  p-8  max-md:ml-0 max-md:p-0`}>
-
-            {/* Publication Header */}
-            <div className=" px-8 py-12 flex items-center justify-between max-md:border-b max-md:border-[#EDEDED] max-md:mx-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
-              <div className="flex items-center gap-6 max-md:gap-3">
-                <div className="w-[66px] h-[68px] rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
-                  {currentPublication?.logoUrl ? (
-                    <img
-                      src={`http://localhost:5000${currentPublication.logoUrl}`}
-                      alt={currentPublication.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-violet-100 rounded-full flex items-center justify-center">
-                      <span className="text-violet-600 font-bold text-xl">
-                        {currentPublication?.name?.charAt(0).toUpperCase() || "P"}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h1 className="font-bold text-base  leading-normal tracking-normal text-[#2E2E2E] max-md:text-base max-md:font-bold">
-                      {loading ? "Loading..." : currentPublication?.name || "Publication Name"}
-                    </h1>
-                    {currentPublication && !currentPublication.isOwner && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${currentPublication.role === 'editor'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-blue-100 text-blue-700'
-                        }`}>
-                        {currentPublication.role?.charAt(0).toUpperCase() + currentPublication.role?.slice(1)}
-                      </span>
-                    )}
+          
+          {/* Publication Header */}
+          <div className=" px-6 py-12 flex items-center justify-between max-md:border-b max-md:border-[#EDEDED] max-md:mx-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
+            <div className="flex items-center gap-6 max-md:gap-3">
+              <div className="w-[66px] h-[68px] rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
+                {currentPublication?.logoUrl ? (
+                  <img 
+                    src={`http://localhost:5000${currentPublication.logoUrl}`} 
+                    alt={currentPublication.name} 
+                    className="w-full h-full object-cover" 
+                  />
+                ) : (
+                  <div className="w-full h-full bg-violet-100 rounded-full flex items-center justify-center">
+                    <span className="text-violet-600 font-bold text-xl">
+                      {currentPublication?.name?.charAt(0).toUpperCase() || "P"}
+                    </span>
                   </div>
-                  {currentPublication?.description && (
-                    <p className="font-normal text-sm leading-normal tracking-normal text-[#A4A4A4] max-w-md max-md:text-xs max-md:line-clamp-2">
-                      {currentPublication.description}
-                    </p>
-                  )}
-                </div>
+                )}
               </div>
+              <div>
+                <h2 className="font-semibold text-xl leading-normal tracking-normal text-[#2E2E2E] max-md:text-lg">
+                  {currentPublication?.name || "My Publication"}
+                </h2>
+                {currentPublication?.description && (
+                  <p className="font-normal text-sm leading-normal tracking-normal text-[#A4A4A4] max-w-md max-md:text-xs max-md:line-clamp-2">
+                    {currentPublication.description}
+                  </p>
+                )}
+              </div>
+            </div>
               {currentPublication?.isOwner && (
                 <button
                   onClick={handleEditPublication}
@@ -249,12 +239,22 @@ export default function HomePage() {
                         <p className="font-normal text-[14px] h-[42px] text-[#A4A4A4] mb-4 leading-normal line-clamp-2">
                           {article.description}
                         </p>
-                        <div className="flex items-center  justify-between">
-                          <span className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
-                            {article.category}
-                          </span>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex flex-wrap gap-2">
+                            {article.categories && article.categories.length > 0 ? (
+                              article.categories.map((category, index) => (
+                                <span key={index} className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
+                                  {category}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
+                                Uncategorized
+                              </span>
+                            )}
+                          </div>
                           <button
-                            className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors"
+                            className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors flex-shrink-0"
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(`/editor?status=published&id=${article.id}`);
