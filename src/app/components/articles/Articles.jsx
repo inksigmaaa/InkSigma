@@ -17,6 +17,7 @@ export default function Articles(props) {
     moveToDraft,
     publishArticle,
     unpublishArticle,
+    createDraftFromPublished,
   } = useArticles();
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
@@ -132,7 +133,12 @@ export default function Articles(props) {
 
   const confirmDraft = async () => {
     try {
-      await moveToDraft(actionArticleId);
+      const article = allArticles.find((a) => a.id === actionArticleId);
+      if (article && article.status === "published") {
+        await createDraftFromPublished(actionArticleId);
+      } else {
+        await moveToDraft(actionArticleId);
+      }
       setShowDraftModal(false);
       setActionArticleId(null);
     } catch (error) {
@@ -342,9 +348,27 @@ export default function Articles(props) {
           setActionArticleId(null);
         }}
         onConfirm={confirmDraft}
-        title="Move to Draft?"
-        message="This article will be moved to drafts"
-        confirmText="Move to Draft"
+        title={
+          actionArticleId &&
+          allArticles.find((a) => a.id === actionArticleId)?.status ===
+            "published"
+            ? "Create a Draft?"
+            : "Move to Draft?"
+        }
+        message={
+          actionArticleId &&
+          allArticles.find((a) => a.id === actionArticleId)?.status ===
+            "published"
+            ? "A draft copy will be created. The original article will remain published."
+            : "This article will be moved to drafts"
+        }
+        confirmText={
+          actionArticleId &&
+          allArticles.find((a) => a.id === actionArticleId)?.status ===
+            "published"
+            ? "Create Draft"
+            : "Move to Draft"
+        }
         confirmStyle="normal"
       />
 

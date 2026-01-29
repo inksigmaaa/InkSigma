@@ -19,6 +19,7 @@ export default function MyBlogsPage() {
     moveToDraft,
     unpublishArticle,
     loadUserArticles,
+    createDraftFromPublished,
   } = useArticles();
   const { currentPublication } = usePublication();
   const [selectedArticles, setSelectedArticles] = useState([]);
@@ -114,7 +115,12 @@ export default function MyBlogsPage() {
   const confirmDraft = async () => {
     try {
       if (actionArticleId) {
-        await moveToDraft(actionArticleId);
+        const article = myArticles.find((a) => a.id === actionArticleId);
+        if (article && article.status === "published") {
+          await createDraftFromPublished(actionArticleId);
+        } else {
+          await moveToDraft(actionArticleId);
+        }
       }
       setShowDraftModal(false);
       setActionArticleId(null);
@@ -201,9 +207,27 @@ export default function MyBlogsPage() {
           setActionArticleId(null);
         }}
         onConfirm={confirmDraft}
-        title="Move to Draft?"
-        message="This article will be moved to drafts"
-        confirmText="Move to Draft"
+        title={
+          actionArticleId &&
+          myArticles.find((a) => a.id === actionArticleId)?.status ===
+            "published"
+            ? "Create a Draft?"
+            : "Move to Draft?"
+        }
+        message={
+          actionArticleId &&
+          myArticles.find((a) => a.id === actionArticleId)?.status ===
+            "published"
+            ? "A draft copy will be created. The original article will remain published."
+            : "This article will be moved to drafts"
+        }
+        confirmText={
+          actionArticleId &&
+          myArticles.find((a) => a.id === actionArticleId)?.status ===
+            "published"
+            ? "Create Draft"
+            : "Move to Draft"
+        }
         confirmStyle="normal"
       />
 

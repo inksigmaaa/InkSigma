@@ -1102,7 +1102,7 @@ router.post("/:id/edit-draft", getCurrentUser, async (req, res) => {
       categories: originalBlog.categories,
       status: "draft",
       published: false,
-      authorId: req.user.id, // Current user becomes author of draft (usually same person)
+      authorId: originalBlog.authorId, // Original author remains author of draft
       publicationId: originalBlog.publicationId, // Keep same publication
       masterId: originalBlog.id, // Link to original
       createdAt: new Date(),
