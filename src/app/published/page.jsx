@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
-import EditorSidebar from "../components/sidebar/EditorSidebar";
 import Verify from "../components/verify/Verify";
 import PersonalArticles from "../components/personalArticles/personalArticles";
 import ConfirmModal from "../components/confirmModal/ConfirmModal";
@@ -12,7 +11,7 @@ import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 
-export default function Published() {
+export default function PublishedPage() {
   const {
     articles,
     publicationArticles,
@@ -232,11 +231,7 @@ export default function Published() {
     return (
       <>
         <NavbarLoggedin />
-        {currentPublication?.role === "editor" ? (
-          <EditorSidebar />
-        ) : (
-          <Sidebar />
-        )}
+        <Sidebar />
         <Verify />
         <div className="flex justify-center items-center min-h-[400px] animate-pulse">
           <div className="text-gray-500">Loading published articles...</div>
@@ -249,11 +244,7 @@ export default function Published() {
     return (
       <>
         <NavbarLoggedin />
-        {currentPublication?.role === "editor" ? (
-          <EditorSidebar />
-        ) : (
-          <Sidebar />
-        )}
+        <Sidebar />
         <Verify />
         <div className="flex justify-center items-center min-h-[400px] animate-fadeIn">
           <div className="text-red-500">Error: {error}</div>
@@ -280,7 +271,7 @@ export default function Published() {
   return (
     <>
       <NavbarLoggedin />
-      {currentPublication?.role === "editor" ? <EditorSidebar /> : <Sidebar />}
+      <Sidebar />
       <Verify />
       <PageTransition>
         <PersonalArticles

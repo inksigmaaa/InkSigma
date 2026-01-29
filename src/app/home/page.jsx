@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
-import EditorSidebar from "../components/sidebar/EditorSidebar";
 import Verify from "../components/verify/Verify";
 import BlogStatsComponent from "../components/BlogStatsComponent/BlogStatsComponent";
 import { Pencil } from "lucide-react";
@@ -153,7 +152,7 @@ export default function HomePage() {
   return (
     <AuthGuard>
       <NavbarLoggedin />
-      {currentPublication?.role === "editor" ? <EditorSidebar /> : <Sidebar />}
+      <Sidebar />
       <Verify />
 
       {/* Main Content */}

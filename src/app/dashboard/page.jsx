@@ -1,53 +1,57 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { useEffect } from "react"
-import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
-import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
-import Verify from "../components/verify/Verify"
-import { ChevronRight } from "lucide-react"
-import { usePublication } from "@/contexts/PublicationContext"
-import AuthGuard from "@/components/auth/AuthGuard"
-
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
+import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar";
+import Verify from "../components/verify/Verify";
+import { ChevronRight } from "lucide-react";
+import { usePublication } from "@/contexts/PublicationContext";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 export default function DashboardPage() {
-  const router = useRouter()
+  const router = useRouter();
   const {
     getOwnedPublications,
     getJoinedPublications,
     switchPublication,
     loadUserPublications,
-    loading: publicationLoading
-  } = usePublication()
+    loading: publicationLoading,
+  } = usePublication();
 
   // Effect to handle potential context refresh issues
   useEffect(() => {
     // If we're not loading and have no publications, try refreshing once
     // This handles the case where a user just created a publication but context wasn't updated
     if (!publicationLoading) {
-      const ownedPublications = getOwnedPublications()
-      const joinedPublications = getJoinedPublications()
+      const ownedPublications = getOwnedPublications();
+      const joinedPublications = getJoinedPublications();
 
       if (ownedPublications.length === 0 && joinedPublications.length === 0) {
-        const hasRefreshed = sessionStorage.getItem('dashboard-refreshed');
+        const hasRefreshed = sessionStorage.getItem("dashboard-refreshed");
         if (!hasRefreshed) {
-          console.log('No publications found, refreshing context...');
-          sessionStorage.setItem('dashboard-refreshed', 'true');
+          console.log("No publications found, refreshing context...");
+          sessionStorage.setItem("dashboard-refreshed", "true");
           loadUserPublications();
         }
       } else {
         // Clear the refresh flag when publications are found
-        sessionStorage.removeItem('dashboard-refreshed');
+        sessionStorage.removeItem("dashboard-refreshed");
       }
     }
-  }, [publicationLoading, loadUserPublications, getOwnedPublications, getJoinedPublications]);
+  }, [
+    publicationLoading,
+    loadUserPublications,
+    getOwnedPublications,
+    getJoinedPublications,
+  ]);
 
   if (publicationLoading) {
-    return null
+    return null;
   }
 
-  const ownedPublications = getOwnedPublications()
-  const joinedPublications = getJoinedPublications()
+  const ownedPublications = getOwnedPublications();
+  const joinedPublications = getJoinedPublications();
 
   return (
     <AuthGuard>
@@ -57,23 +61,33 @@ export default function DashboardPage() {
         <div className="w-full max-w-[819px] mx-auto space-y-6 sm:space-y-8">
           {/* Welcome Banner */}
           <div className="w-full max-w-[819px] min-h-[184px] rounded-[4px] pt-[24px] px-4 sm:px-[155px] pb-[24px] gap-[5px] opacity-100 border border-[#EDEDED] flex flex-col items-center justify-center mx-auto">
-            <h1 className="w-full max-w-[166px] h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] text-center" style={{ fontFamily: 'Public Sans' }}>Welcome to InkSigma</h1>
-            <p className="w-full max-w-[536px] min-h-[42px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-center text-[#696969] px-4 sm:px-0" style={{ fontFamily: 'Public Sans' }}>
-              Generate a publication and embark on crafting numerous articles showcasing your innovative ideas, thereby disseminating them to the global audience.
+            <h1
+              className="w-full max-w-[166px] h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] text-center"
+              style={{ fontFamily: "Public Sans" }}
+            >
+              Welcome to InkSigma
+            </h1>
+            <p
+              className="w-full max-w-[536px] min-h-[42px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-center text-[#696969] px-4 sm:px-0"
+              style={{ fontFamily: "Public Sans" }}
+            >
+              Generate a publication and embark on crafting numerous articles
+              showcasing your innovative ideas, thereby disseminating them to
+              the global audience.
             </p>
             <button
-              onClick={() => router.push('/profile-settings')}
+              onClick={() => router.push("/profile-settings")}
               className="min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center mt-2"
             >
-              <span 
+              <span
                 className="opacity-100 font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
-                style={{ 
-                  fontFamily: 'Public Sans'
+                style={{
+                  fontFamily: "Public Sans",
                 }}
               >
                 Complete your profile
               </span>
-              <ChevronRight className="w-3.5 h-3.5 text-[#A941FB] ml-1"/>
+              <ChevronRight className="w-3.5 h-3.5 text-[#A941FB] ml-1" />
             </button>
           </div>
 
@@ -82,7 +96,12 @@ export default function DashboardPage() {
 
           {/* Your Publication Section */}
           <section>
-            <h2 className="w-full max-w-[125px] h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-2" style={{ fontFamily: 'Public Sans' }}>Your Publication</h2>
+            <h2
+              className="w-full max-w-[125px] h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-2"
+              style={{ fontFamily: "Public Sans" }}
+            >
+              Your Publication
+            </h2>
             {ownedPublications.length > 0 ? (
               <div className="w-full max-w-[819px] min-h-[143px] rounded-[4px] gap-[16px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-0">
@@ -101,17 +120,26 @@ export default function DashboardPage() {
                       ) : (
                         <div className="w-full h-full bg-violet-100 rounded-full flex items-center justify-center">
                           <span className="text-violet-600 font-bold text-lg">
-                            {ownedPublications[0]?.name?.charAt(0).toUpperCase() || "P"}
+                            {ownedPublications[0]?.name
+                              ?.charAt(0)
+                              .toUpperCase() || "P"}
                           </span>
                         </div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0 w-full">
-                      <h3 className="font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-1 overflow-hidden text-ellipsis" style={{ fontFamily: 'Public Sans' }}>
+                      <h3
+                        className="font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-1 overflow-hidden text-ellipsis"
+                        style={{ fontFamily: "Public Sans" }}
+                      >
                         {ownedPublications[0]?.name || "Publication Name"}
                       </h3>
-                      <p className="w-full max-w-[414px] min-h-[63px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#A4A4A4]" style={{ fontFamily: 'Public Sans' }}>
-                        {ownedPublications[0]?.description || "Note: Edit/Upload your logo, Favicon & Publication Description inside the publication settings. Start with clicking this Publication card"}
+                      <p
+                        className="w-full max-w-[414px] min-h-[63px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#A4A4A4]"
+                        style={{ fontFamily: "Public Sans" }}
+                      >
+                        {ownedPublications[0]?.description ||
+                          "Note: Edit/Upload your logo, Favicon & Publication Description inside the publication settings. Start with clicking this Publication card"}
                       </p>
                     </div>
                   </div>
@@ -123,10 +151,10 @@ export default function DashboardPage() {
                     }}
                     className="flex-shrink-0 min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center w-full sm:w-auto"
                   >
-                    <span 
+                    <span
                       className="font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
-                      style={{ 
-                        fontFamily: 'Public Sans'
+                      style={{
+                        fontFamily: "Public Sans",
                       }}
                     >
                       Go to Publication
@@ -139,17 +167,23 @@ export default function DashboardPage() {
               <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <div className="text-center py-8">
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center  mb-3">
-                    <img src="/icons/nib.svg" alt="publication" className="w-12 h-12" />
+                    <img
+                      src="/icons/nib.svg"
+                      alt="publication"
+                      className="w-12 h-12"
+                    />
                   </div>
                   <div className="mx-auto">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1">No Publication Yet</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                      No Publication Yet
+                    </h3>
                     <p className="text-xs text-gray-400">
                       Create your first publication to get started.
                     </p>
                   </div>
 
                   <button
-                    onClick={() => router.push('/create-publication')}
+                    onClick={() => router.push("/create-publication")}
                     className="mt-4 bg-violet-600 text-white px-6 py-2 rounded-lg text-xs font-medium hover:bg-violet-700 transition-colors"
                   >
                     Create Publication
@@ -161,11 +195,19 @@ export default function DashboardPage() {
 
           {/* Joined Publication Section */}
           <section>
-            <h2 className="w-auto h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-2" style={{ fontFamily: 'Public Sans' }}>Joined Publications</h2>
+            <h2
+              className="w-auto h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-2"
+              style={{ fontFamily: "Public Sans" }}
+            >
+              Joined Publications
+            </h2>
             {joinedPublications.length > 0 ? (
               <div className="space-y-4">
                 {joinedPublications.map((joinedPub) => (
-                  <div key={joinedPub.id} className="w-full max-w-[819px] min-h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
+                  <div
+                    key={joinedPub.id}
+                    className="w-full max-w-[819px] min-h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto"
+                  >
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-[88px]">
                       <div className="flex gap-9 items-center flex-1 w-full">
                         <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -188,25 +230,36 @@ export default function DashboardPage() {
                           )}
                         </div>
                         <div className="flex-1 min-w-0 w-full">
-                          <h3 className="w-full max-w-[135px] h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-1 overflow-hidden text-ellipsis" style={{ fontFamily: 'Public Sans' }}>{joinedPub.name}</h3>
+                          <h3
+                            className="w-full max-w-[135px] h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-1 overflow-hidden text-ellipsis"
+                            style={{ fontFamily: "Public Sans" }}
+                          >
+                            {joinedPub.name}
+                          </h3>
                           <p className="text-xs text-gray-400 leading-relaxed">
                             {joinedPub.description || "No description provided"}
                           </p>
                           <div className="flex items-center gap-4 mt-2">
-                            <span className={`text-xs font-medium ${joinedPub.role === 'editor' ? 'text-green-600' : 'text-blue-600'
-                              }`}>
-                              {joinedPub.role.charAt(0).toUpperCase() + joinedPub.role.slice(1)}
+                            <span
+                              className={`text-xs font-medium ${
+                                joinedPub.role === "editor"
+                                  ? "text-green-600"
+                                  : "text-blue-600"
+                              }`}
+                            >
+                              {joinedPub.role.charAt(0).toUpperCase() +
+                                joinedPub.role.slice(1)}
                             </span>
                             <span className="text-xs text-gray-400">
-                              {joinedPub.joinedAt ? (
-                                `Joined ${new Date(joinedPub.joinedAt).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric'
-                                })}`
-                              ) : (
-                                'Joined Recently'
-                              )}
+                              {joinedPub.joinedAt
+                                ? `Joined ${new Date(
+                                    joinedPub.joinedAt,
+                                  ).toLocaleDateString("en-US", {
+                                    year: "numeric",
+                                    month: "short",
+                                    day: "numeric",
+                                  })}`
+                                : "Joined Recently"}
                             </span>
                           </div>
                         </div>
@@ -214,23 +267,20 @@ export default function DashboardPage() {
                       <button
                         onClick={() => {
                           switchPublication(joinedPub);
-                          if (joinedPub.role === 'editor') {
-                            router.push(`/editorpage?pub=${joinedPub.id}`);
-                          } else {
-                            router.push(`/posts/home?pub=${joinedPub.id}`);
-                          }
+                          // UNIFIED ROUTING: All roles (editor, author, admin) go to /home logic
+                          router.push(`/home?pub=${joinedPub.id}`);
                         }}
                         className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
                       >
-                        <span 
+                        <span
                           className="font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
-                          style={{ 
-                            fontFamily: 'Public Sans'
+                          style={{
+                            fontFamily: "Public Sans",
                           }}
                         >
                           Go to Publication
                         </span>
-                        <ChevronRight className="w-3.5 h-3.5 text-[#A941FB]"/>
+                        <ChevronRight className="w-3.5 h-3.5 text-[#A941FB]" />
                       </button>
                     </div>
                   </div>
@@ -241,28 +291,42 @@ export default function DashboardPage() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-[16px] h-full w-full">
                   <div className="flex gap-9 items-center flex-1 min-w-0 w-full">
                     <div className="w-[68px] h-[70px] rounded-[112px] opacity-100 border border-[#EDEDED] bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      <img src="/icons/pen.svg" alt="publication" className="w-full h-full object-cover" />
+                      <img
+                        src="/icons/pen.svg"
+                        alt="publication"
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div className="flex-1 min-w-0 w-full">
-                      <h3 className="w-full max-w-[135px] h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-1 overflow-hidden text-ellipsis" style={{ fontFamily: 'Public Sans' }}>Publication Name</h3>
-                      <p className="w-full max-w-[414px] min-h-[63px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#A4A4A4]" style={{ fontFamily: 'Public Sans' }}>
-                       Note: Edit/Upload your logo, Favicon & Publication Description inside the publication settings. Start with clicking this Publication card
+                      <h3
+                        className="w-full max-w-[135px] h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-1 overflow-hidden text-ellipsis"
+                        style={{ fontFamily: "Public Sans" }}
+                      >
+                        Publication Name
+                      </h3>
+                      <p
+                        className="w-full max-w-[414px] min-h-[63px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#A4A4A4]"
+                        style={{ fontFamily: "Public Sans" }}
+                      >
+                        Note: Edit/Upload your logo, Favicon & Publication
+                        Description inside the publication settings. Start with
+                        clicking this Publication card
                       </p>
                     </div>
                   </div>
                   <button
-                    onClick={() => router.push('/create-publication')}
+                    onClick={() => router.push("/create-publication")}
                     className="flex-shrink-0 min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] gap-[4px] opacity-100 flex items-center justify-center w-full sm:w-auto"
                   >
-                    <span 
+                    <span
                       className="font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
-                      style={{ 
-                        fontFamily: 'Public Sans'
+                      style={{
+                        fontFamily: "Public Sans",
                       }}
                     >
                       Go to Publication
                     </span>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#A941FB]"/>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#A941FB]" />
                   </button>
                 </div>
               </div>
@@ -271,5 +335,5 @@ export default function DashboardPage() {
         </div>
       </main>
     </AuthGuard>
-  )
+  );
 }

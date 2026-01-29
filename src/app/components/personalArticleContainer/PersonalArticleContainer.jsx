@@ -79,9 +79,9 @@ export default function PersonalArticleContainer({
 
   // Explicitly ensure 'author' and 'editor' cannot publish, even if isOwner is somehow true (edge case)
   const canPublish =
-    (currentPublication?.isOwner || currentPublication?.role === "admin") &&
-    currentPublication?.role !== "author" &&
-    currentPublication?.role !== "editor";
+    currentPublication?.isOwner ||
+    currentPublication?.role === "admin" ||
+    currentPublication?.role === "editor";
 
   const handleEdit = () => {
     const publicationQuery = currentPublication?.id

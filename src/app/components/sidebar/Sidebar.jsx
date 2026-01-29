@@ -1,82 +1,207 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
-import { usePublication } from '@/contexts/PublicationContext';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { usePublication } from "@/contexts/PublicationContext";
+import { hasPermission } from "@/utils/permissions";
+
+// Extracted component for individual menu items to comply with Rules of Hooks
+function SidebarMenuItem({ label, icon, route, isActive }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <Link href={route}>
+      <div
+        className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive ? "bg-[#F6F6F6]" : ""}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+          <img
+            src={
+              label === "Settings" ? `/icons/${icon}` : `/images/icons/${icon}`
+            }
+            className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive ? "opacity-100 brightness-0" : isHovered ? "opacity-100 brightness-50" : "opacity-60"}`}
+          />
+          <p
+            className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-['Public Sans'] leading-[150%] tracking-[0%] font-normal ${isActive ? "font-semibold text-[#2E2E2E]" : isHovered ? "text-[#2E2E2E]" : "text-[#B0B0B0]"}`}
+          >
+            {label}
+          </p>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+// Extracted component for My Space item
+function MySpaceItem({ pathname }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const isActive = pathname === "/dashboard";
+
+  return (
+    <div
+      className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${isHovered ? "bg-[#F6F6F6]" : ""}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <img
+        src="/images/icons/myspace.svg"
+        className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${isActive ? "brightness-0" : isHovered ? "brightness-50" : ""}`}
+      />
+      <Link href="/dashboard">
+        <p
+          className={`font-sans text-[14px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center font-['Public Sans'] tracking-[0%] font-normal ${isActive ? "font-bold text-black" : isHovered ? "text-[#2E2E2E]" : "text-[#B0B0B0]"}`}
+        >
+          My Space
+        </p>
+      </Link>
+    </div>
+  );
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { currentPublication, loading } = usePublication();
 
+  // Helper to determine the effective role
+  const getEffectiveRole = () => {
+    if (!currentPublication) return null;
+    if (currentPublication.isOwner) return "admin"; // Owner is 'admin' in our permissions chart
+    return currentPublication.role || "author";
+  };
+
+  const role = getEffectiveRole();
+
   // Route mapping for navigation
   const getRoute = (label) => {
-    // Determine review route based on role
-    let reviewRoute = "/review";
-    if (currentPublication) {
-      const role = currentPublication.role;
-      const isOwner = currentPublication.isOwner;
-      const isReviewer = isOwner || role === 'editor' || role === 'admin';
-      if (!isReviewer) {
-        reviewRoute = "/author-review";
-      }
-    }
-
     const routes = {
-      "Home": "/home",
-      "Domain": "/domain",
-      "Members": "/members",
-      "Settings": "/dashboard/settings",
+      Home: "/home",
+      Domain: "/domain",
+      Members: "/members",
+      Settings: "/dashboard/settings",
       "All Articles": "/posts",
-      "Published": "/published",
-      "Unpublished": "/unpublished",
-      "Schedule": "/schedule",
-      "Review": reviewRoute,
+      Published: "/published",
+      Unpublished: "/unpublished",
+      Schedule: "/schedule",
+      Review: "/review",
       "My Blogs": "/my-blogs",
-      "Draft": "/draft",
-      "Trash": "/trash",
+      Draft: "/draft",
+      Trash: "/trash",
     };
-    
+
     let route = routes[label] || "/dashboard";
-    
+
     // Append publication ID to all publication-specific routes to preserve context
-    if (currentPublication?.id && route !== "/dashboard" && route !== "/dashboard/settings") {
+    if (
+      currentPublication?.id &&
+      route !== "/dashboard" &&
+      route !== "/dashboard/settings"
+    ) {
       route = `${route}?pub=${currentPublication.id}`;
     }
-    
+
     return route;
   };
+
+  // MENU CONFIGURATION
+  // Define items with permission checks
+  const MENU_SECTIONS = [
+    {
+      title: "PUBLICATION",
+      items: [
+        { label: "Home", icon: "home.svg", check: () => true },
+        {
+          label: "Domain",
+          icon: "domain.svg",
+          check: (r) => hasPermission(r, "canAccessDomain"),
+        },
+        {
+          label: "Members",
+          icon: "Member.svg",
+          check: (r) => hasPermission(r, "canAccessMembers"),
+        },
+        {
+          label: "Settings",
+          icon: "settings.svg",
+          check: (r) => hasPermission(r, "canAccessSettings"),
+        },
+      ],
+    },
+    {
+      title: "ARTICLES",
+      items: [
+        {
+          label: "All Articles",
+          icon: "all_articles.svg",
+          check: (r) => hasPermission(r, "canAccessAllArticles"),
+        },
+        {
+          label: "Published",
+          icon: "Publish.svg",
+          check: (r) => hasPermission(r, "canAccessPublished"),
+        },
+        {
+          label: "Unpublished",
+          icon: "unpublished.svg",
+          check: (r) => hasPermission(r, "canAccessAllArticles"),
+        },
+        {
+          label: "Schedule",
+          icon: "Schedule.svg",
+          check: (r) => hasPermission(r, "canAccessScheduled"),
+        },
+        {
+          label: "Review",
+          icon: "Review.svg",
+          check: (r) => hasPermission(r, "canAccessReviewQueue"),
+        },
+      ],
+    },
+    {
+      title: "PERSONAL",
+      items: [
+        {
+          label: "My Blogs",
+          icon: "myblogs.svg",
+          check: (r) => hasPermission(r, "viewOwnArticles"),
+        },
+        {
+          label: "Draft",
+          icon: "Draft.svg",
+          check: (r) => hasPermission(r, "canAccessDrafts"),
+        },
+        {
+          label: "Trash",
+          icon: "trash.svg",
+          check: (r) => hasPermission(r, "viewOwnArticles"),
+        },
+      ],
+    },
+  ];
 
   // Check if the current route is active
   const isActive = (label) => {
     const route = getRoute(label);
-    // Extract the base path without query parameters for comparison
-    const basePath = route.split('?')[0];
+    const basePath = route.split("?")[0];
     return pathname === basePath;
   };
 
   return (
     <>
       {/* SIDE CONTAINER / WRAPPER */}
-      <div
-        className="fixed left-1/2 -translate-x-1/2 top-[112px] w-full max-w-[1034px] h-[612px] bg-transparent z-30 px-5 pointer-events-none max-md:fixed max-md:left-0 max-md:right-0 max-md:top-auto max-md:bottom-0 max-md:translate-x-0 max-md:w-full max-md:max-w-full max-md:h-[70px] max-md:p-0 max-md:z-50 max-md:bg-white max-md:border-t max-md:border-gray-200 max-md:shadow-[0_-4px_12px_rgba(0,0,0,0.08)] max-md:overflow-x-auto max-md:overflow-y-hidden"
-      >
-
+      <div className="fixed left-1/2 -translate-x-1/2 top-[112px] w-full max-w-[1034px] h-[612px] bg-transparent z-30 px-5 pointer-events-none max-md:fixed max-md:left-0 max-md:right-0 max-md:top-auto max-md:bottom-0 max-md:translate-x-0 max-md:w-full max-md:max-w-full max-md:h-[70px] max-md:p-0 max-md:z-50 max-md:bg-white max-md:border-t max-md:border-gray-200 max-md:shadow-[0_-4px_12px_rgba(0,0,0,0.08)] max-md:overflow-x-auto max-md:overflow-y-hidden">
         {/* SIDEBAR CONTAINER */}
-        <div
-          className="relative w-[165px] h-[612px] bg-white border-r border-gray-200 p-[14px] pr-[10px] flex flex-col gap-[10px] overflow-hidden pointer-events-auto max-md:w-auto max-md:min-w-max max-md:h-[70px] max-md:px-4 max-md:py-2 max-md:flex-row max-md:gap-2 max-md:border-r-0 max-md:overflow-visible "
-        >
-
+        <div className="relative w-[165px] h-[612px] bg-white border-r border-gray-200 p-[14px] pr-[10px] flex flex-col gap-[10px] overflow-hidden pointer-events-auto max-md:w-auto max-md:min-w-max max-md:h-[70px] max-md:px-4 max-md:py-2 max-md:flex-row max-md:gap-2 max-md:border-r-0 max-md:overflow-visible ">
           {/* PROFILE */}
-          <div
-            className="flex items-center gap-2 pb-[10px] max-md:hidden"
-          >
+          <div className="flex items-center gap-2 pb-[10px] max-md:hidden">
             <div className="w-[34px] h-[34px] rounded-full overflow-hidden border-2 border-violet-500 flex-shrink-0 bg-gray-100 flex items-center justify-center">
               {loading ? (
                 <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
               ) : currentPublication?.logoUrl ? (
                 <img
-                  src={`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}${currentPublication.logoUrl}`}
+                  src={`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${currentPublication.logoUrl}`}
                   alt={currentPublication.name || "Publication"}
                   className="w-full h-full object-cover"
                 />
@@ -94,14 +219,16 @@ export default function Sidebar() {
             </div>
 
             <div className="flex-1 min-w-0">
-              <a 
-                href={currentPublication?.id ? `/view-site?publicationId=${currentPublication.id}` : "/view-site"} 
-                target="_blank" 
+              <a
+                href={
+                  currentPublication?.id
+                    ? `/view-site?publicationId=${currentPublication.id}`
+                    : "/view-site"
+                }
+                target="_blank"
                 rel="noopener noreferrer"
               >
-                <button
-                  className="w-[94px] h-[32px] text-white px-[16px] py-[8px] rounded-[4px] text-[14px] font-semibold leading-[100%] whitespace-nowrap hover:opacity-90 transition-opacity flex items-center justify-center bg-gradient-to-br from-[#A941FB] to-[#7864F0] shadow-[0px_4px_8px_0px_#EADBF9]"
-                >
+                <button className="w-[94px] h-[32px] text-white px-[16px] py-[8px] rounded-[4px] text-[14px] font-semibold leading-[100%] whitespace-nowrap hover:opacity-90 transition-opacity flex items-center justify-center bg-gradient-to-br from-[#A941FB] to-[#7864F0] shadow-[0px_4px_8px_0px_#EADBF9]">
                   View Site
                 </button>
               </a>
@@ -110,128 +237,41 @@ export default function Sidebar() {
 
           {/* MY SPACE */}
           <div className="pb-2 max-md:pb-0 max-md:border-none max-md:flex-shrink-0">
-            {(() => {
-              const [isHovered, setIsHovered] = useState(false);
-              return (
-            <div
-              className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${isHovered ? 'bg-[#F6F6F6]' : ''}`}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-            >
-              <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${pathname === '/dashboard' ? 'brightness-0' : isHovered ? 'brightness-50' : ''}`} />
-              <Link href="/dashboard">
-                <p className={`font-sans text-[14px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center font-[\'Public Sans\'] tracking-[0%] font-normal ${pathname === '/dashboard' ? 'font-bold text-black' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
-                  My Space
-                </p>
-              </Link>
-            </div>
-              );
-            })()}
+            <MySpaceItem pathname={pathname} />
           </div>
 
           {/* SECTION BLOCK COMPONENT */}
-          {[
-            {
-              title: "PUBLICATION",
-              items: [
-                ["home.svg", "Home", "/home"],
-                ["domain.svg", "Domain", "/domain"],
-                ["Member.svg", "Members", "/members"],
-                ["settings.svg", "Settings", "/settings"],
-              ]
-            },
-            {
-              title: "ARTICLES",
-              items: [
-                ["all_articles.svg", "All Articles"],
-                ["Publish.svg", "Published"],
-                ["unpublished.svg", "Unpublished"],
-                ["Schedule.svg", "Schedule"],
-                ["Review.svg", "Review"],
-              ]
-            },
-            {
-              title: "PERSONAL",
-              items: [
-                ["myblogs.svg", "My Blogs", "/my blogs"],
-                ["Draft.svg", "Draft", "/drafts"],
-                ["trash.svg", "Trash", "/trash"],
-              ]
-            }
-          ].map((section, idx) => (
-            <div
-              key={idx}
-              className="flex flex-col gap-[3px] max-md:flex-row max-md:gap-2 max-md:p-0"
-            >
-              {/* SECTION HEADING */}
-              <h1
-                className="text-[11px] font-semibold text-[#A4A4A4] tracking-[0.5px] uppercase mb-[3px] max-md:hidden"
+          {MENU_SECTIONS.map((section, idx) => {
+            // Filter items based on role permission
+            const visibleItems = section.items.filter((item) =>
+              item.check(role),
+            );
+
+            if (visibleItems.length === 0) return null;
+
+            return (
+              <div
+                key={idx}
+                className="flex flex-col gap-[3px] max-md:flex-row max-md:gap-2 max-md:p-0"
               >
-                {section.title}
-              </h1>
+                {/* SECTION HEADING */}
+                <h1 className="text-[11px] font-semibold text-[#A4A4A4] tracking-[0.5px] uppercase mb-[3px] max-md:hidden">
+                  {section.title}
+                </h1>
 
-              {/* SECTION ITEMS */}
-              {section.items.map(([icon, label]) => {
-                const [isHovered, setIsHovered] = useState(false);
-                return (
-                <Link key={label} href={getRoute(label)}>
-                  <div
-                    className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive(label) ? 'bg-[#F6F6F6]' : ''}`}
-                    onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}
-                  >
-                    <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                      <img
-                        src={label === "Settings" ? `/icons/${icon}` : `/images/icons/${icon}`}
-                        className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive(label) ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`}
-                      />
-                      <p
-                        className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive(label) ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}
-                      >
-                        {label}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-                );
-              })}
-            </div>
-          ))}
-
-          {/* View Site Button - Mobile Only */}
-          <div className="hidden max-md:flex max-md:flex-shrink-0 max-md:items-center max-md:px-2">
-            <a 
-              href={currentPublication?.id ? `/view-site?publicationId=${currentPublication.id}` : "/view-site"} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{
-                width: '82px',
-                height: '32px',
-                borderRadius: '4px',
-                padding: '8px 16px',
-                gap: '10px',
-                background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
-                boxShadow: '0px 4px 8px 0px #EADBF9',
-                fontFamily: 'Public Sans',
-                fontWeight: 600,
-                fontSize: '12px',
-                lineHeight: '150%',
-                letterSpacing: '0%',
-                color: '#EDEDED',
-                opacity: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textDecoration: 'none',
-                whiteSpace: 'nowrap'
-              }}
-              className="hover:opacity-90 transition-opacity"
-              title="Visit site"
-            >
-              View Site
-            </a>
-          </div>
-
+                {/* SECTION ITEMS */}
+                {visibleItems.map((item) => (
+                  <SidebarMenuItem
+                    key={item.label}
+                    label={item.label}
+                    icon={item.icon}
+                    route={getRoute(item.label)}
+                    isActive={isActive(item.label)}
+                  />
+                ))}
+              </div>
+            );
+          })}
         </div>
       </div>
     </>
