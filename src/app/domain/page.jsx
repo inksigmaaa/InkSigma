@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 export default function DomainPage() {
-  const [customDomain, setCustomDomain] = useState(".com")
+  const [customDomain, setCustomDomain] = useState("")
   const [subdomain, setSubdomain] = useState("Subdomain")
   const [loading, setLoading] = useState(true)
   const [savedCustomDomain, setSavedCustomDomain] = useState("")
-  const [editDomain, setEditDomain] = useState(".com")
+  const [editDomain, setEditDomain] = useState("")
 
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [pendingDomain, setPendingDomain] = useState("")
@@ -52,7 +52,7 @@ export default function DomainPage() {
 
   const handleSaveChanges = () => {
     let domain = customDomain.trim()
-    if (domain && domain !== ".com") {
+    if (domain) {
       if (!domain.includes(".")) {
         domain += ".com"
       }
@@ -63,7 +63,7 @@ export default function DomainPage() {
 
   const handleEditSave = () => {
     let domain = editDomain.trim()
-    if (domain === "" || domain === ".com") {
+    if (domain === "") {
       setShowRevertConfirmation(true)
     } else {
       if (!domain.includes(".")) {
@@ -89,8 +89,8 @@ export default function DomainPage() {
 
   const handleConfirmRevert = () => {
     setSavedCustomDomain("")
-    setEditDomain(".com")
-    setCustomDomain(".com")
+    setEditDomain("")
+    setCustomDomain("")
     setShowRevertConfirmation(false)
   }
 
@@ -107,14 +107,14 @@ export default function DomainPage() {
       <NavbarLoggedin />
       <Sidebar />
 
-      <div className="w-full min-h-screen md:absolute md:left-1/2 md:-translate-x-1/2 md:top-[120px] md:max-w-[1034px] z-20 px-5 md:px-5 pt-24 md:pt-0 pb-24 md:pb-0">
+      <div className="w-full min-h-screen md:absolute md:left-1/2 md:-translate-x-1/2 md:top-[120px] md:max-w-[1034px] z-20 px-0 md:px-5 pt-24 md:pt-0 pb-24 md:pb-0">
         <div className="ml-0 md:ml-[165px] md:border-r md:border-gray-200">
-          <div className="flex flex-col max-md:pl-10 max-md:pr-10 pb-8 md:pb-20">
+          <div className="flex flex-col pb-8 md:pb-20">
             {/* Header */}
-            <div className="text-center mt-10 mb-6 max-md:mb-6  max-md:mt-8">
-              <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Custom Domain Integration</h1>
-              <p className="text-sm text-gray-600 px-4 md:px-0">
-                Connect your custom domain you already own <br />
+            <div className="text-center mt-10 mb-6 max-md:mb-6 max-md:mt-8 max-md:w-[301px] max-md:mx-auto">
+              <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-2 max-md:text-[14px] max-md:font-bold">Custom Domain Integration</h1>
+              <p className="text-sm text-gray-600 px-4 md:px-0 max-md:text-[12px]">
+                Connect your custom domain you already own <br className="max-md:hidden" />
                 with Inksigma.{" "}
                 <a
                   href="#instructions"
@@ -131,7 +131,7 @@ export default function DomainPage() {
                       })
                     }
                   }}
-                  className="text-black font-semibold cursor-pointer"
+                  className="text-black font-semibold cursor-pointer max-md:font-normal"
                 >
                   Read instructions
                 </a>
@@ -141,25 +141,25 @@ export default function DomainPage() {
             {/* Current Domain Section */}
             {!savedCustomDomain ? (
               // Initial state - no custom domain saved
-              <div className="bg-white mx-auto rounded-lg border border-gray-200 p-6 md:p-8 space-y-5 w-full max-w-[400px] mb-12 md:mb-20">
+              <div className="bg-white mx-auto rounded-lg border border-gray-200 p-6 md:p-8 space-y-5 w-full max-w-[400px] max-md:p-4 max-md:w-[301px] mb-12 md:mb-20">
                 <div className="border-b border-gray-200 pb-5">
-                  <h2 className="text-xs font-semibold text-gray-400 mb-3">YOUR CURRENT DOMAIN</h2>
+                  <h2 className="text-xs font-semibold text-gray-400 mb-3 max-md:text-[8px] mb-0 max-md:font-normal">YOUR CURRENT DOMAIN</h2>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-purple-600 font-medium text-sm md:text-base break-all">{currentDomain}</span>
-                    <span className="bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded whitespace-nowrap">{subdomain}</span>
+                    <span className="text-purple-600 font-medium text-sm md:text-base break-all max-md:text-[12px] max-md:font-normal">{currentDomain}</span>
+                    <span className="bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded whitespace-nowrap max-md:text-[8px]">Subdomain</span>
                   </div>
                 </div>
 
                 {/* Warning Box */}
                 <div className="bg-orange-50 border border-orange-200 rounded p-3">
-                  <p className="text-orange-700 text-sm">
-                    <span className="font-semibold">Warning:</span> If you change your domain, you can only change it after 14 days.
+                  <p className="text-orange-700 text-sm max-md:text-[10px] max-md:font-normal">
+                    <span className="font-semibold max-md:font-bold">Warning:</span> If you change your domain, you can only change it after 14 days.
                   </p>
                 </div>
 
                 {/* Custom Domain Input */}
                 <div className="space-y-3 border-t border-gray-200 pt-5">
-                  <label className="block text-sm font-semibold text-gray-900">
+                  <label className="block text-sm font-semibold text-gray-900 max-md:text-[12px] max-md:font-normal">
                     Create your Custom Domain
                   </label>
                   <Input
@@ -171,7 +171,7 @@ export default function DomainPage() {
                   />
                   <Button
                     onClick={handleSaveChanges}
-                    className="bg-black text-white hover:bg-gray-800 w-full md:w-auto px-8 text-sm h-10"
+                    className="bg-black text-white hover:bg-gray-800 w-full md:w-auto max-md:w-[112px] max-md:text-[10px] max-md:font-bold max-md:px-2 px-8 text-sm h-10"
                   >
                     Save Changes
                   </Button>
@@ -180,51 +180,21 @@ export default function DomainPage() {
             ) : (
               // After custom domain is saved - exact CSS styling
               <div
-                className="mx-auto mb-12 md:mb-20"
-                style={{
-                  width: '447px',
-                  height: '503px',
-                  borderRadius: '8px',
-                  padding: '24px 32px',
-                  gap: '24px',
-                  background: '#FFFFFF',
-                  border: '1px solid #EDEDED',
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}
+                className="mx-auto mb-12 md:mb-20 w-[301px] md:w-[447px] h-auto md:h-[503px] p-5 md:p-[24px_32px] rounded-lg border border-[#EDEDED] bg-white flex flex-col gap-6"
               >
                 {/* Subdomain Domain Section */}
                 <div
-                  style={{
-                    width: '383px',
-                    borderRadius: '4px',
-                    padding: '16px 24px',
-                    gap: '4px',
-                    background: '#FAFAFA',
-                    border: '1px solid #EAEAEA',
-                    display: 'flex',
-                    flexDirection: 'column'
-                  }}
+                  className="w-full md:w-[383px] rounded bg-[#FAFAFA] border border-[#EAEAEA] flex flex-col p-4 md:px-6 md:py-4 gap-1"
                 >
                   <div
-                    style={{
-                      fontFamily: 'Public Sans',
-                      fontWeight: 600,
-                      fontSize: '12px',
-                      lineHeight: '150%',
-                      color: '#A4A4A4'
-                    }}
+                    className="font-semibold text-[#A4A4A4] text-[12px] max-md:text-[8px] max-md:font-normal leading-[150%]"
+                    style={{ fontFamily: 'Public Sans' }}
                   >
                     YOUR SUBDOMAIN DOMAIN
                   </div>
                   <div
-                    style={{
-                      fontFamily: 'Public Sans',
-                      fontWeight: 600,
-                      fontSize: '16px',
-                      lineHeight: '28px',
-                      color: '#202020'
-                    }}
+                    className="font-semibold text-[#202020] text-[16px] max-md:text-[12px] max-md:font-normal leading-[28px]"
+                    style={{ fontFamily: 'Public Sans' }}
                   >
                     {currentDomain}
                   </div>
@@ -257,44 +227,21 @@ export default function DomainPage() {
                 {/* Current Domain Section */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid #EDEDED', paddingBottom: '24px' }}>
                   <div
-                    style={{
-                      fontFamily: 'Public Sans',
-                      fontWeight: 600,
-                      fontSize: '12px',
-                      lineHeight: '150%',
-                      color: '#A4A4A4'
-                    }}
+                    className="font-semibold text-[#A4A4A4] text-[12px] max-md:text-[8px] max-md:font-normal leading-[150%]"
+                    style={{ fontFamily: 'Public Sans' }}
                   >
                     YOUR CURRENT DOMAIN
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <span
-                      style={{
-                        fontFamily: 'Public Sans',
-                        fontWeight: 600,
-                        fontSize: '16px',
-                        lineHeight: '28px',
-                        color: '#7C3AED'
-                      }}
+                      className="font-semibold text-[#7C3AED] text-[16px] max-md:text-[12px] max-md:font-normal leading-[28px] break-all"
+                      style={{ fontFamily: 'Public Sans' }}
                     >
                       {savedCustomDomain}
                     </span>
                     <span
-                      style={{
-                        width: '108px',
-                        height: '26px',
-                        borderRadius: '71px',
-                        padding: '4px 10px',
-                        background: '#F4F4F4',
-                        fontFamily: 'Public Sans',
-                        fontWeight: 400,
-                        fontSize: '12px',
-                        lineHeight: '150%',
-                        color: '#808080',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
+                      className="bg-[#F4F4F4] text-[#808080] rounded-[71px] flex items-center justify-center h-[26px] w-[108px] max-md:w-[70px] text-[12px] max-md:text-[8px] leading-[150%] whitespace-nowrap"
+                      style={{ fontFamily: 'Public Sans' }}
                     >
                       Custom Domain
                     </span>
@@ -303,20 +250,10 @@ export default function DomainPage() {
 
                 {/* Info Box */}
                 <div
-                  style={{
-                    width: '382px',
-                    height: '88px',
-                    borderRadius: '4px',
-                    padding: '16px 24px',
-                    background: '#ECF0FE',
-                    fontFamily: 'Public Sans',
-                    fontWeight: 400,
-                    fontSize: '12px',
-                    lineHeight: '18.5px',
-                    color: '#0048B5'
-                  }}
+                  className="w-full md:w-[382px] min-h-[88px] h-auto rounded bg-[#ECF0FE] p-4 md:px-6 md:py-4 text-[#0048B5] text-[12px] max-md:text-[10px] max-md:font-normal leading-[18.5px]"
+                  style={{ fontFamily: 'Public Sans' }}
                 >
-                  <span style={{ fontWeight: 700 }}>Info:</span> If you wish to switch back to your subdomain, <span style={{ fontWeight: 700 }}>COPY</span> and <span style={{ fontWeight: 700 }}>PASTE</span> the subdomain above into the below text field and click on 'Save Changes'.
+                  <span className="font-bold max-md:font-bold">Info:</span> If you wish to switch back to your subdomain, <span className="font-bold max-md:font-normal">COPY</span> and <span className="font-bold max-md:font-normal">PASTE</span> the subdomain above into the below text field and click on 'Save Changes'.
                 </div>
 
                 {/* Edit Domain Section */}
@@ -329,6 +266,7 @@ export default function DomainPage() {
                       lineHeight: '100%',
                       color: '#202020'
                     }}
+                    className="max-md:text-[12px] max-md:!font-normal"
                   >
                     Edit Your current Domain
                   </div>
@@ -336,6 +274,7 @@ export default function DomainPage() {
                     type="text"
                     value={editDomain}
                     onChange={(e) => setEditDomain(e.target.value)}
+                    className="max-md:text-[12px]"
                     style={{
                       width: '100%',
                       padding: '8px 12px',
@@ -352,6 +291,7 @@ export default function DomainPage() {
                   />
                   <button
                     onClick={handleEditSave}
+                    className="max-md:!w-[112px] max-md:text-[10px] max-md:!px-2"
                     style={{
                       width: '141px',
                       height: '32px',
@@ -380,12 +320,12 @@ export default function DomainPage() {
             <div className="border-t border-gray-200 mb-8 md:mb-12"></div>
 
             {/* Instructions Section */}
-            <div id="instructions" className="space-y-4 w-full px-10 max-w-[100%]  max-md:px-0">
-              <h2 className="text-base md:text-lg font-bold text-gray-900">Custom Domain Integration Instructions</h2>
+            <div id="instructions" className="space-y-4 w-full px-10 max-w-[100%] max-md:px-0 max-md:w-[301px] max-md:mx-auto">
+              <h2 className="text-base md:text-lg font-bold text-gray-900 max-md:text-[14px] max-md:font-bold">Custom Domain Integration Instructions</h2>
 
-              <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
+              <div className="space-y-3 text-sm text-gray-700 leading-relaxed max-md:text-[12px]">
                 <p>
-                  <span className="font-semibold">1.</span> Enter the correct domain name that you have bought/own in the domain field
+                  <span className="font-semibold max-md:font-normal">1.</span> Enter the correct domain name that you have bought/own in the domain field
                 </p>
 
                 <p className="text-gray-600 pl-4 md:pl-4">
@@ -393,15 +333,15 @@ export default function DomainPage() {
                 </p>
 
                 <p>
-                  <span className="font-semibold">2.</span> Copy the IP Address that's given there by clicking the copy button
+                  <span className="font-semibold max-md:font-normal">2.</span> Copy the IP Address that's given there by clicking the copy button
                 </p>
 
                 <p>
-                  <span className="font-semibold">3.</span> Open your domain's <span className="font-semibold">DNS</span> (Domain Name System) Management in your domain provider -like GoDaddy, Cloudflare, Bluehost, Hostgator, etc.
+                  <span className="font-semibold max-md:font-normal">3.</span> Open your domain's <span className="font-semibold max-md:font-normal">DNS</span> (Domain Name System) Management in your domain provider -like GoDaddy, Cloudflare, Bluehost, Hostgator, etc.
                 </p>
 
                 <p>
-                  <span className="font-semibold">4.</span> If there's an existing A record in your domain- please click edit and remove the existing IP Address and paste the NEW copied IP Address in the respective IP/IPv4 address field
+                  <span className="font-semibold max-md:font-normal">4.</span> If there's an existing A record in your domain- please click edit and remove the existing IP Address and paste the NEW copied IP Address in the respective IP/IPv4 address field
                 </p>
 
                 <p className="text-gray-600 pl-4 md:pl-4">(or)</p>
@@ -427,23 +367,23 @@ export default function DomainPage() {
                 </div>
 
                 <p>
-                  <span className="font-semibold">5.</span> Ensure the TTL is in the lowest time possible or Auto and click SAVE.
+                  <span className="font-semibold max-md:font-normal">5.</span> Ensure the TTL is in the lowest time possible or Auto and click SAVE.
                 </p>
 
                 <p>
-                  <span className="font-semibold">6.</span> Now come back to your admin panel and click the checkbox - that you have read all the instructions and click UPDATE.
+                  <span className="font-semibold max-md:font-normal">6.</span> Now come back to your admin panel and click the checkbox - that you have read all the instructions and click UPDATE.
                 </p>
 
                 <p>
-                  <span className="font-semibold">7.</span> A pop-up will appear to re-confirm your domain change request. Click YES.
+                  <span className="font-semibold max-md:font-normal">7.</span> A pop-up will appear to re-confirm your domain change request. Click YES.
                 </p>
 
                 <p>
-                  <span className="font-semibold">8.</span> You will be redirected to a 404 Error Page. Please don't worry. We are just now transferring your blog site to your new domain.
+                  <span className="font-semibold max-md:font-normal">8.</span> You will be redirected to a 404 Error Page. Please don't worry. We are just now transferring your blog site to your new domain.
                 </p>
 
                 <p>
-                  <span className="font-semibold">9.</span> After 5 minutes, enter your newly connected domain name in the search bar of your browser to experience your own blog site.
+                  <span className="font-semibold max-md:font-normal">9.</span> After 5 minutes, enter your newly connected domain name in the search bar of your browser to experience your own blog site.
                 </p>
 
                 <p className="mt-4">
@@ -472,7 +412,7 @@ export default function DomainPage() {
 
                   <p className="mt-2">
                     With love,<br />
-                    <span className="font-semibold">Inksigma</span>
+                    <span className="font-semibold max-md:font-normal">Inksigma</span>
                   </p>
                 </div>
               </div>
@@ -486,10 +426,10 @@ export default function DomainPage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
           <div
             style={{
-              width: '489px',
-              height: '286px',
+              width: '350px',
+              height: 'auto',
               borderRadius: '4px',
-              padding: '40px',
+              padding: '40px 24px',
               gap: '12px',
               background: '#FEFEFE',
               display: 'flex',
@@ -498,6 +438,7 @@ export default function DomainPage() {
             }}
           >
             <h3
+              className="max-md:text-[12px] max-md:font-normal"
               style={{
                 fontFamily: 'Public Sans',
                 fontWeight: 700,
@@ -512,9 +453,10 @@ export default function DomainPage() {
             </h3>
 
             <div
+              className="w-full md:w-[401px] max-md:p-4"
               style={{
-                width: '401px',
-                height: '102px',
+                height: 'auto',
+                minHeight: '102px',
                 borderRadius: '8px',
                 border: '1px solid #EAEAEA',
                 padding: '24px',
@@ -525,6 +467,7 @@ export default function DomainPage() {
               }}
             >
               <div
+                className="max-md:text-[8px]"
                 style={{
                   fontFamily: 'Public Sans',
                   fontWeight: 600,
@@ -537,6 +480,7 @@ export default function DomainPage() {
                 YOUR DOMAIN WILL BE CHANGED TO
               </div>
               <div
+                className="max-md:text-[14px]"
                 style={{
                   fontFamily: 'Public Sans',
                   fontWeight: 600,
@@ -556,6 +500,7 @@ export default function DomainPage() {
             <div className="flex gap-4 ml-auto" style={{ marginTop: '20px' }}>
               <button
                 onClick={handleCancelSave}
+                className="max-md:min-w-[80px] max-md:text-[12px] max-md:px-4"
                 style={{
                   minWidth: '94px',
                   height: '32px',
@@ -579,6 +524,7 @@ export default function DomainPage() {
               </button>
               <button
                 onClick={handleConfirmSave}
+                className="max-md:min-w-[100px] max-md:text-[12px] max-md:px-4"
                 style={{
                   minWidth: '123px',
                   height: '32px',
@@ -609,10 +555,10 @@ export default function DomainPage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
           <div
             style={{
-              width: '343px',
-              height: '192px',
+              width: '350px',
+              height: 'auto',
               borderRadius: '4px',
-              padding: '40px',
+              padding: '32px 24px',
               gap: '24px',
               background: '#FEFEFE',
               display: 'flex',
@@ -622,6 +568,7 @@ export default function DomainPage() {
             }}
           >
             <h3
+              className="max-md:text-[12px] max-md:font-normal"
               style={{
                 fontFamily: 'Public Sans',
                 fontWeight: 700,
@@ -638,6 +585,7 @@ export default function DomainPage() {
             <div className="flex gap-2">
               <button
                 onClick={handleCancelRevert}
+                className="max-md:min-w-[80px] max-md:text-[12px] max-md:px-4"
                 style={{
                   minWidth: '94px',
                   height: '32px',
@@ -661,6 +609,7 @@ export default function DomainPage() {
               </button>
               <button
                 onClick={handleConfirmRevert}
+                className="max-md:min-w-[80px] max-md:text-[12px] max-md:px-4"
                 style={{
                   minWidth: '82px',
                   height: '32px',
