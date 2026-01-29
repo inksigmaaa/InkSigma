@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AuthGuard from "@/components/auth/AuthGuard";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
@@ -20,11 +20,17 @@ export default function TrashPage() {
     moveToDraft,
     moveToTrash,
     bulkMoveToTrash,
+    loadUserArticles,
   } = useArticles();
   const [selectedArticles, setSelectedArticles] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [deleteArticleId, setDeleteArticleId] = useState(null);
+
+  // Load articles filtered by current publication when page mounts or publication changes
+  useEffect(() => {
+    loadUserArticles(currentPublication?.id);
+  }, [loadUserArticles, currentPublication?.id]);
 
   // Filter trash articles
   const trashArticles = articles.filter((article) => {
