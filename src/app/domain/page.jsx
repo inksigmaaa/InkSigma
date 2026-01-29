@@ -7,9 +7,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 export default function DomainPage() {
-  const [customDomain, setCustomDomain] = useState("")
+  const [customDomain, setCustomDomain] = useState(".com")
   const [subdomain, setSubdomain] = useState("Subdomain")
   const [loading, setLoading] = useState(true)
+  const [savedCustomDomain, setSavedCustomDomain] = useState("")
+  const [editDomain, setEditDomain] = useState(".com")
+
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [pendingDomain, setPendingDomain] = useState("")
+
+  const [showRevertConfirmation, setShowRevertConfirmation] = useState(false)
 
   useEffect(() => {
     loadPublicationData()
@@ -44,7 +51,55 @@ export default function DomainPage() {
   const currentDomain = `${subdomain}.inksigma.com`
 
   const handleSaveChanges = () => {
-    console.log("Saving domain changes:", customDomain)
+    let domain = customDomain.trim()
+    if (domain && domain !== ".com") {
+      if (!domain.includes(".")) {
+        domain += ".com"
+      }
+      setPendingDomain(domain)
+      setShowConfirmation(true)
+    }
+  }
+
+  const handleEditSave = () => {
+    let domain = editDomain.trim()
+    if (domain === "" || domain === ".com") {
+      setShowRevertConfirmation(true)
+    } else {
+      if (!domain.includes(".")) {
+        domain += ".com"
+      }
+      setPendingDomain(domain)
+      setShowConfirmation(true)
+    }
+  }
+
+  const handleConfirmSave = () => {
+    setSavedCustomDomain(pendingDomain)
+    setEditDomain(pendingDomain)
+    setCustomDomain("")
+    setShowConfirmation(false)
+    console.log("Saving domain changes:", pendingDomain)
+  }
+
+  const handleCancelSave = () => {
+    setShowConfirmation(false)
+    setPendingDomain("")
+  }
+
+  const handleConfirmRevert = () => {
+    setSavedCustomDomain("")
+    setEditDomain(".com")
+    setCustomDomain(".com")
+    setShowRevertConfirmation(false)
+  }
+
+  const handleCancelRevert = () => {
+    setShowRevertConfirmation(false)
+  }
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text)
   }
 
   return (
@@ -59,7 +114,8 @@ export default function DomainPage() {
             <div className="text-center mt-10 mb-6 max-md:mb-6  max-md:mt-8">
               <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Custom Domain Integration</h1>
               <p className="text-sm text-gray-600 px-4 md:px-0">
-                Connect your custom domain you already own with Inksigma.{" "}
+                Connect your custom domain you already own <br />
+                with Inksigma.{" "}
                 <a
                   href="#instructions"
                   onClick={(e) => {
@@ -75,7 +131,7 @@ export default function DomainPage() {
                       })
                     }
                   }}
-                  className="text-black font-semibold underline cursor-pointer"
+                  className="text-black font-semibold cursor-pointer"
                 >
                   Read instructions
                 </a>
@@ -83,42 +139,242 @@ export default function DomainPage() {
             </div>
 
             {/* Current Domain Section */}
-            <div className="bg-white mx-auto rounded-lg border border-gray-200 p-6 md:p-8 space-y-5 w-full max-w-[400px] mb-12 md:mb-20">
-              <div className="border-b border-gray-200 pb-5">
-                <h2 className="text-xs font-semibold text-gray-400 mb-3">YOUR CURRENT DOMAIN</h2>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-purple-600 font-medium text-sm md:text-base break-all">{currentDomain}</span>
-                  <span className="bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded whitespace-nowrap">{subdomain}</span>
+            {!savedCustomDomain ? (
+              // Initial state - no custom domain saved
+              <div className="bg-white mx-auto rounded-lg border border-gray-200 p-6 md:p-8 space-y-5 w-full max-w-[400px] mb-12 md:mb-20">
+                <div className="border-b border-gray-200 pb-5">
+                  <h2 className="text-xs font-semibold text-gray-400 mb-3">YOUR CURRENT DOMAIN</h2>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-purple-600 font-medium text-sm md:text-base break-all">{currentDomain}</span>
+                    <span className="bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded whitespace-nowrap">{subdomain}</span>
+                  </div>
+                </div>
+
+                {/* Warning Box */}
+                <div className="bg-orange-50 border border-orange-200 rounded p-3">
+                  <p className="text-orange-700 text-sm">
+                    <span className="font-semibold">Warning:</span> If you change your domain, you can only change it after 14 days.
+                  </p>
+                </div>
+
+                {/* Custom Domain Input */}
+                <div className="space-y-3 border-t border-gray-200 pt-5">
+                  <label className="block text-sm font-semibold text-gray-900">
+                    Create your Custom Domain
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="joshhh.com"
+                    value={customDomain}
+                    onChange={(e) => setCustomDomain(e.target.value)}
+                    className="w-full bg-gray-50 border-gray-300"
+                  />
+                  <Button
+                    onClick={handleSaveChanges}
+                    className="bg-black text-white hover:bg-gray-800 w-full md:w-auto px-8 text-sm h-10"
+                  >
+                    Save Changes
+                  </Button>
                 </div>
               </div>
-
-              {/* Warning Box */}
-              <div className="bg-orange-50 border border-orange-200 rounded p-3">
-                <p className="text-orange-700 text-sm">
-                  <span className="font-semibold">Warning:</span> If you change your domain, you can only change it after 14 days.
-                </p>
-              </div>
-
-              {/* Custom Domain Input */}
-              <div className="space-y-3 border-t border-gray-200 pt-5">
-                <label className="block text-sm font-semibold text-gray-900">
-                  Create your Custom Domain
-                </label>
-                <Input
-                  type="text"
-                  placeholder="joshhh.com"
-                  value={customDomain}
-                  onChange={(e) => setCustomDomain(e.target.value)}
-                  className="w-full bg-gray-50 border-gray-300"
-                />
-                <Button
-                  onClick={handleSaveChanges}
-                  className="bg-black text-white hover:bg-gray-800 w-full md:w-auto px-8 text-sm h-10"
+            ) : (
+              // After custom domain is saved - exact CSS styling
+              <div
+                className="mx-auto mb-12 md:mb-20"
+                style={{
+                  width: '447px',
+                  height: '503px',
+                  borderRadius: '8px',
+                  padding: '24px 32px',
+                  gap: '24px',
+                  background: '#FFFFFF',
+                  border: '1px solid #EDEDED',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}
+              >
+                {/* Subdomain Domain Section */}
+                <div
+                  style={{
+                    width: '383px',
+                    borderRadius: '4px',
+                    padding: '16px 24px',
+                    gap: '4px',
+                    background: '#FAFAFA',
+                    border: '1px solid #EAEAEA',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}
                 >
-                  Save Changes
-                </Button>
+                  <div
+                    style={{
+                      fontFamily: 'Public Sans',
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      lineHeight: '150%',
+                      color: '#A4A4A4'
+                    }}
+                  >
+                    YOUR SUBDOMAIN DOMAIN
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: 'Public Sans',
+                      fontWeight: 600,
+                      fontSize: '16px',
+                      lineHeight: '28px',
+                      color: '#202020'
+                    }}
+                  >
+                    {currentDomain}
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(currentDomain)}
+                    style={{
+                      width: '60px',
+                      height: '22px',
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      gap: '4px',
+                      background: '#FFFFFF',
+                      border: '1px solid #EAEAEA',
+                      fontFamily: 'Public Sans',
+                      fontWeight: 400,
+                      fontSize: '12px',
+                      lineHeight: '150%',
+                      color: '#696969',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <img src="/images/icons/copy-domain.svg" alt="copy" style={{ width: '12px', height: '12px' }} />
+                    Copy
+                  </button>
+                </div>
+
+                {/* Current Domain Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid #EDEDED', paddingBottom: '24px' }}>
+                  <div
+                    style={{
+                      fontFamily: 'Public Sans',
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      lineHeight: '150%',
+                      color: '#A4A4A4'
+                    }}
+                  >
+                    YOUR CURRENT DOMAIN
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span
+                      style={{
+                        fontFamily: 'Public Sans',
+                        fontWeight: 600,
+                        fontSize: '16px',
+                        lineHeight: '28px',
+                        color: '#7C3AED'
+                      }}
+                    >
+                      {savedCustomDomain}
+                    </span>
+                    <span
+                      style={{
+                        width: '108px',
+                        height: '26px',
+                        borderRadius: '71px',
+                        padding: '4px 10px',
+                        background: '#F4F4F4',
+                        fontFamily: 'Public Sans',
+                        fontWeight: 400,
+                        fontSize: '12px',
+                        lineHeight: '150%',
+                        color: '#808080',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      Custom Domain
+                    </span>
+                  </div>
+                </div>
+
+                {/* Info Box */}
+                <div
+                  style={{
+                    width: '382px',
+                    height: '88px',
+                    borderRadius: '4px',
+                    padding: '16px 24px',
+                    background: '#ECF0FE',
+                    fontFamily: 'Public Sans',
+                    fontWeight: 400,
+                    fontSize: '12px',
+                    lineHeight: '18.5px',
+                    color: '#0048B5'
+                  }}
+                >
+                  <span style={{ fontWeight: 700 }}>Info:</span> If you wish to switch back to your subdomain, <span style={{ fontWeight: 700 }}>COPY</span> and <span style={{ fontWeight: 700 }}>PASTE</span> the subdomain above into the below text field and click on 'Save Changes'.
+                </div>
+
+                {/* Edit Domain Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div
+                    style={{
+                      fontFamily: 'Public Sans',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      lineHeight: '100%',
+                      color: '#202020'
+                    }}
+                  >
+                    Edit Your current Domain
+                  </div>
+                  <input
+                    type="text"
+                    value={editDomain}
+                    onChange={(e) => setEditDomain(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '1px solid #EAEAEA',
+                      borderRadius: '4px',
+                      fontFamily: 'Public Sans',
+                      fontWeight: 400,
+                      fontSize: '14px',
+                      lineHeight: '150%',
+                      color: '#202020',
+                      background: '#FFFFFF'
+                    }}
+                    placeholder="Enter domain"
+                  />
+                  <button
+                    onClick={handleEditSave}
+                    style={{
+                      width: '141px',
+                      height: '32px',
+                      borderRadius: '4px',
+                      padding: '8px 24px',
+                      background: '#080808',
+                      border: 'none',
+                      fontFamily: 'Public Sans',
+                      fontWeight: 500,
+                      fontSize: '14px',
+                      lineHeight: '150%',
+                      color: '#EDEDED',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    Save Changes
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Divider Line */}
             <div className="border-t border-gray-200 mb-8 md:mb-12"></div>
@@ -224,6 +480,212 @@ export default function DomainPage() {
           </div>
         </div>
       </div>
+
+
+      {showConfirmation && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
+          <div
+            style={{
+              width: '489px',
+              height: '286px',
+              borderRadius: '4px',
+              padding: '40px',
+              gap: '12px',
+              background: '#FEFEFE',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+            }}
+          >
+            <h3
+              style={{
+                fontFamily: 'Public Sans',
+                fontWeight: 700,
+                fontSize: '16px',
+                lineHeight: '28px',
+                textAlign: 'center',
+                color: '#000000',
+                margin: 0
+              }}
+            >
+              Are you sure you want to change your domain name?
+            </h3>
+
+            <div
+              style={{
+                width: '401px',
+                height: '102px',
+                borderRadius: '8px',
+                border: '1px solid #EAEAEA',
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: 'Public Sans',
+                  fontWeight: 600,
+                  fontSize: '12px',
+                  lineHeight: '150%',
+                  color: '#A4A4A4',
+                  textTransform: 'uppercase'
+                }}
+              >
+                YOUR DOMAIN WILL BE CHANGED TO
+              </div>
+              <div
+                style={{
+                  fontFamily: 'Public Sans',
+                  fontWeight: 600,
+                  fontSize: '18px',
+                  lineHeight: '28px',
+                  background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  color: 'transparent'
+                }}
+              >
+                {pendingDomain}
+              </div>
+            </div>
+
+            <div className="flex gap-4 ml-auto" style={{ marginTop: '20px' }}>
+              <button
+                onClick={handleCancelSave}
+                style={{
+                  minWidth: '94px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  padding: '8px 24px',
+                  gap: '4px',
+                  background: '#F4F4F4',
+                  border: 'none',
+                  fontFamily: 'Public Sans',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '150%',
+                  color: '#2E2E2E',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmSave}
+                style={{
+                  minWidth: '123px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  gap: '10px',
+                  background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
+                  border: 'none',
+                  fontFamily: 'Public Sans',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  lineHeight: '100%',
+                  color: '#EDEDED',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                Save changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRevertConfirmation && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
+          <div
+            style={{
+              width: '343px',
+              height: '192px',
+              borderRadius: '4px',
+              padding: '40px',
+              gap: '24px',
+              background: '#FEFEFE',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <h3
+              style={{
+                fontFamily: 'Public Sans',
+                fontWeight: 700,
+                fontSize: '16px',
+                lineHeight: '28px',
+                textAlign: 'center',
+                color: '#000000',
+                margin: 0
+              }}
+            >
+              Are you sure you want to change back to Subdomain ?
+            </h3>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleCancelRevert}
+                style={{
+                  minWidth: '94px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  padding: '8px 24px',
+                  gap: '4px',
+                  background: '#F4F4F4',
+                  border: 'none',
+                  fontFamily: 'Public Sans',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '150%',
+                  color: '#2E2E2E',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={handleConfirmRevert}
+                style={{
+                  minWidth: '82px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  gap: '10px',
+                  background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
+                  border: 'none',
+                  fontFamily: 'Public Sans',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  lineHeight: '100%',
+                  color: '#EDEDED',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
