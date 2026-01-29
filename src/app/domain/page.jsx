@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 export default function DomainPage() {
-  const [customDomain, setCustomDomain] = useState("")
+  const [customDomain, setCustomDomain] = useState(".com")
   const [subdomain, setSubdomain] = useState("Subdomain")
   const [loading, setLoading] = useState(true)
   const [savedCustomDomain, setSavedCustomDomain] = useState("")
-  const [editDomain, setEditDomain] = useState("")
+  const [editDomain, setEditDomain] = useState(".com")
 
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [pendingDomain, setPendingDomain] = useState("")
@@ -51,18 +51,25 @@ export default function DomainPage() {
   const currentDomain = `${subdomain}.inksigma.com`
 
   const handleSaveChanges = () => {
-    if (customDomain.trim()) {
-      setPendingDomain(customDomain.trim())
+    let domain = customDomain.trim()
+    if (domain && domain !== ".com") {
+      if (!domain.includes(".")) {
+        domain += ".com"
+      }
+      setPendingDomain(domain)
       setShowConfirmation(true)
     }
   }
 
   const handleEditSave = () => {
-    const trimmed = editDomain.trim()
-    if (trimmed === "") {
+    let domain = editDomain.trim()
+    if (domain === "" || domain === ".com") {
       setShowRevertConfirmation(true)
     } else {
-      setPendingDomain(trimmed)
+      if (!domain.includes(".")) {
+        domain += ".com"
+      }
+      setPendingDomain(domain)
       setShowConfirmation(true)
     }
   }
@@ -82,7 +89,8 @@ export default function DomainPage() {
 
   const handleConfirmRevert = () => {
     setSavedCustomDomain("")
-    setEditDomain("")
+    setEditDomain(".com")
+    setCustomDomain(".com")
     setShowRevertConfirmation(false)
   }
 
