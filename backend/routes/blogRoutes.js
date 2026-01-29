@@ -1091,13 +1091,11 @@ router.post("/:id/edit-draft", getCurrentUser, async (req, res) => {
       return res.json(existingDraft);
     }
 
-    const { isCopy } = req.body;
-
     // Create new draft
     const draftSlug = await ensureUniqueSlug(`${originalBlog.slug}-draft`);
     const draftData = {
       slug: draftSlug,
-      title: isCopy ? `[copy] ${originalBlog.title}` : originalBlog.title,
+      title: `[copy] ${originalBlog.title}`,
       description: originalBlog.description,
       content: originalBlog.content,
       image: originalBlog.image,

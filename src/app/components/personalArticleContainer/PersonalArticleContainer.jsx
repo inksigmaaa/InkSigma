@@ -83,36 +83,7 @@ export default function PersonalArticleContainer({
     currentPublication?.role !== "author" &&
     currentPublication?.role !== "editor";
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
-  const handleEdit = async () => {
-    // If published, create a draft first
-    if (status === "published") {
-      try {
-        const response = await fetch(`${API_URL}/api/blogs/${id}/edit-draft`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ isCopy: false }),
-        });
-
-        if (response.ok) {
-          const draft = await response.json();
-          const publicationQuery = currentPublication?.id
-            ? `&publicationId=${currentPublication.id}`
-            : "";
-          // Navigate to the NEW draft
-          router.push(`/editor?status=draft&id=${draft.id}${publicationQuery}`);
-          return;
-        } else {
-          console.error("Failed to create draft:", await response.text());
-        }
-      } catch (error) {
-        console.error("Error creating draft:", error);
-      }
-    }
-
-    // Default behavior (for drafts, unpublished, or error fallback)
+  const handleEdit = () => {
     const publicationQuery = currentPublication?.id
       ? `&publicationId=${currentPublication.id}`
       : "";
