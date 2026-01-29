@@ -1,70 +1,79 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback, useRef } from "react"
-import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
-import MemberSidebar from "../../membersidebar/MemberSidebar"
-import BlogStatsComponent from "../../components/BlogStatsComponent/BlogStatsComponent"
-import { Pencil } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { usePublication } from "@/contexts/PublicationContext"
-import { useArticles } from "@/contexts/ArticlesContext"
-import { getImageUrl } from "@/utils/imageUrl"
+import { useState, useEffect, useCallback, useRef } from "react";
+import NavbarLoggedin from "../../components/navbar/NavbarLoggedin";
+import MemberSidebar from "../../membersidebar/MemberSidebar";
+import BlogStatsComponent from "../../components/BlogStatsComponent/BlogStatsComponent";
+import { Pencil } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { usePublication } from "@/contexts/PublicationContext";
+import { useArticles } from "@/contexts/ArticlesContext";
+import { getImageUrl } from "@/utils/imageUrl";
+import CategoryBadgeList from "@/components/CategoryBadgeList";
 
 export default function PostsHomePage() {
-  const router = useRouter()
-  const { currentPublication, publicationDetails, loading: publicationLoading } = usePublication()
-  const { publicationArticles, loadPublicationArticles, pubArticlesLoading } = useArticles()
-  const [loading, setLoading] = useState(true)
+  const router = useRouter();
+  const {
+    currentPublication,
+    publicationDetails,
+    loading: publicationLoading,
+  } = usePublication();
+  const { publicationArticles, loadPublicationArticles, pubArticlesLoading } =
+    useArticles();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchArticles = async () => {
       if (currentPublication?.id) {
-        setLoading(true)
+        setLoading(true);
         try {
           // Fetch published articles for this publication using context
           // This populates publicationArticles which BlogStatsComponent also uses
-          await loadPublicationArticles(currentPublication.id, 'published')
-          console.log('[Home] Articles loaded via context')
+          await loadPublicationArticles(currentPublication.id, "published");
+          console.log("[Home] Articles loaded via context");
         } catch (error) {
-          console.error('[Home] Error loading articles:', error)
+          console.error("[Home] Error loading articles:", error);
         } finally {
-          setLoading(false)
+          setLoading(false);
         }
       }
-    }
+    };
 
     if (!publicationLoading && currentPublication?.id) {
-      fetchArticles()
+      fetchArticles();
     }
-  }, [currentPublication?.id, publicationLoading, loadPublicationArticles])
+  }, [currentPublication?.id, publicationLoading, loadPublicationArticles]);
 
   // Get recent published articles (limit to 4)
   const recentArticles = publicationArticles
-    .filter(article => article.status === 'published')
+    .filter((article) => article.status === "published")
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 4)
+    .slice(0, 4);
 
   const handleStartWriting = () => {
     // Pass publicationId to editor so blogs are created for this publication
     if (currentPublication?.id) {
-      router.push(`/editor?publicationId=${currentPublication.id}`)
+      router.push(`/editor?publicationId=${currentPublication.id}`);
     } else {
-      router.push("/editor")
+      router.push("/editor");
     }
-  }
+  };
 
   const handleVisitSite = () => {
     // Pass the current publication ID to view-site
     if (currentPublication?.id) {
-      window.open(`/view-site?publicationId=${currentPublication.id}`, "_blank")
+      window.open(
+        `/view-site?publicationId=${currentPublication.id}`,
+        "_blank",
+      );
     } else {
-      window.open("/view-site", "_blank")
+      window.open("/view-site", "_blank");
     }
-  }
+  };
 
   const handleEditPublication = () => {
-    router.push("/dashboard/settings")
-  }
+    router.push("/dashboard/settings");
+  };
 
   if (publicationLoading || loading) {
     return (
@@ -75,7 +84,7 @@ export default function PostsHomePage() {
           <p className="text-gray-500">Loading...</p>
         </div>
       </>
-    )
+    );
   }
 
   if (!currentPublication) {
@@ -87,7 +96,7 @@ export default function PostsHomePage() {
           <p className="text-gray-500">No joined publications found</p>
         </div>
       </>
-    )
+    );
   }
 
   return (
@@ -99,7 +108,6 @@ export default function PostsHomePage() {
       <div className="pt-[112px] min-h-screen max-md:pt-[90px]">
         <div className="max-w-[1034px] mx-auto px-5 max-md:p-0">
           <div className="ml-[165px] bg-white  p-8  max-md:ml-0 max-md:p-0">
-
             {/* Publication Header */}
             <div className=" px-6 py-12 flex items-start justify-between max-md:border-b max-md:border-[#EDEDED] max-md:px-0 max-md:mx-6 max-md:py-4 max-md:pb-3 max-md:mt-4">
               <div className="flex items-start gap-4 max-md:gap-3">
@@ -117,7 +125,8 @@ export default function PostsHomePage() {
                   ) : (
                     <div className="w-full h-full bg-violet-100 rounded-full flex items-center justify-center">
                       <span className="text-violet-600 font-bold text-xl">
-                        {currentPublication?.name?.charAt(0).toUpperCase() || "P"}
+                        {currentPublication?.name?.charAt(0).toUpperCase() ||
+                          "P"}
                       </span>
                     </div>
                   )}
@@ -128,16 +137,21 @@ export default function PostsHomePage() {
                       {currentPublication.name}
                     </h1>
                     {currentPublication && !currentPublication.isOwner && (
-                      <span className={`text-xs px-2 py-0.5 rounded-sm font-medium ${currentPublication.role === 'editor'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-blue-100 text-blue-700'
-                        }`}>
-                        {currentPublication.role?.charAt(0).toUpperCase() + currentPublication.role?.slice(1)}
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-sm font-medium ${
+                          currentPublication.role === "editor"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-blue-100 text-blue-700"
+                        }`}
+                      >
+                        {currentPublication.role?.charAt(0).toUpperCase() +
+                          currentPublication.role?.slice(1)}
                       </span>
                     )}
                   </div>
                   <p className="font-normal text-sm leading-normal tracking-normal text-[#A4A4A4] max-w-md max-md:text-xs max-md:line-clamp-2">
-                    {currentPublication.description || `${currentPublication.subdomain}.inksigma.com`}
+                    {currentPublication.description ||
+                      `${currentPublication.subdomain}.inksigma.com`}
                   </p>
                 </div>
               </div>
@@ -155,7 +169,8 @@ export default function PostsHomePage() {
                   What's on your mind?
                 </h2>
                 <p className="text-sm text-[#A4A4A4] max-w-[425px] leading-normal max-md:text-xs max-md:mb-5 max-md:text-gray-600">
-                  Craft persuasive articles showcasing your novel ideas by publishing them on this publication
+                  Craft persuasive articles showcasing your novel ideas by
+                  publishing them on this publication
                 </p>
 
                 <button
@@ -170,11 +185,15 @@ export default function PostsHomePage() {
 
             {/* Recent Articles Section */}
             <div className=" mt-10 pb-12 max-md:px-4 max-md:py-4 max-md:pb-20">
-              <h3 className="text-lg font-bold text-gray-900 mb-6 max-md:text-base max-md:mb-4">Recent Published Articles</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-6 max-md:text-base max-md:mb-4">
+                Recent Published Articles
+              </h3>
 
               {recentArticles.length === 0 ? (
                 <div className="flex items-center justify-center min-h-[200px] py-20 px-10 bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)]">
-                  <p className="font-['Public_Sans'] font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">No published articles yet</p>
+                  <p className="font-['Public_Sans'] font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">
+                    No published articles yet
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1 max-md:gap-4">
@@ -186,14 +205,22 @@ export default function PostsHomePage() {
                     >
                       <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative">
                         <img
-                          src={article.image ? getImageUrl(article.image) : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"}
+                          src={
+                            article.image
+                              ? getImageUrl(article.image)
+                              : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"
+                          }
                           alt={article.title}
                           className="w-full h-full object-cover rounded-sm"
                           onError={(e) => {
                             // Prevent infinite loop
-                            if (e.target.src !== "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop") {
+                            if (
+                              e.target.src !==
+                              "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"
+                            ) {
                               e.target.onerror = null;
-                              e.target.src = "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
+                              e.target.src =
+                                "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
                             }
                           }}
                         />
@@ -206,18 +233,15 @@ export default function PostsHomePage() {
                           {article.description}
                         </p>
                         <div className="flex items-center justify-between">
-                          <div className="flex flex-wrap gap-2">
-                            {article.categories && article.categories.length > 0 ? (
-                              article.categories.map((category, index) => (
-                                <span key={index} className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
-                                  {category}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-sm text-[#808080] bg-[#F8F8F8] px-4 py-2 rounded">
-                                Uncategorized
-                              </span>
-                            )}
+                          <div className="flex-1 overflow-hidden">
+                            <CategoryBadgeList
+                              categories={
+                                article.categories &&
+                                article.categories.length > 0
+                                  ? article.categories
+                                  : ["Uncategorized"]
+                              }
+                            />
                           </div>
                         </div>
                       </div>
@@ -226,11 +250,9 @@ export default function PostsHomePage() {
                 </div>
               )}
             </div>
-
           </div>
         </div>
       </div>
-
     </>
-  )
+  );
 }
