@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 export default function DomainPage() {
-  const [customDomain, setCustomDomain] = useState(".com")
+  const [customDomain, setCustomDomain] = useState("")
   const [subdomain, setSubdomain] = useState("Subdomain")
   const [loading, setLoading] = useState(true)
   const [savedCustomDomain, setSavedCustomDomain] = useState("")
