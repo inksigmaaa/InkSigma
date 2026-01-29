@@ -553,14 +553,36 @@ router.post(
   },
 );
 
-// Cancel invitation (Admin only)
+// Cancel invitation (Admin or Editor with restrictions)
 router.delete(
   "/:publicationId/invite/:invitationId",
   getCurrentUser,
-  requireAdmin,
+  requireCanRemove,
   async (req, res) => {
     try {
       const { publicationId, invitationId } = req.params;
+
+      // Get the invitation to check its role
+      const [invite] = await db
+        .select()
+        .from(invitation)
+        .where(
+          and(
+            eq(invitation.id, parseInt(invitationId)),
+            eq(invitation.publicationId, parseInt(publicationId)),
+          ),
+        );
+
+      if (!invite) {
+        return res.status(404).json({ error: "Invitation not found" });
+      }
+
+      // Editors can only cancel author invitations, not editor invitations
+      if (req.userRole === "editor" && invite.role === "editor") {
+        return res
+          .status(403)
+          .json({ error: "Editors cannot cancel editor invitations" });
+      }
 
       const result = await db
         .delete(invitation)
@@ -571,10 +593,6 @@ router.delete(
           ),
         )
         .returning();
-
-      if (result.length === 0) {
-        return res.status(404).json({ error: "Invitation not found" });
-      }
 
       res.json({ message: "Invitation cancelled successfully" });
     } catch (error) {

@@ -570,7 +570,7 @@ export default function Members() {
                               onClick={() => setShowLeaveModal(true)}
                               className="px-6 py-2 text-sm font-medium text-red-500 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
                             >
-                              Leave
+                              Exit
                             </button>
                           )}
                       </div>
@@ -590,7 +590,7 @@ export default function Members() {
                     <div className="flex items-center justify-between py-6 max-[767px]:py-4">
                       <div className="flex items-center gap-4 w-1/3 max-[767px]:gap-2 max-[639px]:flex-1">
                         <img
-                          src="/images/icons/profileuser.svg"
+                          src="/icons/nib.svg"
                           alt="Invited"
                           className="w-12 h-12 rounded-full max-[767px]:w-10 max-[767px]:h-10"
                         />
@@ -628,12 +628,18 @@ export default function Members() {
                               : "Re-invite"}
                           </button>
                         )}
-                        <button
-                          onClick={() => handleCancelInvitation(invitation.id)}
-                          className="px-6 py-2 text-sm font-medium text-red-500 bg-red-50 rounded-md hover:bg-red-100"
-                        >
-                          Cancel
-                        </button>
+                        {/* Cancel button: Admin can cancel any, Editor can only cancel Author invitations */}
+                        {canRemove &&
+                          (isAdmin || invitation.role === "author") && (
+                            <button
+                              onClick={() =>
+                                handleCancelInvitation(invitation.id)
+                              }
+                              className="px-6 py-2 text-sm font-medium text-red-500 bg-red-50 rounded-md hover:bg-red-100"
+                            >
+                              Cancel
+                            </button>
+                          )}
                       </div>
                     </div>
                     {index < pendingInvitations.length - 1 && (
