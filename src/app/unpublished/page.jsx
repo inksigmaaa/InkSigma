@@ -1,9 +1,8 @@
-"use client"
+"use client";
 
 import { useState, useEffect } from "react";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
-import EditorSidebar from "../components/sidebar/EditorSidebar";
 import Verify from "../components/verify/Verify";
 import PersonalArticles from "../components/personalArticles/personalArticles";
 import ConfirmModal from "../components/confirmModal/ConfirmModal";
@@ -12,19 +11,19 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 
 export default function Unpublished() {
-  const { 
-    articles, 
-    publicationArticles, 
-    loading, 
+  const {
+    articles,
+    publicationArticles,
+    loading,
     pubArticlesLoading,
-    error, 
-    publishArticle, 
-    moveToDraft, 
+    error,
+    publishArticle,
+    moveToDraft,
     moveToTrashStatus,
     loadUserArticles,
-    loadPublicationArticles
+    loadPublicationArticles,
   } = useArticles();
-  
+
   const { currentPublication, getCurrentUserRole } = usePublication();
   const [selectedArticles, setSelectedArticles] = useState([]);
   const [showRepublishModal, setShowRepublishModal] = useState(false);
@@ -35,25 +34,35 @@ export default function Unpublished() {
 
   // Determine user role and which articles to show
   const userRole = getCurrentUserRole();
-  const isAdmin = userRole === 'admin' || userRole === 'editor' || currentPublication?.isOwner;
-  
+  const isAdmin =
+    userRole === "admin" ||
+    userRole === "editor" ||
+    currentPublication?.isOwner;
+
   // Use publicationArticles for admins/editors, otherwise use user articles
-  const displayArticles = (isAdmin && currentPublication) ? publicationArticles : articles;
-  const isLoading = (isAdmin && currentPublication) ? pubArticlesLoading : loading;
+  const displayArticles =
+    isAdmin && currentPublication ? publicationArticles : articles;
+  const isLoading =
+    isAdmin && currentPublication ? pubArticlesLoading : loading;
 
   // Load appropriate articles on mount or when publication changes
   useEffect(() => {
     if (isAdmin && currentPublication?.id) {
-      loadPublicationArticles(currentPublication.id, 'unpublished');
+      loadPublicationArticles(currentPublication.id, "unpublished");
     } else {
       loadUserArticles(currentPublication?.id);
     }
-  }, [isAdmin, currentPublication?.id, loadPublicationArticles, loadUserArticles]);
+  }, [
+    isAdmin,
+    currentPublication?.id,
+    loadPublicationArticles,
+    loadUserArticles,
+  ]);
 
   // Filter unpublished articles (api already filters for pubArticles, but safety check)
   const unpublishedArticles = displayArticles
-    .filter(article => article.status === 'unpublished')
-    .map(article => ({
+    .filter((article) => article.status === "unpublished")
+    .map((article) => ({
       ...article,
       onRepublish: () => {
         setActionArticleId(article.id);
@@ -69,27 +78,25 @@ export default function Unpublished() {
         setActionArticleId(article.id);
         setIsBulkAction(false);
         setShowTrashModal(true);
-      }
+      },
     }));
-    
+
   // Add handlers to articles
-  const articlesWithHandlers = unpublishedArticles.map(article => ({
+  const articlesWithHandlers = unpublishedArticles.map((article) => ({
     ...article,
     onDraft: () => handleIndividualDraft(article.id),
-    onDelete: () => handleIndividualDelete(article.id)
+    onDelete: () => handleIndividualDelete(article.id),
   }));
 
   const handleArticleSelect = (id, isSelected) => {
-    setSelectedArticles(prev =>
-      isSelected
-        ? [...prev, id]
-        : prev.filter(articleId => articleId !== id)
+    setSelectedArticles((prev) =>
+      isSelected ? [...prev, id] : prev.filter((articleId) => articleId !== id),
     );
   };
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedArticles(unpublishedArticles.map(article => article.id));
+      setSelectedArticles(unpublishedArticles.map((article) => article.id));
     } else {
       setSelectedArticles([]);
     }
@@ -144,7 +151,7 @@ export default function Unpublished() {
       setShowRepublishModal(false);
       setActionArticleId(null);
     } catch (error) {
-      console.error('Error republishing articles:', error);
+      console.error("Error republishing articles:", error);
     }
   };
 
@@ -161,7 +168,7 @@ export default function Unpublished() {
       setShowDraftModal(false);
       setActionArticleId(null);
     } catch (error) {
-      console.error('Error moving articles to draft:', error);
+      console.error("Error moving articles to draft:", error);
     }
   };
 
@@ -178,7 +185,7 @@ export default function Unpublished() {
       setShowTrashModal(false);
       setActionArticleId(null);
     } catch (error) {
-      console.error('Error moving articles to trash:', error);
+      console.error("Error moving articles to trash:", error);
     }
   };
 
@@ -186,7 +193,7 @@ export default function Unpublished() {
     return (
       <>
         <NavbarLoggedin />
-        {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
+        <Sidebar />
         <Verify />
         <div className="flex justify-center items-center min-h-[400px] animate-pulse">
           <div className="text-gray-500">Loading unpublished articles...</div>
@@ -199,7 +206,7 @@ export default function Unpublished() {
     return (
       <>
         <NavbarLoggedin />
-        {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
+        <Sidebar />
         <Verify />
         <div className="flex justify-center items-center min-h-[400px] animate-fadeIn">
           <div className="text-red-500">Error: {error}</div>
@@ -214,24 +221,24 @@ export default function Unpublished() {
     {
       icon: "/images/icons/draft1.svg",
       title: "Move to Draft",
-      onClick: handleBulkDraft
+      onClick: handleBulkDraft,
     },
     {
       icon: "/images/icons/publish.svg",
       title: "Republish",
-      onClick: handleBulkRepublish
+      onClick: handleBulkRepublish,
     },
     {
       icon: "/images/icons/trash2.svg",
       title: "Delete",
-      onClick: handleBulkDelete
+      onClick: handleBulkDelete,
     },
   ];
 
   return (
     <>
       <NavbarLoggedin />
-      {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
+      <Sidebar />
       <Verify />
       <PageTransition>
         <PersonalArticles
@@ -256,7 +263,11 @@ export default function Unpublished() {
         }}
         onConfirm={confirmRepublish}
         title="Republish article?"
-        message={isBulkAction ? `${selectedArticles.length} article(s) will be republished` : "This article will be republished"}
+        message={
+          isBulkAction
+            ? `${selectedArticles.length} article(s) will be republished`
+            : "This article will be republished"
+        }
         confirmText="Republish"
         confirmStyle="normal"
       />
@@ -269,7 +280,11 @@ export default function Unpublished() {
         }}
         onConfirm={confirmDraft}
         title="Move to Draft?"
-        message={isBulkAction ? `${selectedArticles.length} article(s) will be moved to drafts` : "This article will be moved to drafts"}
+        message={
+          isBulkAction
+            ? `${selectedArticles.length} article(s) will be moved to drafts`
+            : "This article will be moved to drafts"
+        }
         confirmText="Move to Draft"
         confirmStyle="normal"
       />
@@ -282,13 +297,14 @@ export default function Unpublished() {
         }}
         onConfirm={confirmTrash}
         title="Are you sure you want to put it in trash?"
-        message={isBulkAction
-          ? `${selectedArticles.length} article(s) will be put into trash and can be restored later`
-          : "This will be put into trash and can be restored later"
+        message={
+          isBulkAction
+            ? `${selectedArticles.length} article(s) will be put into trash and can be restored later`
+            : "This will be put into trash and can be restored later"
         }
         confirmText="Move to Trash"
         confirmStyle="danger"
       />
     </>
-  )
+  );
 }

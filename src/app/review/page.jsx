@@ -1,35 +1,36 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Clock } from "lucide-react"
-import Image from "next/image"
-import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
-import Sidebar from "../components/sidebar/Sidebar"
-import EditorSidebar from "../components/sidebar/EditorSidebar"
-import Verify from "../components/verify/Verify"
-import { ConfirmationModal } from "@/components/ui/confirmation-modal"
-import PublishOptionsModal from "../components/review/PublishOptionsModal"
-import CategoryFilter from "../components/categoryFilter/CategoryFilter"
-import { useArticles } from "@/contexts/ArticlesContext"
-import { usePublication } from "@/contexts/PublicationContext"
-import { useSession } from "@/lib/auth-client"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Clock } from "lucide-react";
+import Image from "next/image";
+import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
+import Sidebar from "../components/sidebar/Sidebar";
+import Verify from "../components/verify/Verify";
+import { ConfirmationModal } from "@/components/ui/confirmation-modal";
+import PublishOptionsModal from "../components/review/PublishOptionsModal";
+import CategoryFilter from "../components/categoryFilter/CategoryFilter";
+import { useArticles } from "@/contexts/ArticlesContext";
+import { usePublication } from "@/contexts/PublicationContext";
+import { useSession } from "@/lib/auth-client";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function ReviewPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { data: session } = useSession()
-  const [selectedPosts, setSelectedPosts] = useState([])
-  const [selectedCategories, setSelectedCategories] = useState([])
-  const [showPublishModal, setShowPublishModal] = useState(false)
-  const [selectedArticleForPublish, setSelectedArticleForPublish] = useState(null)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  const [selectedPosts, setSelectedPosts] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [selectedArticleForPublish, setSelectedArticleForPublish] =
+    useState(null);
 
   // Confirmation Modal State
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [selectedArticleForAction, setSelectedArticleForAction] = useState(null)
-  const [actionType, setActionType] = useState(null) // 'reject' or 'revert'
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedArticleForAction, setSelectedArticleForAction] =
+    useState(null);
+  const [actionType, setActionType] = useState(null); // 'reject' or 'revert'
 
   const {
     reviewArticles,
@@ -38,191 +39,226 @@ export default function ReviewPage() {
     loadReviewArticles,
     acceptReviewArticle,
     rejectReviewArticle,
-    revertReviewToDraft
-  } = useArticles()
+    revertReviewToDraft,
+  } = useArticles();
 
-  const { currentPublication, getCurrentUserRole } = usePublication()
+  const { currentPublication, getCurrentUserRole } = usePublication();
 
   // Get user role in this publication
-  const userRole = getCurrentUserRole()
-  const isEditor = userRole === 'editor'
-  const isAdmin = userRole === 'admin' || currentPublication?.isOwner
+  const userRole = getCurrentUserRole();
+  const isEditor = userRole === "editor";
+  const isAdmin = userRole === "admin" || currentPublication?.isOwner;
 
   // Load review articles when publication changes
   useEffect(() => {
     if (currentPublication?.id) {
-      loadReviewArticles(currentPublication.id)
+      loadReviewArticles(currentPublication.id);
 
       // Ensure URL has the publication ID so refresh works correctly
-      if (searchParams && !searchParams.get('pub')) {
-        const urlArgs = new URLSearchParams(window.location.search)
-        urlArgs.set('pub', currentPublication.id)
-        window.history.replaceState(null, '', `/review?${urlArgs.toString()}`)
+      if (searchParams && !searchParams.get("pub")) {
+        const urlArgs = new URLSearchParams(window.location.search);
+        urlArgs.set("pub", currentPublication.id);
+        window.history.replaceState(null, "", `/review?${urlArgs.toString()}`);
       }
     }
-  }, [currentPublication?.id, loadReviewArticles, searchParams])
+  }, [currentPublication?.id, loadReviewArticles, searchParams]);
 
   // Filter articles by selected categories
-  const filteredArticles = selectedCategories.length > 0
-    ? reviewArticles.filter(article =>
-      article.categories?.some(cat => selectedCategories.includes(cat))
-    )
-    : reviewArticles
+  const filteredArticles =
+    selectedCategories.length > 0
+      ? reviewArticles.filter((article) =>
+          article.categories?.some((cat) => selectedCategories.includes(cat)),
+        )
+      : reviewArticles;
 
   const handleAccept = (article) => {
     // Show publish options modal for admin
-    setSelectedArticleForPublish(article)
-    setShowPublishModal(true)
-  }
+    setSelectedArticleForPublish(article);
+    setShowPublishModal(true);
+  };
 
   const handlePublish = async () => {
-    console.log('[ReviewPage] handlePublish called, article:', selectedArticleForPublish)
+    console.log(
+      "[ReviewPage] handlePublish called, article:",
+      selectedArticleForPublish,
+    );
     if (selectedArticleForPublish) {
       try {
-        console.log('[ReviewPage] Calling acceptReviewArticle with published status')
-        await acceptReviewArticle(selectedArticleForPublish.id, 'published')
-        console.log('[ReviewPage] acceptReviewArticle succeeded')
-        setShowPublishModal(false)
-        setSelectedArticleForPublish(null)
-        console.log('Article published successfully!')
+        console.log(
+          "[ReviewPage] Calling acceptReviewArticle with published status",
+        );
+        await acceptReviewArticle(selectedArticleForPublish.id, "published");
+        console.log("[ReviewPage] acceptReviewArticle succeeded");
+        setShowPublishModal(false);
+        setSelectedArticleForPublish(null);
+        console.log("Article published successfully!");
         // Refresh the review articles list
         if (currentPublication?.id) {
-          loadReviewArticles(currentPublication.id)
+          loadReviewArticles(currentPublication.id);
         }
       } catch (error) {
-        console.error('[ReviewPage] Error publishing article:', error)
+        console.error("[ReviewPage] Error publishing article:", error);
       }
     }
-  }
+  };
 
   const handleUnpublish = async () => {
-    console.log('[ReviewPage] handleUnpublish called, article:', selectedArticleForPublish)
+    console.log(
+      "[ReviewPage] handleUnpublish called, article:",
+      selectedArticleForPublish,
+    );
     if (selectedArticleForPublish) {
       try {
-        console.log('[ReviewPage] Calling acceptReviewArticle with unpublished status')
-        await acceptReviewArticle(selectedArticleForPublish.id, 'unpublished')
-        console.log('[ReviewPage] acceptReviewArticle succeeded')
-        setShowPublishModal(false)
-        setSelectedArticleForPublish(null)
-        console.log('Article stored to unpublished!')
+        console.log(
+          "[ReviewPage] Calling acceptReviewArticle with unpublished status",
+        );
+        await acceptReviewArticle(selectedArticleForPublish.id, "unpublished");
+        console.log("[ReviewPage] acceptReviewArticle succeeded");
+        setShowPublishModal(false);
+        setSelectedArticleForPublish(null);
+        console.log("Article stored to unpublished!");
         // Refresh the review articles list
         if (currentPublication?.id) {
-          loadReviewArticles(currentPublication.id)
+          loadReviewArticles(currentPublication.id);
         }
       } catch (error) {
-        console.error('[ReviewPage] Error storing to unpublished:', error)
+        console.error("[ReviewPage] Error storing to unpublished:", error);
       }
     }
-  }
+  };
 
   const handleReject = (articleId) => {
-    setSelectedArticleForAction(articleId)
-    setActionType('reject')
-    setShowConfirmModal(true)
-  }
+    setSelectedArticleForAction(articleId);
+    setActionType("reject");
+    setShowConfirmModal(true);
+  };
 
   const handleRevertToDraft = (articleId) => {
-    setSelectedArticleForAction(articleId)
-    setActionType('revert')
-    setShowConfirmModal(true)
-  }
+    setSelectedArticleForAction(articleId);
+    setActionType("revert");
+    setShowConfirmModal(true);
+  };
 
   const handleConfirmAction = async () => {
-    if (!selectedArticleForAction) return
+    if (!selectedArticleForAction) return;
 
     try {
-      if (actionType === 'reject') {
-        await rejectReviewArticle(selectedArticleForAction)
-        console.log('Article rejected and returned to draft.')
-      } else if (actionType === 'revert') {
-        await revertReviewToDraft(selectedArticleForAction)
-        console.log('Article reverted to draft successfully!')
+      if (actionType === "reject") {
+        await rejectReviewArticle(selectedArticleForAction);
+        console.log("Article rejected and returned to draft.");
+      } else if (actionType === "revert") {
+        await revertReviewToDraft(selectedArticleForAction);
+        console.log("Article reverted to draft successfully!");
       }
 
       // Refresh the review articles list
       if (currentPublication?.id) {
-        loadReviewArticles(currentPublication.id)
+        loadReviewArticles(currentPublication.id);
       }
     } catch (error) {
-      console.error('Error performing action:', error)
+      console.error("Error performing action:", error);
     } finally {
-      setShowConfirmModal(false)
-      setSelectedArticleForAction(null)
-      setActionType(null)
+      setShowConfirmModal(false);
+      setSelectedArticleForAction(null);
+      setActionType(null);
     }
-  }
+  };
 
   const handleCardClick = (e, articleId) => {
     // Don't navigate if clicking on buttons or checkboxes
-    if (e.target.closest('button') || e.target.closest('input[type="checkbox"]') || e.target.closest('[role="checkbox"]')) {
-      return
+    if (
+      e.target.closest("button") ||
+      e.target.closest('input[type="checkbox"]') ||
+      e.target.closest('[role="checkbox"]')
+    ) {
+      return;
     }
-    router.push(`/home/preview/${articleId}`)
-  }
+    router.push(`/home/preview/${articleId}`);
+  };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffTime = Math.abs(now - date)
-    const diffHours = Math.floor(diffTime / (1000 * 60 * 60))
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
     // Less than 24 hours - show hours
-    if (diffHours < 1) return 'Sent less than an hour ago'
-    if (diffHours === 1) return 'Sent 1 hour ago'
-    if (diffHours < 24) return `Sent ${diffHours} hours ago`
+    if (diffHours < 1) return "Sent less than an hour ago";
+    if (diffHours === 1) return "Sent 1 hour ago";
+    if (diffHours < 24) return `Sent ${diffHours} hours ago`;
 
     // 24 hours or more - show full date without day of week
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
 
-    const monthName = months[date.getMonth()]
-    const day = date.getDate()
-    const year = date.getFullYear()
+    const monthName = months[date.getMonth()];
+    const day = date.getDate();
+    const year = date.getFullYear();
 
-    return `Sent on ${monthName} ${day}, ${year}`
-  }
+    return `Sent on ${monthName} ${day}, ${year}`;
+  };
 
   if (reviewLoading) {
     return (
       <>
         <NavbarLoggedin />
-        {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
+        <Sidebar />
         <Verify />
         <div className="flex justify-center items-center min-h-[400px] animate-pulse">
           <div className="text-gray-500">Loading review articles...</div>
         </div>
       </>
-    )
+    );
   }
 
   if (reviewError) {
     return (
       <>
         <NavbarLoggedin />
-        {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
+        <Sidebar />
         <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-red-500">Error: {reviewError}</div>
         </div>
       </>
-    )
+    );
   }
 
   return (
     <>
       <NavbarLoggedin />
-      {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
+      <Sidebar />
       <Verify />
 
-      <div className={`absolute left-1/2 -translate-x-1/2 top-[160px] w-full max-w-[1034px] z-20 px-5 max-md:top-[120px]`}>
+      <div
+        className={`absolute left-1/2 -translate-x-1/2 top-[160px] w-full max-w-[1034px] z-20 px-5 max-md:top-[120px]`}
+      >
         <div className="ml-0 md:ml-[195px]">
           <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#267F24' }}></div>
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: "#267F24" }}
+                ></div>
                 <h1 className="text-base font-bold text-gray-800">Review</h1>
-                <span className="text-sm text-gray-500">({filteredArticles.length})</span>
+                <span className="text-sm text-gray-500">
+                  ({filteredArticles.length})
+                </span>
               </div>
 
               {/* Category Select */}
@@ -233,13 +269,13 @@ export default function ReviewPage() {
               />
             </div>
 
-
-
             {/* Posts List */}
             <div className="space-y-4 mt-6">
               {filteredArticles.length === 0 ? (
                 <div className="flex items-center justify-center min-h-[200px] py-20 px-10 bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)] animate-fadeIn">
-                  <p className="font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">No articles pending review</p>
+                  <p className="font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">
+                    No articles pending review
+                  </p>
                 </div>
               ) : (
                 filteredArticles.map((article) => (
@@ -248,11 +284,11 @@ export default function ReviewPage() {
                     className="bg-white border border-[#EDEDED] cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
                     onClick={(e) => handleCardClick(e, article.id)}
                     style={{
-                      width: '786px',
-                      maxWidth: '100%',
-                      minHeight: '151px',
-                      borderRadius: '8px',
-                      padding: '24px'
+                      width: "786px",
+                      maxWidth: "100%",
+                      minHeight: "151px",
+                      borderRadius: "8px",
+                      padding: "24px",
                     }}
                   >
                     {/* Desktop Layout */}
@@ -263,9 +299,11 @@ export default function ReviewPage() {
                           checked={selectedPosts.includes(article.id)}
                           onCheckedChange={(checked) => {
                             if (checked) {
-                              setSelectedPosts([...selectedPosts, article.id])
+                              setSelectedPosts([...selectedPosts, article.id]);
                             } else {
-                              setSelectedPosts(selectedPosts.filter(id => id !== article.id))
+                              setSelectedPosts(
+                                selectedPosts.filter((id) => id !== article.id),
+                              );
                             }
                           }}
                           onClick={(e) => e.stopPropagation()}
@@ -280,11 +318,11 @@ export default function ReviewPage() {
                             <h3
                               className="font-semibold"
                               style={{
-                                fontFamily: 'Public Sans, sans-serif',
+                                fontFamily: "Public Sans, sans-serif",
                                 fontWeight: 600,
-                                fontSize: '14px',
-                                lineHeight: '100%',
-                                color: '#000000'
+                                fontSize: "14px",
+                                lineHeight: "100%",
+                                color: "#000000",
                               }}
                             >
                               {article.title}
@@ -292,15 +330,15 @@ export default function ReviewPage() {
                             <p
                               className="underline"
                               style={{
-                                fontFamily: 'Public Sans, sans-serif',
+                                fontFamily: "Public Sans, sans-serif",
                                 fontWeight: 400,
-                                fontSize: '14px',
-                                lineHeight: '150%',
-                                color: '#A4A4A4',
-                                textDecorationLine: 'underline'
+                                fontSize: "14px",
+                                lineHeight: "150%",
+                                color: "#A4A4A4",
+                                textDecorationLine: "underline",
                               }}
                             >
-                              {article.author?.name || 'Unknown Author'}
+                              {article.author?.name || "Unknown Author"}
                             </p>
                           </div>
 
@@ -313,8 +351,8 @@ export default function ReviewPage() {
                                 variant="outline"
                                 className="text-gray-700 border-gray-300 hover:bg-gray-50"
                                 onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleRevertToDraft(article.id)
+                                  e.stopPropagation();
+                                  handleRevertToDraft(article.id);
                                 }}
                               >
                                 Revert to Draft
@@ -325,23 +363,23 @@ export default function ReviewPage() {
                                 <button
                                   className="hover:opacity-80 transition-opacity flex items-center justify-center"
                                   style={{
-                                    width: '66px',
-                                    height: '32px',
-                                    borderRadius: '4px',
-                                    padding: '8px',
-                                    backgroundColor: '#FEECEC',
-                                    fontFamily: 'Public Sans, sans-serif',
+                                    width: "66px",
+                                    height: "32px",
+                                    borderRadius: "4px",
+                                    padding: "8px",
+                                    backgroundColor: "#FEECEC",
+                                    fontFamily: "Public Sans, sans-serif",
                                     fontWeight: 400,
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    color: '#F53D3D',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    textAlign: 'center'
+                                    fontSize: "14px",
+                                    lineHeight: "20px",
+                                    color: "#F53D3D",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    textAlign: "center",
                                   }}
                                   onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleReject(article.id)
+                                    e.stopPropagation();
+                                    handleReject(article.id);
                                   }}
                                 >
                                   Reject
@@ -349,23 +387,23 @@ export default function ReviewPage() {
                                 <button
                                   className="hover:opacity-80 transition-opacity flex items-center justify-center"
                                   style={{
-                                    width: '71px',
-                                    height: '32px',
-                                    borderRadius: '4px',
-                                    padding: '8px',
-                                    backgroundColor: '#E6F7EA',
-                                    fontFamily: 'Public Sans, sans-serif',
+                                    width: "71px",
+                                    height: "32px",
+                                    borderRadius: "4px",
+                                    padding: "8px",
+                                    backgroundColor: "#E6F7EA",
+                                    fontFamily: "Public Sans, sans-serif",
                                     fontWeight: 400,
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    color: '#06AD2B',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    textAlign: 'center'
+                                    fontSize: "14px",
+                                    lineHeight: "20px",
+                                    color: "#06AD2B",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    textAlign: "center",
                                   }}
                                   onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleAccept(article)
+                                    e.stopPropagation();
+                                    handleAccept(article);
                                   }}
                                 >
                                   Accept
@@ -381,8 +419,8 @@ export default function ReviewPage() {
                           <div
                             className="flex gap-2 overflow-x-auto scrollbar-hide flex-1"
                             style={{
-                              overflowY: 'hidden',
-                              maxWidth: 'calc(100% - 200px)'
+                              overflowY: "hidden",
+                              maxWidth: "calc(100% - 200px)",
                             }}
                           >
                             <style jsx>{`
@@ -406,14 +444,17 @@ export default function ReviewPage() {
 
                           {/* Date - aligned to right edge */}
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <Clock className="h-4 w-4" style={{ color: '#A4A4A4' }} />
+                            <Clock
+                              className="h-4 w-4"
+                              style={{ color: "#A4A4A4" }}
+                            />
                             <span
                               style={{
-                                fontFamily: 'Public Sans, sans-serif',
+                                fontFamily: "Public Sans, sans-serif",
                                 fontWeight: 400,
-                                fontSize: '14px',
-                                color: '#A4A4A4',
-                                whiteSpace: 'nowrap'
+                                fontSize: "14px",
+                                color: "#A4A4A4",
+                                whiteSpace: "nowrap",
                               }}
                             >
                               {formatDate(article.createdAt)}
@@ -432,11 +473,11 @@ export default function ReviewPage() {
                             <h3
                               className="font-semibold mb-1"
                               style={{
-                                fontFamily: 'Public Sans, sans-serif',
+                                fontFamily: "Public Sans, sans-serif",
                                 fontWeight: 600,
-                                fontSize: '14px',
-                                lineHeight: '100%',
-                                color: '#000000'
+                                fontSize: "14px",
+                                lineHeight: "100%",
+                                color: "#000000",
                               }}
                             >
                               {article.title}
@@ -444,15 +485,15 @@ export default function ReviewPage() {
                             <p
                               className="underline"
                               style={{
-                                fontFamily: 'Public Sans, sans-serif',
+                                fontFamily: "Public Sans, sans-serif",
                                 fontWeight: 400,
-                                fontSize: '14px',
-                                lineHeight: '150%',
-                                color: '#A4A4A4',
-                                textDecorationLine: 'underline'
+                                fontSize: "14px",
+                                lineHeight: "150%",
+                                color: "#A4A4A4",
+                                textDecorationLine: "underline",
                               }}
                             >
-                              {article.author?.name || 'Unknown Author'}
+                              {article.author?.name || "Unknown Author"}
                             </p>
                           </div>
 
@@ -465,8 +506,8 @@ export default function ReviewPage() {
                                 size="sm"
                                 className="text-gray-700 border-gray-300 hover:bg-gray-50"
                                 onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleRevertToDraft(article.id)
+                                  e.stopPropagation();
+                                  handleRevertToDraft(article.id);
                                 }}
                               >
                                 Revert
@@ -479,17 +520,17 @@ export default function ReviewPage() {
                                   <button
                                     className="hover:opacity-80 transition-opacity flex items-center justify-center"
                                     style={{
-                                      width: '26px',
-                                      height: '26px',
-                                      borderRadius: '4px',
-                                      border: '1px solid #FFD6D6',
-                                      backgroundColor: 'transparent',
-                                      cursor: 'pointer',
-                                      padding: '0'
+                                      width: "26px",
+                                      height: "26px",
+                                      borderRadius: "4px",
+                                      border: "1px solid #FFD6D6",
+                                      backgroundColor: "transparent",
+                                      cursor: "pointer",
+                                      padding: "0",
                                     }}
                                     onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleReject(article.id)
+                                      e.stopPropagation();
+                                      handleReject(article.id);
                                     }}
                                   >
                                     <Image
@@ -502,17 +543,17 @@ export default function ReviewPage() {
                                   <button
                                     className="hover:opacity-80 transition-opacity flex items-center justify-center"
                                     style={{
-                                      width: '26px',
-                                      height: '26px',
-                                      borderRadius: '4px',
-                                      border: '1px solid #D5F2D4',
-                                      backgroundColor: 'transparent',
-                                      cursor: 'pointer',
-                                      padding: '0'
+                                      width: "26px",
+                                      height: "26px",
+                                      borderRadius: "4px",
+                                      border: "1px solid #D5F2D4",
+                                      backgroundColor: "transparent",
+                                      cursor: "pointer",
+                                      padding: "0",
                                     }}
                                     onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleAccept(article)
+                                      e.stopPropagation();
+                                      handleAccept(article);
                                     }}
                                   >
                                     <Image
@@ -529,23 +570,23 @@ export default function ReviewPage() {
                                   <button
                                     className="hover:opacity-80 transition-opacity flex items-center justify-center"
                                     style={{
-                                      width: '66px',
-                                      height: '32px',
-                                      borderRadius: '4px',
-                                      padding: '8px',
-                                      backgroundColor: '#FEECEC',
-                                      fontFamily: 'Public Sans, sans-serif',
+                                      width: "66px",
+                                      height: "32px",
+                                      borderRadius: "4px",
+                                      padding: "8px",
+                                      backgroundColor: "#FEECEC",
+                                      fontFamily: "Public Sans, sans-serif",
                                       fontWeight: 400,
-                                      fontSize: '14px',
-                                      lineHeight: '20px',
-                                      color: '#F53D3D',
-                                      border: 'none',
-                                      cursor: 'pointer',
-                                      textAlign: 'center'
+                                      fontSize: "14px",
+                                      lineHeight: "20px",
+                                      color: "#F53D3D",
+                                      border: "none",
+                                      cursor: "pointer",
+                                      textAlign: "center",
                                     }}
                                     onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleReject(article.id)
+                                      e.stopPropagation();
+                                      handleReject(article.id);
                                     }}
                                   >
                                     Reject
@@ -553,23 +594,23 @@ export default function ReviewPage() {
                                   <button
                                     className="hover:opacity-80 transition-opacity flex items-center justify-center"
                                     style={{
-                                      width: '71px',
-                                      height: '32px',
-                                      borderRadius: '4px',
-                                      padding: '8px',
-                                      backgroundColor: '#E6F7EA',
-                                      fontFamily: 'Public Sans, sans-serif',
+                                      width: "71px",
+                                      height: "32px",
+                                      borderRadius: "4px",
+                                      padding: "8px",
+                                      backgroundColor: "#E6F7EA",
+                                      fontFamily: "Public Sans, sans-serif",
                                       fontWeight: 400,
-                                      fontSize: '14px',
-                                      lineHeight: '20px',
-                                      color: '#06AD2B',
-                                      border: 'none',
-                                      cursor: 'pointer',
-                                      textAlign: 'center'
+                                      fontSize: "14px",
+                                      lineHeight: "20px",
+                                      color: "#06AD2B",
+                                      border: "none",
+                                      cursor: "pointer",
+                                      textAlign: "center",
                                     }}
                                     onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleAccept(article)
+                                      e.stopPropagation();
+                                      handleAccept(article);
                                     }}
                                   >
                                     Accept
@@ -584,7 +625,7 @@ export default function ReviewPage() {
                         <div
                           className="flex gap-2 overflow-x-auto scrollbar-hide"
                           style={{
-                            overflowY: 'hidden'
+                            overflowY: "hidden",
                           }}
                         >
                           <style jsx>{`
@@ -608,14 +649,17 @@ export default function ReviewPage() {
 
                         {/* Date */}
                         <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4" style={{ color: '#A4A4A4' }} />
+                          <Clock
+                            className="h-4 w-4"
+                            style={{ color: "#A4A4A4" }}
+                          />
                           <span
                             style={{
-                              fontFamily: 'Public Sans, sans-serif',
+                              fontFamily: "Public Sans, sans-serif",
                               fontWeight: 400,
-                              fontSize: '14px',
-                              color: '#A4A4A4',
-                              whiteSpace: 'nowrap'
+                              fontSize: "14px",
+                              color: "#A4A4A4",
+                              whiteSpace: "nowrap",
                             }}
                           >
                             {formatDate(article.createdAt)}
@@ -635,8 +679,8 @@ export default function ReviewPage() {
       <PublishOptionsModal
         isOpen={showPublishModal}
         onClose={() => {
-          setShowPublishModal(false)
-          setSelectedArticleForPublish(null)
+          setShowPublishModal(false);
+          setSelectedArticleForPublish(null);
         }}
         onPublish={handlePublish}
         onUnpublish={handleUnpublish}
@@ -648,14 +692,14 @@ export default function ReviewPage() {
       <ConfirmationModal
         isOpen={showConfirmModal}
         onClose={() => {
-          setShowConfirmModal(false)
-          setSelectedArticleForAction(null)
-          setActionType(null)
+          setShowConfirmModal(false);
+          setSelectedArticleForAction(null);
+          setActionType(null);
         }}
         onConfirm={handleConfirmAction}
-        title={actionType === 'reject' ? 'Reject Article?' : 'Revert to Draft?'}
+        title={actionType === "reject" ? "Reject Article?" : "Revert to Draft?"}
         description={
-          actionType === 'reject'
+          actionType === "reject"
             ? "This article will be returned to the author's drafts. They can edit and resubmit it."
             : "This action will move the article back to your drafts. You can edit and resubmit it later."
         }
@@ -663,5 +707,5 @@ export default function ReviewPage() {
         cancelText="Cancel"
       />
     </>
-  )
+  );
 }
