@@ -14,6 +14,7 @@ import { usePublication } from "@/contexts/PublicationContext";
 export default function MyBlogsPage() {
   const {
     articles,
+    moveToTrash, // Destructure persistent delete function
     moveToTrashStatus,
     publishArticle,
     moveToDraft,
@@ -91,12 +92,19 @@ export default function MyBlogsPage() {
   const confirmDelete = async () => {
     try {
       if (actionArticleId) {
-        await moveToTrashStatus(actionArticleId);
+        const article = myArticles.find((a) => a.id === actionArticleId);
+        // If already in trash, delete permanently
+        if (article?.status === "trash") {
+          await moveToTrash(actionArticleId);
+        } else {
+          // Otherwise move to trash
+          await moveToTrashStatus(actionArticleId);
+        }
       }
       setShowDeleteModal(false);
       setActionArticleId(null);
     } catch (error) {
-      console.error("Error moving to trash:", error);
+      console.error("Error deleting article:", error);
     }
   };
 
@@ -153,6 +161,22 @@ export default function MyBlogsPage() {
     }
   };
 
+  const getDeleteModalProps = () => {
+    const article = myArticles.find((a) => a.id === actionArticleId);
+    const isTrash = article?.status === "trash";
+
+    return {
+      title: isTrash
+        ? "Delete Permanently?"
+        : "Are you sure you want to put it in trash?",
+      message: isTrash
+        ? "This will permanently delete this article and cannot be restored"
+        : "This will be put into trash and can be restored later",
+      confirmText: isTrash ? "Delete Permanently" : "Move to Trash",
+      confirmStyle: "danger",
+    };
+  };
+
   return (
     <AuthGuard>
       <NavbarLoggedin />
@@ -181,10 +205,7 @@ export default function MyBlogsPage() {
           setActionArticleId(null);
         }}
         onConfirm={confirmDelete}
-        title="Are you sure you want to put it in trash?"
-        message="This will be put into trash and can be restored later"
-        confirmText="Move to Trash"
-        confirmStyle="danger"
+        {...getDeleteModalProps()}
       />
 
       <ConfirmModal
