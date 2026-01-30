@@ -1095,14 +1095,14 @@ router.post("/:id/edit-draft", getCurrentUser, async (req, res) => {
     const draftSlug = await ensureUniqueSlug(`${originalBlog.slug}-draft`);
     const draftData = {
       slug: draftSlug,
-      title: `[copy] ${originalBlog.title}`,
+      title: `${originalBlog.title} [Draft update]`,
       description: originalBlog.description,
       content: originalBlog.content,
       image: originalBlog.image,
       categories: originalBlog.categories,
       status: "draft",
       published: false,
-      authorId: req.user.id, // Current user becomes author of draft (usually same person)
+      authorId: originalBlog.authorId, // Original author remains author of draft
       publicationId: originalBlog.publicationId, // Keep same publication
       masterId: originalBlog.id, // Link to original
       createdAt: new Date(),
@@ -1755,15 +1755,20 @@ router.delete("/:id", getCurrentUser, async (req, res) => {
     }
 
     // Delete associated image file if exists
-    if (
-      existingBlog.image &&
-      existingBlog.image.includes("/uploads/blog-images/")
-    ) {
-      const imagePath = existingBlog.image.split("/uploads/blog-images/")[1];
-      const filePath = `uploads/blog-images/${imagePath}`;
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+    try {
+      if (
+        existingBlog.image &&
+        existingBlog.image.includes("/uploads/blog-images/")
+      ) {
+        const imagePath = existingBlog.image.split("/uploads/blog-images/")[1];
+        const filePath = `uploads/blog-images/${imagePath}`;
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
       }
+    } catch (fileError) {
+      console.error("Error deleting image file:", fileError);
+      // Continue with blog deletion even if image deletion fails
     }
 
     await db.delete(blog).where(eq(blog.id, parseInt(id)));

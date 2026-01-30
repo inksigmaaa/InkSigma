@@ -14,11 +14,13 @@ import { usePublication } from "@/contexts/PublicationContext";
 export default function MyBlogsPage() {
   const {
     articles,
+    moveToTrash, // Destructure persistent delete function
     moveToTrashStatus,
     publishArticle,
     moveToDraft,
     unpublishArticle,
     loadUserArticles,
+    createDraftFromPublished,
   } = useArticles();
   const { currentPublication } = usePublication();
   const [selectedArticles, setSelectedArticles] = useState([]);
@@ -90,12 +92,19 @@ export default function MyBlogsPage() {
   const confirmDelete = async () => {
     try {
       if (actionArticleId) {
-        await moveToTrashStatus(actionArticleId);
+        const article = myArticles.find((a) => a.id === actionArticleId);
+        // If already in trash, delete permanently
+        if (article?.status === "trash") {
+          await moveToTrash(actionArticleId);
+        } else {
+          // Otherwise move to trash
+          await moveToTrashStatus(actionArticleId);
+        }
       }
       setShowDeleteModal(false);
       setActionArticleId(null);
     } catch (error) {
-      console.error("Error moving to trash:", error);
+      console.error("Error deleting article:", error);
     }
   };
 
@@ -114,7 +123,12 @@ export default function MyBlogsPage() {
   const confirmDraft = async () => {
     try {
       if (actionArticleId) {
-        await moveToDraft(actionArticleId);
+        const article = myArticles.find((a) => a.id === actionArticleId);
+        if (article && article.status === "published") {
+          await createDraftFromPublished(actionArticleId);
+        } else {
+          await moveToDraft(actionArticleId);
+        }
       }
       setShowDraftModal(false);
       setActionArticleId(null);
@@ -147,6 +161,22 @@ export default function MyBlogsPage() {
     }
   };
 
+  const getDeleteModalProps = () => {
+    const article = myArticles.find((a) => a.id === actionArticleId);
+    const isTrash = article?.status === "trash";
+
+    return {
+      title: isTrash
+        ? "Delete Permanently?"
+        : "Are you sure you want to put it in trash?",
+      message: isTrash
+        ? "This will permanently delete this article and cannot be restored"
+        : "This will be put into trash and can be restored later",
+      confirmText: isTrash ? "Delete Permanently" : "Move to Trash",
+      confirmStyle: "danger",
+    };
+  };
+
   return (
     <AuthGuard>
       <NavbarLoggedin />
@@ -175,10 +205,7 @@ export default function MyBlogsPage() {
           setActionArticleId(null);
         }}
         onConfirm={confirmDelete}
-        title="Are you sure you want to put it in trash?"
-        message="This will be put into trash and can be restored later"
-        confirmText="Move to Trash"
-        confirmStyle="danger"
+        {...getDeleteModalProps()}
       />
 
       <ConfirmModal
@@ -201,9 +228,27 @@ export default function MyBlogsPage() {
           setActionArticleId(null);
         }}
         onConfirm={confirmDraft}
-        title="Move to Draft?"
-        message="This article will be moved to drafts"
-        confirmText="Move to Draft"
+        title={
+          actionArticleId &&
+          myArticles.find((a) => a.id === actionArticleId)?.status ===
+            "published"
+            ? "Create a Draft?"
+            : "Move to Draft?"
+        }
+        message={
+          actionArticleId &&
+          myArticles.find((a) => a.id === actionArticleId)?.status ===
+            "published"
+            ? "A draft copy will be created. The original article will remain published."
+            : "This article will be moved to drafts"
+        }
+        confirmText={
+          actionArticleId &&
+          myArticles.find((a) => a.id === actionArticleId)?.status ===
+            "published"
+            ? "Create Draft"
+            : "Move to Draft"
+        }
         confirmStyle="normal"
       />
 

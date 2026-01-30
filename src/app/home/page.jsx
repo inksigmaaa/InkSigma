@@ -281,17 +281,19 @@ export default function HomePage() {
                               }
                             />
                           </div>
-                          <button
-                            className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors flex-shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(
-                                `/editor?status=published&id=${article.id}`,
-                              );
-                            }}
-                          >
-                            <Pencil className="w-5 h-5" />
-                          </button>
+                          {currentPublication?.role !== "author" && (
+                            <button
+                              className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors flex-shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(
+                                  `/editor?status=published&id=${article.id}`,
+                                );
+                              }}
+                            >
+                              <Pencil className="w-5 h-5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

@@ -8,6 +8,7 @@ import EditorCategoryDropdown from "./EditorCategoryDropdown";
 import { ThumbnailModal } from "./ThumbnailModal";
 import { DateTimePicker } from "./DateTimePicker";
 import PublishSuccessModal from "./PublishSuccessModal";
+import ExitConfirmModal from "./ExitConfirmModal";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { useSession } from "@/lib/auth-client";
 import { usePublication } from "@/contexts/PublicationContext";
@@ -116,8 +117,12 @@ export default function EditorPageClient() {
   const [publishedBlogSlug, setPublishedBlogSlug] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [initialContent, setInitialContent] = useState("");
+  const [initialTitle, setInitialTitle] = useState("");
+  const [initialDescription, setInitialDescription] = useState("");
+  const [initialCategories, setInitialCategories] = useState([]);
   const [existingBlogStatus, setExistingBlogStatus] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
   const calendarRef = useRef(null);
   const savedSuccessfullyRef = useRef(false);
 
@@ -129,15 +134,46 @@ export default function EditorPageClient() {
   }, [blogTitle, blogDescription, editorContent.html]);
 
   // Track unsaved changes
+  // Track unsaved changes by comparing with initial values
   useEffect(() => {
-    if (
-      blogTitle ||
-      blogDescription ||
-      (editorContent.html && editorContent.html !== "<p></p>")
-    ) {
-      setHasUnsavedChanges(true);
-    }
-  }, [blogTitle, blogDescription, editorContent.html]);
+    // Helper to compare arrays (categories)
+    const arraysEqual = (a, b) => {
+      if (a === b) return true;
+      if (a == null || b == null) return false;
+      if (a.length !== b.length) return false;
+      const sortedA = [...a].sort();
+      const sortedB = [...b].sort();
+      for (let i = 0; i < sortedA.length; ++i) {
+        if (sortedA[i] !== sortedB[i]) return false;
+      }
+      return true;
+    };
+
+    // Helper to normalize HTML content
+    const normalizeContent = (content) => {
+      if (!content) return "";
+      if (content === "<p></p>") return ""; // Treat empty paragraph as empty
+      return content;
+    };
+
+    const hasChanges =
+      blogTitle !== initialTitle ||
+      blogDescription !== initialDescription ||
+      normalizeContent(editorContent.html) !==
+        normalizeContent(initialContent) ||
+      !arraysEqual(selectedCategories, initialCategories);
+
+    setHasUnsavedChanges(hasChanges);
+  }, [
+    blogTitle,
+    blogDescription,
+    editorContent.html,
+    selectedCategories,
+    initialTitle,
+    initialDescription,
+    initialContent,
+    initialCategories,
+  ]);
 
   // Show warning when leaving the page with unsaved changes
   useEffect(() => {
@@ -180,21 +216,44 @@ export default function EditorPageClient() {
   const loadExistingBlog = async (id) => {
     setIsLoading(true);
     try {
+      console.log(`Loading blog with ID: ${id}`);
       const response = await fetch(`${API_URL}/api/blogs/${id}`, {
         credentials: "include",
       });
 
       if (!response.ok) {
-        throw new Error("Failed to load blog");
+        const errorText = await response.text();
+        console.error(
+          `Failed to load blog: ${response.status} ${response.statusText}`,
+          errorText,
+        );
+        throw new Error(
+          `Failed to load blog: ${response.status} ${errorText || response.statusText}`,
+        );
       }
 
       const blog = await response.json();
       console.log("Loaded blog for editing:", blog);
 
       setBlogTitle(blog.title || "");
+      setInitialTitle(blog.title || "");
+
       setBlogDescription(blog.description || "");
+      setInitialDescription(blog.description || "");
+
       setSelectedCategories(blog.categories || []);
+      setInitialCategories(blog.categories || []);
+
       setInitialContent(blog.content || "");
+
+      // Initialize editorContent state to prevent data loss if saving without editing body
+      setEditorContent({
+        html: blog.content || "",
+        text: "", // Initial text representation (will be updated by editor on load)
+        charCount: (blog.content || "").length,
+        wordCount: 0,
+      });
+
       setExistingBlogStatus(blog.status);
 
       if (blog.image) {
@@ -209,7 +268,7 @@ export default function EditorPageClient() {
       }
     } catch (error) {
       console.error("Error loading blog:", error);
-      // alert('Failed to load blog for editing')
+      // alert(`Failed to load blog: ${error.message}`)
     } finally {
       setIsLoading(false);
     }
@@ -385,22 +444,68 @@ export default function EditorPageClient() {
     }
   };
 
-  // Handle Back - Auto-save as draft and go back
-  const handleBack = async () => {
-    // If there's content to save, auto-save as draft
-    if (
-      blogTitle.trim() ||
-      blogDescription.trim() ||
-      (editorContent.html && editorContent.html !== "<p></p>")
-    ) {
-      const result = await saveBlog("draft", null, true);
-      if (result) {
-        router.push("/draft?refresh=true");
-        return;
-      }
+  const handleExitNavigation = () => {
+    savedSuccessfullyRef.current = true; // Prevent beforeunload check
+    if (articleStatus === "published") {
+      router.push("/published?refresh=true");
+    } else if (articleStatus === "review") {
+      const targetPath =
+        currentPublication?.isOwner ||
+        currentPublication?.role === "editor" ||
+        currentPublication?.role === "admin"
+          ? "/review"
+          : "/author-review";
+      router.push(`${targetPath}?refresh=true`);
+    } else if (articleStatus === "trash") {
+      router.push("/trash?refresh=true");
+    } else {
+      router.push("/draft?refresh=true");
     }
-    // If nothing to save or save failed, just go back
-    router.push("/draft?refresh=true");
+  };
+
+  // Handle Back - Check for unsaved changes
+  // Handle Back - Check for unsaved changes
+  const handleBack = async () => {
+    if (hasUnsavedChanges) {
+      // Only show confirmation for sensitive statuses that shouldn't be auto-updated blindly
+      const sensitiveStatuses = [
+        "published",
+        "unpublished",
+        "review",
+        "scheduled",
+      ];
+
+      if (
+        existingBlogStatus &&
+        sensitiveStatuses.includes(existingBlogStatus)
+      ) {
+        setShowExitModal(true);
+      } else {
+        // Auto-save as draft (or existing status like trash) and exit without prompt
+        const statusToSave = existingBlogStatus || "draft";
+        await saveBlog(statusToSave, null, true);
+        handleExitNavigation();
+      }
+    } else {
+      handleExitNavigation();
+    }
+  };
+
+  const handleDiscard = () => {
+    setHasUnsavedChanges(false);
+    setShowExitModal(false);
+    handleExitNavigation();
+  };
+
+  const handleUpdateAndExit = async () => {
+    // Use existing status (don't force to draft!)
+    // If it's a new article (no status), default to draft
+    const statusToSave = existingBlogStatus || "draft";
+    const result = await saveBlog(statusToSave, null, true);
+    if (result) {
+      setShowExitModal(false);
+      handleExitNavigation();
+    }
   };
 
   // Handle Schedule
@@ -1669,6 +1774,12 @@ export default function EditorPageClient() {
           </div>
         </div>
       )}
+      <ExitConfirmModal
+        isOpen={showExitModal}
+        onClose={() => setShowExitModal(false)}
+        onDiscard={handleDiscard}
+        onUpdate={handleUpdateAndExit}
+      />
     </div>
   );
 }
