@@ -11,6 +11,7 @@ import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
+import { useSession } from "@/lib/auth-client";
 
 export default function DraftPage() {
   const {
@@ -26,20 +27,32 @@ export default function DraftPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const hasLoadedRef = useRef(false);
+  const { data: session } = useSession();
 
   // Only load articles if they haven't been loaded yet or if refresh param is present
   useEffect(() => {
     const needsRefresh = searchParams.get("refresh") === "true";
 
+    // Only load if session is available and we haven't loaded yet
     if (
-      needsRefresh ||
-      (articles.length === 0 && !loading && !hasLoadedRef.current)
+      !hasLoadedRef.current &&
+      session?.user?.id &&
+      (needsRefresh || articles.length === 0)
     ) {
-      console.log("[DraftPage] Loading articles...");
+      console.log(
+        "[DraftPage] Loading articles with context:",
+        currentPublication?.id,
+      );
       hasLoadedRef.current = true;
-      loadUserArticles();
+      loadUserArticles(currentPublication?.id, false);
     }
-  }, [searchParams, articles.length, loading, loadUserArticles]);
+  }, [
+    searchParams,
+    session?.user?.id,
+    currentPublication?.id,
+    articles.length,
+    loadUserArticles,
+  ]);
 
   // Clean up refresh param from URL if present
   useEffect(() => {

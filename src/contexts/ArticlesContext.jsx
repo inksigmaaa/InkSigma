@@ -111,23 +111,18 @@ export function ArticlesProvider({ children }) {
   // Memoized loadUserArticles to prevent unnecessary re-renders
   const loadUserArticles = useCallback(
     async (publicationId = null, includeAllPublications = false) => {
-      // Prevent concurrent loads
-      if (isLoadingRef.current) return;
-
-      // Use current session from ref, but also check the actual session state
+      // Use current session and publication context
       const currentSession = sessionRef.current || session;
+      const effectivePublicationId =
+        publicationId || currentPublicationRef.current?.id;
 
-      console.log("[ArticlesContext] loadUserArticles called");
-      console.log(
-        "[ArticlesContext] currentSession:",
-        currentSession?.user?.id,
-      );
-
-      // If no session yet, wait a bit and retry (session might still be loading)
       if (!currentSession?.user?.id) {
-        console.log(
-          "[ArticlesContext] No session yet, will retry when session loads",
-        );
+        console.log("[ArticlesContext] No session available");
+        return;
+      }
+
+      if (isLoadingRef.current) {
+        console.log("[ArticlesContext] Already loading, skipping");
         return;
       }
 
@@ -136,24 +131,13 @@ export function ArticlesProvider({ children }) {
         setLoading(true);
         setError(null);
 
-        console.log(
-          "[ArticlesContext] Loading user blogs for:",
-          currentSession.user.id,
-          "publicationId:",
-          publicationId,
-          "includeAllPublications:",
-          includeAllPublications,
-        );
-
-        // If includeAllPublications is true, don't filter by publicationId at all
-        // If publicationId is provided, filter by that publication
-        // If NOT provided, explicitly filter for PERSONAL articles (publicationId = null)
-        // This prevents "Joined Publication" articles from showing up in "My Blogs"
         const filters = includeAllPublications
           ? {}
-          : publicationId
-            ? { publicationId }
-            : { publicationId: "null" };
+          : effectivePublicationId
+            ? { publicationId: effectivePublicationId }
+            : { publicationId: null }; // Fixed: Use null instead of "null"
+
+        console.log("[ArticlesContext] Loading blogs with filters:", filters);
         const blogs = await blogService.getUserBlogs(
           currentSession.user.id,
           filters,
@@ -165,10 +149,6 @@ export function ArticlesProvider({ children }) {
         console.log(
           "[ArticlesContext] Converted articles:",
           convertedArticles?.length,
-        );
-        console.log(
-          "[ArticlesContext] Published articles:",
-          convertedArticles?.filter((a) => a.status === "published"),
         );
 
         setArticles(convertedArticles);
