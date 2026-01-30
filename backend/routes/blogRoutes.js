@@ -1095,7 +1095,7 @@ router.post("/:id/edit-draft", getCurrentUser, async (req, res) => {
     const draftSlug = await ensureUniqueSlug(`${originalBlog.slug}-draft`);
     const draftData = {
       slug: draftSlug,
-      title: `[copy] ${originalBlog.title}`,
+      title: `${originalBlog.title} [Draft update]`,
       description: originalBlog.description,
       content: originalBlog.content,
       image: originalBlog.image,
