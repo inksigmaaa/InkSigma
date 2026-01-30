@@ -125,6 +125,11 @@ export default function PersonalArticleContainer({
     ) {
       return;
     }
+
+    // Prevent default behavior and stop propagation
+    e.preventDefault();
+    e.stopPropagation();
+
     // Navigate to preview in same tab
     const publicationQuery = currentPublication?.id
       ? `?publicationId=${currentPublication.id}`
