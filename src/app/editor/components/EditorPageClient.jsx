@@ -464,9 +464,28 @@ export default function EditorPageClient() {
   };
 
   // Handle Back - Check for unsaved changes
+  // Handle Back - Check for unsaved changes
   const handleBack = async () => {
     if (hasUnsavedChanges) {
-      setShowExitModal(true);
+      // Only show confirmation for sensitive statuses that shouldn't be auto-updated blindly
+      const sensitiveStatuses = [
+        "published",
+        "unpublished",
+        "review",
+        "scheduled",
+      ];
+
+      if (
+        existingBlogStatus &&
+        sensitiveStatuses.includes(existingBlogStatus)
+      ) {
+        setShowExitModal(true);
+      } else {
+        // Auto-save as draft (or existing status like trash) and exit without prompt
+        const statusToSave = existingBlogStatus || "draft";
+        await saveBlog(statusToSave, null, true);
+        handleExitNavigation();
+      }
     } else {
       handleExitNavigation();
     }
