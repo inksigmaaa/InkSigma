@@ -20,6 +20,9 @@ const allison = Allison({
 export const metadata = {
   title: "InkSigma - A platform for focussed and simple writing",
   description: "Designed for you to write passionately. Write and Grow together.",
+  icons: {
+    icon: "/icons/favicon.svg",
+  },
 };
 
 export default function RootLayout({ children }) {
