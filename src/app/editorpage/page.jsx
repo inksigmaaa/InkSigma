@@ -206,7 +206,7 @@ export default function EditorPage() {
                             <CategoryBadgeList
                               categories={
                                 article.categories &&
-                                article.categories.length > 0
+                                  article.categories.length > 0
                                   ? article.categories
                                   : ["Uncategorized"]
                               }

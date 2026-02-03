@@ -3,18 +3,17 @@
 import { useState, useRef, useEffect } from 'react'
 
 const CATEGORIES = [
-  "Technology", "Education", "Health & Wellness", "Lifestyle","Finance","Entertainment","Business","Personal Development","Travel"
-,"Food & Recipes"
+  "Technology", "Education", "Health & Wellness", "Lifestyle", "Finance", "Entertainment", "Business", "Personal Development", "Travel"
+  , "Food & Recipes"
 ]
 
-export default function EditorCategoryDropdown({ 
-  selectedCategories = [], 
+export default function EditorCategoryDropdown({
+  selectedCategories = [],
   onCategoriesChange,
   buttonText = "Choose Category"
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
   const dropdownRef = useRef(null)
   const buttonRef = useRef(null)
 
@@ -29,22 +28,11 @@ export default function EditorCategoryDropdown({
     onCategoriesChange(updated)
   }
 
-  // Update dropdown position when opened
-  useEffect(() => {
-    if (isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect()
-      setDropdownPosition({
-        top: rect.bottom + 8,
-        left: rect.left
-      })
-    }
-  }, [isOpen])
-
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
-          buttonRef.current && !buttonRef.current.contains(event.target)) {
+        buttonRef.current && !buttonRef.current.contains(event.target)) {
         setIsOpen(false)
       }
     }
@@ -58,7 +46,7 @@ export default function EditorCategoryDropdown({
     }
   }, [isOpen])
 
-  const displayText = selectedCategories.length > 0 
+  const displayText = selectedCategories.length > 0
     ? `${selectedCategories.length} selected`
     : buttonText
 
@@ -70,21 +58,17 @@ export default function EditorCategoryDropdown({
         className="flex items-center justify-between bg-white border border-[#EAEAEA] rounded whitespace-nowrap w-[115px] h-8 gap-[10px] px-4 py-[10px] text-sm font-normal leading-normal tracking-normal text-[#2E2E2E] cursor-pointer transition-all duration-200 ease-in-out hover:border-gray-300"
       >
         <span>{displayText}</span>
-        <img 
-          src="/images/icons/down.svg" 
-          alt="dropdown" 
+        <img
+          src="/images/icons/down.svg"
+          alt="dropdown"
           className={`flex items-center justify-center w-[9px] h-[9px] opacity-100 transition-transform duration-200 ease-in-out ${isOpen ? 'rotate-180' : 'rotate-0'}`}
         />
       </button>
 
       {isOpen && (
-        <div 
+        <div
           ref={dropdownRef}
-          className="fixed bg-white flex flex-col w-[283px] rounded-lg border border-[#EDEDED] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.07)] p-2 gap-1 z-[9999]"
-          style={{
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`
-          }}
+          className="absolute top-full left-0 mt-2 bg-white flex flex-col w-[283px] rounded-lg border border-[#EDEDED] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.07)] p-2 gap-1 z-[9999]"
         >
           <div className="flex gap-1 w-[267px] h-[30px]">
             <input
@@ -109,9 +93,8 @@ export default function EditorCategoryDropdown({
                 <div
                   key={category}
                   onClick={() => handleCategoryToggle(category)}
-                  className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-gray-50 transition-colors font-normal text-sm leading-[150%] ${
-                    isSelected ? 'text-[#3400A3]' : 'text-[#2E2E2E]'
-                  }`}
+                  className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-gray-50 transition-colors font-normal text-sm leading-[150%] ${isSelected ? 'text-[#3400A3]' : 'text-[#2E2E2E]'
+                    }`}
                 >
                   <input
                     type="checkbox"
@@ -123,7 +106,7 @@ export default function EditorCategoryDropdown({
                 </div>
               )
             })}
-            
+
             {filteredCategories.length === 0 && (
               <div className="text-center py-4 font-normal text-sm leading-[150%] text-[#2E2E2E]">
                 No categories found

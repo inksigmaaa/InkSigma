@@ -87,12 +87,56 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     setIsMounted(true)
   }, [])
 
-  // Update positions when dropdowns are shown
-  useEffect(() => {
-    if (showHeadingMenu || showListMenu || showAlignMenu || showAdvancedOptions || showLinkPopup) {
-      updateDropdownPositions()
+  // Helper function for toggling dropdowns with positioning
+  const handleDropdownToggle = (key, event, options = {}) => {
+    if (event) {
+      event.preventDefault()
+      event.stopPropagation()
     }
-  }, [showHeadingMenu, showListMenu, showAlignMenu, showAdvancedOptions, showLinkPopup, headingButtonRef, listButtonRef, alignButtonRef, advancedButtonRef, linkButtonRef])
+
+    const isOpenMap = {
+      heading: showHeadingMenu,
+      list: showListMenu,
+      align: showAlignMenu,
+      advanced: showAdvancedOptions,
+      color: showColorPicker,
+      lineSpacing: showLineSpacing,
+      link: showLinkPopup
+    }
+    const currentlyOpen = isOpenMap[key]
+
+    closeAllDropdowns()
+
+    if (!currentlyOpen && event) {
+      const rect = event.currentTarget.getBoundingClientRect()
+      const newPos = {
+        top: rect.bottom + (options.offsetY || 4),
+        left: options.alignRight ? rect.right - (options.width || 300) : rect.left
+      }
+
+      setDropdownPositions(prev => ({
+        ...prev,
+        [key]: newPos
+      }))
+
+      switch (key) {
+        case 'heading': setShowHeadingMenu(true); break;
+        case 'list': setShowListMenu(true); break;
+        case 'align': setShowAlignMenu(true); break;
+        case 'advanced': setShowAdvancedOptions(true); break;
+        case 'color': setShowColorPicker(true); break;
+        case 'lineSpacing': setShowLineSpacing(true); break;
+        case 'link':
+          // For link, we also need to call insertLink's internal logic
+          const { from, to } = editor.state.selection
+          const selectedText = editor.state.doc.textBetween(from, to, '')
+          setLinkText(selectedText)
+          setLinkUrl('')
+          setShowLinkPopup(true)
+          break;
+      }
+    }
+  }
 
   const fonts = [
     "Arial", "Arial Black", "Brush Script MT", "Comic Sans MS",
@@ -386,43 +430,6 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     }
   }
 
-  const updateDropdownPositions = () => {
-    const newPositions = { ...dropdownPositions }
-
-    if (headingButtonRef) {
-      const rect = headingButtonRef.getBoundingClientRect()
-      newPositions.heading = { top: rect.bottom + 4, left: rect.left }
-    }
-
-    if (listButtonRef) {
-      const rect = listButtonRef.getBoundingClientRect()
-      newPositions.list = { top: rect.bottom + 4, left: rect.left }
-    }
-
-    if (alignButtonRef) {
-      const rect = alignButtonRef.getBoundingClientRect()
-      newPositions.align = { top: rect.bottom + 4, left: rect.left }
-    }
-
-    if (advancedButtonRef) {
-      const rect = advancedButtonRef.getBoundingClientRect()
-      newPositions.advanced = { top: rect.bottom + 4, left: rect.left }
-    }
-
-    if (linkButtonRef) {
-      const rect = linkButtonRef.getBoundingClientRect()
-      newPositions.link = { top: rect.bottom + 4, left: rect.left }
-    }
-
-    setDropdownPositions(newPositions)
-  }
-
-  // Update positions when dropdowns are shown
-  useEffect(() => {
-    if (showHeadingMenu || showListMenu || showAlignMenu || showAdvancedOptions || showLinkPopup) {
-      updateDropdownPositions()
-    }
-  }, [showHeadingMenu, showListMenu, showAlignMenu, showAdvancedOptions, showLinkPopup, headingButtonRef, listButtonRef, alignButtonRef, advancedButtonRef, linkButtonRef])
 
   // Close dropdowns when clicking outside or scrolling
   useEffect(() => {
@@ -601,20 +608,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             <button
               ref={setHeadingButtonRef}
               className="flex items-center hover:bg-gray-100 rounded px-1 py-1.5"
-              onMouseDown={(e) => {
-                e.preventDefault()
-                if (!showHeadingMenu) {
-                  closeAllDropdowns()
-                  const rect = e.currentTarget.getBoundingClientRect()
-                  setDropdownPositions(prev => ({
-                    ...prev,
-                    heading: { top: rect.bottom + 4, left: rect.left }
-                  }))
-                  setShowHeadingMenu(true)
-                } else {
-                  setShowHeadingMenu(false)
-                }
-              }}
+              onMouseDown={(e) => handleDropdownToggle('heading', e)}
             >
               <img src="/editor-icons/H.svg" alt="H" className="w-5 h-5" />
               <ChevronDown className="h-3 w-3 text-gray-600 ml-0.5" />
@@ -683,20 +677,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
           <button
             ref={setListButtonRef}
             className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
-            onMouseDown={(e) => {
-              e.preventDefault()
-              if (!showListMenu) {
-                closeAllDropdowns()
-                const rect = e.currentTarget.getBoundingClientRect()
-                setDropdownPositions(prev => ({
-                  ...prev,
-                  list: { top: rect.bottom + 4, left: rect.left }
-                }))
-                setShowListMenu(true)
-              } else {
-                setShowListMenu(false)
-              }
-            }}
+            onMouseDown={(e) => handleDropdownToggle('list', e)}
             title="Lists"
           >
             <img src="/editor-icons/list.svg" alt="Lists" className="w-4 h-4" />
@@ -743,20 +724,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
           <button
             ref={setAlignButtonRef}
             className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
-            onMouseDown={(e) => {
-              e.preventDefault()
-              if (!showAlignMenu) {
-                closeAllDropdowns()
-                const rect = e.currentTarget.getBoundingClientRect()
-                setDropdownPositions(prev => ({
-                  ...prev,
-                  align: { top: rect.bottom + 4, left: rect.left }
-                }))
-                setShowAlignMenu(true)
-              } else {
-                setShowAlignMenu(false)
-              }
-            }}
+            onMouseDown={(e) => handleDropdownToggle('align', e)}
             title="Alignment"
           >
             <img src="/editor-icons/Paragraph.svg" alt="Alignment" className="w-4 h-4" />
@@ -874,15 +842,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             <button
               ref={setLinkButtonRef}
               className="p-1.5 hover:bg-gray-100 rounded"
-              onClick={(e) => {
-                closeAllDropdowns()
-                const rect = e.currentTarget.getBoundingClientRect()
-                setDropdownPositions(prev => ({
-                  ...prev,
-                  link: { top: rect.bottom + 4, left: rect.left }
-                }))
-                insertLink()
-              }}
+              onClick={(e) => handleDropdownToggle('link', e)}
               title="Insert Link"
             >
               <img src="/editor-icons/link.svg" alt="Link" className="w-4 h-4" />
@@ -896,15 +856,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             ref={setAdvancedButtonRef}
             className="text-sm text-gray-600 px-3 py-1.5 hover:bg-gray-200 rounded whitespace-nowrap"
             style={{ backgroundColor: '#F8F8F8' }}
-            onClick={(e) => {
-              closeAllDropdowns()
-              const rect = e.currentTarget.getBoundingClientRect()
-              setDropdownPositions(prev => ({
-                ...prev,
-                advanced: { top: rect.bottom + 4, left: rect.right - 300 }
-              }))
-              setShowAdvancedOptions(true)
-            }}
+            onClick={(e) => handleDropdownToggle('advanced', e, { alignRight: true, width: 300 })}
           >
             Advanced Options
           </button>
@@ -1027,11 +979,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             <button
               ref={setHeadingButtonRef}
               className="flex items-center hover:bg-gray-100 rounded px-1 py-1.5"
-              onMouseDown={(e) => {
-                e.preventDefault()
-                if (!showHeadingMenu) closeAllDropdowns()
-                setShowHeadingMenu(!showHeadingMenu)
-              }}
+              onMouseDown={(e) => handleDropdownToggle('heading', e)}
             >
               <img src="/editor-icons/H.svg" alt="H" className="w-5 h-5" />
               <ChevronDown className="h-3 w-3 text-gray-600 ml-0.5" />
@@ -1100,11 +1048,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
           <button
             ref={setListButtonRef}
             className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
-            onMouseDown={(e) => {
-              e.preventDefault()
-              if (!showListMenu) closeAllDropdowns()
-              setShowListMenu(!showListMenu)
-            }}
+            onMouseDown={(e) => handleDropdownToggle('list', e)}
             title="Lists"
           >
             <img src="/editor-icons/list.svg" alt="Lists" className="w-4 h-4" />
@@ -1151,11 +1095,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
           <button
             ref={setAlignButtonRef}
             className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
-            onMouseDown={(e) => {
-              e.preventDefault()
-              if (!showAlignMenu) closeAllDropdowns()
-              setShowAlignMenu(!showAlignMenu)
-            }}
+            onMouseDown={(e) => handleDropdownToggle('align', e)}
             title="Alignment"
           >
             <img src="/editor-icons/Paragraph.svg" alt="Alignment" className="w-4 h-4" />
@@ -1281,21 +1221,9 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
         {/* Line Spacing */}
         <div className="relative shrink-0 px-1 border-r border-gray-200">
           <button
-            ref={(el) => {
-              if (el && !dropdownPositions.lineSpacing) {
-                const rect = el.getBoundingClientRect()
-                setDropdownPositions(prev => ({
-                  ...prev,
-                  lineSpacing: { top: rect.bottom + 4, left: rect.left }
-                }))
-              }
-            }}
             className="flex items-center gap-0.5 p-1.5 hover:bg-gray-100 rounded shrink-0"
             title="Line Spacing"
-            onClick={() => {
-              closeAllDropdowns()
-              setShowLineSpacing(!showLineSpacing)
-            }}
+            onClick={(e) => handleDropdownToggle('lineSpacing', e)}
           >
             <img src="/editor-icons/advance/line-height.svg" alt="Line Spacing" className="w-4 h-4" />
             <ChevronDown className="h-3 w-3" />
@@ -1381,11 +1309,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
           <button
             ref={setHeadingButtonRef}
             className="flex items-center hover:bg-gray-100 rounded px-2 py-1.5 text-sm"
-            onMouseDown={(e) => {
-              e.preventDefault()
-              if (!showHeadingMenu) closeAllDropdowns()
-              setShowHeadingMenu(!showHeadingMenu)
-            }}
+            onMouseDown={(e) => handleDropdownToggle('heading', e)}
           >
             <span className="text-gray-700">
               {editor?.isActive('heading', { level: 1 }) ? 'Heading 1' :
@@ -1625,21 +1549,9 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
         {/* Line Spacing */}
         <div className="relative shrink-0 px-1 border-r border-gray-200">
           <button
-            ref={(el) => {
-              if (el && !dropdownPositions.lineSpacing) {
-                const rect = el.getBoundingClientRect()
-                setDropdownPositions(prev => ({
-                  ...prev,
-                  lineSpacing: { top: rect.bottom + 4, left: rect.left }
-                }))
-              }
-            }}
             className="flex items-center gap-0.5 p-1.5 hover:bg-gray-100 rounded shrink-0"
             title="Line Spacing"
-            onClick={() => {
-              closeAllDropdowns()
-              setShowLineSpacing(!showLineSpacing)
-            }}
+            onClick={(e) => handleDropdownToggle('lineSpacing', e)}
           >
             <img src="/editor-icons/advance/line-height.svg" alt="Line Spacing" className="w-4 h-4" />
             <ChevronDown className="h-3 w-3" />
