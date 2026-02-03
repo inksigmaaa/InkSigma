@@ -5,6 +5,7 @@ import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import Sidebar from "../components/sidebar/Sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { getApiBase } from "@/utils/apiBase"
 
 export default function DomainPage() {
   const [customDomain, setCustomDomain] = useState("")
@@ -24,7 +25,9 @@ export default function DomainPage() {
 
   const loadPublicationData = async () => {
     try {
-      const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
+      const apiBase = getApiBase()
+
+      const sessionRes = await fetch(`${apiBase}/api/auth/get-session`, {
         credentials: "include",
       })
 
@@ -33,7 +36,7 @@ export default function DomainPage() {
       const sessionData = await sessionRes.json()
       const userId = sessionData.user.id
 
-      const pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+      const pubRes = await fetch(`${apiBase}/api/publications/user/${userId}`, {
         credentials: "include",
       })
 

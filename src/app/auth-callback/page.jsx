@@ -2,6 +2,7 @@
 
 import { useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { getApiBase } from "@/utils/apiBase"
 
 function AuthCallbackContent() {
   const router = useRouter()
@@ -17,7 +18,9 @@ function AuthCallbackContent() {
           return
         }
 
-        const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
+        const apiBase = getApiBase()
+
+        const sessionRes = await fetch(`${apiBase}/api/auth/get-session`, {
           credentials: "include",
         })
         
@@ -29,7 +32,7 @@ function AuthCallbackContent() {
         const sessionData = await sessionRes.json()
         const userId = sessionData.user.id
         
-        const pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+        const pubRes = await fetch(`${apiBase}/api/publications/user/${userId}`, {
           credentials: "include",
         })
         

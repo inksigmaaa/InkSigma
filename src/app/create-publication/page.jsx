@@ -9,6 +9,7 @@ import imagePlaceholder from "@/icons/image-placeholder.svg";
 import cameraIcon from "@/icons/camera.svg";
 import { publicationService } from "@/services/publicationService";
 import { usePublication } from "@/contexts/PublicationContext";
+import { getApiBase } from "@/utils/apiBase";
 
 export default function CreatePublication() {
   const router = useRouter();
@@ -63,7 +64,7 @@ export default function CreatePublication() {
     
     subdomainCheckTimeout.current = setTimeout(async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+        const API_URL = getApiBase();
         const response = await fetch(`${API_URL}/api/publications/check-subdomain/${subdomain.toLowerCase()}`, {
           credentials: "include",
         });
@@ -139,7 +140,7 @@ export default function CreatePublication() {
 
     try {
       // First, verify authentication with the backend
-      const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const API_URL = getApiBase();
       console.log("Verifying authentication with backend...");
       
       const authCheckResponse = await fetch(`${API_URL}/api/publications/debug/auth-check`, {

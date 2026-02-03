@@ -9,6 +9,11 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
+import validator from "validator";
+import { isReservedSubdomain } from "../utils/subdomainRules.js";
+import {
+  invalidatePublicationCache,
+} from "../services/publicationResolver.js";
 
 const router = express.Router();
 
@@ -161,6 +166,10 @@ router.get("/check-subdomain/:subdomain", async (req, res) => {
       return res.status(400).json({ error: "Invalid subdomain" });
     }
 
+    if (isReservedSubdomain(subdomain)) {
+      return res.status(400).json({ error: "Subdomain is reserved" });
+    }
+
     const existing = await db
       .select()
       .from(publication)
@@ -171,6 +180,30 @@ router.get("/check-subdomain/:subdomain", async (req, res) => {
   } catch (error) {
     console.error("Error checking subdomain:", error);
     res.status(500).json({ error: "Failed to check subdomain" });
+  }
+});
+
+// Resolve publication by current host
+router.get("/resolve", async (req, res) => {
+  try {
+    const tenant = req.tenant || {};
+    if (!tenant.publication) {
+      return res.status(404).json({ error: "Publication not found" });
+    }
+
+    return res.json({
+      publication: tenant.publication,
+      tenant: {
+        host: tenant.host,
+        subdomain: tenant.subdomain,
+        isCustomDomain: tenant.isCustomDomain,
+        isDashboard: tenant.isDashboard,
+        type: tenant.type,
+      },
+    });
+  } catch (error) {
+    console.error("Error resolving publication:", error);
+    res.status(500).json({ error: "Failed to resolve publication" });
   }
 });
 
@@ -334,7 +367,7 @@ router.post("/", getCurrentUser, async (req, res) => {
     console.log("User:", JSON.stringify(req.user, null, 2));
     console.log("Headers:", JSON.stringify(req.headers, null, 2));
     
-    const { name, subdomain, description } = req.body;
+    const { name, subdomain, description, customDomain } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -365,10 +398,30 @@ router.post("/", getCurrentUser, async (req, res) => {
       return res.status(400).json({ error: "Subdomain can only contain letters, numbers, and hyphens. Cannot start or end with hyphens or contain consecutive hyphens." });
     }
 
+    if (isReservedSubdomain(subdomain)) {
+      console.log("Validation failed: reserved subdomain");
+      return res.status(400).json({ error: "Subdomain is reserved" });
+    }
+
     // Validate description length (max 100 characters)
     if (description && description.length > 100) {
       console.log("Validation failed: description too long");
       return res.status(400).json({ error: "Description must not exceed 100 characters" });
+    }
+
+    // Validate custom domain format if provided
+    let normalizedCustomDomain = null;
+    if (customDomain) {
+      normalizedCustomDomain = String(customDomain).trim().toLowerCase();
+      if (
+        normalizedCustomDomain.startsWith("http://") ||
+        normalizedCustomDomain.startsWith("https://")
+      ) {
+        return res.status(400).json({ error: "Custom domain must not include protocol" });
+      }
+      if (!validator.isFQDN(normalizedCustomDomain, { require_tld: true })) {
+        return res.status(400).json({ error: "Custom domain must be a valid domain name" });
+      }
     }
 
     console.log("Checking for existing user publication...");
@@ -395,6 +448,17 @@ router.post("/", getCurrentUser, async (req, res) => {
       return res.status(400).json({ error: "Subdomain already taken" });
     }
 
+    if (normalizedCustomDomain) {
+      const existingCustom = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.customDomain, normalizedCustomDomain));
+
+      if (existingCustom.length > 0) {
+        return res.status(400).json({ error: "Custom domain already taken" });
+      }
+    }
+
     console.log("Creating publication in transaction...");
     // Create publication and add creator as admin member in a transaction
     const result = await db.transaction(async (tx) => {
@@ -406,6 +470,7 @@ router.post("/", getCurrentUser, async (req, res) => {
           .values({
             name,
             subdomain: subdomain.toLowerCase(),
+            customDomain: normalizedCustomDomain,
             description: description || null,
             userId,
             logoUrl: null,
@@ -442,6 +507,10 @@ router.post("/", getCurrentUser, async (req, res) => {
     });
 
     console.log("Publication creation successful:", result);
+    await invalidatePublicationCache({
+      subdomain: result.subdomain,
+      customDomain: result.customDomain,
+    });
     return res.status(201).json(result);
   } catch (error) {
     console.error("Error creating publication:", error);
@@ -487,7 +556,7 @@ router.post("/", getCurrentUser, async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, subdomain, description } = req.body;
+    const { name, subdomain, description, customDomain } = req.body;
 
     // Validate description length (max 100 characters)
     if (description && description.length > 100) {
@@ -497,11 +566,21 @@ router.put("/:id", async (req, res) => {
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (subdomain !== undefined) updateData.subdomain = subdomain.toLowerCase();
+    if (customDomain !== undefined) {
+      updateData.customDomain =
+        customDomain === null || customDomain === ""
+          ? null
+          : String(customDomain).trim().toLowerCase();
+    }
     if (description !== undefined) updateData.description = description;
     updateData.updatedAt = new Date();
 
     // Check if subdomain is being changed and if it's already taken
     if (subdomain) {
+      if (isReservedSubdomain(subdomain)) {
+        return res.status(400).json({ error: "Subdomain is reserved" });
+      }
+
       const existing = await db
         .select()
         .from(publication)
@@ -512,6 +591,32 @@ router.put("/:id", async (req, res) => {
       }
     }
 
+    if (customDomain) {
+      const normalizedCustomDomain = String(customDomain).trim().toLowerCase();
+      if (
+        normalizedCustomDomain.startsWith("http://") ||
+        normalizedCustomDomain.startsWith("https://")
+      ) {
+        return res.status(400).json({ error: "Custom domain must not include protocol" });
+      }
+      if (!validator.isFQDN(normalizedCustomDomain, { require_tld: true })) {
+        return res.status(400).json({ error: "Custom domain must be a valid domain name" });
+      }
+      const existingCustom = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.customDomain, normalizedCustomDomain));
+      if (existingCustom.length > 0 && existingCustom[0].id !== parseInt(id)) {
+        return res.status(400).json({ error: "Custom domain already taken" });
+      }
+    }
+
+    const [currentPublication] = await db
+      .select()
+      .from(publication)
+      .where(eq(publication.id, parseInt(id)))
+      .limit(1);
+
     const updated = await db
       .update(publication)
       .set(updateData)
@@ -521,6 +626,15 @@ router.put("/:id", async (req, res) => {
     if (updated.length === 0) {
       return res.status(404).json({ error: "Publication not found" });
     }
+
+    await invalidatePublicationCache({
+      subdomain: currentPublication?.subdomain,
+      customDomain: currentPublication?.customDomain,
+    });
+    await invalidatePublicationCache({
+      subdomain: updated[0].subdomain,
+      customDomain: updated[0].customDomain,
+    });
 
     res.json(updated[0]);
   } catch (error) {

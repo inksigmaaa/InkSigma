@@ -1,4 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+import { getApiBase } from "@/utils/apiBase";
+const API_URL = getApiBase();
 
 export const blogService = {
   // Get all blogs with optional filters

@@ -21,6 +21,7 @@ import {
   trackBlogView,
   getBlogViewCount,
 } from "../services/viewTrackingService.js";
+import { requirePublicationContext } from "../middleware/subdomainMiddleware.js";
 
 const router = express.Router();
 
@@ -262,6 +263,16 @@ const syncStatusAndPublished = (status) => {
 // GET /api/blogs - Get all blogs with filters
 router.get("/", async (req, res) => {
   try {
+    if (
+      req.tenant?.type === "subdomain" ||
+      req.tenant?.type === "custom-domain"
+    ) {
+      if (!req.tenant.publication) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+      req.query.publicationId = String(req.tenant.publication.id);
+    }
+
     const {
       published,
       status,
@@ -489,6 +500,50 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET /api/blogs/public - Get all published blogs for current host publication
+router.get("/public", requirePublicationContext, async (req, res) => {
+  try {
+    const { publication } = req;
+    const blogs = await db
+      .select({
+        id: blog.id,
+        slug: blog.slug,
+        title: blog.title,
+        description: blog.description,
+        content: blog.content,
+        image: blog.image,
+        publicationId: blog.publicationId,
+        categories: blog.categories,
+        status: blog.status,
+        published: blog.published,
+        publishedAt: blog.publishedAt,
+        createdAt: blog.createdAt,
+        updatedAt: blog.updatedAt,
+        authorId: blog.authorId,
+        author: {
+          id: user.id,
+          name: user.name,
+          image: user.image,
+          username: user.username,
+        },
+      })
+      .from(blog)
+      .leftJoin(user, eq(blog.authorId, user.id))
+      .where(
+        and(
+          eq(blog.publicationId, publication.id),
+          eq(blog.status, "published"),
+        ),
+      )
+      .orderBy(desc(blog.publishedAt));
+
+    res.json({ publication, blogs });
+  } catch (error) {
+    console.error("Error fetching public blogs:", error);
+    res.status(500).json({ error: "Failed to fetch public blogs" });
+  }
+});
+
 // GET /api/blogs/publication/:publicationId - Get all blogs for a publication
 router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
   try {
@@ -680,6 +735,18 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Blog not found" });
     }
 
+    if (
+      req.tenant?.type === "subdomain" ||
+      req.tenant?.type === "custom-domain"
+    ) {
+      if (!req.tenant.publication) {
+        return res.status(404).json({ error: "Blog not found" });
+      }
+      if (blogData.publicationId !== req.tenant.publication.id) {
+        return res.status(404).json({ error: "Blog not found" });
+      }
+    }
+
     // Security: Only show non-published blogs to authorized users (author, admin, editor)
     if (blogData.status !== "published") {
       if (!currentUserId) {
@@ -752,6 +819,18 @@ router.get("/slug/:slug", async (req, res) => {
 
     if (!blogData) {
       return res.status(404).json({ error: "Blog not found" });
+    }
+
+    if (
+      req.tenant?.type === "subdomain" ||
+      req.tenant?.type === "custom-domain"
+    ) {
+      if (!req.tenant.publication) {
+        return res.status(404).json({ error: "Blog not found" });
+      }
+      if (blogData.publicationId !== req.tenant.publication.id) {
+        return res.status(404).json({ error: "Blog not found" });
+      }
     }
 
     // Get view count from blog_view table

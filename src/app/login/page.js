@@ -11,6 +11,7 @@ import PasswordField from "@/components/auth/PasswordField"
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton"
 import { APP_CONFIG } from "@/constants/app"
 import { signIn } from "@/lib/auth-client"
+import { getApiBase } from "@/utils/apiBase"
 
 function LoginForm() {
   const router = useRouter()
@@ -26,6 +27,15 @@ function LoginForm() {
   const [showResendVerification, setShowResendVerification] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
+
+  const getOrigin = () => {
+    if (typeof window !== "undefined") {
+      return window.location.origin
+    }
+    return "http://localhost:3000"
+  }
+
+  const apiBase = getApiBase()
 
   const handleInputChange = (field) => (e) => {
     setFormData(prev => ({
@@ -69,15 +79,19 @@ function LoginForm() {
 
       // Check if user has a publication (only for dashboard redirect)
       try {
-        const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
+        const sessionRes = await fetch(`${apiBase}/api/auth/get-session`, {
           credentials: "include",
         })
         
         if (sessionRes.ok) {
           const sessionData = await sessionRes.json()
-          const userId = sessionData.user.id
+          const userId = sessionData?.user?.id
+          if (!userId) {
+            router.push(redirectTo)
+            return
+          }
           
-          const pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+          const pubRes = await fetch(`${apiBase}/api/publications/user/${userId}`, {
             credentials: "include",
           })
           
@@ -114,9 +128,10 @@ function LoginForm() {
   const handleGoogleLogin = async () => {
     try {
       // Preserve redirect parameter in callback URL
+      const origin = getOrigin()
       const callbackURL = redirectTo !== "/dashboard" 
-        ? `http://localhost:3000/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
-        : `http://localhost:3000/auth-callback`
+        ? `${origin}/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+        : `${origin}/auth-callback`
       
       await signIn.social({
         provider: "google",
@@ -138,7 +153,7 @@ function LoginForm() {
     setResendSuccess(false)
     
     try {
-      const response = await fetch("http://localhost:5000/api/resend-verification", {
+      const response = await fetch(`${apiBase}/api/resend-verification`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

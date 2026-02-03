@@ -74,7 +74,7 @@ function PublicationProviderInner({ children }) {
       }
       
       // Add retry logic for network errors
-      let retries = 3;
+      let retries = 2; // Reduced retries to prevent long loading
       let data = null;
       let lastError = null;
       
@@ -89,21 +89,38 @@ function PublicationProviderInner({ children }) {
           
           console.error(`[PublicationContext] Failed to load publications (${retries} retries left):`, {
             message: err.message,
-            type: err.constructor.name,
-            stack: err.stack
+            type: err.constructor.name
           });
           
+          // If it's an auth error, don't retry
+          if (err.message.includes('Unauthorized') || err.message.includes('401')) {
+            console.warn('[PublicationContext] Auth error, not retrying');
+            break;
+          }
+          
           if (retries > 0) {
-            console.warn(`[PublicationContext] Retrying in ${1000 * (4 - retries)}ms...`);
-            // Wait before retrying (exponential backoff: 1s, 2s, 3s)
-            await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)));
+            console.warn(`[PublicationContext] Retrying in ${1000 * (3 - retries)}ms...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (3 - retries)));
           }
         }
       }
       
-      // If all retries failed, throw the last error
-      if (lastError && !data) {
+      // If all retries failed and it's not an auth error, throw the last error
+      if (lastError && !data && !lastError.message.includes('Unauthorized')) {
         throw lastError;
+      }
+      
+      // Handle auth errors gracefully
+      if (lastError && lastError.message.includes('Unauthorized')) {
+        console.warn('[PublicationContext] Unauthorized access, clearing publications');
+        setUserPublications([]);
+        setCurrentPublication(null);
+        setPublicationDetails(null);
+        setError('Session expired. Please login again.');
+        if (!silent) {
+          setLoading(false);
+        }
+        return;
       }
       
       // Backend returns either array (legacy) or object with publications array (new)
@@ -197,8 +214,12 @@ function PublicationProviderInner({ children }) {
     } catch (error) {
       console.error('Error loading user publications:', error);
       if (!silent) {
-        setError(error.message);
+        setError(error.message || 'Failed to load publications');
       }
+      // Set empty state on error to prevent infinite loading
+      setUserPublications([]);
+      setCurrentPublication(null);
+      setPublicationDetails(null);
     } finally {
       if (!silent) {
         setLoading(false);

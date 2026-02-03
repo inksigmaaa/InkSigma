@@ -5,12 +5,52 @@ import { db } from "./database.js";
 import { emailService } from "../services/emailService.js";
 import { emailValidationService } from "../services/emailValidationService.js";
 import { redisSessionStorage } from "./redis.js";
+import { getBaseDomains } from "../utils/hostParser.js";
+
+const buildTrustedOrigins = () => {
+    const fromEnv =
+        process.env.TRUSTED_ORIGINS ||
+        process.env.ALLOWED_ORIGINS ||
+        process.env.FRONTEND_URL ||
+        "http://localhost:3000";
+
+    const origins = new Set(
+        fromEnv
+            .split(",")
+            .map((origin) => origin.trim())
+            .filter(Boolean),
+    );
+
+    const baseDomains = getBaseDomains();
+    for (const baseDomain of baseDomains) {
+        origins.add(`http://${baseDomain}:3000`);
+        origins.add(`http://dashboard.${baseDomain}:3000`);
+        origins.add(`https://${baseDomain}`);
+        origins.add(`https://dashboard.${baseDomain}`);
+    }
+
+  return Array.from(origins);
+};
+
+const buildBaseUrl = () => {
+    if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
+
+    const baseDomains = getBaseDomains();
+    const dashboardSub = process.env.DASHBOARD_SUBDOMAIN || "dashboard";
+
+    // Prefer dashboard.<base>:5000 so cookies align with dashboard host in local dev
+    if (baseDomains.length > 0) {
+        return `http://${dashboardSub}.${baseDomains[0]}:5000`;
+    }
+
+    return "http://localhost:5000";
+};
 
 export const auth = betterAuth({
-    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5000",
+    baseURL: buildBaseUrl(),
     basePath: "/api/auth",
     secret: process.env.BETTER_AUTH_SECRET,
-    trustedOrigins: [process.env.FRONTEND_URL || "http://localhost:3000"],
+    trustedOrigins: buildTrustedOrigins(),
     
     database: drizzleAdapter(db, {
         provider: "pg",
@@ -106,4 +146,3 @@ export const auth = betterAuth({
         },
     },
 });
-

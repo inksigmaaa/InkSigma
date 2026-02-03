@@ -1,7 +1,19 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
+
+const getBackendBase = () => {
+  const envBase = process.env.NEXT_PUBLIC_BACKEND_URL;
+  if (envBase) return envBase.replace(/\/$/, "");
+
+  const h = headers();
+  const host = h.get("host") || "localhost";
+  const protocol = h.get("x-forwarded-proto") || "http";
+  const hostname = host.split(":")[0].replace(/^www\./, "");
+
+  return `${protocol}://${hostname}:5000`;
+};
 
 export default async function InvitationPage({ params }) {
   const { token } = await params;
@@ -23,7 +35,7 @@ export default async function InvitationPage({ params }) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
 
-    const res = await fetch("http://localhost:5000/api/auth/get-session", {
+    const res = await fetch(`${getBackendBase()}/api/auth/get-session`, {
       headers: {
         Cookie: cookieString,
       },
