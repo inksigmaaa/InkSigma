@@ -680,46 +680,21 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Blog not found" });
     }
 
-    // Security: Only show non-published blogs to the author or reviewers
+    // Security: Only show non-published blogs to authorized users (author, admin, editor)
     if (blogData.status !== "published") {
-      if (
-        !currentUserId ||
-        (blogData.authorId !== currentUserId && blogData.status !== "review")
-      ) {
+      if (!currentUserId) {
         return res.status(404).json({ error: "Blog not found" });
       }
 
-      // If blog is in review status, check if user is a reviewer (admin/editor) in the publication
-      if (blogData.status === "review" && blogData.authorId !== currentUserId) {
-        // Need to fetch the blog with publication info to check reviewer status
-        const [blogWithPub] = await db
-          .select({
-            publicationId: blog.publicationId,
-          })
-          .from(blog)
-          .where(eq(blog.id, parseInt(id)));
+      // Check if user is author OR has permission to modify (Admin/Editor)
+      // This aligns with the PUT permissions so editors can view the drafts they are allowed to edit
+      const canView = await canUserModifyBlog(currentUserId, blogData.authorId);
 
-        if (blogWithPub?.publicationId) {
-          const [member] = await db
-            .select()
-            .from(publicationMember)
-            .where(
-              and(
-                eq(publicationMember.publicationId, blogWithPub.publicationId),
-                eq(publicationMember.userId, currentUserId),
-                or(
-                  eq(publicationMember.role, "admin"),
-                  eq(publicationMember.role, "editor"),
-                ),
-              ),
-            );
-
-          if (!member) {
-            return res.status(404).json({ error: "Blog not found" });
-          }
-        } else {
-          return res.status(404).json({ error: "Blog not found" });
-        }
+      if (!canView) {
+        // Special check: If it's in review, current logic might still apply?
+        // canUserModifyBlog covers Admin/Editor roles which are the reviewers.
+        // So we can rely on it.
+        return res.status(404).json({ error: "Blog not found" });
       }
     }
 
@@ -1278,11 +1253,13 @@ router.put("/:id", getCurrentUser, async (req, res) => {
           // Return the master blog as the result
           return res.json(updatedMaster);
         } else {
-          console.warn(
-            `[PUT BLOG] Master blog ${existingBlog.masterId} not found, proceeding with normal update`,
+          console.error(
+            `[PUT BLOG ERROR] Master blog ${existingBlog.masterId} not found for draft ${id}. Cannot merge.`,
           );
-          // If master not found, maybe just treat this as a normal blog now?
-          // Or strip the masterId? Let's just proceed as normal update for now to avoid data loss.
+          return res.status(404).json({
+            error:
+              "Original article not found. Cannot publish this draft as an update.",
+          });
         }
       }
     }
@@ -1606,6 +1583,58 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
       ...syncedFields,
       updatedAt: new Date(),
     };
+
+    // MERGE LOGIC: If this is a draft of a published article and it is being published
+    if (existingBlog.masterId && targetStatus === "published") {
+      console.log(
+        `[PATCH BLOG] Merging draft ${id} into master ${existingBlog.masterId}`,
+      );
+
+      // Get Master Blog to ensure it exists
+      const [masterBlog] = await db
+        .select()
+        .from(blog)
+        .where(eq(blog.id, existingBlog.masterId));
+
+      if (masterBlog) {
+        // Prepare data to update master
+        // We use the draft's current data (existingBlog) as the source of truth
+        // since PATCH usually only updates status, but we want to merge the draft's content
+        const mergeData = {
+          title: existingBlog.title,
+          description: existingBlog.description,
+          content: existingBlog.content,
+          image: existingBlog.image,
+          categories: existingBlog.categories,
+          updatedAt: new Date(),
+          ...syncedFields, // Ensure master gets 'published' status if it wasn't already (though it should be)
+        };
+
+        console.log("[PATCH BLOG] Updating master with merged data");
+
+        // Update Master
+        const [updatedMaster] = await db
+          .update(blog)
+          .set(mergeData)
+          .where(eq(blog.id, existingBlog.masterId))
+          .returning();
+
+        // Delete the Draft
+        console.log(`[PATCH BLOG] Deleting draft ${id} after merge`);
+        await db.delete(blog).where(eq(blog.id, parseInt(id)));
+
+        // Return the master blog as the result
+        return res.json(updatedMaster);
+      } else {
+        console.error(
+          `[PATCH BLOG ERROR] Master blog ${existingBlog.masterId} not found for draft ${id}. Cannot merge.`,
+        );
+        return res.status(404).json({
+          error:
+            "Original article not found. Cannot publish this draft as an update.",
+        });
+      }
+    }
 
     const [updatedBlog] = await db
       .update(blog)
