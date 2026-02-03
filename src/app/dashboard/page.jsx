@@ -154,7 +154,7 @@ export default function DashboardPage() {
                     onClick={() => {
                       // Switch to owned publication first
                       switchPublication(ownedPublications[0]);
-                      router.push(`/home?pub=${ownedPublications[0].id}`);
+                      router.push(`/${ownedPublications[0].subdomain}/home`);
                     }}
                     className="flex-shrink-0 min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center w-full sm:w-auto"
                   >
@@ -275,7 +275,7 @@ export default function DashboardPage() {
                         onClick={() => {
                           switchPublication(joinedPub);
                           // UNIFIED ROUTING: All roles (editor, author, admin) go to /home logic
-                          router.push(`/home?pub=${joinedPub.id}`);
+                          router.push(`/${joinedPub.subdomain}/home`);
                         }}
                         className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
                       >

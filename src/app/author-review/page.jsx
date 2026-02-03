@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Clock } from "lucide-react"
@@ -12,10 +12,11 @@ import CategoryFilter from "../components/categoryFilter/CategoryFilter"
 import { useArticles } from "@/contexts/ArticlesContext"
 import { usePublication } from "@/contexts/PublicationContext"
 import { useSession } from "@/lib/auth-client"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 export default function AuthorReviewPage() {
   const router = useRouter()
+  const pathname = usePathname()
   const { data: session } = useSession()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -35,6 +36,14 @@ export default function AuthorReviewPage() {
   } = useArticles()
   
   const { currentPublication, getCurrentUserRole } = usePublication()
+  const pubPrefix = currentPublication?.subdomain
+    ? `/${currentPublication.subdomain}`
+    : ""
+  const withPub = useCallback((path) => {
+    if (!path?.startsWith?.("/")) return path
+    if (!pubPrefix) return path
+    return path.startsWith(pubPrefix) ? path : `${pubPrefix}${path}`
+  }, [pubPrefix])
   
   // Get user role in this publication
   const userRole = getCurrentUserRole()
@@ -147,8 +156,26 @@ export default function AuthorReviewPage() {
     if (e.target.closest('button') || e.target.closest('input[type="checkbox"]') || e.target.closest('[role="checkbox"]')) {
       return
     }
-    router.push(`/home/preview/${articleId}`)
+    router.push(withPub(`/home/preview/${articleId}`))
   }
+
+  // On dashboard host, keep canonical URL shape: /{subdomain}/author-review
+  useEffect(() => {
+    if (!currentPublication?.subdomain) return
+    if (typeof window === "undefined") return
+    const isDashboardHost =
+      window.location.hostname === "dashboard.localhost" ||
+      window.location.hostname.startsWith("dashboard.")
+    if (!isDashboardHost) return
+
+    const desired = withPub("/author-review")
+    if (pathname === desired) return
+    const qs = window.location.search || ""
+
+    if (pathname === "/author-review" || !pathname?.startsWith?.(pubPrefix + "/")) {
+      router.replace(`${desired}${qs}`)
+    }
+  }, [currentPublication?.subdomain, pathname, pubPrefix, router, withPub])
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)

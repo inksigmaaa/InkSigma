@@ -7,6 +7,49 @@ import { publicationService } from '@/services/publicationService';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 
 const PublicationContext = createContext();
+const DASHBOARD_PUB_COOKIE = 'inksigma_dashboard_pub';
+
+const DASHBOARD_HOST_PREFIX = 'dashboard.';
+const PUBLIC_PATH_PREFIXES = [
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/reset-password',
+  '/magic-link',
+  '/auth-callback',
+  '/create-publication',
+  '/invite',
+  '/view-site',
+];
+
+const DASHBOARD_ENDPOINT_PREFIXES = [
+  '/home',
+  '/posts',
+  '/review',
+  '/author-review',
+  '/editor',
+  '/draft',
+  '/published',
+  '/unpublished',
+  '/trash',
+  '/schedule',
+  '/members',
+  '/my-blogs',
+  '/profile-settings',
+  '/domain',
+  '/dashboard',
+];
+
+const isDashboardHost = () => {
+  if (typeof window === 'undefined') return false;
+  return window.location.hostname === 'dashboard.localhost' || window.location.hostname.startsWith(DASHBOARD_HOST_PREFIX);
+};
+
+const isPublicPath = (pathname) =>
+  PUBLIC_PATH_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+const isOldDashboardEndpointPath = (pathname) =>
+  DASHBOARD_ENDPOINT_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
 function PublicationProviderInner({ children }) {
   const { data: session, isPending } = useSession();
@@ -27,17 +70,33 @@ function PublicationProviderInner({ children }) {
 
   // Helper function to determine if we're on member dashboard routes
   const isMemberDashboard = () => {
-    return pathname?.startsWith('/posts/') || 
-           pathname?.startsWith('/review') || 
-           pathname?.startsWith('/author-review') ||
-           pathname?.startsWith('/editorpage') ||
-           pathname?.startsWith('/published') ||
-           pathname?.startsWith('/unpublished') ||
-           pathname?.startsWith('/members');
+    const effectivePathname = (() => {
+      if (!pathname) return pathname;
+      if (!isDashboardHost()) return pathname;
+
+      // If the URL is /{pubSubdomain}/{endpoint}, treat /{endpoint} as the effective route
+      // for dashboard-internal logic.
+      if (!isPublicPath(pathname) && !isOldDashboardEndpointPath(pathname)) {
+        const segments = pathname.split('/').filter(Boolean);
+        if (segments.length >= 2) {
+          return `/${segments.slice(1).join('/')}`;
+        }
+      }
+
+      return pathname;
+    })();
+
+    return effectivePathname?.startsWith('/posts/') || 
+           effectivePathname?.startsWith('/review') || 
+           effectivePathname?.startsWith('/author-review') ||
+           effectivePathname?.startsWith('/editorpage') ||
+           effectivePathname?.startsWith('/published') ||
+           effectivePathname?.startsWith('/unpublished') ||
+           effectivePathname?.startsWith('/members');
   };
 
   // Get publication ID from URL params
-  const getPublicationIdFromUrl = () => {
+  const getPublicationIdFromUrl = (publicationsForLookup = userPublications) => {
     // Try searchParams first (client-side, when available)
     if (searchParams?.get('pub')) {
       return parseInt(searchParams.get('pub'));
@@ -48,7 +107,17 @@ function PublicationProviderInner({ children }) {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const pub = params.get('pub');
-      return pub ? parseInt(pub) : null;
+      if (pub) return parseInt(pub);
+
+      // New dashboard URL shape: /{pubSubdomain}/{endpoint}
+      if (isDashboardHost() && pathname && !isPublicPath(pathname) && !isOldDashboardEndpointPath(pathname)) {
+        const segments = pathname.split('/').filter(Boolean);
+        const pubSub = segments[0];
+        if (pubSub && Array.isArray(publicationsForLookup) && publicationsForLookup.length > 0) {
+          const match = publicationsForLookup.find((p) => p?.subdomain === pubSub);
+          return match ? match.id : null;
+        }
+      }
     }
     
     return null;
@@ -138,7 +207,7 @@ function PublicationProviderInner({ children }) {
           setUserPublications(publications);
           setLoading(false);
           // Use window.location for a full page redirect to ensure clean state
-          window.location.href = '/dashboard';
+          window.location.href = '/';
           return;
         }
       }
@@ -152,7 +221,7 @@ function PublicationProviderInner({ children }) {
           let pubToSet = null;
           
           // Check if we have a publication ID from URL
-          const urlPubId = getPublicationIdFromUrl();
+          const urlPubId = getPublicationIdFromUrl(publications);
           
           if (urlPubId) {
             // Try to find the URL publication (could be owned or joined)
@@ -226,6 +295,15 @@ function PublicationProviderInner({ children }) {
       }
     }
   }, [session?.user?.id, isPending, router]);
+
+  // Keep the dashboard publication cookie in sync so middleware can normalize URLs.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!isDashboardHost()) return;
+    const sub = currentPublication?.subdomain;
+    if (!sub) return;
+    document.cookie = `${DASHBOARD_PUB_COOKIE}=${encodeURIComponent(sub)}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+  }, [currentPublication?.subdomain]);
 
   // Load full publication details (with stats)
   const loadPublicationDetails = async (publicationId) => {
@@ -370,7 +448,7 @@ function PublicationProviderInner({ children }) {
   useEffect(() => {
     if (!userPublications.length || isPending) return;
 
-    const urlPubId = getPublicationIdFromUrl();
+    const urlPubId = getPublicationIdFromUrl(userPublications);
     
     // If URL has a publication ID and it's different from current, switch to it
     if (urlPubId && currentPublication && urlPubId !== currentPublication.id) {

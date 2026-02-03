@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Clock } from "lucide-react";
@@ -14,11 +14,11 @@ import CategoryFilter from "../components/categoryFilter/CategoryFilter";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { useSession } from "@/lib/auth-client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function ReviewPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const { data: session } = useSession();
   const [selectedPosts, setSelectedPosts] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -49,19 +49,42 @@ export default function ReviewPage() {
   const isEditor = userRole === "editor";
   const isAdmin = userRole === "admin" || currentPublication?.isOwner;
 
+  const pubPrefix = currentPublication?.subdomain
+    ? `/${currentPublication.subdomain}`
+    : "";
+
+  const withPub = useCallback((path) => {
+    if (!path?.startsWith?.("/")) return path;
+    if (!pubPrefix) return path;
+    return path.startsWith(pubPrefix) ? path : `${pubPrefix}${path}`;
+  }, [pubPrefix]);
+
   // Load review articles when publication changes
   useEffect(() => {
     if (currentPublication?.id) {
       loadReviewArticles(currentPublication.id);
-
-      // Ensure URL has the publication ID so refresh works correctly
-      if (searchParams && !searchParams.get("pub")) {
-        const urlArgs = new URLSearchParams(window.location.search);
-        urlArgs.set("pub", currentPublication.id);
-        window.history.replaceState(null, "", `/review?${urlArgs.toString()}`);
-      }
     }
-  }, [currentPublication?.id, loadReviewArticles, searchParams]);
+  }, [currentPublication?.id, loadReviewArticles]);
+
+  // On dashboard host, keep canonical URL shape: /{subdomain}/review
+  useEffect(() => {
+    if (!currentPublication?.subdomain) return;
+    if (typeof window === "undefined") return;
+    const isDashboardHost =
+      window.location.hostname === "dashboard.localhost" ||
+      window.location.hostname.startsWith("dashboard.");
+    if (!isDashboardHost) return;
+
+    const desired = withPub("/review");
+    if (pathname === desired) return;
+
+    // Preserve querystring (e.g. ?refresh=true)
+    const qs = window.location.search || "";
+    // Avoid infinite replace loops when already prefixed but deeper path
+    if (pathname === "/review" || !pathname?.startsWith?.(pubPrefix + "/")) {
+      router.replace(`${desired}${qs}`);
+    }
+  }, [currentPublication?.subdomain, pathname, pubPrefix, router, withPub]);
 
   // Filter articles by selected categories
   const filteredArticles =
@@ -173,7 +196,7 @@ export default function ReviewPage() {
     ) {
       return;
     }
-    router.push(`/home/preview/${articleId}`);
+    router.push(withPub(`/home/preview/${articleId}`));
   };
 
   const formatDate = (dateString) => {

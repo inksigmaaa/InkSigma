@@ -16,7 +16,7 @@ import { getApiBase } from "@/utils/apiBase"
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get("redirect") || "/dashboard"
+  const redirectTo = searchParams.get("redirect") || "/"
   
   const [formData, setFormData] = useState({
     email: "",
@@ -72,31 +72,22 @@ function LoginForm() {
       }
 
       // If there's a specific redirect (like invitation), go there directly
-      if (redirectTo !== "/dashboard") {
+      if (redirectTo !== "/") {
         router.push(redirectTo)
         return
       }
 
-      // Check if user has a publication (only for dashboard redirect)
+      // Check if user has any publications (owned or joined) (only for default redirect)
       try {
-        const sessionRes = await fetch(`${apiBase}/api/auth/get-session`, {
+        const pubsRes = await fetch(`${apiBase}/api/members/user/publications`, {
           credentials: "include",
         })
-        
-        if (sessionRes.ok) {
-          const sessionData = await sessionRes.json()
-          const userId = sessionData?.user?.id
-          if (!userId) {
-            router.push(redirectTo)
-            return
-          }
-          
-          const pubRes = await fetch(`${apiBase}/api/publications/user/${userId}`, {
-            credentials: "include",
-          })
-          
-          if (pubRes.status === 404) {
-            // No publication, redirect to create one
+
+        if (pubsRes.ok) {
+          const data = await pubsRes.json().catch(() => null)
+          const publications = Array.isArray(data) ? data : (data?.publications || [])
+          const hasAny = Array.isArray(publications) && publications.length > 0
+          if (!hasAny) {
             router.push('/create-publication')
             return
           }
@@ -129,7 +120,7 @@ function LoginForm() {
     try {
       // Preserve redirect parameter in callback URL
       const origin = getOrigin()
-      const callbackURL = redirectTo !== "/dashboard" 
+      const callbackURL = redirectTo !== "/" 
         ? `${origin}/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
         : `${origin}/auth-callback`
       
@@ -261,7 +252,7 @@ function LoginForm() {
           New to InkSigma?
         </span>
         <Link
-          href={redirectTo !== "/dashboard" ? `/signup?redirect=${encodeURIComponent(redirectTo)}` : "/signup"}
+          href={redirectTo !== "/" ? `/signup?redirect=${encodeURIComponent(redirectTo)}` : "/signup"}
           className="w-[122px] h-[16px] opacity-100 rotate-0 font-medium text-[14px] leading-[100%] tracking-[0%] underline decoration-solid decoration-0 text-[#4B4B4B] hover:text-gray-600 transition-colors whitespace-nowrap"
         >
           Create an Account

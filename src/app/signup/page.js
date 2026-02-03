@@ -14,7 +14,7 @@ import { CheckCircle2, ArrowLeft } from "lucide-react"
 
 function SignupForm() {
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get("redirect") || "/dashboard"
+  const redirectTo = searchParams.get("redirect") || "/"
 
   const getOrigin = () => {
     if (typeof window !== "undefined") {
@@ -52,7 +52,7 @@ function SignupForm() {
         name: defaultName,
         email: formData.email,
         password: formData.password,
-        callbackURL: redirectTo !== "/dashboard" 
+        callbackURL: redirectTo !== "/" 
           ? `${getOrigin()}/login?redirect=${encodeURIComponent(redirectTo)}`
           : `${getOrigin()}/login`,
       })
@@ -77,7 +77,7 @@ function SignupForm() {
       const origin = getOrigin()
       await signIn.social({
         provider: "google",
-        callbackURL: redirectTo !== "/dashboard"
+        callbackURL: redirectTo !== "/"
           ? `${origin}/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
           : `${origin}/auth-callback`,
         prompt: "select_account",

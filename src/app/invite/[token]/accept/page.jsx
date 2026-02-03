@@ -84,7 +84,7 @@ export default function AcceptInvitation() {
       }
       
       // Redirect to dashboard (myspace) instead of directly to publication
-      router.push('/dashboard');
+      router.push('/');
     } catch (error) {
       setError(error.message);
     } finally {

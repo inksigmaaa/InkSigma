@@ -236,15 +236,19 @@ export default function CreatePublication() {
         sessionStorage.setItem(cacheKey, 'true');
         sessionStorage.removeItem('publication-check-cache');
         
-        // Redirect to dashboard (myspace) instead of directly to publication
-        router.push('/dashboard');
+        // Redirect to the new publication (canonical URL shape)
+        if (publication?.subdomain) {
+          router.push(`/${publication.subdomain}/home`);
+        } else {
+          router.push('/');
+        }
       } catch (contextError) {
         console.error('Failed to update context, redirecting to dashboard:', contextError);
         // Clear cache and redirect to dashboard (myspace)
         const cacheKey = `publication-check-${session.user.id}`;
         sessionStorage.setItem(cacheKey, 'true');
         sessionStorage.removeItem('publication-check-cache');
-        router.push('/dashboard');
+        router.push('/');
       }
     } catch (error) {
       console.error('Error creating publication:', error);

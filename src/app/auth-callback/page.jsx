@@ -20,30 +20,23 @@ function AuthCallbackContent() {
 
         const apiBase = getApiBase()
 
-        const sessionRes = await fetch(`${apiBase}/api/auth/get-session`, {
+        const pubsRes = await fetch(`${apiBase}/api/members/user/publications`, {
           credentials: "include",
         })
         
-        if (!sessionRes.ok) {
+        if (!pubsRes.ok) {
           router.push('/login')
           return
         }
-        
-        const sessionData = await sessionRes.json()
-        const userId = sessionData.user.id
-        
-        const pubRes = await fetch(`${apiBase}/api/publications/user/${userId}`, {
-          credentials: "include",
-        })
-        
-        if (pubRes.status === 404) {
-          router.push('/create-publication')
-        } else {
-          router.push('/dashboard')
-        }
+
+        const data = await pubsRes.json().catch(() => null)
+        const publications = Array.isArray(data) ? data : (data?.publications || [])
+        const hasAny = Array.isArray(publications) && publications.length > 0
+
+        router.push(hasAny ? '/' : '/create-publication')
       } catch (err) {
         console.error("Error checking publication:", err)
-        router.push('/dashboard')
+        router.push('/')
       }
     }
 

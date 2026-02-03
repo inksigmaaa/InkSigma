@@ -28,21 +28,45 @@ import {
 } from "lucide-react"
 import { ImageModal } from './ImageModal'
 import { getImageUrl } from '@/utils/imageUrl'
+import { getApiBase } from '@/utils/apiBase'
+
+const API_URL = getApiBase()
 
 // Helper function to convert full URLs back to relative paths for storage
 const stripImageUrls = (html) => {
   if (!html) return html
 
-  const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+  const origins = new Set(
+    [
+      API_URL,
+      process.env.NEXT_PUBLIC_BACKEND_URL,
+      process.env.NEXT_PUBLIC_API_URL,
+      'http://localhost:5000',
+    ]
+      .filter(Boolean)
+      .map((o) => String(o).replace(/\/$/, '')),
+  )
 
   // Match img tags with src attributes
   return html.replace(/src="([^"]*)"/g, (match, src) => {
     if (!src) return match
 
     // If it's a full URL pointing to our API, convert to relative path
-    if (src.startsWith(apiUrl)) {
-      const relativePath = src.substring(apiUrl.length)
-      return `src="${relativePath}"`
+    for (const origin of origins) {
+      if (src.startsWith(origin)) {
+        const relativePath = src.substring(origin.length) || '/'
+        return `src="${relativePath.startsWith('/') ? relativePath : `/${relativePath}`}"`
+      }
+    }
+
+    // Best-effort: if it's any absolute URL to :5000, strip the origin.
+    try {
+      const u = new URL(src)
+      if (u.host.endsWith(':5000')) {
+        return `src="${u.pathname}${u.search}${u.hash}"`
+      }
+    } catch {
+      // ignore
     }
 
     // Otherwise return as is
@@ -164,7 +188,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
   useEffect(() => {
     if (editor && initialContent && !initialContentSetRef.current) {
       // Convert relative image URLs to full URLs for display in editor
-      const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+      const apiUrl = API_URL
       const processedContent = initialContent.replace(/src="([^"]*)"/g, (match, src) => {
         if (!src) return match
 
@@ -233,7 +257,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
   const handleImageAdd = (imageData) => {
     if (editor && imageData.src) {
       // Convert relative path to full URL for display in editor
-      const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+      const apiUrl = API_URL
       let fullImageUrl = imageData.src
 
       // If it's a relative path, convert to full URL
@@ -1705,6 +1729,5 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     </div>
   )
 }
-
 
 

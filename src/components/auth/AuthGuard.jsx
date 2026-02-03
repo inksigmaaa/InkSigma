@@ -63,8 +63,8 @@ export default function AuthGuard({ children }) {
 
             // Check if user has a publication
             try {
-                console.log('[AuthGuard] Checking if user has publication...');
-                const pubResponse = await fetch(`${getApiBase()}/api/publications/check`, {
+                console.log('[AuthGuard] Checking if user has publications (owned or joined)...');
+                const pubResponse = await fetch(`${getApiBase()}/api/members/user/publications`, {
                     credentials: 'include',
                 });
 
@@ -74,8 +74,10 @@ export default function AuthGuard({ children }) {
                     return;
                 }
 
-                const { hasPublication } = await pubResponse.json();
-                console.log('[AuthGuard] Has publication:', hasPublication);
+                const data = await pubResponse.json().catch(() => null);
+                const publications = Array.isArray(data) ? data : (data?.publications || []);
+                const hasPublication = Array.isArray(publications) && publications.length > 0;
+                console.log('[AuthGuard] Has publications:', hasPublication);
                 
                 // Cache the result
                 sessionStorage.setItem(cacheKey, hasPublication.toString());

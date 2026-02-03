@@ -94,7 +94,7 @@ export default function DeclineInvitation() {
             <p className="text-gray-600">You have declined the invitation to join the publication.</p>
           </div>
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push("/")}
             className="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200"
           >
             Go to Dashboard

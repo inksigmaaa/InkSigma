@@ -21,8 +21,9 @@ import {
 } from "lucide-react";
 
 import { TiptapEditor } from "./TiptapEditor";
+import { getApiBase } from "@/utils/apiBase";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = getApiBase();
 
 export default function EditorPageClient() {
   const router = useRouter();
@@ -36,6 +37,19 @@ export default function EditorPageClient() {
     loadUserArticles,
   } = useArticles();
   const { currentPublication } = usePublication();
+  const pubPrefix = currentPublication?.subdomain
+    ? `/${currentPublication.subdomain}`
+    : "";
+
+  const withPub = useCallback(
+    (path) => {
+      if (!path?.startsWith?.("/")) return path;
+      if (!pubPrefix) return path;
+      // Avoid double-prefixing.
+      return path.startsWith(pubPrefix) ? path : `${pubPrefix}${path}`;
+    },
+    [pubPrefix],
+  );
 
   // Prevent hydration mismatch by ensuring client-side rendering
   const [isMounted, setIsMounted] = useState(false);
@@ -70,15 +84,26 @@ export default function EditorPageClient() {
       if (currentPublication?.id || publicationId) return;
 
       try {
-        const response = await fetch(
-          `${API_URL}/api/publications/user/${session.user.id}`,
-          {
-            credentials: "include",
-          },
-        );
+        // Use the unified "owned + joined" endpoint so members don't get treated as new users.
+        const response = await fetch(`${API_URL}/api/members/user/publications`, {
+          credentials: "include",
+        });
 
-        if (response.status === 404) {
-          // User has no publication, redirect to create one
+        if (response.status === 401) {
+          router.push("/login");
+          return;
+        }
+
+        if (!response.ok) {
+          console.warn("[Editor] Failed to check publications:", response.status);
+          return;
+        }
+
+        const data = await response.json().catch(() => null);
+        const publications = Array.isArray(data) ? data : data?.publications || [];
+        const hasAny = Array.isArray(publications) && publications.length > 0;
+
+        if (!hasAny) {
           router.push("/create-publication");
         }
       } catch (error) {
@@ -382,7 +407,7 @@ export default function EditorPageClient() {
     const result = await saveBlog(existingBlogStatus || "draft", null, true);
     if (result && existingBlogStatus === "published") {
       // For published articles, redirect to published page
-      window.location.href = "/published?refresh=true";
+      window.location.href = withPub("/published?refresh=true");
     }
   };
 
@@ -390,7 +415,7 @@ export default function EditorPageClient() {
   const handleSaveDraft = async () => {
     const result = await saveBlog("draft");
     if (result) {
-      window.location.href = "/draft?refresh=true";
+      window.location.href = withPub("/draft?refresh=true");
     }
   };
 
@@ -398,7 +423,7 @@ export default function EditorPageClient() {
   const handleDraft = async () => {
     const result = await saveBlog("draft", null, true);
     if (result) {
-      window.location.href = "/draft?refresh=true";
+      window.location.href = withPub("/draft?refresh=true");
     }
   };
 
@@ -407,7 +432,7 @@ export default function EditorPageClient() {
     try {
       const result = await saveBlog("draft", null, true);
       if (result) {
-        window.location.href = "/draft?refresh=true";
+        window.location.href = withPub("/draft?refresh=true");
       }
     } catch (error) {
       console.error("Error reverting from trash:", error);
@@ -435,19 +460,14 @@ export default function EditorPageClient() {
       const isReviewer = isOwner || role === "editor" || role === "admin";
       const targetPath = isReviewer ? "/review" : "/author-review";
 
-      // Include publication ID in URL to stay in joined publication context
-      const pubId = publicationId || currentPublication?.id;
-      const redirectUrl = pubId
-        ? `${targetPath}?pub=${pubId}&refresh=true`
-        : `${targetPath}?refresh=true`;
-      window.location.href = redirectUrl;
+      window.location.href = withPub(`${targetPath}?refresh=true`);
     }
   };
 
   const handleExitNavigation = () => {
     savedSuccessfullyRef.current = true; // Prevent beforeunload check
     if (articleStatus === "published") {
-      router.push("/published?refresh=true");
+      router.push(withPub("/published?refresh=true"));
     } else if (articleStatus === "review") {
       const targetPath =
         currentPublication?.isOwner ||
@@ -455,11 +475,11 @@ export default function EditorPageClient() {
         currentPublication?.role === "admin"
           ? "/review"
           : "/author-review";
-      router.push(`${targetPath}?refresh=true`);
+      router.push(withPub(`${targetPath}?refresh=true`));
     } else if (articleStatus === "trash") {
-      router.push("/trash?refresh=true");
+      router.push(withPub("/trash?refresh=true"));
     } else {
-      router.push("/draft?refresh=true");
+      router.push(withPub("/draft?refresh=true"));
     }
   };
 
@@ -528,7 +548,7 @@ export default function EditorPageClient() {
     const result = await saveBlog("scheduled", scheduledDateTime);
     if (result) {
       setShowCalendar(false);
-      window.location.href = "/schedule?refresh=true";
+      window.location.href = withPub("/schedule?refresh=true");
     }
   };
 

@@ -146,7 +146,8 @@ export default function HomePage() {
   };
 
   const handleEditPublication = () => {
-    router.push("/dashboard/settings");
+    const sub = currentPublication?.subdomain;
+    router.push(sub ? `/${sub}/settings` : "/dashboard/settings");
   };
 
   return (
