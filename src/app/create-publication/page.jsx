@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import AuthGuard from "@/components/auth/AuthGuard";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
@@ -13,6 +13,7 @@ import { getApiBase } from "@/utils/apiBase";
 
 export default function CreatePublication() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { loadUserPublications, switchPublication } = usePublication();
   const [publicationName, setPublicationName] = useState("");
@@ -236,11 +237,24 @@ export default function CreatePublication() {
         sessionStorage.setItem(cacheKey, 'true');
         sessionStorage.removeItem('publication-check-cache');
         
-        // Redirect to the new publication (canonical URL shape)
+        // If we were sent here from an invite (or other flow), return there after creating.
+        const redirectTo = searchParams?.get("redirect");
+        const safeRedirect =
+          redirectTo &&
+          typeof redirectTo === "string" &&
+          redirectTo.startsWith("/") &&
+          !redirectTo.startsWith("//");
+
+        if (safeRedirect) {
+          router.push(redirectTo);
+          return;
+        }
+
+        // Default: go to the new publication (canonical URL shape)
         if (publication?.subdomain) {
           router.push(`/${publication.subdomain}/home`);
         } else {
-          router.push('/');
+          router.push("/");
         }
       } catch (contextError) {
         console.error('Failed to update context, redirecting to dashboard:', contextError);
