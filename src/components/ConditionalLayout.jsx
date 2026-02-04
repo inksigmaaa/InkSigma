@@ -30,6 +30,7 @@ export default function ConditionalLayout({ children, isDashboardHost: isDashboa
         "/create-publication",
         "/invite",
         "/view-site",
+        "/profile-settings", // User-level settings, not publication-specific
       ];
       const OLD_ENDPOINTS = [
         "/home",
@@ -44,7 +45,6 @@ export default function ConditionalLayout({ children, isDashboardHost: isDashboa
         "/schedule",
         "/members",
         "/my-blogs",
-        "/profile-settings",
         "/domain",
         "/dashboard",
       ];
