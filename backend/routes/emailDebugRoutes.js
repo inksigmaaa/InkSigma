@@ -19,14 +19,14 @@ router.post("/test-email", async (req, res) => {
         console.log(`[EMAIL-DEBUG] Testing ${type} email to: ${email}`);
 
         if (type === "verification") {
-            const testUrl = "http://localhost:5000/api/auth/verify-email?token=test-token&callbackURL=http://localhost:3000/login";
+            const testUrl = "http://localhost:5000/api/auth/verify-email?token=test-token&callbackURL=http://dashboard.localhost:3000/login";
             await emailService.sendVerification({
                 email,
                 name: "Test User",
                 verifyUrl: testUrl,
             });
         } else if (type === "reset") {
-            const testUrl = "http://localhost:5000/api/auth/reset-password?token=test-token&callbackURL=http://localhost:3000/reset-password";
+            const testUrl = "http://localhost:5000/api/auth/reset-password?token=test-token&callbackURL=http://dashboard.localhost:3000/reset-password";
             await emailService.sendPasswordReset({
                 email,
                 name: "Test User",
@@ -125,7 +125,7 @@ router.post("/resend-verification", async (req, res) => {
         }
 
         // Generate a verification URL (this is a simplified version)
-        const verificationUrl = `http://localhost:5000/api/auth/verify-email?token=manual-${Date.now()}&callbackURL=http://localhost:3000/login`;
+        const verificationUrl = `http://localhost:5000/api/auth/verify-email?token=manual-${Date.now()}&callbackURL=http://dashboard.localhost:3000/login`;
         
         await emailService.sendVerification({
             email: foundUser.email,

@@ -87,7 +87,7 @@ export default function Header() {
         </nav>
 
         {/* Login Button - Right positioned */}
-        <Link href="/login" className="flex items-center">
+        <a href="http://dashboard.localhost:3000/login" className="flex items-center">
           <Button 
             style={{
               width: '85px',
@@ -107,7 +107,7 @@ export default function Header() {
           >
             Login
           </Button>
-        </Link>
+        </a>
       </div>
 
       {/* Mobile Menu - Full Screen Overlay */}
@@ -147,7 +147,7 @@ export default function Header() {
               </div>
             ))}
             
-            <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+            <a href="http://dashboard.localhost:3000/login" onClick={() => setMobileMenuOpen(false)}>
               <Button 
                 style={{
                   width: '85px',
@@ -167,7 +167,7 @@ export default function Header() {
               >
                 Login
               </Button>
-            </Link>
+            </a>
           </nav>
         </div>
       )}
