@@ -6,6 +6,7 @@ import Link from 'next/link';
 import ShareMenu from '../ShareMenu/ShareMenu';
 import { formatTimeAgo } from '@/utils/timeFormatter';
 import { getImageUrl } from '@/utils/imageUrl';
+import { getThumbnailWithFallback } from '@/utils/fallbackThumbnail';
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
@@ -57,7 +58,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
   };
 
   const dateFormatted = formatDate(latestBlog.createdAt);
-  const thumbnailUrl = getImageUrl(latestBlog.image) || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
+  const thumbnailUrl = getThumbnailWithFallback(getImageUrl(latestBlog.image), latestBlog.id);
 
   return (
     <section className="w-full max-w-[90%] md:max-w-[70%] mx-auto py-6 md:py-0 max-md:px-0 ">

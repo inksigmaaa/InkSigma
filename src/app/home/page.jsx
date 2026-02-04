@@ -13,6 +13,7 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import CategoryBadgeList from "@/components/CategoryBadgeList";
 import { getImageUrl } from "@/utils/imageUrl";
+import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -42,9 +43,7 @@ export default function HomePage() {
     .slice(0, 4)
     .map((article) => {
       // Check if article has an image - use fallback if not
-      const thumbnailUrl = article.image
-        ? getImageUrl(article.image)
-        : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
+      const thumbnailUrl = getThumbnailWithFallback(getImageUrl(article.image), article.id);
 
       return {
         id: article.id,
@@ -251,17 +250,6 @@ export default function HomePage() {
                           src={article.thumbnail}
                           alt={article.title}
                           className="w-full h-full object-cover rounded-sm"
-                          onError={(e) => {
-                            // Prevent infinite loop
-                            if (
-                              e.target.src !==
-                              "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"
-                            ) {
-                              e.target.onerror = null;
-                              e.target.src =
-                                "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
-                            }
-                          }}
                         />
                       </div>
                       <div>

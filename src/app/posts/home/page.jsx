@@ -10,6 +10,7 @@ import { usePublication } from "@/contexts/PublicationContext";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { getImageUrl } from "@/utils/imageUrl";
 import CategoryBadgeList from "@/components/CategoryBadgeList";
+import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 
 export default function PostsHomePage() {
   const router = useRouter();
@@ -206,23 +207,10 @@ export default function PostsHomePage() {
                       <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative">
                         <img
                           src={
-                            article.image
-                              ? getImageUrl(article.image)
-                              : "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"
+                            getThumbnailWithFallback(getImageUrl(article.image), article.id)
                           }
                           alt={article.title}
                           className="w-full h-full object-cover rounded-sm"
-                          onError={(e) => {
-                            // Prevent infinite loop
-                            if (
-                              e.target.src !==
-                              "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop"
-                            ) {
-                              e.target.onerror = null;
-                              e.target.src =
-                                "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
-                            }
-                          }}
                         />
                       </div>
                       <div>
