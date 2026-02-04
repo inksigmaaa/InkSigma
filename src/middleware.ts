@@ -13,6 +13,7 @@ const PUBLIC_PATH_PREFIXES = [
   '/create-publication',
   '/invite',
   '/view-site',
+  '/profile-settings', // User-level settings, not publication-specific
 ];
 
 // "Old" (non-prefixed) dashboard endpoints. If users navigate to these directly on the
@@ -30,7 +31,6 @@ const DASHBOARD_ENDPOINT_PREFIXES = [
   '/schedule',
   '/members',
   '/my-blogs',
-  '/profile-settings',
   '/domain',
   // Legacy dashboard paths (we normalize these below)
   '/dashboard',
