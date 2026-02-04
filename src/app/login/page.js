@@ -11,11 +11,12 @@ import PasswordField from "@/components/auth/PasswordField"
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton"
 import { APP_CONFIG } from "@/constants/app"
 import { signIn } from "@/lib/auth-client"
+import { getApiBase } from "@/utils/apiBase"
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get("redirect") || "/dashboard"
+  const redirectTo = searchParams.get("redirect") || "/"
   
   const [formData, setFormData] = useState({
     email: "",
@@ -26,6 +27,15 @@ function LoginForm() {
   const [showResendVerification, setShowResendVerification] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
+
+  const getOrigin = () => {
+    if (typeof window !== "undefined") {
+      return window.location.origin
+    }
+    return "http://localhost:3000"
+  }
+
+  const apiBase = getApiBase()
 
   const handleInputChange = (field) => (e) => {
     setFormData(prev => ({
@@ -62,27 +72,46 @@ function LoginForm() {
       }
 
       // If there's a specific redirect (like invitation), go there directly
-      if (redirectTo !== "/dashboard") {
+      if (redirectTo !== "/") {
+        // Special case: invited member flow.
+        // If this is a brand-new InkSigma user (no owned publication yet),
+        // take them through create-publication first, then return to invite acceptance.
+        if (redirectTo.startsWith("/invite/")) {
+          try {
+            const ownedRes = await fetch(`${apiBase}/api/publications/check`, {
+              credentials: "include",
+            })
+
+            if (ownedRes.ok) {
+              const data = await ownedRes.json().catch(() => null)
+              const hasOwned = Boolean(data?.hasPublication)
+              if (!hasOwned) {
+                router.push(
+                  `/create-publication?redirect=${encodeURIComponent(redirectTo)}`,
+                )
+                return
+              }
+            }
+          } catch (err) {
+            console.error("Error checking owned publication:", err)
+          }
+        }
+
         router.push(redirectTo)
         return
       }
 
-      // Check if user has a publication (only for dashboard redirect)
+      // Check if user has any publications (owned or joined) (only for default redirect)
       try {
-        const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
+        const pubsRes = await fetch(`${apiBase}/api/members/user/publications`, {
           credentials: "include",
         })
-        
-        if (sessionRes.ok) {
-          const sessionData = await sessionRes.json()
-          const userId = sessionData.user.id
-          
-          const pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
-            credentials: "include",
-          })
-          
-          if (pubRes.status === 404) {
-            // No publication, redirect to create one
+
+        if (pubsRes.ok) {
+          const data = await pubsRes.json().catch(() => null)
+          const publications = Array.isArray(data) ? data : (data?.publications || [])
+          const hasAny = Array.isArray(publications) && publications.length > 0
+          if (!hasAny) {
             router.push('/create-publication')
             return
           }
@@ -114,9 +143,10 @@ function LoginForm() {
   const handleGoogleLogin = async () => {
     try {
       // Preserve redirect parameter in callback URL
-      const callbackURL = redirectTo !== "/dashboard" 
-        ? `http://localhost:3000/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
-        : `http://localhost:3000/auth-callback`
+      const origin = getOrigin()
+      const callbackURL = redirectTo !== "/" 
+        ? `${origin}/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+        : `${origin}/auth-callback`
       
       await signIn.social({
         provider: "google",
@@ -138,7 +168,7 @@ function LoginForm() {
     setResendSuccess(false)
     
     try {
-      const response = await fetch("http://localhost:5000/api/resend-verification", {
+      const response = await fetch(`${apiBase}/api/resend-verification`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -246,7 +276,7 @@ function LoginForm() {
           New to InkSigma?
         </span>
         <Link
-          href={redirectTo !== "/dashboard" ? `/signup?redirect=${encodeURIComponent(redirectTo)}` : "/signup"}
+          href={redirectTo !== "/" ? `/signup?redirect=${encodeURIComponent(redirectTo)}` : "/signup"}
           className="w-[122px] h-[16px] opacity-100 rotate-0 font-medium text-[14px] leading-[100%] tracking-[0%] underline decoration-solid decoration-0 text-[#4B4B4B] hover:text-gray-600 transition-colors whitespace-nowrap"
         >
           Create an Account

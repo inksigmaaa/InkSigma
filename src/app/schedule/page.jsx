@@ -1,11 +1,10 @@
-"use client"
+"use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import AuthGuard from "@/components/auth/AuthGuard";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
-import EditorSidebar from "../components/sidebar/EditorSidebar";
 import Verify from "../components/verify/Verify";
 import PersonalArticles from "../components/personalArticles/personalArticles";
 import ConfirmModal from "../components/confirmModal/ConfirmModal";
@@ -13,18 +12,18 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 
 export default function SchedulePage() {
-  const { 
-    articles, 
+  const {
+    articles,
     publicationArticles,
-    loading, 
+    loading,
     pubArticlesLoading,
-    error, 
-    loadUserArticles, 
+    error,
+    loadUserArticles,
     loadPublicationArticles,
-    moveToTrashStatus, 
-    bulkMoveToTrashStatus, 
-    moveToDraft, 
-    bulkMoveToDraft 
+    moveToTrashStatus,
+    bulkMoveToTrashStatus,
+    moveToDraft,
+    bulkMoveToDraft,
   } = useArticles();
   const { currentPublication, getCurrentUserRole } = usePublication();
   const searchParams = useSearchParams();
@@ -35,21 +34,26 @@ export default function SchedulePage() {
   const [actionArticleId, setActionArticleId] = useState(null);
   const [isBulkAction, setIsBulkAction] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+
   // Determine user role and which articles to show
   const userRole = getCurrentUserRole();
-  const isAdmin = userRole === 'admin' || userRole === 'editor' || currentPublication?.isOwner;
-  
+  const isAdmin =
+    userRole === "admin" ||
+    userRole === "editor" ||
+    currentPublication?.isOwner;
+
   // Use publicationArticles for admins/editors, otherwise use user articles
-  const allArticles = (isAdmin && currentPublication) ? publicationArticles : articles;
-  const isLoading = (isAdmin && currentPublication) ? pubArticlesLoading : loading;
-  
+  const allArticles =
+    isAdmin && currentPublication ? publicationArticles : articles;
+  const isLoading =
+    isAdmin && currentPublication ? pubArticlesLoading : loading;
+
   // Refs to prevent stale closures and unnecessary re-renders
   const loadUserArticlesRef = useRef(loadUserArticles);
   const loadPublicationArticlesRef = useRef(loadPublicationArticles);
   const hasMountedRef = useRef(false);
   const loadedContextRef = useRef(null); // 'user' or 'publication'
-  
+
   // Update refs when functions change
   useEffect(() => {
     loadUserArticlesRef.current = loadUserArticles;
@@ -58,43 +62,50 @@ export default function SchedulePage() {
 
   // Refresh articles when coming from editor with refresh param or when component mounts
   useEffect(() => {
-    const needsRefresh = searchParams.get('refresh') === 'true';
-    
+    const needsRefresh = searchParams.get("refresh") === "true";
+
     // Target context based on current state
-    const targetContext = (isAdmin && currentPublication?.id) ? 'publication' : 'user';
-    
+    const targetContext =
+      isAdmin && currentPublication?.id ? "publication" : "user";
+
     // Check if context changed
-    const isWrongContext = hasMountedRef.current && loadedContextRef.current !== targetContext;
-    
-    const shouldLoad = needsRefresh || 
-                      !hasMountedRef.current ||
-                      isWrongContext;
-    
+    const isWrongContext =
+      hasMountedRef.current && loadedContextRef.current !== targetContext;
+
+    const shouldLoad = needsRefresh || !hasMountedRef.current || isWrongContext;
+
     if (shouldLoad) {
-      console.log(`[SchedulePage] Loading articles... Target: ${targetContext}, Prev: ${loadedContextRef.current}`);
+      console.log(
+        `[SchedulePage] Loading articles... Target: ${targetContext}, Prev: ${loadedContextRef.current}`,
+      );
       hasMountedRef.current = true;
       loadedContextRef.current = targetContext;
-      
-      if (targetContext === 'publication') {
+
+      if (targetContext === "publication") {
         loadPublicationArticlesRef.current(currentPublication.id);
       } else {
         loadUserArticlesRef.current(null, true); // Load all publications for scheduled articles
       }
-      
+
       // Clean up the URL if refresh param was present
       if (needsRefresh) {
-        router.replace('/schedule', { scroll: false });
+        router.replace("/schedule", { scroll: false });
       }
     }
   }, [searchParams, router, isAdmin, currentPublication?.id]);
 
   // Filter scheduled articles - separate from action handlers to prevent re-renders
   const scheduledArticleIds = useMemo(() => {
-    console.log('[SchedulePage] All articles:', allArticles.length);
-    console.log('[SchedulePage] Articles statuses:', allArticles.map(a => ({ id: a.id, title: a.title, status: a.status })));
-    const scheduled = allArticles.filter(article => article.status === 'scheduled');
-    console.log('[SchedulePage] Scheduled articles:', scheduled.length);
-    return scheduled.map(article => article.id);
+    console.log("[SchedulePage] All articles:", allArticles.length);
+    console.log(
+      "[SchedulePage] Articles statuses:",
+      allArticles.map((a) => ({ id: a.id, title: a.title, status: a.status })),
+    );
+    const scheduled = allArticles.filter(
+      (article) => article.status === "scheduled",
+    );
+    console.log("[SchedulePage] Scheduled articles:", scheduled.length);
+    return scheduled.map((article) => article.id);
   }, [allArticles]);
 
   // Memoized action handlers
@@ -112,16 +123,26 @@ export default function SchedulePage() {
 
   // Create scheduled articles with stable action handlers
   const scheduledArticles = useMemo(() => {
-    const scheduled = allArticles.filter(article => article.status === 'scheduled');
-    console.log('[SchedulePage] Creating scheduledArticles array:', scheduled.length);
-    scheduled.forEach(a => {
-      console.log('[SchedulePage] Scheduled article:', { id: a.id, title: a.title, status: a.status, scheduledAt: a.scheduledAt });
+    const scheduled = allArticles.filter(
+      (article) => article.status === "scheduled",
+    );
+    console.log(
+      "[SchedulePage] Creating scheduledArticles array:",
+      scheduled.length,
+    );
+    scheduled.forEach((a) => {
+      console.log("[SchedulePage] Scheduled article:", {
+        id: a.id,
+        title: a.title,
+        status: a.status,
+        scheduledAt: a.scheduledAt,
+      });
     });
-    return scheduled.map(article => ({
-        ...article,
-        onDelete: () => handleDeleteAction(article.id),
-        onDraft: () => handleDraftAction(article.id)
-      }));
+    return scheduled.map((article) => ({
+      ...article,
+      onDelete: () => handleDeleteAction(article.id),
+      onDraft: () => handleDraftAction(article.id),
+    }));
   }, [allArticles, handleDeleteAction, handleDraftAction]);
 
   // Smart refresh: set a single timer for the next scheduled article to publish
@@ -129,35 +150,41 @@ export default function SchedulePage() {
     if (scheduledArticles.length === 0) return;
 
     const now = new Date();
-    
+
     // Find the next article that will be published
     const upcomingArticles = scheduledArticles
-      .filter(article => article.scheduledAt)
-      .map(article => ({
+      .filter((article) => article.scheduledAt)
+      .map((article) => ({
         id: article.id,
         title: article.title,
-        scheduledTime: new Date(article.scheduledAt)
+        scheduledTime: new Date(article.scheduledAt),
       }))
-      .filter(article => article.scheduledTime > now)
+      .filter((article) => article.scheduledTime > now)
       .sort((a, b) => a.scheduledTime - b.scheduledTime);
 
     if (upcomingArticles.length === 0) return;
 
     const nextArticle = upcomingArticles[0];
-    const timeUntilPublish = nextArticle.scheduledTime.getTime() - now.getTime();
+    const timeUntilPublish =
+      nextArticle.scheduledTime.getTime() - now.getTime();
 
     // Set a timer to refresh after the scheduled time + 2 seconds buffer
     const timer = setTimeout(() => {
-      console.log(`[SCHEDULE] Article "${nextArticle.title}" should be published now, refreshing...`);
-      const targetContext = (isAdmin && currentPublication?.id) ? 'publication' : 'user';
-      if (targetContext === 'publication') {
+      console.log(
+        `[SCHEDULE] Article "${nextArticle.title}" should be published now, refreshing...`,
+      );
+      const targetContext =
+        isAdmin && currentPublication?.id ? "publication" : "user";
+      if (targetContext === "publication") {
         loadPublicationArticlesRef.current(currentPublication.id);
       } else {
         loadUserArticlesRef.current(null, true); // Load all publications for scheduled articles
       }
     }, timeUntilPublish + 2000);
 
-    console.log(`[SCHEDULE] Next publish: "${nextArticle.title}" in ${Math.round(timeUntilPublish / 1000)}s`);
+    console.log(
+      `[SCHEDULE] Next publish: "${nextArticle.title}" in ${Math.round(timeUntilPublish / 1000)}s`,
+    );
 
     return () => clearTimeout(timer);
   }, [scheduledArticles, isAdmin, currentPublication?.id]);
@@ -166,32 +193,38 @@ export default function SchedulePage() {
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const targetContext = (isAdmin && currentPublication?.id) ? 'publication' : 'user';
-      if (targetContext === 'publication') {
+      const targetContext =
+        isAdmin && currentPublication?.id ? "publication" : "user";
+      if (targetContext === "publication") {
         await loadPublicationArticlesRef.current(currentPublication.id);
       } else {
         await loadUserArticlesRef.current(null, true); // Load all publications for scheduled articles
       }
     } catch (error) {
-      console.error('Error refreshing articles:', error);
+      console.error("Error refreshing articles:", error);
     } finally {
       setIsRefreshing(false);
     }
   }, [isAdmin, currentPublication?.id]);
 
-  const handleSelectAll = useCallback((checked) => {
-    if (checked) {
-      setSelectedArticles(scheduledArticleIds);
-    } else {
-      setSelectedArticles([]);
-    }
-  }, [scheduledArticleIds]);
+  const handleSelectAll = useCallback(
+    (checked) => {
+      if (checked) {
+        setSelectedArticles(scheduledArticleIds);
+      } else {
+        setSelectedArticles([]);
+      }
+    },
+    [scheduledArticleIds],
+  );
 
   const handleArticleSelect = useCallback((id, checked) => {
     if (checked) {
-      setSelectedArticles(prev => [...prev, id]);
+      setSelectedArticles((prev) => [...prev, id]);
     } else {
-      setSelectedArticles(prev => prev.filter(articleId => articleId !== id));
+      setSelectedArticles((prev) =>
+        prev.filter((articleId) => articleId !== id),
+      );
     }
   }, []);
 
@@ -216,9 +249,15 @@ export default function SchedulePage() {
       setShowDeleteModal(false);
       setActionArticleId(null);
     } catch (error) {
-      console.error('Error moving to trash:', error);
+      console.error("Error moving to trash:", error);
     }
-  }, [isBulkAction, selectedArticles, actionArticleId, bulkMoveToTrashStatus, moveToTrashStatus]);
+  }, [
+    isBulkAction,
+    selectedArticles,
+    actionArticleId,
+    bulkMoveToTrashStatus,
+    moveToTrashStatus,
+  ]);
 
   const confirmDraft = useCallback(async () => {
     try {
@@ -231,22 +270,31 @@ export default function SchedulePage() {
       setShowDraftModal(false);
       setActionArticleId(null);
     } catch (error) {
-      console.error('Error moving to draft:', error);
+      console.error("Error moving to draft:", error);
     }
-  }, [isBulkAction, selectedArticles, actionArticleId, bulkMoveToDraft, moveToDraft]);
+  }, [
+    isBulkAction,
+    selectedArticles,
+    actionArticleId,
+    bulkMoveToDraft,
+    moveToDraft,
+  ]);
 
-  const actionButtons = useMemo(() => [
-    {
-      title: "Move to Draft",
-      icon: "/images/icons/edit.svg",
-      onClick: handleBulkDraft
-    },
-    {
-      title: "Delete",
-      icon: "/images/icons/trash2.svg",
-      onClick: handleBulkDelete
-    }
-  ], [handleBulkDraft, handleBulkDelete]);
+  const actionButtons = useMemo(
+    () => [
+      {
+        title: "Move to Draft",
+        icon: "/images/icons/edit.svg",
+        onClick: handleBulkDraft,
+      },
+      {
+        title: "Delete",
+        icon: "/images/icons/trash2.svg",
+        onClick: handleBulkDelete,
+      },
+    ],
+    [handleBulkDraft, handleBulkDelete],
+  );
 
   const handleCloseDeleteModal = useCallback(() => {
     setShowDeleteModal(false);
@@ -263,7 +311,7 @@ export default function SchedulePage() {
     return (
       <AuthGuard>
         <NavbarLoggedin />
-        {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
+        <Sidebar />
         <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-gray-500">Loading scheduled articles...</div>
@@ -276,7 +324,7 @@ export default function SchedulePage() {
     return (
       <AuthGuard>
         <NavbarLoggedin />
-        {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
+        <Sidebar />
         <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-red-500">Error: {error}</div>
@@ -288,7 +336,7 @@ export default function SchedulePage() {
   return (
     <AuthGuard>
       <NavbarLoggedin />
-      {currentPublication?.role === 'editor' ? <EditorSidebar /> : <Sidebar />}
+      <Sidebar />
       <Verify />
       <PersonalArticles
         title="Scheduled"
@@ -310,7 +358,11 @@ export default function SchedulePage() {
         onClose={handleCloseDeleteModal}
         onConfirm={confirmDelete}
         title="Are you sure you want to put it in trash?"
-        message={isBulkAction ? `${selectedArticles.length} scheduled article(s) will be moved to trash` : "This scheduled article will be moved to trash"}
+        message={
+          isBulkAction
+            ? `${selectedArticles.length} scheduled article(s) will be moved to trash`
+            : "This scheduled article will be moved to trash"
+        }
         confirmText="Move to Trash"
         confirmStyle="danger"
       />
@@ -320,7 +372,11 @@ export default function SchedulePage() {
         onClose={handleCloseDraftModal}
         onConfirm={confirmDraft}
         title="Move to Draft?"
-        message={isBulkAction ? `${selectedArticles.length} scheduled article(s) will be moved to drafts` : "This scheduled article will be moved to drafts"}
+        message={
+          isBulkAction
+            ? `${selectedArticles.length} scheduled article(s) will be moved to drafts`
+            : "This scheduled article will be moved to drafts"
+        }
         confirmText="Move to Draft"
         confirmStyle="normal"
       />

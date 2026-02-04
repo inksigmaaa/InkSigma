@@ -21,6 +21,7 @@ import {
   trackBlogView,
   getBlogViewCount,
 } from "../services/viewTrackingService.js";
+import { requirePublicationContext } from "../middleware/subdomainMiddleware.js";
 
 const router = express.Router();
 
@@ -262,6 +263,16 @@ const syncStatusAndPublished = (status) => {
 // GET /api/blogs - Get all blogs with filters
 router.get("/", async (req, res) => {
   try {
+    if (
+      req.tenant?.type === "subdomain" ||
+      req.tenant?.type === "custom-domain"
+    ) {
+      if (!req.tenant.publication) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+      req.query.publicationId = String(req.tenant.publication.id);
+    }
+
     const {
       published,
       status,
@@ -489,6 +500,50 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET /api/blogs/public - Get all published blogs for current host publication
+router.get("/public", requirePublicationContext, async (req, res) => {
+  try {
+    const { publication } = req;
+    const blogs = await db
+      .select({
+        id: blog.id,
+        slug: blog.slug,
+        title: blog.title,
+        description: blog.description,
+        content: blog.content,
+        image: blog.image,
+        publicationId: blog.publicationId,
+        categories: blog.categories,
+        status: blog.status,
+        published: blog.published,
+        publishedAt: blog.publishedAt,
+        createdAt: blog.createdAt,
+        updatedAt: blog.updatedAt,
+        authorId: blog.authorId,
+        author: {
+          id: user.id,
+          name: user.name,
+          image: user.image,
+          username: user.username,
+        },
+      })
+      .from(blog)
+      .leftJoin(user, eq(blog.authorId, user.id))
+      .where(
+        and(
+          eq(blog.publicationId, publication.id),
+          eq(blog.status, "published"),
+        ),
+      )
+      .orderBy(desc(blog.publishedAt));
+
+    res.json({ publication, blogs });
+  } catch (error) {
+    console.error("Error fetching public blogs:", error);
+    res.status(500).json({ error: "Failed to fetch public blogs" });
+  }
+});
+
 // GET /api/blogs/publication/:publicationId - Get all blogs for a publication
 router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
   try {
@@ -680,46 +735,33 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Blog not found" });
     }
 
-    // Security: Only show non-published blogs to the author or reviewers
+    if (
+      req.tenant?.type === "subdomain" ||
+      req.tenant?.type === "custom-domain"
+    ) {
+      if (!req.tenant.publication) {
+        return res.status(404).json({ error: "Blog not found" });
+      }
+      if (blogData.publicationId !== req.tenant.publication.id) {
+        return res.status(404).json({ error: "Blog not found" });
+      }
+    }
+
+    // Security: Only show non-published blogs to authorized users (author, admin, editor)
     if (blogData.status !== "published") {
-      if (
-        !currentUserId ||
-        (blogData.authorId !== currentUserId && blogData.status !== "review")
-      ) {
+      if (!currentUserId) {
         return res.status(404).json({ error: "Blog not found" });
       }
 
-      // If blog is in review status, check if user is a reviewer (admin/editor) in the publication
-      if (blogData.status === "review" && blogData.authorId !== currentUserId) {
-        // Need to fetch the blog with publication info to check reviewer status
-        const [blogWithPub] = await db
-          .select({
-            publicationId: blog.publicationId,
-          })
-          .from(blog)
-          .where(eq(blog.id, parseInt(id)));
+      // Check if user is author OR has permission to modify (Admin/Editor)
+      // This aligns with the PUT permissions so editors can view the drafts they are allowed to edit
+      const canView = await canUserModifyBlog(currentUserId, blogData.authorId);
 
-        if (blogWithPub?.publicationId) {
-          const [member] = await db
-            .select()
-            .from(publicationMember)
-            .where(
-              and(
-                eq(publicationMember.publicationId, blogWithPub.publicationId),
-                eq(publicationMember.userId, currentUserId),
-                or(
-                  eq(publicationMember.role, "admin"),
-                  eq(publicationMember.role, "editor"),
-                ),
-              ),
-            );
-
-          if (!member) {
-            return res.status(404).json({ error: "Blog not found" });
-          }
-        } else {
-          return res.status(404).json({ error: "Blog not found" });
-        }
+      if (!canView) {
+        // Special check: If it's in review, current logic might still apply?
+        // canUserModifyBlog covers Admin/Editor roles which are the reviewers.
+        // So we can rely on it.
+        return res.status(404).json({ error: "Blog not found" });
       }
     }
 
@@ -777,6 +819,18 @@ router.get("/slug/:slug", async (req, res) => {
 
     if (!blogData) {
       return res.status(404).json({ error: "Blog not found" });
+    }
+
+    if (
+      req.tenant?.type === "subdomain" ||
+      req.tenant?.type === "custom-domain"
+    ) {
+      if (!req.tenant.publication) {
+        return res.status(404).json({ error: "Blog not found" });
+      }
+      if (blogData.publicationId !== req.tenant.publication.id) {
+        return res.status(404).json({ error: "Blog not found" });
+      }
     }
 
     // Get view count from blog_view table
@@ -1095,14 +1149,14 @@ router.post("/:id/edit-draft", getCurrentUser, async (req, res) => {
     const draftSlug = await ensureUniqueSlug(`${originalBlog.slug}-draft`);
     const draftData = {
       slug: draftSlug,
-      title: `[copy] ${originalBlog.title}`,
+      title: `${originalBlog.title} [Draft update]`,
       description: originalBlog.description,
       content: originalBlog.content,
       image: originalBlog.image,
       categories: originalBlog.categories,
       status: "draft",
       published: false,
-      authorId: req.user.id, // Current user becomes author of draft (usually same person)
+      authorId: originalBlog.authorId, // Original author remains author of draft
       publicationId: originalBlog.publicationId, // Keep same publication
       masterId: originalBlog.id, // Link to original
       createdAt: new Date(),
@@ -1278,11 +1332,13 @@ router.put("/:id", getCurrentUser, async (req, res) => {
           // Return the master blog as the result
           return res.json(updatedMaster);
         } else {
-          console.warn(
-            `[PUT BLOG] Master blog ${existingBlog.masterId} not found, proceeding with normal update`,
+          console.error(
+            `[PUT BLOG ERROR] Master blog ${existingBlog.masterId} not found for draft ${id}. Cannot merge.`,
           );
-          // If master not found, maybe just treat this as a normal blog now?
-          // Or strip the masterId? Let's just proceed as normal update for now to avoid data loss.
+          return res.status(404).json({
+            error:
+              "Original article not found. Cannot publish this draft as an update.",
+          });
         }
       }
     }
@@ -1607,6 +1663,58 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
       updatedAt: new Date(),
     };
 
+    // MERGE LOGIC: If this is a draft of a published article and it is being published
+    if (existingBlog.masterId && targetStatus === "published") {
+      console.log(
+        `[PATCH BLOG] Merging draft ${id} into master ${existingBlog.masterId}`,
+      );
+
+      // Get Master Blog to ensure it exists
+      const [masterBlog] = await db
+        .select()
+        .from(blog)
+        .where(eq(blog.id, existingBlog.masterId));
+
+      if (masterBlog) {
+        // Prepare data to update master
+        // We use the draft's current data (existingBlog) as the source of truth
+        // since PATCH usually only updates status, but we want to merge the draft's content
+        const mergeData = {
+          title: existingBlog.title,
+          description: existingBlog.description,
+          content: existingBlog.content,
+          image: existingBlog.image,
+          categories: existingBlog.categories,
+          updatedAt: new Date(),
+          ...syncedFields, // Ensure master gets 'published' status if it wasn't already (though it should be)
+        };
+
+        console.log("[PATCH BLOG] Updating master with merged data");
+
+        // Update Master
+        const [updatedMaster] = await db
+          .update(blog)
+          .set(mergeData)
+          .where(eq(blog.id, existingBlog.masterId))
+          .returning();
+
+        // Delete the Draft
+        console.log(`[PATCH BLOG] Deleting draft ${id} after merge`);
+        await db.delete(blog).where(eq(blog.id, parseInt(id)));
+
+        // Return the master blog as the result
+        return res.json(updatedMaster);
+      } else {
+        console.error(
+          `[PATCH BLOG ERROR] Master blog ${existingBlog.masterId} not found for draft ${id}. Cannot merge.`,
+        );
+        return res.status(404).json({
+          error:
+            "Original article not found. Cannot publish this draft as an update.",
+        });
+      }
+    }
+
     const [updatedBlog] = await db
       .update(blog)
       .set(updateData)
@@ -1755,15 +1863,20 @@ router.delete("/:id", getCurrentUser, async (req, res) => {
     }
 
     // Delete associated image file if exists
-    if (
-      existingBlog.image &&
-      existingBlog.image.includes("/uploads/blog-images/")
-    ) {
-      const imagePath = existingBlog.image.split("/uploads/blog-images/")[1];
-      const filePath = `uploads/blog-images/${imagePath}`;
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+    try {
+      if (
+        existingBlog.image &&
+        existingBlog.image.includes("/uploads/blog-images/")
+      ) {
+        const imagePath = existingBlog.image.split("/uploads/blog-images/")[1];
+        const filePath = `uploads/blog-images/${imagePath}`;
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
       }
+    } catch (fileError) {
+      console.error("Error deleting image file:", fileError);
+      // Continue with blog deletion even if image deletion fails
     }
 
     await db.delete(blog).where(eq(blog.id, parseInt(id)));

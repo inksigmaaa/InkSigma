@@ -1,7 +1,12 @@
 // routes/memberRoutes.js
 import express from "express";
 import { db } from "../config/database.js";
-import { publicationMember, invitation, publication, user } from "../models/schema.js";
+import {
+  publicationMember,
+  invitation,
+  publication,
+  user,
+} from "../models/schema.js";
 import { eq, and, or } from "drizzle-orm";
 import crypto from "crypto";
 import { auth } from "../config/betterAuth.js";
@@ -57,25 +62,25 @@ const requireAdmin = async (req, res, next) => {
         and(
           eq(publicationMember.publicationId, parseInt(publicationId)),
           eq(publicationMember.userId, userId),
-          eq(publicationMember.role, "admin")
-        )
+          eq(publicationMember.role, "admin"),
+        ),
       );
 
     if (member.length > 0) {
       isAdmin = true;
     } else if (isOwner) {
       // If user is the publication owner but not in members table, add them as admin
-      console.log(`Adding publication owner as admin member: ${userId} for publication ${publicationId}`);
-      
-      await db
-        .insert(publicationMember)
-        .values({
-          publicationId: parseInt(publicationId),
-          userId: userId,
-          role: "admin",
-          invitedBy: userId,
-        });
-      
+      console.log(
+        `Adding publication owner as admin member: ${userId} for publication ${publicationId}`,
+      );
+
+      await db.insert(publicationMember).values({
+        publicationId: parseInt(publicationId),
+        userId: userId,
+        role: "admin",
+        invitedBy: userId,
+      });
+
       isAdmin = true;
     }
 
@@ -87,6 +92,144 @@ const requireAdmin = async (req, res, next) => {
   } catch (error) {
     console.error("Admin check error:", error);
     res.status(500).json({ error: "Failed to verify admin access" });
+  }
+};
+
+// Middleware to check if user can invite members (Admin or Editor)
+const requireCanInvite = async (req, res, next) => {
+  try {
+    const { publicationId } = req.params;
+    const userId = req.user.id;
+
+    // First check if user is the publication owner
+    const [pub] = await db
+      .select()
+      .from(publication)
+      .where(eq(publication.id, parseInt(publicationId)));
+
+    if (!pub) {
+      return res.status(404).json({ error: "Publication not found" });
+    }
+
+    let canInvite = false;
+    let isOwner = pub.userId === userId;
+    let userRole = null;
+
+    // Check if user is an admin or editor member
+    const [member] = await db
+      .select()
+      .from(publicationMember)
+      .where(
+        and(
+          eq(publicationMember.publicationId, parseInt(publicationId)),
+          eq(publicationMember.userId, userId),
+        ),
+      );
+
+    if (member) {
+      userRole = member.role;
+      // Both admin and editor can invite members
+      if (member.role === "admin" || member.role === "editor") {
+        canInvite = true;
+      }
+    } else if (isOwner) {
+      // If user is the publication owner but not in members table, add them as admin
+      console.log(
+        `Adding publication owner as admin member: ${userId} for publication ${publicationId}`,
+      );
+
+      await db.insert(publicationMember).values({
+        publicationId: parseInt(publicationId),
+        userId: userId,
+        role: "admin",
+        invitedBy: userId,
+      });
+
+      canInvite = true;
+      userRole = "admin";
+    }
+
+    if (!canInvite) {
+      return res
+        .status(403)
+        .json({ error: "Admin or Editor access required to invite members" });
+    }
+
+    // Store user role on request for later use (e.g., to restrict editor from inviting editor)
+    req.userRole = userRole;
+    next();
+  } catch (error) {
+    console.error("Invite permission check error:", error);
+    res.status(500).json({ error: "Failed to verify invite permission" });
+  }
+};
+
+// Middleware to check if user can remove members (Admin or Editor)
+const requireCanRemove = async (req, res, next) => {
+  try {
+    const { publicationId } = req.params;
+    const userId = req.user.id;
+
+    // First check if user is the publication owner
+    const [pub] = await db
+      .select()
+      .from(publication)
+      .where(eq(publication.id, parseInt(publicationId)));
+
+    if (!pub) {
+      return res.status(404).json({ error: "Publication not found" });
+    }
+
+    let canRemove = false;
+    let isOwner = pub.userId === userId;
+    let userRole = null;
+
+    // Check if user is an admin or editor member
+    const [member] = await db
+      .select()
+      .from(publicationMember)
+      .where(
+        and(
+          eq(publicationMember.publicationId, parseInt(publicationId)),
+          eq(publicationMember.userId, userId),
+        ),
+      );
+
+    if (member) {
+      userRole = member.role;
+      // Both admin and editor can remove members
+      if (member.role === "admin" || member.role === "editor") {
+        canRemove = true;
+      }
+    } else if (isOwner) {
+      // If user is the publication owner but not in members table, add them as admin
+      console.log(
+        `Adding publication owner as admin member: ${userId} for publication ${publicationId}`,
+      );
+
+      await db.insert(publicationMember).values({
+        publicationId: parseInt(publicationId),
+        userId: userId,
+        role: "admin",
+        invitedBy: userId,
+      });
+
+      canRemove = true;
+      userRole = "admin";
+    }
+
+    if (!canRemove) {
+      return res
+        .status(403)
+        .json({ error: "Admin or Editor access required to remove members" });
+    }
+
+    // Store user role on request for later use
+    req.userRole = userRole;
+    next();
+  } catch (error) {
+    console.error("Remove permission check error:", error);
+    res.status(500).json({ error: "Failed to verify remove permission" });
   }
 };
 
@@ -116,31 +259,32 @@ router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
       .where(
         and(
           eq(publicationMember.publicationId, parseInt(publicationId)),
-          eq(publicationMember.userId, userId)
-        )
+          eq(publicationMember.userId, userId),
+        ),
       );
 
     if (userMember.length > 0) {
       userRole = userMember[0].role;
     } else if (isOwner) {
       // If user is the publication owner but not in members table, add them as admin
-      console.log(`Adding publication owner as admin member: ${userId} for publication ${publicationId}`);
-      
-      await db
-        .insert(publicationMember)
-        .values({
-          publicationId: parseInt(publicationId),
-          userId: userId,
-          role: "admin",
-          invitedBy: userId,
-        });
-      
+      console.log(
+        `Adding publication owner as admin member: ${userId} for publication ${publicationId}`,
+      );
+
+      await db.insert(publicationMember).values({
+        publicationId: parseInt(publicationId),
+        userId: userId,
+        role: "admin",
+        invitedBy: userId,
+      });
+
       userRole = "admin";
     } else {
       return res.status(403).json({ error: "Access denied" });
     }
 
     const isAdmin = userRole === "admin";
+    const canManageInvites = userRole === "admin" || userRole === "editor";
 
     // Get all active members
     const members = await db
@@ -167,9 +311,9 @@ router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
       }
     }
 
-    // If admin, also get pending invitations
+    // If admin or editor, also get pending invitations
     let pendingInvitations = [];
-    if (isAdmin) {
+    if (canManageInvites) {
       pendingInvitations = await db
         .select({
           id: invitation.id,
@@ -186,15 +330,15 @@ router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
             or(
               eq(invitation.status, "pending"),
               eq(invitation.status, "expired"),
-              eq(invitation.status, "declined")
-            )
-          )
+              eq(invitation.status, "declined"),
+            ),
+          ),
         );
     }
 
     res.json({
       members: uniqueMembers,
-      pendingInvitations: isAdmin ? pendingInvitations : [],
+      pendingInvitations: canManageInvites ? pendingInvitations : [],
       userRole: userRole,
     });
   } catch (error) {
@@ -203,275 +347,340 @@ router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
   }
 });
 
-// Send invitation (Admin only)
-router.post("/:publicationId/invite", getCurrentUser, requireAdmin, async (req, res) => {
-  try {
-    const { publicationId } = req.params;
-    const { email, role } = req.body;
-    const inviterId = req.user.id;
+// Send invitation (Admin or Editor with restrictions)
+router.post(
+  "/:publicationId/invite",
+  getCurrentUser,
+  requireCanInvite,
+  async (req, res) => {
+    try {
+      const { publicationId } = req.params;
+      const { email, role } = req.body;
+      const inviterId = req.user.id;
 
-    if (!email || !role) {
-      return res.status(400).json({ error: "Email and role are required" });
-    }
+      if (!email || !role) {
+        return res.status(400).json({ error: "Email and role are required" });
+      }
 
-    if (!["editor", "author"].includes(role)) {
-      return res.status(400).json({ error: "Invalid role. Must be 'editor' or 'author'" });
-    }
+      if (!["editor", "author"].includes(role)) {
+        return res
+          .status(400)
+          .json({ error: "Invalid role. Must be 'editor' or 'author'" });
+      }
 
-    // Check if user is already a member
-    const existingUser = await db
-      .select()
-      .from(user)
-      .where(eq(user.email, email));
+      // Editors can only invite authors, not other editors
+      if (req.userRole === "editor" && role === "editor") {
+        return res
+          .status(403)
+          .json({ error: "Editors cannot invite other editors" });
+      }
 
-    if (existingUser.length > 0) {
-      const existingMember = await db
+      // Check if user is already a member
+      const existingUser = await db
         .select()
-        .from(publicationMember)
+        .from(user)
+        .where(eq(user.email, email));
+
+      if (existingUser.length > 0) {
+        const existingMember = await db
+          .select()
+          .from(publicationMember)
+          .where(
+            and(
+              eq(publicationMember.publicationId, parseInt(publicationId)),
+              eq(publicationMember.userId, existingUser[0].id),
+            ),
+          );
+
+        if (existingMember.length > 0) {
+          return res
+            .status(400)
+            .json({ error: "User is already a member of this publication" });
+        }
+      }
+
+      // Check if there's already a pending invitation
+      const existingInvitation = await db
+        .select()
+        .from(invitation)
         .where(
           and(
-            eq(publicationMember.publicationId, parseInt(publicationId)),
-            eq(publicationMember.userId, existingUser[0].id)
-          )
+            eq(invitation.publicationId, parseInt(publicationId)),
+            eq(invitation.email, email),
+            eq(invitation.status, "pending"),
+          ),
         );
 
-      if (existingMember.length > 0) {
-        return res.status(400).json({ error: "User is already a member of this publication" });
+      if (existingInvitation.length > 0) {
+        return res
+          .status(400)
+          .json({ error: "Invitation already sent to this email" });
       }
-    }
 
-    // Check if there's already a pending invitation
-    const existingInvitation = await db
-      .select()
-      .from(invitation)
-      .where(
-        and(
-          eq(invitation.publicationId, parseInt(publicationId)),
-          eq(invitation.email, email),
-          eq(invitation.status, "pending")
-        )
-      );
+      // Generate unique token
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    if (existingInvitation.length > 0) {
-      return res.status(400).json({ error: "Invitation already sent to this email" });
-    }
-
-    // Generate unique token
-    const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-    // Create invitation
-    const [newInvitation] = await db
-      .insert(invitation)
-      .values({
-        publicationId: parseInt(publicationId),
-        inviterId,
-        email,
-        role,
-        token,
-        expiresAt,
-      })
-      .returning();
-
-    // Get publication details for email
-    const [pub] = await db
-      .select()
-      .from(publication)
-      .where(eq(publication.id, parseInt(publicationId)));
-
-    // Send invitation email
-    let emailSent = true;
-    try {
-      await sendInvitationEmail(email, pub.name, role, token, req.user.name);
-    } catch (emailError) {
-      console.error("Failed to send invitation email:", emailError);
-      emailSent = false;
-      // Still continue since the invitation was created in the database
-    }
-
-    // Create notification if user exists
-    if (existingUser.length > 0) {
-      try {
-        await notificationService.notifyInvitation({
-          userId: existingUser[0].id,
-          publicationName: pub.name,
-          inviterName: req.user.name,
-          inviterId: req.user.id,
+      // Create invitation
+      const [newInvitation] = await db
+        .insert(invitation)
+        .values({
           publicationId: parseInt(publicationId),
-        });
-      } catch (notifError) {
-        console.error("Failed to create notification:", notifError);
-      }
-    }
+          inviterId,
+          email,
+          role,
+          token,
+          expiresAt,
+        })
+        .returning();
 
-    res.status(201).json({
-      message: emailSent 
-        ? "Invitation sent successfully" 
-        : "Invitation created but email failed to send. You can resend it later.",
-      invitation: {
-        id: newInvitation.id,
-        email: newInvitation.email,
-        role: newInvitation.role,
-        status: newInvitation.status,
-        createdAt: newInvitation.createdAt,
-        expiresAt: newInvitation.expiresAt,
-      },
-      emailSent,
-    });
-  } catch (error) {
-    console.error("Error sending invitation:", error);
-    res.status(500).json({ error: "Failed to send invitation" });
-  }
-});
+      // Get publication details for email
+      const [pub] = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.id, parseInt(publicationId)));
+
+      // Send invitation email
+      let emailSent = true;
+      try {
+        await sendInvitationEmail(email, pub.name, role, token, req.user.name);
+      } catch (emailError) {
+        console.error("Failed to send invitation email:", emailError);
+        emailSent = false;
+        // Still continue since the invitation was created in the database
+      }
+
+      // Create notification if user exists
+      if (existingUser.length > 0) {
+        try {
+          await notificationService.notifyInvitation({
+            userId: existingUser[0].id,
+            publicationName: pub.name,
+            inviterName: req.user.name,
+            inviterId: req.user.id,
+            publicationId: parseInt(publicationId),
+          });
+        } catch (notifError) {
+          console.error("Failed to create notification:", notifError);
+        }
+      }
+
+      res.status(201).json({
+        message: emailSent
+          ? "Invitation sent successfully"
+          : "Invitation created but email failed to send. You can resend it later.",
+        invitation: {
+          id: newInvitation.id,
+          email: newInvitation.email,
+          role: newInvitation.role,
+          status: newInvitation.status,
+          createdAt: newInvitation.createdAt,
+          expiresAt: newInvitation.expiresAt,
+        },
+        emailSent,
+      });
+    } catch (error) {
+      console.error("Error sending invitation:", error);
+      res.status(500).json({ error: "Failed to send invitation" });
+    }
+  },
+);
 
 // Resend invitation (Admin only)
-router.post("/:publicationId/invite/:invitationId/resend", getCurrentUser, requireAdmin, async (req, res) => {
-  try {
-    const { publicationId, invitationId } = req.params;
-
-    // Get invitation
-    const [invite] = await db
-      .select()
-      .from(invitation)
-      .where(
-        and(
-          eq(invitation.id, parseInt(invitationId)),
-          eq(invitation.publicationId, parseInt(publicationId))
-        )
-      );
-
-    if (!invite) {
-      return res.status(404).json({ error: "Invitation not found" });
-    }
-
-    if (invite.status === "accepted") {
-      return res.status(400).json({ error: "Invitation already accepted" });
-    }
-
-    // Update expiration date
-    const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-    await db
-      .update(invitation)
-      .set({
-        status: "pending",
-        expiresAt: newExpiresAt,
-        updatedAt: new Date(),
-      })
-      .where(eq(invitation.id, parseInt(invitationId)));
-
-    // Get publication details
-    const [pub] = await db
-      .select()
-      .from(publication)
-      .where(eq(publication.id, parseInt(publicationId)));
-
-    // Resend email
+router.post(
+  "/:publicationId/invite/:invitationId/resend",
+  getCurrentUser,
+  requireAdmin,
+  async (req, res) => {
     try {
-      await sendInvitationEmail(invite.email, pub.name, invite.role, invite.token, req.user.name);
-    } catch (emailError) {
-      console.error("Failed to resend invitation email:", emailError);
-      // Still return success since the invitation was updated in the database
-    }
+      const { publicationId, invitationId } = req.params;
 
-    res.json({ message: "Invitation resent successfully" });
-  } catch (error) {
-    console.error("Error resending invitation:", error);
-    res.status(500).json({ error: "Failed to resend invitation" });
-  }
-});
+      // Get invitation
+      const [invite] = await db
+        .select()
+        .from(invitation)
+        .where(
+          and(
+            eq(invitation.id, parseInt(invitationId)),
+            eq(invitation.publicationId, parseInt(publicationId)),
+          ),
+        );
 
-// Cancel invitation (Admin only)
-router.delete("/:publicationId/invite/:invitationId", getCurrentUser, requireAdmin, async (req, res) => {
-  try {
-    const { publicationId, invitationId } = req.params;
-
-    const result = await db
-      .delete(invitation)
-      .where(
-        and(
-          eq(invitation.id, parseInt(invitationId)),
-          eq(invitation.publicationId, parseInt(publicationId))
-        )
-      )
-      .returning();
-
-    if (result.length === 0) {
-      return res.status(404).json({ error: "Invitation not found" });
-    }
-
-    res.json({ message: "Invitation cancelled successfully" });
-  } catch (error) {
-    console.error("Error cancelling invitation:", error);
-    res.status(500).json({ error: "Failed to cancel invitation" });
-  }
-});
-
-// Remove member (Admin only)
-router.delete("/:publicationId/members/:memberId", getCurrentUser, requireAdmin, async (req, res) => {
-  try {
-    const { publicationId, memberId } = req.params;
-
-    // Don't allow removing admin (themselves)
-    const [member] = await db
-      .select()
-      .from(publicationMember)
-      .where(eq(publicationMember.id, parseInt(memberId)));
-
-    if (!member) {
-      return res.status(404).json({ error: "Member not found" });
-    }
-
-    if (member.role === "admin") {
-      return res.status(400).json({ error: "Cannot remove admin member" });
-    }
-
-    const result = await db
-      .delete(publicationMember)
-      .where(
-        and(
-          eq(publicationMember.id, parseInt(memberId)),
-          eq(publicationMember.publicationId, parseInt(publicationId))
-        )
-      )
-      .returning();
-
-    if (result.length === 0) {
-      return res.status(404).json({ error: "Member not found" });
-    }
-
-    // Get removed member details
-    const [removedUser] = await db
-      .select()
-      .from(user)
-      .where(eq(user.id, member.userId));
-
-    // Notify the removed member
-    if (removedUser) {
-      try {
-        const [pub] = await db
-          .select()
-          .from(publication)
-          .where(eq(publication.id, parseInt(publicationId)));
-
-        await notificationService.createNotification({
-          userId: removedUser.id,
-          type: "member_removed",
-          title: pub.name,
-          message: "You have been removed from this publication.",
-          relatedUserId: req.user.id,  // Add the admin who removed them
-          relatedPublicationId: parseInt(publicationId),
-        });
-      } catch (notifError) {
-        console.error("Failed to create notification:", notifError);
+      if (!invite) {
+        return res.status(404).json({ error: "Invitation not found" });
       }
-    }
 
-    res.json({ message: "Member removed successfully" });
-  } catch (error) {
-    console.error("Error removing member:", error);
-    res.status(500).json({ error: "Failed to remove member" });
-  }
-});
+      if (invite.status === "accepted") {
+        return res.status(400).json({ error: "Invitation already accepted" });
+      }
+
+      // Update expiration date
+      const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      await db
+        .update(invitation)
+        .set({
+          status: "pending",
+          expiresAt: newExpiresAt,
+          updatedAt: new Date(),
+        })
+        .where(eq(invitation.id, parseInt(invitationId)));
+
+      // Get publication details
+      const [pub] = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.id, parseInt(publicationId)));
+
+      // Resend email
+      try {
+        await sendInvitationEmail(
+          invite.email,
+          pub.name,
+          invite.role,
+          invite.token,
+          req.user.name,
+        );
+      } catch (emailError) {
+        console.error("Failed to resend invitation email:", emailError);
+        // Still return success since the invitation was updated in the database
+      }
+
+      res.json({ message: "Invitation resent successfully" });
+    } catch (error) {
+      console.error("Error resending invitation:", error);
+      res.status(500).json({ error: "Failed to resend invitation" });
+    }
+  },
+);
+
+// Cancel invitation (Admin or Editor with restrictions)
+router.delete(
+  "/:publicationId/invite/:invitationId",
+  getCurrentUser,
+  requireCanRemove,
+  async (req, res) => {
+    try {
+      const { publicationId, invitationId } = req.params;
+
+      // Get the invitation to check its role
+      const [invite] = await db
+        .select()
+        .from(invitation)
+        .where(
+          and(
+            eq(invitation.id, parseInt(invitationId)),
+            eq(invitation.publicationId, parseInt(publicationId)),
+          ),
+        );
+
+      if (!invite) {
+        return res.status(404).json({ error: "Invitation not found" });
+      }
+
+      // Editors can only cancel author invitations, not editor invitations
+      if (req.userRole === "editor" && invite.role === "editor") {
+        return res
+          .status(403)
+          .json({ error: "Editors cannot cancel editor invitations" });
+      }
+
+      const result = await db
+        .delete(invitation)
+        .where(
+          and(
+            eq(invitation.id, parseInt(invitationId)),
+            eq(invitation.publicationId, parseInt(publicationId)),
+          ),
+        )
+        .returning();
+
+      res.json({ message: "Invitation cancelled successfully" });
+    } catch (error) {
+      console.error("Error cancelling invitation:", error);
+      res.status(500).json({ error: "Failed to cancel invitation" });
+    }
+  },
+);
+
+// Remove member (Admin or Editor with restrictions)
+router.delete(
+  "/:publicationId/members/:memberId",
+  getCurrentUser,
+  requireCanRemove,
+  async (req, res) => {
+    try {
+      const { publicationId, memberId } = req.params;
+
+      // Get the member to be removed
+      const [member] = await db
+        .select()
+        .from(publicationMember)
+        .where(eq(publicationMember.id, parseInt(memberId)));
+
+      if (!member) {
+        return res.status(404).json({ error: "Member not found" });
+      }
+
+      // Don't allow removing admin
+      if (member.role === "admin") {
+        return res.status(400).json({ error: "Cannot remove admin member" });
+      }
+
+      // Editors can only remove authors, not other editors
+      if (req.userRole === "editor" && member.role === "editor") {
+        return res
+          .status(403)
+          .json({ error: "Editors cannot remove other editors" });
+      }
+
+      const result = await db
+        .delete(publicationMember)
+        .where(
+          and(
+            eq(publicationMember.id, parseInt(memberId)),
+            eq(publicationMember.publicationId, parseInt(publicationId)),
+          ),
+        )
+        .returning();
+
+      if (result.length === 0) {
+        return res.status(404).json({ error: "Member not found" });
+      }
+
+      // Get removed member details
+      const [removedUser] = await db
+        .select()
+        .from(user)
+        .where(eq(user.id, member.userId));
+
+      // Notify the removed member
+      if (removedUser) {
+        try {
+          const [pub] = await db
+            .select()
+            .from(publication)
+            .where(eq(publication.id, parseInt(publicationId)));
+
+          await notificationService.createNotification({
+            userId: removedUser.id,
+            type: "member_removed",
+            title: pub.name,
+            message: "You have been removed from this publication.",
+            relatedUserId: req.user.id, // Add the admin who removed them
+            relatedPublicationId: parseInt(publicationId),
+          });
+        } catch (notifError) {
+          console.error("Failed to create notification:", notifError);
+        }
+      }
+
+      res.json({ message: "Member removed successfully" });
+    } catch (error) {
+      console.error("Error removing member:", error);
+      res.status(500).json({ error: "Failed to remove member" });
+    }
+  },
+);
 
 // Get user's publications (owned + joined)
 router.get("/user/publications", getCurrentUser, async (req, res) => {
@@ -492,10 +701,10 @@ router.get("/user/publications", getCurrentUser, async (req, res) => {
       .where(eq(publication.userId, userId));
 
     // Get the IDs of owned publications to exclude from joined list
-    const ownedPublicationIds = ownedPublications.map(pub => pub.id);
+    const ownedPublicationIds = ownedPublications.map((pub) => pub.id);
 
     // Add metadata for owned publications
-    const ownedWithMeta = ownedPublications.map(pub => ({
+    const ownedWithMeta = ownedPublications.map((pub) => ({
       ...pub,
       isOwner: true,
       role: "admin",
@@ -516,16 +725,19 @@ router.get("/user/publications", getCurrentUser, async (req, res) => {
         ownerId: publication.userId,
       })
       .from(publicationMember)
-      .innerJoin(publication, eq(publicationMember.publicationId, publication.id))
+      .innerJoin(
+        publication,
+        eq(publicationMember.publicationId, publication.id),
+      )
       .where(eq(publicationMember.userId, userId));
 
     // Filter out publications where user is the owner (they should only appear in owned list)
     const filteredJoinedPublications = joinedPublications.filter(
-      pub => pub.ownerId !== userId
+      (pub) => pub.ownerId !== userId,
     );
 
     // Add metadata for joined publications
-    const joinedWithMeta = filteredJoinedPublications.map(pub => {
+    const joinedWithMeta = filteredJoinedPublications.map((pub) => {
       const { ownerId, ...rest } = pub; // Remove ownerId from response
       return {
         ...rest,
@@ -560,16 +772,20 @@ router.post("/:publicationId/leave", getCurrentUser, async (req, res) => {
       .where(
         and(
           eq(publicationMember.publicationId, parseInt(publicationId)),
-          eq(publicationMember.userId, userId)
-        )
+          eq(publicationMember.userId, userId),
+        ),
       );
 
     if (!member) {
-      return res.status(404).json({ error: "You are not a member of this publication" });
+      return res
+        .status(404)
+        .json({ error: "You are not a member of this publication" });
     }
 
     if (member.role === "admin") {
-      return res.status(400).json({ error: "Admin cannot leave publication. Transfer ownership first." });
+      return res.status(400).json({
+        error: "Admin cannot leave publication. Transfer ownership first.",
+      });
     }
 
     await db
@@ -577,8 +793,8 @@ router.post("/:publicationId/leave", getCurrentUser, async (req, res) => {
       .where(
         and(
           eq(publicationMember.publicationId, parseInt(publicationId)),
-          eq(publicationMember.userId, userId)
-        )
+          eq(publicationMember.userId, userId),
+        ),
       );
 
     res.json({ message: "Successfully left the publication" });
@@ -605,9 +821,9 @@ router.get("/invite/:token", getCurrentUser, async (req, res) => {
 
     // Check if invitation is still valid
     if (invite.status !== "pending") {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Invitation is no longer valid",
-        status: invite.status 
+        status: invite.status,
       });
     }
 
@@ -617,16 +833,16 @@ router.get("/invite/:token", getCurrentUser, async (req, res) => {
         .update(invitation)
         .set({ status: "expired", updatedAt: new Date() })
         .where(eq(invitation.id, invite.id));
-      
+
       return res.status(400).json({ error: "Invitation has expired" });
     }
 
     // Check if user email matches invitation email
     if (req.user.email !== invite.email) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "This invitation was sent to a different email address",
         invitedEmail: invite.email,
-        yourEmail: req.user.email
+        yourEmail: req.user.email,
       });
     }
 
@@ -679,7 +895,9 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
     const { token } = req.params;
     const userId = req.user.id;
 
-    console.log(`[Invitation Accept] User ${userId} attempting to accept invitation`);
+    console.log(
+      `[Invitation Accept] User ${userId} attempting to accept invitation`,
+    );
 
     // Get invitation
     const [invite] = await db
@@ -692,7 +910,9 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
       return res.status(404).json({ error: "Invalid invitation link" });
     }
 
-    console.log(`[Invitation Accept] Found invitation ID: ${invite.id}, email: ${invite.email}, status: ${invite.status}`);
+    console.log(
+      `[Invitation Accept] Found invitation ID: ${invite.id}, email: ${invite.email}, status: ${invite.status}`,
+    );
 
     if (invite.status !== "pending") {
       return res.status(400).json({ error: "Invitation is no longer valid" });
@@ -704,14 +924,18 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
         .update(invitation)
         .set({ status: "expired", updatedAt: new Date() })
         .where(eq(invitation.id, invite.id));
-      
+
       return res.status(400).json({ error: "Invitation has expired" });
     }
 
     // Check if user email matches invitation email
     if (req.user.email !== invite.email) {
-      console.log(`[Invitation Accept] Email mismatch: user=${req.user.email}, invite=${invite.email}`);
-      return res.status(400).json({ error: "This invitation was sent to a different email address" });
+      console.log(
+        `[Invitation Accept] Email mismatch: user=${req.user.email}, invite=${invite.email}`,
+      );
+      return res.status(400).json({
+        error: "This invitation was sent to a different email address",
+      });
     }
 
     // Check if user is already a member
@@ -721,27 +945,29 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
       .where(
         and(
           eq(publicationMember.publicationId, invite.publicationId),
-          eq(publicationMember.userId, userId)
-        )
+          eq(publicationMember.userId, userId),
+        ),
       );
 
     if (existingMember.length > 0) {
-      return res.status(400).json({ error: "You are already a member of this publication" });
+      return res
+        .status(400)
+        .json({ error: "You are already a member of this publication" });
     }
 
-    console.log(`[Invitation Accept] Adding user as ${invite.role} to publication ${invite.publicationId}`);
+    console.log(
+      `[Invitation Accept] Adding user as ${invite.role} to publication ${invite.publicationId}`,
+    );
 
     // Accept invitation in transaction
     const result = await db.transaction(async (tx) => {
       // Add user as member
-      await tx
-        .insert(publicationMember)
-        .values({
-          publicationId: invite.publicationId,
-          userId,
-          role: invite.role,
-          invitedBy: invite.inviterId,
-        });
+      await tx.insert(publicationMember).values({
+        publicationId: invite.publicationId,
+        userId,
+        role: invite.role,
+        invitedBy: invite.inviterId,
+      });
 
       // Mark invitation as accepted
       await tx
@@ -774,7 +1000,9 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
       };
     });
 
-    console.log(`[Invitation Accept] Success! User ${userId} joined publication ${invite.publicationId}`);
+    console.log(
+      `[Invitation Accept] Success! User ${userId} joined publication ${invite.publicationId}`,
+    );
 
     // Get publication details for notification
     const [pub] = await db
@@ -794,9 +1022,9 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
       console.error("Failed to create notification:", notifError);
     }
 
-    res.json({ 
+    res.json({
       message: "Invitation accepted successfully",
-      publication: result
+      publication: result,
     });
   } catch (error) {
     console.error("Error accepting invitation:", error);
@@ -810,7 +1038,9 @@ router.post("/invite/:token/decline", getCurrentUser, async (req, res) => {
     const { token } = req.params;
     const userId = req.user.id;
 
-    console.log(`[Invitation Decline] User ${userId} (${req.user.email}) attempting to decline invitation with token: ${token}`);
+    console.log(
+      `[Invitation Decline] User ${userId} (${req.user.email}) attempting to decline invitation with token: ${token}`,
+    );
 
     // Get invitation
     const [invite] = await db
@@ -823,17 +1053,25 @@ router.post("/invite/:token/decline", getCurrentUser, async (req, res) => {
       return res.status(404).json({ error: "Invalid invitation link" });
     }
 
-    console.log(`[Invitation Decline] Found invitation ID: ${invite.id}, email: ${invite.email}, status: ${invite.status}`);
+    console.log(
+      `[Invitation Decline] Found invitation ID: ${invite.id}, email: ${invite.email}, status: ${invite.status}`,
+    );
 
     if (invite.status !== "pending") {
-      console.log(`[Invitation Decline] Invitation not pending, status: ${invite.status}`);
+      console.log(
+        `[Invitation Decline] Invitation not pending, status: ${invite.status}`,
+      );
       return res.status(400).json({ error: "Invitation is no longer valid" });
     }
 
     // Check if user email matches invitation email
     if (req.user.email !== invite.email) {
-      console.log(`[Invitation Decline] Email mismatch: user=${req.user.email}, invite=${invite.email}`);
-      return res.status(400).json({ error: "This invitation was sent to a different email address" });
+      console.log(
+        `[Invitation Decline] Email mismatch: user=${req.user.email}, invite=${invite.email}`,
+      );
+      return res.status(400).json({
+        error: "This invitation was sent to a different email address",
+      });
     }
 
     // Mark invitation as declined
@@ -845,7 +1083,9 @@ router.post("/invite/:token/decline", getCurrentUser, async (req, res) => {
       })
       .where(eq(invitation.id, invite.id));
 
-    console.log(`[Invitation Decline] Invitation ${invite.id} marked as declined`);
+    console.log(
+      `[Invitation Decline] Invitation ${invite.id} marked as declined`,
+    );
 
     // Get publication details for notification
     const [pub] = await db
@@ -854,26 +1094,44 @@ router.post("/invite/:token/decline", getCurrentUser, async (req, res) => {
       .where(eq(publication.id, invite.publicationId));
 
     if (!pub) {
-      console.error(`[Invitation Decline] Publication not found: ${invite.publicationId}`);
+      console.error(
+        `[Invitation Decline] Publication not found: ${invite.publicationId}`,
+      );
       return res.json({ message: "Invitation declined" });
     }
 
-    console.log(`[Invitation Decline] Publication found: ${pub.name}, Owner: ${pub.userId}`);
-    console.log(`[Invitation Decline] Creating notification for publication owner ${pub.userId}`);
-    console.log(`[Invitation Decline] Decliner name: ${req.user.name}, Decliner ID: ${userId}`);
+    console.log(
+      `[Invitation Decline] Publication found: ${pub.name}, Owner: ${pub.userId}`,
+    );
+    console.log(
+      `[Invitation Decline] Creating notification for publication owner ${pub.userId}`,
+    );
+    console.log(
+      `[Invitation Decline] Decliner name: ${req.user.name}, Decliner ID: ${userId}`,
+    );
 
     // Notify publication owner that invitation was declined
     try {
       const notification = await notificationService.notifyInvitationDeclined({
-        ownerId: pub.userId,  // Notify the publication owner
+        ownerId: pub.userId, // Notify the publication owner
         memberName: req.user.name,
         memberId: userId,
         publicationId: invite.publicationId,
       });
-      console.log(`[Invitation Decline] Notification created successfully:`, notification);
+      console.log(
+        `[Invitation Decline] Notification created successfully:`,
+        notification,
+      );
     } catch (notifError) {
-      console.error("[Invitation Decline] Failed to create notification:", notifError);
-      console.error("[Invitation Decline] Error details:", notifError.message, notifError.stack);
+      console.error(
+        "[Invitation Decline] Failed to create notification:",
+        notifError,
+      );
+      console.error(
+        "[Invitation Decline] Error details:",
+        notifError.message,
+        notifError.stack,
+      );
     }
 
     res.json({ message: "Invitation declined" });
@@ -884,7 +1142,13 @@ router.post("/invite/:token/decline", getCurrentUser, async (req, res) => {
 });
 
 // Helper function to send invitation email
-async function sendInvitationEmail(email, publicationName, role, token, inviterName) {
+async function sendInvitationEmail(
+  email,
+  publicationName,
+  role,
+  token,
+  inviterName,
+) {
   try {
     // Create SMTP transporter
     const transporter = nodemailer.createTransport({

@@ -1,119 +1,138 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import AuthGuard from "@/components/auth/AuthGuard"
-import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
-import Sidebar from "../components/sidebar/Sidebar"
-import Verify from "../components/verify/Verify"
-import PersonalArticles from "../components/personalArticles/personalArticles"
-import ConfirmModal from "../components/confirmModal/ConfirmModal"
-import PageTransition from "@/components/PageTransition"
-import { useArticles } from "@/contexts/ArticlesContext"
-import { usePublication } from "@/contexts/PublicationContext"
-import EditorSidebar from "../components/sidebar/EditorSidebar"
+import { useState, useEffect } from "react";
+import AuthGuard from "@/components/auth/AuthGuard";
+import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
+import Sidebar from "../components/sidebar/Sidebar";
+import Verify from "../components/verify/Verify";
+import PersonalArticles from "../components/personalArticles/personalArticles";
+import ConfirmModal from "../components/confirmModal/ConfirmModal";
+import PageTransition from "@/components/PageTransition";
+import { useArticles } from "@/contexts/ArticlesContext";
+import { usePublication } from "@/contexts/PublicationContext";
 
 export default function TrashPage() {
-  const { currentPublication } = usePublication()
-  const isSidebarAdmin = currentPublication?.isOwner || currentPublication?.role === 'admin'
-  const { articles, loading, error, moveToDraft, moveToTrash, bulkMoveToTrash } = useArticles()
-  const [selectedArticles, setSelectedArticles] = useState([])
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [showRestoreModal, setShowRestoreModal] = useState(false)
-  const [deleteArticleId, setDeleteArticleId] = useState(null)
+  const { currentPublication } = usePublication();
+  const {
+    articles,
+    loading,
+    error,
+    moveToDraft,
+    moveToTrash,
+    bulkMoveToTrash,
+    loadUserArticles,
+  } = useArticles();
+  const [selectedArticles, setSelectedArticles] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [deleteArticleId, setDeleteArticleId] = useState(null);
+
+  // Load articles filtered by current publication when page mounts or publication changes
+  useEffect(() => {
+    loadUserArticles(currentPublication?.id);
+  }, [loadUserArticles, currentPublication?.id]);
 
   // Filter trash articles
-  const trashArticles = articles.filter(article => {
-    const isTrash = article.status === 'trash'
-    
+  const trashArticles = articles.filter((article) => {
+    const isTrash = article.status === "trash";
+
     // If we are in a publication context, only show articles for that publication
     if (currentPublication?.id) {
-      return isTrash && article.publicationId === currentPublication.id
+      return isTrash && article.publicationId === currentPublication.id;
     }
-    
+
     // If not in a publication context (e.g. dashboard), show all trash
-    return isTrash
-  })
+    return isTrash;
+  });
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedArticles(trashArticles.map(a => a.id))
+      setSelectedArticles(trashArticles.map((a) => a.id));
     } else {
-      setSelectedArticles([])
+      setSelectedArticles([]);
     }
-  }
+  };
 
   const handleArticleSelect = (id, checked) => {
     if (checked) {
-      setSelectedArticles(prev => [...prev, id])
+      setSelectedArticles((prev) => [...prev, id]);
     } else {
-      setSelectedArticles(prev => prev.filter(articleId => articleId !== id))
+      setSelectedArticles((prev) =>
+        prev.filter((articleId) => articleId !== id),
+      );
     }
-  }
+  };
 
   const handleBulkDelete = () => {
     if (selectedArticles.length > 0) {
-      setDeleteArticleId(null)
-      setShowDeleteModal(true)
+      setDeleteArticleId(null);
+      setShowDeleteModal(true);
     }
-  }
+  };
 
   const handleBulkRestore = () => {
     if (selectedArticles.length > 0) {
-      setShowRestoreModal(true)
+      setShowRestoreModal(true);
     }
-  }
+  };
 
   const handleIndividualDelete = (id) => {
-    setDeleteArticleId(id)
-    setShowDeleteModal(true)
-  }
+    setDeleteArticleId(id);
+    setShowDeleteModal(true);
+  };
 
   const handleIndividualRestore = async (id) => {
     try {
-      await moveToDraft(id)
+      await moveToDraft(id);
     } catch (error) {
-      console.error('Error restoring article:', error)
+      console.error("Error restoring article:", error);
     }
-  }
+  };
 
   // Add handlers to articles
-  const articlesWithHandlers = trashArticles.map(article => ({
+  const articlesWithHandlers = trashArticles.map((article) => ({
     ...article,
-    onDelete: () => handleIndividualDelete(article.id),
-    onRestore: () => handleIndividualRestore(article.id)
-  }))
+    onDelete: (e) => {
+      e?.stopPropagation();
+      handleIndividualDelete(article.id);
+    },
+    onRestore: (e) => {
+      e?.stopPropagation();
+      handleIndividualRestore(article.id);
+    },
+  }));
 
   const confirmDelete = async () => {
     try {
       if (deleteArticleId) {
         // Single article permanent delete
-        await moveToTrash(deleteArticleId)
+        await moveToTrash(deleteArticleId);
       } else {
         // Bulk permanent delete
-        await bulkMoveToTrash(selectedArticles)
-        setSelectedArticles([])
+        await bulkMoveToTrash(selectedArticles);
+        setSelectedArticles([]);
       }
 
-      setShowDeleteModal(false)
-      setDeleteArticleId(null)
+      setShowDeleteModal(false);
+      setDeleteArticleId(null);
     } catch (error) {
-      console.error('Error permanently deleting articles:', error)
+      console.error("Error permanently deleting articles:", error);
     }
-  }
+  };
 
   const confirmRestore = async () => {
     try {
       // Restore selected articles to draft
       for (const articleId of selectedArticles) {
-        await moveToDraft(articleId)
+        await moveToDraft(articleId);
       }
 
-      setSelectedArticles([])
-      setShowRestoreModal(false)
+      setSelectedArticles([]);
+      setShowRestoreModal(false);
     } catch (error) {
-      console.error('Error restoring articles:', error)
+      console.error("Error restoring articles:", error);
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -125,7 +144,7 @@ export default function TrashPage() {
           <div className="text-gray-500">Loading trash articles...</div>
         </div>
       </>
-    )
+    );
   }
 
   if (error) {
@@ -138,28 +157,28 @@ export default function TrashPage() {
           <div className="text-red-500">Error: {error}</div>
         </div>
       </>
-    )
+    );
   }
 
-  const hasSelectedArticles = selectedArticles.length > 0
+  const hasSelectedArticles = selectedArticles.length > 0;
 
   const actionButtons = [
     {
       title: "Restore",
       icon: "/images/icons/restore.svg",
-      onClick: handleBulkRestore
+      onClick: handleBulkRestore,
     },
     {
       title: "Delete",
       icon: "/images/icons/trash2.svg",
-      onClick: handleBulkDelete
-    }
-  ]
+      onClick: handleBulkDelete,
+    },
+  ];
 
   return (
     <AuthGuard>
       <NavbarLoggedin />
-      {isSidebarAdmin ? <Sidebar /> : <EditorSidebar />}
+      <Sidebar />
       <Verify />
       <PageTransition>
         <PersonalArticles
@@ -179,9 +198,9 @@ export default function TrashPage() {
       <ConfirmModal
         isOpen={showDeleteModal}
         onClose={() => {
-          setShowDeleteModal(false)
-          setDeleteArticleId(null)
-          if (!deleteArticleId) setSelectedArticles([])
+          setShowDeleteModal(false);
+          setDeleteArticleId(null);
+          if (!deleteArticleId) setSelectedArticles([]);
         }}
         onConfirm={confirmDelete}
         title="Are you sure you want to delete permanently?"
@@ -199,5 +218,5 @@ export default function TrashPage() {
         confirmStyle="normal"
       />
     </AuthGuard>
-  )
+  );
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import AuthGuard from "@/components/auth/AuthGuard";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
@@ -9,9 +9,11 @@ import imagePlaceholder from "@/icons/image-placeholder.svg";
 import cameraIcon from "@/icons/camera.svg";
 import { publicationService } from "@/services/publicationService";
 import { usePublication } from "@/contexts/PublicationContext";
+import { getApiBase } from "@/utils/apiBase";
 
 export default function CreatePublication() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { loadUserPublications, switchPublication } = usePublication();
   const [publicationName, setPublicationName] = useState("");
@@ -63,7 +65,7 @@ export default function CreatePublication() {
     
     subdomainCheckTimeout.current = setTimeout(async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+        const API_URL = getApiBase();
         const response = await fetch(`${API_URL}/api/publications/check-subdomain/${subdomain.toLowerCase()}`, {
           credentials: "include",
         });
@@ -139,7 +141,7 @@ export default function CreatePublication() {
 
     try {
       // First, verify authentication with the backend
-      const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const API_URL = getApiBase();
       console.log("Verifying authentication with backend...");
       
       const authCheckResponse = await fetch(`${API_URL}/api/publications/debug/auth-check`, {
@@ -235,15 +237,32 @@ export default function CreatePublication() {
         sessionStorage.setItem(cacheKey, 'true');
         sessionStorage.removeItem('publication-check-cache');
         
-        // Redirect to dashboard (myspace) instead of directly to publication
-        router.push('/dashboard');
+        // If we were sent here from an invite (or other flow), return there after creating.
+        const redirectTo = searchParams?.get("redirect");
+        const safeRedirect =
+          redirectTo &&
+          typeof redirectTo === "string" &&
+          redirectTo.startsWith("/") &&
+          !redirectTo.startsWith("//");
+
+        if (safeRedirect) {
+          router.push(redirectTo);
+          return;
+        }
+
+        // Default: go to the new publication (canonical URL shape)
+        if (publication?.subdomain) {
+          router.push(`/${publication.subdomain}/home`);
+        } else {
+          router.push("/");
+        }
       } catch (contextError) {
         console.error('Failed to update context, redirecting to dashboard:', contextError);
         // Clear cache and redirect to dashboard (myspace)
         const cacheKey = `publication-check-${session.user.id}`;
         sessionStorage.setItem(cacheKey, 'true');
         sessionStorage.removeItem('publication-check-cache');
-        router.push('/dashboard');
+        router.push('/');
       }
     } catch (error) {
       console.error('Error creating publication:', error);

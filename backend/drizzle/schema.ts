@@ -49,6 +49,7 @@ export const publication = pgTable("publication", {
 	id: serial().primaryKey().notNull(),
 	name: text().notNull(),
 	subdomain: text().notNull(),
+	customDomain: text(),
 	description: text(),
 	image: text(),
 	logoUrl: text(),
@@ -64,6 +65,7 @@ export const publication = pgTable("publication", {
 			name: "publication_userId_user_id_fk"
 		}),
 	unique("publication_subdomain_unique").on(table.subdomain),
+	unique("publication_customDomain_unique").on(table.customDomain),
 ]);
 
 export const session = pgTable("session", {

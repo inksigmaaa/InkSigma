@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: inksigma-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ../nginx/nginx.local.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped

@@ -1,148 +1,186 @@
-"use client"
+"use client";
 
-import { useState, useMemo, useEffect } from "react"
-import AuthGuard from "@/components/auth/AuthGuard"
-import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
-import Sidebar from "../components/sidebar/Sidebar"
-import EditorSidebar from "../components/sidebar/EditorSidebar"
-import Verify from "../components/verify/Verify"
-import PersonalArticles from "../components/personalArticles/personalArticles"
-import ConfirmModal from "../components/confirmModal/ConfirmModal"
-import PageTransition from "@/components/PageTransition"
-import { useArticles } from "@/contexts/ArticlesContext"
-import { usePublication } from "@/contexts/PublicationContext"
+import { useState, useMemo, useEffect } from "react";
+import AuthGuard from "@/components/auth/AuthGuard";
+import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
+import Sidebar from "../components/sidebar/Sidebar";
+import Verify from "../components/verify/Verify";
+import PersonalArticles from "../components/personalArticles/personalArticles";
+import ConfirmModal from "../components/confirmModal/ConfirmModal";
+import PageTransition from "@/components/PageTransition";
+import { useArticles } from "@/contexts/ArticlesContext";
+import { usePublication } from "@/contexts/PublicationContext";
 
 export default function MyBlogsPage() {
-  const { articles, moveToTrashStatus, publishArticle, moveToDraft, unpublishArticle, loadUserArticles } = useArticles()
-  const { currentPublication } = usePublication()
-  const [selectedArticles, setSelectedArticles] = useState([])
-  const [selectedCategories, setSelectedCategories] = useState([])
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [showPublishModal, setShowPublishModal] = useState(false)
-  const [showDraftModal, setShowDraftModal] = useState(false)
-  const [showUnpublishModal, setShowUnpublishModal] = useState(false)
-  const [showRepublishModal, setShowRepublishModal] = useState(false)
-  const [actionArticleId, setActionArticleId] = useState(null)
+  const {
+    articles,
+    moveToTrash, // Destructure persistent delete function
+    moveToTrashStatus,
+    publishArticle,
+    moveToDraft,
+    unpublishArticle,
+    loadUserArticles,
+    createDraftFromPublished,
+  } = useArticles();
+  const { currentPublication } = usePublication();
+  const [selectedArticles, setSelectedArticles] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
+  const [showUnpublishModal, setShowUnpublishModal] = useState(false);
+  const [showRepublishModal, setShowRepublishModal] = useState(false);
+  const [actionArticleId, setActionArticleId] = useState(null);
 
   // Load articles filtered by current publication when page mounts or publication changes
   useEffect(() => {
-    loadUserArticles(currentPublication?.id)
-  }, [loadUserArticles, currentPublication?.id])
+    loadUserArticles(currentPublication?.id);
+  }, [loadUserArticles, currentPublication?.id]);
 
   const myArticles = useMemo(() => {
-    let filtered = articles
-    
+    let filtered = articles;
+
     // Filter by selected categories
     if (selectedCategories.length > 0) {
-      filtered = articles.filter(article =>
-        article.categories?.some(cat => selectedCategories.includes(cat))
-      )
+      filtered = articles.filter((article) =>
+        article.categories?.some((cat) => selectedCategories.includes(cat)),
+      );
     }
-    
-    return filtered.map(article => ({
+
+    return filtered.map((article) => ({
       ...article,
       onDelete: () => {
-        setActionArticleId(article.id)
-        setShowDeleteModal(true)
+        setActionArticleId(article.id);
+        setShowDeleteModal(true);
       },
       onPublish: () => {
-        setActionArticleId(article.id)
-        setShowPublishModal(true)
+        setActionArticleId(article.id);
+        setShowPublishModal(true);
       },
       onDraft: () => {
-        setActionArticleId(article.id)
-        setShowDraftModal(true)
+        setActionArticleId(article.id);
+        setShowDraftModal(true);
       },
       onUnpublish: () => {
-        setActionArticleId(article.id)
-        setShowUnpublishModal(true)
+        setActionArticleId(article.id);
+        setShowUnpublishModal(true);
       },
       onRepublish: () => {
-        setActionArticleId(article.id)
-        setShowRepublishModal(true)
+        setActionArticleId(article.id);
+        setShowRepublishModal(true);
       },
       onRestore: async () => {
         try {
-          await moveToDraft(article.id)
+          await moveToDraft(article.id);
         } catch (error) {
-          console.error('Error restoring article:', error)
+          console.error("Error restoring article:", error);
         }
-      }
-    }))
-  }, [articles, moveToDraft, selectedCategories])
+      },
+    }));
+  }, [articles, moveToDraft, selectedCategories]);
 
   const handleArticleSelect = (id, checked) => {
     if (checked) {
-      setSelectedArticles(prev => [...prev, id])
+      setSelectedArticles((prev) => [...prev, id]);
     } else {
-      setSelectedArticles(prev => prev.filter(articleId => articleId !== id))
+      setSelectedArticles((prev) =>
+        prev.filter((articleId) => articleId !== id),
+      );
     }
-  }
+  };
 
   const confirmDelete = async () => {
     try {
       if (actionArticleId) {
-        await moveToTrashStatus(actionArticleId)
+        const article = myArticles.find((a) => a.id === actionArticleId);
+        // If already in trash, delete permanently
+        if (article?.status === "trash") {
+          await moveToTrash(actionArticleId);
+        } else {
+          // Otherwise move to trash
+          await moveToTrashStatus(actionArticleId);
+        }
       }
-      setShowDeleteModal(false)
-      setActionArticleId(null)
+      setShowDeleteModal(false);
+      setActionArticleId(null);
     } catch (error) {
-      console.error('Error moving to trash:', error)
+      console.error("Error deleting article:", error);
     }
-  }
+  };
 
   const confirmPublish = async () => {
     try {
       if (actionArticleId) {
-        await publishArticle(actionArticleId)
+        await publishArticle(actionArticleId);
       }
-      setShowPublishModal(false)
-      setActionArticleId(null)
+      setShowPublishModal(false);
+      setActionArticleId(null);
     } catch (error) {
-      console.error('Error publishing article:', error)
+      console.error("Error publishing article:", error);
     }
-  }
+  };
 
   const confirmDraft = async () => {
     try {
       if (actionArticleId) {
-        await moveToDraft(actionArticleId)
+        const article = myArticles.find((a) => a.id === actionArticleId);
+        if (article && article.status === "published") {
+          await createDraftFromPublished(actionArticleId);
+        } else {
+          await moveToDraft(actionArticleId);
+        }
       }
-      setShowDraftModal(false)
-      setActionArticleId(null)
+      setShowDraftModal(false);
+      setActionArticleId(null);
     } catch (error) {
-      console.error('Error moving to draft:', error)
+      console.error("Error moving to draft:", error);
     }
-  }
+  };
 
   const confirmUnpublish = async () => {
     try {
       if (actionArticleId) {
-        await unpublishArticle(actionArticleId)
+        await unpublishArticle(actionArticleId);
       }
-      setShowUnpublishModal(false)
-      setActionArticleId(null)
+      setShowUnpublishModal(false);
+      setActionArticleId(null);
     } catch (error) {
-      console.error('Error unpublishing article:', error)
+      console.error("Error unpublishing article:", error);
     }
-  }
+  };
 
   const confirmRepublish = async () => {
     try {
       if (actionArticleId) {
-        await publishArticle(actionArticleId)
+        await publishArticle(actionArticleId);
       }
-      setShowRepublishModal(false)
-      setActionArticleId(null)
+      setShowRepublishModal(false);
+      setActionArticleId(null);
     } catch (error) {
-      console.error('Error republishing article:', error)
+      console.error("Error republishing article:", error);
     }
-  }
+  };
+
+  const getDeleteModalProps = () => {
+    const article = myArticles.find((a) => a.id === actionArticleId);
+    const isTrash = article?.status === "trash";
+
+    return {
+      title: isTrash
+        ? "Delete Permanently?"
+        : "Are you sure you want to put it in trash?",
+      message: isTrash
+        ? "This will permanently delete this article and cannot be restored"
+        : "This will be put into trash and can be restored later",
+      confirmText: isTrash ? "Delete Permanently" : "Move to Trash",
+      confirmStyle: "danger",
+    };
+  };
 
   return (
     <AuthGuard>
       <NavbarLoggedin />
-      {currentPublication?.isOwner || currentPublication?.role === 'admin' ? <Sidebar /> : <EditorSidebar />}
+      <Sidebar />
       <Verify />
       <PageTransition>
         <PersonalArticles
@@ -163,21 +201,18 @@ export default function MyBlogsPage() {
       <ConfirmModal
         isOpen={showDeleteModal}
         onClose={() => {
-          setShowDeleteModal(false)
-          setActionArticleId(null)
+          setShowDeleteModal(false);
+          setActionArticleId(null);
         }}
         onConfirm={confirmDelete}
-        title="Are you sure you want to put it in trash?"
-        message="This will be put into trash and can be restored later"
-        confirmText="Move to Trash"
-        confirmStyle="danger"
+        {...getDeleteModalProps()}
       />
 
       <ConfirmModal
         isOpen={showPublishModal}
         onClose={() => {
-          setShowPublishModal(false)
-          setActionArticleId(null)
+          setShowPublishModal(false);
+          setActionArticleId(null);
         }}
         onConfirm={confirmPublish}
         title="Publish article?"
@@ -189,21 +224,39 @@ export default function MyBlogsPage() {
       <ConfirmModal
         isOpen={showDraftModal}
         onClose={() => {
-          setShowDraftModal(false)
-          setActionArticleId(null)
+          setShowDraftModal(false);
+          setActionArticleId(null);
         }}
         onConfirm={confirmDraft}
-        title="Move to Draft?"
-        message="This article will be moved to drafts"
-        confirmText="Move to Draft"
+        title={
+          actionArticleId &&
+          myArticles.find((a) => a.id === actionArticleId)?.status ===
+            "published"
+            ? "Create a Draft?"
+            : "Move to Draft?"
+        }
+        message={
+          actionArticleId &&
+          myArticles.find((a) => a.id === actionArticleId)?.status ===
+            "published"
+            ? "A draft copy will be created. The original article will remain published."
+            : "This article will be moved to drafts"
+        }
+        confirmText={
+          actionArticleId &&
+          myArticles.find((a) => a.id === actionArticleId)?.status ===
+            "published"
+            ? "Create Draft"
+            : "Move to Draft"
+        }
         confirmStyle="normal"
       />
 
       <ConfirmModal
         isOpen={showUnpublishModal}
         onClose={() => {
-          setShowUnpublishModal(false)
-          setActionArticleId(null)
+          setShowUnpublishModal(false);
+          setActionArticleId(null);
         }}
         onConfirm={confirmUnpublish}
         title="Unpublish this article?"
@@ -215,8 +268,8 @@ export default function MyBlogsPage() {
       <ConfirmModal
         isOpen={showRepublishModal}
         onClose={() => {
-          setShowRepublishModal(false)
-          setActionArticleId(null)
+          setShowRepublishModal(false);
+          setActionArticleId(null);
         }}
         onConfirm={confirmRepublish}
         title="Republish article?"
@@ -225,5 +278,5 @@ export default function MyBlogsPage() {
         confirmStyle="normal"
       />
     </AuthGuard>
-  )
+  );
 }

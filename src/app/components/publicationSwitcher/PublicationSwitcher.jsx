@@ -35,15 +35,58 @@ export default function PublicationSwitcher() {
     switchPublication(publication);
     setIsOpen(false);
     
-    // Navigate to the current page with the new publication ID
-    const currentPath = window.location.pathname;
-    const newUrl = `${currentPath}?pub=${publication.id}`;
-    router.push(newUrl);
+    // Preserve the current endpoint, but swap the publication prefix:
+    // /oldPub/posts/home -> /newPub/posts/home
+    // /home             -> /newPub/home
+    const currentPath = window.location.pathname || '/';
+    const segments = currentPath.split('/').filter(Boolean);
+
+    const PUBLIC_PATH_PREFIXES = [
+      '/login',
+      '/signup',
+      '/forgot-password',
+      '/reset-password',
+      '/magic-link',
+      '/auth-callback',
+      '/create-publication',
+      '/invite',
+      '/view-site',
+    ];
+    const DASHBOARD_ENDPOINT_PREFIXES = [
+      '/home',
+      '/posts',
+      '/review',
+      '/author-review',
+      '/editor',
+      '/draft',
+      '/published',
+      '/unpublished',
+      '/trash',
+      '/schedule',
+      '/members',
+      '/my-blogs',
+      '/profile-settings',
+      '/domain',
+      '/dashboard',
+    ];
+
+    const isPublicPath = (p) =>
+      PUBLIC_PATH_PREFIXES.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
+    const isOldEndpoint = (p) =>
+      DASHBOARD_ENDPOINT_PREFIXES.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
+
+    const endpointSegments =
+      !isPublicPath(currentPath) && !isOldEndpoint(currentPath) && segments.length >= 2
+        ? segments.slice(1)
+        : segments;
+
+    const endpointPath = endpointSegments.length ? `/${endpointSegments.join('/')}` : '/home';
+    router.push(`/${publication.subdomain}${endpointPath}`);
   };
 
   const handleViewMySpace = () => {
     setIsOpen(false);
-    router.push('/dashboard');
+    router.push('/');
   };
 
   if (loading || !currentPublication) {

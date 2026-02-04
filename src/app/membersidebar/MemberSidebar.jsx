@@ -6,6 +6,12 @@ import { memo, useState } from 'react';
 import { usePublication } from '@/contexts/PublicationContext';
 
 const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, currentPublication }) {
+  const pubPrefix = currentPublication?.subdomain ? `/${currentPublication.subdomain}` : "";
+  const effectivePathname =
+    pubPrefix && pathname?.startsWith(`${pubPrefix}/`)
+      ? pathname.slice(pubPrefix.length)
+      : pathname;
+
   const getRoute = (label) => {
     const routes = {
       "Home": "/posts/home",
@@ -16,20 +22,15 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
       "Draft": "/posts/draft",
     };
     
-    let route = routes[label] || "/dashboard";
-    
-    // Append publication ID to preserve context
-    if (currentPublication?.id && route !== "/dashboard") {
-      route = `${route}?pub=${currentPublication.id}`;
-    }
-    
-    return route;
+    const endpointPath = routes[label] || "/";
+    if (endpointPath === "/") return "/";
+    return `${pubPrefix}${endpointPath}`;
   };
 
   const isActive = (label) => {
     const route = getRoute(label);
-    const basePath = route.split('?')[0];
-    return pathname === basePath;
+    const basePath = route.replace(pubPrefix, "").split('?')[0] || "/";
+    return effectivePathname === basePath;
   };
 
   return (
@@ -89,7 +90,7 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
               onMouseLeave={() => setIsHovered(false)}
             >
               <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${isHovered ? 'brightness-50' : ''}`} />
-              <Link href="/dashboard">
+              <Link href="/">
                 <p className={`font-sans text-[14px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center font-[\'Public Sans\'] tracking-[0%] font-normal ${isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
                   My Space
                 </p>

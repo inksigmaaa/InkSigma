@@ -17,6 +17,8 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js";
 import viewRoutes from "./routes/viewRoutes.js";
 import { corsMiddleware } from "./middleware/cors.js";
+import { subdomainMiddleware } from "./middleware/subdomainMiddleware.js";
+import { rateLimitMiddleware } from "./middleware/rateLimitMiddleware.js";
 import { emailService } from "./services/emailService.js";
 import schedulerService from "./services/schedulerService.js";
 import InvitationService from "./services/invitationService.js";
@@ -26,7 +28,10 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(corsMiddleware);
-app.use(express.json());
+app.use(subdomainMiddleware);
+app.use(rateLimitMiddleware);
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Static file serving
 app.use("/uploads", express.static("uploads"));
@@ -34,11 +39,11 @@ app.use("/uploads", express.static("uploads"));
 // Authentication routes
 console.log("Mounting better-auth handler at /api/auth");
 try {
-    const authHandler = toNodeHandler(auth);
-    app.use("/api/auth", authHandler);
-    console.log("✅ Better-auth handler mounted successfully");
+  const authHandler = toNodeHandler(auth);
+  app.use("/api/auth", authHandler);
+  console.log("✅ Better-auth handler mounted successfully");
 } catch (error) {
-    console.error("❌ Error mounting better-auth handler:", error);
+  console.error("❌ Error mounting better-auth handler:", error);
 }
 
 // API routes
@@ -61,63 +66,65 @@ app.use("/api/email-debug", emailDebugRoutes);
 
 // Health check
 app.get("/health", (req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 // Global error handler - must be after all routes
 app.use((err, req, res, next) => {
-    console.error("Global error handler caught:", err);
-    console.error("Error stack:", err.stack);
-    
-    // Don't send response if headers already sent
-    if (res.headersSent) {
-        return next(err);
-    }
-    
-    res.status(err.status || 500).json({ 
-        error: err.message || "Internal server error",
-        details: process.env.NODE_ENV === 'development' ? err.stack : undefined
-    });
+  console.error("Global error handler caught:", err);
+  console.error("Error stack:", err.stack);
+
+  // Don't send response if headers already sent
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  res.status(err.status || 500).json({
+    error: err.message || "Internal server error",
+    details: process.env.NODE_ENV === "development" ? err.stack : undefined,
+  });
 });
 
 app.listen(PORT, async () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    
-    // Check database connection
-    console.log("🔄 Checking database connection...");
-    try {
-        const { db } = await import("./config/database.js");
-        await db.execute("SELECT 1");
-        console.log("✅ Database connection verified!");
-        console.log("💡 Run 'npm run db:push' to sync schema changes");
-    } catch (error) {
-        console.error("❌ Database connection failed:", error.message);
-    }
-    
-    // Verify SMTP connection
-    const smtpReady = await emailService.verify();
-    if (!smtpReady) {
-        console.error("⚠️  WARNING: SMTP not configured properly. Emails will not be sent!");
-        console.error("   Check SMTP_USER and SMTP_PASS in .env file");
-    }
-    
-    // Initialize scheduler
-    app.locals.schedulerService = schedulerService;
-    schedulerService.start();
-    
-    // Initialize invitation cleanup
-    InvitationService.startScheduler();
+  console.log(`Server running on http://localhost:${PORT}`);
+
+  // Check database connection
+  console.log("🔄 Checking database connection...");
+  try {
+    const { db } = await import("./config/database.js");
+    await db.execute("SELECT 1");
+    console.log("✅ Database connection verified!");
+    console.log("💡 Run 'npm run db:push' to sync schema changes");
+  } catch (error) {
+    console.error("❌ Database connection failed:", error.message);
+  }
+
+  // Verify SMTP connection
+  const smtpReady = await emailService.verify();
+  if (!smtpReady) {
+    console.error(
+      "⚠️  WARNING: SMTP not configured properly. Emails will not be sent!",
+    );
+    console.error("   Check SMTP_USER and SMTP_PASS in .env file");
+  }
+
+  // Initialize scheduler
+  app.locals.schedulerService = schedulerService;
+  schedulerService.start();
+
+  // Initialize invitation cleanup
+  InvitationService.startScheduler();
 });
 
 // Graceful shutdown
-process.on('SIGINT', () => {
-    console.log('\nShutting down server...');
-    schedulerService.stop();
-    process.exit(0);
+process.on("SIGINT", () => {
+  console.log("\nShutting down server...");
+  schedulerService.stop();
+  process.exit(0);
 });
 
-process.on('SIGTERM', () => {
-    console.log('\n Shutting down server...');
-    schedulerService.stop();
-    process.exit(0);
+process.on("SIGTERM", () => {
+  console.log("\n Shutting down server...");
+  schedulerService.stop();
+  process.exit(0);
 });

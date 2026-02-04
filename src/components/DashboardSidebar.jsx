@@ -9,12 +9,12 @@ const menuItems = [
   {
     title: "My Space",
     icon: "/icons/my-space.svg",
-    href: "/dashboard",
+    href: "/",
   },
   {
     title: "Settings",
     icon: "/icons/settings.svg",
-    href: "/dashboard/settings",
+    href: "/profile-settings",
   },
 ]
 

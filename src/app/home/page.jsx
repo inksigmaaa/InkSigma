@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
-import EditorSidebar from "../components/sidebar/EditorSidebar";
 import Verify from "../components/verify/Verify";
 import BlogStatsComponent from "../components/BlogStatsComponent/BlogStatsComponent";
 import { Pencil } from "lucide-react";
@@ -146,13 +145,14 @@ export default function HomePage() {
   };
 
   const handleEditPublication = () => {
-    router.push("/dashboard/settings");
+    const sub = currentPublication?.subdomain;
+    router.push(sub ? `/${sub}/settings` : "/dashboard/settings");
   };
 
   return (
     <AuthGuard>
       <NavbarLoggedin />
-      {currentPublication?.role === "editor" ? <EditorSidebar /> : <Sidebar />}
+      <Sidebar />
       <Verify />
 
       {/* Main Content */}
@@ -270,17 +270,19 @@ export default function HomePage() {
                               }
                             />
                           </div>
-                          <button
-                            className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors flex-shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(
-                                `/editor?status=published&id=${article.id}`,
-                              );
-                            }}
-                          >
-                            <Pencil className="w-5 h-5" />
-                          </button>
+                          {currentPublication?.role !== "author" && (
+                            <button
+                              className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors flex-shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(
+                                  `/editor?status=published&id=${article.id}`,
+                                );
+                              }}
+                            >
+                              <Pencil className="w-5 h-5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
