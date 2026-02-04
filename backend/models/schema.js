@@ -146,6 +146,7 @@ export const publication = pgTable("publication", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   subdomain: text("subdomain").notNull().unique(),
+  customDomain: text("customDomain").unique(),
   description: text("description"),
   image: text("image"),
   logoUrl: text("logoUrl"),

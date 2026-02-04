@@ -7,6 +7,7 @@ import { memberService } from "@/services/memberService";
 import { usePublication } from "@/contexts/PublicationContext";
 import NavbarLoggedin from "@/app/components/navbar/NavbarLoggedin";
 import { signOut } from "@/lib/auth-client";
+import { getApiBase } from "@/utils/apiBase";
 
 export default function AcceptInvitation() {
   const { token } = useParams();
@@ -18,12 +19,62 @@ export default function AcceptInvitation() {
   const [error, setError] = useState("");
   const [invitationDetails, setInvitationDetails] = useState(null);
 
+  // Ensure invite flows happen on the dashboard host so auth cookies work consistently.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
+    const desiredHost = rootDomain === "localhost" ? "dashboard.localhost" : `dashboard.${rootDomain}`;
+    const currentHost = window.location.hostname.toLowerCase();
+
+    const isDashboardHost =
+      currentHost === desiredHost ||
+      currentHost === "dashboard.localhost" ||
+      currentHost.startsWith("dashboard.");
+
+    if (!isDashboardHost) {
+      const port = window.location.port ? `:${window.location.port}` : "";
+      const target = `${window.location.protocol}//${desiredHost}${port}/invite/${token}/accept${window.location.search || ""}`;
+      window.location.replace(target);
+    }
+  }, [token]);
+
   useEffect(() => {
     if (!isPending && !session) {
       // Redirect to login with return URL
       router.push(`/login?redirect=/invite/${token}/accept`);
     }
   }, [session, isPending, token, router]);
+
+  // If invited member is a brand-new user (no owned publication), force create-publication first.
+  // After creation we return back here via ?redirect=/invite/{token}/accept.
+  useEffect(() => {
+    const ensureOwnedPublication = async () => {
+      if (!session?.user?.id || !token) return;
+
+      try {
+        const apiBase = getApiBase();
+        const ownedRes = await fetch(`${apiBase}/api/publications/check`, {
+          credentials: "include",
+        });
+
+        if (ownedRes.ok) {
+          const data = await ownedRes.json().catch(() => null);
+          const hasOwned = Boolean(data?.hasPublication);
+          if (!hasOwned) {
+            router.replace(
+              `/create-publication?redirect=${encodeURIComponent(
+                `/invite/${token}/accept`,
+              )}`,
+            );
+          }
+        }
+      } catch (err) {
+        console.error("Error checking owned publication:", err);
+      }
+    };
+
+    ensureOwnedPublication();
+  }, [session?.user?.id, token, router]);
 
   // Fetch invitation details when user is logged in
   useEffect(() => {
@@ -83,8 +134,8 @@ export default function AcceptInvitation() {
         await setCurrentPublicationFromInvite(result.publication);
       }
       
-      // Redirect to dashboard (myspace) instead of directly to publication
-      router.push('/dashboard');
+      // Option 1: keep user on dashboard landing (My Space) after accepting.
+      router.push("/");
     } catch (error) {
       setError(error.message);
     } finally {
@@ -123,8 +174,12 @@ export default function AcceptInvitation() {
       <div className="min-h-screen bg-white flex items-center justify-center px-4">
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">You're Invited!</h1>
-            <p className="text-gray-600">You've been invited to join a publication.</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              You&apos;re Invited!
+            </h1>
+            <p className="text-gray-600">
+              You&apos;ve been invited to join a publication.
+            </p>
           </div>
 
           {error && (

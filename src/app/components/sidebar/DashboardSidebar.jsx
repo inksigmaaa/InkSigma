@@ -19,7 +19,7 @@ export default function DashboardSidebar() {
                             onMouseLeave={() => setIsHovered(false)}
                         >
                             <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${isHovered ? 'brightness-0' : ''}`} />
-                            <Link href="/dashboard">
+                            <Link href="/">
                                 <p className={`text-[14px] font-normal leading-[150%] m-0 max-md:text-[11px] max-md:text-center tracking-[0%] ${isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
                                     My Space
                                 </p>

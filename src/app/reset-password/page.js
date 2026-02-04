@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import PasswordField from "@/components/auth/PasswordField"
 import { ArrowLeft, CheckCircle2 } from "lucide-react"
 import { LOGOS } from "@/constants/app"
+import { getApiBase } from "@/utils/apiBase"
 
 function ResetPasswordForm() {
   const router = useRouter()
@@ -48,7 +49,8 @@ function ResetPasswordForm() {
     setLoading(true)
 
     try {
-      const response = await fetch("http://localhost:5000/api/custom/reset-password", {
+      const apiBase = getApiBase()
+      const response = await fetch(`${apiBase}/api/custom/reset-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

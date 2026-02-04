@@ -1,6 +1,7 @@
 // validators/schemas.js
 import { z } from 'zod';
 import validator from 'validator';
+import { isReservedSubdomain } from '../utils/subdomainRules.js';
 
 // ============================================
 // CUSTOM VALIDATORS
@@ -35,7 +36,18 @@ const subdomainValidator = z.string()
   .regex(
     /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/,
     'Subdomain can only contain letters, numbers, and hyphens. Cannot start or end with hyphens or contain consecutive hyphens.'
-  );
+  )
+  .refine((value) => !isReservedSubdomain(value), {
+    message: 'This subdomain is reserved',
+  });
+
+const customDomainValidator = z.string()
+  .refine((value) => validator.isFQDN(value, { require_tld: true }), {
+    message: 'Custom domain must be a valid domain name',
+  })
+  .refine((value) => !value.startsWith('http://') && !value.startsWith('https://'), {
+    message: 'Custom domain must not include protocol',
+  });
 
 // ============================================
 // AUTH SCHEMAS
@@ -190,6 +202,7 @@ export const updatePublicationSchema = z.object({
     .trim()
     .optional(),
   subdomain: subdomainValidator.optional(),
+  customDomain: customDomainValidator.optional().nullable(),
   description: z.string()
     .max(50, 'Description must not exceed 50 characters')
     .trim()

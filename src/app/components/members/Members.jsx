@@ -288,7 +288,7 @@ export default function Members() {
       await memberService.leavePublication(currentPublication.id);
       setShowLeaveModal(false);
       await refreshCurrentPublication();
-      window.location.href = "/dashboard";
+      window.location.href = "/";
     } catch (error) {
       setError(error.message);
       setShowLeaveModal(false);
@@ -331,7 +331,7 @@ export default function Members() {
           <div className="flex flex-col justify-center items-center min-h-[400px] text-center">
             <div className="text-red-500 mb-4">{error}</div>
             <button
-              onClick={() => (window.location.href = "/dashboard")}
+              onClick={() => (window.location.href = "/")}
               className="bg-violet-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-violet-700"
             >
               Go to Dashboard

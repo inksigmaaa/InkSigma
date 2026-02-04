@@ -4,6 +4,9 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X, Upload } from "lucide-react"
+import { getApiBase } from "@/utils/apiBase"
+
+const API_URL = getApiBase()
 
 export function ImageModal({ isOpen, onClose, onImageAdd }) {
   const [imageWidth, setImageWidth] = useState("")
@@ -42,7 +45,7 @@ export function ImageModal({ isOpen, onClose, onImageAdd }) {
         const formData = new FormData()
         formData.append('image', selectedFile)
         
-        const response = await fetch('http://localhost:5000/api/upload-image', {
+        const response = await fetch(`${API_URL}/api/upload-image`, {
           method: 'POST',
           credentials: 'include',
           body: formData

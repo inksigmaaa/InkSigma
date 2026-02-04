@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { authService } from '@/services/auth.service';
+import { getApiBase } from '@/utils/apiBase';
 
 interface User {
   id: string;
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const loadSession = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/get-session`, {
+        const response = await fetch(`${getApiBase()}/api/auth/get-session`, {
           credentials: 'include',
         });
 
@@ -107,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshSession = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/get-session`, {
+      const response = await fetch(`${getApiBase()}/api/auth/get-session`, {
         credentials: 'include',
       });
 

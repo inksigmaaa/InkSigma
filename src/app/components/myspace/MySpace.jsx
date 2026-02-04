@@ -29,11 +29,11 @@ export default function MySpace() {
 
   const handlePublicationClick = (publication) => {
     switchPublication(publication);
-    // Route to appropriate dashboard based on ownership with publication ID in URL
+    // Canonical dashboard routing: /{subdomain}/{endpoint}
     if (publication.isOwner) {
-      router.push(`/home?pub=${publication.id}`);
+      router.push(`/${publication.subdomain}/home`);
     } else {
-      router.push(`/posts/home?pub=${publication.id}`);
+      router.push(`/${publication.subdomain}/posts/home`);
     }
   };
 

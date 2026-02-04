@@ -196,7 +196,7 @@ export default function NavbarLoggedin() {
                                     className="w-6 h-6 md:w-6 md:h-6 sm:w-6 sm:h-6"
                                 />
                                 {unreadCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                                    <span className={`absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 flex items-center justify-center ${unreadCount > 9 ? 'px-1.5 min-w-[1rem]' : 'w-4'}`}>
                                         {unreadCount > 9 ? '9+' : unreadCount}
                                     </span>
                                 )}

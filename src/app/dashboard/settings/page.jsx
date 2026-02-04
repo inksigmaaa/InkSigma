@@ -4,9 +4,11 @@ import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import Sidebar from "../../components/sidebar/Sidebar"
+import { getApiBase } from "@/utils/apiBase"
 
 export default function SettingsPage() {
   const router = useRouter()
+  const apiBase = getApiBase()
   const [showResetModal, setShowResetModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -35,7 +37,7 @@ export default function SettingsPage() {
       setError(null)
       
       // Get user ID from session
-      const sessionRes = await fetch("http://localhost:5000/api/auth/get-session", {
+      const sessionRes = await fetch(`${apiBase}/api/auth/get-session`, {
         credentials: "include",
       })
       
@@ -51,14 +53,14 @@ export default function SettingsPage() {
       const userUsername = sessionData.user.username || `user${userId.substring(0, 8)}`
       
       // Fetch publication data
-      let pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+      let pubRes = await fetch(`${apiBase}/api/publications/user/${userId}`, {
         credentials: "include",
       })
       
       // If no publication exists, create one
       if (pubRes.status === 404) {
         console.log("No publication found, creating one...")
-        const createRes = await fetch("http://localhost:5000/api/publications", {
+        const createRes = await fetch(`${apiBase}/api/publications`, {
           method: "POST",
           credentials: "include",
           headers: {
@@ -73,7 +75,7 @@ export default function SettingsPage() {
         })
         
         if (createRes.ok) {
-          pubRes = await fetch(`http://localhost:5000/api/publications/user/${userId}`, {
+          pubRes = await fetch(`${apiBase}/api/publications/user/${userId}`, {
             credentials: "include",
           })
         }
@@ -86,9 +88,9 @@ export default function SettingsPage() {
         setDescription(pubData.description || "")
         setSubdomain(pubData.subdomain || "")
         setOriginalSubdomain(pubData.subdomain || "")
-        setLogo(pubData.logoUrl ? `http://localhost:5000${pubData.logoUrl}` : "/icons/inksigma-logo.svg")
-        setFavicon(pubData.faviconUrl ? `http://localhost:5000${pubData.faviconUrl}` : "/icons/inksigma-logo.svg")
-        setMetaOg(pubData.metaOgImageUrl ? `http://localhost:5000${pubData.metaOgImageUrl}` : "/icons/inksigma-logo.svg")
+        setLogo(pubData.logoUrl ? `${apiBase}${pubData.logoUrl}` : "/icons/inksigma-logo.svg")
+        setFavicon(pubData.faviconUrl ? `${apiBase}${pubData.faviconUrl}` : "/icons/inksigma-logo.svg")
+        setMetaOg(pubData.metaOgImageUrl ? `${apiBase}${pubData.metaOgImageUrl}` : "/icons/inksigma-logo.svg")
       }
     } catch (err) {
       console.error("Load error:", err)
@@ -112,7 +114,7 @@ export default function SettingsPage() {
       formData.append(type === 'logo' ? 'logo' : type === 'favicon' ? 'favicon' : 'metaOg', file)
       
       const endpoint = type === 'logo' ? 'logo' : type === 'favicon' ? 'favicon' : 'meta-og'
-      const res = await fetch(`http://localhost:5000/api/publications/${publicationId}/${endpoint}`, {
+      const res = await fetch(`${apiBase}/api/publications/${publicationId}/${endpoint}`, {
         method: "POST",
         credentials: "include",
         body: formData,
@@ -124,7 +126,7 @@ export default function SettingsPage() {
       }
       
       const data = await res.json()
-      const imageUrl = `http://localhost:5000${data[type === 'logo' ? 'logoUrl' : type === 'favicon' ? 'faviconUrl' : 'metaOgImageUrl']}`
+      const imageUrl = `${apiBase}${data[type === 'logo' ? 'logoUrl' : type === 'favicon' ? 'faviconUrl' : 'metaOgImageUrl']}`
       
       if (type === 'logo') {
         setLogo(imageUrl)
@@ -191,7 +193,7 @@ export default function SettingsPage() {
       setUploading(true)
       const endpoint = type === 'logo' ? 'logo' : type === 'favicon' ? 'favicon' : 'meta-og'
       
-      const res = await fetch(`http://localhost:5000/api/publications/${publicationId}/image/${endpoint}`, {
+      const res = await fetch(`${apiBase}/api/publications/${publicationId}/image/${endpoint}`, {
         method: "DELETE",
         credentials: "include",
       })
@@ -239,7 +241,7 @@ export default function SettingsPage() {
         throw new Error("Description must be less than 100 characters")
       }
       
-      const res = await fetch(`http://localhost:5000/api/publications/${publicationId}`, {
+      const res = await fetch(`${apiBase}/api/publications/${publicationId}`, {
         method: "PUT",
         credentials: "include",
         headers: {

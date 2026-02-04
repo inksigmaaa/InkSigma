@@ -15,6 +15,7 @@ import CommentSection from '../../components/CommentSection/CommentSection';
 import ClockIcon from '../../components/icons/ClockIcon';
 import { getImageUrl } from '@/utils/imageUrl';
 import { useSnapshot } from '@/hooks/useSnapshot';
+import { getThumbnailWithFallback } from '@/utils/fallbackThumbnail';
 
 
 export default function BlogDetailPage({ params }) {
@@ -232,7 +233,7 @@ export default function BlogDetailPage({ params }) {
   }
 
   const dateFormatted = formatDate(blog.createdAt);
-  const thumbnailUrl = getImageUrl(blog.image) || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
+  const thumbnailUrl = getThumbnailWithFallback(getImageUrl(blog.image), blog.id);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

@@ -1,6 +1,21 @@
-CREATE TYPE "public"."invitation_status" AS ENUM('pending', 'accepted', 'declined', 'expired');--> statement-breakpoint
-ALTER TYPE "public"."blog_status" ADD VALUE 'review';--> statement-breakpoint
-ALTER TYPE "public"."member_role" ADD VALUE 'admin' BEFORE 'editor';--> statement-breakpoint
+DO $$ BEGIN
+ CREATE TYPE "public"."invitation_status" AS ENUM('pending', 'accepted', 'declined', 'expired');
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TYPE "public"."blog_status" ADD VALUE IF NOT EXISTS 'review';
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TYPE "public"."member_role" ADD VALUE IF NOT EXISTS 'admin' BEFORE 'editor';
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
 CREATE TABLE "invitation" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"publicationId" integer NOT NULL,

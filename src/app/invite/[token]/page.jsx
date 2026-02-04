@@ -1,10 +1,40 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
+const getBackendBase = async () => {
+  const envBase = process.env.NEXT_PUBLIC_BACKEND_URL;
+  if (envBase) return envBase.replace(/\/$/, "");
+
+  const h = await headers();
+  const host = h.get("host") || "localhost";
+  const protocol = h.get("x-forwarded-proto") || "http";
+  const hostname = host.split(":")[0].replace(/^www\./, "");
+
+  return `${protocol}://${hostname}:5000`;
+};
+
 export default async function InvitationPage({ params }) {
   const { token } = await params;
+  const h = await headers();
+  const host = (h.get("x-forwarded-host") || h.get("host") || "").split(",")[0].trim();
+  const protocol = h.get("x-forwarded-proto") || "http";
+  const hostname = host.split(":")[0].replace(/^www\./, "").toLowerCase();
+  const port = host.includes(":") ? `:${host.split(":")[1]}` : "";
+
+  // Force invite flows onto the dashboard host so auth cookies work consistently.
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
+  const desiredHost = rootDomain === "localhost" ? "dashboard.localhost" : `dashboard.${rootDomain}`;
+  const isDashboardHost =
+    hostname === desiredHost ||
+    hostname === "dashboard.localhost" ||
+    hostname.startsWith("dashboard.");
+
+  if (!isDashboardHost) {
+    redirect(`${protocol}://${desiredHost}${port}/invite/${token}`);
+  }
+
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("better-auth.session_token") || cookieStore.get("session_token");
 
@@ -23,7 +53,8 @@ export default async function InvitationPage({ params }) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
 
-    const res = await fetch("http://localhost:5000/api/auth/get-session", {
+    const backendBase = await getBackendBase();
+    const res = await fetch(`${backendBase}/api/auth/get-session`, {
       headers: {
         Cookie: cookieString,
       },
