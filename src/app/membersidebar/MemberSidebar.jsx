@@ -68,7 +68,7 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
             </div>
 
             <a 
-              href={currentPublication?.id ? `/view-site?publicationId=${currentPublication.id}` : "/view-site"} 
+              href={currentPublication?.subdomain ? `http://${currentPublication.subdomain}.localhost:3000` : "/view-site"} 
               target="_blank" 
               rel="noopener noreferrer"
             >
