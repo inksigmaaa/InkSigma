@@ -71,7 +71,7 @@ export default function Footer({ publicationName = 'Jasmin blogs' }) {
             <a href="#" className="hover:text-[#C0C0C0] transition-colors">Privacy Policy</a>
           </div>
           <p className="text-center">
-            Copyright © {currentYear} designed & developed by Inksigma, a Zamuria Inc. brand
+            Copyright © {currentYear} designed & developed by Inksigma, a Zemuria Inc. brand
           </p>
         </div>
       </div>

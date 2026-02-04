@@ -100,10 +100,10 @@ export default function ConditionalLayout({ children, isDashboardHost: isDashboa
     const isreset = effectivePath === "/reset-password"
     const ismagiclink = effectivePath === "/magic-link"
     const iseditordashboard = effectivePath === "/editorpage"
-    const isviewsite = effectivePath === "/view-site"
-    const isviewblog = effectivePath?.startsWith("/view-site/blog")
+    // Check if on subdomain (not dashboard host) and at root - this is view-site
+    const isSubdomainRoot = !isDashboardHost && effectivePath === "/"
 
-    const customLayout = isDashboardPage || isDashboardSettingsPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished || islogin || issignup || isforgot || isreset || ismagiclink || iseditordashboard || (isDashboardHost && isLandingPage)
+    const customLayout = isDashboardPage || isDashboardSettingsPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished || islogin || issignup || isforgot || isreset || ismagiclink || iseditordashboard || isSubdomainRoot || (isDashboardHost && isLandingPage)
 
     const showButtons = !isCreatePublicationPage && !isPreview && !isDashboardPage && !isDashboardSettingsPage && !isprofilesettings && !isPostsSettingsPage && !isEditorPage && !islogin && !issignup && !isforgot && !isreset && !ismagiclink
 
