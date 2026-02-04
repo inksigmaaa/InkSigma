@@ -20,7 +20,6 @@ const PUBLIC_PATH_PREFIXES = [
   '/create-publication',
   '/invite',
   '/view-site',
-  '/profile-settings', // User-level settings, not publication-specific
 ];
 
 const DASHBOARD_ENDPOINT_PREFIXES = [
@@ -36,6 +35,7 @@ const DASHBOARD_ENDPOINT_PREFIXES = [
   '/schedule',
   '/members',
   '/my-blogs',
+  '/profile-settings',
   '/domain',
   '/dashboard',
 ];
