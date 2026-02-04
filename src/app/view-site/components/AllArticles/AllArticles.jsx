@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from 'next/navigation';
 import ShareMenu from "../ShareMenu/ShareMenu";
 import { getImageUrl } from "@/utils/imageUrl";
 import CategoryBadgeList from "@/components/CategoryBadgeList";
@@ -16,6 +17,8 @@ export default function AllArticles({
   publicationId,
 }) {
   const [commentCounts, setCommentCounts] = useState({});
+  const pathname = usePathname();
+  const basePath = pathname.startsWith('/view-site') ? '/view-site' : '';
 
   // Fetch comment counts for all blogs
   useEffect(() => {
@@ -163,7 +166,7 @@ export default function AllArticles({
                   </div>
 
                   <Link
-                    href={`/view-site/blog/${article.slug}${publicationId ? `?from=${publicationId}&view=site` : ""}`}
+                    href={`${basePath}/blog/${article.slug}${publicationId ? `?from=${publicationId}&view=site` : ""}`}
                     className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block"
                   >
                     {/* Background Image */}

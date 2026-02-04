@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import ShareMenu from '../ShareMenu/ShareMenu';
 import { formatTimeAgo } from '@/utils/timeFormatter';
 import { getImageUrl } from '@/utils/imageUrl';
@@ -11,6 +12,8 @@ const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
 export default function LatestBlog({ searchQuery = '', blogs = [], publicationId }) {
   const [commentCount, setCommentCount] = useState(0);
+  const pathname = usePathname();
+  const basePath = pathname.startsWith('/view-site') ? '/view-site' : '';
   
   // Get the latest blog (first one in the array, sorted by date)
   const latestBlog = blogs.length > 0
@@ -132,8 +135,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
           />
         </div>
 
-        <Link href={`/view-site/blog/${latestBlog.slug}${publicationId ? `?from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block">
-          {/* Background Image */}
+                  <Link href={`${basePath}/blog/${latestBlog.slug}${publicationId ? `?from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block">          {/* Background Image */}
           <div className="absolute inset-0">
             <Image
               src={thumbnailUrl}
@@ -222,7 +224,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
             />
           </div>
 
-          <Link href={`/view-site/blog/${latestBlog.slug}${publicationId ? `?from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-md overflow-hidden cursor-pointer block">
+          <Link href={`${basePath}/blog/${latestBlog.slug}${publicationId ? `?from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-md overflow-hidden cursor-pointer block">
             <Image
               src={thumbnailUrl}
               alt={latestBlog.title}
