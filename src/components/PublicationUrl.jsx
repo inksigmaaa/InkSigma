@@ -12,8 +12,8 @@ export function PublicationUrl({ publication }) {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
     if (isDevelopment || isLocalhost) {
-      // In development, use /view-site path
-      setUrl(`${window.location.origin}/view-site`);
+      // In development, use subdomain.localhost:3000 format
+      setUrl(`http://${publication.subdomain}.localhost:3000`);
     } else {
       // In production, use subdomain
       setUrl(`https://${publication.subdomain}.inksigma.com`);
@@ -33,7 +33,7 @@ export function usePublicationUrl(publication) {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
     if (isDevelopment || isLocalhost) {
-      setUrl(`${window.location.origin}/view-site`);
+      setUrl(`http://${publication.subdomain}.localhost:3000`);
     } else {
       setUrl(`https://${publication.subdomain}.inksigma.com`);
     }

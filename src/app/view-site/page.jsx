@@ -22,22 +22,53 @@ function ViewSiteContent() {
   const searchParams = useSearchParams();
   const { currentPublication } = usePublication();
   
-  // Get subdomain from URL params (set by middleware)
-  const subdomain = searchParams.get('subdomain');
+  // Get subdomain from URL params (set by middleware) or hostname
+  const [subdomain, setSubdomain] = useState(searchParams.get('subdomain'));
   const pubIdFromUrl = searchParams.get('publicationId');
+
+  useEffect(() => {
+    const paramSub = searchParams.get('subdomain');
+    if (paramSub) {
+      setSubdomain(paramSub);
+    } else if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost';
+      const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'inksigma.com';
+      
+      let detectedSubdomain = null;
+
+      // Check for subdomain in local development or production
+      if (hostname.endsWith(`.${rootDomain}`) && hostname !== rootDomain && !hostname.startsWith('dashboard.') && !hostname.startsWith('www.')) {
+         const parts = hostname.split('.');
+         if (parts.length > 0) detectedSubdomain = parts[0];
+      } else if (hostname.endsWith(`.${mainDomain}`) && hostname !== mainDomain && !hostname.startsWith('www.')) {
+         const parts = hostname.replace(`.${mainDomain}`, '').split('.');
+         if (parts.length > 0) detectedSubdomain = parts[0];
+      }
+
+      if (detectedSubdomain) {
+          console.log('[ViewSite] Detected subdomain from hostname:', detectedSubdomain);
+          setSubdomain(detectedSubdomain);
+      }
+    }
+  }, [searchParams]);
   
   // Fetch publication data and update meta tags
   const { publication } = usePublicationMeta(subdomain);
 
-  // Fetch publication details if publicationId is in URL
+  // Set publication data from subdomain lookup or publicationId lookup
   useEffect(() => {
-    const fetchPublicationDetails = async () => {
-      // Use publicationId from URL or currentPublication
-      const publicationId = pubIdFromUrl || currentPublication?.id;
-      
-      if (publicationId) {
+    if (publication) {
+      // Use publication from subdomain lookup
+      console.log('[ViewSite] Using publication from subdomain:', publication);
+      setPublicationData(publication);
+    } else if (pubIdFromUrl || currentPublication?.id) {
+      // Fallback to fetching by ID
+      const fetchPublicationDetails = async () => {
+        const publicationId = pubIdFromUrl || currentPublication?.id;
+        
         try {
-          console.log('[ViewSite] Fetching publication:', publicationId);
+          console.log('[ViewSite] Fetching publication by ID:', publicationId);
           const response = await fetch(`${API_URL}/api/publications/${publicationId}`, {
             credentials: 'include'
           });
@@ -51,20 +82,20 @@ function ViewSiteContent() {
         } catch (error) {
           console.error('[ViewSite] Error fetching publication:', error);
         }
-      }
-    };
+      };
 
-    fetchPublicationDetails();
-  }, [pubIdFromUrl, currentPublication?.id]);
+      fetchPublicationDetails();
+    }
+  }, [publication, pubIdFromUrl, currentPublication?.id]);
 
   // Fetch published blogs
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
         setLoading(true);
-        // Use publicationId from URL query parameter if available, otherwise use currentPublication
+        // Use publicationId from URL query parameter, fetched publication data, or currentPublication
         // Remove parseInt to support UUIDs and avoid NaN issues
-        const publicationId = pubIdFromUrl || currentPublication?.id;
+        const publicationId = pubIdFromUrl || publicationData?.id || currentPublication?.id;
         
         console.log('[ViewSite] Fetching blogs for publication:', publicationId);
         
@@ -96,7 +127,7 @@ function ViewSiteContent() {
     };
 
     fetchBlogs();
-  }, [currentPublication?.id, pubIdFromUrl]);
+  }, [publicationData?.id, currentPublication?.id, pubIdFromUrl]);
 
   // Get unique categories from blogs, limit to 3
   const categories = [...new Set(blogs.map(blog => blog.categories?.[0]).filter(Boolean))].slice(0, 3);
@@ -142,12 +173,12 @@ function ViewSiteContent() {
           </div>
         ) : (
           <>
-            <LatestBlog searchQuery={searchQuery} blogs={blogs} publicationId={pubIdFromUrl || currentPublication?.id} />
+            <LatestBlog searchQuery={searchQuery} blogs={blogs} publicationId={pubIdFromUrl || publicationData?.id || currentPublication?.id} />
             <AllArticles 
               searchQuery={searchQuery} 
               selectedCategory={selectedCategory} 
               blogs={searchQuery ? blogs : blogs.slice(1)} 
-              publicationId={pubIdFromUrl || currentPublication?.id}
+              publicationId={pubIdFromUrl || publicationData?.id || currentPublication?.id}
             />
           </>
         )}

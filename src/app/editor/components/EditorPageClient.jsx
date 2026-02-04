@@ -1768,16 +1768,12 @@ export default function EditorPageClient() {
               >
                 See Later
               </button>
-              <button
+              <a
+                href={currentPublication?.subdomain ? `http://${currentPublication.subdomain}.localhost:3000` : `/view-site?publicationId=${publicationId || currentPublication?.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={() => {
                   setShowPublishSuccess(false);
-                  // Navigate to view-site with publicationId
-                  const pubId = publicationId || currentPublication?.id;
-                  if (pubId) {
-                    router.push(`/view-site?publicationId=${pubId}`);
-                  } else {
-                    router.push("/published?refresh=true");
-                  }
                 }}
                 style={{
                   width: "110px",
@@ -1789,7 +1785,7 @@ export default function EditorPageClient() {
                 className="flex items-center justify-center text-sm font-medium text-white hover:opacity-90 transition-opacity whitespace-nowrap"
               >
                 View in Site
-              </button>
+              </a>
             </div>
           </div>
         </div>

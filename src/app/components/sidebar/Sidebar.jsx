@@ -222,8 +222,8 @@ export default function Sidebar() {
             <div className="flex-1 min-w-0">
               <a
                 href={
-                  currentPublication?.id
-                    ? `/view-site?publicationId=${currentPublication.id}`
+                  currentPublication?.subdomain
+                    ? `http://${currentPublication.subdomain}.localhost:3000`
                     : "/view-site"
                 }
                 target="_blank"

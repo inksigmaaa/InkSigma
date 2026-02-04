@@ -184,6 +184,50 @@ export async function middleware(request: NextRequest) {
     }
   }
   
+  // Handle publication subdomains (e.g., tyson.localhost:3000)
+  const subdomainMatch = cleanHost.match(/^([a-zA-Z0-9-]+)\.localhost$/);
+  if (subdomainMatch && isDev && !isDashboardHost) {
+    const [, subdomain] = subdomainMatch;
+    
+    // Don't route dashboard subdomain or reserved subdomains
+    if (subdomain !== 'dashboard' && subdomain !== 'www') {
+      // Route all publication subdomain requests to view-site with subdomain parameter
+      const viewSiteUrl = new URL(request.url);
+      
+      // If root path, rewrite to /view-site
+      // If deeper path (e.g., /blog/slug), rewrite to /view-site/blog/slug
+      if (viewSiteUrl.pathname === '/') {
+        viewSiteUrl.pathname = '/view-site';
+      } else {
+        // Ensure we don't double-prefix if something weird happens, 
+        // though typically pathname starts with /
+        viewSiteUrl.pathname = `/view-site${viewSiteUrl.pathname}`;
+      }
+      
+      viewSiteUrl.searchParams.set('subdomain', subdomain);
+      
+      return NextResponse.rewrite(viewSiteUrl);
+    }
+  }
+  
+  // Handle production publication subdomains (e.g., tyson.inksigma.com)
+  if (!isDev && cleanHost.endsWith('.inksigma.com') && cleanHost !== 'www.inksigma.com') {
+    const subdomain = cleanHost.replace('.inksigma.com', '');
+    
+    // Route all publication subdomain requests to view-site with subdomain parameter
+    const viewSiteUrl = new URL(request.url);
+    
+    if (viewSiteUrl.pathname === '/') {
+      viewSiteUrl.pathname = '/view-site';
+    } else {
+      viewSiteUrl.pathname = `/view-site${viewSiteUrl.pathname}`;
+    }
+    
+    viewSiteUrl.searchParams.set('subdomain', subdomain);
+    
+    return NextResponse.rewrite(viewSiteUrl);
+  }
+  
   return NextResponse.next();
 }
 

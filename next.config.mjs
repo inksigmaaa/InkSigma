@@ -2,6 +2,9 @@
 const nextConfig = {
   /* config options here */
   reactCompiler: true,
+  turbopack: {
+    root: process.cwd(),
+  },
   images: {
     remotePatterns: [
       {
@@ -15,7 +18,7 @@ const nextConfig = {
       {
         protocol: 'http',
         hostname: 'localhost',
-        port: '3001',
+        port: '3000',
         pathname: '/uploads/**',
       },
       {

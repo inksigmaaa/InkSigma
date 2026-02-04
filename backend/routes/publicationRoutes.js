@@ -13,6 +13,7 @@ import validator from "validator";
 import { isReservedSubdomain } from "../utils/subdomainRules.js";
 import {
   invalidatePublicationCache,
+  resolvePublicationBySubdomain,
 } from "../services/publicationResolver.js";
 
 const router = express.Router();
@@ -180,6 +181,28 @@ router.get("/check-subdomain/:subdomain", async (req, res) => {
   } catch (error) {
     console.error("Error checking subdomain:", error);
     res.status(500).json({ error: "Failed to check subdomain" });
+  }
+});
+
+// Get publication by subdomain
+router.get("/by-subdomain/:subdomain", async (req, res) => {
+  try {
+    const { subdomain } = req.params;
+    
+    if (!subdomain) {
+      return res.status(400).json({ error: "Subdomain is required" });
+    }
+
+    const publication = await resolvePublicationBySubdomain(subdomain);
+    
+    if (!publication) {
+      return res.status(404).json({ error: "Publication not found" });
+    }
+
+    res.json(publication);
+  } catch (error) {
+    console.error("Error fetching publication by subdomain:", error);
+    res.status(500).json({ error: "Failed to fetch publication" });
   }
 });
 
