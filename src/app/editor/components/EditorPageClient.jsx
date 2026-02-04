@@ -1132,7 +1132,7 @@ export default function EditorPageClient() {
           {/* Editor Content Area */}
           <div
             className="w-full bg-white"
-            style={{ minHeight: "400px", paddingBottom: "150px" }}
+            style={{ minHeight: "400px", paddingBottom: "10px" }}
           >
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
