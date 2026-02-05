@@ -1,7 +1,8 @@
 // validators/schemas.js
 import { z } from 'zod';
 import validator from 'validator';
-import { isReservedSubdomain } from '../utils/subdomainRules.js';
+// NOTE: Domain validation logic moved to frontend (src/utils/subdomainRules.js, src/utils/domainValidation.js)
+// Backend now only performs basic validation and database availability checks
 
 // ============================================
 // CUSTOM VALIDATORS
@@ -29,25 +30,16 @@ const slugValidator = z.string()
   .min(1, 'Slug is required')
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must contain only lowercase letters, numbers, and hyphens');
 
-// Subdomain validator
+// Subdomain validator - basic string validation only
+// Format and reserved subdomain validation now handled on frontend
 const subdomainValidator = z.string()
   .min(3, 'Subdomain must be at least 3 characters')
-  .max(63, 'Subdomain must not exceed 63 characters')
-  .regex(
-    /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/,
-    'Subdomain can only contain letters, numbers, and hyphens. Cannot start or end with hyphens or contain consecutive hyphens.'
-  )
-  .refine((value) => !isReservedSubdomain(value), {
-    message: 'This subdomain is reserved',
-  });
+  .max(63, 'Subdomain must not exceed 63 characters');
 
+// Custom domain validator - basic validation only
+// Detailed format validation now handled on frontend
 const customDomainValidator = z.string()
-  .refine((value) => validator.isFQDN(value, { require_tld: true }), {
-    message: 'Custom domain must be a valid domain name',
-  })
-  .refine((value) => !value.startsWith('http://') && !value.startsWith('https://'), {
-    message: 'Custom domain must not include protocol',
-  });
+  .min(1, 'Custom domain is required');
 
 // ============================================
 // AUTH SCHEMAS

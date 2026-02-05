@@ -5,11 +5,21 @@ import { db } from "./database.js";
 import { emailService } from "../services/emailService.js";
 import { emailValidationService } from "../services/emailValidationService.js";
 import { redisSessionStorage } from "./redis.js";
-import { getBaseDomains } from "../utils/hostParser.js";
+
+// Inline helper to get base domains from environment
+const getBaseDomains = () => {
+    const envValue =
+        process.env.BASE_DOMAINS || process.env.BASE_DOMAIN || "localhost,inksigma.local";
+    return envValue
+        .split(",")
+        .map((d) => d.trim().toLowerCase())
+        .filter(Boolean);
+};
 
 const buildTrustedOrigins = () => {
     const fromEnv =
         process.env.TRUSTED_ORIGINS ||
+        process.env.CORS_ORIGIN ||
         process.env.ALLOWED_ORIGINS ||
         process.env.FRONTEND_URL ||
         "http://localhost:3000";
@@ -29,7 +39,7 @@ const buildTrustedOrigins = () => {
         origins.add(`https://dashboard.${baseDomain}`);
     }
 
-  return Array.from(origins);
+    return Array.from(origins);
 };
 
 const buildBaseUrl = () => {
@@ -51,7 +61,7 @@ export const auth = betterAuth({
     basePath: "/api/auth",
     secret: process.env.BETTER_AUTH_SECRET,
     trustedOrigins: buildTrustedOrigins(),
-    
+
     database: drizzleAdapter(db, {
         provider: "pg",
     }),
@@ -78,21 +88,21 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true,
         requireEmailVerification: true,
-        
+
         // Validate email before signup
         async beforeSignUp({ email }) {
             console.log(`[EMAIL-VALIDATION] Validating email: ${email}`);
-            
+
             const validation = await emailValidationService.validateEmail(email);
             if (!validation.isValid) {
                 const errorMessage = validation.errors.join(', ');
                 console.log(`[EMAIL-VALIDATION] Rejected: ${email} - ${errorMessage}`);
                 throw new Error(errorMessage);
             }
-            
+
             console.log(`[EMAIL-VALIDATION] Approved: ${email}`);
         },
-        
+
         sendResetPassword: async ({ user, url }) => {
             console.log("[BETTER-AUTH] sendResetPassword called for:", user.email);
             try {
@@ -117,7 +127,7 @@ export const auth = betterAuth({
             console.log("[BETTER-AUTH] sendVerificationEmail called for:", user.email);
             console.log("[BETTER-AUTH] Verification URL:", url);
             console.log("[BETTER-AUTH] Token:", token);
-            
+
             try {
                 const result = await emailService.sendVerification({
                     email: user.email,

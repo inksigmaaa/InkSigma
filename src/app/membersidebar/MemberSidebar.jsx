@@ -21,7 +21,7 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
       "My Blogs": "/posts/my-blogs",
       "Draft": "/posts/draft",
     };
-    
+
     const endpointPath = routes[label] || "/";
     if (endpointPath === "/") return "/";
     return `${pubPrefix}${endpointPath}`;
@@ -46,7 +46,7 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
             <div className="w-[34px] h-[34px] rounded-full overflow-hidden border-2 border-violet-500 flex-shrink-0 bg-gray-100 flex items-center justify-center">
               {currentPublication?.logoUrl ? (
                 <img
-                  src={`http://localhost:5000${currentPublication.logoUrl}`}
+                  src={`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${currentPublication.logoUrl}`}
                   alt={currentPublication.name || "Publication"}
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -67,9 +67,9 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
               )}
             </div>
 
-            <a 
-              href={currentPublication?.subdomain ? `http://${currentPublication.subdomain}.localhost:3000` : "/view-site"} 
-              target="_blank" 
+            <a
+              href={currentPublication?.subdomain ? `http://${currentPublication.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost'}:3000` : "/view-site"}
+              target="_blank"
               rel="noopener noreferrer"
             >
               <button
@@ -85,17 +85,17 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
             {(() => {
               const [isHovered, setIsHovered] = useState(false);
               return (
-            <div className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${isHovered ? 'bg-[#F6F6F6]' : ''}`}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-            >
-              <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${isHovered ? 'brightness-50' : ''}`} />
-              <Link href="/">
-                <p className={`font-sans text-[14px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center font-[\'Public Sans\'] tracking-[0%] font-normal ${isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
-                  My Space
-                </p>
-              </Link>
-            </div>
+                <div className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${isHovered ? 'bg-[#F6F6F6]' : ''}`}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                >
+                  <img src="/images/icons/myspace.svg" className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${isHovered ? 'brightness-50' : ''}`} />
+                  <Link href="/">
+                    <p className={`font-sans text-[14px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center font-[\'Public Sans\'] tracking-[0%] font-normal ${isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
+                      My Space
+                    </p>
+                  </Link>
+                </div>
               );
             })()}
           </div>
@@ -112,20 +112,20 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
             {(() => {
               const [isHovered, setIsHovered] = useState(false);
               return (
-              <Link href={getRoute("Home")}>
-                <div 
-                  className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Home') ? 'bg-[#F6F6F6]' : ''}`}
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                >
-                  <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                    <img src="/images/icons/home.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Home') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
-                    <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Home') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
-                      Home
-                    </p>
+                <Link href={getRoute("Home")}>
+                  <div
+                    className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Home') ? 'bg-[#F6F6F6]' : ''}`}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                  >
+                    <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+                      <img src="/images/icons/home.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Home') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
+                      <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Home') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
+                        Home
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
               );
             })()}
 
@@ -133,20 +133,20 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
             {(() => {
               const [isHovered, setIsHovered] = useState(false);
               return (
-              <Link href={getRoute("Members")}>
-                <div 
-                  className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Members') ? 'bg-[#F6F6F6]' : ''}`}
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                >
-                  <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                    <img src="/images/icons/Member.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Members') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
-                    <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Members') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
-                      Members
-                    </p>
+                <Link href={getRoute("Members")}>
+                  <div
+                    className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Members') ? 'bg-[#F6F6F6]' : ''}`}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                  >
+                    <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+                      <img src="/images/icons/Member.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Members') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
+                      <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Members') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
+                        Members
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
               );
             })()}
           </div>
@@ -161,20 +161,20 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
             {(() => {
               const [isHovered, setIsHovered] = useState(false);
               return (
-              <Link href={getRoute("Published")}>
-                <div 
-                  className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Published') ? 'bg-[#F6F6F6]' : ''}`}
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                >
-                  <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                    <img src="/images/icons/Publish.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Published') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
-                    <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Published') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
-                      Published
-                    </p>
+                <Link href={getRoute("Published")}>
+                  <div
+                    className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Published') ? 'bg-[#F6F6F6]' : ''}`}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                  >
+                    <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+                      <img src="/images/icons/Publish.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Published') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
+                      <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Published') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
+                        Published
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
               );
             })()}
 
@@ -182,20 +182,20 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
             {(() => {
               const [isHovered, setIsHovered] = useState(false);
               return (
-              <Link href={getRoute("Review")}>
-                <div 
-                  className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Review') ? 'bg-[#F6F6F6]' : ''}`}
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                >
-                  <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                    <img src="/images/icons/Review.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Review') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
-                    <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Review') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
-                      Review
-                    </p>
+                <Link href={getRoute("Review")}>
+                  <div
+                    className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Review') ? 'bg-[#F6F6F6]' : ''}`}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                  >
+                    <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+                      <img src="/images/icons/Review.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Review') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
+                      <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Review') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
+                        Review
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
               );
             })()}
           </div>
@@ -210,20 +210,20 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
             {(() => {
               const [isHovered, setIsHovered] = useState(false);
               return (
-              <Link href={getRoute("My Blogs")}>
-                <div 
-                  className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('My Blogs') ? 'bg-[#F6F6F6]' : ''}`}
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                >
-                  <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                    <img src="/images/icons/all_articles.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('My Blogs') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
-                    <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('My Blogs') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
-                      My Blogs
-                    </p>
+                <Link href={getRoute("My Blogs")}>
+                  <div
+                    className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('My Blogs') ? 'bg-[#F6F6F6]' : ''}`}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                  >
+                    <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+                      <img src="/images/icons/all_articles.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('My Blogs') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
+                      <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('My Blogs') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
+                        My Blogs
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
               );
             })()}
 
@@ -231,20 +231,20 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
             {(() => {
               const [isHovered, setIsHovered] = useState(false);
               return (
-              <Link href={getRoute("Draft")}>
-                <div 
-                  className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Draft') ? 'bg-[#F6F6F6]' : ''}`}
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                >
-                  <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                    <img src="/images/icons/draft.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Draft') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
-                    <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Draft') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
-                      Draft
-                    </p>
+                <Link href={getRoute("Draft")}>
+                  <div
+                    className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive('Draft') ? 'bg-[#F6F6F6]' : ''}`}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                  >
+                    <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+                      <img src="/images/icons/draft.svg" className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive('Draft') ? 'opacity-100 brightness-0' : isHovered ? 'opacity-100 brightness-50' : 'opacity-60'}`} />
+                      <p className={`font-sans text-[14px] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap transition-colors font-[\'Public Sans\'] leading-[150%] tracking-[0%] font-normal ${isActive('Draft') ? 'font-semibold text-[#2E2E2E]' : isHovered ? 'text-[#2E2E2E]' : 'text-[#B0B0B0]'}`}>
+                        Draft
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
               );
             })()}
           </div>
@@ -259,6 +259,6 @@ const MemberSidebarContent = memo(function MemberSidebarContent({ pathname, curr
 export default function MemberSidebar() {
   const pathname = usePathname();
   const { currentPublication } = usePublication();
-  
+
   return <MemberSidebarContent pathname={pathname} currentPublication={currentPublication} />;
 }

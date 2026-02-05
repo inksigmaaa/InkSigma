@@ -21,7 +21,7 @@ function ViewSiteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { currentPublication } = usePublication();
-  
+
   // Get subdomain from URL params (set by middleware) or hostname
   const [subdomain, setSubdomain] = useState(searchParams.get('subdomain'));
   const pubIdFromUrl = searchParams.get('publicationId');
@@ -34,25 +34,25 @@ function ViewSiteContent() {
       const hostname = window.location.hostname;
       const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost';
       const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'inksigma.com';
-      
+
       let detectedSubdomain = null;
 
       // Check for subdomain in local development or production
       if (hostname.endsWith(`.${rootDomain}`) && hostname !== rootDomain && !hostname.startsWith('dashboard.') && !hostname.startsWith('www.')) {
-         const parts = hostname.split('.');
-         if (parts.length > 0) detectedSubdomain = parts[0];
+        const parts = hostname.split('.');
+        if (parts.length > 0) detectedSubdomain = parts[0];
       } else if (hostname.endsWith(`.${mainDomain}`) && hostname !== mainDomain && !hostname.startsWith('www.')) {
-         const parts = hostname.replace(`.${mainDomain}`, '').split('.');
-         if (parts.length > 0) detectedSubdomain = parts[0];
+        const parts = hostname.replace(`.${mainDomain}`, '').split('.');
+        if (parts.length > 0) detectedSubdomain = parts[0];
       }
 
       if (detectedSubdomain) {
-          console.log('[ViewSite] Detected subdomain from hostname:', detectedSubdomain);
-          setSubdomain(detectedSubdomain);
+        console.log('[ViewSite] Detected subdomain from hostname:', detectedSubdomain);
+        setSubdomain(detectedSubdomain);
       }
     }
   }, [searchParams]);
-  
+
   // Fetch publication data and update meta tags
   const { publication } = usePublicationMeta(subdomain);
 
@@ -66,7 +66,7 @@ function ViewSiteContent() {
       // Fallback to fetching by ID
       const fetchPublicationDetails = async () => {
         const publicationId = pubIdFromUrl || currentPublication?.id;
-        
+
         try {
           console.log('[ViewSite] Fetching publication by ID:', publicationId);
           const response = await fetch(`${API_URL}/api/publications/${publicationId}`, {
@@ -96,9 +96,9 @@ function ViewSiteContent() {
         // Use publicationId from URL query parameter, fetched publication data, or currentPublication
         // Remove parseInt to support UUIDs and avoid NaN issues
         const publicationId = pubIdFromUrl || publicationData?.id || currentPublication?.id;
-        
+
         console.log('[ViewSite] Fetching blogs for publication:', publicationId);
-        
+
         if (!publicationId) {
           console.log('[ViewSite] No publicationId, skipping blog fetch');
           setBlogs([]);
@@ -160,8 +160,8 @@ function ViewSiteContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <HomeHeader 
-        userName={publicationName} 
+      <HomeHeader
+        userName={publicationName}
         userAvatar={avatarUrl}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -174,10 +174,10 @@ function ViewSiteContent() {
         ) : (
           <>
             <LatestBlog searchQuery={searchQuery} blogs={blogs} publicationId={pubIdFromUrl || publicationData?.id || currentPublication?.id} />
-            <AllArticles 
-              searchQuery={searchQuery} 
-              selectedCategory={selectedCategory} 
-              blogs={searchQuery ? blogs : blogs.slice(1)} 
+            <AllArticles
+              searchQuery={searchQuery}
+              selectedCategory={selectedCategory}
+              blogs={searchQuery ? blogs : blogs.slice(1)}
               publicationId={pubIdFromUrl || publicationData?.id || currentPublication?.id}
             />
           </>

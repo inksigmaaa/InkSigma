@@ -33,8 +33,14 @@ export default async function RootLayout({ children }) {
   const cleanHost = hostname.replace(/^www\./, "");
 
   // Ensure client/server agree on dashboard host detection to avoid hydration mismatches.
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost';
   const isDashboardHost =
-    cleanHost === "dashboard.localhost" || cleanHost.startsWith("dashboard.");
+    cleanHost === `dashboard.${rootDomain}` || cleanHost.startsWith("dashboard.");
+
+  const isPublicationSubdomain =
+    cleanHost !== rootDomain &&
+    cleanHost !== `www.${rootDomain}` &&
+    !isDashboardHost;
 
   return (
     <html lang="en">
@@ -45,7 +51,10 @@ export default async function RootLayout({ children }) {
           <PublicationProvider>
             <ArticlesProvider>
               <ToastProvider>
-                <ConditionalLayout isDashboardHost={isDashboardHost}>
+                <ConditionalLayout
+                  isDashboardHost={isDashboardHost}
+                  isPublicationSubdomain={isPublicationSubdomain}
+                >
                   {children}
                 </ConditionalLayout>
               </ToastProvider>

@@ -10,6 +10,8 @@ import cameraIcon from "@/icons/camera.svg";
 import { publicationService } from "@/services/publicationService";
 import { usePublication } from "@/contexts/PublicationContext";
 import { getApiBase } from "@/utils/apiBase";
+import { validateSubdomain, isReservedSubdomain } from "@/utils/subdomainRules";
+import { validatePublicationName } from "@/utils/domainValidation";
 
 export default function CreatePublication() {
   const router = useRouter();
@@ -45,6 +47,8 @@ export default function CreatePublication() {
   }, [session, publicationName, hasUserEditedName]);
 
   // Check subdomain availability with debounce
+  // Frontend validation now handles format and reserved subdomain checks
+  // Backend only checks database availability
   useEffect(() => {
     if (subdomainCheckTimeout.current) {
       clearTimeout(subdomainCheckTimeout.current);
@@ -55,21 +59,24 @@ export default function CreatePublication() {
       return;
     }
 
-    // Validate subdomain format first
-    if (!/^[a-zA-Z0-9-]+$/.test(subdomain)) {
+    // Use frontend validation for format and reserved subdomain checks
+    const validation = validateSubdomain(subdomain);
+    if (!validation.valid) {
+      // Don't check backend if frontend validation fails
       setSubdomainAvailable(null);
       return;
     }
 
     setCheckingSubdomain(true);
-    
+
+    // Only check backend for database availability (not reserved, not format)
     subdomainCheckTimeout.current = setTimeout(async () => {
       try {
         const API_URL = getApiBase();
         const response = await fetch(`${API_URL}/api/publications/check-subdomain/${subdomain.toLowerCase()}`, {
           credentials: "include",
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           setSubdomainAvailable(data.available);
@@ -92,39 +99,22 @@ export default function CreatePublication() {
   }, [subdomain]);
 
   const handleStartWriting = async () => {
-    if (!publicationName.trim() || !subdomain.trim()) {
-      setErrorMessage("Please fill in all required fields!");
+    // Use frontend validation utilities
+    const nameValidation = validatePublicationName(publicationName);
+    if (!nameValidation.valid) {
+      setErrorMessage(nameValidation.error);
       setShowErrors(true);
       return;
     }
 
-    if (publicationName.length < 2 || publicationName.length > 50) {
-      setErrorMessage("Publication name must be between 2 and 50 characters!");
+    const subdomainValidation = validateSubdomain(subdomain);
+    if (!subdomainValidation.valid) {
+      setErrorMessage(subdomainValidation.error);
       setShowErrors(true);
       return;
     }
 
-    if (subdomain.length < 3 || subdomain.length > 63) {
-      setErrorMessage("Subdomain must be between 3 and 63 characters!");
-      setShowErrors(true);
-      return;
-    }
-
-    // Validate subdomain format (alphanumeric and hyphens only)
-    if (!/^[a-zA-Z0-9-]+$/.test(subdomain)) {
-      setErrorMessage("Subdomain can only contain letters, numbers, and hyphens!");
-      setShowErrors(true);
-      return;
-    }
-
-    // Validate subdomain format more strictly (no leading/trailing hyphens)
-    if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(subdomain)) {
-      setErrorMessage("Subdomain cannot start or end with hyphens!");
-      setShowErrors(true);
-      return;
-    }
-
-    // Check if subdomain is available
+    // Check if subdomain is available in database
     if (subdomainAvailable === false) {
       setErrorMessage("This subdomain is already taken. Please choose another one.");
       setShowErrors(true);
@@ -143,16 +133,16 @@ export default function CreatePublication() {
       // First, verify authentication with the backend
       const API_URL = getApiBase();
       console.log("Verifying authentication with backend...");
-      
+
       const authCheckResponse = await fetch(`${API_URL}/api/publications/debug/auth-check`, {
         credentials: "include",
       });
-      
+
       if (!authCheckResponse.ok) {
         console.error("Authentication check failed:", authCheckResponse.status);
         throw new Error("Authentication failed. Please log in again.");
       }
-      
+
       const authCheckData = await authCheckResponse.json();
       console.log("Authentication verified:", authCheckData);
 
@@ -168,14 +158,14 @@ export default function CreatePublication() {
       if (uploadedImage && publication.id) {
         try {
           console.log('Uploading logo for publication:', publication.id);
-          
+
           // Convert base64 to blob
           const base64Response = await fetch(uploadedImage);
           const blob = await base64Response.blob();
-          
+
           // Determine the correct mime type from the base64 string
           const mimeType = uploadedImage.match(/data:([^;]+);/)?.[1] || 'image/png';
-          
+
           // Map MIME types to proper file extensions
           const extensionMap = {
             'image/jpeg': 'jpg',
@@ -186,17 +176,17 @@ export default function CreatePublication() {
             'image/svg+xml': 'svg',
             'image/svg': 'svg'
           };
-          
+
           const extension = extensionMap[mimeType] || 'png';
-          
+
           console.log('Image details:', { mimeType, extension, size: blob.size });
-          
+
           // Create file with correct mime type
           const file = new File([blob], `publication-logo.${extension}`, { type: mimeType });
-          
+
           const uploadResult = await publicationService.uploadLogo(publication.id, file);
           console.log('Logo upload result:', uploadResult);
-          
+
           // Wait a bit to ensure database is updated
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
@@ -213,14 +203,14 @@ export default function CreatePublication() {
 
       // Redirect to dashboard
       console.log('Refreshing user publications...');
-      
+
       try {
         // Refresh the publication context to include the new publication
         await loadUserPublications();
-        
+
         // Wait a bit to ensure the context is updated
         await new Promise(resolve => setTimeout(resolve, 500));
-        
+
         // Switch to the newly created publication
         const publicationWithMeta = {
           ...publication,
@@ -228,15 +218,15 @@ export default function CreatePublication() {
           role: "admin",
           joinedAt: publication.createdAt,
         };
-        
+
         switchPublication(publicationWithMeta);
-        
+
         // Clear any cached publication check to force AuthGuard to recheck
         // This prevents the AuthGuard from redirecting back to create-publication
         const cacheKey = `publication-check-${session.user.id}`;
         sessionStorage.setItem(cacheKey, 'true');
         sessionStorage.removeItem('publication-check-cache');
-        
+
         // If we were sent here from an invite (or other flow), return there after creating.
         const redirectTo = searchParams?.get("redirect");
         const safeRedirect =
@@ -271,10 +261,10 @@ export default function CreatePublication() {
         status: error.status,
         data: error.data,
       });
-      
+
       // Provide more helpful error messages
       let displayMessage = "Failed to create publication. Please try again.";
-      
+
       if (error.status === 401) {
         displayMessage = "You are not authenticated. Please log in again.";
       } else if (error.status === 400) {
@@ -282,7 +272,7 @@ export default function CreatePublication() {
       } else if (error.message) {
         displayMessage = error.message;
       }
-      
+
       setErrorMessage(displayMessage);
       setShowErrors(true);
     } finally {
@@ -363,23 +353,23 @@ export default function CreatePublication() {
               Welcome to InkSigma!
             </h1>
             <p className="text-center text-[12px] md:text-[14px] text-[#404040]">
-             Set up a publication & Start Writing
+              Set up a publication & Start Writing
             </p>
           </div>
 
           <div className="flex justify-center mb-6 md:mb-10">
             <div className="relative">
               {uploadedImage ? (
-                <img 
-                  src={uploadedImage} 
-                  alt="Publication" 
-                  className="w-[100px] h-[100px] md:w-[114px] md:h-[114px] rounded-full object-cover" 
+                <img
+                  src={uploadedImage}
+                  alt="Publication"
+                  className="w-[100px] h-[100px] md:w-[114px] md:h-[114px] rounded-full object-cover"
                 />
               ) : (
-                <img 
-                  src={imagePlaceholder.src} 
-                  alt="Upload placeholder" 
-                  className="w-[100px] h-[100px] md:w-[114px] md:h-[116px] rounded-full object-cover" 
+                <img
+                  src={imagePlaceholder.src}
+                  alt="Upload placeholder"
+                  className="w-[100px] h-[100px] md:w-[114px] md:h-[116px] rounded-full object-cover"
                 />
               )}
 
@@ -456,13 +446,24 @@ export default function CreatePublication() {
               </div>
               {subdomain.length >= 3 && (
                 <div className="mt-2 text-[10px] md:text-[11px]">
-                  {checkingSubdomain ? (
-                    <span className="text-[#666]">Checking availability...</span>
-                  ) : subdomainAvailable === true ? (
-                    <span className="text-green-600">✓ Subdomain available</span>
-                  ) : subdomainAvailable === false ? (
-                    <span className="text-red-600">✗ Subdomain already taken</span>
-                  ) : null}
+                  {(() => {
+                    // Show frontend validation errors first
+                    const validation = validateSubdomain(subdomain);
+                    if (!validation.valid) {
+                      return <span className="text-red-600">✗ {validation.error}</span>;
+                    }
+                    // Then show backend availability status
+                    if (checkingSubdomain) {
+                      return <span className="text-[#666]">Checking availability...</span>;
+                    }
+                    if (subdomainAvailable === true) {
+                      return <span className="text-green-600">✓ Subdomain available</span>;
+                    }
+                    if (subdomainAvailable === false) {
+                      return <span className="text-red-600">✗ Subdomain already taken</span>;
+                    }
+                    return null;
+                  })()}
                 </div>
               )}
             </div>
@@ -475,14 +476,14 @@ export default function CreatePublication() {
               >
                 {loading ? "Creating Publication..." : "Start Writing"}
                 <svg width="6" height="10" viewBox="0 0 7 11" fill="none" xmlns="http://www.w3.org/2000/svg" className="md:w-[7px] md:h-[11px]">
-                  <path d="M0.700012 9.7002L5.20001 5.2002L0.700012 0.700195" stroke="url(#paint0_linear_8797_4601)" strokeWidth="1.4" strokeLinecap="round"/>
+                  <path d="M0.700012 9.7002L5.20001 5.2002L0.700012 0.700195" stroke="url(#paint0_linear_8797_4601)" strokeWidth="1.4" strokeLinecap="round" />
                   <defs>
                     <linearGradient id="paint0_linear_8797_4601" x1="0.700012" y1="1.44182" x2="7.33046" y2="4.72725" gradientUnits="userSpaceOnUse">
-                       <stop stopColor="#A941FB"/>
-                       <stop offset="1" stopColor="#7864F0" stopOpacity="0.92"/>
+                      <stop stopColor="#A941FB" />
+                      <stop offset="1" stopColor="#7864F0" stopOpacity="0.92" />
                     </linearGradient>
                   </defs>
-                  </svg>
+                </svg>
               </button>
             </div>
           </div>
