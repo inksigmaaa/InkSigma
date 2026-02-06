@@ -15,6 +15,7 @@ import CommentSection from '../../components/CommentSection/CommentSection';
 import ClockIcon from '../../components/icons/ClockIcon';
 import { getImageUrl } from '@/utils/imageUrl';
 import { useSnapshot } from '@/hooks/useSnapshot';
+import { getThumbnailWithFallback } from '@/utils/fallbackThumbnail';
 
 
 export default function BlogDetailPage({ params }) {
@@ -29,55 +30,55 @@ export default function BlogDetailPage({ params }) {
 
   const handleSnapshot = () => {
     if (contentRef.current) {
-       // Get the bounding rectangle of the content element
-       const rect = contentRef.current.getBoundingClientRect();
-       
-       // Calculate how much of the element is above the viewport
-       // If rect.top is negative, we've scrolled past the top of the element
-       let yOffset = 0;
-       if (rect.top < 0) {
-         yOffset = Math.abs(rect.top);
-       }
-       
-       // Account for any fixed header (typically 80px on this site)
-       const headerHeight = 80;
-       
-       // If the element starts below the viewport top (hasn't been scrolled yet),
-       // we need to adjust the offset to start from where it's visible
-       if (rect.top > 0) {
-         yOffset = 0;
-       } else {
-         // Add any additional scroll that happened past the element top
-         yOffset = Math.abs(rect.top);
-       }
-       
-       // Calculate the height to capture (viewport height minus header)
-       const captureHeight = window.innerHeight - headerHeight;
-       
-       // Ensure we don't try to capture beyond the element's total height
-       const maxOffset = contentRef.current.scrollHeight - captureHeight;
-       if (yOffset > maxOffset && maxOffset > 0) {
-         yOffset = maxOffset;
-       }
-       if (yOffset < 0) yOffset = 0;
+      // Get the bounding rectangle of the content element
+      const rect = contentRef.current.getBoundingClientRect();
 
-       captureSnapshot(contentRef, blog?.title || 'blog-snapshot', { 
-         height: captureHeight,
-         width: contentRef.current.scrollWidth,
-         y: yOffset,
-         x: 0
-       });
+      // Calculate how much of the element is above the viewport
+      // If rect.top is negative, we've scrolled past the top of the element
+      let yOffset = 0;
+      if (rect.top < 0) {
+        yOffset = Math.abs(rect.top);
+      }
+
+      // Account for any fixed header (typically 80px on this site)
+      const headerHeight = 80;
+
+      // If the element starts below the viewport top (hasn't been scrolled yet),
+      // we need to adjust the offset to start from where it's visible
+      if (rect.top > 0) {
+        yOffset = 0;
+      } else {
+        // Add any additional scroll that happened past the element top
+        yOffset = Math.abs(rect.top);
+      }
+
+      // Calculate the height to capture (viewport height minus header)
+      const captureHeight = window.innerHeight - headerHeight;
+
+      // Ensure we don't try to capture beyond the element's total height
+      const maxOffset = contentRef.current.scrollHeight - captureHeight;
+      if (yOffset > maxOffset && maxOffset > 0) {
+        yOffset = maxOffset;
+      }
+      if (yOffset < 0) yOffset = 0;
+
+      captureSnapshot(contentRef, blog?.title || 'blog-snapshot', {
+        height: captureHeight,
+        width: contentRef.current.scrollWidth,
+        y: yOffset,
+        x: 0
+      });
     }
   };
 
   const handleBack = (e) => {
     e.preventDefault();
     const fromPub = searchParams.get('from');
-    
+
     // Try browser history first
     if (window.history.length > 1) {
       router.back();
-    } 
+    }
     // Fallback to explicit navigation
     else if (fromPub) {
       router.push(`/view-site?publicationId=${fromPub}`);
@@ -95,34 +96,73 @@ export default function BlogDetailPage({ params }) {
         setLoading(true);
         // Fetch blog by slug (without incrementing view here)
         const response = await fetch(`http://localhost:5000/api/blogs/slug/${slug}`);
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch blog');
         }
-        
+
         const foundBlog = await response.json();
-        
+
         if (!foundBlog || foundBlog.error) {
           setError('Blog not found');
         } else {
+          // Process content immediately
+          if (foundBlog.content) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(foundBlog.content, 'text/html');
+
+            // Fix Images
+            const images = doc.querySelectorAll('img');
+            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+
+            images.forEach((img, index) => {
+              const src = img.getAttribute('src');
+              if (src && src.startsWith('/')) {
+                img.setAttribute('src', `${backendUrl}${src}`);
+              }
+
+              // Optimize LCP
+              if (index === 0) {
+                img.setAttribute('loading', 'eager');
+                img.setAttribute('fetchpriority', 'high');
+              } else {
+                img.setAttribute('loading', 'lazy');
+              }
+            });
+
+            // Process TOC
+            const headings = doc.querySelectorAll('h2');
+            const extractedSections = Array.from(headings).map((heading, index) => {
+              const id = heading.id || `section-${index + 1}`;
+              heading.id = id;
+              return {
+                id,
+                title: heading.textContent,
+              };
+            });
+
+            setSections(extractedSections);
+            foundBlog.content = doc.body.innerHTML;
+          }
+
           // Fetch publication details if publicationId exists
           if (foundBlog.publicationId) {
-            const pubResponse = await fetch(`http://localhost:5000/api/publications/${foundBlog.publicationId}`, {
+            const pubResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/publications/${foundBlog.publicationId}`, {
               credentials: 'include'
             });
-            
+
             if (pubResponse.ok) {
               const pubData = await pubResponse.json();
               foundBlog.publication = pubData;
             }
           }
-          
+
           setBlog(foundBlog);
-          
+
           // Track view separately using the new tracking system
           if (foundBlog.status === 'published') {
             try {
-              await fetch('http://localhost:5000/api/views/track', {
+              await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/views/track`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -131,7 +171,6 @@ export default function BlogDetailPage({ params }) {
               });
             } catch (viewError) {
               console.error('Error tracking view:', viewError);
-              // Don't fail the page load if view tracking fails
             }
           }
         }
@@ -146,32 +185,8 @@ export default function BlogDetailPage({ params }) {
     fetchBlog();
   }, [slug]);
 
-  // Process content to inject IDs for Table of Contents
-  const [processedContent, setProcessedContent] = useState('');
+  // Content processing moved to fetchBlog
   const [sections, setSections] = useState([]);
-
-  useEffect(() => {
-    if (!blog?.content) return;
-
-    // Use DOMParser to parse and modify content safely
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(blog.content, 'text/html');
-    const headings = doc.querySelectorAll('h2');
-    
-    const extractedSections = Array.from(headings).map((heading, index) => {
-      // Create a consistent ID
-      const id = heading.id || `section-${index + 1}`;
-      heading.id = id; // Inject ID back into the DOM node
-      
-      return {
-        id,
-        title: heading.textContent,
-      };
-    });
-
-    setSections(extractedSections);
-    setProcessedContent(doc.body.innerHTML);
-  }, [blog?.content]);
 
   // Scroll to top when blog page loads
   useEffect(() => {
@@ -185,14 +200,14 @@ export default function BlogDetailPage({ params }) {
     const day = String(date.getDate()).padStart(2, '0');
     const month = months[date.getMonth()];
     const year = date.getFullYear();
-    
+
     // Get ordinal suffix for day
     const getOrdinal = (n) => {
       const s = ['th', 'st', 'nd', 'rd'];
       const v = n % 100;
       return n + (s[(v - 20) % 10] || s[v] || s[0]);
     };
-    
+
     return {
       date: `${day} ${month}, ${year}`,
       fullDate: `${getOrdinal(parseInt(day))} ${month}`,
@@ -232,16 +247,16 @@ export default function BlogDetailPage({ params }) {
   }
 
   const dateFormatted = formatDate(blog.createdAt);
-  const thumbnailUrl = getImageUrl(blog.image) || "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
+  const thumbnailUrl = getThumbnailWithFallback(getImageUrl(blog.image), blog.id);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header Section */}
-      <ViewSiteHeader 
-        userName={blog.publication?.name || (blog.author?.name ? `${blog.author.name}'s Blog` : "InkSigma")} 
-        userAvatar={blog.publication?.logoUrl ? `http://localhost:5000${blog.publication.logoUrl}` : (blog.author?.image ? (blog.author.image.startsWith('http') ? blog.author.image : `http://localhost:5000${blog.author.image}`) : null)} 
+      <ViewSiteHeader
+        userName={blog.publication?.name || (blog.author?.name ? `${blog.author.name}'s Blog` : "InkSigma")}
+        userAvatar={blog.publication?.logoUrl ? `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}${blog.publication.logoUrl}` : (blog.author?.image ? (blog.author.image.startsWith('http') ? blog.author.image : `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}${blog.author.image}`) : null)}
         shareButton={
-          <ShareMenu 
+          <ShareMenu
             title={blog.title}
             slug={blog.slug}
             blogId={blog.id}
@@ -256,7 +271,7 @@ export default function BlogDetailPage({ params }) {
           {/* Left Sidebar - Navigation & TOC */}
           <aside className="hidden lg:block w-[240px] flex-shrink-0 pt-5 sticky top-28 h-[calc(100vh-6rem)] overflow-y-auto z-30">
             <div className="flex flex-col gap-8">
-              <button 
+              <button
                 onClick={handleBack}
                 className="inline-flex items-center gap-1 px-4 py-3 bg-[#F4F4F4] hover:bg-[#EAEAEA] text-[#696969] text-sm font-semibold leading-none tracking-normal rounded-3xl w-fit transition-colors"
                 type="button"
@@ -268,7 +283,7 @@ export default function BlogDetailPage({ params }) {
                   width={12}
                   height={5}
                 />
-                
+
                 Go back
               </button>
               <TableOfContents sections={sections} />
@@ -312,12 +327,12 @@ export default function BlogDetailPage({ params }) {
                     <img
                       src={
                         blog.author.image.startsWith('http') || blog.author.image.startsWith('https')
-                          ? blog.author.image 
-                          : blog.author.image.startsWith('/') 
-                            ? `http://localhost:5000${blog.author.image}`
-                            : `http://localhost:5000/${blog.author.image}`
-                      } 
-                      alt={blog.author?.name || 'Author'} 
+                          ? blog.author.image
+                          : blog.author.image.startsWith('/')
+                            ? `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}${blog.author.image}`
+                            : `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/${blog.author.image}`
+                      }
+                      alt={blog.author?.name || 'Author'}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.style.display = 'none';
@@ -336,7 +351,7 @@ export default function BlogDetailPage({ params }) {
                   {blog.author?.name || 'Anonymous'}
                 </span>
               </div>
-              
+
               {/* Date */}
               <div className="flex items-center gap-2 text-[#808080] text-sm font-normal leading-normal tracking-normal max-md:text-[12px] max-md:leading-[1.5]">
                 <div className="flex-shrink-0">
@@ -347,22 +362,12 @@ export default function BlogDetailPage({ params }) {
             </div>
 
             {/* Blog Content */}
-              <article
-                className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px]"
-                dangerouslySetInnerHTML={{ __html: (() => {
-                  // Use processed content if available, otherwise original
-                  const contentToRender = processedContent || blog.content;
-                  
-                  // Convert relative image URLs to full URLs for display
-                  const apiUrl = 'http://localhost:5000';
-                  return contentToRender.replace(/src="([^"]*)"/g, (match, src) => {
-                    if (!src) return match;
-                    if (src.startsWith('http://') || src.startsWith('https://')) return match;
-                    if (src.startsWith('/')) return `src="${apiUrl}${src}"`;
-                    return `src="${apiUrl}/${src}"`;
-                  });
-                })() }}
-              />
+            <article
+              className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px]"
+              dangerouslySetInnerHTML={{
+                __html: blog.content
+              }}
+            />
 
             {/* Comment Section */}
             <div className="">
@@ -372,19 +377,19 @@ export default function BlogDetailPage({ params }) {
 
           {/* Right Sidebar - Social Share */}
           <aside className="hidden xl:block w-16 pt-6 h-fit sticky top-28 z-30">
-             <SocialSidebar 
-               title={blog.title}
-               slug={blog.slug}
-               blogId={blog.id}
-               onSnapshot={handleSnapshot}
-             />
+            <SocialSidebar
+              title={blog.title}
+              slug={blog.slug}
+              blogId={blog.id}
+              onSnapshot={handleSnapshot}
+            />
           </aside>
         </div>
       </section>
 
       <Footer publicationName={blog.publication?.name} />
       <ScrollToTop />
-      
+
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav
         title={blog.title}

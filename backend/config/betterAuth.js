@@ -6,12 +6,62 @@ import { emailService } from "../services/emailService.js";
 import { emailValidationService } from "../services/emailValidationService.js";
 import { redisSessionStorage } from "./redis.js";
 
+// Inline helper to get base domains from environment
+const getBaseDomains = () => {
+    const envValue =
+        process.env.BASE_DOMAINS || process.env.BASE_DOMAIN || "localhost,inksigma.local";
+    return envValue
+        .split(",")
+        .map((d) => d.trim().toLowerCase())
+        .filter(Boolean);
+};
+
+const buildTrustedOrigins = () => {
+    const fromEnv =
+        process.env.TRUSTED_ORIGINS ||
+        process.env.CORS_ORIGIN ||
+        process.env.ALLOWED_ORIGINS ||
+        process.env.FRONTEND_URL ||
+        "http://localhost:3000";
+
+    const origins = new Set(
+        fromEnv
+            .split(",")
+            .map((origin) => origin.trim())
+            .filter(Boolean),
+    );
+
+    const baseDomains = getBaseDomains();
+    for (const baseDomain of baseDomains) {
+        origins.add(`http://${baseDomain}:3000`);
+        origins.add(`http://dashboard.${baseDomain}:3000`);
+        origins.add(`https://${baseDomain}`);
+        origins.add(`https://dashboard.${baseDomain}`);
+    }
+
+    return Array.from(origins);
+};
+
+const buildBaseUrl = () => {
+    if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
+
+    const baseDomains = getBaseDomains();
+    const dashboardSub = process.env.DASHBOARD_SUBDOMAIN || "dashboard";
+
+    // Prefer dashboard.<base>:5000 so cookies align with dashboard host in local dev
+    if (baseDomains.length > 0) {
+        return `http://${dashboardSub}.${baseDomains[0]}:5000`;
+    }
+
+    return "http://localhost:5000";
+};
+
 export const auth = betterAuth({
-    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5000",
+    baseURL: buildBaseUrl(),
     basePath: "/api/auth",
     secret: process.env.BETTER_AUTH_SECRET,
-    trustedOrigins: [process.env.FRONTEND_URL || "http://localhost:3000"],
-    
+    trustedOrigins: buildTrustedOrigins(),
+
     database: drizzleAdapter(db, {
         provider: "pg",
     }),
@@ -38,21 +88,21 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true,
         requireEmailVerification: true,
-        
+
         // Validate email before signup
         async beforeSignUp({ email }) {
             console.log(`[EMAIL-VALIDATION] Validating email: ${email}`);
-            
+
             const validation = await emailValidationService.validateEmail(email);
             if (!validation.isValid) {
                 const errorMessage = validation.errors.join(', ');
                 console.log(`[EMAIL-VALIDATION] Rejected: ${email} - ${errorMessage}`);
                 throw new Error(errorMessage);
             }
-            
+
             console.log(`[EMAIL-VALIDATION] Approved: ${email}`);
         },
-        
+
         sendResetPassword: async ({ user, url }) => {
             console.log("[BETTER-AUTH] sendResetPassword called for:", user.email);
             try {
@@ -77,7 +127,7 @@ export const auth = betterAuth({
             console.log("[BETTER-AUTH] sendVerificationEmail called for:", user.email);
             console.log("[BETTER-AUTH] Verification URL:", url);
             console.log("[BETTER-AUTH] Token:", token);
-            
+
             try {
                 const result = await emailService.sendVerification({
                     email: user.email,
@@ -106,4 +156,3 @@ export const auth = betterAuth({
         },
     },
 });
-

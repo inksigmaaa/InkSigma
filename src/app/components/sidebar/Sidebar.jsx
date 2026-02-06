@@ -38,7 +38,7 @@ function SidebarMenuItem({ label, icon, route, isActive }) {
 // Extracted component for My Space item
 function MySpaceItem({ pathname }) {
   const [isHovered, setIsHovered] = useState(false);
-  const isActive = pathname === "/dashboard";
+  const isActive = pathname === "/";
 
   return (
     <div
@@ -50,7 +50,7 @@ function MySpaceItem({ pathname }) {
         src="/images/icons/myspace.svg"
         className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${isActive ? "brightness-0" : isHovered ? "brightness-50" : ""}`}
       />
-      <Link href="/dashboard">
+      <Link href="/">
         <p
           className={`font-sans text-[14px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center font-['Public Sans'] tracking-[0%] font-normal ${isActive ? "font-bold text-black" : isHovered ? "text-[#2E2E2E]" : "text-[#B0B0B0]"}`}
         >
@@ -64,6 +64,15 @@ function MySpaceItem({ pathname }) {
 export default function Sidebar() {
   const pathname = usePathname();
   const { currentPublication, loading } = usePublication();
+  const pubPrefix = currentPublication?.subdomain ? `/${currentPublication.subdomain}` : "";
+
+  const effectivePathname = (() => {
+    if (!pathname) return pathname;
+    if (pubPrefix && pathname.startsWith(`${pubPrefix}/`)) {
+      return pathname.slice(pubPrefix.length);
+    }
+    return pathname;
+  })();
 
   // Helper to determine the effective role
   const getEffectiveRole = () => {
@@ -80,7 +89,7 @@ export default function Sidebar() {
       Home: "/home",
       Domain: "/domain",
       Members: "/members",
-      Settings: "/dashboard/settings",
+      Settings: "/settings",
       "All Articles": "/posts",
       Published: "/published",
       Unpublished: "/unpublished",
@@ -91,18 +100,10 @@ export default function Sidebar() {
       Trash: "/trash",
     };
 
-    let route = routes[label] || "/dashboard";
-
-    // Append publication ID to all publication-specific routes to preserve context
-    if (
-      currentPublication?.id &&
-      route !== "/dashboard" &&
-      route !== "/dashboard/settings"
-    ) {
-      route = `${route}?pub=${currentPublication.id}`;
-    }
-
-    return route;
+    const endpointPath = routes[label] || "/";
+    // Publication-scoped routes always include /{subdomain}/...
+    if (endpointPath === "/") return "/";
+    return `${pubPrefix}${endpointPath}`;
   };
 
   // MENU CONFIGURATION
@@ -184,8 +185,8 @@ export default function Sidebar() {
   // Check if the current route is active
   const isActive = (label) => {
     const route = getRoute(label);
-    const basePath = route.split("?")[0];
-    return pathname === basePath;
+    const basePath = route.replace(pubPrefix, "").split("?")[0] || "/";
+    return effectivePathname === basePath;
   };
 
   return (
@@ -221,8 +222,8 @@ export default function Sidebar() {
             <div className="flex-1 min-w-0">
               <a
                 href={
-                  currentPublication?.id
-                    ? `/view-site?publicationId=${currentPublication.id}`
+                  currentPublication?.subdomain
+                    ? `http://${currentPublication.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost'}:3000`
                     : "/view-site"
                 }
                 target="_blank"

@@ -1,5 +1,6 @@
 // services/publicationService.js
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+import { getApiBase } from "@/utils/apiBase";
+const API_URL = getApiBase();
 
 export const publicationService = {
   // Get user's publication

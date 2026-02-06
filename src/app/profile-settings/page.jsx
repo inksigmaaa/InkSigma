@@ -6,13 +6,13 @@ import NavbarLoggedin from "../components/navbar/NavbarLoggedin"
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar"
 import UserAvatar from "@/components/ui/UserAvatar"
 import { useSession } from "@/lib/auth-client"
-
-const API_URL = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:5000"
+import { getApiBase } from "@/utils/apiBase"
 
 export default function ProfileSettingsPage() {
   const router = useRouter()
   const { data: session, isPending } = useSession()
   const fileInputRef = useRef(null)
+  const API_URL = getApiBase() // Get API URL dynamically based on current hostname
   const [showResetModal, setShowResetModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [showUpdateMessage, setShowUpdateMessage] = useState(false)
@@ -32,13 +32,20 @@ export default function ProfileSettingsPage() {
   // Fetch profile data on mount
   useEffect(() => {
     const fetchProfile = async () => {
+      console.log('[ProfileSettings] Fetching profile from:', API_URL)
+      console.log('[ProfileSettings] Session:', session)
+      console.log('[ProfileSettings] isPending:', isPending)
+      
       try {
         const response = await fetch(`${API_URL}/api/profile`, {
           credentials: "include",
         })
 
+        console.log('[ProfileSettings] Profile response status:', response.status)
+
         if (response.ok) {
           const data = await response.json()
+          console.log('[ProfileSettings] Profile data received:', data)
           setEmail(data.email || "")
           setProfileName(data.profileName || "")
           setUsername(data.username || "")
@@ -47,23 +54,34 @@ export default function ProfileSettingsPage() {
           setImagePreview(data.image || "")
           setHasPasswordAccount(data.hasPasswordAccount || false)
         } else if (response.status === 401) {
+          console.error('[ProfileSettings] Unauthorized - redirecting to login')
           router.push("/login")
+        } else {
+          console.error('[ProfileSettings] Unexpected response status:', response.status)
         }
       } catch (error) {
-        console.error("Error fetching profile:", error)
+        console.error("[ProfileSettings] Error fetching profile:", error)
+        setError("Failed to load profile. Please try again.")
       } finally {
         setIsLoading(false)
       }
     }
 
-    if (!isPending) {
-      if (session?.user) {
-        fetchProfile()
-      } else {
-        router.push("/login")
-      }
+    // Wait for session to be determined before checking
+    if (isPending) {
+      console.log('[ProfileSettings] Session is still loading, waiting...')
+      return
     }
-  }, [session, isPending, router])
+
+    if (session?.user) {
+      console.log('[ProfileSettings] Session found, fetching profile')
+      fetchProfile()
+    } else {
+      console.error('[ProfileSettings] No session found - redirecting to login')
+      setIsLoading(false)
+      router.push("/login")
+    }
+  }, [session, isPending, router, API_URL])
 
   const handleImageChange = async (e) => {
     const file = e.target.files?.[0]
@@ -205,10 +223,16 @@ export default function ProfileSettingsPage() {
         <NavbarLoggedin />
         <DashboardSimpleSidebar />
         <div className="min-h-screen bg-white flex justify-center items-center p-4 pt-[140px] md:pt-32 md:pl-64">
-          <p className="text-gray-500">Loading...</p>
+          <p className="text-gray-500">Loading profile...</p>
         </div>
       </>
     )
+  }
+
+  // If no session after loading, redirect to login
+  if (!session?.user) {
+    router.push("/login")
+    return null
   }
 
   // User object for avatar

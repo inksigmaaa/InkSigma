@@ -631,8 +631,8 @@ export function ArticlesProvider({ children }) {
       // Use the dedicated endpoint to create a draft copy
       // This allows editing without unpublishing the original
       console.log("Creating draft form published article:", id);
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const { getApiBase } = await import("@/utils/apiBase");
+      const API_URL = getApiBase();
       const response = await fetch(`${API_URL}/api/blogs/${id}/edit-draft`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

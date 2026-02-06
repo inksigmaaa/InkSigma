@@ -4,21 +4,21 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         CLIENT REQUEST                           │
-│              (Browser/Mobile App/API Client)                     │
+│                         CLIENT REQUEST                          │
+│              (Browser/Mobile App/API Client)                    │
 └────────────────────────────┬────────────────────────────────────┘
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                      1. SERVER.JS (Entry Point)                  │
-│  • Express app initialization                                    │
-│  • Port: 5000                                                    │
-│  • CORS middleware applied                                       │
+│                      1. SERVER.JS (Entry Point)                 │
+│  • Express app initialization                                   │
+│  • Port: 5000                                                   │
+│  • CORS middleware applied                                      │
 └────────────────────────────┬────────────────────────────────────┘
                              │
                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    2. MIDDLEWARE LAYER                           │
+┌────────────────────────────────────────────────────────────────┐
+│                    2. MIDDLEWARE LAYER                         │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │ A. CORS (middleware/cors.js)                             │  │
 │  │    • Allow cross-origin requests                         │  │
@@ -34,11 +34,11 @@
 │  │    • Session management                                  │  │
 │  │    • Cookie handling                                     │  │
 │  └──────────────────────────────────────────────────────────┘  │
-└────────────────────────────┬────────────────────────────────────┘
+└────────────────────────────┬───────────────────────────────────┘
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                      3. ROUTE MATCHING                           │
+│                      3. ROUTE MATCHING                          │
 │  • /api/auth/*          → authRoutes.js                         │
 │  • /api/blogs/*         → blogRoutes.js                         │
 │  • /api/comments/*      → commentRoutes.js                      │
@@ -50,8 +50,8 @@
 └────────────────────────────┬────────────────────────────────────┘
                              │
                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    4. ROUTE HANDLER (routes/)                    │
+┌────────────────────────────────────────────────────────────────┐
+│                    4. ROUTE HANDLER (routes/)                  │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │ A. Authentication Check (if required)                    │  │
 │  │    • getCurrentUser() middleware                         │  │
@@ -71,11 +71,11 @@
 │  │    • Verify ownership/membership                         │  │
 │  │    • Return 403 if unauthorized                          │  │
 │  └──────────────────────────────────────────────────────────┘  │
-└────────────────────────────┬────────────────────────────────────┘
+└────────────────────────────┬───────────────────────────────────┘
                              │
                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   5. BUSINESS LOGIC (services/)                  │
+┌────────────────────────────────────────────────────────────────┐
+│                   5. BUSINESS LOGIC (services/)                │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │ • authService.js         - Authentication logic          │  │
 │  │ • emailService.js        - Email sending                 │  │
@@ -85,13 +85,13 @@
 │  │ • schedulerService       - Blog scheduling               │  │
 │  │ • invitationService      - Member invitations            │  │
 │  └──────────────────────────────────────────────────────────┘  │
-└────────────────────────────┬────────────────────────────────────┘
+└────────────────────────────┬───────────────────────────────────┘
                              │
                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    6. DATA ACCESS LAYER                          │
+┌────────────────────────────────────────────────────────────────┐
+│                    6. DATA ACCESS LAYER                        │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │ A. Cache Check (Redis - config/redis.js)                │  │
+│  │ A. Cache Check (Redis - config/redis.js)                 │  │
 │  │    • Check if data exists in Redis                       │  │
 │  │    • Return cached data if available                     │  │
 │  │    • Skip database query                                 │  │
@@ -107,20 +107,20 @@
 │  │    • Store result in Redis                               │  │
 │  │    • Set expiration time                                 │  │
 │  └──────────────────────────────────────────────────────────┘  │
+└────────────────────────────┬───────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    7. RESPONSE FORMATTING                       │
+│  • Format data as JSON                                          │
+│  • Set appropriate status code (200, 201, 400, 404, 500)        │
+│  • Add headers if needed                                        │
 └────────────────────────────┬────────────────────────────────────┘
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    7. RESPONSE FORMATTING                        │
-│  • Format data as JSON                                           │
-│  • Set appropriate status code (200, 201, 400, 404, 500)       │
-│  • Add headers if needed                                         │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      8. SEND RESPONSE                            │
-│                    Back to Client                                │
+│                      8. SEND RESPONSE                           │
+│                    Back to Client                               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -276,13 +276,13 @@
    POST /api/auth/sign-in → Better Auth handles this
 
 3. BETTER AUTH (config/betterAuth.js)
-   ┌─────────────────────────────────────────┐
-   │ A. Email Validation                     │
-   │    emailValidationService.validateEmail()│
-   │    ├─ Check format (validator.js)       │
-   │    ├─ Check disposable domain           │
-   │    └─ Return error if invalid           │
-   └─────────────────────────────────────────┘
+   ┌───────────────────────────────────────────┐
+   │ A. Email Validation                       │
+   │    emailValidationService.validateEmail() │
+   │    ├─ Check format (validator.js)         │
+   │    ├─ Check disposable domain             │
+   │    └─ Return error if invalid             │
+   └───────────────────────────────────────────┘
    ┌─────────────────────────────────────────┐
    │ B. Find User                            │
    │    authService.findUserByEmail()        │
@@ -389,7 +389,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    AUTHENTICATION FLOW                           │
+│                    AUTHENTICATION FLOW                          │
 └─────────────────────────────────────────────────────────────────┘
 
 1. User Signs Up
@@ -437,7 +437,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         LAYER ARCHITECTURE                       │
+│                         LAYER ARCHITECTURE                      │
 └─────────────────────────────────────────────────────────────────┘
 
 Layer 1: PRESENTATION (Routes)

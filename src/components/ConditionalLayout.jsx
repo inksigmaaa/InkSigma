@@ -6,54 +6,118 @@ import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import FeedbackButton from "@/components/FeedbackButton"
 
-export default function ConditionalLayout({ children }) {
+export default function ConditionalLayout({
+  children,
+  isDashboardHost: isDashboardHostProp = false,
+  isPublicationSubdomain: isPublicationSubdomainProp = false
+}) {
   const pathname = usePathname()
-  
+  const isDashboardHost = Boolean(isDashboardHostProp)
+  const isPublicationSubdomain = Boolean(isPublicationSubdomainProp)
+
   // Memoize layout decision to prevent unnecessary re-evaluations
   const { useCustomLayout, showMobileButtons } = useMemo(() => {
-    const isDashboardPage = pathname?.startsWith("/dashboard")
-    const isSchedulePage = pathname === "/schedule"
-    const isReviewPage = pathname === "/review"
-    const isEditorPage = pathname === "/editor"
-    const isPostsPage = pathname?.startsWith("/posts")
-    const isPostsSettingsPage = pathname === "/posts/settings"
-    const isMyBlogsPage = pathname === "/my-blogs"
-    const isDraftPage = pathname === "/draft" || pathname === "/posts/draft"
-    const isTrashPage = pathname === "/trash"
-    const isPublished = pathname === "/published"
-    const isUnpublishedPage = pathname === "/unpublished"
-    const isMembersPage = pathname === "/members"
-    const isAuthorReview = pathname === "/author-review"
-    const isViewSitePage = pathname?.startsWith("/view-site")
-    const isCreatePublicationPage = pathname === "/create-publication"
-    const isDomain = pathname === "/domain"
-    const isprofilesettings = pathname === "/profile-settings"
-    const isHome = pathname === "/home"
-    const ismembers = pathname === "/posts/members"
-    const isMembersDashboard = pathname === "/dashboard/members"
-    const isPreview = pathname?.startsWith("/home/preview")
-    const isLandingPage = pathname === "/"
-    const isblog = pathname === "/posts/my-blogs"
-    const ispostsmembers = pathname === "/posts/home"
-    const ispostspublished = pathname === "/posts/published"
-    const islogin = pathname === "/login"
-    const issignup = pathname === "/signup"
-    const isforgot = pathname === "/forgot-password"
-    const isreset = pathname === "/reset-password"
-    const ismagiclink = pathname === "/magic-link"
-    const iseditordashboard = pathname === "/editorpage"
-    const isviewsite = pathname === "/view-site"
-    const isviewblog = pathname?.startsWith("/view-site/blog")
+    // On the dashboard host we use the public URL shape:
+    // ... (rest of normalizeDashboardPath) ...
+    const normalizeDashboardPath = (p) => {
+      // ... same logic ...
+      if (!isDashboardHost) return p;
+      if (!p) return p;
+      if (p === "/") return p;
 
-    const customLayout = isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished || islogin || issignup || isforgot || isreset || ismagiclink || iseditordashboard 
+      const PUBLIC_PREFIXES = [
+        "/login",
+        "/signup",
+        "/forgot-password",
+        "/reset-password",
+        "/magic-link",
+        "/auth-callback",
+        "/create-publication",
+        "/invite",
+        "/view-site",
+        "/profile-settings", // User-level settings, not publication-specific
+      ];
+      const OLD_ENDPOINTS = [
+        "/home",
+        "/posts",
+        "/review",
+        "/author-review",
+        "/editor",
+        "/draft",
+        "/published",
+        "/unpublished",
+        "/trash",
+        "/schedule",
+        "/members",
+        "/my-blogs",
+        "/domain",
+        "/dashboard",
+      ];
 
-    const showButtons = !isCreatePublicationPage && !isPreview && !isDashboardPage && !isprofilesettings && !isPostsSettingsPage && !isEditorPage && !islogin && !issignup && !isforgot && !isreset && !ismagiclink
+      const isPublic = PUBLIC_PREFIXES.some(
+        (prefix) => p === prefix || p.startsWith(`${prefix}/`),
+      );
+      if (isPublic) return p;
+
+      const isOld = OLD_ENDPOINTS.some(
+        (prefix) => p === prefix || p.startsWith(`${prefix}/`),
+      );
+      if (isOld) return p;
+
+      const segments = p.split("/").filter(Boolean);
+      if (segments.length >= 2) {
+        return `/${segments.slice(1).join("/")}`;
+      }
+      return p;
+    };
+
+    const effectivePath = normalizeDashboardPath(pathname);
+
+    const isDashboardPage = effectivePath?.startsWith("/dashboard") || (isDashboardHost && pathname === "/")
+    const isDashboardSettingsPage = effectivePath === "/settings" || effectivePath?.startsWith("/settings/")
+    // ... all other checks ...
+    const isSchedulePage = effectivePath === "/schedule"
+    const isReviewPage = effectivePath === "/review"
+    const isEditorPage = effectivePath === "/editor"
+    const isPostsPage = effectivePath?.startsWith("/posts")
+    const isPostsSettingsPage = effectivePath === "/posts/settings"
+    const isMyBlogsPage = effectivePath === "/my-blogs"
+    const isDraftPage = effectivePath === "/draft" || effectivePath === "/posts/draft"
+    const isTrashPage = effectivePath === "/trash"
+    const isPublished = effectivePath === "/published"
+    const isUnpublishedPage = effectivePath === "/unpublished"
+    const isMembersPage = effectivePath === "/members"
+    const isAuthorReview = effectivePath === "/author-review"
+    const isViewSitePage = effectivePath?.startsWith("/view-site")
+    const isCreatePublicationPage = effectivePath === "/create-publication"
+    const isDomain = effectivePath === "/domain"
+    const isprofilesettings = effectivePath === "/profile-settings"
+    const isHome = effectivePath === "/home"
+    const ismembers = effectivePath === "/posts/members"
+    const isMembersDashboard = effectivePath === "/dashboard/members"
+    const isPreview = effectivePath?.startsWith("/home/preview")
+    const isLandingPage = effectivePath === "/"
+    const isblog = effectivePath === "/posts/my-blogs"
+    const ispostsmembers = effectivePath === "/posts/home"
+    const ispostspublished = effectivePath === "/posts/published"
+    const islogin = effectivePath === "/login"
+    const issignup = effectivePath === "/signup"
+    const isforgot = effectivePath === "/forgot-password"
+    const isreset = effectivePath === "/reset-password"
+    const ismagiclink = effectivePath === "/magic-link"
+    const iseditordashboard = effectivePath === "/editorpage"
+    const isviewsite = effectivePath === "/view-site"
+    const isviewblog = effectivePath?.startsWith("/view-site/blog")
+
+    const customLayout = isPublicationSubdomain || isDashboardPage || isDashboardSettingsPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished || islogin || issignup || isforgot || isreset || ismagiclink || iseditordashboard
+
+    const showButtons = !isCreatePublicationPage && !isPreview && !isDashboardPage && !isDashboardSettingsPage && !isprofilesettings && !isPostsSettingsPage && !isEditorPage && !islogin && !issignup && !isforgot && !isreset && !ismagiclink
 
     return {
       useCustomLayout: customLayout,
       showMobileButtons: showButtons
     }
-  }, [pathname])
+  }, [pathname, isDashboardHost])
 
   if (useCustomLayout) {
     return (

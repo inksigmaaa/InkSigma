@@ -12,8 +12,8 @@ export default function DashboardSimpleSidebar() {
             <div className={styles.sideContainer}>
                 <div className={styles.sidebarContainer}>
                     <div className={styles.mySpace}>
-                        <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-                            <div className={`${styles.spaceIcon} ${pathname === '/dashboard' ? styles.active : ''}`}>
+                        <Link href="/" style={{ textDecoration: 'none' }}>
+                            <div className={`${styles.spaceIcon} ${pathname === '/' ? styles.active : ''}`}>
                                 <img
                                     src="/images/icons/myspace.svg"
                                     alt="my space logo"

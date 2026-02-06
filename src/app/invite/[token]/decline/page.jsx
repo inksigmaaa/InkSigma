@@ -15,6 +15,25 @@ export default function DeclineInvitation() {
   const [success, setSuccess] = useState(false);
   const [invitationDetails, setInvitationDetails] = useState(null);
 
+  // Ensure invite flows happen on the dashboard host so auth cookies work consistently.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
+    const desiredHost = rootDomain === "localhost" ? "dashboard.localhost" : `dashboard.${rootDomain}`;
+    const currentHost = window.location.hostname.toLowerCase();
+
+    const isDashboardHost =
+      currentHost === desiredHost ||
+      currentHost === "dashboard.localhost" ||
+      currentHost.startsWith("dashboard.");
+
+    if (!isDashboardHost) {
+      const port = window.location.port ? `:${window.location.port}` : "";
+      const target = `${window.location.protocol}//${desiredHost}${port}/invite/${token}/decline${window.location.search || ""}`;
+      window.location.replace(target);
+    }
+  }, [token]);
+
   useEffect(() => {
     if (!isPending && !session) {
       // Redirect to login with return URL
@@ -94,7 +113,7 @@ export default function DeclineInvitation() {
             <p className="text-gray-600">You have declined the invitation to join the publication.</p>
           </div>
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push("/")}
             className="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200"
           >
             Go to Dashboard

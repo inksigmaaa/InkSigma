@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, CheckCircle2 } from "lucide-react"
 import { LOGOS } from "@/constants/app"
+import { getApiBase } from "@/utils/apiBase"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
@@ -21,15 +22,21 @@ export default function ForgotPasswordPage() {
     setLoading(true)
 
     try {
+      const apiBase = getApiBase()
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/reset-password`
+          : "http://localhost:3000/reset-password"
+
       // Use custom endpoint
-      const response = await fetch("http://localhost:5000/api/custom/forgot-password", {
+      const response = await fetch(`${apiBase}/api/custom/forgot-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email,
-          redirectTo: "http://localhost:3000/reset-password"
+          redirectTo,
         }),
         credentials: "include",
       })

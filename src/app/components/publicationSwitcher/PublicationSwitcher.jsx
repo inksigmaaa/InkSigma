@@ -5,11 +5,11 @@ import { usePublication } from '@/contexts/PublicationContext';
 import { useRouter } from 'next/navigation';
 
 export default function PublicationSwitcher() {
-  const { 
-    userPublications, 
-    currentPublication, 
+  const {
+    userPublications,
+    currentPublication,
     switchPublication,
-    loading 
+    loading
   } = usePublication();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -34,16 +34,78 @@ export default function PublicationSwitcher() {
   const handlePublicationSwitch = (publication) => {
     switchPublication(publication);
     setIsOpen(false);
-    
-    // Navigate to the current page with the new publication ID
-    const currentPath = window.location.pathname;
-    const newUrl = `${currentPath}?pub=${publication.id}`;
-    router.push(newUrl);
+
+    // Preserve the current endpoint, but swap the publication prefix:
+    // /oldPub/posts/home -> /newPub/posts/home
+    // /home             -> /newPub/home
+    const currentPath = window.location.pathname || '/';
+    const currentSearch = window.location.search || ''; // Preserve query params like ?refresh=true
+
+    // Split path into segments
+    const segments = currentPath.split('/').filter(Boolean);
+
+    const PUBLIC_PATH_PREFIXES = [
+      '/login',
+      '/signup',
+      '/forgot-password',
+      '/reset-password',
+      '/magic-link',
+      '/auth-callback',
+      '/create-publication',
+      '/invite',
+      '/view-site',
+    ];
+
+    const DASHBOARD_ENDPOINT_PREFIXES = [
+      '/home',
+      '/posts',
+      '/review',
+      '/author-review',
+      '/editor',
+      '/draft',
+      '/published',
+      '/unpublished',
+      '/trash',
+      '/schedule',
+      '/members',
+      '/my-blogs',
+      '/profile-settings',
+      '/domain',
+      '/dashboard',
+    ];
+
+    const isPublicPath = (p) =>
+      PUBLIC_PATH_PREFIXES.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
+
+    // Check if path starts with any dashboard endpoint (after potential subdomain)
+    const isOldEndpoint = (p) =>
+      DASHBOARD_ENDPOINT_PREFIXES.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
+
+    // Determine segments to keep
+    let endpointSegments = segments;
+
+    if (!isPublicPath(currentPath) && !isOldEndpoint(currentPath)) {
+      // We are likely in a subdomain-prefixed path like /oldPub/some/page
+      // We assume the first segment is the subdomain if we have at least 2 segments
+      // OR if the first segment matches the *old* publication subdomain (if we knew it), but here we just rely on structure.
+
+      // If segments.length >= 2, we assume first is subdomain
+      if (segments.length >= 2) {
+        endpointSegments = segments.slice(1);
+      } else if (segments.length === 1) {
+        // Edge case: /oldPub -> /newPub (redirects to home usually)
+        // We can treat this as replacing the whole path with just the new subdomain
+        endpointSegments = [];
+      }
+    }
+
+    const endpointPath = endpointSegments.length ? `/${endpointSegments.join('/')}` : '/home';
+    router.push(`/${publication.subdomain}${endpointPath}${currentSearch}`);
   };
 
   const handleViewMySpace = () => {
     setIsOpen(false);
-    router.push('/dashboard');
+    router.push('/');
   };
 
   if (loading || !currentPublication) {
@@ -77,10 +139,10 @@ export default function PublicationSwitcher() {
         <span className="text-sm font-medium text-gray-900 max-w-[150px] truncate">
           {currentPublication.name}
         </span>
-        <svg 
+        <svg
           className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          fill="none" 
-          stroke="currentColor" 
+          fill="none"
+          stroke="currentColor"
           viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -93,15 +155,14 @@ export default function PublicationSwitcher() {
             <div className="text-xs font-medium text-gray-500 uppercase tracking-wide px-2 py-1">
               Switch Publication
             </div>
-            
+
             <div className="max-h-60 overflow-y-auto">
               {userPublications.map((pub) => (
                 <button
                   key={pub.id}
                   onClick={() => handlePublicationSwitch(pub)}
-                  className={`w-full flex items-center gap-3 px-2 py-2 rounded-md text-left hover:bg-gray-50 transition-colors ${
-                    currentPublication.id === pub.id ? 'bg-violet-50 border border-violet-200' : ''
-                  }`}
+                  className={`w-full flex items-center gap-3 px-2 py-2 rounded-md text-left hover:bg-gray-50 transition-colors ${currentPublication.id === pub.id ? 'bg-violet-50 border border-violet-200' : ''
+                    }`}
                 >
                   {pub.logoUrl ? (
                     <img
@@ -119,13 +180,12 @@ export default function PublicationSwitcher() {
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-gray-900 truncate">{pub.name}</div>
                     <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
-                        pub.isOwner 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : pub.role === 'editor'
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${pub.isOwner
+                        ? 'bg-blue-100 text-blue-800'
+                        : pub.role === 'editor'
                           ? 'bg-green-100 text-green-800'
                           : 'bg-yellow-100 text-yellow-800'
-                      }`}>
+                        }`}>
                         {pub.isOwner ? 'Owner' : pub.role.charAt(0).toUpperCase() + pub.role.slice(1)}
                       </span>
                       {currentPublication.id === pub.id && (

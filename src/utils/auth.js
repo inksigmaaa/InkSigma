@@ -1,4 +1,5 @@
 // Utility functions for authentication
+import { getApiBase } from "./apiBase";
 
 export const clearAuthData = () => {
   // Clear localStorage
@@ -19,7 +20,7 @@ export const clearAuthData = () => {
 
 export const checkAuthStatus = async () => {
   try {
-    const response = await fetch("http://localhost:5000/api/auth/get-session", {
+    const response = await fetch(`${getApiBase()}/api/auth/get-session`, {
       credentials: "include",
       cache: "no-store",
     })

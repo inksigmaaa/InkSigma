@@ -17,6 +17,8 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js";
 import viewRoutes from "./routes/viewRoutes.js";
 import { corsMiddleware } from "./middleware/cors.js";
+import { subdomainMiddleware } from "./middleware/subdomainMiddleware.js";
+import { rateLimitMiddleware } from "./middleware/rateLimitMiddleware.js";
 import { emailService } from "./services/emailService.js";
 import schedulerService from "./services/schedulerService.js";
 import InvitationService from "./services/invitationService.js";
@@ -26,6 +28,8 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(corsMiddleware);
+app.use(subdomainMiddleware);
+app.use(rateLimitMiddleware);
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 

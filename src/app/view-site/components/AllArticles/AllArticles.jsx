@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from 'next/navigation';
 import ShareMenu from "../ShareMenu/ShareMenu";
 import { getImageUrl } from "@/utils/imageUrl";
 import CategoryBadgeList from "@/components/CategoryBadgeList";
+import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -16,6 +18,8 @@ export default function AllArticles({
   publicationId,
 }) {
   const [commentCounts, setCommentCounts] = useState({});
+  const pathname = usePathname();
+  const basePath = pathname.startsWith('/view-site') ? '/view-site' : '';
 
   // Fetch comment counts for all blogs
   useEffect(() => {
@@ -104,9 +108,7 @@ export default function AllArticles({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-20 md:mb-40 pb-10">
           {filteredArticles.map((article) => {
             const dateFormatted = formatDate(article.createdAt);
-            const thumbnailUrl =
-              getImageUrl(article.image) ||
-              "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&h=600&fit=crop";
+            const thumbnailUrl = getThumbnailWithFallback(getImageUrl(article.image), article.id);
 
             return (
               <div
@@ -163,7 +165,7 @@ export default function AllArticles({
                   </div>
 
                   <Link
-                    href={`/view-site/blog/${article.slug}${publicationId ? `?from=${publicationId}&view=site` : ""}`}
+                    href={`${basePath}/blog/${article.slug}${publicationId ? `?from=${publicationId}&view=site` : ""}`}
                     className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block"
                   >
                     {/* Background Image */}
