@@ -1,11 +1,11 @@
 import CategoryFilter from "../categoryFilter/CategoryFilter"
 import { Trash2 } from "lucide-react"
 
-export default function ScheduleControls({ 
-  selectedPosts, 
-  totalPosts, 
-  onSelectAll, 
-  category, 
+export default function ScheduleControls({
+  selectedPosts,
+  totalPosts,
+  onSelectAll,
+  category,
   onCategoryChange,
   onBulkDraft,
   onBulkDelete
@@ -32,11 +32,10 @@ export default function ScheduleControls({
           title="Move to Draft"
           disabled={selectedPosts.length === 0}
           onClick={onBulkDraft}
-          className={`w-8 h-8 border rounded flex items-center justify-center transition ${
-            selectedPosts.length > 0
+          className={`w-8 h-8 border rounded flex items-center justify-center transition ${selectedPosts.length > 0
               ? "bg-white border-gray-300 cursor-pointer hover:bg-gray-50"
               : "bg-gray-50 border-gray-200 cursor-not-allowed opacity-50"
-          }`}
+            }`}
         >
           <img src="/images/icons/draft1.svg" alt="Move to Draft" className={`w-4 h-4 ${selectedPosts.length === 0 ? "opacity-50" : ""}`} />
         </button>
@@ -44,20 +43,20 @@ export default function ScheduleControls({
           title="Delete selected"
           disabled={selectedPosts.length === 0}
           onClick={onBulkDelete}
-          className={`w-8 h-8 border rounded flex items-center justify-center transition ${
-            selectedPosts.length > 0
+          className={`w-8 h-8 border rounded flex items-center justify-center transition ${selectedPosts.length > 0
               ? "bg-white border-gray-300 cursor-pointer hover:bg-gray-50"
               : "bg-gray-50 border-gray-200 cursor-not-allowed opacity-50"
-          }`}
+            }`}
         >
           <Trash2 className={`h-4 w-4 ${selectedPosts.length === 0 ? "text-gray-300" : "text-gray-600"}`} />
         </button>
       </div>
 
-      <CategoryFilter 
+      <CategoryFilter
         selectedCategories={category ? [category] : []}
         onCategoriesChange={(cats) => onCategoryChange(cats[0] || "")}
         buttonText="Choose Category"
+        disabled={totalPosts === 0}
       />
     </div>
   )

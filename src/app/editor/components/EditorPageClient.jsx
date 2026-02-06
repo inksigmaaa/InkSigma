@@ -484,7 +484,7 @@ export default function EditorPageClient() {
   };
 
   // Handle Back - Check for unsaved changes
-  // Handle Back - Check for unsaved changes
+  // Handle Back - Save as draft and redirect to home
   const handleBack = async () => {
     if (hasUnsavedChanges) {
       // Only show confirmation for sensitive statuses that shouldn't be auto-updated blindly
@@ -501,30 +501,32 @@ export default function EditorPageClient() {
       ) {
         setShowExitModal(true);
       } else {
-        // Auto-save as draft (or existing status like trash) and exit without prompt
-        const statusToSave = existingBlogStatus || "draft";
-        await saveBlog(statusToSave, null, true);
-        handleExitNavigation();
+        // Auto-save as draft and redirect to home page
+        await saveBlog("draft", null, true);
+        savedSuccessfullyRef.current = true;
+        router.push(withPub("/?refresh=true"));
       }
     } else {
-      handleExitNavigation();
+      // No unsaved changes - just redirect to home page
+      savedSuccessfullyRef.current = true;
+      router.push(withPub("/?refresh=true"));
     }
   };
 
   const handleDiscard = () => {
     setHasUnsavedChanges(false);
     setShowExitModal(false);
-    handleExitNavigation();
+    savedSuccessfullyRef.current = true;
+    router.push(withPub("/?refresh=true"));
   };
 
   const handleUpdateAndExit = async () => {
-    // Use existing status (don't force to draft!)
-    // If it's a new article (no status), default to draft
-    const statusToSave = existingBlogStatus || "draft";
-    const result = await saveBlog(statusToSave, null, true);
+    // Save as draft and redirect to home page
+    const result = await saveBlog("draft", null, true);
     if (result) {
       setShowExitModal(false);
-      handleExitNavigation();
+      savedSuccessfullyRef.current = true;
+      router.push(withPub("/?refresh=true"));
     }
   };
 
