@@ -1,6 +1,6 @@
 import CategoryFilter from "../categoryFilter/CategoryFilter"
 
-export default function ScheduleHeader({ category, onCategoryChange }) {
+export default function ScheduleHeader({ category, onCategoryChange, totalPosts = 0 }) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
@@ -10,10 +10,11 @@ export default function ScheduleHeader({ category, onCategoryChange }) {
 
       {/* Category Select - Mobile Only */}
       <div className="sm:hidden">
-        <CategoryFilter 
+        <CategoryFilter
           selectedCategories={category ? [category] : []}
           onCategoriesChange={(cats) => onCategoryChange(cats[0] || "")}
           buttonText="Category"
+          disabled={totalPosts === 0}
         />
       </div>
     </div>

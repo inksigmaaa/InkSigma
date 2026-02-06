@@ -233,6 +233,7 @@ export default function Articles(props) {
                 selectedCategories={selectedCategories}
                 onCategoriesChange={setSelectedCategories}
                 buttonText="Category"
+                disabled={filteredArticles.length === 0}
               />
             </div>
           </div>
@@ -269,6 +270,7 @@ export default function Articles(props) {
                 selectedCategories={selectedCategories}
                 onCategoriesChange={setSelectedCategories}
                 buttonText="Choose Category"
+                disabled={filteredArticles.length === 0}
               />
             </div>
           </div>
@@ -302,7 +304,7 @@ export default function Articles(props) {
                     onRepublish={() => handlePublishArticle(article.id)}
                     onUnpublish={() => handleUnpublishArticle(article.id)}
                     onRestore={() => handleDraftArticle(article.id)}
-                    // stats prop removed to hide stats button as requested
+                  // stats prop removed to hide stats button as requested
                   />
                 );
               })
@@ -350,21 +352,21 @@ export default function Articles(props) {
         onConfirm={confirmDraft}
         title={
           actionArticleId &&
-          allArticles.find((a) => a.id === actionArticleId)?.status ===
+            allArticles.find((a) => a.id === actionArticleId)?.status ===
             "published"
             ? "Create a Draft?"
             : "Move to Draft?"
         }
         message={
           actionArticleId &&
-          allArticles.find((a) => a.id === actionArticleId)?.status ===
+            allArticles.find((a) => a.id === actionArticleId)?.status ===
             "published"
             ? "A draft copy will be created. The original article will remain published."
             : "This article will be moved to drafts"
         }
         confirmText={
           actionArticleId &&
-          allArticles.find((a) => a.id === actionArticleId)?.status ===
+            allArticles.find((a) => a.id === actionArticleId)?.status ===
             "published"
             ? "Create Draft"
             : "Move to Draft"

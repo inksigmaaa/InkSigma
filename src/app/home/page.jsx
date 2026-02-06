@@ -156,9 +156,9 @@ export default function HomePage() {
       <Verify />
 
       {/* Main Content */}
-      <div className="pt-[112px] min-h-screen max-md:pt-[90px]">
+      <div className="pt-[90px] min-h-screen max-md:pt-[80px]">
         <div className="max-w-[1034px] mx-auto px-5 max-md:p-0">
-          <div className={`ml-[165px] bg-white  p-8  max-md:ml-0 max-md:p-0`}>
+          <div className={`ml-[165px] bg-white  pl-8  max-md:ml-0 max-md:p-0`}>
             {/* Publication Header */}
             <div className=" px-6 py-12 flex items-center justify-between max-md:border-b max-md:border-[#EDEDED] max-md:mx-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
               <div className="flex items-center gap-6 max-md:gap-3">
