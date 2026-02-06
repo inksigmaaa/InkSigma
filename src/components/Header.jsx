@@ -53,7 +53,7 @@ export default function Header() {
             {MAIN_NAVIGATION.map((item) => {
               // Define specific dimensions for each nav item
               const getItemStyle = (itemId) => {
-                switch(itemId) {
+                switch (itemId) {
                   case 'home':
                     return { width: '39px', height: '21px', opacity: 1 };
                   case 'features':
@@ -87,8 +87,8 @@ export default function Header() {
         </nav>
 
         {/* Login Button - Right positioned */}
-        <a href="http://dashboard.localhost:3000/login" className="flex items-center">
-          <Button 
+        <a href="http://dashboard.inksigma.local:3000/login" className="flex items-center">
+          <Button
             style={{
               width: '85px',
               height: '32px',
@@ -121,7 +121,7 @@ export default function Header() {
             >
               <X size={24} />
             </button>
-            
+
             <Link href="/" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
               <Image
                 src={LOGOS.main}
@@ -131,10 +131,10 @@ export default function Header() {
                 className="w-[109.74px] h-[36.16px]"
               />
             </Link>
-            
+
             <div className="w-10"></div>
           </div>
-          
+
           <nav className="flex flex-col items-center justify-start h-[calc(100vh-80px)] space-y-12 mt-10">
             {MAIN_NAVIGATION.map((item) => (
               <div key={item.id}>
@@ -146,9 +146,9 @@ export default function Header() {
                 </button>
               </div>
             ))}
-            
-            <a href="http://dashboard.localhost:3000/login" onClick={() => setMobileMenuOpen(false)}>
-              <Button 
+
+            <a href="http://dashboard.inksigma.local:3000/login" onClick={() => setMobileMenuOpen(false)}>
+              <Button
                 style={{
                   width: '85px',
                   height: '32px',

@@ -9,8 +9,8 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
-import validator from "validator";
-import { isReservedSubdomain } from "../utils/subdomainRules.js";
+// NOTE: Domain validation logic moved to frontend (src/utils/subdomainRules.js, src/utils/domainValidation.js)
+// Backend now only checks database availability and handles data persistence
 import {
   invalidatePublicationCache,
   resolvePublicationBySubdomain,
@@ -32,7 +32,7 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    
+
     // Map MIME types to proper file extensions
     const extensionMap = {
       'image/jpeg': '.jpg',
@@ -43,10 +43,10 @@ const storage = multer.diskStorage({
       'image/svg+xml': '.svg',
       'image/svg': '.svg'
     };
-    
+
     // Get extension from MIME type or fall back to original extension
     const ext = extensionMap[file.mimetype] || path.extname(file.originalname);
-    
+
     cb(null, file.fieldname + "-" + uniqueSuffix + ext);
   },
 });
@@ -78,7 +78,7 @@ const getCurrentUser = async (req, res, next) => {
       referer: req.headers.referer,
       'content-type': req.headers['content-type']
     }));
-    
+
     const session = await auth.api.getSession({
       headers: fromNodeHeaders(req.headers),
     });
@@ -109,7 +109,7 @@ const getCurrentUser = async (req, res, next) => {
 router.get("/check", getCurrentUser, async (req, res) => {
   try {
     const userId = req.user?.id;
-    
+
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
@@ -130,8 +130,8 @@ router.get("/check", getCurrentUser, async (req, res) => {
 // Test endpoint to verify authentication
 router.get("/test-auth", getCurrentUser, async (req, res) => {
   try {
-    res.json({ 
-      authenticated: true, 
+    res.json({
+      authenticated: true,
       userId: req.user?.id,
       email: req.user?.email,
       name: req.user?.name
@@ -158,19 +158,17 @@ router.get("/debug/auth-check", getCurrentUser, async (req, res) => {
   }
 });
 
-// Check subdomain availability
+// Check subdomain availability (database check only)
+// Frontend handles format and reserved subdomain validation
 router.get("/check-subdomain/:subdomain", async (req, res) => {
   try {
     const { subdomain } = req.params;
-    
+
     if (!subdomain || subdomain.length < 3) {
       return res.status(400).json({ error: "Invalid subdomain" });
     }
 
-    if (isReservedSubdomain(subdomain)) {
-      return res.status(400).json({ error: "Subdomain is reserved" });
-    }
-
+    // Only check database availability - frontend handles format/reserved validation
     const existing = await db
       .select()
       .from(publication)
@@ -188,13 +186,13 @@ router.get("/check-subdomain/:subdomain", async (req, res) => {
 router.get("/by-subdomain/:subdomain", async (req, res) => {
   try {
     const { subdomain } = req.params;
-    
+
     if (!subdomain) {
       return res.status(400).json({ error: "Subdomain is required" });
     }
 
     const publication = await resolvePublicationBySubdomain(subdomain);
-    
+
     if (!publication) {
       return res.status(404).json({ error: "Publication not found" });
     }
@@ -296,10 +294,10 @@ router.get("/:publicationId/details", getCurrentUser, async (req, res) => {
 
     // Check if user is owner or member
     const isOwner = pub.userId === userId;
-    
+
     let userRole = null;
     let isMember = false;
-    
+
     if (!isOwner) {
       const [member] = await db
         .select()
@@ -310,7 +308,7 @@ router.get("/:publicationId/details", getCurrentUser, async (req, res) => {
             eq(publicationMember.userId, userId)
           )
         );
-      
+
       if (member) {
         isMember = true;
         userRole = member.role;
@@ -342,7 +340,7 @@ router.get("/:publicationId/details", getCurrentUser, async (req, res) => {
     // Get post count from all members - handle case where there are no members
     let postCount = 0;
     let publishedCount = 0;
-    
+
     if (memberIds.length > 0) {
       const posts = await db
         .select()
@@ -389,7 +387,7 @@ router.post("/", getCurrentUser, async (req, res) => {
     console.log("Request body:", JSON.stringify(req.body, null, 2));
     console.log("User:", JSON.stringify(req.user, null, 2));
     console.log("Headers:", JSON.stringify(req.headers, null, 2));
-    
+
     const { name, subdomain, description, customDomain } = req.body;
     const userId = req.user?.id;
 
@@ -401,50 +399,6 @@ router.post("/", getCurrentUser, async (req, res) => {
     if (!name || !subdomain) {
       console.log("Validation failed: missing name or subdomain");
       return res.status(400).json({ error: "Name and subdomain are required" });
-    }
-
-    // Validate publication name length
-    if (name.length < 2 || name.length > 50) {
-      console.log("Validation failed: invalid name length");
-      return res.status(400).json({ error: "Publication name must be between 2 and 50 characters" });
-    }
-
-    // Validate subdomain length
-    if (subdomain.length < 3 || subdomain.length > 63) {
-      console.log("Validation failed: invalid subdomain length");
-      return res.status(400).json({ error: "Subdomain must be between 3 and 63 characters" });
-    }
-
-    // Validate subdomain format (alphanumeric and hyphens only, no consecutive hyphens, no leading/trailing hyphens)
-    if (!/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(subdomain)) {
-      console.log("Validation failed: invalid subdomain format");
-      return res.status(400).json({ error: "Subdomain can only contain letters, numbers, and hyphens. Cannot start or end with hyphens or contain consecutive hyphens." });
-    }
-
-    if (isReservedSubdomain(subdomain)) {
-      console.log("Validation failed: reserved subdomain");
-      return res.status(400).json({ error: "Subdomain is reserved" });
-    }
-
-    // Validate description length (max 100 characters)
-    if (description && description.length > 100) {
-      console.log("Validation failed: description too long");
-      return res.status(400).json({ error: "Description must not exceed 100 characters" });
-    }
-
-    // Validate custom domain format if provided
-    let normalizedCustomDomain = null;
-    if (customDomain) {
-      normalizedCustomDomain = String(customDomain).trim().toLowerCase();
-      if (
-        normalizedCustomDomain.startsWith("http://") ||
-        normalizedCustomDomain.startsWith("https://")
-      ) {
-        return res.status(400).json({ error: "Custom domain must not include protocol" });
-      }
-      if (!validator.isFQDN(normalizedCustomDomain, { require_tld: true })) {
-        return res.status(400).json({ error: "Custom domain must be a valid domain name" });
-      }
     }
 
     console.log("Checking for existing user publication...");
@@ -460,7 +414,8 @@ router.post("/", getCurrentUser, async (req, res) => {
     }
 
     console.log("Checking if subdomain is available...");
-    // Check if subdomain already exists
+    // Check if subdomain already exists in database
+    // Frontend handles format and reserved subdomain validation
     const existing = await db
       .select()
       .from(publication)
@@ -471,7 +426,10 @@ router.post("/", getCurrentUser, async (req, res) => {
       return res.status(400).json({ error: "Subdomain already taken" });
     }
 
-    if (normalizedCustomDomain) {
+    // Check custom domain availability if provided
+    let normalizedCustomDomain = null;
+    if (customDomain) {
+      normalizedCustomDomain = String(customDomain).trim().toLowerCase();
       const existingCustom = await db
         .select()
         .from(publication)
@@ -544,11 +502,11 @@ router.post("/", getCurrentUser, async (req, res) => {
       detail: error.detail,
       name: error.name,
     });
-    
+
     // Provide more specific error messages based on error type
     let statusCode = 500;
     let errorMessage = "Failed to create publication";
-    
+
     if (error.code === '23505') {
       // Unique constraint violation
       if (error.detail && error.detail.includes('subdomain')) {
@@ -563,13 +521,13 @@ router.post("/", getCurrentUser, async (req, res) => {
       errorMessage = "Invalid user ID or publication reference";
       statusCode = 400;
     }
-    
+
     // Ensure we always return a JSON response
     if (!res.headersSent) {
-      res.status(statusCode).json({ 
-        error: errorMessage, 
+      res.status(statusCode).json({
+        error: errorMessage,
         details: error.message,
-        code: error.code 
+        code: error.code
       });
     }
   }
@@ -599,11 +557,8 @@ router.put("/:id", async (req, res) => {
     updateData.updatedAt = new Date();
 
     // Check if subdomain is being changed and if it's already taken
+    // Frontend handles format and reserved subdomain validation
     if (subdomain) {
-      if (isReservedSubdomain(subdomain)) {
-        return res.status(400).json({ error: "Subdomain is reserved" });
-      }
-
       const existing = await db
         .select()
         .from(publication)
@@ -614,17 +569,9 @@ router.put("/:id", async (req, res) => {
       }
     }
 
+    // Check custom domain availability if being changed
     if (customDomain) {
       const normalizedCustomDomain = String(customDomain).trim().toLowerCase();
-      if (
-        normalizedCustomDomain.startsWith("http://") ||
-        normalizedCustomDomain.startsWith("https://")
-      ) {
-        return res.status(400).json({ error: "Custom domain must not include protocol" });
-      }
-      if (!validator.isFQDN(normalizedCustomDomain, { require_tld: true })) {
-        return res.status(400).json({ error: "Custom domain must be a valid domain name" });
-      }
       const existingCustom = await db
         .select()
         .from(publication)

@@ -79,15 +79,15 @@ const urlWithPathname = (request: NextRequest, pathname: string) => {
 export async function middleware(request: NextRequest) {
   const host = request.headers.get('host') || '';
   const hostname = host.split(':')[0]; // Remove port if present
-  
+
   // Remove www prefix if present
   const cleanHost = hostname.replace(/^www\./, '');
-  
+
   // Development environment handling
   const isDev = process.env.NODE_ENV === 'development';
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost';
   const pathname = request.nextUrl.pathname;
-  
+
   // Dashboard subdomain
   const isDashboardHost =
     cleanHost === `dashboard.${rootDomain}` ||
@@ -183,51 +183,30 @@ export async function middleware(request: NextRequest) {
       return res;
     }
   }
-  
-  // Handle publication subdomains (e.g., tyson.localhost:3000)
-  const subdomainMatch = cleanHost.match(/^([a-zA-Z0-9-]+)\.localhost$/);
-  if (subdomainMatch && isDev && !isDashboardHost) {
-    const [, subdomain] = subdomainMatch;
-    
-    // Don't route dashboard subdomain or reserved subdomains
-    if (subdomain !== 'dashboard' && subdomain !== 'www') {
+
+  // Handle publication subdomains
+  const isSubdomain = cleanHost.endsWith(`.${rootDomain}`) && cleanHost !== `www.${rootDomain}`;
+
+  if (isSubdomain && !isDashboardHost) {
+    const subdomain = cleanHost.replace(`.${rootDomain}`, '');
+
+    // Don't route reserved subdomains
+    if (subdomain !== 'dashboard' && subdomain !== 'www' && subdomain !== 'api') {
       // Route all publication subdomain requests to view-site with subdomain parameter
       const viewSiteUrl = new URL(request.url);
-      
-      // If root path, rewrite to /view-site
-      // If deeper path (e.g., /blog/slug), rewrite to /view-site/blog/slug
+
       if (viewSiteUrl.pathname === '/') {
         viewSiteUrl.pathname = '/view-site';
       } else {
-        // Ensure we don't double-prefix if something weird happens, 
-        // though typically pathname starts with /
         viewSiteUrl.pathname = `/view-site${viewSiteUrl.pathname}`;
       }
-      
+
       viewSiteUrl.searchParams.set('subdomain', subdomain);
-      
+
       return NextResponse.rewrite(viewSiteUrl);
     }
   }
-  
-  // Handle production publication subdomains (e.g., tyson.inksigma.com)
-  if (!isDev && cleanHost.endsWith('.inksigma.com') && cleanHost !== 'www.inksigma.com') {
-    const subdomain = cleanHost.replace('.inksigma.com', '');
-    
-    // Route all publication subdomain requests to view-site with subdomain parameter
-    const viewSiteUrl = new URL(request.url);
-    
-    if (viewSiteUrl.pathname === '/') {
-      viewSiteUrl.pathname = '/view-site';
-    } else {
-      viewSiteUrl.pathname = `/view-site${viewSiteUrl.pathname}`;
-    }
-    
-    viewSiteUrl.searchParams.set('subdomain', subdomain);
-    
-    return NextResponse.rewrite(viewSiteUrl);
-  }
-  
+
   return NextResponse.next();
 }
 

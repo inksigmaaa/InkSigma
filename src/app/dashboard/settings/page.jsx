@@ -16,7 +16,7 @@ export default function SettingsPage() {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
-  
+
   // Publication data
   const [publicationId, setPublicationId] = useState(null)
   const [name, setName] = useState("")
@@ -35,28 +35,28 @@ export default function SettingsPage() {
     try {
       setLoading(true)
       setError(null)
-      
+
       // Get user ID from session
       const sessionRes = await fetch(`${apiBase}/api/auth/get-session`, {
         credentials: "include",
       })
-      
+
       if (!sessionRes.ok) {
         console.log("Not authenticated")
         setLoading(false)
         return
       }
-      
+
       const sessionData = await sessionRes.json()
       const userId = sessionData.user.id
       const userName = sessionData.user.name || "My Publication"
       const userUsername = sessionData.user.username || `user${userId.substring(0, 8)}`
-      
+
       // Fetch publication data
       let pubRes = await fetch(`${apiBase}/api/publications/user/${userId}`, {
         credentials: "include",
       })
-      
+
       // If no publication exists, create one
       if (pubRes.status === 404) {
         console.log("No publication found, creating one...")
@@ -73,14 +73,14 @@ export default function SettingsPage() {
             userId: userId,
           }),
         })
-        
+
         if (createRes.ok) {
           pubRes = await fetch(`${apiBase}/api/publications/user/${userId}`, {
             credentials: "include",
           })
         }
       }
-      
+
       if (pubRes.ok) {
         const pubData = await pubRes.json()
         setPublicationId(pubData.id)
@@ -109,25 +109,25 @@ export default function SettingsPage() {
     try {
       setUploading(true)
       setError(null)
-      
+
       const formData = new FormData()
       formData.append(type === 'logo' ? 'logo' : type === 'favicon' ? 'favicon' : 'metaOg', file)
-      
+
       const endpoint = type === 'logo' ? 'logo' : type === 'favicon' ? 'favicon' : 'meta-og'
       const res = await fetch(`${apiBase}/api/publications/${publicationId}/${endpoint}`, {
         method: "POST",
         credentials: "include",
         body: formData,
       })
-      
+
       if (!res.ok) {
         const errorData = await res.json()
         throw new Error(errorData.error || "Upload failed")
       }
-      
+
       const data = await res.json()
       const imageUrl = `${apiBase}${data[type === 'logo' ? 'logoUrl' : type === 'favicon' ? 'faviconUrl' : 'metaOgImageUrl']}`
-      
+
       if (type === 'logo') {
         setLogo(imageUrl)
         setSuccess('Logo updated!')
@@ -188,22 +188,22 @@ export default function SettingsPage() {
 
   const handleImageRemove = async (type) => {
     if (!publicationId) return
-    
+
     try {
       setUploading(true)
       const endpoint = type === 'logo' ? 'logo' : type === 'favicon' ? 'favicon' : 'meta-og'
-      
+
       const res = await fetch(`${apiBase}/api/publications/${publicationId}/image/${endpoint}`, {
         method: "DELETE",
         credentials: "include",
       })
-      
+
       if (!res.ok) throw new Error("Failed to remove image")
-      
+
       if (type === 'logo') setLogo("/icons/inksigma-logo.svg")
       else if (type === 'favicon') setFavicon("/icons/inksigma-logo.svg")
       else if (type === 'meta_og') setMetaOg("/icons/inksigma-logo.svg")
-      
+
       setSuccess(`${type} removed successfully!`)
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
@@ -227,20 +227,20 @@ export default function SettingsPage() {
       setSaving(true)
       setError(null)
       setSuccess(null)
-      
+
       // Validate inputs
       if (!name || name.length < 2 || name.length > 50) {
         throw new Error("Publication name must be between 2 and 50 characters")
       }
-      
+
       if (!subdomain || subdomain.length < 3 || subdomain.length > 63) {
         throw new Error("Subdomain must be between 3 and 63 characters")
       }
-      
+
       if (description && description.length > 100) {
         throw new Error("Description must be less than 100 characters")
       }
-      
+
       const res = await fetch(`${apiBase}/api/publications/${publicationId}`, {
         method: "PUT",
         credentials: "include",
@@ -253,13 +253,20 @@ export default function SettingsPage() {
           subdomain: subdomain.toLowerCase(),
         }),
       })
-      
+
       if (!res.ok) {
         const errorData = await res.json()
         throw new Error(errorData.error || "Failed to save")
       }
-      
+
       const updatedPub = await res.json()
+
+      // If subdomain changed, redirect to the new URL
+      if (updatedPub.subdomain !== originalSubdomain) {
+        window.location.href = `/${updatedPub.subdomain}/settings`;
+        return;
+      }
+
       setOriginalSubdomain(updatedPub.subdomain)
       setShowSuccessModal(true)
     } catch (err) {
@@ -285,25 +292,25 @@ export default function SettingsPage() {
       <div className="min-h-screen bg-white flex justify-center p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 md:pl-64 mb-20 md:mb-0">
         <div className="w-[400px] h-[1100px] space-y-8">
           <h1 className="text-lg font-bold text-gray-900 text-center">Publication Settings</h1>
-          
+
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
               {error}
             </div>
           )}
-          
+
           {uploading && (
             <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded text-sm">
               Uploading image...
             </div>
           )}
-          
+
           {success && (
             <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded text-sm">
               {success}
             </div>
           )}
-          
+
           {/* Logo Upload */}
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-6 mb-3">
@@ -394,7 +401,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Save Button */}
-          <button 
+          <button
             onClick={handleSave}
             disabled={saving}
             className="w-full bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors mb-6 disabled:opacity-50"

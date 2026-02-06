@@ -6,16 +6,21 @@ import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import FeedbackButton from "@/components/FeedbackButton"
 
-export default function ConditionalLayout({ children, isDashboardHost: isDashboardHostProp = false }) {
+export default function ConditionalLayout({
+  children,
+  isDashboardHost: isDashboardHostProp = false,
+  isPublicationSubdomain: isPublicationSubdomainProp = false
+}) {
   const pathname = usePathname()
   const isDashboardHost = Boolean(isDashboardHostProp)
-  
+  const isPublicationSubdomain = Boolean(isPublicationSubdomainProp)
+
   // Memoize layout decision to prevent unnecessary re-evaluations
   const { useCustomLayout, showMobileButtons } = useMemo(() => {
     // On the dashboard host we use the public URL shape:
-    //   /{pubSubdomain}/{endpoint}
-    // but we want layout logic to behave like /{endpoint}.
+    // ... (rest of normalizeDashboardPath) ...
     const normalizeDashboardPath = (p) => {
+      // ... same logic ...
       if (!isDashboardHost) return p;
       if (!p) return p;
       if (p === "/") return p;
@@ -70,6 +75,7 @@ export default function ConditionalLayout({ children, isDashboardHost: isDashboa
 
     const isDashboardPage = effectivePath?.startsWith("/dashboard") || (isDashboardHost && pathname === "/")
     const isDashboardSettingsPage = effectivePath === "/settings" || effectivePath?.startsWith("/settings/")
+    // ... all other checks ...
     const isSchedulePage = effectivePath === "/schedule"
     const isReviewPage = effectivePath === "/review"
     const isEditorPage = effectivePath === "/editor"
@@ -103,7 +109,7 @@ export default function ConditionalLayout({ children, isDashboardHost: isDashboa
     const isviewsite = effectivePath === "/view-site"
     const isviewblog = effectivePath?.startsWith("/view-site/blog")
 
-    const customLayout = isDashboardPage || isDashboardSettingsPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished || islogin || issignup || isforgot || isreset || ismagiclink || iseditordashboard || (isDashboardHost && isLandingPage)
+    const customLayout = isPublicationSubdomain || isDashboardPage || isDashboardSettingsPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isprofilesettings || isHome || isPostsSettingsPage || isAuthorReview || isMembersPage || isViewSitePage || ismembers || isMembersDashboard || isDomain || isPreview || isblog || ispostsmembers || ispostspublished || islogin || issignup || isforgot || isreset || ismagiclink || iseditordashboard
 
     const showButtons = !isCreatePublicationPage && !isPreview && !isDashboardPage && !isDashboardSettingsPage && !isprofilesettings && !isPostsSettingsPage && !isEditorPage && !islogin && !issignup && !isforgot && !isreset && !ismagiclink
 

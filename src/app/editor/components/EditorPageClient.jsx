@@ -185,7 +185,7 @@ export default function EditorPageClient() {
       blogTitle !== initialTitle ||
       blogDescription !== initialDescription ||
       normalizeContent(editorContent.html) !==
-        normalizeContent(initialContent) ||
+      normalizeContent(initialContent) ||
       !arraysEqual(selectedCategories, initialCategories);
 
     setHasUnsavedChanges(hasChanges);
@@ -471,8 +471,8 @@ export default function EditorPageClient() {
     } else if (articleStatus === "review") {
       const targetPath =
         currentPublication?.isOwner ||
-        currentPublication?.role === "editor" ||
-        currentPublication?.role === "admin"
+          currentPublication?.role === "editor" ||
+          currentPublication?.role === "admin"
           ? "/review"
           : "/author-review";
       router.push(withPub(`${targetPath}?refresh=true`));
@@ -957,15 +957,14 @@ export default function EditorPageClient() {
               {/* Status Badge */}
               <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200">
                 <div
-                  className={`w-2 h-2 rounded-full ${
-                    existingBlogStatus === "published"
-                      ? "bg-green-500"
-                      : existingBlogStatus === "scheduled"
-                        ? "bg-blue-400"
-                        : existingBlogStatus === "trash"
-                          ? "bg-red-500"
-                          : "bg-orange-400"
-                  }`}
+                  className={`w-2 h-2 rounded-full ${existingBlogStatus === "published"
+                    ? "bg-green-500"
+                    : existingBlogStatus === "scheduled"
+                      ? "bg-blue-400"
+                      : existingBlogStatus === "trash"
+                        ? "bg-red-500"
+                        : "bg-orange-400"
+                    }`}
                 ></div>
                 <span className="text-gray-500 text-sm">
                   {existingBlogStatus === "published"
@@ -1010,15 +1009,14 @@ export default function EditorPageClient() {
               {/* Status Badge - Desktop and Tablet Only */}
               <div className="hidden md:inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200 w-fit mb-4">
                 <div
-                  className={`w-2 h-2 rounded-full ${
-                    existingBlogStatus === "published"
-                      ? "bg-green-500"
-                      : existingBlogStatus === "scheduled"
-                        ? "bg-blue-400"
-                        : existingBlogStatus === "trash"
-                          ? "bg-red-500"
-                          : "bg-orange-400"
-                  }`}
+                  className={`w-2 h-2 rounded-full ${existingBlogStatus === "published"
+                    ? "bg-green-500"
+                    : existingBlogStatus === "scheduled"
+                      ? "bg-blue-400"
+                      : existingBlogStatus === "trash"
+                        ? "bg-red-500"
+                        : "bg-orange-400"
+                    }`}
                 ></div>
                 <span className="text-gray-500 text-sm">
                   {existingBlogStatus === "published"
@@ -1380,9 +1378,9 @@ export default function EditorPageClient() {
               {/* For authors in joined publications, show "Send for Review" button */}
               {/* Editors get same controls as admin (Publish + Schedule) */}
               {publicationId &&
-              currentPublication &&
-              !currentPublication.isOwner &&
-              currentPublication.role === "author" ? (
+                currentPublication &&
+                !currentPublication.isOwner &&
+                currentPublication.role === "author" ? (
                 <button
                   className="flex items-center justify-center gap-2 h-8 rounded bg-gray-900 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
                   style={{
