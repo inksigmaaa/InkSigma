@@ -313,7 +313,7 @@ export default function Members() {
       <div
         className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}
       >
-        <div className="ml-[185px] max-[767px]:ml-0">
+        <div className="ml-[220px] max-[767px]:ml-0">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="text-gray-500">Loading members...</div>
           </div>
@@ -327,7 +327,7 @@ export default function Members() {
       <div
         className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}
       >
-        <div className="ml-[185px] max-[767px]:ml-0">
+        <div className="ml-[220px] max-[767px]:ml-0">
           <div className="flex flex-col justify-center items-center min-h-[400px] text-center">
             <div className="text-red-500 mb-4">{error}</div>
             <button
@@ -349,7 +349,7 @@ export default function Members() {
         <div
           className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5 pb-20 max-[767px]:px-4.5 max-md:pb-32`}
         >
-          <div className="ml-[185px] max-[767px]:ml-0">
+          <div className="ml-[220px] max-[767px]:ml-0">
             {error && (
               <div
                 className={`mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-center transition-all duration-300 ease-in-out ${showErrorToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
@@ -363,12 +363,12 @@ export default function Members() {
                 Members
               </h2>
 
-              <div>
+              <div className={members && members.length > 0 ? "border-y border-[#EDEDED]" : ""}>
                 {members &&
                   members.length > 0 &&
                   members.map((member, index) => (
                     <div key={`member-${member.id}`}>
-                      <div className="flex items-center justify-between py-6 max-[767px]:py-4">
+                      <div className="flex items-center justify-between py-6 max-[767px]:py-4 ">
                         <div className="flex items-center gap-4 flex-1 max-[767px]:gap-3">
                           <UserAvatar
                             user={{
@@ -391,7 +391,7 @@ export default function Members() {
 
                         <div className="flex-1 flex items-center justify-end">
                           {member.userId === session?.user?.id &&
-                          member.role !== "admin" ? (
+                            member.role !== "admin" ? (
                             <button
                               onClick={() => setShowLeaveModal(true)}
                               className="px-6 py-2 text-sm font-medium text-red-500 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
@@ -438,7 +438,7 @@ export default function Members() {
       <div
         className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5 pb-20 max-[767px]:px-4.5 max-md:pb-32`}
       >
-        <div className="ml-[185px] max-[767px]:ml-0">
+        <div className="ml-[220px] max-[767px]:ml-0">
           {error && (
             <div
               className={`mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-center transition-all duration-300 ease-in-out ${showErrorToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
@@ -516,7 +516,7 @@ export default function Members() {
               Members
             </h2>
 
-            <div>
+            <div className={members && members.length > 0 ? "border-y border-[#EDEDED]" : ""}>
               {members &&
                 members.length > 0 &&
                 members.map((member, index) => (
@@ -577,8 +577,8 @@ export default function Members() {
                     </div>
                     {(index < members.length - 1 ||
                       pendingInvitations.length > 0) && (
-                      <hr className="border-[#EDEDED]" />
-                    )}
+                        <hr className="border-[#EDEDED]" />
+                      )}
                   </div>
                 ))}
 
@@ -601,13 +601,12 @@ export default function Members() {
 
                       <div className="w-1/3 flex justify-center max-[639px]:hidden">
                         <span
-                          className={`px-2 py-0 text-sm font-medium border-2 rounded-full ${
-                            invitation.status === "pending"
-                              ? "text-[#72D770] border-[#D5F2D4]"
-                              : invitation.status === "declined"
-                                ? "text-red-500 border-red-200"
-                                : "text-gray-400 border-gray-400"
-                          }`}
+                          className={`px-2 py-0 text-sm font-medium border-2 rounded-full ${invitation.status === "pending"
+                            ? "text-[#72D770] border-[#D5F2D4]"
+                            : invitation.status === "declined"
+                              ? "text-red-500 border-red-200"
+                              : "text-gray-400 border-gray-400"
+                            }`}
                         >
                           {invitation.status === "pending"
                             ? "Pending"

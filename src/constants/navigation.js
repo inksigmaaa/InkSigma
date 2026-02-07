@@ -21,8 +21,8 @@ export const MAIN_NAVIGATION = [
 
 export const FOOTER_LINKS = {
   quickLinks: [
-    { label: 'Home', href: '/' },
-    { label: 'Features', href: '/features' }
+    { label: 'Home', href: '/#home' },
+    { label: 'Features', href: '/#features' }
   ],
   company: [
     { label: 'Terms & Condition', href: '/terms' },
@@ -34,13 +34,13 @@ export const SOCIAL_LINKS = [
   {
     id: 'twitter',
     label: 'Twitter',
-    href: '#',
+    href: 'https://x.com/inksigmahq',
     icon: '/images/social-icons/twitter.svg'
   },
   {
     id: 'instagram',
     label: 'Instagram',
-    href: '#',
+    href: 'https://www.instagram.com/inksigmahq/',
     icon: '/images/social-icons/Instagram.svg'
   }
 ]

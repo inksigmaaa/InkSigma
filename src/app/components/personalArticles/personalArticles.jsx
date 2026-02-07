@@ -50,7 +50,7 @@ export default function PersonalArticles({
         <>
             {/* Mobile Action Bar - Fixed stripe below navbar using Portal */}
             {mounted && showActions && selectedArticles.length > 0 && createPortal(
-                <div 
+                <div
                     className="md:hidden fixed left-0 right-0 z-[9999]"
                     style={{
                         top: '110px',
@@ -66,7 +66,7 @@ export default function PersonalArticles({
                     }}
                 >
                     <div className="flex items-center gap-1">
-                        <div 
+                        <div
                             className="flex items-center cursor-pointer"
                             style={{
                                 width: '69px',
@@ -78,7 +78,7 @@ export default function PersonalArticles({
                             }}
                             onClick={() => onSelectAll?.(false)}
                         >
-                            <span 
+                            <span
                                 style={{
                                     fontFamily: 'Public Sans',
                                     fontWeight: 400,
@@ -114,56 +114,57 @@ export default function PersonalArticles({
 
             <div className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}>
                 <div className="ml-[195px] max-md:ml-0">
-                {/* Title Row */}
-                <div className="flex items-center justify-between gap-4 mb-4">
-                    <h1 className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-800 m-0 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: titleColor || '#8B5CF6' }}></span>
-                        {title}
-                    </h1>
-                    {/* Category dropdown on right end - only if showCategoryInTitle is true */}
-                    {showCategoryInTitle && (
-                        <CategoryFilter 
-                            selectedCategories={categories}
-                            onCategoriesChange={handleCategoryChange}
-                            buttonText="Choose Category"
-                        />
-                    )}
-                </div>
+                    {/* Title Row */}
+                    <div className="flex items-center justify-between gap-4 mb-4">
+                        <h1 className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-800 m-0 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: titleColor || '#8B5CF6' }}></span>
+                            {title}
+                        </h1>
+                        {/* Category dropdown on right end - only if showCategoryInTitle is true */}
+                        {showCategoryInTitle && (
+                            <CategoryFilter
+                                selectedCategories={categories}
+                                onCategoriesChange={handleCategoryChange}
+                                buttonText="Choose Category"
+                                disabled={articles.length === 0}
+                            />
+                        )}
+                    </div>
 
 
-                <div className="mt-6 space-y-4 pb-[85px] animate-fadeIn">
-                    {articlesWithTitleColor.length === 0 ? (
-                        <div className="flex items-center justify-center min-h-[200px] py-20 px-10 bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)] animate-fadeIn">
-                            <p className=" font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">{emptyMessage}</p>
-                        </div>
-                    ) : (
-                        articlesWithTitleColor.map((article, index) => (
-                            <div
-                                key={article.id}
-                                className="animate-slideUp"
-                                style={{ animationDelay: `${index * 50}ms` }}
-                            >
-                                <PersonalArticleContainer
-                                    id={article.id}
-                                    status={article.status}
-                                    title={article.title}
-                                    description={article.description}
-                                    categories={article.categories}
-                                    postedTime={article.postedTime}
-                                    createdAt={article.createdAt}
-                                    onDelete={article.onDelete}
-                                    onRestore={article.onRestore}
-                                    onDraft={article.onDraft}
-                                    onUnpublish={article.onUnpublish}
-                                    onRepublish={article.onRepublish}
-                                    onPublish={article.onPublish}
-                                    isSelected={selectedArticles.includes(article.id)}
-                                    onSelect={onArticleSelect}
-                                />
+                    <div className="mt-6 space-y-4 pb-[85px] animate-fadeIn">
+                        {articlesWithTitleColor.length === 0 ? (
+                            <div className="flex items-center justify-center min-h-[200px] py-20 px-10 bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)] animate-fadeIn">
+                                <p className=" font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">{emptyMessage}</p>
                             </div>
-                        ))
-                    )}
-                </div>
+                        ) : (
+                            articlesWithTitleColor.map((article, index) => (
+                                <div
+                                    key={article.id}
+                                    className="animate-slideUp"
+                                    style={{ animationDelay: `${index * 50}ms` }}
+                                >
+                                    <PersonalArticleContainer
+                                        id={article.id}
+                                        status={article.status}
+                                        title={article.title}
+                                        description={article.description}
+                                        categories={article.categories}
+                                        postedTime={article.postedTime}
+                                        createdAt={article.createdAt}
+                                        onDelete={article.onDelete}
+                                        onRestore={article.onRestore}
+                                        onDraft={article.onDraft}
+                                        onUnpublish={article.onUnpublish}
+                                        onRepublish={article.onRepublish}
+                                        onPublish={article.onPublish}
+                                        isSelected={selectedArticles.includes(article.id)}
+                                        onSelect={onArticleSelect}
+                                    />
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
         </>

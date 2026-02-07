@@ -502,13 +502,13 @@ const BlogStatsComponent = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid  grid-cols-5 px-8   max-lg:hidden">
+      <div className="grid  grid-cols-5 px-8 max-lg:hidden">
         <div >
           <div className="text-[32px]  font-extrabold text-[#292929] leading-none">{stats.totalArticles}</div>
           <div className="text-xs font-semibold bg-[linear-gradient(#A941FB,#7864F0_92%)] bg-clip-text text-transparent">Total no. Articles</div>
         </div>
         <div>
-          <div className="text-[32px] font-extrabold text-[#292929] leading-none">{stats.views}</div>
+          <div className="text-[32px] font-extrabold text-[#292929] leading-none ">{stats.views}</div>
           <div className="text-xs font-semibold bg-[linear-gradient(#A941FB,#7864F0_92%)] bg-clip-text text-transparent">Views</div>
         </div>
         <div>

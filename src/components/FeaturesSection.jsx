@@ -8,10 +8,10 @@ export default function FeaturesSection() {
   return (
     <section id="features" className="py-16 px-3 bg-white">
       <div className="max-w-6xl mx-auto">
-        <h2 className="w-[207px] h-12 mx-auto mb-16 flex items-center justify-center text-center text-[48px] font-[800] leading-[100%] tracking-[0%] text-[#2E2E2E]" style={{ fontFamily: 'Public Sans, sans-serif' }}>
+        <h2 className="w-auto md:w-[207px] h-auto md:h-12 mx-auto mb-12 md:mb-16 flex items-center justify-center text-center text-[32px] md:text-[48px] font-[800] leading-[100%] tracking-[0%] text-[#2E2E2E]" style={{ fontFamily: 'Public Sans, sans-serif' }}>
           Features
         </h2>
-        
+
         <div className="flex flex-col md:flex-row gap-x-24 justify-center items-center">
           <div className="flex-1 max-w-md space-y-12 mb-5 md:mb-0">
             {leftColumn.map((feature) => (
@@ -24,7 +24,7 @@ export default function FeaturesSection() {
               />
             ))}
           </div>
-          
+
           <div className="flex-1 max-w-md space-y-12">
             {rightColumn.map((feature) => (
               <FeatureItem

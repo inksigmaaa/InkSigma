@@ -72,10 +72,11 @@ export default function ReviewArticles({ title = "Review" }) {
             {title}
           </h1>
 
-          <CategoryFilter 
+          <CategoryFilter
             selectedCategories={selectedCategories}
             onCategoriesChange={setSelectedCategories}
             buttonText="Category"
+            disabled={posts.length === 0}
           />
         </div>
 
@@ -110,10 +111,11 @@ export default function ReviewArticles({ title = "Review" }) {
               </label>
             </div>
 
-            <CategoryFilter 
+            <CategoryFilter
               selectedCategories={selectedCategories}
               onCategoriesChange={setSelectedCategories}
               buttonText="Choose Category"
+              disabled={posts.length === 0}
             />
           </div>
         </div>

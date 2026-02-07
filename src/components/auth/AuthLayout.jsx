@@ -12,21 +12,30 @@ import { LOGOS } from "@/constants/app"
  */
 export default function AuthLayout({ children, title, titleClassName }) {
   return (
-    <div className="bg-white flex flex-col items-center justify-center h-screen overflow-hidden px-4">
+    <div className="bg-white flex flex-col items-center justify-center h-screen px-4 pb-[60px] md:pb-[80px]">
       <div className="w-full max-w-[260px] h-auto opacity-100 rotate-0 flex flex-col">
-        <div className="text-center mb-[12px] md:mb-[20px]">
+        {/* Logo - fixed position */}
+        <div className="text-center mt-[10px]">
           <Image
             src={LOGOS.auth}
             alt="InkSigma Logo"
             width={127}
             height={41.843929290771484}
-            className="mx-auto mb-[12px] md:mb-[20px] w-[100px] md:w-[127px] h-auto"
+            className="mx-auto w-[100px] md:w-[127px] h-auto"
           />
-          <h1 className={`${title === "Welcome, Sign up here!" ? "w-[179px] h-[28px]" : "w-auto md:w-[85px] h-auto md:h-[28px]"} font-bold text-[14px] md:text-[16px] leading-[28px] tracking-[0%] text-[#2E2E2E] opacity-100 rotate-0 mx-auto ${titleClassName || ''}`}>
+        </div>
+
+        {/* Title - fixed position with logo */}
+        <div className="mt-[45px] md:mt-[55px]">
+          <h1 className={`${title === "Welcome, Sign up here!" ? "w-[179px] h-[28px]" : "w-auto md:w-[85px] h-auto md:h-[28px]"} font-bold text-[14px] md:text-[16px] leading-[28px] tracking-[0%] text-[#2E2E2E] opacity-100 rotate-0 mx-auto text-center ${titleClassName || ''}`}>
             {title}
           </h1>
         </div>
-        {children}
+
+        {/* Form content - with spacing from title */}
+        <div className="mt-[35px] md:mt-[45px]">
+          {children}
+        </div>
       </div>
     </div>
   )

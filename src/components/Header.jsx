@@ -25,25 +25,34 @@ export default function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 w-full max-w-[1920px] h-[84px] mx-auto z-50 pt-6 pb-6 border-b border-gray-200 opacity-100 overflow-hidden max-md:h-16" style={{ background: '#FEFEFE' }}>
-      <div className="w-full flex items-center justify-between max-w-[1920px] mx-auto px-[151.63px]">
+    <header className="fixed top-0 left-0 right-0 w-full max-w-[1920px] h-[84px] mx-auto z-50 pt-6 pb-6 border-b border-gray-200 opacity-100 overflow-hidden max-md:h-16 max-md:pt-0 max-md:pb-0 max-md:flex max-md:items-center" style={{ background: '#FEFEFE' }}>
+      <div className="w-full flex items-center justify-between max-w-[1920px] mx-auto px-[151.63px] max-md:px-5 relative">
         {/* Mobile Menu Button - Left Side */}
         <button
-          className="md:hidden p-2"
+          className="md:hidden p-2 z-10"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
-        {/* Logo - Left positioned */}
-        <Link href="/" className="flex items-center">
+        {/* Logo - Left on desktop, Center on mobile */}
+        <Link href="/" className="flex items-center max-md:absolute max-md:left-1/2 max-md:-translate-x-1/2">
+          {/* Desktop logo with border */}
           <Image
             src={LOGOS.main}
             alt="Sigma Logo"
             width={109.74}
             height={36.16}
-            className="w-[109.74px] h-[36.16px]"
+            className="w-[109.74px] h-[36.16px] hidden md:block"
+          />
+          {/* Mobile logo without border */}
+          <Image
+            src={LOGOS.mobile}
+            alt="Sigma Logo"
+            width={76.79}
+            height={24.80}
+            className="w-[76.79px] h-[24.80px] md:hidden"
           />
         </Link>
 
@@ -103,7 +112,7 @@ export default function Header() {
               animationDuration: '0ms',
               border: 'none'
             }}
-            className="text-white hover:bg-gray-800 transition-none duration-0 text-sm font-medium border-0"
+            className="text-white hover:bg-gray-800 transition-none duration-0 text-sm font-medium border-0 max-md:w-[70px] max-md:h-[28px] max-md:text-xs max-md:px-3"
           >
             Login
           </Button>
