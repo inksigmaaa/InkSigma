@@ -9,8 +9,8 @@ export default function Footer() {
       <div className="container mx-auto px-6 max-w-6xl">
         <div className="grid grid-cols-1 md:grid-cols-5 items-start">
           {/* Logo and Description */}
-          <div className="flex flex-col md:col-span-2 gap-4" >
-            <Link href="/" className="flex items-center">
+          <div className="flex flex-col md:col-span-2 gap-4 max-md:items-center">
+            <Link href="/" className="flex items-center max-md:justify-center">
               <Image
                 src={LOGOS.main}
                 alt="Sigma Logo"
@@ -19,7 +19,7 @@ export default function Footer() {
                 className="w-[109.74px] h-[36.16px]"
               />
             </Link>
-            <p className="text-gray-600 text-sm leading-relaxed mb-8 max-w-[320px]">
+            <p className="text-gray-600 text-sm leading-relaxed mb-8 max-w-[320px] max-md:text-center">
               Welcome to the home of writers - pen down your innermost musings, ideas, stories, and inspire others to grow through words that connect. Write daily, inspire & be heard
             </p>
             {/* Social Icons */}
@@ -78,43 +78,46 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h3 className="font-bold mt-16 text-gray-900 mb-4 text-sm">Quick Links</h3>
-            <ul className="space-y-2">
-              {FOOTER_LINKS.quickLinks.map((link, index) => (
-                <li key={index}>
-                  <Link
-                    href={link.href}
-                    className="text-gray-600 hover:text-gray-900 text-sm transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Quick Links and Company - Side by side on mobile */}
+          <div className="md:contents max-md:grid max-md:grid-cols-2 max-md:gap-8 max-md:mt-8">
+            {/* Quick Links */}
+            <div>
+              <h3 className="font-bold md:mt-16 text-gray-900 mb-4 text-sm">Quick Links</h3>
+              <ul className="space-y-2">
+                {FOOTER_LINKS.quickLinks.map((link, index) => (
+                  <li key={index}>
+                    <Link
+                      href={link.href}
+                      className="text-gray-600 hover:text-gray-900 text-sm transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-          {/* Company */}
-          <div>
-            <h3 className="font-bold mt-16 text-gray-900 mb-4 text-sm">Company</h3>
-            <ul className="space-y-2">
-              {FOOTER_LINKS.company.map((link, index) => (
-                <li key={index}>
-                  <Link
-                    href={link.href}
-                    className="text-gray-600 hover:text-gray-900 text-sm transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            {/* Company */}
+            <div>
+              <h3 className="font-bold md:mt-16 text-gray-900 mb-4 text-sm">Company</h3>
+              <ul className="space-y-2">
+                {FOOTER_LINKS.company.map((link, index) => (
+                  <li key={index}>
+                    <Link
+                      href={link.href}
+                      className="text-gray-600 hover:text-gray-900 text-sm transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           {/* Contact */}
-          <div>
-            <h3 className="font-bold mt-16 text-gray-900 mb-4 text-sm">Contact</h3>
+          <div className="max-md:mt-8">
+            <h3 className="font-bold md:mt-16 text-gray-900 mb-4 text-sm">Contact</h3>
             <Link
               href={`mailto:${APP_CONFIG.email}`}
               className="text-gray-600 hover:text-gray-900 text-sm transition-colors"
@@ -127,7 +130,10 @@ export default function Footer() {
         {/* Copyright */}
         <div className="mt-12 pt-8">
           <p className="text-center text-gray-500 text-xs">
-            Copyright © 2025 Designed & Developed by Inksigma, a <a href="https://zemuria.com/" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-gray-800 transition-colors">Zemuria Inc.</a> brand.
+            Copyright © Designed & Developed by Inksigma.
+          </p>
+          <p className="text-center text-gray-500 text-xs mt-1">
+            A <a href="https://zemuria.com/" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-gray-800 transition-colors">Zemuria Inc.</a> Brand.
           </p>
         </div>
       </div>
