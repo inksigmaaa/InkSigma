@@ -123,6 +123,15 @@ export const auth = betterAuth({
     emailVerification: {
         sendOnSignUp: true,
         autoSignInAfterVerification: true,
+        // Redirect to auth-callback after verification, which handles routing to create-publication for new users
+        callbackURL: (() => {
+            const baseDomains = getBaseDomains();
+            const dashboardSub = process.env.DASHBOARD_SUBDOMAIN || "dashboard";
+            if (baseDomains.length > 0) {
+                return `http://${dashboardSub}.${baseDomains[0]}:3000/auth-callback`;
+            }
+            return "http://localhost:3000/auth-callback";
+        })(),
         sendVerificationEmail: async ({ user, url, token }) => {
             console.log("[BETTER-AUTH] sendVerificationEmail called for:", user.email);
             console.log("[BETTER-AUTH] Verification URL:", url);

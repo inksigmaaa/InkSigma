@@ -6,6 +6,7 @@ export const authClient = createAuthClient({
     basePath: "/api/auth",
     fetchOptions: {
         credentials: "include",
+        retry: 1,
     },
 });
 

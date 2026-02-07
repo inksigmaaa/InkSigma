@@ -7,11 +7,11 @@ import { Label } from "@/components/ui/label"
 /**
  * Password input field with show/hide toggle
  */
-export default function PasswordField({ 
-  id, 
-  label, 
-  placeholder, 
-  value, 
+export default function PasswordField({
+  id,
+  label,
+  placeholder,
+  value,
   onChange,
   className = "",
   minLength,
@@ -32,7 +32,7 @@ export default function PasswordField({
           onChange={onChange}
           minLength={minLength}
           maxLength={maxLength}
-          className="border-0 border-b border-gray-300 rounded-none bg-transparent px-2 py-2 pr-12 md:pr-16 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300 focus:ring-offset-0 w-full placeholder:text-[#C8C8C8]"
+          className="border-0 border-b border-gray-300 rounded-none bg-transparent px-2 py-2 pr-12 md:pr-16 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300 focus:ring-offset-0 w-full placeholder:text-[#C8C8C8] [&::-ms-reveal]:hidden [&::-ms-clear]:hidden [&::-webkit-credentials-auto-fill-button]:hidden"
           required
           {...inputProps}
         />
