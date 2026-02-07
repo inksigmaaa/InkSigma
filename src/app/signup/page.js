@@ -51,8 +51,8 @@ function SignupForm() {
         email: formData.email,
         password: formData.password,
         callbackURL: redirectTo !== "/"
-          ? `${getOrigin()}/login?redirect=${encodeURIComponent(redirectTo)}`
-          : `${getOrigin()}/login`,
+          ? `${getOrigin()}/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+          : `${getOrigin()}/auth-callback`,
       })
 
       if (result.error) {
@@ -126,7 +126,7 @@ function SignupForm() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-gray-700 text-sm md:text-sm">Name</Label>
             <Input
@@ -199,7 +199,7 @@ function SignupForm() {
           />
         </div>
 
-        <div className="w-auto h-[16px] opacity-100 rotate-0 mt-4 mx-auto flex items-center justify-center gap-2">
+        <div className="w-auto h-[16px] opacity-100 rotate-0 mt-8 mx-auto flex items-center justify-center gap-2">
           <Link
             href="http://inksigma.local:3000"
             className="flex items-center gap-2 hover:text-gray-500 transition-colors"

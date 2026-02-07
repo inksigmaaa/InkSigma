@@ -90,8 +90,8 @@ export default function ReviewPage() {
   const filteredArticles =
     selectedCategories.length > 0
       ? reviewArticles.filter((article) =>
-          article.categories?.some((cat) => selectedCategories.includes(cat)),
-        )
+        article.categories?.some((cat) => selectedCategories.includes(cat)),
+      )
       : reviewArticles;
 
   const handleAccept = (article) => {
@@ -289,6 +289,7 @@ export default function ReviewPage() {
                 selectedCategories={selectedCategories}
                 onCategoriesChange={setSelectedCategories}
                 buttonText="Choose Category"
+                disabled={reviewArticles.length === 0}
               />
             </div>
 
