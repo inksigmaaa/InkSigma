@@ -13,6 +13,7 @@ import { usePublication } from "@/contexts/PublicationContext";
 import { useSession } from "@/lib/auth-client";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "../components/sidebar/Sidebar";
+import PublishOptionsModal from "../components/review/PublishOptionsModal";
 
 export default function AuthorReviewPage() {
   const router = useRouter();
@@ -25,6 +26,9 @@ export default function AuthorReviewPage() {
   const [selectedArticleForAction, setSelectedArticleForAction] =
     useState(null);
   const [actionType, setActionType] = useState(null);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [selectedArticleForPublish, setSelectedArticleForPublish] =
+    useState(null);
 
   const {
     reviewArticles,
@@ -109,10 +113,41 @@ export default function AuthorReviewPage() {
     setShowConfirmModal(true);
   };
 
+  const handlePublish = async () => {
+    if (selectedArticleForPublish) {
+      try {
+        await acceptReviewArticle(selectedArticleForPublish.id, "published");
+        setShowPublishModal(false);
+        setSelectedArticleForPublish(null);
+        // Refresh the review articles list
+        if (currentPublication?.id) {
+          loadReviewArticles(currentPublication.id);
+        }
+      } catch (error) {
+        console.error("Error publishing article:", error);
+      }
+    }
+  };
+
+  const handleUnpublish = async () => {
+    if (selectedArticleForPublish) {
+      try {
+        await acceptReviewArticle(selectedArticleForPublish.id, "unpublished");
+        setShowPublishModal(false);
+        setSelectedArticleForPublish(null);
+        // Refresh the review articles list
+        if (currentPublication?.id) {
+          loadReviewArticles(currentPublication.id);
+        }
+      } catch (error) {
+        console.error("Error storing to unpublished:", error);
+      }
+    }
+  };
+
   const handleAccept = (article) => {
-    setSelectedArticleForAction(article);
-    setActionType("accept");
-    setShowConfirmModal(true);
+    setSelectedArticleForPublish(article);
+    setShowPublishModal(true);
   };
 
   const handleReject = (article) => {
@@ -128,10 +163,6 @@ export default function AuthorReviewPage() {
       if (actionType === "revert") {
         await revertReviewToDraft(selectedArticleForAction.id);
         console.log("Article reverted to draft successfully!");
-      } else if (actionType === "accept") {
-        // Editor can only unpublish, not publish
-        await acceptReviewArticle(selectedArticleForAction.id, "unpublished");
-        console.log("Article accepted and stored to unpublished!");
       } else if (actionType === "reject") {
         await rejectReviewArticle(selectedArticleForAction.id);
         console.log("Article rejected and returned to author's draft.");
@@ -210,7 +241,6 @@ export default function AuthorReviewPage() {
 
   const getModalTitle = () => {
     if (actionType === "revert") return "Revert to Draft?";
-    if (actionType === "accept") return "Accept Article?";
     if (actionType === "reject") return "Reject Article?";
     return "";
   };
@@ -218,9 +248,6 @@ export default function AuthorReviewPage() {
   const getModalDescription = () => {
     if (actionType === "revert") {
       return "This action will move the article back to your drafts. You can edit and resubmit it later.";
-    }
-    if (actionType === "accept") {
-      return "This article will be accepted and stored in the unpublished section. The publication admin can publish it later.";
     }
     if (actionType === "reject") {
       return "This article will be returned to the author's drafts. They can edit and resubmit it.";
@@ -345,8 +372,8 @@ export default function AuthorReviewPage() {
                         </Button>
                       )}
 
-                      {/* Editor sees different actions based on article ownership */}
-                      {isEditor && (
+                      {/* Editor/Admin sees different actions based on article ownership */}
+                      {(isEditor || isAdmin) && (
                         <>
                           {/* If it's editor's own article, only show Revert to Draft */}
                           {article.author?.id === session?.user?.id ? (
@@ -421,7 +448,7 @@ export default function AuthorReviewPage() {
                           Revert
                         </Button>
                       )}
-                      {isEditor && (
+                      {(isEditor || isAdmin) && (
                         <>
                           {/* If it's editor's own article, only show Revert to Draft */}
                           {article.author?.id === session?.user?.id ? (
@@ -499,6 +526,18 @@ export default function AuthorReviewPage() {
         description={getModalDescription()}
         confirmText="Confirm"
         cancelText="Cancel"
+      />
+
+      <PublishOptionsModal
+        isOpen={showPublishModal}
+        onClose={() => {
+          setShowPublishModal(false);
+          setSelectedArticleForPublish(null);
+        }}
+        onPublish={handlePublish}
+        onUnpublish={handleUnpublish}
+        articleTitle={selectedArticleForPublish?.title}
+        userRole={currentPublication?.role}
       />
     </>
   );
