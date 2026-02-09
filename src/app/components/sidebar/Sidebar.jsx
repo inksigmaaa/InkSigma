@@ -64,7 +64,9 @@ function MySpaceItem({ pathname }) {
 export default function Sidebar() {
   const pathname = usePathname();
   const { currentPublication, loading } = usePublication();
-  const pubPrefix = currentPublication?.subdomain ? `/${currentPublication.subdomain}` : "";
+  const pubPrefix = currentPublication?.subdomain
+    ? `/${currentPublication.subdomain}`
+    : "";
 
   const effectivePathname = (() => {
     if (!pathname) return pathname;
@@ -98,12 +100,23 @@ export default function Sidebar() {
       "My Blogs": "/my-blogs",
       Draft: "/draft",
       Trash: "/trash",
+      // Add default mapping just in case, though overridden in config
+      "Author Review": "/author-review",
     };
 
     const endpointPath = routes[label] || "/";
     // Publication-scoped routes always include /{subdomain}/...
     if (endpointPath === "/") return "/";
     return `${pubPrefix}${endpointPath}`;
+  };
+
+  // Helper to get route from item config or default map
+  const getItemRoute = (item) => {
+    if (item.getRoute) {
+      const customRoute = item.getRoute(role);
+      return `${pubPrefix}${customRoute}`;
+    }
+    return getRoute(item.label);
   };
 
   // MENU CONFIGURATION
@@ -157,6 +170,9 @@ export default function Sidebar() {
           label: "Review",
           icon: "Review.svg",
           check: (r) => hasPermission(r, "canAccessReviewQueue"),
+          // Special handling: route depends on role
+          getRoute: (role) =>
+            role === "author" ? "/author-review" : "/review",
         },
       ],
     },
@@ -184,7 +200,17 @@ export default function Sidebar() {
 
   // Check if the current route is active
   const isActive = (label) => {
-    const route = getRoute(label);
+    // Find the item config to check for custom route logic
+    let itemConfig = null;
+    for (const section of MENU_SECTIONS) {
+      const found = section.items.find((i) => i.label === label);
+      if (found) {
+        itemConfig = found;
+        break;
+      }
+    }
+
+    const route = itemConfig ? getItemRoute(itemConfig) : getRoute(label);
     const basePath = route.replace(pubPrefix, "").split("?")[0] || "/";
     return effectivePathname === basePath;
   };
@@ -223,7 +249,7 @@ export default function Sidebar() {
               <a
                 href={
                   currentPublication?.subdomain
-                    ? `http://${currentPublication.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost'}:3000`
+                    ? `http://${currentPublication.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"}:3000`
                     : "/view-site"
                 }
                 target="_blank"
@@ -266,7 +292,7 @@ export default function Sidebar() {
                     key={item.label}
                     label={item.label}
                     icon={item.icon}
-                    route={getRoute(item.label)}
+                    route={getItemRoute(item)}
                     isActive={isActive(item.label)}
                   />
                 ))}
