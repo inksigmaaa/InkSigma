@@ -126,6 +126,11 @@ export default function PersonalArticleContainer({
       return;
     }
 
+    // Don't navigate for trash items - they should be unclickable
+    if (status === "trash") {
+      return;
+    }
+
     // Prevent default behavior and stop propagation
     e.preventDefault();
     e.stopPropagation();
@@ -139,7 +144,7 @@ export default function PersonalArticleContainer({
 
   return (
     <div
-      className={`relative rounded-[8px] mb-4 cursor-pointer hover:shadow-md transition-shadow duration-200 min-[768px]:bg-white max-[767px]:bg-[#FEFEFE] w-full max-[640px]:p-4 max-[640px]:pt-10 min-[641px]:p-6 min-[641px]:pt-10 border min-[641px]:border-[#EDEDED] ${isSelected ? "max-[640px]:border-[#202020]" : "max-[640px]:border-[#EDEDED]"}`}
+      className={`relative rounded-[8px] mb-4 ${status === "trash" ? "cursor-default" : "cursor-pointer hover:shadow-md"} transition-shadow duration-200 min-[768px]:bg-white max-[767px]:bg-[#FEFEFE] w-full max-[640px]:p-4 max-[640px]:pt-10 min-[641px]:p-6 min-[641px]:pt-10 border min-[641px]:border-[#EDEDED] ${isSelected ? "max-[640px]:border-[#202020]" : "max-[640px]:border-[#EDEDED]"}`}
       style={{
         overflow: "hidden",
       }}
@@ -436,20 +441,6 @@ export default function PersonalArticleContainer({
             <div className="flex gap-[10px] flex-shrink-0">
               {status === "trash" ? (
                 <>
-                  <button
-                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      padding: "8px",
-                      borderWidth: "1px",
-                    }}
-                    title="Edit"
-                    onClick={handleEdit}
-                  >
-                    <img src="/images/icons/edit.svg" alt="edit" />
-                  </button>
                   <button
                     className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
                     style={{
