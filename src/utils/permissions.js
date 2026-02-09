@@ -104,7 +104,7 @@ export const PERMISSIONS = {
     // Navigation Access
     canAccessAllArticles: false, // KEY DIFFERENCE
     canAccessScheduled: false,
-    canAccessReviewQueue: true, // Authors can access the unified /review page
+    canAccessReviewQueue: true, // Authors can access their own review page
     canAccessDrafts: true,
     canAccessPublished: true, // Author can view their published articles
     canAccessMembers: true, // User comment: "the author also view the members"
