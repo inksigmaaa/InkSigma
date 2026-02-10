@@ -16,7 +16,7 @@ export default function ConditionalLayout({
   const isPublicationSubdomain = Boolean(isPublicationSubdomainProp)
 
   // Memoize layout decision to prevent unnecessary re-evaluations
-  const { useCustomLayout, showMobileButtons } = useMemo(() => {
+  const { useCustomLayout, showMobileButtons, isLandingPage } = useMemo(() => {
     // On the dashboard host we use the public URL shape:
     // ... (rest of normalizeDashboardPath) ...
     const normalizeDashboardPath = (p) => {
@@ -96,7 +96,7 @@ export default function ConditionalLayout({
     const ismembers = effectivePath === "/posts/members"
     const isMembersDashboard = effectivePath === "/dashboard/members"
     const isPreview = effectivePath?.startsWith("/home/preview")
-    const isLandingPage = effectivePath === "/"
+    const isLandingPage = effectivePath === "/" && !isDashboardHost
     const isblog = effectivePath === "/posts/my-blogs"
     const ispostsmembers = effectivePath === "/posts/home"
     const ispostspublished = effectivePath === "/posts/published"
@@ -115,7 +115,8 @@ export default function ConditionalLayout({
 
     return {
       useCustomLayout: customLayout,
-      showMobileButtons: showButtons
+      showMobileButtons: showButtons,
+      isLandingPage: isLandingPage
     }
   }, [pathname, isDashboardHost])
 
@@ -139,7 +140,7 @@ export default function ConditionalLayout({
         {children}
       </main>
       <Footer />
-      {pathname !== "/" && (
+      {!isLandingPage && (
         <>
           <FeedbackButton />
         </>

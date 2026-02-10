@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from "react";
 
 export default function TermsPage() {
-  const [activeSection, setActiveSection] = useState("introduction");
+  const [activeSection, setActiveSection] = useState("conduct");
+  const [showTOC, setShowTOC] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -38,88 +39,115 @@ export default function TermsPage() {
         behavior: "smooth",
       });
       setActiveSection(id);
+      setShowTOC(false); // Close TOC after clicking
     }
   };
 
   const TableOfContents = () => (
-    <nav className="space-y-1">
-      <ul className="space-y-2 text-sm list-disc">
+    <nav className="space-y-1 pl-12" style={{ width: '271px' }}>
+      <ul className="space-y-2 text-sm list-disc pl-4">
         <li>
           <a
-            href="#introduction"
-            onClick={(e) => scrollToSection(e, "introduction")}
+            href="#conduct"
+            onClick={(e) => scrollToSection(e, "conduct")}
             className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "introduction"
+              activeSection === "conduct"
                 ? "text-black font-semibold"
                 : "text-gray-500"
             }`}
           >
-            Introduction
+            User Conduct
           </a>
         </li>
         <li>
           <a
-            href="#communications"
-            onClick={(e) => scrollToSection(e, "communications")}
+            href="#content"
+            onClick={(e) => scrollToSection(e, "content")}
             className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "communications"
+              activeSection === "content"
                 ? "text-black font-semibold"
                 : "text-gray-500"
             }`}
           >
-            Communications
+            User Content
           </a>
         </li>
         <li>
           <a
-            href="#purchases"
-            onClick={(e) => scrollToSection(e, "purchases")}
+            href="#intellectual"
+            onClick={(e) => scrollToSection(e, "intellectual")}
             className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "purchases"
+              activeSection === "intellectual"
                 ? "text-black font-semibold"
                 : "text-gray-500"
             }`}
           >
-            Purchases
+            Intellectual Property
           </a>
         </li>
         <li>
           <a
-            href="#contests"
-            onClick={(e) => scrollToSection(e, "contests")}
+            href="#termination"
+            onClick={(e) => scrollToSection(e, "termination")}
             className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "contests"
+              activeSection === "termination"
                 ? "text-black font-semibold"
                 : "text-gray-500"
             }`}
           >
-            Contests & Promotions
+            Termination
           </a>
         </li>
         <li>
           <a
-            href="#subscriptions"
-            onClick={(e) => scrollToSection(e, "subscriptions")}
+            href="#liability"
+            onClick={(e) => scrollToSection(e, "liability")}
             className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "subscriptions"
+              activeSection === "liability"
                 ? "text-black font-semibold"
                 : "text-gray-500"
             }`}
           >
-            Subscriptions
+            Limitation of Liability
           </a>
         </li>
         <li>
           <a
-            href="#freetrial"
-            onClick={(e) => scrollToSection(e, "freetrial")}
+            href="#governing"
+            onClick={(e) => scrollToSection(e, "governing")}
             className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "freetrial"
+              activeSection === "governing"
                 ? "text-black font-semibold"
                 : "text-gray-500"
             }`}
           >
-            Free Trial
+            Governing Law
+          </a>
+        </li>
+        <li>
+          <a
+            href="#changes"
+            onClick={(e) => scrollToSection(e, "changes")}
+            className={`block py-1 hover:text-black transition-colors ${
+              activeSection === "changes"
+                ? "text-black font-semibold"
+                : "text-gray-500"
+            }`}
+          >
+            Changes
+          </a>
+        </li>
+        <li>
+          <a
+            href="#contact"
+            onClick={(e) => scrollToSection(e, "contact")}
+            className={`block py-1 hover:text-black transition-colors ${
+              activeSection === "contact"
+                ? "text-black font-semibold"
+                : "text-gray-500"
+            }`}
+          >
+            Contact Us
           </a>
         </li>
       </ul>
@@ -127,184 +155,270 @@ export default function TermsPage() {
   );
 
   return (
-    <div className="w-full md:max-w-[80%] mx-auto px-4 md:px-8 pt-[140px] pb-12 md:pb-20 lg:pb-24">
+    <div className="w-full md:max-w-[80%] mx-auto px-6 md:px-8 pt-[98px] md:pt-[140px] pb-12 md:pb-20 lg:pb-24">
+      {/* Mobile Floating TOC Button */}
+      <button
+        onClick={() => setShowTOC(!showTOC)}
+        className={`md:hidden fixed bottom-8 left-1/2 transform -translate-x-1/2 z-30 bg-[#FEFEFE] rounded-[40px] shadow-lg flex items-center justify-center transition-all duration-300 ${
+          showTOC ? 'border-t border-gray-200' : ''
+        }`}
+        style={
+          showTOC
+            ? { width: '360px', height: '66px', paddingTop: '24px', paddingRight: '32px', paddingBottom: '24px', paddingLeft: '32px', gap: '12px' }
+            : { width: '160px', height: '42px', paddingTop: '12px', paddingRight: '24px', paddingBottom: '12px', paddingLeft: '24px', gap: '8px' }
+        }
+      >
+        <img 
+          src="/images/icons/down.svg" 
+          alt="toggle" 
+          className={`transition-transform duration-300 ${showTOC ? '' : 'rotate-180'}`}
+          style={{ width: '10px', height: '5px' }}
+        />
+        <span className="text-[12px] leading-[150%] text-[#080808] font-normal">
+          Table of Content
+        </span>
+      </button>
+
+      {/* Mobile TOC Overlay */}
+      {showTOC && (
+        <div 
+          className="md:hidden fixed inset-0 z-20 flex items-end"
+          onClick={() => setShowTOC(false)}
+        >
+          <div 
+            className="bg-white rounded-t-[32px] w-full shadow-2xl"
+            style={{ 
+              marginBottom: '80px', 
+              maxHeight: '75vh', 
+              overflowY: 'auto',
+              animation: 'slideUpSpring 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-8 py-8">
+              <nav>
+                <ul className="space-y-6">
+                  <li className="flex items-start">
+                    <span className="mr-3 text-[#9E9E9E] text-sm">•</span>
+                    <a
+                      href="#conduct"
+                      onClick={(e) => scrollToSection(e, "conduct")}
+                      className="block text-[10px] leading-[18px] text-[#6B6B6B] hover:text-black font-normal"
+                    >
+                      User Conduct
+                    </a>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-3 text-[#9E9E9E] text-sm">•</span>
+                    <a
+                      href="#content"
+                      onClick={(e) => scrollToSection(e, "content")}
+                      className="block text-[10px] leading-[18px] text-[#6B6B6B] hover:text-black font-normal"
+                    >
+                      User Content
+                    </a>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-3 text-[#9E9E9E] text-sm">•</span>
+                    <a
+                      href="#intellectual"
+                      onClick={(e) => scrollToSection(e, "intellectual")}
+                      className="block text-[10px] leading-[18px] text-[#6B6B6B] hover:text-black font-normal"
+                    >
+                      Intellectual Property
+                    </a>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-3 text-[#9E9E9E] text-sm">•</span>
+                    <a
+                      href="#termination"
+                      onClick={(e) => scrollToSection(e, "termination")}
+                      className="block text-[10px] leading-[18px] text-[#6B6B6B] hover:text-black font-normal"
+                    >
+                      Termination
+                    </a>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-3 text-[#9E9E9E] text-sm">•</span>
+                    <a
+                      href="#liability"
+                      onClick={(e) => scrollToSection(e, "liability")}
+                      className="block text-[10px] leading-[18px] text-[#6B6B6B] hover:text-black font-normal"
+                    >
+                      Limitation of Liability
+                    </a>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-3 text-[#9E9E9E] text-sm">•</span>
+                    <a
+                      href="#governing"
+                      onClick={(e) => scrollToSection(e, "governing")}
+                      className="block text-[10px] leading-[18px] text-[#6B6B6B] hover:text-black font-normal"
+                    >
+                      Governing Law
+                    </a>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-3 text-[#9E9E9E] text-sm">•</span>
+                    <a
+                      href="#changes"
+                      onClick={(e) => scrollToSection(e, "changes")}
+                      className="block text-[10px] leading-[18px] text-[#6B6B6B] hover:text-black font-normal"
+                    >
+                      Changes
+                    </a>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-3 text-[#9E9E9E] text-sm">•</span>
+                    <a
+                      href="#contact"
+                      onClick={(e) => scrollToSection(e, "contact")}
+                      className="block text-[10px] leading-[18px] text-[#6B6B6B] hover:text-black font-normal"
+                    >
+                      Contact Us
+                    </a>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes slideUpSpring {
+          0% {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          100% {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
+
       <div className="flex flex-col md:flex-row gap-8 lg:gap-16">
         {/* Sidebar / Table of Contents - Hidden on small mobile, visible on desktop */}
-        <aside className="hidden md:block w-64 flex-shrink-0">
+        <aside className="hidden md:block flex-shrink-0">
           <div className="sticky top-28">
             <TableOfContents />
           </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 max-w-4xl">
-          <h1 className="text-[32px] font-bold leading-6 tracking-normal text-[#000000] mb-8">
+        <main className="flex-1" style={{ maxWidth: '707px' }}>
+          <p className="text-[14px] md:text-[32px] font-bold leading-[13px] md:leading-6 tracking-normal text-[#000000] mb-8">
             Terms and Conditions
-          </h1>
+          </p>
 
-          <div className="space-y-12 text-gray-700 font-sans">
-            {/* 1. Introduction */}
-            <section id="introduction" className="scroll-mt-28">
-              <h2 className="text-base font-normal leading-6 tracking-normal text-[#14142D] mb-4">
-                1. Introduction
+          <div className="space-y-8 text-gray-700 font-sans text-[8px] md:text-base leading-[13px] md:leading-normal">
+            <div className="space-y-4">
+              <p>
+                Please read these Terms of Use ("Terms") carefully before using the Inksigma website, mobile applications, and other online products and services (collectively referred to as the "Service") operated by Zemuria Inc. ("we," "us," "our," or "Zemuria").
+              </p>
+              <p>
+                By accessing or using the Service, you agree to be bound by these Terms. If you do not agree with any part of these Terms, please do not use the Service.
+              </p>
+            </div>
+
+            {/* 1. User Conduct */}
+            <section id="conduct" className="scroll-mt-28">
+              <h2 className="text-xl md:text-xl text-[8px] font-semibold leading-[13px] md:leading-normal text-[#14142D] mb-4">
+                1. User Conduct
               </h2>
-              <div className="space-y-4">
-                <p>
-                  Welcome to <strong>Zemuria’s Legal Department</strong>. As you
-                  have just clicked on our Terms of Service, please make a
-                  pause, grab a cup of coffee and carefully read the following
-                  pages. It will take you approximately 20 minutes.
-                </p>
-                <p>
-                  These Terms of Service (“Terms”, “Terms of Service”) govern
-                  your use of our web pages located at https://zemuria.com,
-                  https://zemuria.io and our services (together or individually
-                  “Service”) operated by Zemuria Inc. (the “Company”)
-                </p>
-                <p>
-                  Our Privacy Policy also governs your use of our Service and
-                  explains how we collect, safeguard and disclose information
-                  that results from your use of our web pages. Please read it
-                  here https://zemuria.com/privacy-policy
-                </p>
-                <p>
-                  Your agreement with us includes these Terms and our Privacy
-                  Policy (“Agreements”). You acknowledge that you have read and
-                  understood Agreements, and agree to be bound by them.
-                </p>
-                <p>
-                  If you do not agree with (or cannot comply with) Agreements,
-                  then you may not use the Service or the product, but please
-                  let us know by emailing us at support@zemuria.com so we can
-                  try to find a solution. These Terms apply to all visitors,
-                  users, and others who wish to access or use the Service or the
-                  Product.
-                </p>
-                <p>Thank you for being responsible.</p>
-              </div>
+              <p className="mb-3">By using the Service, you agree to:</p>
+              <ol className="list-decimal pl-6 space-y-2">
+                <li>Comply with all applicable laws and regulations.</li>
+                <li>Respect the intellectual property rights of Inksigma and other third parties.</li>
+                <li>Refrain from engaging in prohibited activities, including but not limited to:
+                  <ul className="list-disc pl-6 mt-2 space-y-1">
+                    <li>Posting or transmitting any content that is unlawful, harmful, threatening, abusive, harassing, defamatory, vulgar, obscene, or otherwise objectionable.</li>
+                    <li>Impersonating any person or entity, or falsely stating or otherwise misrepresenting your affiliation with a person or entity.</li>
+                    <li>Interfering with or disrupting the Service or servers and networks connected to the Service.</li>
+                    <li>Violating any requirements, procedures, policies, or regulations of networks connected to the Service.</li>
+                    <li>Collecting or storing personal data about other users without their consent.</li>
+                    <li>Engaging in any activity that could compromise the security of the Service or its users.</li>
+                  </ul>
+                </li>
+              </ol>
             </section>
 
-            {/* 2. Communications */}
-            <section id="communications" className="scroll-mt-28">
-              <h2 className="text-base font-normal leading-6 tracking-normal text-[#14142D] mb-4">
-                2. Communications
+            {/* 2. User Content */}
+            <section id="content" className="scroll-mt-28">
+              <h2 className="text-xl md:text-xl text-[8px] font-semibold leading-[13px] md:leading-normal text-[#14142D] mb-4">
+                2. User Content
               </h2>
               <p>
-                By creating an Account on our Service or Product, you agree to
-                subscribe to newsletters, marketing or promotional materials,
-                and other information we may send. However, you may opt out of
-                receiving any, or all, of these communications from us by
-                following the unsubscribe link or by emailing us at
-                support@zemuria.com
+                You retain ownership of any content you submit, post, or display on or through the Service ("User Content"). By posting User Content, you grant Inksigma a non-exclusive, worldwide, royalty-free, and sublicensable license to use, reproduce, modify, adapt, publish, translate, distribute, publicly perform, and publicly display your User Content in connection with the Service.
               </p>
             </section>
 
-            {/* 3. Purchases */}
-            <section id="purchases" className="scroll-mt-28">
-              <h2 className="text-base font-normal leading-6 tracking-normal text-[#14142D] mb-4">
-                3. Purchases
-              </h2>
-              <div className="space-y-4">
-                <p>
-                  If you wish to purchase any product or service made available
-                  through Service or the Product (“Purchase”), you may be asked
-                  to supply certain information relevant to your Purchase
-                  including, without limitation, your credit card or debit card
-                  number and other information, the expiration date of your
-                  credit card, your billing address, and your shipping
-                  information.
-                </p>
-                <p>
-                  You represent and warrant that: (i) you have the legal right
-                  to use any credit card(s) or other payment methods (s) in
-                  connection with any Purchase; and that (ii) the information
-                  you supply to us is true, correct, and complete.
-                </p>
-                <p>
-                  We may employ the use of third-party services for the purpose
-                  of facilitating payment and the completion of Purchases. By
-                  submitting your information, you grant us the right to provide
-                  the information to these third parties subject to our Privacy
-                  Policy.
-                </p>
-                <p>
-                  We reserve the right to refuse or cancel your order at any
-                  time for reasons including but not limited to product or
-                  service availability, errors in the description or price of
-                  the product or service, error in your order, or other reasons.
-                </p>
-                <p>
-                  We reserve the right to refuse or cancel your order if fraud
-                  or an unauthorized or illegal transaction is suspected.
-                </p>
-              </div>
-            </section>
-
-            {/* 4. Contests, Sweepstakes, and Promotions */}
-            <section id="contests" className="scroll-mt-28">
-              <h2 className="text-base font-normal leading-6 tracking-normal text-[#14142D] mb-4">
-                4. Contests, Sweepstakes, and Promotions
+            {/* 3. Intellectual Property */}
+            <section id="intellectual" className="scroll-mt-28">
+              <h2 className="text-xl md:text-xl text-[8px] font-semibold leading-[13px] md:leading-normal text-[#14142D] mb-4">
+                3. Intellectual Property
               </h2>
               <p>
-                Any contests, sweepstakes or other promotions (collectively,
-                “Promotions”) made available through Service and the Product may
-                be governed by rules that are separate from these Terms of
-                Service. If you participate in any Promotions, please review the
-                applicable rules as well as our Privacy Policy. If the rules for
-                a Promotion conflict with these Terms of Service, Promotion
-                rules will apply.
+                The Service and its original content (excluding User Content), features, and functionality are owned by Zemuria Inc. and are protected by international copyright, trademark, patent, trade secret, and other intellectual property or proprietary rights laws.
               </p>
             </section>
 
-            {/* 5. Subscriptions */}
-            <section id="subscriptions" className="scroll-mt-28">
-              <h2 className="text-base font-normal leading-6 tracking-normal text-[#14142D] mb-4">
-                5. Subscriptions
+            {/* 4. Termination */}
+            <section id="termination" className="scroll-mt-28">
+              <h2 className="text-xl md:text-xl text-[8px] font-semibold leading-[13px] md:leading-normal text-[#14142D] mb-4">
+                4. Termination
               </h2>
-              <div className="space-y-4">
-                <p>
-                  Some parts of the Service and the Product are billed on a
-                  subscription basis (“Subscription(s)”). You will be billed in
-                  advance on a recurring and periodic basis (“Billing Cycle”).
-                  Billing cycles are set on a monthly basis of 28 days or the
-                  entire year consisting of 365 days.
-                </p>
-                <p>
-                  At the end of each Billing Cycle, your Subscription will
-                  automatically renew under the exact same conditions unless you
-                  cancel it or Zemuria Inc. cancels it. You may cancel your
-                  Subscription renewal either through your online account
-                  management page or by contacting the customer support team by
-                  emailing us at support@zemuria.com
-                </p>
-                <p>
-                  A valid payment method, including a credit card, is required
-                  to process the payment for your subscription. You shall
-                  provide Zemuria Inc. with accurate and complete billing
-                  information including full name, address, state, zip code,
-                  telephone number, and valid payment method information. By
-                  submitting such payment information, you automatically
-                  authorize Zemuria Inc. to charge all Subscription fees
-                  incurred through your account to any such payment instruments.
-                </p>
-                <p>
-                  Should automatic billing fail to occur for any reason, Zemuria
-                  Inc. might issue an electronic invoice indicating that you
-                  must proceed manually, within a certain deadline date, with
-                  the full payment corresponding to the billing period as
-                  indicated on the invoice which if that also is not paid by the
-                  deadline, will automatically result in the denial and
-                  cancellation of the service and product.
-                </p>
-              </div>
+              <p>
+                We reserve the right to terminate or suspend your account and access to the Service at our sole discretion, without prior notice or liability, for any reason whatsoever, including without limitation if you breach these Terms.
+              </p>
             </section>
 
-            {/* 6. Free Trial */}
-            <section id="freetrial" className="scroll-mt-28">
-              <h2 className="text-base font-normal leading-6 tracking-normal text-[#14142D] mb-4">
-                6. Free Trial
+            {/* 5. Limitation of Liability */}
+            <section id="liability" className="scroll-mt-28">
+              <h2 className="text-xl md:text-xl text-[8px] font-semibold leading-[13px] md:leading-normal text-[#14142D] mb-4">
+                5. Limitation of Liability
               </h2>
-              <p>Ze</p>
+              <p className="mb-3">
+                To the extent permitted by applicable law, Inksigma shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, goodwill, or other intangible losses resulting from:
+              </p>
+              <ol className="list-decimal pl-6 space-y-2">
+                <li>Your access to or use of or inability to access or use the Service.</li>
+                <li>Any conduct or content of any third party on the Service.</li>
+                <li>Any unauthorized access, use, or alteration of your transmissions or content.</li>
+                <li>Any content obtained from the Service.</li>
+                <li>Unauthorized access to or use of our servers and/or any personal information stored therein.</li>
+              </ol>
+            </section>
+
+            {/* 6. Governing Law */}
+            <section id="governing" className="scroll-mt-28">
+              <h2 className="text-xl md:text-xl text-[8px] font-semibold leading-[13px] md:leading-normal text-[#14142D] mb-4">
+                6. Governing Law
+              </h2>
+              <p>
+                These Terms shall be governed and construed in accordance with the laws of The State of Delaware, without regard to its conflict of law provisions.
+              </p>
+            </section>
+
+            {/* 7. Changes */}
+            <section id="changes" className="scroll-mt-28">
+              <h2 className="text-xl md:text-xl text-[8px] font-semibold leading-[13px] md:leading-normal text-[#14142D] mb-4">
+                7. Changes
+              </h2>
+              <p>
+                We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material, we will provide notice before any new terms take effect. What constitutes a material change will be determined at our sole discretion.
+              </p>
+            </section>
+
+            {/* 8. Contact Us */}
+            <section id="contact" className="scroll-mt-28">
+              <h2 className="text-xl md:text-xl text-[8px] font-semibold leading-[13px] md:leading-normal text-[#14142D] mb-4">
+                8. Contact Us
+              </h2>
+              <p>
+                If you have any questions about these Terms, please contact us at <a href="mailto:inksigma@zemuria.com" className="text-gray-700 hover:underline">inksigma@zemuria.com</a>.
+              </p>
             </section>
           </div>
         </main>

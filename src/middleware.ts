@@ -91,7 +91,7 @@ export async function middleware(request: NextRequest) {
   // Dashboard subdomain
   const isDashboardHost =
     cleanHost === `dashboard.${rootDomain}` ||
-    (isDev && cleanHost === 'dashboard.localhost');
+    cleanHost === 'dashboard.localhost';
 
   if (isDashboardHost) {
     const apiBase = getBackendBase(request, cleanHost);
@@ -182,6 +182,12 @@ export async function middleware(request: NextRequest) {
       });
       return res;
     }
+  }
+
+  // Handle root domain - show landing page
+  if (cleanHost === rootDomain || cleanHost === `www.${rootDomain}`) {
+    // Landing page is already at "/" so just let it through
+    return NextResponse.next();
   }
 
   // Handle publication subdomains
