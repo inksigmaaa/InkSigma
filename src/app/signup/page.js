@@ -153,6 +153,10 @@ function SignupForm() {
               minLength={5}
               maxLength={254}
               className="border-0 border-b border-gray-300 rounded-none bg-transparent px-2 py-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300 focus:ring-offset-0 w-full text-sm placeholder:text-[#C8C8C8]"
+              style={{
+                boxShadow: '0 0 0 30px white inset',
+                WebkitBoxShadow: '0 0 0 30px white inset',
+              }}
               required
             />
           </div>
