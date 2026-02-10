@@ -27,6 +27,7 @@ function LoginForm() {
   const [showResendVerification, setShowResendVerification] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
+  const [showUnregistered, setShowUnregistered] = useState(false)
 
   const getOrigin = () => {
     if (typeof window !== "undefined") {
@@ -43,12 +44,14 @@ function LoginForm() {
       [field]: e.target.value
     }))
     setError("")
+    setShowUnregistered(false)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError("")
+    setShowUnregistered(false)
 
     try {
       const result = await signIn.email({
@@ -57,7 +60,7 @@ function LoginForm() {
       })
 
       if (result.error) {
-        const errorMessage = result.error.message || "Invalid email or password"
+        const errorMessage = result.error.message || "Oops! Credentials do not match"
 
         // Check if it's a "no password account" error
         if (errorMessage.toLowerCase().includes("no password account")) {
@@ -65,8 +68,38 @@ function LoginForm() {
         } else if (errorMessage.toLowerCase().includes("email not verified")) {
           setError("Please verify your email before logging in. Check your inbox for the verification link.")
           setShowResendVerification(true)
+        } else if (errorMessage.toLowerCase().includes("invalid email or password") || errorMessage.toLowerCase().includes("invalid credentials")) {
+          // Check if user exists to decide whether to show unregistered alert
+          try {
+            const checkRes = await fetch(`${apiBase}/api/custom/check-email`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: formData.email })
+            })
+
+            if (checkRes.ok) {
+              const checkData = await checkRes.json()
+              if (!checkData.exists) {
+                setShowUnregistered(true)
+                setError("") // Don't show generic error for unregistered users
+              } else {
+                setShowUnregistered(false)
+                setError("Oops! Credentials do not match")
+              }
+            } else {
+              // Fallback if check fails
+              setError("Oops! Credentials do not match")
+            }
+          } catch (err) {
+            console.error("Error checking user existence:", err)
+            // Fallback
+            setError("Oops! Credentials do not match")
+          }
         } else {
           setError(errorMessage)
+          if (errorMessage.toLowerCase().includes("user not found")) {
+            setShowUnregistered(true)
+          }
         }
         return
       }
@@ -74,8 +107,6 @@ function LoginForm() {
       // If there's a specific redirect (like invitation), go there directly
       if (redirectTo !== "/") {
         // Special case: invited member flow.
-        // If this is a brand-new InkSigma user (no owned publication yet),
-        // take them through create-publication first, then return to invite acceptance.
         if (redirectTo.startsWith("/invite/")) {
           try {
             const ownedRes = await fetch(`${apiBase}/api/publications/check`, {
@@ -133,6 +164,7 @@ function LoginForm() {
         setShowResendVerification(true)
       } else {
         setError(errorMessage)
+        setShowUnregistered(true)
       }
       console.error(err)
     } finally {
@@ -193,10 +225,10 @@ function LoginForm() {
   }
 
   return (
-    <div className="relative h-screen overflow-hidden">
+    <div className="relative min-h-screen flex flex-col">
       <AuthLayout title="Login here!">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-[#FFD6D6] text-[#A30000] font-normal text-[12px] leading-[150%] tracking-[0%] px-4 py-3 rounded mb-4 text-center">
             {error}
             {showResendVerification && (
               <button
@@ -227,6 +259,10 @@ function LoginForm() {
               value={formData.email}
               onChange={handleInputChange('email')}
               className="border-0 border-b border-gray-300 rounded-none bg-transparent px-2 py-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300 focus:ring-offset-0 w-full text-sm placeholder:text-[#C8C8C8]"
+              style={{
+                boxShadow: '0 0 0 30px white inset',
+                WebkitBoxShadow: '0 0 0 30px white inset',
+              }}
               required
             />
           </div>
@@ -261,14 +297,22 @@ function LoginForm() {
             </span>
           </Button>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleMagicLink}
-            className="w-full md:w-[259px] h-[28px] md:h-[32px] opacity-100 rotate-0 gap-[4px] rounded-[4px] pt-[6px] md:pt-[8px] pr-[20px] md:pr-[109px] pb-[6px] md:pb-[8px] pl-[20px] md:pl-[109px] border bg-[#F4F4F4] border-[#ECECEC] text-black hover:bg-gray-50 text-xs md:text-sm flex items-center justify-center mt-6"
-          >
-            <span className="h-[18px]">Login with Magic link</span>
-          </Button>
+          {showUnregistered ? (
+            <div className="w-full md:w-[259px] h-[60px] bg-[#F3EEFF] rounded-[4px] px-[16px] py-[12px] flex items-center justify-center mt-6 mx-auto text-center">
+              <p className="font-normal text-[12px] leading-[150%] tracking-[0%] text-[#7A37AE]">
+                Looks like you haven't registered with us yet. <Link href="/signup" className="font-semibold underline decoration-solid decoration-[#7A37AE] hover:text-[#5e2a86]">Sign Up Now.</Link>
+              </p>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleMagicLink}
+              className="w-full md:w-[259px] h-[28px] md:h-[32px] opacity-100 rotate-0 gap-[4px] rounded-[4px] pt-[6px] md:pt-[8px] pr-[20px] md:pr-[109px] pb-[6px] md:pb-[8px] pl-[20px] md:pl-[109px] border bg-[#F4F4F4] border-[#ECECEC] text-black hover:bg-gray-50 text-xs md:text-sm flex items-center justify-center mt-6"
+            >
+              <span className="h-[18px]">Login with Magic link</span>
+            </Button>
+          )}
         </form>
 
         <div className="text-center mt-6 flex items-center justify-center gap-1 whitespace-nowrap">
@@ -293,7 +337,7 @@ function LoginForm() {
         </div>
 
         {/* Go Back to website - positioned with proper spacing */}
-        <div className="w-auto md:w-[260px] h-[16px] md:h-[24px] opacity-100 rotate-0 mt-2 md:mt-3 mb-4 mx-auto flex items-center justify-center gap-2">
+        <div className="w-auto md:w-[260px] h-[16px] md:h-[24px] opacity-100 rotate-0 mt-6 md:mt-8 mb-2 mx-auto flex items-center justify-center gap-2">
           <Link
             href="/"
             className="flex items-center gap-2 hover:text-gray-500 transition-colors mt-6"
@@ -307,7 +351,7 @@ function LoginForm() {
       </AuthLayout>
 
       {/* Copyright - positioned at bottom with 32px spacing */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-full h-[15px] opacity-100 rotate-0 flex items-center justify-center">
+      <div className="mt-auto pb-4 w-full h-[15px] opacity-100 rotate-0 flex items-center justify-center">
         <p className="font-normal text-[10px] md:text-[12px] leading-[100%] tracking-[0%] text-[#A4A4A4] text-center whitespace-nowrap" style={{ fontFamily: 'Inter' }}>
           Copyright © 2023 designed & developed by Inksigma, a Zemuria Inc. brand
         </p>
