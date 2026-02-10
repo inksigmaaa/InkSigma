@@ -12,6 +12,7 @@ import ExitConfirmModal from "./ExitConfirmModal";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { useSession } from "@/lib/auth-client";
 import { usePublication } from "@/contexts/PublicationContext";
+import { useToast } from "@/contexts/ToastContext";
 
 import {
   Image as ImageIcon,
@@ -37,6 +38,7 @@ export default function EditorPageClient() {
     loadUserArticles,
   } = useArticles();
   const { currentPublication } = usePublication();
+  const { showToast } = useToast();
   const pubPrefix = currentPublication?.subdomain
     ? `/${currentPublication.subdomain}`
     : "";
@@ -502,7 +504,10 @@ export default function EditorPageClient() {
         setShowExitModal(true);
       } else {
         // Auto-save as draft and redirect to home page
-        await saveBlog("draft", null, true);
+        const result = await saveBlog("draft", null, true);
+        if (result) {
+          showToast("Saved to draft", "success");
+        }
         savedSuccessfullyRef.current = true;
         router.push(withPub("/?refresh=true"));
       }
@@ -1075,11 +1080,11 @@ export default function EditorPageClient() {
               />
 
               <button
-                className="flex items-center w-[180px] h-8 gap-2 rounded border border-gray-200 bg-white text-sm px-4 py-2 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                className={`relative flex items-center w-[180px] h-8 gap-2 rounded border ${thumbnailData ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white'} text-sm px-4 py-2 hover:bg-gray-50 transition-colors whitespace-nowrap`}
                 onClick={() => setShowThumbnailModal(true)}
               >
                 <svg
-                  className="w-4 h-4 flex-shrink-0"
+                  className={`w-4 h-4 flex-shrink-0 ${thumbnailData ? 'text-green-600' : ''}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1091,7 +1096,12 @@ export default function EditorPageClient() {
                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                Thumbnail Image
+                <span className={thumbnailData ? 'text-green-700' : ''}>Thumbnail Image</span>
+                {thumbnailData && (
+                  <svg className="w-4 h-4 text-green-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
               </button>
 
               <div className="flex-1 min-w-0"></div>

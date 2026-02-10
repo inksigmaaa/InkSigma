@@ -884,10 +884,24 @@ router.post("/", getCurrentUser, async (req, res) => {
       publicationId,
     } = req.body;
 
-    if (!title || !description || !content) {
-      return res.status(400).json({
-        error: "Title, description, and content are required",
-      });
+    // For drafts, only require at least a title to save
+    // For publishing, require all fields
+    const isDraft = status === "draft" || (!status && !published);
+
+    if (isDraft) {
+      // For drafts, only require a title to save
+      if (!title || !title.trim()) {
+        return res.status(400).json({
+          error: "Title is required to save as draft",
+        });
+      }
+    } else {
+      // For publishing/scheduling, require all fields
+      if (!title || !description || !content) {
+        return res.status(400).json({
+          error: "Title, description, and content are required",
+        });
+      }
     }
 
     // publicationId is optional - verify access only if provided

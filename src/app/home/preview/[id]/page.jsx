@@ -1,14 +1,17 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, Info, Bell } from 'lucide-react';
 import { formatTimeAgo } from '@/utils/timeFormatter';
 import { getImageUrl } from '@/utils/imageUrl';
+import { getApiBase } from '@/utils/apiBase';
 
 export default function PreviewPage({ params }) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const publicationId = searchParams.get('publicationId');
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,28 +20,32 @@ export default function PreviewPage({ params }) {
     const fetchArticle = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5000/api/blogs/${id}`, {
+        const apiBase = getApiBase();
+        const url = `${apiBase}/api/blogs/${id}`;
+
+        const response = await fetch(url, {
           credentials: 'include'
         });
-        
+
         if (!response.ok) {
-          throw new Error('Failed to fetch article');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to fetch article');
         }
-        
+
         const data = await response.json();
-        
+
         // Fetch publication details if publicationId exists
         if (data.publicationId) {
-          const pubResponse = await fetch(`http://localhost:5000/api/publications/${data.publicationId}`, {
+          const pubResponse = await fetch(`${apiBase}/api/publications/${data.publicationId}`, {
             credentials: 'include'
           });
-          
+
           if (pubResponse.ok) {
             const pubData = await pubResponse.json();
             data.publication = pubData;
           }
         }
-        
+
         setArticle(data);
       } catch (err) {
         console.error('Error fetching article:', err);
@@ -68,7 +75,7 @@ export default function PreviewPage({ params }) {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 mb-4">{error || 'Article not found'}</p>
-          <button 
+          <button
             onClick={handleClose}
             className="text-purple-600 hover:text-purple-700 underline"
           >
@@ -90,7 +97,7 @@ export default function PreviewPage({ params }) {
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200">
                   <img
-                    src={`http://localhost:5000${article.publication.logoUrl}`}
+                    src={`${getApiBase()}${article.publication.logoUrl}`}
                     alt={article.publication.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -120,9 +127,9 @@ export default function PreviewPage({ params }) {
             <div className="w-9 h-9 rounded-full bg-gray-300 overflow-hidden">
               {article.author?.image ? (
                 <img
-                  src={article.author.image.startsWith('http') ? article.author.image : `http://localhost:5000${article.author.image}`} 
-                  alt={article.author.name || 'User'} 
-                  className="w-full h-full object-cover" 
+                  src={article.author.image.startsWith('http') ? article.author.image : `${getApiBase()}${article.author.image}`}
+                  alt={article.author.name || 'User'}
+                  className="w-full h-full object-cover"
                   onError={(e) => {
                     e.target.style.display = 'none';
                     e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${article.author?.name?.charAt(0).toUpperCase() || 'U'}</span></div>`;
@@ -229,17 +236,19 @@ export default function PreviewPage({ params }) {
               {/* Article Body */}
               <article
                 className="prose prose-sm md:prose-lg max-w-none prose-headings:mt-0 prose-headings:mb-3 md:prose-headings:mb-4 [&_:is(h1,h2,h3,h4,h5,h6)]:!font-bold [&_:is(h1,h2,h3,h4,h5,h6)]:!text-[20px] [&_:is(h1,h2,h3,h4,h5,h6)]:!leading-[100%] [&_:is(h1,h2,h3,h4,h5,h6)]:!tracking-[0%] [&_:is(h1,h2,h3,h4,h5,h6)]:!text-black [&_:is(h1,h2,h3,h4,h5,h6)_span]:!font-bold [&_:is(h1,h2,h3,h4,h5,h6)_span]:!text-[20px] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!leading-[100%] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!tracking-[0%] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!text-black [&_p]:!text-[#404040] [&_p_span]:!text-[#404040] [&_p_span]:!font-normal [&_p_span]:!text-[16px] [&_p_span]:!leading-[28px] [&_p_span]:!tracking-[0.01em] prose-p:font-normal prose-p:text-[16px] prose-p:leading-[28px] prose-p:tracking-[0.01em] prose-p:mb-4 md:prose-p:mb-6 prose-img:rounded-lg prose-img:my-6 md:prose-img:my-8 prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-600 text-[#404040]"
-                dangerouslySetInnerHTML={{ __html: (() => {
-                  if (!article.content) return '';
-                  // Convert relative image URLs to full URLs for display
-                  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-                  return article.content.replace(/src="([^"]*)"/g, (match, src) => {
-                    if (!src) return match;
-                    if (src.startsWith('http://') || src.startsWith('https://')) return match;
-                    if (src.startsWith('/')) return `src="${apiUrl}${src}"`;
-                    return `src="${apiUrl}/${src}"`;
-                  });
-                })() }}
+                dangerouslySetInnerHTML={{
+                  __html: (() => {
+                    if (!article.content) return '';
+                    // Convert relative image URLs to full URLs for display
+                    const apiUrl = getApiBase();
+                    return article.content.replace(/src="([^"]*)"/g, (match, src) => {
+                      if (!src) return match;
+                      if (src.startsWith('http://') || src.startsWith('https://')) return match;
+                      if (src.startsWith('/')) return `src="${apiUrl}${src}"`;
+                      return `src="${apiUrl}/${src}"`;
+                    });
+                  })()
+                }}
               />
             </div>
           </div>
