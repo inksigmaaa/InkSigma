@@ -33,7 +33,7 @@ router.post("/track", async (req, res) => {
         res.json({
             success: result.viewed,
             isNewView: result.isNewView,
-            message: result.isNewView ? 'View tracked' : 'View already tracked within 24 hours'
+            message: result.isNewView ? 'View tracked' : 'View already tracked'
         });
 
     } catch (error) {

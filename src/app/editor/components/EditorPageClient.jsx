@@ -1779,7 +1779,15 @@ export default function EditorPageClient() {
                 See Later
               </button>
               <a
-                href={currentPublication?.subdomain ? `http://${currentPublication.subdomain}.localhost:3000` : `/view-site?publicationId=${publicationId || currentPublication?.id}`}
+                href={
+                  publishedBlogSlug
+                    ? (currentPublication?.subdomain
+                      ? `http://${currentPublication.subdomain}.localhost:3000/view-site/blog/${publishedBlogSlug}`
+                      : `/view-site/blog/${publishedBlogSlug}`)
+                    : (currentPublication?.subdomain
+                      ? `http://${currentPublication.subdomain}.localhost:3000`
+                      : `/view-site?publicationId=${publicationId || currentPublication?.id}`)
+                }
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => {

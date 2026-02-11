@@ -228,14 +228,14 @@ function LoginForm() {
     <div className="relative min-h-screen flex flex-col">
       <AuthLayout title="Login here!">
         {error && (
-          <div className="bg-[#FFD6D6] text-[#A30000] font-normal text-[12px] leading-[150%] tracking-[0%] px-4 py-3 rounded mb-4 text-center">
-            {error}
+          <div className="bg-[#FFD6D6] text-[#A30000] font-normal text-[12px] leading-[150%] tracking-[0%] px-4 py-3 rounded mb-4 text-center flex flex-col items-center gap-1">
+            <span>{error}</span>
             {showResendVerification && (
               <button
                 type="button"
                 onClick={handleResendVerification}
                 disabled={resendLoading}
-                className="mt-2 text-sm underline hover:text-red-800 disabled:opacity-50"
+                className="text-sm underline hover:text-red-800 disabled:opacity-50"
               >
                 {resendLoading ? "Sending..." : "Resend Verification Email"}
               </button>
