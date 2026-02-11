@@ -172,7 +172,7 @@ export default function NavbarLoggedin() {
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
     return (
-        <div className={`fixed left-0 right-0 top-0 z-50 transition-transform duration-300 sm:bg-white sm:border-b sm:border-gray-200 md:bg-white/50 md:backdrop-blur-md md:border-0 ${!isVisible ? 'sm:-translate-y-full' : 'sm:translate-y-0'}`}>
+        <div className={`fixed left-0 right-0 top-0 z-50 transition-transform duration-300 sm:bg-white sm:border-b sm:border-gray-200 md:bg-white md:border-0 ${!isVisible ? 'sm:-translate-y-full' : 'sm:translate-y-0'}`}>
             <div className="w-full max-w-[1034px] mx-auto mt-[22px] md:mt-[15px] sm:mt-0 px-4 md:px-2 sm:px-4 sm:pb-2 md:pb-0 max-md:mt-0 max-md:px-0">
                 <div className="w-full h-[82px] flex justify-between items-center rounded-[8px] pt-[16px] pr-[24px] pb-[16px] pl-[24px] bg-[#FFFFFF] shadow-[0px_4px_25px_0px_rgba(0,0,0,0.07)] md:px-4 md:py-3 md:h-[70px] sm:px-6 sm:py-4 sm:h-[70px] sm:rounded-none sm:shadow-none sm:pt-4 sm:pb-4 md:rounded-[8px] md:shadow-[0px_4px_25px_0px_rgba(0,0,0,0.07)]">
 
