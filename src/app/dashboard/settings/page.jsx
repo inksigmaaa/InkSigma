@@ -5,10 +5,12 @@ import { useState, useEffect } from "react"
 import NavbarLoggedin from "../../components/navbar/NavbarLoggedin"
 import Sidebar from "../../components/sidebar/Sidebar"
 import { getApiBase } from "@/utils/apiBase"
+import { usePublication } from "@/contexts/PublicationContext"
 
 export default function SettingsPage() {
   const router = useRouter()
   const apiBase = getApiBase()
+  const { refreshCurrentPublication } = usePublication()
   const [showResetModal, setShowResetModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -24,8 +26,11 @@ export default function SettingsPage() {
   const [subdomain, setSubdomain] = useState("")
   const [originalSubdomain, setOriginalSubdomain] = useState("")
   const [logo, setLogo] = useState("/icons/inksigma-logo.svg")
+  const [logoPreview, setLogoPreview] = useState("/icons/inksigma-logo.svg")
   const [favicon, setFavicon] = useState("/icons/inksigma-logo.svg")
+  const [faviconPreview, setFaviconPreview] = useState("/icons/inksigma-logo.svg")
   const [metaOg, setMetaOg] = useState("/icons/inksigma-logo.svg")
+  const [metaOgPreview, setMetaOgPreview] = useState("/icons/inksigma-logo.svg")
 
   useEffect(() => {
     loadPublicationData()
@@ -88,9 +93,17 @@ export default function SettingsPage() {
         setDescription(pubData.description || "")
         setSubdomain(pubData.subdomain || "")
         setOriginalSubdomain(pubData.subdomain || "")
-        setLogo(pubData.logoUrl ? `${apiBase}${pubData.logoUrl}` : "/icons/inksigma-logo.svg")
-        setFavicon(pubData.faviconUrl ? `${apiBase}${pubData.faviconUrl}` : "/icons/inksigma-logo.svg")
-        setMetaOg(pubData.metaOgImageUrl ? `${apiBase}${pubData.metaOgImageUrl}` : "/icons/inksigma-logo.svg")
+        
+        const logoUrl = pubData.logoUrl ? `${apiBase}${pubData.logoUrl}` : "/icons/inksigma-logo.svg"
+        const faviconUrl = pubData.faviconUrl ? `${apiBase}${pubData.faviconUrl}` : "/icons/inksigma-logo.svg"
+        const metaOgUrl = pubData.metaOgImageUrl ? `${apiBase}${pubData.metaOgImageUrl}` : "/icons/inksigma-logo.svg"
+        
+        setLogo(logoUrl)
+        setLogoPreview(logoUrl)
+        setFavicon(faviconUrl)
+        setFaviconPreview(faviconUrl)
+        setMetaOg(metaOgUrl)
+        setMetaOgPreview(metaOgUrl)
       }
     } catch (err) {
       console.error("Load error:", err)
@@ -314,8 +327,8 @@ export default function SettingsPage() {
           {/* Logo Upload */}
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-6 mb-3">
-              <div className="w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden p-4">
-                <img src={logo} alt="Logo" className="w-full h-full object-contain" />
+              <div className={`w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden ${logoPreview === "/icons/inksigma-logo.svg" || logoPreview.includes("/icons/inksigma-logo.svg") ? "p-4" : ""}`}>
+                <img key={logoPreview} src={logoPreview} alt="Logo" className="w-full h-full object-contain" />
               </div>
               <div className="flex flex-col gap-3">
                 <button onClick={handleLogoChange} className="text-purple-500 text-sm hover:text-purple-600">Change Logo</button>
@@ -328,8 +341,8 @@ export default function SettingsPage() {
           {/* Favicon Upload */}
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-6 mb-3">
-              <div className="w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden p-4">
-                <img src={favicon} alt="Favicon" className="w-full h-full object-contain" />
+              <div className={`w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden ${faviconPreview === "/icons/inksigma-logo.svg" || faviconPreview.includes("/icons/inksigma-logo.svg") ? "p-4" : ""}`}>
+                <img key={faviconPreview} src={faviconPreview} alt="Favicon" className="w-full h-full object-contain" />
               </div>
               <div className="flex flex-col gap-3">
                 <button onClick={handleFaviconChange} className="text-purple-500 text-sm hover:text-purple-600">Change Favicon</button>
@@ -342,8 +355,8 @@ export default function SettingsPage() {
           {/* Meta OG Upload */}
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-6 mb-3">
-              <div className="w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden p-4">
-                <img src={metaOg} alt="Meta OG" className="w-full h-full object-contain" />
+              <div className={`w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden ${metaOgPreview === "/icons/inksigma-logo.svg" || metaOgPreview.includes("/icons/inksigma-logo.svg") ? "p-4" : ""}`}>
+                <img key={metaOgPreview} src={metaOgPreview} alt="Meta OG" className="w-full h-full object-contain" />
               </div>
               <div className="flex flex-col gap-3">
                 <button onClick={handleMetaOgChange} className="text-purple-500 text-sm hover:text-purple-600">Change Meta OG</button>
