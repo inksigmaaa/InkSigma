@@ -40,15 +40,15 @@ export default function ForgotPasswordPage() {
         }),
         credentials: "include",
       })
-      
+
       const data = await response.json()
       console.log("Response:", response.status, data)
-      
+
       if (response.ok && data.success) {
         setSuccess(true)
         return
       }
-      
+
       throw new Error(data.error || "Failed to send reset email")
     } catch (err) {
       console.error('Password reset error:', err)
@@ -62,65 +62,7 @@ export default function ForgotPasswordPage() {
     }
   }
 
-  if (success) {
-    return (
-      <div className="bg-white min-h-screen overflow-hidden px-4 relative">
-        {/* Logo - positioned 193px above center */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -mt-[230]">
-          <Image
-            src={LOGOS.auth}
-            alt="InkSigma Logo"
-            width={127}
-            height={41.843929290771484}
-            className="mx-auto w-[100px] md:w-[127px] h-auto"
-          />
-        </div>
 
-        {/* Body Content - centered on page */}
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="w-full max-w-[258.5px] flex flex-col items-center">
-            <h1 className="font-bold text-[14px] md:text-[16px] leading-[28px] tracking-[0%] text-[#2E2E2E] mb-8">
-              Check Your Email
-            </h1>
-            
-            <div className="space-y-6 text-center">
-              <div className="flex justify-center">
-                <CheckCircle2 className="w-16 h-16 text-green-500" />
-              </div>
-              <div className="space-y-2">
-                <p className="text-gray-700 text-sm md:text-base">
-                  We've sent a password reset link to <strong>{email}</strong>
-                </p>
-                <p className="text-xs md:text-sm text-gray-500">
-                  Please check your inbox and click the link to reset your password.
-                </p>
-              </div>
-              <div className="text-center pt-4">
-                <div className="flex items-center justify-center gap-2">
-                  <svg width="7" height="11" viewBox="0 0 7 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5.48975 0.700195L0.989746 5.2002L5.48975 9.7002" stroke="#696969" strokeWidth="1.4" strokeLinecap="round"/>
-                  </svg>
-                  <Link
-                    href="/login"
-                    className="font-semibold text-[12px] md:text-[14px] leading-[100%] tracking-[0%] text-[#696969] hover:text-gray-500 transition-colors"
-                  >
-                    Back to Login
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Copyright - positioned 32px from bottom */}
-        <div className="absolute bottom-[32px] left-1/2 transform -translate-x-1/2 w-full h-[15px] opacity-100 rotate-0 flex items-center justify-center">
-          <p className="font-normal text-[10px] md:text-[12px] leading-[100%] tracking-[0%] text-[#A4A4A4] text-center whitespace-nowrap" style={{ fontFamily: 'Inter' }}>
-            Copyright © 2023 designed & developed by Inksigma, a Zemuria Inc. brand
-          </p>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="bg-white min-h-screen overflow-hidden px-4 relative">
@@ -141,7 +83,7 @@ export default function ForgotPasswordPage() {
           <h1 className="font-bold text-[14px] md:text-[16px] leading-[28px] tracking-[0%] text-[#2E2E2E] mb-8">
             Forgot Password?
           </h1>
-          
+
           <form onSubmit={handleSubmit} className="w-full space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email" className="font-semibold text-[12px] md:text-[14px] leading-[100%] tracking-[0%] text-[#2E2E2E]">
@@ -153,7 +95,11 @@ export default function ForgotPasswordPage() {
                 placeholder="Enter your Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="border-0 border-b border-gray-300 rounded-none bg-transparent px-2 py-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300 focus:ring-offset-0 w-full text-sm  placeholder:text-[#C8C8C8]"
+                className="border-0 border-b border-gray-300 rounded-none bg-transparent px-2 py-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300 focus:ring-offset-0 w-full text-sm placeholder:text-[#C8C8C8]"
+                style={{
+                  boxShadow: '0 0 0 30px white inset',
+                  WebkitBoxShadow: '0 0 0 30px white inset',
+                }}
                 required
                 disabled={loading}
               />
@@ -171,37 +117,45 @@ export default function ForgotPasswordPage() {
               disabled={loading}
             >
               {loading ? (
-                <span className="font-medium text-[12px] md:text-[14px] leading-[150%] tracking-[0%] text-[#EDEDED]" style={{ fontFamily: 'Public Sans' }}>
+                <span className="font-medium text-[12px] md:text-[14px] leading-[150%] tracking-[0%] text-[#EDEDED]">
                   Sending...
                 </span>
               ) : (
                 <>
-                  <span className="hidden md:inline font-medium text-[12px] md:text-[14px] leading-[150%] tracking-[0%] text-[#EDEDED]" style={{ fontFamily: 'Public Sans' }}>
+                  <span className="hidden md:inline font-medium text-[12px] md:text-[14px] leading-[150%] tracking-[0%] text-[#EDEDED]">
                     Send to Mail
                   </span>
                   <div className="md:hidden flex items-center gap-2">
-                    <span className="font-medium text-[12px] leading-[150%] tracking-[0%] text-[#EDEDED]" style={{ fontFamily: 'Public Sans' }}>
+                    <span className="font-medium text-[12px] leading-[150%] tracking-[0%] text-[#EDEDED]">
                       Mail sent
                     </span>
                     <svg width="14" height="13" viewBox="0 0 16 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-100">
-                      <path d="M14.5996 0.629872L4.97461 9.27636V13.5996L7.59961 11.0057M0.599609 6.25009L14.5996 0.599609L12.1496 13.1673L0.599609 6.25009Z" stroke="#EDEDED" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M14.5996 0.629872L4.97461 9.27636V13.5996L7.59961 11.0057M0.599609 6.25009L14.5996 0.599609L12.1496 13.1673L0.599609 6.25009Z" stroke="#EDEDED" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                 </>
               )}
             </Button>
+
+            {success && (
+              <div className="w-full md:w-[259px] h-[60px] bg-[#D5F2D4] rounded-[4px] px-[16px] py-[12px] flex items-center justify-center mt-6 mx-auto text-center">
+                <p className="font-normal text-[12px] leading-[150%] tracking-[0%] text-[#267F24]">
+                  Password Reset Link has been sent to your registered email ID.
+                </p>
+              </div>
+            )}
           </form>
 
           <div className="text-center pt-6">
             <div className="flex items-center justify-center gap-2">
               <svg width="7" height="11" viewBox="0 0 7 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5.48975 0.700195L0.989746 5.2002L5.48975 9.7002" stroke="#696969" strokeWidth="1.4" strokeLinecap="round"/>
+                <path d="M5.48975 0.700195L0.989746 5.2002L5.48975 9.7002" stroke="#696969" strokeWidth="1.4" strokeLinecap="round" />
               </svg>
               <Link
                 href="/login"
                 className="font-semibold text-[12px] md:text-[14px] leading-[100%] tracking-[0%] text-[#696969] hover:text-gray-500 transition-colors"
               >
-              Go Back
+                Go Back
               </Link>
             </div>
           </div>

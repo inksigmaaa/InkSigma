@@ -9,9 +9,7 @@ class SchedulerService {
     }
 
     async start() {
-        console.log('[SCHEDULER] Starting...');
         await this.loadScheduledBlogs();
-        console.log('[SCHEDULER] Ready');
     }
 
     stop() {
@@ -28,7 +26,7 @@ class SchedulerService {
                 .from(blog)
                 .where(eq(blog.status, 'scheduled'));
 
-            console.log(`[SCHEDULER] Found ${scheduledBlogs.length} scheduled blog(s)`);
+            
             for (const blogPost of scheduledBlogs) {
                 this.schedulePublish(blogPost);
             }

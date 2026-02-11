@@ -12,7 +12,7 @@ import { LOGOS } from "@/constants/app"
  */
 export default function AuthLayout({ children, title, titleClassName }) {
   return (
-    <div className="bg-white flex flex-col items-center justify-center h-screen px-4 pb-[60px] md:pb-[80px]">
+    <div className="bg-white flex flex-col items-center justify-center flex-1 min-h-0 px-4 pb-[60px] md:pb-[80px]">
       <div className="w-full max-w-[260px] h-auto opacity-100 rotate-0 flex flex-col">
         {/* Logo - fixed position */}
         <div className="text-center mt-[10px]">

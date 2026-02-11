@@ -12,7 +12,7 @@ async function getSession(req) {
     for (const [key, value] of Object.entries(req.headers)) {
         if (value) headers.set(key, Array.isArray(value) ? value[0] : value);
     }
-    
+
     const session = await auth.api.getSession({ headers });
     return session;
 }
@@ -28,7 +28,7 @@ router.post("/forgot-password", async (req, res) => {
         }
 
         const user = await authService.findUserByEmail(email);
-        
+
         if (!user) {
             // Security: Don't reveal if user exists
             console.log(`[AUTH] User not found: ${email} (returning success)`);
@@ -77,7 +77,7 @@ router.post("/reset-password", async (req, res) => {
         }
 
         let credentialAccount = await authService.findCredentialAccount(user.id);
-        
+
         // If no credential account exists (Google-only user), create one
         if (!credentialAccount) {
             const googleAccount = await authService.findGoogleAccount(user.id);
@@ -165,33 +165,54 @@ router.get("/redis-health", async (req, res) => {
     try {
         const { getRedisClient } = await import("../config/redis.js");
         const client = getRedisClient();
-        
+
         // Test Redis connection
         const testKey = `health-check:${Date.now()}`;
         await client.set(testKey, "OK", "EX", 10); // Expires in 10 seconds
         const result = await client.get(testKey);
         await client.del(testKey);
-        
+
         if (result === "OK") {
-            res.json({ 
-                status: "healthy", 
+            res.json({
+                status: "healthy",
                 redis: "connected",
                 message: "Redis is working properly"
             });
         } else {
-            res.status(500).json({ 
-                status: "unhealthy", 
+            res.status(500).json({
+                status: "unhealthy",
                 redis: "error",
                 message: "Redis test failed"
             });
         }
     } catch (error) {
         console.error("[REDIS-HEALTH] Error:", error);
-        res.status(500).json({ 
-            status: "unhealthy", 
+        res.status(500).json({
+            status: "unhealthy",
             redis: "disconnected",
-            error: error.message 
+            error: error.message
         });
+    }
+});
+
+// POST /api/custom/check-email
+router.post("/check-email", async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ error: "Email is required" });
+        }
+
+        const user = await authService.findUserByEmail(email);
+
+        // Return clear status
+        res.json({
+            exists: !!user,
+            emailVerified: user ? user.emailVerified : false
+        });
+    } catch (error) {
+        console.error(`[AUTH] Check email error:`, error);
+        res.status(500).json({ error: "Failed to check email" });
     }
 });
 
@@ -229,14 +250,14 @@ router.post("/set-password", async (req, res) => {
         const { canSet, hasGoogleAccount, hasCredentialAccount } = await authService.canSetPassword(userId);
 
         if (!hasGoogleAccount) {
-            return res.status(400).json({ 
-                error: "This feature is only available for Google OAuth users" 
+            return res.status(400).json({
+                error: "This feature is only available for Google OAuth users"
             });
         }
 
         if (hasCredentialAccount) {
-            return res.status(400).json({ 
-                error: "Password already set. Use forgot password to reset it." 
+            return res.status(400).json({
+                error: "Password already set. Use forgot password to reset it."
             });
         }
 
@@ -248,9 +269,9 @@ router.post("/set-password", async (req, res) => {
         await authService.createCredentialAccountForGoogleUser(userId, userEmail, password);
 
         console.log(`[AUTH] Password set successfully for Google user: ${userEmail}`);
-        res.json({ 
-            success: true, 
-            message: "Password set successfully. You can now login with email and password." 
+        res.json({
+            success: true,
+            message: "Password set successfully. You can now login with email and password."
         });
     } catch (error) {
         console.error(`[AUTH] Set password error:`, error);

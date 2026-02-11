@@ -69,7 +69,7 @@ function MagicLinkPage() {
             </p>
             <div className="flex items-center justify-center gap-2 mt-8">
               <svg width="7" height="11" viewBox="0 0 7 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5.48975 0.700195L0.989746 5.2002L5.48975 9.7002" stroke="#696969" strokeWidth="1.4" strokeLinecap="round"/>
+                <path d="M5.48975 0.700195L0.989746 5.2002L5.48975 9.7002" stroke="#696969" strokeWidth="1.4" strokeLinecap="round" />
               </svg>
               <Link
                 href="/login"
@@ -126,6 +126,10 @@ function MagicLinkPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="border-0 border-b border-gray-300 rounded-none bg-transparent px-2 py-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300 focus:ring-offset-0 w-full text-sm md:text-base placeholder:w-[107px] placeholder:h-[21px] placeholder:opacity-100 placeholder:rotate-0 placeholder:font-normal placeholder:text-[12px] md:placeholder:text-[14px] placeholder:leading-[150%] placeholder:tracking-[0%] placeholder:text-[#C8C8C8]"
+                style={{
+                  boxShadow: '0 0 0 30px white inset',
+                  WebkitBoxShadow: '0 0 0 30px white inset',
+                }}
                 required
               />
             </div>
@@ -150,7 +154,7 @@ function MagicLinkPage() {
                       Mail sent
                     </span>
                     <svg width="14" height="13" viewBox="0 0 16 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="opacity-100">
-                      <path d="M14.5996 0.629872L4.97461 9.27636V13.5996L7.59961 11.0057M0.599609 6.25009L14.5996 0.599609L12.1496 13.1673L0.599609 6.25009Z" stroke="#EDEDED" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M14.5996 0.629872L4.97461 9.27636V13.5996L7.59961 11.0057M0.599609 6.25009L14.5996 0.599609L12.1496 13.1673L0.599609 6.25009Z" stroke="#EDEDED" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                 </>
@@ -160,13 +164,13 @@ function MagicLinkPage() {
             {/* Go Back Link */}
             <div className="flex items-center justify-center gap-2">
               <svg width="7" height="11" viewBox="0 0 7 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5.48975 0.700195L0.989746 5.2002L5.48975 9.7002" stroke="#696969" strokeWidth="1.4" strokeLinecap="round"/>
+                <path d="M5.48975 0.700195L0.989746 5.2002L5.48975 9.7002" stroke="#696969" strokeWidth="1.4" strokeLinecap="round" />
               </svg>
               <Link
                 href="/login"
                 className="font-semibold text-[12px] md:text-[14px] leading-[100%] tracking-[0%] text-[#696969] hover:text-gray-500 transition-colors"
               >
-                Go Back 
+                Go Back
               </Link>
             </div>
           </form>
