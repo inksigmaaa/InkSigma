@@ -172,6 +172,16 @@ export default function EditorPageClient() {
       return;
     }
 
+    // IMPORTANT: Only auto-save for drafts or new articles
+    // Don't auto-save published, scheduled, or review articles
+    const isPublishedOrScheduled = existingBlogStatus && ['published', 'scheduled', 'review', 'unpublished'].includes(existingBlogStatus);
+    
+    if (isPublishedOrScheduled) {
+      // For published/scheduled articles, don't auto-save
+      setSaveStatus("idle");
+      return;
+    }
+
     // Clear existing timeout
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
@@ -182,11 +192,11 @@ export default function EditorPageClient() {
 
     // Debounce auto-save by 1.5 seconds
     autoSaveTimeoutRef.current = setTimeout(async () => {
-      // Only auto-save drafts or existing blogs, not published/scheduled/review status
+      // Only auto-save drafts or new blogs (not published/scheduled/review)
       const canAutoSave = !existingBlogStatus || existingBlogStatus === "draft";
       
       if (canAutoSave && blogTitle.trim()) {
-        const result = await saveBlog(existingBlogStatus || "draft", null, true, true);
+        const result = await saveBlog("draft", null, true, true);
         if (result) {
           setSaveStatus("saved");
         } else {
@@ -251,23 +261,25 @@ export default function EditorPageClient() {
       const hasTitle = blogTitle.trim();
       
       if (hasUnsavedChanges && hasTitle && !savedSuccessfullyRef.current) {
-        // For sensitive statuses, show warning
-        const sensitiveStatuses = ["published", "unpublished", "review", "scheduled"];
+        // IMPORTANT: Only auto-save as draft for new articles or existing drafts
+        // Don't create drafts for published/scheduled/review articles
+        const isPublishedOrScheduled = existingBlogStatus && ['published', 'scheduled', 'review', 'unpublished'].includes(existingBlogStatus);
         
-        if (existingBlogStatus && sensitiveStatuses.includes(existingBlogStatus)) {
+        if (isPublishedOrScheduled) {
+          // For published/scheduled articles, show warning but don't auto-save
           e.preventDefault();
           e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
           return e.returnValue;
         }
         
-        // For drafts or new blogs, auto-save silently
+        // For new articles or drafts, auto-save silently
         // Use sendBeacon for reliable save on page unload
         const blogData = {
           title: blogTitle,
           description: blogDescription,
           content: editorContent.html,
           categories: selectedCategories,
-          status: existingBlogStatus || "draft",
+          status: "draft",
           published: false,
         };
 
@@ -305,12 +317,12 @@ export default function EditorPageClient() {
         const hasTitle = blogTitle.trim();
         
         if (hasUnsavedChanges && hasTitle && !savedSuccessfullyRef.current) {
-          const sensitiveStatuses = ["published", "unpublished", "review", "scheduled"];
-          const canAutoSave = !existingBlogStatus || !sensitiveStatuses.includes(existingBlogStatus);
+          // Only auto-save as draft for new articles or existing drafts
+          const isPublishedOrScheduled = existingBlogStatus && ['published', 'scheduled', 'review', 'unpublished'].includes(existingBlogStatus);
           
-          if (canAutoSave) {
-            // Save when user switches tabs or minimizes
-            await saveBlog(existingBlogStatus || "draft", null, true, true);
+          if (!isPublishedOrScheduled) {
+            // Save as draft when user switches tabs or minimizes
+            await saveBlog("draft", null, true, true);
           }
         }
       }
