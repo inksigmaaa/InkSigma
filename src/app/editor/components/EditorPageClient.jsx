@@ -248,27 +248,84 @@ export default function EditorPageClient() {
     initialCategories,
   ]);
 
-  // Show warning when leaving the page with unsaved changes
+  // Auto-save when leaving the page with unsaved changes
   useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      // Only show warning if there are unsaved changes, it's a new blog, and not already saved
-      if (
-        hasUnsavedChanges &&
-        !blogId &&
-        blogTitle.trim() &&
-        !savedSuccessfullyRef.current
-      ) {
-        e.preventDefault();
-        e.returnValue =
-          "You have unsaved changes. Are you sure you want to leave?";
-        return e.returnValue;
+    const handleBeforeUnload = async (e) => {
+      // Auto-save if there are unsaved changes and content exists
+      const contentExists = blogTitle.trim() || blogDescription.trim() || (editorContent.html && editorContent.html !== "<p></p>");
+      
+      if (hasUnsavedChanges && contentExists && !savedSuccessfullyRef.current) {
+        // For sensitive statuses, show warning
+        const sensitiveStatuses = ["published", "unpublished", "review", "scheduled"];
+        
+        if (existingBlogStatus && sensitiveStatuses.includes(existingBlogStatus)) {
+          e.preventDefault();
+          e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
+          return e.returnValue;
+        }
+        
+        // For drafts or new blogs, auto-save silently
+        // Use sendBeacon for reliable save on page unload
+        const blogData = {
+          title: blogTitle,
+          description: blogDescription,
+          content: editorContent.html,
+          categories: selectedCategories,
+          status: existingBlogStatus || "draft",
+          published: false,
+        };
+
+        const pubId = publicationId || currentPublication?.id;
+        if (pubId) {
+          blogData.publicationId = parseInt(pubId);
+        }
+
+        const url = blogId
+          ? `${API_URL}/api/blogs/${blogId}`
+          : `${API_URL}/api/blogs`;
+
+        // Use sendBeacon for reliable save during page unload
+        const blob = new Blob([JSON.stringify(blogData)], { type: 'application/json' });
+        navigator.sendBeacon(url, blob);
+        
+        // Also try fetch with keepalive as backup
+        fetch(url, {
+          method: blogId ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(blogData),
+          keepalive: true, // Ensures request completes even if page is closed
+        }).catch(() => {
+          // Silently fail - sendBeacon should handle it
+        });
+      }
+    };
+
+    // Handle visibility change (tab switch, minimize, etc.)
+    const handleVisibilityChange = async () => {
+      if (document.hidden) {
+        const contentExists = blogTitle.trim() || blogDescription.trim() || (editorContent.html && editorContent.html !== "<p></p>");
+        
+        if (hasUnsavedChanges && contentExists && !savedSuccessfullyRef.current) {
+          const sensitiveStatuses = ["published", "unpublished", "review", "scheduled"];
+          const canAutoSave = !existingBlogStatus || !sensitiveStatuses.includes(existingBlogStatus);
+          
+          if (canAutoSave) {
+            // Save when user switches tabs or minimizes
+            await saveBlog(existingBlogStatus || "draft", null, true, true);
+          }
+        }
       }
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [
     hasUnsavedChanges,
@@ -277,6 +334,9 @@ export default function EditorPageClient() {
     blogDescription,
     editorContent.html,
     selectedCategories,
+    existingBlogStatus,
+    publicationId,
+    currentPublication,
   ]);
 
   // Load existing blog if editing
