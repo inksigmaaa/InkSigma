@@ -314,7 +314,7 @@ export default function SettingsPage() {
           {/* Logo Upload */}
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-6 mb-3">
-              <div className="w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden">
+              <div className="w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden p-4">
                 <img src={logo} alt="Logo" className="w-full h-full object-contain" />
               </div>
               <div className="flex flex-col gap-3">
@@ -328,7 +328,7 @@ export default function SettingsPage() {
           {/* Favicon Upload */}
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-6 mb-3">
-              <div className="w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden">
+              <div className="w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden p-4">
                 <img src={favicon} alt="Favicon" className="w-full h-full object-contain" />
               </div>
               <div className="flex flex-col gap-3">
@@ -342,7 +342,7 @@ export default function SettingsPage() {
           {/* Meta OG Upload */}
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-6 mb-3">
-              <div className="w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden">
+              <div className="w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden p-4">
                 <img src={metaOg} alt="Meta OG" className="w-full h-full object-contain" />
               </div>
               <div className="flex flex-col gap-3">
