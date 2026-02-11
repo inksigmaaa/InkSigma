@@ -161,8 +161,8 @@ export default function EditorPageClient() {
     const contentExists = blogTitle.trim() || blogDescription.trim() || (editorContent.html && editorContent.html !== "<p></p>");
     setHasContent(contentExists);
 
-    // Don't auto-save if no content or if it's a new blog without any data
-    if (!contentExists) {
+    // Don't auto-save if no title (minimum requirement for draft)
+    if (!blogTitle.trim()) {
       setSaveStatus("idle");
       return;
     }
@@ -185,14 +185,10 @@ export default function EditorPageClient() {
       // Only auto-save drafts or existing blogs, not published/scheduled/review status
       const canAutoSave = !existingBlogStatus || existingBlogStatus === "draft";
       
-      if (canAutoSave && contentExists) {
-        const result = await saveBlog(existingBlogStatus || "draft", null, true);
+      if (canAutoSave && blogTitle.trim()) {
+        const result = await saveBlog(existingBlogStatus || "draft", null, true, true);
         if (result) {
           setSaveStatus("saved");
-          // Reset to idle after 2 seconds
-          setTimeout(() => {
-            setSaveStatus("idle");
-          }, 2000);
         } else {
           setSaveStatus("idle");
         }
@@ -251,10 +247,10 @@ export default function EditorPageClient() {
   // Auto-save when leaving the page with unsaved changes
   useEffect(() => {
     const handleBeforeUnload = async (e) => {
-      // Auto-save if there are unsaved changes and content exists
-      const contentExists = blogTitle.trim() || blogDescription.trim() || (editorContent.html && editorContent.html !== "<p></p>");
+      // Auto-save if there are unsaved changes and title exists (minimum requirement)
+      const hasTitle = blogTitle.trim();
       
-      if (hasUnsavedChanges && contentExists && !savedSuccessfullyRef.current) {
+      if (hasUnsavedChanges && hasTitle && !savedSuccessfullyRef.current) {
         // For sensitive statuses, show warning
         const sensitiveStatuses = ["published", "unpublished", "review", "scheduled"];
         
@@ -306,9 +302,9 @@ export default function EditorPageClient() {
     // Handle visibility change (tab switch, minimize, etc.)
     const handleVisibilityChange = async () => {
       if (document.hidden) {
-        const contentExists = blogTitle.trim() || blogDescription.trim() || (editorContent.html && editorContent.html !== "<p></p>");
+        const hasTitle = blogTitle.trim();
         
-        if (hasUnsavedChanges && contentExists && !savedSuccessfullyRef.current) {
+        if (hasUnsavedChanges && hasTitle && !savedSuccessfullyRef.current) {
           const sensitiveStatuses = ["published", "unpublished", "review", "scheduled"];
           const canAutoSave = !existingBlogStatus || !sensitiveStatuses.includes(existingBlogStatus);
           
