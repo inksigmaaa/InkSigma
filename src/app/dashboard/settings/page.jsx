@@ -143,12 +143,15 @@ export default function SettingsPage() {
 
       if (type === 'logo') {
         setLogo(imageUrl)
+        setLogoPreview(imageUrl)
         setSuccess('Logo updated!')
       } else if (type === 'favicon') {
         setFavicon(imageUrl)
+        setFaviconPreview(imageUrl)
         setSuccess('Favicon updated!')
       } else if (type === 'meta_og') {
         setMetaOg(imageUrl)
+        setMetaOgPreview(imageUrl)
         setSuccess('Meta OG image updated!')
       }
       setTimeout(() => setSuccess(null), 3000)
@@ -167,6 +170,13 @@ export default function SettingsPage() {
     input.onchange = async (e) => {
       const file = e.target.files[0]
       if (file) {
+        // Show preview immediately
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setLogoPreview(reader.result)
+        }
+        reader.readAsDataURL(file)
+        
         await handleImageUpload(file, 'logo')
       }
     }
@@ -180,6 +190,13 @@ export default function SettingsPage() {
     input.onchange = async (e) => {
       const file = e.target.files[0]
       if (file) {
+        // Show preview immediately
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setFaviconPreview(reader.result)
+        }
+        reader.readAsDataURL(file)
+        
         await handleImageUpload(file, 'favicon')
       }
     }
@@ -193,6 +210,13 @@ export default function SettingsPage() {
     input.onchange = async (e) => {
       const file = e.target.files[0]
       if (file) {
+        // Show preview immediately
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setMetaOgPreview(reader.result)
+        }
+        reader.readAsDataURL(file)
+        
         await handleImageUpload(file, 'meta_og')
       }
     }
@@ -213,9 +237,16 @@ export default function SettingsPage() {
 
       if (!res.ok) throw new Error("Failed to remove image")
 
-      if (type === 'logo') setLogo("/icons/inksigma-logo.svg")
-      else if (type === 'favicon') setFavicon("/icons/inksigma-logo.svg")
-      else if (type === 'meta_og') setMetaOg("/icons/inksigma-logo.svg")
+      if (type === 'logo') {
+        setLogo("/icons/inksigma-logo.svg")
+        setLogoPreview("/icons/inksigma-logo.svg")
+      } else if (type === 'favicon') {
+        setFavicon("/icons/inksigma-logo.svg")
+        setFaviconPreview("/icons/inksigma-logo.svg")
+      } else if (type === 'meta_og') {
+        setMetaOg("/icons/inksigma-logo.svg")
+        setMetaOgPreview("/icons/inksigma-logo.svg")
+      }
 
       setSuccess(`${type} removed successfully!`)
       setTimeout(() => setSuccess(null), 3000)
@@ -274,14 +305,11 @@ export default function SettingsPage() {
 
       const updatedPub = await res.json()
 
-      // If subdomain changed, redirect to the new URL
-      if (updatedPub.subdomain !== originalSubdomain) {
-        window.location.href = `/${updatedPub.subdomain}/settings`;
-        return;
-      }
+      // Refresh the publication context with updated data
+      await refreshCurrentPublication()
 
-      setOriginalSubdomain(updatedPub.subdomain)
-      setShowSuccessModal(true)
+      // Redirect to home page with full reload to show updated changes
+      window.location.href = `/${updatedPub.subdomain}/home`
     } catch (err) {
       console.error('Save error:', err)
       setError(err.message)
