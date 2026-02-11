@@ -141,6 +141,8 @@ export default function EditorPageClient() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle"); // 'idle' | 'saving' | 'saved'
   const [showPublishSuccess, setShowPublishSuccess] = useState(false);
+  const [hasContent, setHasContent] = useState(false);
+  const autoSaveTimeoutRef = useRef(null);
   const [publishedBlogSlug, setPublishedBlogSlug] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [initialContent, setInitialContent] = useState("");
@@ -153,12 +155,62 @@ export default function EditorPageClient() {
   const calendarRef = useRef(null);
   const savedSuccessfullyRef = useRef(false);
 
-  // Reset save status to idle when content changes
+  // Auto-save functionality with debouncing
   useEffect(() => {
-    if (saveStatus === "saved") {
+    // Check if there's any content
+    const contentExists = blogTitle.trim() || blogDescription.trim() || (editorContent.html && editorContent.html !== "<p></p>");
+    setHasContent(contentExists);
+
+    // Don't auto-save if no title (minimum requirement for draft)
+    if (!blogTitle.trim()) {
       setSaveStatus("idle");
+      return;
     }
-  }, [blogTitle, blogDescription, editorContent.html]);
+
+    // Don't auto-save if there are no unsaved changes
+    if (!hasUnsavedChanges) {
+      return;
+    }
+
+    // IMPORTANT: Only auto-save for drafts or new articles
+    // Don't auto-save published, scheduled, or review articles
+    const isPublishedOrScheduled = existingBlogStatus && ['published', 'scheduled', 'review', 'unpublished'].includes(existingBlogStatus);
+    
+    if (isPublishedOrScheduled) {
+      // For published/scheduled articles, don't auto-save
+      setSaveStatus("idle");
+      return;
+    }
+
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Set saving status immediately
+    setSaveStatus("saving");
+
+    // Debounce auto-save by 1.5 seconds
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      // Only auto-save drafts or new blogs (not published/scheduled/review)
+      const canAutoSave = !existingBlogStatus || existingBlogStatus === "draft";
+      
+      if (canAutoSave && blogTitle.trim()) {
+        const result = await saveBlog("draft", null, true, true);
+        if (result) {
+          setSaveStatus("saved");
+        } else {
+          setSaveStatus("idle");
+        }
+      }
+    }, 1500);
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [blogTitle, blogDescription, editorContent.html, selectedCategories, hasUnsavedChanges, existingBlogStatus]);
 
   // Track unsaved changes
   // Track unsaved changes by comparing with initial values
@@ -202,27 +254,86 @@ export default function EditorPageClient() {
     initialCategories,
   ]);
 
-  // Show warning when leaving the page with unsaved changes
+  // Auto-save when leaving the page with unsaved changes
   useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      // Only show warning if there are unsaved changes, it's a new blog, and not already saved
-      if (
-        hasUnsavedChanges &&
-        !blogId &&
-        blogTitle.trim() &&
-        !savedSuccessfullyRef.current
-      ) {
-        e.preventDefault();
-        e.returnValue =
-          "You have unsaved changes. Are you sure you want to leave?";
-        return e.returnValue;
+    const handleBeforeUnload = async (e) => {
+      // Auto-save if there are unsaved changes and title exists (minimum requirement)
+      const hasTitle = blogTitle.trim();
+      
+      if (hasUnsavedChanges && hasTitle && !savedSuccessfullyRef.current) {
+        // IMPORTANT: Only auto-save as draft for new articles or existing drafts
+        // Don't create drafts for published/scheduled/review articles
+        const isPublishedOrScheduled = existingBlogStatus && ['published', 'scheduled', 'review', 'unpublished'].includes(existingBlogStatus);
+        
+        if (isPublishedOrScheduled) {
+          // For published/scheduled articles, show warning but don't auto-save
+          e.preventDefault();
+          e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
+          return e.returnValue;
+        }
+        
+        // For new articles or drafts, auto-save silently
+        // Use sendBeacon for reliable save on page unload
+        const blogData = {
+          title: blogTitle,
+          description: blogDescription,
+          content: editorContent.html,
+          categories: selectedCategories,
+          status: "draft",
+          published: false,
+        };
+
+        const pubId = publicationId || currentPublication?.id;
+        if (pubId) {
+          blogData.publicationId = parseInt(pubId);
+        }
+
+        const url = blogId
+          ? `${API_URL}/api/blogs/${blogId}`
+          : `${API_URL}/api/blogs`;
+
+        // Use sendBeacon for reliable save during page unload
+        const blob = new Blob([JSON.stringify(blogData)], { type: 'application/json' });
+        navigator.sendBeacon(url, blob);
+        
+        // Also try fetch with keepalive as backup
+        fetch(url, {
+          method: blogId ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(blogData),
+          keepalive: true, // Ensures request completes even if page is closed
+        }).catch(() => {
+          // Silently fail - sendBeacon should handle it
+        });
+      }
+    };
+
+    // Handle visibility change (tab switch, minimize, etc.)
+    const handleVisibilityChange = async () => {
+      if (document.hidden) {
+        const hasTitle = blogTitle.trim();
+        
+        if (hasUnsavedChanges && hasTitle && !savedSuccessfullyRef.current) {
+          // Only auto-save as draft for new articles or existing drafts
+          const isPublishedOrScheduled = existingBlogStatus && ['published', 'scheduled', 'review', 'unpublished'].includes(existingBlogStatus);
+          
+          if (!isPublishedOrScheduled) {
+            // Save as draft when user switches tabs or minimizes
+            await saveBlog("draft", null, true, true);
+          }
+        }
       }
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [
     hasUnsavedChanges,
@@ -231,6 +342,9 @@ export default function EditorPageClient() {
     blogDescription,
     editorContent.html,
     selectedCategories,
+    existingBlogStatus,
+    publicationId,
+    currentPublication,
   ]);
 
   // Load existing blog if editing
@@ -306,6 +420,7 @@ export default function EditorPageClient() {
     status,
     scheduledAt = null,
     skipValidation = false,
+    isAutoSave = false,
   ) => {
     // Skip validation when reverting to draft or updating existing published articles
     // Also skip validation if blog already exists (updating)
@@ -321,7 +436,10 @@ export default function EditorPageClient() {
     }
 
     setIsSaving(true);
-    setSaveStatus("saving");
+    // Only set saving status for manual saves, not auto-saves
+    if (!isAutoSave) {
+      setSaveStatus("saving");
+    }
     try {
       const blogData = {
         title: blogTitle,
@@ -391,12 +509,16 @@ export default function EditorPageClient() {
       // Mark as saved to prevent auto-save on exit
       setHasUnsavedChanges(false);
       savedSuccessfullyRef.current = true;
-      setSaveStatus("saved");
+      if (!isAutoSave) {
+        setSaveStatus("saved");
+      }
 
       return responseData;
     } catch (error) {
       console.error("Error saving blog:", error);
-      setSaveStatus("idle");
+      if (!isAutoSave) {
+        setSaveStatus("idle");
+      }
       // alert(error.message || 'Failed to save blog')
       return false;
     } finally {
@@ -835,6 +957,20 @@ export default function EditorPageClient() {
           color: #2e2e2e;
         }
 
+        .saving-spinner {
+          width: 16px;
+          height: 16px;
+          border: 2px solid #8AA4FF4D;
+          border-top: 2px solid #2659BC;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
         .stats-bar-container {
           position: fixed;
           display: flex;
@@ -1106,36 +1242,61 @@ export default function EditorPageClient() {
 
               <div className="flex-1 min-w-0"></div>
 
-              {/* Saved Status - Desktop and Tablet Only */}
-              <div
-                className="hidden md:flex items-center flex-shrink-0"
-                style={{
-                  width: "78px",
-                  height: "33px",
-                  borderRadius: "4px",
-                  border: "1px solid #EAEAEA",
-                  padding: "6px 8px",
-                  gap: "8px",
-                }}
-              >
-                <img
-                  src="/images/icons/tick4.svg"
-                  alt="saved"
-                  style={{ width: "13px", height: "13px" }}
-                />
-                <span
+              {/* Save Status - Desktop and Tablet Only */}
+              {hasContent && saveStatus !== "idle" && (
+                <div
+                  className="hidden md:flex items-center flex-shrink-0"
                   style={{
-                    fontFamily: "Public Sans",
-                    fontWeight: 400,
-                    fontSize: "14px",
-                    lineHeight: "150%",
-                    letterSpacing: "0%",
-                    color: "#696969",
+                    width: saveStatus === "saving" ? "98px" : "78px",
+                    height: "33px",
+                    borderRadius: "4px",
+                    border: "1px solid #EAEAEA",
+                    padding: "6px 8px",
+                    gap: "8px",
+                    transition: "width 0.2s ease",
                   }}
                 >
-                  Saved
-                </span>
-              </div>
+                  {saveStatus === "saving" ? (
+                    <>
+                      <div className="saving-spinner" />
+                      <span
+                        style={{
+                          width: "56px",
+                          height: "21px",
+                          fontFamily: "Public Sans",
+                          fontWeight: 400,
+                          fontSize: "14px",
+                          lineHeight: "150%",
+                          letterSpacing: "0%",
+                          color: "#696969",
+                        }}
+                      >
+                        Saving...
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <img
+                        src="/images/icons/tick4.svg"
+                        alt="saved"
+                        style={{ width: "13px", height: "13px" }}
+                      />
+                      <span
+                        style={{
+                          fontFamily: "Public Sans",
+                          fontWeight: 400,
+                          fontSize: "14px",
+                          lineHeight: "150%",
+                          letterSpacing: "0%",
+                          color: "#696969",
+                        }}
+                      >
+                        Saved
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

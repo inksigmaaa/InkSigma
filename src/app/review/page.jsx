@@ -15,6 +15,7 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { useSession } from "@/lib/auth-client";
 import { usePathname, useRouter } from "next/navigation";
+import { formatTimeAgo } from "@/utils/timeFormatter";
 
 export default function ReviewPage() {
   const router = useRouter();
@@ -197,41 +198,6 @@ export default function ReviewPage() {
       return;
     }
     router.push(withPub(`/home/preview/${articleId}`));
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    // Less than 24 hours - show hours
-    if (diffHours < 1) return "Sent less than an hour ago";
-    if (diffHours === 1) return "Sent 1 hour ago";
-    if (diffHours < 24) return `Sent ${diffHours} hours ago`;
-
-    // 24 hours or more - show full date without day of week
-    const months = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-
-    const monthName = months[date.getMonth()];
-    const day = date.getDate();
-    const year = date.getFullYear();
-
-    return `Sent on ${monthName} ${day}, ${year}`;
   };
 
   if (reviewLoading) {
@@ -481,7 +447,7 @@ export default function ReviewPage() {
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              {formatDate(article.createdAt)}
+                              Sent {formatTimeAgo(article.createdAt)}
                             </span>
                           </div>
                         </div>
@@ -686,7 +652,7 @@ export default function ReviewPage() {
                               whiteSpace: "nowrap",
                             }}
                           >
-                            {formatDate(article.createdAt)}
+                            Sent {formatTimeAgo(article.createdAt)}
                           </span>
                         </div>
                       </div>

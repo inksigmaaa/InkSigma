@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar";
 import Verify from "../components/verify/Verify";
 import { ChevronRight } from "lucide-react";
 import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
+import { getApiBase } from "@/utils/apiBase";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -18,6 +19,9 @@ export default function DashboardPage() {
     loadUserPublications,
     loading: publicationLoading,
   } = usePublication();
+  const API_URL = getApiBase();
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
+  const [checkingProfile, setCheckingProfile] = useState(true);
 
   // Effect to handle potential context refresh issues
   useEffect(() => {
@@ -45,6 +49,34 @@ export default function DashboardPage() {
     getOwnedPublications,
     getJoinedPublications,
   ]);
+
+  // Check if profile is complete
+  useEffect(() => {
+    const checkProfileCompletion = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/profile`, {
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Profile is complete if all required fields are filled
+          const isComplete = !!(
+            data.profileName?.trim() &&
+            data.username?.trim() &&
+            data.bio?.trim()
+          );
+          setIsProfileComplete(isComplete);
+        }
+      } catch (error) {
+        console.error("Error checking profile completion:", error);
+      } finally {
+        setCheckingProfile(false);
+      }
+    };
+
+    checkProfileCompletion();
+  }, [API_URL]);
 
   if (publicationLoading) {
     return (
@@ -82,20 +114,22 @@ export default function DashboardPage() {
               showcasing your innovative ideas, thereby disseminating them to
               the global audience.
             </p>
-            <button
-              onClick={() => router.push("/profile-settings")}
-              className="min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center mt-2"
-            >
-              <span
-                className="opacity-100 font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
-                style={{
-                  fontFamily: "Public Sans",
-                }}
+            {!isProfileComplete && (
+              <button
+                onClick={() => router.push("/profile-settings")}
+                className="min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center mt-2"
               >
-                Complete your profile
-              </span>
-              <ChevronRight className="w-3.5 h-3.5 text-[#A941FB] ml-1" />
-            </button>
+                <span
+                  className="opacity-100 font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
+                  style={{
+                    fontFamily: "Public Sans",
+                  }}
+                >
+                  Complete your profile
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-[#A941FB] ml-1" />
+              </button>
+            )}
           </div>
 
           {/* Verification Alert - Only shows for unverified email/password users */}
@@ -110,10 +144,10 @@ export default function DashboardPage() {
               Your Publication
             </h2>
             {ownedPublications.length > 0 ? (
-              <div className="w-full max-w-[819px] min-h-[143px] rounded-[4px] gap-[16px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-0">
-                  <div className="flex gap-9 items-center flex-1 min-w-0 w-full">
-                    <div className="w-[74px] h-[75px] opacity-100 border border-gray-300 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <div className="w-full max-w-[819px] h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-[88px]">
+                  <div className="flex gap-6 items-center flex-1 min-w-0 w-full">
+                    <div className="w-[66px] h-[66px] opacity-100 border-[0.92px] border-[#EAEAEA] rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                       {ownedPublications[0]?.logoUrl ? (
                         <img
                           src={`http://localhost:5000${ownedPublications[0].logoUrl}`}
@@ -134,20 +168,22 @@ export default function DashboardPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0 w-full">
-                      <h3
-                        className="font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-1 overflow-hidden text-ellipsis"
-                        style={{ fontFamily: "Public Sans" }}
-                      >
-                        {ownedPublications[0]?.name || "Publication Name"}
-                      </h3>
-                      <p
-                        className="w-full max-w-[414px] min-h-[63px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#A4A4A4]"
-                        style={{ fontFamily: "Public Sans" }}
-                      >
-                        {ownedPublications[0]?.description ||
-                          "Note: Edit/Upload your logo, Favicon & Publication Description inside the publication settings. Start with clicking this Publication card"}
-                      </p>
+                    <div className="flex-1 min-w-0 w-full max-w-[414px]">
+                      <div className="w-full h-auto opacity-100 flex flex-col gap-1">
+                        <h3
+                          className="font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] overflow-hidden text-ellipsis"
+                          style={{ fontFamily: "Public Sans" }}
+                        >
+                          {ownedPublications[0]?.name || "Publication Name"}
+                        </h3>
+                        <p
+                          className="w-full opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#A4A4A4] line-clamp-2"
+                          style={{ fontFamily: "Public Sans" }}
+                        >
+                          {ownedPublications[0]?.description ||
+                            "Note: Edit/Upload your logo, Favicon & Publication Description inside the publication settings. Start with clicking this Publication card"}
+                        </p>
+                      </div>
                     </div>
                   </div>
                   <button
@@ -213,11 +249,11 @@ export default function DashboardPage() {
                 {joinedPublications.map((joinedPub) => (
                   <div
                     key={joinedPub.id}
-                    className="w-full max-w-[819px] min-h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto"
+                    className="w-full max-w-[819px] h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto"
                   >
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-[88px]">
-                      <div className="flex gap-9 items-center flex-1 w-full">
-                        <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <div className="flex gap-6 items-center flex-1 w-full">
+                        <div className="w-[66px] h-[66px] border-[0.92px] border-[#EAEAEA] rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {joinedPub.logoUrl ? (
                             <img
                               src={`http://localhost:5000${joinedPub.logoUrl}`}
@@ -236,38 +272,43 @@ export default function DashboardPage() {
                             </div>
                           )}
                         </div>
-                        <div className="flex-1 min-w-0 w-full">
-                          <h3
-                            className="w-full max-w-[135px] h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-1 overflow-hidden text-ellipsis"
-                            style={{ fontFamily: "Public Sans" }}
-                          >
-                            {joinedPub.name}
-                          </h3>
-                          <p className="text-xs text-gray-400 leading-relaxed">
-                            {joinedPub.description || "No description provided"}
-                          </p>
-                          <div className="flex items-center gap-4 mt-2">
-                            <span
-                              className={`text-xs font-medium ${
-                                joinedPub.role === "editor"
-                                  ? "text-green-600"
-                                  : "text-blue-600"
-                              }`}
+                        <div className="flex-1 min-w-0 w-full max-w-[414px]">
+                          <div className="w-full h-auto opacity-100 flex flex-col gap-1">
+                            <h3
+                              className="font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] overflow-hidden text-ellipsis"
+                              style={{ fontFamily: "Public Sans" }}
                             >
-                              {joinedPub.role.charAt(0).toUpperCase() +
-                                joinedPub.role.slice(1)}
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              {joinedPub.joinedAt
-                                ? `Joined ${new Date(
-                                    joinedPub.joinedAt,
-                                  ).toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                  })}`
-                                : "Joined Recently"}
-                            </span>
+                              {joinedPub.name}
+                            </h3>
+                            <p
+                              className="w-full opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#A4A4A4] line-clamp-2"
+                              style={{ fontFamily: "Public Sans" }}
+                            >
+                              {joinedPub.description || "No description provided"}
+                            </p>
+                            <div className="flex items-center gap-4 mt-2">
+                              <span
+                                className={`text-xs font-medium ${
+                                  joinedPub.role === "editor"
+                                    ? "text-green-600"
+                                    : "text-blue-600"
+                                }`}
+                              >
+                                {joinedPub.role.charAt(0).toUpperCase() +
+                                  joinedPub.role.slice(1)}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {joinedPub.joinedAt
+                                  ? `Joined ${new Date(
+                                      joinedPub.joinedAt,
+                                    ).toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                    })}`
+                                  : "Joined Recently"}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -294,35 +335,40 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="w-full max-w-[819px] min-h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-[16px] h-full w-full">
-                  <div className="flex gap-9 items-center flex-1 min-w-0 w-full">
-                    <div className="w-[68px] h-[70px] rounded-[112px] opacity-100 border border-[#EDEDED] bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <div className="w-full max-w-[819px] h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-[88px] h-full w-full">
+                  <div className="flex gap-6 items-center flex-1 min-w-0 w-full">
+                    <div className="w-[66px] h-[66px] border-[0.92px] border-[#EAEAEA] rounded-full opacity-100 bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                       <img
                         src="/icons/pen.svg"
                         alt="publication"
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <div className="flex-1 min-w-0 w-full">
-                      <h3
-                        className="w-full max-w-[135px] h-[28px] opacity-100 font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] mb-1 overflow-hidden text-ellipsis"
-                        style={{ fontFamily: "Public Sans" }}
-                      >
-                        Publication Name
-                      </h3>
-                      <p
-                        className="w-full max-w-[414px] min-h-[63px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#A4A4A4]"
-                        style={{ fontFamily: "Public Sans" }}
-                      >
-                        Note: Edit/Upload your logo, Favicon & Publication
-                        Description inside the publication settings. Start with
-                        clicking this Publication card
-                      </p>
+                    <div className="flex-1 min-w-0 w-full max-w-[414px]">
+                      <div className="w-full h-auto opacity-100 flex flex-col gap-1">
+                        <h3
+                          className="font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] overflow-hidden text-ellipsis"
+                          style={{ fontFamily: "Public Sans" }}
+                        >
+                          Publication Name
+                        </h3>
+                        <p
+                          className="w-full opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#A4A4A4] line-clamp-2"
+                          style={{ fontFamily: "Public Sans" }}
+                        >
+                          Note: Edit/Upload your logo, Favicon & Publication
+                          Description inside the publication settings. Start with
+                          clicking this Publication card
+                        </p>
+                      </div>
                     </div>
                   </div>
                   <button
-                    onClick={() => router.push("/create-publication")}
+                    onClick={() => {
+                      // TODO: Implement join publication flow (e.g., show modal with invite code input)
+                      console.log("Join publication clicked");
+                    }}
                     className="flex-shrink-0 min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] gap-[4px] opacity-100 flex items-center justify-center w-full sm:w-auto"
                   >
                     <span
@@ -331,7 +377,7 @@ export default function DashboardPage() {
                         fontFamily: "Public Sans",
                       }}
                     >
-                      Go to Publication
+                      Join Publication
                     </span>
                     <ChevronRight className="w-3.5 h-3.5 text-[#A941FB]" />
                   </button>
