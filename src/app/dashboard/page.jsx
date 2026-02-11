@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar";
 import Verify from "../components/verify/Verify";
 import { ChevronRight } from "lucide-react";
 import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
+import { getApiBase } from "@/utils/apiBase";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -18,6 +19,9 @@ export default function DashboardPage() {
     loadUserPublications,
     loading: publicationLoading,
   } = usePublication();
+  const API_URL = getApiBase();
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
+  const [checkingProfile, setCheckingProfile] = useState(true);
 
   // Effect to handle potential context refresh issues
   useEffect(() => {
@@ -45,6 +49,34 @@ export default function DashboardPage() {
     getOwnedPublications,
     getJoinedPublications,
   ]);
+
+  // Check if profile is complete
+  useEffect(() => {
+    const checkProfileCompletion = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/profile`, {
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Profile is complete if all required fields are filled
+          const isComplete = !!(
+            data.profileName?.trim() &&
+            data.username?.trim() &&
+            data.bio?.trim()
+          );
+          setIsProfileComplete(isComplete);
+        }
+      } catch (error) {
+        console.error("Error checking profile completion:", error);
+      } finally {
+        setCheckingProfile(false);
+      }
+    };
+
+    checkProfileCompletion();
+  }, [API_URL]);
 
   if (publicationLoading) {
     return (
@@ -82,20 +114,22 @@ export default function DashboardPage() {
               showcasing your innovative ideas, thereby disseminating them to
               the global audience.
             </p>
-            <button
-              onClick={() => router.push("/profile-settings")}
-              className="min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center mt-2"
-            >
-              <span
-                className="opacity-100 font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
-                style={{
-                  fontFamily: "Public Sans",
-                }}
+            {!isProfileComplete && (
+              <button
+                onClick={() => router.push("/profile-settings")}
+                className="min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center mt-2"
               >
-                Complete your profile
-              </span>
-              <ChevronRight className="w-3.5 h-3.5 text-[#A941FB] ml-1" />
-            </button>
+                <span
+                  className="opacity-100 font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
+                  style={{
+                    fontFamily: "Public Sans",
+                  }}
+                >
+                  Complete your profile
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-[#A941FB] ml-1" />
+              </button>
+            )}
           </div>
 
           {/* Verification Alert - Only shows for unverified email/password users */}
