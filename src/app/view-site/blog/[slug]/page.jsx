@@ -162,13 +162,30 @@ export default function BlogDetailPage({ params }) {
           // Track view separately using the new tracking system
           if (foundBlog.status === 'published') {
             try {
-              await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/views/track`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ blogId: foundBlog.id }),
-              });
+              let shouldTrack = true;
+              if (typeof window !== 'undefined') {
+                try {
+                  const viewKey = `viewed:${foundBlog.id}`;
+                  if (localStorage.getItem(viewKey)) {
+                    shouldTrack = false;
+                  } else {
+                    localStorage.setItem(viewKey, '1');
+                  }
+                } catch {
+                  // If storage is unavailable, fall back to server-side dedupe only
+                }
+              }
+
+              if (shouldTrack) {
+                await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/views/track`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  credentials: 'include',
+                  body: JSON.stringify({ blogId: foundBlog.id }),
+                });
+              }
             } catch (viewError) {
               console.error('Error tracking view:', viewError);
             }
