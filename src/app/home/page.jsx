@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
+import { useSession } from "@/lib/auth-client";
 import CategoryBadgeList from "@/components/CategoryBadgeList";
 import { getImageUrl } from "@/utils/imageUrl";
 import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
@@ -18,6 +19,7 @@ const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 export default function HomePage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { currentPublication, publicationDetails, loading } = usePublication();
   const {
     articles: allArticles,
@@ -31,6 +33,7 @@ export default function HomePage() {
   // Refresh articles when home page loads
   useEffect(() => {
     if (currentPublication?.id) {
+      // Load ALL publication articles for everyone (including authors)
       loadPublicationArticles(currentPublication.id, "published");
     }
   }, [currentPublication?.id, loadPublicationArticles]);
@@ -43,6 +46,9 @@ export default function HomePage() {
     .map((article) => {
       // Check if article has an image - use fallback if not
       const thumbnailUrl = getThumbnailWithFallback(getImageUrl(article.image), article.id);
+      
+      // Check if current user is the author of this article
+      const isOwnArticle = article.authorId === session?.user?.id;
 
       return {
         id: article.id,
@@ -54,6 +60,7 @@ export default function HomePage() {
             : ["Uncategorized"],
         thumbnail: thumbnailUrl,
         views: viewStats[article.id]?.views || article.views || 0,
+        isOwnArticle, // Add this flag
       };
     });
 
@@ -270,7 +277,10 @@ export default function HomePage() {
                               }
                             />
                           </div>
-                          {currentPublication?.role !== "author" && (
+                          {/* Show edit button only for:
+                              1. Admins/Editors (not authors)
+                              2. Authors but only for their own articles */}
+                          {(currentPublication?.role !== "author" || article.isOwnArticle) && (
                             <button
                               className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors flex-shrink-0"
                               onClick={(e) => {

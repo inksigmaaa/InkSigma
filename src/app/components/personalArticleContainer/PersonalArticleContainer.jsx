@@ -72,6 +72,7 @@ export default function PersonalArticleContainer({
   isSelected,
   onSelect,
   titleColor,
+  canEdit = true, // Default to true for backward compatibility
 }) {
   const router = useRouter();
   const { currentPublication } = usePublication();
@@ -198,7 +199,8 @@ export default function PersonalArticleContainer({
               }}
             />
           </div>
-        ) : (
+        ) : canEdit ? (
+          /* Only show dropdown if user can edit */
           <div
             style={{ transform: "scale(0.8125)", transformOrigin: "center" }}
           >
@@ -214,7 +216,7 @@ export default function PersonalArticleContainer({
               canPublish={canPublish}
             />
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* content */}
@@ -437,42 +439,11 @@ export default function PersonalArticleContainer({
             className="hidden min-[641px]:flex min-[641px]:flex-col min-[641px]:items-end min-[641px]:flex-shrink-0"
             style={{ gap: "54px" }}
           >
-            {/* Action icons */}
-            <div className="flex gap-[10px] flex-shrink-0">
-              {status === "trash" ? (
-                <>
-                  <button
-                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      padding: "8px",
-                      borderWidth: "1px",
-                    }}
-                    title="Restore"
-                    onClick={onRestore}
-                  >
-                    <img src="/images/icons/restore.svg" alt="restore" />
-                  </button>
-                  <button
-                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      padding: "8px",
-                      borderWidth: "1px",
-                    }}
-                    title="Delete Permanently"
-                    onClick={onDelete}
-                  >
-                    <img src="/images/icons/trash2.svg" alt="delete" />
-                  </button>
-                </>
-              ) : status === "draft" ? (
-                <>
-                  {canPublish && (
+            {/* Action icons - only show if canEdit is true */}
+            {canEdit && (
+              <div className="flex gap-[10px] flex-shrink-0">
+                {status === "trash" ? (
+                  <>
                     <button
                       className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
                       style={{
@@ -482,61 +453,44 @@ export default function PersonalArticleContainer({
                         padding: "8px",
                         borderWidth: "1px",
                       }}
-                      title="Publish"
-                      onClick={onPublish}
+                      title="Restore"
+                      onClick={onRestore}
                     >
-                      <img src="/images/icons/share.svg" alt="publish" />
+                      <img src="/images/icons/restore.svg" alt="restore" />
                     </button>
-                  )}
-                  <button
-                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      padding: "8px",
-                      borderWidth: "1px",
-                    }}
-                    title="Edit"
-                    onClick={handleEdit}
-                  >
-                    <img src="/images/icons/edit.svg" alt="edit" />
-                  </button>
-                  <button
-                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      padding: "8px",
-                      borderWidth: "1px",
-                    }}
-                    title="Delete"
-                    onClick={onDelete}
-                  >
-                    <img src="/images/icons/trash2.svg" alt="delete" />
-                  </button>
-                </>
-              ) : status === "review" ? (
-                <>
-                  <button
-                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      padding: "8px",
-                      borderWidth: "1px",
-                    }}
-                    title="Revert to Draft"
-                    onClick={onDraft}
-                  >
-                    <img src="/images/icons/copy.svg" alt="draft" />
-                  </button>
-                </>
-              ) : status === "unpublished" ? (
-                <>
-                  {canPublish && (
+                    <button
+                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "8px",
+                        padding: "8px",
+                        borderWidth: "1px",
+                      }}
+                      title="Delete Permanently"
+                      onClick={onDelete}
+                    >
+                      <img src="/images/icons/trash2.svg" alt="delete" />
+                    </button>
+                  </>
+                ) : status === "draft" ? (
+                  <>
+                    {canPublish && (
+                      <button
+                        className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
+                        style={{
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "8px",
+                          padding: "8px",
+                          borderWidth: "1px",
+                        }}
+                        title="Publish"
+                        onClick={onPublish}
+                      >
+                        <img src="/images/icons/share.svg" alt="publish" />
+                      </button>
+                    )}
                     <button
                       className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
                       style={{
@@ -546,61 +500,28 @@ export default function PersonalArticleContainer({
                         padding: "8px",
                         borderWidth: "1px",
                       }}
-                      title="Republish"
-                      onClick={onRepublish}
+                      title="Edit"
+                      onClick={handleEdit}
                     >
-                      <img
-                        src="/images/icons/publish-ideal.svg"
-                        alt="republish"
-                      />
+                      <img src="/images/icons/edit.svg" alt="edit" />
                     </button>
-                  )}
-                  <button
-                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      padding: "8px",
-                      borderWidth: "1px",
-                    }}
-                    title="Edit"
-                    onClick={handleEdit}
-                  >
-                    <img src="/images/icons/edit-ideal.svg" alt="edit" />
-                  </button>
-                  <button
-                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      padding: "8px",
-                      borderWidth: "1px",
-                    }}
-                    title="Move to Draft"
-                    onClick={onDraft}
-                  >
-                    <img src="/images/icons/copy.svg" alt="draft" />
-                  </button>
-                  <button
-                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      padding: "8px",
-                      borderWidth: "1px",
-                    }}
-                    title="Delete"
-                    onClick={onDelete}
-                  >
-                    <img src="/images/icons/trash2.svg" alt="delete" />
-                  </button>
-                </>
-              ) : (
-                <>
-                  {status === "published" && canPublish && (
+                    <button
+                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "8px",
+                        padding: "8px",
+                        borderWidth: "1px",
+                      }}
+                      title="Delete"
+                      onClick={onDelete}
+                    >
+                      <img src="/images/icons/trash2.svg" alt="delete" />
+                    </button>
+                  </>
+                ) : status === "review" ? (
+                  <>
                     <button
                       className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
                       style={{
@@ -610,68 +531,143 @@ export default function PersonalArticleContainer({
                         padding: "8px",
                         borderWidth: "1px",
                       }}
-                      title="Unpublish"
-                      onClick={onUnpublish}
+                      title="Revert to Draft"
+                      onClick={onDraft}
                     >
-                      <img
-                        src="/images/icons/unpublished-hover.svg"
-                        alt="unpublish"
-                      />
+                      <img src="/images/icons/copy.svg" alt="draft" />
                     </button>
-                  )}
-                  {/* Stats/Preview button - commented out */}
-                  {/* <button 
-                                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300" 
-                                    style={{ width: '32px', height: '32px', borderRadius: '8px', padding: '8px', borderWidth: '1px' }}
-                                    title="Preview"
-                                >
-                                    <img src="/images/icons/preview.svg" alt="preview" />
-                                </button> */}
-                  <button
-                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      padding: "8px",
-                      borderWidth: "1px",
-                    }}
-                    title="Edit"
-                    onClick={handleEdit}
-                  >
-                    <img src="/images/icons/edit-ideal.svg" alt="edit" />
-                  </button>
-                  <button
-                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      padding: "8px",
-                      borderWidth: "1px",
-                    }}
-                    title="Draft"
-                    onClick={onDraft}
-                  >
-                    <img src="/images/icons/copy.svg" alt="draft" />
-                  </button>
-                  <button
-                    className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "8px",
-                      padding: "8px",
-                      borderWidth: "1px",
-                    }}
-                    title="Delete"
-                    onClick={onDelete}
-                  >
-                    <img src="/images/icons/delete.svg" alt="delete" />
-                  </button>
-                </>
-              )}
-            </div>
+                  </>
+                ) : status === "unpublished" ? (
+                  <>
+                    {canPublish && (
+                      <button
+                        className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
+                        style={{
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "8px",
+                          padding: "8px",
+                          borderWidth: "1px",
+                        }}
+                        title="Republish"
+                        onClick={onRepublish}
+                      >
+                        <img
+                          src="/images/icons/publish-ideal.svg"
+                          alt="republish"
+                        />
+                      </button>
+                    )}
+                    <button
+                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "8px",
+                        padding: "8px",
+                        borderWidth: "1px",
+                      }}
+                      title="Edit"
+                      onClick={handleEdit}
+                    >
+                      <img src="/images/icons/edit-ideal.svg" alt="edit" />
+                    </button>
+                    <button
+                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "8px",
+                        padding: "8px",
+                        borderWidth: "1px",
+                      }}
+                      title="Move to Draft"
+                      onClick={onDraft}
+                    >
+                      <img src="/images/icons/copy.svg" alt="draft" />
+                    </button>
+                    <button
+                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "8px",
+                        padding: "8px",
+                        borderWidth: "1px",
+                      }}
+                      title="Delete"
+                      onClick={onDelete}
+                    >
+                      <img src="/images/icons/trash2.svg" alt="delete" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {status === "published" && canPublish && (
+                      <button
+                        className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
+                        style={{
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "8px",
+                          padding: "8px",
+                          borderWidth: "1px",
+                        }}
+                        title="Unpublish"
+                        onClick={onUnpublish}
+                      >
+                        <img
+                          src="/images/icons/unpublished-hover.svg"
+                          alt="unpublish"
+                        />
+                      </button>
+                    )}
+                    <button
+                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "8px",
+                        padding: "8px",
+                        borderWidth: "1px",
+                      }}
+                      title="Edit"
+                      onClick={handleEdit}
+                    >
+                      <img src="/images/icons/edit-ideal.svg" alt="edit" />
+                    </button>
+                    <button
+                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "8px",
+                        padding: "8px",
+                        borderWidth: "1px",
+                      }}
+                      title="Draft"
+                      onClick={onDraft}
+                    >
+                      <img src="/images/icons/copy.svg" alt="draft" />
+                    </button>
+                    <button
+                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "8px",
+                        padding: "8px",
+                        borderWidth: "1px",
+                      }}
+                      title="Delete"
+                      onClick={onDelete}
+                    >
+                      <img src="/images/icons/delete.svg" alt="delete" />
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Posted time */}
             {(createdAt || postedTime) && (
