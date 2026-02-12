@@ -477,7 +477,13 @@ export default function Members() {
                     <select
                       value={role}
                       onChange={(e) => setRole(e.target.value)}
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md text-sm text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500 cursor-pointer appearance-none"
+                      className="w-full px-2 py-1 pr-8 border border-[#EDEDED] rounded text-sm text-[#696969] bg-[#FEFEFE] focus:outline-none focus:ring-1 focus:ring-[#EDEDED] cursor-pointer appearance-none"
+                      style={{
+                        fontFamily: 'Public Sans, sans-serif',
+                        fontWeight: 400,
+                        fontSize: '14px',
+                        lineHeight: '150%',
+                      }}
                     >
                       <option value="Select Role">Select Role</option>
                       {/* Only Admins can invite Editors */}
@@ -485,7 +491,7 @@ export default function Members() {
                       <option value="Author">Author</option>
                     </select>
                     <svg
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[#696969] pointer-events-none"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
