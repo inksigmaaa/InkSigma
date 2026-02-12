@@ -1551,7 +1551,7 @@ export default function EditorPageClient() {
                 }}
               >
                 <img
-                  src="/images/icons/Draft.svg"
+                  src="/images/icons/draft.svg"
                   alt="Revert to draft"
                   className="w-5 h-5"
                   style={{ filter: "brightness(0) saturate(100%)" }}
