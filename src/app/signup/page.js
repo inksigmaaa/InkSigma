@@ -88,8 +88,8 @@ function SignupForm() {
 
   if (verificationSent) {
     return (
-      <div className="relative min-h-screen">
-        <AuthLayout title="Verify Your Email">
+      <div className="relative min-h-screen flex items-center">
+        <AuthLayout title="Verify Your Email" compact>
           <div className="space-y-6 text-center">
             <div className="flex justify-center">
               <CheckCircle2 className="w-16 h-16 text-green-500" />
