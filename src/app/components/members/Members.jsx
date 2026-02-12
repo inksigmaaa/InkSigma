@@ -18,7 +18,8 @@ export default function Members() {
     loading: publicationLoading,
   } = usePublication();
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("Select Role");
+  const [role, setRole] = useState(null);
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
   const [members, setMembers] = useState([]);
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [userRole, setUserRole] = useState(null);
@@ -27,6 +28,18 @@ export default function Members() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isRoleDropdownOpen && !event.target.closest('.role-dropdown-container')) {
+        setIsRoleDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isRoleDropdownOpen]);
 
   // Memoized admin check to prevent flickering during state updates
   // Only rely on context's isCurrentUserAdmin() to avoid showing admin view when switching publications
@@ -179,7 +192,7 @@ export default function Members() {
   };
 
   const handleSendInvite = async () => {
-    if (!email || role === "Select Role") {
+    if (!email || !role) {
       setError("Please enter email and select a role");
       return;
     }
@@ -244,7 +257,8 @@ export default function Members() {
       setTimeout(() => setShowInviteSentToast(false), 3000);
 
       setEmail("");
-      setRole("Select Role");
+      setRole(null);
+      setIsRoleDropdownOpen(false);
       await loadData();
       await refreshCurrentPublication();
     } catch (error) {
@@ -456,52 +470,158 @@ export default function Members() {
 
           {/* Add Member Section */}
           <div className="mb-8 max-[767px]:mb-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 max-[767px]:text-lg max-[767px]:mb-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-2 max-[767px]:text-lg max-[767px]:mb-4 max-[767px]:text-center">
               Add Members
             </h2>
+            <hr 
+              className="hidden md:block max-lg:!w-[550px]"
+              style={{
+                width: '770px',
+                maxWidth: '100%',
+                height: '0px',
+                border: '1px solid #EDEDED',
+                borderWidth: '1px',
+                opacity: 1,
+                marginBottom: '24px',
+              }}
+            />
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email
               </label>
-              <div className="flex gap-4 items-end max-[767px]:gap-3 max-[639px]:flex-col">
+              <div className="flex gap-4 items-end justify-between max-[767px]:gap-3 max-[639px]:flex-col max-[639px]:justify-start">
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter the Email"
-                  className="flex-1 px-0 py-2 border-0 border-b border-gray-300 text-sm focus:outline-none focus:border-gray-900 focus:ring-0 placeholder:text-gray-400 max-[639px]:w-full"
+                  className="w-[258px] px-0 py-2 border-0 border-b border-gray-300 text-sm focus:outline-none focus:border-gray-900 focus:ring-0 placeholder:text-gray-400 max-[639px]:w-full"
                 />
-                <div className="flex gap-3 max-[639px]:w-full">
-                  <div className="relative min-w-[130px] max-[639px]:flex-1">
-                    <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md text-sm text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500 cursor-pointer appearance-none"
+                <div className="flex gap-6 max-[639px]:w-full">
+                  <div className="relative min-w-[130px] max-[639px]:flex-1 role-dropdown-container">
+                    <button
+                      type="button"
+                      onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none cursor-pointer text-left flex items-center justify-between"
                     >
-                      <option value="Select Role">Select Role</option>
-                      {/* Only Admins can invite Editors */}
-                      {isAdmin && <option value="Editor">Editor</option>}
-                      <option value="Author">Author</option>
-                    </select>
-                    <svg
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
+                      <span
+                        style={{
+                          fontFamily: 'Public Sans, sans-serif',
+                          fontWeight: 400,
+                          fontSize: '14px',
+                          lineHeight: '150%',
+                          letterSpacing: '0%',
+                          color: '#2E2E2E',
+                        }}
+                      >
+                        {role || 'Select Role'}
+                      </span>
+                      <svg
+                        className="w-4 h-4 flex-shrink-0"
+                        style={{ color: '#2E2E2E' }}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+                    
+                    {isRoleDropdownOpen && (
+                      <div
+                        className="absolute top-full left-0 mt-1 z-50 flex flex-col"
+                        style={{
+                          width: '130px',
+                          borderBottomRightRadius: '4px',
+                          borderBottomLeftRadius: '4px',
+                          padding: '8px',
+                          background: '#FEFEFE',
+                          border: '1px solid #EDEDED',
+                          boxShadow: '0px 4px 24px 0px rgba(0, 0, 0, 0.07)',
+                          gap: '4px',
+                        }}
+                      >
+                        {isAdmin && (
+                          <div
+                            onClick={() => {
+                              setRole('Editor');
+                              setIsRoleDropdownOpen(false);
+                            }}
+                            className="cursor-pointer hover:bg-gray-50 transition-colors"
+                            style={{
+                              width: '110px',
+                              height: '29px',
+                              borderRadius: '4px',
+                              paddingTop: '4px',
+                              paddingRight: '8px',
+                              paddingBottom: '4px',
+                              paddingLeft: '8px',
+                              background: '#FEFEFE',
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontFamily: 'Public Sans, sans-serif',
+                                fontWeight: 400,
+                                fontSize: '14px',
+                                lineHeight: '150%',
+                                color: '#696969',
+                              }}
+                            >
+                              Editor
+                            </span>
+                          </div>
+                        )}
+                        <div
+                          onClick={() => {
+                            setRole('Author');
+                            setIsRoleDropdownOpen(false);
+                          }}
+                          className="cursor-pointer hover:bg-gray-50 transition-colors"
+                          style={{
+                            width: '110px',
+                            height: '29px',
+                            borderRadius: '4px',
+                            paddingTop: '4px',
+                            paddingRight: '8px',
+                            paddingBottom: '4px',
+                            paddingLeft: '8px',
+                            background: '#FEFEFE',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontFamily: 'Public Sans, sans-serif',
+                              fontWeight: 400,
+                              fontSize: '14px',
+                              lineHeight: '150%',
+                              color: '#696969',
+                            }}
+                          >
+                            Author
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={handleSendInvite}
                     disabled={sending}
-                    className="px-6 py-2 bg-violet-600 text-white rounded-md text-sm font-medium hover:bg-violet-700 transition-colors whitespace-nowrap disabled:opacity-50 max-[639px]:flex-1"
+                    className="px-6 py-2 text-white rounded-md text-sm font-medium transition-colors whitespace-nowrap disabled:opacity-50 max-[639px]:flex-1"
+                    style={{
+                      background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
+                      boxShadow: '0px 4px 8px 0px #EADBF9',
+                    }}
                   >
                     {sending ? "Sending..." : "Send Invite"}
                   </button>

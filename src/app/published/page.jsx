@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
@@ -28,38 +29,33 @@ export default function PublishedPage() {
   } = useArticles();
 
   const { currentPublication, getCurrentUserRole } = usePublication();
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
   const hasLoadedRef = useRef(false);
   const loadedContextRef = useRef(null); // 'user' or 'publication'
 
-  // Determine user role and which articles to show
+  // Determine user role
   const userRole = getCurrentUserRole();
   const isAdmin =
     userRole === "admin" ||
     userRole === "editor" ||
     currentPublication?.isOwner;
+  const isAuthor = userRole === "author";
 
-  // Use publicationArticles for admins/editors, otherwise use user articles
-  // Note: for published page, we might ideally want to use same data source
-  const displayArticles =
-    isAdmin && currentPublication ? publicationArticles : articles;
-  const isLoading =
-    isAdmin && currentPublication ? pubArticlesLoading : loading;
+  // IMPORTANT: Always use publicationArticles to show ALL published articles
+  // But filter actions based on ownership
+  const displayArticles = publicationArticles;
+  const isLoading = pubArticlesLoading;
 
-  // Load appropriate articles
+  // Load appropriate articles - ALWAYS load publication articles to show all published blogs
   useEffect(() => {
     const needsRefresh = searchParams.get("refresh") === "true";
 
-    // Target context based on current state
-    const targetContext =
-      isAdmin && currentPublication?.id ? "publication" : "user";
+    // Always load publication articles (for all roles including authors)
+    const targetContext = "publication";
 
     // Helper to check if we need to load
-    // Re-load if:
-    // 1. Refresh requested
-    // 2. Data is empty AND not loading AND (not loaded OR loaded wrong context)
-    // 3. Context changed (e.g. from user to publication) - critical for switching to admin view
     const isWrongContext =
       hasLoadedRef.current && loadedContextRef.current !== targetContext;
 
@@ -68,27 +64,21 @@ export default function PublishedPage() {
       (displayArticles.length === 0 && !isLoading && !hasLoadedRef.current) ||
       isWrongContext;
 
-    if (shouldLoad) {
+    if (shouldLoad && currentPublication?.id) {
       console.log(
-        `[PublishedPage] Loading articles... Target: ${targetContext}, Prev: ${loadedContextRef.current}`,
+        `[PublishedPage] Loading ALL publication articles for role: ${userRole}`,
       );
       hasLoadedRef.current = true;
       loadedContextRef.current = targetContext;
-
-      if (targetContext === "publication") {
-        loadPublicationArticles(currentPublication.id, "published");
-      } else {
-        loadUserArticles(currentPublication?.id);
-      }
+      loadPublicationArticles(currentPublication.id, "published");
     }
   }, [
     searchParams,
     displayArticles.length,
     isLoading,
-    loadUserArticles,
     loadPublicationArticles,
-    isAdmin,
     currentPublication?.id,
+    userRole,
   ]);
 
   // Clean up refresh param from URL if present
@@ -126,24 +116,36 @@ export default function PublishedPage() {
       );
       return isPublished;
     })
-    .map((article) => ({
-      ...article,
-      onDelete: () => {
-        setActionArticleId(article.id);
-        setIsBulkAction(false);
-        setShowDeleteModal(true);
-      },
-      onDraft: () => {
-        setActionArticleId(article.id);
-        setIsBulkAction(false);
-        setShowDraftModal(true);
-      },
-      onUnpublish: () => {
-        setActionArticleId(article.id);
-        setIsBulkAction(false);
-        setShowUnpublishModal(true);
-      },
-    }));
+    .map((article) => {
+      // Check if current user is the author of this article
+      const isOwnArticle = article.authorId === session?.user?.id;
+      
+      // For authors, only show actions for their own articles
+      // For admins/editors, show actions for all articles
+      const canEdit = isAdmin || isOwnArticle;
+      
+      return {
+        ...article,
+        // Always pass the handlers, but PersonalArticleContainer will check canEdit
+        onDelete: () => {
+          setActionArticleId(article.id);
+          setIsBulkAction(false);
+          setShowDeleteModal(true);
+        },
+        onDraft: () => {
+          setActionArticleId(article.id);
+          setIsBulkAction(false);
+          setShowDraftModal(true);
+        },
+        onUnpublish: () => {
+          setActionArticleId(article.id);
+          setIsBulkAction(false);
+          setShowUnpublishModal(true);
+        },
+        isOwnArticle, // Pass this flag to the component
+        canEdit, // Pass this flag to control button visibility
+      };
+    });
 
   console.log(
     "[PublishedPage] Filtered published articles count:",
@@ -151,6 +153,12 @@ export default function PublishedPage() {
   );
 
   const handleArticleSelect = (id, isSelected) => {
+    // Only allow selection of own articles for authors
+    const article = publishedArticles.find(a => a.id === id);
+    if (isAuthor && !article?.isOwnArticle) {
+      return; // Don't allow selection of others' articles
+    }
+    
     setSelectedArticles((prev) =>
       isSelected ? [...prev, id] : prev.filter((articleId) => articleId !== id),
     );
@@ -158,7 +166,11 @@ export default function PublishedPage() {
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedArticles(publishedArticles.map((article) => article.id));
+      // For authors, only select their own articles
+      const selectableArticles = isAuthor 
+        ? publishedArticles.filter(a => a.isOwnArticle)
+        : publishedArticles;
+      setSelectedArticles(selectableArticles.map((article) => article.id));
     } else {
       setSelectedArticles([]);
     }
