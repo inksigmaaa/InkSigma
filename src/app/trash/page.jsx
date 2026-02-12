@@ -188,6 +188,7 @@ export default function TrashPage() {
           emptyMessage="No trash articles yet"
           showSelectAll={true}
           showActions={true}
+          showCategoryInTitle={true}
           actionButtons={actionButtons}
           selectedArticles={selectedArticles}
           onSelectAll={handleSelectAll}

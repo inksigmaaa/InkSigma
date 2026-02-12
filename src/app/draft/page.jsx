@@ -171,7 +171,9 @@ export default function DraftPage() {
   };
 
   const canPublish =
-    currentPublication?.isOwner || currentPublication?.role === "admin";
+    currentPublication?.isOwner ||
+    currentPublication?.role === "admin" ||
+    currentPublication?.role === "editor";
 
   const actionButtons = [
     ...(canPublish
@@ -204,6 +206,7 @@ export default function DraftPage() {
           emptyMessage="No Articles Drafted yet"
           showSelectAll={true}
           showActions={true}
+          showCategoryInTitle={true}
           actionButtons={actionButtons}
           selectedArticles={selectedArticles}
           onSelectAll={handleSelectAll}
