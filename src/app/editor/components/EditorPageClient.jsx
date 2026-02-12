@@ -122,6 +122,7 @@ export default function EditorPageClient() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [showThumbnailModal, setShowThumbnailModal] = useState(false);
   const [thumbnailData, setThumbnailData] = useState(null);
+  const [thumbnailRemoved, setThumbnailRemoved] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedHour, setSelectedHour] = useState(10);
@@ -152,6 +153,7 @@ export default function EditorPageClient() {
   const [showExitModal, setShowExitModal] = useState(false);
   const calendarRef = useRef(null);
   const savedSuccessfullyRef = useRef(false);
+  const handlingPopStateRef = useRef(false);
 
   // Reset save status to idle when content changes
   useEffect(() => {
@@ -233,6 +235,7 @@ export default function EditorPageClient() {
     selectedCategories,
   ]);
 
+
   // Load existing blog if editing
   useEffect(() => {
     if (blogId) {
@@ -285,6 +288,7 @@ export default function EditorPageClient() {
 
       if (blog.image) {
         setThumbnailData({ url: blog.image });
+        setThumbnailRemoved(false);
       }
 
       if (blog.scheduledAt) {
@@ -348,6 +352,10 @@ export default function EditorPageClient() {
       // Add scheduledAt if scheduling
       if (scheduledAt) {
         blogData.scheduledAt = scheduledAt.toISOString();
+      }
+
+      if (thumbnailRemoved) {
+        blogData.image = null;
       }
 
       console.log("Saving blog with data:", blogData, "blogId:", blogId);
@@ -506,17 +514,47 @@ export default function EditorPageClient() {
         // Auto-save as draft and redirect to home page
         const result = await saveBlog("draft", null, true);
         if (result) {
-          showToast("Saved to draft", "success");
+          showToast("Post has been saved as Draft", "success");
         }
         savedSuccessfullyRef.current = true;
-        router.push(withPub("/?refresh=true"));
+        setTimeout(() => {
+          router.push(withPub("/draft?refresh=true"));
+        }, 800);
       }
     } else {
       // No unsaved changes - just redirect to home page
       savedSuccessfullyRef.current = true;
-      router.push(withPub("/?refresh=true"));
+      router.push(withPub("/draft?refresh=true"));
     }
   };
+
+  // Intercept browser back/gesture to auto-save draft and navigate home
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const pushCurrentState = () => {
+      try {
+        window.history.pushState({ editor: true }, "", window.location.href);
+      } catch {
+        // Ignore history errors
+      }
+    };
+
+    const handlePopState = () => {
+      if (handlingPopStateRef.current) return;
+      handlingPopStateRef.current = true;
+      pushCurrentState();
+      handleBack().finally(() => {
+        handlingPopStateRef.current = false;
+      });
+    };
+
+    pushCurrentState();
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isMounted, handleBack]);
 
   const handleDiscard = () => {
     setHasUnsavedChanges(false);
@@ -819,7 +857,13 @@ export default function EditorPageClient() {
 
   const handleThumbnailAdd = (data) => {
     setThumbnailData(data);
+    setThumbnailRemoved(false);
     console.log("Thumbnail added:", data);
+  };
+
+  const handleThumbnailRemove = () => {
+    setThumbnailData(null);
+    setThumbnailRemoved(true);
   };
 
   return (
@@ -1663,6 +1707,8 @@ export default function EditorPageClient() {
         isOpen={showThumbnailModal}
         onClose={() => setShowThumbnailModal(false)}
         onImageAdd={handleThumbnailAdd}
+        onImageRemove={handleThumbnailRemove}
+        initialPreviewUrl={thumbnailData?.previewUrl || thumbnailData?.url || null}
       />
 
       {/* Publish Success Modal */}

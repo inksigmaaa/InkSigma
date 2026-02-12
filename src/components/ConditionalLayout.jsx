@@ -123,7 +123,9 @@ export default function ConditionalLayout({
   if (useCustomLayout) {
     return (
       <div className="min-h-screen">
-        {children}
+        <div className="page-transition">
+          {children}
+        </div>
         {showMobileButtons && (
           <>
             <FeedbackButton />
@@ -137,7 +139,9 @@ export default function ConditionalLayout({
     <>
       <Header />
       <main className="w-full max-w-[1920px] mx-auto bg-white">
-        {children}
+        <div className="page-transition">
+          {children}
+        </div>
       </main>
       <Footer />
       {!isLandingPage && (

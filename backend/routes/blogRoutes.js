@@ -1195,6 +1195,7 @@ router.put("/:id", getCurrentUser, async (req, res) => {
       description,
       content,
       categories,
+      image,
       published,
       status,
       scheduledAt,
@@ -1265,6 +1266,22 @@ router.put("/:id", getCurrentUser, async (req, res) => {
       console.log(
         `[BLOG] Scheduling blog ${id} for: ${updateData.scheduledAt.toISOString()}`,
       );
+    }
+
+    if (image !== undefined) {
+      updateData.image = image || null;
+
+      if (
+        (image === null || image === "") &&
+        existingBlog.image &&
+        existingBlog.image.includes("/uploads/blog-images/")
+      ) {
+        const imagePath = existingBlog.image.split("/uploads/blog-images/")[1];
+        const filePath = `uploads/blog-images/${imagePath}`;
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
     }
 
     // Handle publicationId update
