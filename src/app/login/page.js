@@ -227,22 +227,6 @@ function LoginForm() {
   return (
     <div className="relative min-h-screen flex flex-col">
       <AuthLayout title="Login here!">
-        {error && (
-          <div className="bg-[#FFD6D6] text-[#A30000] font-normal text-[12px] leading-[150%] tracking-[0%] px-4 py-3 rounded mb-4 text-center flex flex-col items-center gap-1">
-            <span>{error}</span>
-            {showResendVerification && (
-              <button
-                type="button"
-                onClick={handleResendVerification}
-                disabled={resendLoading}
-                className="text-sm underline hover:text-red-800 disabled:opacity-50"
-              >
-                {resendLoading ? "Sending..." : "Resend Verification Email"}
-              </button>
-            )}
-          </div>
-        )}
-
         {resendSuccess && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4">
             Verification email sent! Please check your inbox (and spam folder).
@@ -297,13 +281,19 @@ function LoginForm() {
             </span>
           </Button>
 
+          {error && (
+            <div className="bg-[#F3EEFF] text-[#7A37AE] font-normal text-[12px] leading-[150%] tracking-[0%] px-4 py-3 rounded mb-4 text-left flex flex-col items-start gap-1">
+              <span>{error}</span>
+            </div>
+          )}
+
           {showUnregistered ? (
             <div className="w-full md:w-[259px] h-[60px] bg-[#F3EEFF] rounded-[4px] px-[16px] py-[12px] flex items-center justify-center mt-6 mx-auto text-center">
               <p className="font-normal text-[12px] leading-[150%] tracking-[0%] text-[#7A37AE]">
                 Looks like you haven't registered with us yet. <Link href="/signup" className="font-semibold underline decoration-solid decoration-[#7A37AE] hover:text-[#5e2a86]">Sign Up Now.</Link>
               </p>
             </div>
-          ) : (
+          ) : !showResendVerification ? (
             <Button
               type="button"
               variant="outline"
@@ -312,7 +302,7 @@ function LoginForm() {
             >
               <span className="h-[18px]">Login with Magic link</span>
             </Button>
-          )}
+          ) : null}
         </form>
 
         <div className="text-center mt-6 flex items-center justify-center gap-1 whitespace-nowrap">

@@ -219,11 +219,11 @@ body {
 /* Toast Animation */
 @keyframes slide-in {
   from {
-    transform: translateX(100%);
+    transform: translateY(-12px);
     opacity: 0;
   }
   to {
-    transform: translateX(0);
+    transform: translateY(0);
     opacity: 1;
   }
 }
@@ -245,6 +245,11 @@ body {
 
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
+}
+
+.page-transition {
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+  will-change: opacity, transform;
 }
 
 /* Scrollbar styling for notification list */
