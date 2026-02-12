@@ -19,7 +19,10 @@ export default function DeclineInvitation() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
-    const desiredHost = rootDomain === "localhost" ? "dashboard.localhost" : `dashboard.${rootDomain}`;
+    const desiredHost =
+      rootDomain === "localhost"
+        ? "dashboard.localhost"
+        : `dashboard.${rootDomain}`;
     const currentHost = window.location.hostname.toLowerCase();
 
     const isDashboardHost =
@@ -105,12 +108,26 @@ export default function DeclineInvitation() {
         <div className="max-w-md w-full text-center">
           <div className="mb-6">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              <svg
+                className="w-8 h-8 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                ></path>
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Invitation Declined</h1>
-            <p className="text-gray-600">You have declined the invitation to join the publication.</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Invitation Declined
+            </h1>
+            <p className="text-gray-600">
+              You have declined the invitation to join the publication.
+            </p>
           </div>
           <button
             onClick={() => router.push("/")}
@@ -127,8 +144,12 @@ export default function DeclineInvitation() {
     <div className="min-h-screen bg-white flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Decline Invitation</h1>
-          <p className="text-gray-600">Are you sure you want to decline this invitation?</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Decline Invitation
+          </h1>
+          <p className="text-gray-600">
+            Are you sure you want to decline this invitation?
+          </p>
         </div>
 
         {error && (
@@ -196,11 +217,11 @@ export default function DeclineInvitation() {
           </button>
 
           <button
-            onClick={() => router.push(`/invite/${token}/accept`)}
+            onClick={() => router.push("/")}
             disabled={loading}
             className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 disabled:opacity-50"
           >
-            Go Back
+            Go to Dashboard
           </button>
         </div>
       </div>

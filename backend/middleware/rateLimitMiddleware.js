@@ -1,5 +1,5 @@
 const WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000);
-const MAX_REQUESTS = Number(process.env.RATE_LIMIT_MAX || 120);
+const MAX_REQUESTS = Number(process.env.RATE_LIMIT_MAX || 1200);
 
 const hits = new Map();
 
