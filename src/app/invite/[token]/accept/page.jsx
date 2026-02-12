@@ -20,6 +20,7 @@ export default function AcceptInvitation() {
   const [invitationDetails, setInvitationDetails] = useState(null);
   const [emailMismatch, setEmailMismatch] = useState(false);
   const acceptAttempted = useRef(false);
+  const [sessionReady, setSessionReady] = useState(false);
 
   // Ensure invite flows happen on the dashboard host so auth cookies work consistently.
   useEffect(() => {
@@ -43,12 +44,32 @@ export default function AcceptInvitation() {
     }
   }, [token]);
 
+  // Wait for useSession to fully resolve before making any auth decisions.
+  // Use a stabilization delay to prevent false login redirects on initial load.
   useEffect(() => {
+    if (session) {
+      // Session found — immediately mark as ready
+      setSessionReady(true);
+      return;
+    }
+
     if (!isPending && !session) {
-      // Redirect to login with return URL
+      // isPending is false and no session — wait a moment before deciding.
+      // This handles the case where isPending briefly starts as false
+      // before the session check begins.
+      const timeout = setTimeout(() => {
+        setSessionReady(true);
+      }, 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, [session, isPending]);
+
+  useEffect(() => {
+    // Only redirect to login once session check has fully stabilized
+    if (sessionReady && !session) {
       router.push(`/login?redirect=/invite/${token}/accept`);
     }
-  }, [session, isPending, token, router]);
+  }, [sessionReady, session, token, router]);
 
   // If invited member is a brand-new user (no owned publication), force create-publication first.
   // After creation we return back here via ?redirect=/invite/{token}/accept.
