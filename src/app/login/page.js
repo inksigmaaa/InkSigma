@@ -54,9 +54,15 @@ function LoginForm() {
     setShowUnregistered(false)
 
     try {
+      const origin = getOrigin()
+      const callbackURL = redirectTo !== "/"
+        ? `${origin}/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+        : `${origin}/auth-callback`
+
       const result = await signIn.email({
         email: formData.email,
         password: formData.password,
+        callbackURL,
       })
 
       if (result.error) {
