@@ -87,9 +87,12 @@ export default function EditorPageClient() {
 
       try {
         // Use the unified "owned + joined" endpoint so members don't get treated as new users.
-        const response = await fetch(`${API_URL}/api/members/user/publications`, {
-          credentials: "include",
-        });
+        const response = await fetch(
+          `${API_URL}/api/members/user/publications`,
+          {
+            credentials: "include",
+          },
+        );
 
         if (response.status === 401) {
           router.push("/login");
@@ -97,12 +100,17 @@ export default function EditorPageClient() {
         }
 
         if (!response.ok) {
-          console.warn("[Editor] Failed to check publications:", response.status);
+          console.warn(
+            "[Editor] Failed to check publications:",
+            response.status,
+          );
           return;
         }
 
         const data = await response.json().catch(() => null);
-        const publications = Array.isArray(data) ? data : data?.publications || [];
+        const publications = Array.isArray(data)
+          ? data
+          : data?.publications || [];
         const hasAny = Array.isArray(publications) && publications.length > 0;
 
         if (!hasAny) {
@@ -160,7 +168,10 @@ export default function EditorPageClient() {
   // Auto-save functionality with debouncing
   useEffect(() => {
     // Check if there's any content
-    const contentExists = blogTitle.trim() || blogDescription.trim() || (editorContent.html && editorContent.html !== "<p></p>");
+    const contentExists =
+      blogTitle.trim() ||
+      blogDescription.trim() ||
+      (editorContent.html && editorContent.html !== "<p></p>");
     setHasContent(contentExists);
 
     // Don't auto-save if no title (minimum requirement for draft)
@@ -176,8 +187,12 @@ export default function EditorPageClient() {
 
     // IMPORTANT: Only auto-save for drafts or new articles
     // Don't auto-save published, scheduled, or review articles
-    const isPublishedOrScheduled = existingBlogStatus && ['published', 'scheduled', 'review', 'unpublished'].includes(existingBlogStatus);
-    
+    const isPublishedOrScheduled =
+      existingBlogStatus &&
+      ["published", "scheduled", "review", "unpublished"].includes(
+        existingBlogStatus,
+      );
+
     if (isPublishedOrScheduled) {
       // For published/scheduled articles, don't auto-save
       setSaveStatus("idle");
@@ -196,7 +211,7 @@ export default function EditorPageClient() {
     autoSaveTimeoutRef.current = setTimeout(async () => {
       // Only auto-save drafts or new blogs (not published/scheduled/review)
       const canAutoSave = !existingBlogStatus || existingBlogStatus === "draft";
-      
+
       if (canAutoSave && blogTitle.trim()) {
         const result = await saveBlog("draft", null, true, true);
         if (result) {
@@ -212,7 +227,14 @@ export default function EditorPageClient() {
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [blogTitle, blogDescription, editorContent.html, selectedCategories, hasUnsavedChanges, existingBlogStatus]);
+  }, [
+    blogTitle,
+    blogDescription,
+    editorContent.html,
+    selectedCategories,
+    hasUnsavedChanges,
+    existingBlogStatus,
+  ]);
 
   // Track unsaved changes
   // Track unsaved changes by comparing with initial values
@@ -241,7 +263,7 @@ export default function EditorPageClient() {
       blogTitle !== initialTitle ||
       blogDescription !== initialDescription ||
       normalizeContent(editorContent.html) !==
-      normalizeContent(initialContent) ||
+        normalizeContent(initialContent) ||
       !arraysEqual(selectedCategories, initialCategories);
 
     setHasUnsavedChanges(hasChanges);
@@ -261,19 +283,24 @@ export default function EditorPageClient() {
     const handleBeforeUnload = async (e) => {
       // Auto-save if there are unsaved changes and title exists (minimum requirement)
       const hasTitle = blogTitle.trim();
-      
+
       if (hasUnsavedChanges && hasTitle && !savedSuccessfullyRef.current) {
         // IMPORTANT: Only auto-save as draft for new articles or existing drafts
         // Don't create drafts for published/scheduled/review articles
-        const isPublishedOrScheduled = existingBlogStatus && ['published', 'scheduled', 'review', 'unpublished'].includes(existingBlogStatus);
-        
+        const isPublishedOrScheduled =
+          existingBlogStatus &&
+          ["published", "scheduled", "review", "unpublished"].includes(
+            existingBlogStatus,
+          );
+
         if (isPublishedOrScheduled) {
           // For published/scheduled articles, show warning but don't auto-save
           e.preventDefault();
-          e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
+          e.returnValue =
+            "You have unsaved changes. Are you sure you want to leave?";
           return e.returnValue;
         }
-        
+
         // For new articles or drafts, auto-save silently
         // Use sendBeacon for reliable save on page unload
         const blogData = {
@@ -295,9 +322,11 @@ export default function EditorPageClient() {
           : `${API_URL}/api/blogs`;
 
         // Use sendBeacon for reliable save during page unload
-        const blob = new Blob([JSON.stringify(blogData)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(blogData)], {
+          type: "application/json",
+        });
         navigator.sendBeacon(url, blob);
-        
+
         // Also try fetch with keepalive as backup
         fetch(url, {
           method: blogId ? "PUT" : "POST",
@@ -317,11 +346,15 @@ export default function EditorPageClient() {
     const handleVisibilityChange = async () => {
       if (document.hidden) {
         const hasTitle = blogTitle.trim();
-        
+
         if (hasUnsavedChanges && hasTitle && !savedSuccessfullyRef.current) {
           // Only auto-save as draft for new articles or existing drafts
-          const isPublishedOrScheduled = existingBlogStatus && ['published', 'scheduled', 'review', 'unpublished'].includes(existingBlogStatus);
-          
+          const isPublishedOrScheduled =
+            existingBlogStatus &&
+            ["published", "scheduled", "review", "unpublished"].includes(
+              existingBlogStatus,
+            );
+
           if (!isPublishedOrScheduled) {
             // Save as draft when user switches tabs or minimizes
             await saveBlog("draft", null, true, true);
@@ -348,7 +381,6 @@ export default function EditorPageClient() {
     publicationId,
     currentPublication,
   ]);
-
 
   // Load existing blog if editing
   useEffect(() => {
@@ -545,10 +577,7 @@ export default function EditorPageClient() {
 
   // Handle Save to Draft (with redirect)
   const handleSaveDraft = async () => {
-    const result = await saveBlog("draft");
-    if (result) {
-      window.location.href = withPub("/draft?refresh=true");
-    }
+    await performSaveAndExit("/draft?refresh=true", false);
   };
 
   // Handle Revert to Draft (for published articles)
@@ -603,8 +632,8 @@ export default function EditorPageClient() {
     } else if (articleStatus === "review") {
       const targetPath =
         currentPublication?.isOwner ||
-          currentPublication?.role === "editor" ||
-          currentPublication?.role === "admin"
+        currentPublication?.role === "editor" ||
+        currentPublication?.role === "admin"
           ? "/review"
           : "/author-review";
       router.push(withPub(`${targetPath}?refresh=true`));
@@ -612,6 +641,20 @@ export default function EditorPageClient() {
       router.push(withPub("/trash?refresh=true"));
     } else {
       router.push(withPub("/draft?refresh=true"));
+    }
+  };
+
+  // Helper for consistent save-and-exit behavior
+  const performSaveAndExit = async (targetPath, forceExit = false) => {
+    const result = await saveBlog("draft", null, true);
+
+    // Show toast if save succeeded OR if we are forced to exit (user expectation)
+    if (result || forceExit) {
+      showToast("Post has been saved as Draft", "success");
+      savedSuccessfullyRef.current = true;
+      setTimeout(() => {
+        router.push(withPub(targetPath));
+      }, 1000);
     }
   };
 
@@ -634,17 +677,27 @@ export default function EditorPageClient() {
         setShowExitModal(true);
       } else {
         // Auto-save as draft and redirect to home page
-        const result = await saveBlog("draft", null, true);
-        if (result) {
-          showToast("Post has been saved as Draft", "success");
-        }
+        await performSaveAndExit("/draft?refresh=true", true);
+      }
+    } else {
+      // No unsaved changes
+      // Check if it's a draft or new article - if so, show the toast for reassurance
+      const isSensitive =
+        existingBlogStatus &&
+        ["published", "scheduled", "review", "unpublished"].includes(
+          existingBlogStatus,
+        );
+
+      if (!isSensitive) {
+        showToast("Post has been saved as Draft", "success");
         savedSuccessfullyRef.current = true;
         setTimeout(() => {
           router.push(withPub("/draft?refresh=true"));
-        }, 800);
+        }, 1000);
+        return;
       }
-    } else {
-      // No unsaved changes - just redirect to home page
+
+      // For others, just redirect
       savedSuccessfullyRef.current = true;
       router.push(withPub("/draft?refresh=true"));
     }
@@ -687,12 +740,8 @@ export default function EditorPageClient() {
 
   const handleUpdateAndExit = async () => {
     // Save as draft and redirect to home page
-    const result = await saveBlog("draft", null, true);
-    if (result) {
-      setShowExitModal(false);
-      savedSuccessfullyRef.current = true;
-      router.push(withPub("/?refresh=true"));
-    }
+    setShowExitModal(false);
+    await performSaveAndExit("/?refresh=true", false);
   };
 
   // Handle Schedule
@@ -1004,15 +1053,19 @@ export default function EditorPageClient() {
         .saving-spinner {
           width: 16px;
           height: 16px;
-          border: 2px solid #8AA4FF4D;
-          border-top: 2px solid #2659BC;
+          border: 2px solid #8aa4ff4d;
+          border-top: 2px solid #2659bc;
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
         }
 
         .stats-bar-container {
@@ -1144,14 +1197,15 @@ export default function EditorPageClient() {
               {/* Status Badge */}
               <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200">
                 <div
-                  className={`w-2 h-2 rounded-full ${existingBlogStatus === "published"
-                    ? "bg-green-500"
-                    : existingBlogStatus === "scheduled"
-                      ? "bg-blue-400"
-                      : existingBlogStatus === "trash"
-                        ? "bg-red-500"
-                        : "bg-orange-400"
-                    }`}
+                  className={`w-2 h-2 rounded-full ${
+                    existingBlogStatus === "published"
+                      ? "bg-green-500"
+                      : existingBlogStatus === "scheduled"
+                        ? "bg-blue-400"
+                        : existingBlogStatus === "trash"
+                          ? "bg-red-500"
+                          : "bg-orange-400"
+                  }`}
                 ></div>
                 <span className="text-gray-500 text-sm">
                   {existingBlogStatus === "published"
@@ -1196,14 +1250,15 @@ export default function EditorPageClient() {
               {/* Status Badge - Desktop and Tablet Only */}
               <div className="hidden md:inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-200 w-fit mb-4">
                 <div
-                  className={`w-2 h-2 rounded-full ${existingBlogStatus === "published"
-                    ? "bg-green-500"
-                    : existingBlogStatus === "scheduled"
-                      ? "bg-blue-400"
-                      : existingBlogStatus === "trash"
-                        ? "bg-red-500"
-                        : "bg-orange-400"
-                    }`}
+                  className={`w-2 h-2 rounded-full ${
+                    existingBlogStatus === "published"
+                      ? "bg-green-500"
+                      : existingBlogStatus === "scheduled"
+                        ? "bg-blue-400"
+                        : existingBlogStatus === "trash"
+                          ? "bg-red-500"
+                          : "bg-orange-400"
+                  }`}
                 ></div>
                 <span className="text-gray-500 text-sm">
                   {existingBlogStatus === "published"
@@ -1260,11 +1315,11 @@ export default function EditorPageClient() {
               />
 
               <button
-                className={`relative flex items-center w-[180px] h-8 gap-2 rounded border ${thumbnailData ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white'} text-sm px-4 py-2 hover:bg-gray-50 transition-colors whitespace-nowrap`}
+                className={`relative flex items-center w-[180px] h-8 gap-2 rounded border ${thumbnailData ? "border-green-400 bg-green-50" : "border-gray-200 bg-white"} text-sm px-4 py-2 hover:bg-gray-50 transition-colors whitespace-nowrap`}
                 onClick={() => setShowThumbnailModal(true)}
               >
                 <svg
-                  className={`w-4 h-4 flex-shrink-0 ${thumbnailData ? 'text-green-600' : ''}`}
+                  className={`w-4 h-4 flex-shrink-0 ${thumbnailData ? "text-green-600" : ""}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1276,10 +1331,22 @@ export default function EditorPageClient() {
                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                <span className={thumbnailData ? 'text-green-700' : ''}>Thumbnail Image</span>
+                <span className={thumbnailData ? "text-green-700" : ""}>
+                  Thumbnail Image
+                </span>
                 {thumbnailData && (
-                  <svg className="w-4 h-4 text-green-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-4 h-4 text-green-600 ml-auto"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 )}
               </button>
@@ -1595,9 +1662,9 @@ export default function EditorPageClient() {
               {/* For authors in joined publications, show "Send for Review" button */}
               {/* Editors get same controls as admin (Publish + Schedule) */}
               {publicationId &&
-                currentPublication &&
-                !currentPublication.isOwner &&
-                currentPublication.role === "author" ? (
+              currentPublication &&
+              !currentPublication.isOwner &&
+              currentPublication.role === "author" ? (
                 <button
                   className="flex items-center justify-center gap-2 h-8 rounded bg-gray-900 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
                   style={{
@@ -1869,7 +1936,9 @@ export default function EditorPageClient() {
         onClose={() => setShowThumbnailModal(false)}
         onImageAdd={handleThumbnailAdd}
         onImageRemove={handleThumbnailRemove}
-        initialPreviewUrl={thumbnailData?.previewUrl || thumbnailData?.url || null}
+        initialPreviewUrl={
+          thumbnailData?.previewUrl || thumbnailData?.url || null
+        }
       />
 
       {/* Publish Success Modal */}
@@ -1988,12 +2057,12 @@ export default function EditorPageClient() {
               <a
                 href={
                   publishedBlogSlug
-                    ? (currentPublication?.subdomain
+                    ? currentPublication?.subdomain
                       ? `http://${currentPublication.subdomain}.localhost:3000/view-site/blog/${publishedBlogSlug}`
-                      : `/view-site/blog/${publishedBlogSlug}`)
-                    : (currentPublication?.subdomain
+                      : `/view-site/blog/${publishedBlogSlug}`
+                    : currentPublication?.subdomain
                       ? `http://${currentPublication.subdomain}.localhost:3000`
-                      : `/view-site?publicationId=${publicationId || currentPublication?.id}`)
+                      : `/view-site?publicationId=${publicationId || currentPublication?.id}`
                 }
                 target="_blank"
                 rel="noopener noreferrer"
