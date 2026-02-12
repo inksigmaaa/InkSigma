@@ -10,6 +10,7 @@ import ConfirmModal from "../components/confirmModal/ConfirmModal";
 import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function TrashPage() {
   const { currentPublication } = usePublication();
@@ -102,35 +103,75 @@ export default function TrashPage() {
     },
   }));
 
+  const { showToast } = useToast();
+
   const confirmDelete = async () => {
     try {
       if (deleteArticleId) {
         // Single article permanent delete
-        await moveToTrash(deleteArticleId);
+        try {
+          await moveToTrash(deleteArticleId);
+          showToast("Article deleted permanently", "success");
+        } catch (error) {
+          showToast("Failed to delete article", "error");
+          console.error(error);
+        }
       } else {
         // Bulk permanent delete
-        await bulkMoveToTrash(selectedArticles);
-        setSelectedArticles([]);
+        const results = await Promise.allSettled(
+          selectedArticles.map((id) => moveToTrash(id)),
+        );
+
+        const successes = results.filter(
+          (r) => r.status === "fulfilled",
+        ).length;
+        const failures = results.filter((r) => r.status === "rejected").length;
+        const failedIds = selectedArticles.filter(
+          (_, index) => results[index].status === "rejected",
+        );
+
+        if (failures === 0) {
+          showToast(`${successes} article(s) deleted permanently`, "success");
+          setSelectedArticles([]);
+        } else {
+          showToast(`${successes} deleted. ${failures} failed.`, "error");
+          setSelectedArticles(failedIds);
+        }
       }
 
       setShowDeleteModal(false);
       setDeleteArticleId(null);
     } catch (error) {
       console.error("Error permanently deleting articles:", error);
+      showToast("An unexpected error occurred", "error");
     }
   };
 
   const confirmRestore = async () => {
     try {
       // Restore selected articles to draft
-      for (const articleId of selectedArticles) {
-        await moveToDraft(articleId);
+      const results = await Promise.allSettled(
+        selectedArticles.map((id) => moveToDraft(id)),
+      );
+
+      const successes = results.filter((r) => r.status === "fulfilled").length;
+      const failures = results.filter((r) => r.status === "rejected").length;
+      const failedIds = selectedArticles.filter(
+        (_, index) => results[index].status === "rejected",
+      );
+
+      if (failures === 0) {
+        showToast(`${successes} article(s) restored to drafts`, "success");
+        setSelectedArticles([]);
+      } else {
+        showToast(`${successes} restored. ${failures} failed.`, "error");
+        setSelectedArticles(failedIds);
       }
 
-      setSelectedArticles([]);
       setShowRestoreModal(false);
     } catch (error) {
       console.error("Error restoring articles:", error);
+      showToast("An unexpected error occurred during restore", "error");
     }
   };
 
