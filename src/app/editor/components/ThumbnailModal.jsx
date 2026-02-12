@@ -2,7 +2,13 @@
 
 import { useState, useRef, useEffect } from "react"
 
-export function ThumbnailModal({ isOpen, onClose, onImageAdd }) {
+export function ThumbnailModal({
+  isOpen,
+  onClose,
+  onImageAdd,
+  onImageRemove,
+  initialPreviewUrl = null,
+}) {
   const [imageTitle, setImageTitle] = useState("")
   const [altText, setAltText] = useState("")
   const [selectedFile, setSelectedFile] = useState(null)
@@ -20,6 +26,16 @@ export function ThumbnailModal({ isOpen, onClose, onImageAdd }) {
 
   const handleUploadClick = () => {
     fileInputRef.current?.click()
+  }
+
+  const handleClearImage = (event) => {
+    event.stopPropagation()
+    setSelectedFile(null)
+    setPreviewUrl(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+    onImageRemove?.()
   }
 
   const handleAddImage = () => {
@@ -45,13 +61,16 @@ export function ThumbnailModal({ isOpen, onClose, onImageAdd }) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
+      if (initialPreviewUrl) {
+        setPreviewUrl(initialPreviewUrl)
+      }
     } else {
       document.body.style.overflow = 'unset'
     }
     return () => {
       document.body.style.overflow = 'unset'
     }
-  }, [isOpen])
+  }, [isOpen, initialPreviewUrl])
 
   if (!isOpen) return null
 
@@ -79,19 +98,29 @@ export function ThumbnailModal({ isOpen, onClose, onImageAdd }) {
           {/* Upload Area */}
           <div 
             onClick={handleUploadClick}
-            className="w-[254px] h-[152px] border border-gray-200 rounded-lg flex flex-col items-center justify-center bg-gray-50 cursor-pointer mb-2 hover:border-gray-300 transition-colors"
+            className="w-[254px] h-[152px] border border-gray-200 rounded-lg bg-gray-50 cursor-pointer mb-2 hover:border-gray-300 transition-colors overflow-hidden"
           >
             {previewUrl ? (
-              <div className="text-center">
+              <div className="relative w-full h-full">
                 <img 
                   src={previewUrl} 
                   alt="Preview" 
-                  className="max-w-full max-h-[100px] rounded"
+                  className="w-full h-full object-cover"
                 />
-                <p className="text-xs text-gray-500 mt-2">Click to change</p>
+                <button
+                  type="button"
+                  onClick={handleClearImage}
+                  className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/75"
+                  aria-label="Remove thumbnail"
+                  title="Remove thumbnail"
+                >
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
             ) : (
-              <>
+              <div className="flex flex-col items-center justify-center h-full">
                 <svg 
                   className="w-12 h-12 text-gray-300 mb-2"
                   fill="currentColor" 
@@ -102,7 +131,7 @@ export function ThumbnailModal({ isOpen, onClose, onImageAdd }) {
                 <span className="font-['Public_Sans'] text-sm text-gray-400">
                   + Upload Thumbnail here
                 </span>
-              </>
+              </div>
             )}
           </div>
 

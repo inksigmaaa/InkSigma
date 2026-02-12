@@ -12,6 +12,7 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { useSession } from "@/lib/auth-client";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function DraftPage() {
   const {
@@ -126,18 +127,50 @@ export default function DraftPage() {
     }
   };
 
+  const { showToast } = useToast();
+
   const confirmDelete = async () => {
     try {
       if (isBulkAction) {
-        await bulkMoveToTrashStatus(selectedArticles);
-        setSelectedArticles([]);
+        const results = await Promise.allSettled(
+          selectedArticles.map((id) => moveToTrashStatus(id)),
+        );
+
+        const successes = results.filter(
+          (r) => r.status === "fulfilled",
+        ).length;
+        const failures = results.filter((r) => r.status === "rejected").length;
+        const failedIds = selectedArticles.filter(
+          (_, index) => results[index].status === "rejected",
+        );
+
+        if (failures === 0) {
+          showToast(
+            `${successes} article(s) moved to trash successfully`,
+            "success",
+          );
+          setSelectedArticles([]);
+        } else {
+          showToast(
+            `${successes} moved to trash. ${failures} failed.`,
+            "error",
+          );
+          setSelectedArticles(failedIds);
+        }
       } else if (actionArticleId) {
-        await moveToTrashStatus(actionArticleId);
+        try {
+          await moveToTrashStatus(actionArticleId);
+          showToast("Article moved to trash successfully", "success");
+        } catch (error) {
+          showToast("Failed to move article to trash", "error");
+          console.error(error);
+        }
       }
       setShowDeleteModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error moving to trash:", error);
+      showToast("An unexpected error occurred", "error");
     }
   };
 
@@ -150,12 +183,42 @@ export default function DraftPage() {
 
       if (isBulkAction) {
         console.log("Calling bulkPublish with IDs:", selectedArticles);
-        await bulkPublish(selectedArticles);
-        setSelectedArticles([]);
+
+        const results = await Promise.allSettled(
+          selectedArticles.map((id) => publishArticle(id)),
+        );
+
+        const successes = results.filter(
+          (r) => r.status === "fulfilled",
+        ).length;
+        const failures = results.filter((r) => r.status === "rejected").length;
+        const failedIds = selectedArticles.filter(
+          (_, index) => results[index].status === "rejected",
+        );
+
+        if (failures === 0) {
+          showToast(
+            `${successes} article(s) published successfully`,
+            "success",
+          );
+          setSelectedArticles([]);
+        } else {
+          showToast(
+            `${successes} published successfully. ${failures} failed.`,
+            "error",
+          );
+          setSelectedArticles(failedIds);
+        }
       } else if (actionArticleId) {
         console.log("Calling publishArticle with ID:", actionArticleId);
-        const result = await publishArticle(actionArticleId);
-        console.log("Publish result:", result);
+        try {
+          const result = await publishArticle(actionArticleId);
+          console.log("Publish result:", result);
+          showToast("Article published successfully", "success");
+        } catch (error) {
+          console.error("Publish failed:", error);
+          showToast("Failed to publish article", "error");
+        }
       } else {
         console.error("No article ID to publish!");
       }
@@ -167,11 +230,14 @@ export default function DraftPage() {
       console.error("=== PUBLISH ERROR ===");
       console.error("Error publishing:", error);
       console.error("Error details:", error.message, error.stack);
+      showToast("An unexpected error occurred during publishing", "error");
     }
   };
 
   const canPublish =
-    currentPublication?.isOwner || currentPublication?.role === "admin";
+    currentPublication?.isOwner ||
+    currentPublication?.role === "admin" ||
+    currentPublication?.role === "editor";
 
   const actionButtons = [
     ...(canPublish
@@ -204,6 +270,7 @@ export default function DraftPage() {
           emptyMessage="No Articles Drafted yet"
           showSelectAll={true}
           showActions={true}
+          showCategoryInTitle={true}
           actionButtons={actionButtons}
           selectedArticles={selectedArticles}
           onSelectAll={handleSelectAll}
