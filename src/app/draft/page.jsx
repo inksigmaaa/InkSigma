@@ -111,19 +111,22 @@ export default function DraftPage() {
         // If not in a publication context (e.g. dashboard), show all drafts
         return isDraft;
       })
-      .map((article) => ({
-        ...article,
-        onDelete: () => {
-          setActionArticleId(article.id);
-          setIsBulkAction(false);
-          setShowDeleteModal(true);
-        },
-        onPublish: () => {
-          setActionArticleId(article.id);
-          setIsBulkAction(false);
-          setShowPublishModal(true);
-        },
-      }));
+      .map((article) => {
+        return {
+          ...article,
+          canDelete: true, // No delete restriction for drafts
+          onDelete: () => {
+            setActionArticleId(article.id);
+            setIsBulkAction(false);
+            setShowDeleteModal(true);
+          },
+          onPublish: () => {
+            setActionArticleId(article.id);
+            setIsBulkAction(false);
+            setShowPublishModal(true);
+          },
+        };
+      });
   }, [articles, currentPublication]);
 
   const handleSelectAll = (checked) => {
@@ -163,30 +166,52 @@ export default function DraftPage() {
   const confirmDelete = async () => {
     try {
       if (isBulkAction) {
-        const results = await Promise.allSettled(
-          selectedArticles.map((id) => moveToTrashStatus(id)),
-        );
+        // Filter out articles that the user cannot delete
+        const articlesToDelete = selectedArticles.filter((id) => {
+          const article = draftArticles.find((a) => a.id === id);
+          return article && article.canDelete;
+        });
 
-        const successes = results.filter(
-          (r) => r.status === "fulfilled",
-        ).length;
-        const failures = results.filter((r) => r.status === "rejected").length;
-        const failedIds = selectedArticles.filter(
-          (_, index) => results[index].status === "rejected",
-        );
-
-        if (failures === 0) {
-          showToast(
-            `${successes} article(s) moved to trash successfully`,
-            "success",
+        if (articlesToDelete.length !== selectedArticles.length) {
+          console.warn(
+            "Some selected articles could not be deleted due to permissions.",
           );
-          setSelectedArticles([]);
+          showToast(
+            "Some articles could not be deleted due to permissions.",
+            "warning",
+          );
+        }
+
+        if (articlesToDelete.length > 0) {
+          const results = await Promise.allSettled(
+            articlesToDelete.map((id) => moveToTrashStatus(id)),
+          );
+
+          const successes = results.filter(
+            (r) => r.status === "fulfilled",
+          ).length;
+          const failures = results.filter(
+            (r) => r.status === "rejected",
+          ).length;
+          const failedIds = articlesToDelete.filter(
+            (_, index) => results[index].status === "rejected",
+          );
+
+          if (failures === 0) {
+            showToast(
+              `${successes} article(s) moved to trash successfully`,
+              "success",
+            );
+            setSelectedArticles([]);
+          } else {
+            showToast(
+              `${successes} moved to trash. ${failures} failed.`,
+              "error",
+            );
+            setSelectedArticles(failedIds);
+          }
         } else {
-          showToast(
-            `${successes} moved to trash. ${failures} failed.`,
-            "error",
-          );
-          setSelectedArticles(failedIds);
+          showToast("No deletable articles selected.", "info");
         }
       } else if (actionArticleId) {
         try {

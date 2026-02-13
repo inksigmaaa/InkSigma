@@ -186,7 +186,7 @@ export default function Sidebar() {
         },
         {
           label: "Draft",
-          icon: "Draft.svg",
+          icon: "draft.svg",
           check: (r) => hasPermission(r, "canAccessDrafts"),
         },
         {

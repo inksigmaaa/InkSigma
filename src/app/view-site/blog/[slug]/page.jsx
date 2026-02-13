@@ -1,22 +1,21 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { use, useEffect, useState, useRef } from 'react';
-import ViewSiteHeader from '../../components/Header/Header';
-import Footer from '../../components/Footer/Footer';
-import TableOfContents from '../../components/TableOfContents/TableOfContents';
-import SocialSidebar from '../../components/SocialSidebar/SocialSidebar';
-import ShareMenu from '../../components/ShareMenu/ShareMenu';
-import ScrollToTop from '../../components/ScrollToTop/ScrollToTop';
-import MobileBottomNav from '../../components/MobileBottomNav/MobileBottomNav';
-import CommentSection from '../../components/CommentSection/CommentSection';
-import ClockIcon from '../../components/icons/ClockIcon';
-import { getImageUrl } from '@/utils/imageUrl';
-import { useSnapshot } from '@/hooks/useSnapshot';
-import { getThumbnailWithFallback } from '@/utils/fallbackThumbnail';
-
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { use, useEffect, useState, useRef } from "react";
+import ViewSiteHeader from "../../components/Header/Header";
+import Footer from "../../components/Footer/Footer";
+import TableOfContents from "../../components/TableOfContents/TableOfContents";
+import SocialSidebar from "../../components/SocialSidebar/SocialSidebar";
+import ShareMenu from "../../components/ShareMenu/ShareMenu";
+import ScrollToTop from "../../components/ScrollToTop/ScrollToTop";
+import MobileBottomNav from "../../components/MobileBottomNav/MobileBottomNav";
+import CommentSection from "../../components/CommentSection/CommentSection";
+import ClockIcon from "../../components/icons/ClockIcon";
+import { getImageUrl } from "@/utils/imageUrl";
+import { useSnapshot } from "@/hooks/useSnapshot";
+import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 
 export default function BlogDetailPage({ params }) {
   const { slug } = use(params);
@@ -62,18 +61,18 @@ export default function BlogDetailPage({ params }) {
       }
       if (yOffset < 0) yOffset = 0;
 
-      captureSnapshot(contentRef, blog?.title || 'blog-snapshot', {
+      captureSnapshot(contentRef, blog?.title || "blog-snapshot", {
         height: captureHeight,
         width: contentRef.current.scrollWidth,
         y: yOffset,
-        x: 0
+        x: 0,
       });
     }
   };
 
   const handleBack = (e) => {
     e.preventDefault();
-    const fromPub = searchParams.get('from');
+    const fromPub = searchParams.get("from");
 
     // Try browser history first
     if (window.history.length > 1) {
@@ -85,8 +84,9 @@ export default function BlogDetailPage({ params }) {
     }
     // Default fallback
     else {
-      const pubId = blog?.publication?.id || blog?.publicationId || blog?.publication_id;
-      router.push(pubId ? `/view-site?publicationId=${pubId}` : '/view-site');
+      const pubId =
+        blog?.publication?.id || blog?.publicationId || blog?.publication_id;
+      router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");
     }
   };
 
@@ -95,51 +95,56 @@ export default function BlogDetailPage({ params }) {
       try {
         setLoading(true);
         // Fetch blog by slug (without incrementing view here)
-        const response = await fetch(`http://localhost:5000/api/blogs/slug/${slug}`);
+        const response = await fetch(
+          `http://localhost:5000/api/blogs/slug/${slug}`,
+        );
 
         if (!response.ok) {
-          throw new Error('Failed to fetch blog');
+          throw new Error("Failed to fetch blog");
         }
 
         const foundBlog = await response.json();
 
         if (!foundBlog || foundBlog.error) {
-          setError('Blog not found');
+          setError("Blog not found");
         } else {
           // Process content immediately
           if (foundBlog.content) {
             const parser = new DOMParser();
-            const doc = parser.parseFromString(foundBlog.content, 'text/html');
+            const doc = parser.parseFromString(foundBlog.content, "text/html");
 
             // Fix Images
-            const images = doc.querySelectorAll('img');
-            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+            const images = doc.querySelectorAll("img");
+            const backendUrl =
+              process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
             images.forEach((img, index) => {
-              const src = img.getAttribute('src');
-              if (src && src.startsWith('/')) {
-                img.setAttribute('src', `${backendUrl}${src}`);
+              const src = img.getAttribute("src");
+              if (src && src.startsWith("/")) {
+                img.setAttribute("src", `${backendUrl}${src}`);
               }
 
               // Optimize LCP
               if (index === 0) {
-                img.setAttribute('loading', 'eager');
-                img.setAttribute('fetchpriority', 'high');
+                img.setAttribute("loading", "eager");
+                img.setAttribute("fetchpriority", "high");
               } else {
-                img.setAttribute('loading', 'lazy');
+                img.setAttribute("loading", "lazy");
               }
             });
 
             // Process TOC
-            const headings = doc.querySelectorAll('h2');
-            const extractedSections = Array.from(headings).map((heading, index) => {
-              const id = heading.id || `section-${index + 1}`;
-              heading.id = id;
-              return {
-                id,
-                title: heading.textContent,
-              };
-            });
+            const headings = doc.querySelectorAll("h2");
+            const extractedSections = Array.from(headings).map(
+              (heading, index) => {
+                const id = heading.id || `section-${index + 1}`;
+                heading.id = id;
+                return {
+                  id,
+                  title: heading.textContent,
+                };
+              },
+            );
 
             setSections(extractedSections);
             foundBlog.content = doc.body.innerHTML;
@@ -147,9 +152,12 @@ export default function BlogDetailPage({ params }) {
 
           // Fetch publication details if publicationId exists
           if (foundBlog.publicationId) {
-            const pubResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/publications/${foundBlog.publicationId}`, {
-              credentials: 'include'
-            });
+            const pubResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/publications/${foundBlog.publicationId}`,
+              {
+                credentials: "include",
+              },
+            );
 
             if (pubResponse.ok) {
               const pubData = await pubResponse.json();
@@ -160,16 +168,16 @@ export default function BlogDetailPage({ params }) {
           setBlog(foundBlog);
 
           // Track view separately using the new tracking system
-          if (foundBlog.status === 'published') {
+          if (foundBlog.status === "published") {
             try {
               let shouldTrack = true;
-              if (typeof window !== 'undefined') {
+              if (typeof window !== "undefined") {
                 try {
                   const viewKey = `viewed:${foundBlog.id}`;
                   if (localStorage.getItem(viewKey)) {
                     shouldTrack = false;
                   } else {
-                    localStorage.setItem(viewKey, '1');
+                    localStorage.setItem(viewKey, "1");
                   }
                 } catch {
                   // If storage is unavailable, fall back to server-side dedupe only
@@ -177,22 +185,25 @@ export default function BlogDetailPage({ params }) {
               }
 
               if (shouldTrack) {
-                await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/views/track`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
+                await fetch(
+                  `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/views/track`,
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({ blogId: foundBlog.id }),
                   },
-                  credentials: 'include',
-                  body: JSON.stringify({ blogId: foundBlog.id }),
-                });
+                );
               }
             } catch (viewError) {
-              console.error('Error tracking view:', viewError);
+              console.error("Error tracking view:", viewError);
             }
           }
         }
       } catch (err) {
-        console.error('Error fetching blog:', err);
+        console.error("Error fetching blog:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -208,19 +219,32 @@ export default function BlogDetailPage({ params }) {
   // Scroll to top when blog page loads
   useEffect(() => {
     // Always scroll to top when opening a blog post
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, behavior: "instant" });
   }, [slug]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const day = String(date.getDate()).padStart(2, '0');
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const day = String(date.getDate()).padStart(2, "0");
     const month = months[date.getMonth()];
     const year = date.getFullYear();
 
     // Get ordinal suffix for day
     const getOrdinal = (n) => {
-      const s = ['th', 'st', 'nd', 'rd'];
+      const s = ["th", "st", "nd", "rd"];
       const v = n % 100;
       return n + (s[(v - 20) % 10] || s[v] || s[0]);
     };
@@ -232,7 +256,7 @@ export default function BlogDetailPage({ params }) {
   };
 
   const currentUrl =
-    typeof window !== 'undefined'
+    typeof window !== "undefined"
       ? window.location.href
       : `http://localhost:3000/view-site/blog/${slug}`;
 
@@ -254,7 +278,10 @@ export default function BlogDetailPage({ params }) {
         <ViewSiteHeader userName="Publication" userAvatar={null} />
         <div className="flex-grow max-w-[800px] mx-auto px-6 py-12">
           <h1 className="text-4xl font-bold text-black mb-4">Blog not found</h1>
-          <Link href="/view-site" className="text-purple-600 hover:text-purple-700">
+          <Link
+            href="/view-site"
+            className="text-purple-600 hover:text-purple-700"
+          >
             Back to home
           </Link>
         </div>
@@ -264,14 +291,28 @@ export default function BlogDetailPage({ params }) {
   }
 
   const dateFormatted = formatDate(blog.createdAt);
-  const thumbnailUrl = getThumbnailWithFallback(getImageUrl(blog.image), blog.id);
+  const thumbnailUrl = getThumbnailWithFallback(
+    getImageUrl(blog.image),
+    blog.id,
+  );
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header Section */}
       <ViewSiteHeader
-        userName={blog.publication?.name || (blog.author?.name ? `${blog.author.name}'s Blog` : "InkSigma")}
-        userAvatar={blog.publication?.logoUrl ? `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}${blog.publication.logoUrl}` : (blog.author?.image ? (blog.author.image.startsWith('http') ? blog.author.image : `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}${blog.author.image}`) : null)}
+        userName={
+          blog.publication?.name ||
+          (blog.author?.name ? `${blog.author.name}'s Blog` : "InkSigma")
+        }
+        userAvatar={
+          blog.publication?.logoUrl
+            ? `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${blog.publication.logoUrl}`
+            : blog.author?.image
+              ? blog.author.image.startsWith("http")
+                ? blog.author.image
+                : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${blog.author.image}`
+              : null
+        }
         shareButton={
           <ShareMenu
             title={blog.title}
@@ -293,22 +334,23 @@ export default function BlogDetailPage({ params }) {
                 className="inline-flex items-center gap-1 px-4 py-3 bg-[#F4F4F4] hover:bg-[#EAEAEA] text-[#696969] text-sm font-semibold leading-none tracking-normal rounded-3xl w-fit transition-colors"
                 type="button"
               >
-
                 <Image
                   src="/svg/arrow_back.svg"
                   alt="Arrow Left"
                   width={12}
                   height={5}
                 />
-
-                Go back
+                Go to homepage
               </button>
               <TableOfContents sections={sections} />
             </div>
           </aside>
 
           {/* Main Content */}
-          <div ref={contentRef} className="flex-1 max-w-[800px] w-full min-w-0 mx-auto pt-12 pb-20 px-12 border-l border-[#EAEAEA] max-md:border-none max-md:px-2 max-md:pt-6">
+          <div
+            ref={contentRef}
+            className="flex-1 max-w-[800px] w-full min-w-0 mx-auto pt-12 pb-20 px-12 border-l border-[#EAEAEA] max-md:border-none max-md:px-2 max-md:pt-6"
+          >
             {/* Blog Title */}
             <h1 className="text-[#202020] text-[40px] font-extrabold leading-[1.09] mb-6 tracking-normal break-words max-md:text-[24px] max-md:leading-[1.2] max-md:mb-3 ">
               {blog.title}
@@ -324,7 +366,10 @@ export default function BlogDetailPage({ params }) {
             <div className="flex flex-wrap gap-2 mb-6 max-md:mb-3">
               {blog.categories && blog.categories.length > 0 ? (
                 blog.categories.map((category, index) => (
-                  <span key={index} className="text-[#7C7C7C] text-sm font-normal leading-normal tracking-normal px-4 py-1.5 border border-[#EAEAEA] rounded-lg max-md:text-[10px] max-md:px-3">
+                  <span
+                    key={index}
+                    className="text-[#7C7C7C] text-sm font-normal leading-normal tracking-normal px-4 py-1.5 border border-[#EAEAEA] rounded-lg max-md:text-[10px] max-md:px-3"
+                  >
                     {category}
                   </span>
                 ))
@@ -343,29 +388,30 @@ export default function BlogDetailPage({ params }) {
                   {blog.author?.image ? (
                     <img
                       src={
-                        blog.author.image.startsWith('http') || blog.author.image.startsWith('https')
+                        blog.author.image.startsWith("http") ||
+                        blog.author.image.startsWith("https")
                           ? blog.author.image
-                          : blog.author.image.startsWith('/')
-                            ? `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}${blog.author.image}`
-                            : `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/${blog.author.image}`
+                          : blog.author.image.startsWith("/")
+                            ? `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${blog.author.image}`
+                            : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${blog.author.image}`
                       }
-                      alt={blog.author?.name || 'Author'}
+                      alt={blog.author?.name || "Author"}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${blog.author?.name?.charAt(0).toUpperCase() || 'A'}</span></div>`;
+                        e.target.style.display = "none";
+                        e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${blog.author?.name?.charAt(0).toUpperCase() || "A"}</span></div>`;
                       }}
                     />
                   ) : (
                     <div className="w-full h-full bg-purple-100 flex items-center justify-center">
                       <span className="text-purple-600 font-semibold text-sm">
-                        {blog.author?.name?.charAt(0).toUpperCase() || 'A'}
+                        {blog.author?.name?.charAt(0).toUpperCase() || "A"}
                       </span>
                     </div>
                   )}
                 </div>
                 <span className="text-[#404040] text-base font-normal italic leading-[1.88] tracking-normal max-md:text-[12px] max-md:leading-[1.5]">
-                  {blog.author?.name || 'Anonymous'}
+                  {blog.author?.name || "Anonymous"}
                 </span>
               </div>
 
@@ -374,7 +420,9 @@ export default function BlogDetailPage({ params }) {
                 <div className="flex-shrink-0">
                   <ClockIcon className="w-3.5 h-3.5 max-md:w-2.5 max-md:h-2.5" />
                 </div>
-                <span>Created on {dateFormatted.fullDate || dateFormatted.date}</span>
+                <span>
+                  Created on {dateFormatted.fullDate || dateFormatted.date}
+                </span>
               </div>
             </div>
 
@@ -382,7 +430,7 @@ export default function BlogDetailPage({ params }) {
             <article
               className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px]"
               dangerouslySetInnerHTML={{
-                __html: blog.content
+                __html: blog.content,
               }}
             />
 

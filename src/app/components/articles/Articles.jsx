@@ -109,7 +109,25 @@ export default function Articles(props) {
   const confirmDelete = async () => {
     try {
       if (isBulkAction) {
-        await bulkMoveToTrashStatus(Array.from(selectedArticles));
+        // Filter out articles that the user cannot delete
+        // We need to look up the full article objects to check permissions
+        const articlesToDelete = Array.from(selectedArticles).filter((id) => {
+          const article = allArticles.find((a) => a.id === id);
+          return (
+            article &&
+            (article.canDelete !== undefined ? article.canDelete : true)
+          );
+        });
+
+        if (articlesToDelete.length !== selectedArticles.size) {
+          console.warn(
+            "Some selected articles could not be deleted due to permissions.",
+          );
+        }
+
+        if (articlesToDelete.length > 0) {
+          await bulkMoveToTrashStatus(articlesToDelete);
+        }
         setSelectedArticles(new Set());
       } else {
         await moveToTrashStatus(actionArticleId);
@@ -304,7 +322,10 @@ export default function Articles(props) {
                     onRepublish={() => handlePublishArticle(article.id)}
                     onUnpublish={() => handleUnpublishArticle(article.id)}
                     onRestore={() => handleDraftArticle(article.id)}
-                  // stats prop removed to hide stats button as requested
+                    canDelete={
+                      article.canDelete !== undefined ? article.canDelete : true
+                    }
+                    // stats prop removed to hide stats button as requested
                   />
                 );
               })
@@ -352,21 +373,21 @@ export default function Articles(props) {
         onConfirm={confirmDraft}
         title={
           actionArticleId &&
-            allArticles.find((a) => a.id === actionArticleId)?.status ===
+          allArticles.find((a) => a.id === actionArticleId)?.status ===
             "published"
             ? "Create a Draft?"
             : "Move to Draft?"
         }
         message={
           actionArticleId &&
-            allArticles.find((a) => a.id === actionArticleId)?.status ===
+          allArticles.find((a) => a.id === actionArticleId)?.status ===
             "published"
             ? "A draft copy will be created. The original article will remain published."
             : "This article will be moved to drafts"
         }
         confirmText={
           actionArticleId &&
-            allArticles.find((a) => a.id === actionArticleId)?.status ===
+          allArticles.find((a) => a.id === actionArticleId)?.status ===
             "published"
             ? "Create Draft"
             : "Move to Draft"

@@ -1,14 +1,25 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 
-export default function ArticleDropdown({ status, onEdit, onDelete, onRestore, onPublish, onUnpublish, onRepublish, onDraft, canPublish }) {
-  const [isOpen, setIsOpen] = useState(false)
+export default function ArticleDropdown({
+  status,
+  onEdit,
+  onDelete,
+  onRestore,
+  onPublish,
+  onUnpublish,
+  onRepublish,
+  onDraft,
+  canPublish,
+  canDelete = true,
+}) {
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleAction = (action) => {
-    setIsOpen(false)
-    action()
-  }
+    setIsOpen(false);
+    action();
+  };
 
   return (
     <div className="relative">
@@ -26,400 +37,591 @@ export default function ArticleDropdown({ status, onEdit, onDelete, onRestore, o
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-[99]" onClick={() => setIsOpen(false)} />
-          <div 
+          <div
+            className="fixed inset-0 z-[99]"
+            onClick={() => setIsOpen(false)}
+          />
+          <div
             className="absolute top-10 right-0 z-[100] overflow-hidden"
             style={{
-              width: '147px',
-              borderRadius: '8px',
-              borderWidth: '1px',
-              gap: '4px',
-              padding: '8px',
-              background: '#FEFEFE',
-              border: '1px solid #EDEDED'
+              width: "147px",
+              borderRadius: "8px",
+              borderWidth: "1px",
+              gap: "4px",
+              padding: "8px",
+              background: "#FEFEFE",
+              border: "1px solid #EDEDED",
             }}
           >
-            {status === 'draft' && (
+            {status === "draft" && (
               <>
                 {canPublish && (
-                  <button 
+                  <button
                     className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
                     style={{
-                      width: '131px',
-                      height: '26px',
-                      borderRadius: '4px',
-                      paddingTop: '4px',
-                      paddingRight: '8px',
-                      paddingBottom: '4px',
-                      paddingLeft: '8px',
-                      gap: '10px',
-                      background: 'transparent',
-                      fontFamily: 'Public Sans',
+                      width: "131px",
+                      height: "26px",
+                      borderRadius: "4px",
+                      paddingTop: "4px",
+                      paddingRight: "8px",
+                      paddingBottom: "4px",
+                      paddingLeft: "8px",
+                      gap: "10px",
+                      background: "transparent",
+                      fontFamily: "Public Sans",
                       fontWeight: 400,
-                      fontSize: '12px',
-                      lineHeight: '150%',
-                      color: '#2E2E2E'
+                      fontSize: "12px",
+                      lineHeight: "150%",
+                      color: "#2E2E2E",
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    onClick={() => handleAction(onPublish || (() => console.log('Publish')))}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "#F5F5F5")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "transparent")
+                    }
+                    onClick={() =>
+                      handleAction(onPublish || (() => console.log("Publish")))
+                    }
                   >
-                    <img src="/images/icons/share.svg" alt="publish" className="shrink-0" width="16" height="16" />
+                    <img
+                      src="/images/icons/share.svg"
+                      alt="publish"
+                      className="shrink-0"
+                      width="16"
+                      height="16"
+                    />
                     Publish
                   </button>
                 )}
-                <button 
+                <button
                   className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
                   style={{
-                    width: '131px',
-                    height: '26px',
-                    borderRadius: '4px',
-                    paddingTop: '4px',
-                    paddingRight: '8px',
-                    paddingBottom: '4px',
-                    paddingLeft: '8px',
-                    gap: '10px',
-                    background: 'transparent',
-                    fontFamily: 'Public Sans',
+                    width: "131px",
+                    height: "26px",
+                    borderRadius: "4px",
+                    paddingTop: "4px",
+                    paddingRight: "8px",
+                    paddingBottom: "4px",
+                    paddingLeft: "8px",
+                    gap: "10px",
+                    background: "transparent",
+                    fontFamily: "Public Sans",
                     fontWeight: 400,
-                    fontSize: '12px',
-                    lineHeight: '150%',
-                    color: '#2E2E2E'
+                    fontSize: "12px",
+                    lineHeight: "150%",
+                    color: "#2E2E2E",
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  onClick={() => handleAction(onEdit || (() => console.log('Edit')))}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "#F5F5F5")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
+                  onClick={() =>
+                    handleAction(onEdit || (() => console.log("Edit")))
+                  }
                 >
-                  <img src="/images/icons/edit.svg" alt="edit" className="shrink-0" width="16" height="16" />
+                  <img
+                    src="/images/icons/edit.svg"
+                    alt="edit"
+                    className="shrink-0"
+                    width="16"
+                    height="16"
+                  />
                   Edit
                 </button>
-                <button 
-                  className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
-                  style={{
-                    width: '131px',
-                    height: '26px',
-                    borderRadius: '4px',
-                    paddingTop: '4px',
-                    paddingRight: '8px',
-                    paddingBottom: '4px',
-                    paddingLeft: '8px',
-                    gap: '10px',
-                    background: 'transparent',
-                    fontFamily: 'Public Sans',
-                    fontWeight: 400,
-                    fontSize: '12px',
-                    lineHeight: '150%',
-                    color: '#2E2E2E'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  onClick={() => handleAction(onDelete || (() => console.log('Delete')))}
-                >
-                  <img src="/images/icons/trash2.svg" alt="delete" className="shrink-0" width="16" height="16" />
-                  Delete
-                </button>
+                {canDelete && (
+                  <button
+                    className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
+                    style={{
+                      width: "131px",
+                      height: "26px",
+                      borderRadius: "4px",
+                      paddingTop: "4px",
+                      paddingRight: "8px",
+                      paddingBottom: "4px",
+                      paddingLeft: "8px",
+                      gap: "10px",
+                      background: "transparent",
+                      fontFamily: "Public Sans",
+                      fontWeight: 400,
+                      fontSize: "12px",
+                      lineHeight: "150%",
+                      color: "#2E2E2E",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "#F5F5F5")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "transparent")
+                    }
+                    onClick={() =>
+                      handleAction(onDelete || (() => console.log("Delete")))
+                    }
+                  >
+                    <img
+                      src="/images/icons/trash2.svg"
+                      alt="delete"
+                      className="shrink-0"
+                      width="16"
+                      height="16"
+                    />
+                    Delete
+                  </button>
+                )}
               </>
             )}
 
-            {status === 'trash' && (
+            {status === "trash" && (
               <>
-                <button 
+                <button
                   className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
                   style={{
-                    width: '131px',
-                    height: '26px',
-                    borderRadius: '4px',
-                    paddingTop: '4px',
-                    paddingRight: '8px',
-                    paddingBottom: '4px',
-                    paddingLeft: '8px',
-                    gap: '10px',
-                    background: 'transparent',
-                    fontFamily: 'Public Sans',
+                    width: "131px",
+                    height: "26px",
+                    borderRadius: "4px",
+                    paddingTop: "4px",
+                    paddingRight: "8px",
+                    paddingBottom: "4px",
+                    paddingLeft: "8px",
+                    gap: "10px",
+                    background: "transparent",
+                    fontFamily: "Public Sans",
                     fontWeight: 400,
-                    fontSize: '12px',
-                    lineHeight: '150%',
-                    color: '#2E2E2E'
+                    fontSize: "12px",
+                    lineHeight: "150%",
+                    color: "#2E2E2E",
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  onClick={() => handleAction(onRestore || (() => console.log('Restore')))}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "#F5F5F5")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
+                  onClick={() =>
+                    handleAction(onRestore || (() => console.log("Restore")))
+                  }
                 >
-                  <img src="/images/icons/restore.svg" alt="restore" className="shrink-0" width="16" height="16" />
+                  <img
+                    src="/images/icons/restore.svg"
+                    alt="restore"
+                    className="shrink-0"
+                    width="16"
+                    height="16"
+                  />
                   Restore
                 </button>
-                <button 
-                  className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
-                  style={{
-                    width: '131px',
-                    height: '26px',
-                    borderRadius: '4px',
-                    paddingTop: '4px',
-                    paddingRight: '8px',
-                    paddingBottom: '4px',
-                    paddingLeft: '8px',
-                    gap: '10px',
-                    background: 'transparent',
-                    fontFamily: 'Public Sans',
-                    fontWeight: 400,
-                    fontSize: '12px',
-                    lineHeight: '150%',
-                    color: '#2E2E2E'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  onClick={() => handleAction(onDelete || (() => console.log('Delete Permanently')))}
-                >
-                  <img src="/images/icons/trash2.svg" alt="delete" className="shrink-0" width="16" height="16" />
-                  Delete Permanently
-                </button>
+                {canDelete && (
+                  <button
+                    className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
+                    style={{
+                      width: "131px",
+                      height: "26px",
+                      borderRadius: "4px",
+                      paddingTop: "4px",
+                      paddingRight: "8px",
+                      paddingBottom: "4px",
+                      paddingLeft: "8px",
+                      gap: "10px",
+                      background: "transparent",
+                      fontFamily: "Public Sans",
+                      fontWeight: 400,
+                      fontSize: "12px",
+                      lineHeight: "150%",
+                      color: "#2E2E2E",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "#F5F5F5")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "transparent")
+                    }
+                    onClick={() =>
+                      handleAction(
+                        onDelete || (() => console.log("Delete Permanently")),
+                      )
+                    }
+                  >
+                    <img
+                      src="/images/icons/trash2.svg"
+                      alt="delete"
+                      className="shrink-0"
+                      width="16"
+                      height="16"
+                    />
+                    Delete Permanently
+                  </button>
+                )}
               </>
             )}
 
-            {status === 'review' && (
-              <button 
+            {status === "review" && (
+              <button
                 className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
                 style={{
-                  width: '131px',
-                  height: '26px',
-                  borderRadius: '4px',
-                  paddingTop: '4px',
-                  paddingRight: '8px',
-                  paddingBottom: '4px',
-                  paddingLeft: '8px',
-                  gap: '10px',
-                  background: 'transparent',
-                  fontFamily: 'Public Sans',
+                  width: "131px",
+                  height: "26px",
+                  borderRadius: "4px",
+                  paddingTop: "4px",
+                  paddingRight: "8px",
+                  paddingBottom: "4px",
+                  paddingLeft: "8px",
+                  gap: "10px",
+                  background: "transparent",
+                  fontFamily: "Public Sans",
                   fontWeight: 400,
-                  fontSize: '12px',
-                  lineHeight: '150%',
-                  color: '#2E2E2E'
+                  fontSize: "12px",
+                  lineHeight: "150%",
+                  color: "#2E2E2E",
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                onClick={() => handleAction(onDraft || (() => console.log('Revert to Draft')))}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "#F5F5F5")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
+                onClick={() =>
+                  handleAction(
+                    onDraft || (() => console.log("Revert to Draft")),
+                  )
+                }
               >
-                <img src="/images/icons/copy.svg" alt="draft" className="shrink-0" width="16" height="16" />
+                <img
+                  src="/images/icons/copy.svg"
+                  alt="draft"
+                  className="shrink-0"
+                  width="16"
+                  height="16"
+                />
                 Revert to Draft
               </button>
             )}
 
-            {status === 'unpublished' && (
+            {status === "unpublished" && (
               <>
                 {canPublish && (
-                  <button 
+                  <button
                     className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
                     style={{
-                      width: '131px',
-                      height: '26px',
-                      borderRadius: '4px',
-                      paddingTop: '4px',
-                      paddingRight: '8px',
-                      paddingBottom: '4px',
-                      paddingLeft: '8px',
-                      gap: '10px',
-                      background: 'transparent',
-                      fontFamily: 'Public Sans',
+                      width: "131px",
+                      height: "26px",
+                      borderRadius: "4px",
+                      paddingTop: "4px",
+                      paddingRight: "8px",
+                      paddingBottom: "4px",
+                      paddingLeft: "8px",
+                      gap: "10px",
+                      background: "transparent",
+                      fontFamily: "Public Sans",
                       fontWeight: 400,
-                      fontSize: '12px',
-                      lineHeight: '150%',
-                      color: '#2E2E2E'
+                      fontSize: "12px",
+                      lineHeight: "150%",
+                      color: "#2E2E2E",
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    onClick={() => handleAction(onRepublish || (() => console.log('Republish')))}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "#F5F5F5")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "transparent")
+                    }
+                    onClick={() =>
+                      handleAction(
+                        onRepublish || (() => console.log("Republish")),
+                      )
+                    }
                   >
-                    <img src="/images/icons/publish-ideal.svg" alt="republish" className="shrink-0" width="16" height="16" />
+                    <img
+                      src="/images/icons/publish-ideal.svg"
+                      alt="republish"
+                      className="shrink-0"
+                      width="16"
+                      height="16"
+                    />
                     Republish
                   </button>
                 )}
-                <button 
+                <button
                   className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
                   style={{
-                    width: '131px',
-                    height: '26px',
-                    borderRadius: '4px',
-                    paddingTop: '4px',
-                    paddingRight: '8px',
-                    paddingBottom: '4px',
-                    paddingLeft: '8px',
-                    gap: '10px',
-                    background: 'transparent',
-                    fontFamily: 'Public Sans',
+                    width: "131px",
+                    height: "26px",
+                    borderRadius: "4px",
+                    paddingTop: "4px",
+                    paddingRight: "8px",
+                    paddingBottom: "4px",
+                    paddingLeft: "8px",
+                    gap: "10px",
+                    background: "transparent",
+                    fontFamily: "Public Sans",
                     fontWeight: 400,
-                    fontSize: '12px',
-                    lineHeight: '150%',
-                    color: '#2E2E2E'
+                    fontSize: "12px",
+                    lineHeight: "150%",
+                    color: "#2E2E2E",
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  onClick={() => handleAction(onEdit || (() => console.log('Edit')))}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "#F5F5F5")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
+                  onClick={() =>
+                    handleAction(onEdit || (() => console.log("Edit")))
+                  }
                 >
-                  <img src="/images/icons/edit-ideal.svg" alt="edit" className="shrink-0" width="16" height="16" />
+                  <img
+                    src="/images/icons/edit-ideal.svg"
+                    alt="edit"
+                    className="shrink-0"
+                    width="16"
+                    height="16"
+                  />
                   Edit
                 </button>
-                <button 
+                <button
                   className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
                   style={{
-                    width: '131px',
-                    height: '26px',
-                    borderRadius: '4px',
-                    paddingTop: '4px',
-                    paddingRight: '8px',
-                    paddingBottom: '4px',
-                    paddingLeft: '8px',
-                    gap: '10px',
-                    background: 'transparent',
-                    fontFamily: 'Public Sans',
+                    width: "131px",
+                    height: "26px",
+                    borderRadius: "4px",
+                    paddingTop: "4px",
+                    paddingRight: "8px",
+                    paddingBottom: "4px",
+                    paddingLeft: "8px",
+                    gap: "10px",
+                    background: "transparent",
+                    fontFamily: "Public Sans",
                     fontWeight: 400,
-                    fontSize: '12px',
-                    lineHeight: '150%',
-                    color: '#2E2E2E'
+                    fontSize: "12px",
+                    lineHeight: "150%",
+                    color: "#2E2E2E",
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  onClick={() => handleAction(onDraft || (() => console.log('Move to Draft')))}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "#F5F5F5")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
+                  onClick={() =>
+                    handleAction(
+                      onDraft || (() => console.log("Move to Draft")),
+                    )
+                  }
                 >
-                  <img src="/images/icons/copy.svg" alt="draft" className="shrink-0" width="16" height="16" />
+                  <img
+                    src="/images/icons/copy.svg"
+                    alt="draft"
+                    className="shrink-0"
+                    width="16"
+                    height="16"
+                  />
                   Move to Draft
                 </button>
-                <button 
-                  className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
-                  style={{
-                    width: '131px',
-                    height: '26px',
-                    borderRadius: '4px',
-                    paddingTop: '4px',
-                    paddingRight: '8px',
-                    paddingBottom: '4px',
-                    paddingLeft: '8px',
-                    gap: '10px',
-                    background: 'transparent',
-                    fontFamily: 'Public Sans',
-                    fontWeight: 400,
-                    fontSize: '12px',
-                    lineHeight: '150%',
-                    color: '#2E2E2E'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  onClick={() => handleAction(onDelete || (() => console.log('Delete')))}
-                >
-                  <img src="/images/icons/trash2.svg" alt="delete" className="shrink-0" width="16" height="16" />
-                  Delete
-                </button>
+                {canDelete && (
+                  <button
+                    className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
+                    style={{
+                      width: "131px",
+                      height: "26px",
+                      borderRadius: "4px",
+                      paddingTop: "4px",
+                      paddingRight: "8px",
+                      paddingBottom: "4px",
+                      paddingLeft: "8px",
+                      gap: "10px",
+                      background: "transparent",
+                      fontFamily: "Public Sans",
+                      fontWeight: 400,
+                      fontSize: "12px",
+                      lineHeight: "150%",
+                      color: "#2E2E2E",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "#F5F5F5")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "transparent")
+                    }
+                    onClick={() =>
+                      handleAction(onDelete || (() => console.log("Delete")))
+                    }
+                  >
+                    <img
+                      src="/images/icons/trash2.svg"
+                      alt="delete"
+                      className="shrink-0"
+                      width="16"
+                      height="16"
+                    />
+                    Delete
+                  </button>
+                )}
               </>
             )}
 
-            {status === 'published' && (
+            {status === "published" && (
               <>
                 {canPublish && (
-                  <button 
+                  <button
                     className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
                     style={{
-                      width: '131px',
-                      height: '26px',
-                      borderRadius: '4px',
-                      paddingTop: '4px',
-                      paddingRight: '8px',
-                      paddingBottom: '4px',
-                      paddingLeft: '8px',
-                      gap: '10px',
-                      background: 'transparent',
-                      fontFamily: 'Public Sans',
+                      width: "131px",
+                      height: "26px",
+                      borderRadius: "4px",
+                      paddingTop: "4px",
+                      paddingRight: "8px",
+                      paddingBottom: "4px",
+                      paddingLeft: "8px",
+                      gap: "10px",
+                      background: "transparent",
+                      fontFamily: "Public Sans",
                       fontWeight: 400,
-                      fontSize: '12px',
-                      lineHeight: '150%',
-                      color: '#2E2E2E'
+                      fontSize: "12px",
+                      lineHeight: "150%",
+                      color: "#2E2E2E",
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    onClick={() => handleAction(onUnpublish || (() => console.log('Unpublish')))}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "#F5F5F5")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "transparent")
+                    }
+                    onClick={() =>
+                      handleAction(
+                        onUnpublish || (() => console.log("Unpublish")),
+                      )
+                    }
                   >
-                    <img src="/images/icons/unpublished-hover.svg" alt="unpublish" className="shrink-0" width="16" height="16" />
+                    <img
+                      src="/images/icons/unpublished-hover.svg"
+                      alt="unpublish"
+                      className="shrink-0"
+                      width="16"
+                      height="16"
+                    />
                     Unpublish
                   </button>
                 )}
-                <button 
+                <button
                   className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
                   style={{
-                    width: '131px',
-                    height: '26px',
-                    borderRadius: '4px',
-                    paddingTop: '4px',
-                    paddingRight: '8px',
-                    paddingBottom: '4px',
-                    paddingLeft: '8px',
-                    gap: '10px',
-                    background: 'transparent',
-                    fontFamily: 'Public Sans',
+                    width: "131px",
+                    height: "26px",
+                    borderRadius: "4px",
+                    paddingTop: "4px",
+                    paddingRight: "8px",
+                    paddingBottom: "4px",
+                    paddingLeft: "8px",
+                    gap: "10px",
+                    background: "transparent",
+                    fontFamily: "Public Sans",
                     fontWeight: 400,
-                    fontSize: '12px',
-                    lineHeight: '150%',
-                    color: '#2E2E2E'
+                    fontSize: "12px",
+                    lineHeight: "150%",
+                    color: "#2E2E2E",
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  onClick={() => handleAction(onEdit || (() => console.log('Edit')))}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "#F5F5F5")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
+                  onClick={() =>
+                    handleAction(onEdit || (() => console.log("Edit")))
+                  }
                 >
-                  <img src="/images/icons/edit-ideal.svg" alt="edit" className="shrink-0" width="16" height="16" />
+                  <img
+                    src="/images/icons/edit-ideal.svg"
+                    alt="edit"
+                    className="shrink-0"
+                    width="16"
+                    height="16"
+                  />
                   Edit
                 </button>
-                <button 
+                <button
                   className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
                   style={{
-                    width: '131px',
-                    height: '26px',
-                    borderRadius: '4px',
-                    paddingTop: '4px',
-                    paddingRight: '8px',
-                    paddingBottom: '4px',
-                    paddingLeft: '8px',
-                    gap: '10px',
-                    background: 'transparent',
-                    fontFamily: 'Public Sans',
+                    width: "131px",
+                    height: "26px",
+                    borderRadius: "4px",
+                    paddingTop: "4px",
+                    paddingRight: "8px",
+                    paddingBottom: "4px",
+                    paddingLeft: "8px",
+                    gap: "10px",
+                    background: "transparent",
+                    fontFamily: "Public Sans",
                     fontWeight: 400,
-                    fontSize: '12px',
-                    lineHeight: '150%',
-                    color: '#2E2E2E'
+                    fontSize: "12px",
+                    lineHeight: "150%",
+                    color: "#2E2E2E",
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  onClick={() => handleAction(onDraft || (() => console.log('Move to Draft')))}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "#F5F5F5")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
+                  onClick={() =>
+                    handleAction(
+                      onDraft || (() => console.log("Move to Draft")),
+                    )
+                  }
                 >
-                  <img src="/images/icons/copy.svg" alt="draft" className="shrink-0" width="16" height="16" />
+                  <img
+                    src="/images/icons/copy.svg"
+                    alt="draft"
+                    className="shrink-0"
+                    width="16"
+                    height="16"
+                  />
                   Move to Draft
                 </button>
-                <button 
-                  className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
-                  style={{
-                    width: '131px',
-                    height: '26px',
-                    borderRadius: '4px',
-                    paddingTop: '4px',
-                    paddingRight: '8px',
-                    paddingBottom: '4px',
-                    paddingLeft: '8px',
-                    gap: '10px',
-                    background: 'transparent',
-                    fontFamily: 'Public Sans',
-                    fontWeight: 400,
-                    fontSize: '12px',
-                    lineHeight: '150%',
-                    color: '#2E2E2E'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#F5F5F5'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  onClick={() => handleAction(onDelete || (() => console.log('Delete')))}
-                >
-                  <img src="/images/icons/delete.svg" alt="delete" className="shrink-0" width="16" height="16" />
-                  Delete
-                </button>
+                {canDelete && (
+                  <button
+                    className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
+                    style={{
+                      width: "131px",
+                      height: "26px",
+                      borderRadius: "4px",
+                      paddingTop: "4px",
+                      paddingRight: "8px",
+                      paddingBottom: "4px",
+                      paddingLeft: "8px",
+                      gap: "10px",
+                      background: "transparent",
+                      fontFamily: "Public Sans",
+                      fontWeight: 400,
+                      fontSize: "12px",
+                      lineHeight: "150%",
+                      color: "#2E2E2E",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "#F5F5F5")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "transparent")
+                    }
+                    onClick={() =>
+                      handleAction(onDelete || (() => console.log("Delete")))
+                    }
+                  >
+                    <img
+                      src="/images/icons/trash2.svg"
+                      alt="delete"
+                      className="shrink-0"
+                      width="16"
+                      height="16"
+                    />
+                    Delete
+                  </button>
+                )}
               </>
             )}
           </div>
         </>
       )}
     </div>
-  )
+  );
 }
