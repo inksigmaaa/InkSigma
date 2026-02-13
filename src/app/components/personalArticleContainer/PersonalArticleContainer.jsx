@@ -73,6 +73,7 @@ export default function PersonalArticleContainer({
   onSelect,
   titleColor,
   canEdit = true, // Default to true for backward compatibility
+  canDelete = true, // Default to true for backward compatibility
 }) {
   const router = useRouter();
   const { currentPublication } = usePublication();
@@ -199,10 +200,15 @@ export default function PersonalArticleContainer({
               }}
             />
           </div>
-        ) : canEdit ? (
-          /* Only show dropdown if user can edit */
+        ) : (
+          /* Show dropdown, disabled if user cannot edit */
           <div
-            style={{ transform: "scale(0.8125)", transformOrigin: "center" }}
+            style={{
+              transform: "scale(0.8125)",
+              transformOrigin: "center",
+              opacity: canEdit ? 1 : 0.4,
+              pointerEvents: canEdit ? "auto" : "none",
+            }}
           >
             <ArticleDropdown
               status={status}
@@ -214,9 +220,10 @@ export default function PersonalArticleContainer({
               onRepublish={onRepublish}
               onDraft={onDraft}
               canPublish={canPublish}
+              canDelete={canDelete}
             />
           </div>
-        ) : null}
+        )}
       </div>
 
       {/* content */}
@@ -439,8 +446,8 @@ export default function PersonalArticleContainer({
             className="hidden min-[641px]:flex min-[641px]:flex-col min-[641px]:items-end min-[641px]:flex-shrink-0"
             style={{ gap: "54px" }}
           >
-            {/* Action icons - only show if canEdit is true */}
-            {canEdit && (
+            {/* Action icons - show always, disable if canEdit is false */}
+            {
               <div className="flex gap-[10px] flex-shrink-0">
                 {status === "trash" ? (
                   <>
@@ -459,7 +466,7 @@ export default function PersonalArticleContainer({
                       <img src="/images/icons/restore.svg" alt="restore" />
                     </button>
                     <button
-                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
+                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-red-50 hover:border-red-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
                         height: "32px",
@@ -468,7 +475,8 @@ export default function PersonalArticleContainer({
                         borderWidth: "1px",
                       }}
                       title="Delete Permanently"
-                      onClick={onDelete}
+                      onClick={canDelete ? onDelete : undefined}
+                      disabled={!canDelete}
                     >
                       <img src="/images/icons/trash2.svg" alt="delete" />
                     </button>
@@ -506,7 +514,7 @@ export default function PersonalArticleContainer({
                       <img src="/images/icons/edit.svg" alt="edit" />
                     </button>
                     <button
-                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
+                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-red-50 hover:border-red-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
                         height: "32px",
@@ -515,7 +523,8 @@ export default function PersonalArticleContainer({
                         borderWidth: "1px",
                       }}
                       title="Delete"
-                      onClick={onDelete}
+                      onClick={canDelete ? onDelete : undefined}
+                      disabled={!canDelete}
                     >
                       <img src="/images/icons/trash2.svg" alt="delete" />
                     </button>
@@ -587,7 +596,7 @@ export default function PersonalArticleContainer({
                       <img src="/images/icons/copy.svg" alt="draft" />
                     </button>
                     <button
-                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
+                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-red-50 hover:border-red-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
                         height: "32px",
@@ -596,7 +605,8 @@ export default function PersonalArticleContainer({
                         borderWidth: "1px",
                       }}
                       title="Delete"
-                      onClick={onDelete}
+                      onClick={canDelete ? onDelete : undefined}
+                      disabled={!canDelete}
                     >
                       <img src="/images/icons/trash2.svg" alt="delete" />
                     </button>
@@ -623,7 +633,7 @@ export default function PersonalArticleContainer({
                       </button>
                     )}
                     <button
-                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
+                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canEdit ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
                         height: "32px",
@@ -632,12 +642,13 @@ export default function PersonalArticleContainer({
                         borderWidth: "1px",
                       }}
                       title="Edit"
-                      onClick={handleEdit}
+                      onClick={canEdit ? handleEdit : undefined}
+                      disabled={!canEdit}
                     >
                       <img src="/images/icons/edit-ideal.svg" alt="edit" />
                     </button>
                     <button
-                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
+                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canEdit ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
                         height: "32px",
@@ -646,12 +657,13 @@ export default function PersonalArticleContainer({
                         borderWidth: "1px",
                       }}
                       title="Draft"
-                      onClick={onDraft}
+                      onClick={canEdit ? onDraft : undefined}
+                      disabled={!canEdit}
                     >
                       <img src="/images/icons/copy.svg" alt="draft" />
                     </button>
                     <button
-                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
+                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-red-50 hover:border-red-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
                         height: "32px",
@@ -660,14 +672,15 @@ export default function PersonalArticleContainer({
                         borderWidth: "1px",
                       }}
                       title="Delete"
-                      onClick={onDelete}
+                      onClick={canDelete ? onDelete : undefined}
+                      disabled={!canDelete}
                     >
                       <img src="/images/icons/delete.svg" alt="delete" />
                     </button>
                   </>
                 )}
               </div>
-            )}
+            }
 
             {/* Posted time */}
             {(createdAt || postedTime) && (

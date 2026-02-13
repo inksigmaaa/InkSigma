@@ -65,6 +65,7 @@ export default function ArticleContainer({
   showActions = true,
   stats,
   titleColor,
+  canDelete = true, // Default to true for backward compatibility
 }) {
   const router = useRouter();
   const { currentPublication } = usePublication();
@@ -229,6 +230,7 @@ export default function ArticleContainer({
                 onRepublish={onRepublish}
                 onDraft={onDraft}
                 canPublish={canPublish}
+                canDelete={canDelete}
               />
             </div>
           )}
@@ -477,7 +479,7 @@ export default function ArticleContainer({
                       <img src="/images/icons/restore.svg" alt="restore" />
                     </button>
                     <button
-                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
+                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-red-50 hover:border-red-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
                         height: "32px",
@@ -486,7 +488,8 @@ export default function ArticleContainer({
                         borderWidth: "1px",
                       }}
                       title="Delete Permanently"
-                      onClick={onDelete}
+                      onClick={canDelete ? onDelete : undefined}
+                      disabled={!canDelete}
                     >
                       <img src="/images/icons/trash2.svg" alt="delete" />
                     </button>
@@ -524,7 +527,7 @@ export default function ArticleContainer({
                       <img src="/images/icons/edit.svg" alt="edit" />
                     </button>
                     <button
-                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
+                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-red-50 hover:border-red-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
                         height: "32px",
@@ -533,7 +536,8 @@ export default function ArticleContainer({
                         borderWidth: "1px",
                       }}
                       title="Delete"
-                      onClick={onDelete}
+                      onClick={canDelete ? onDelete : undefined}
+                      disabled={!canDelete}
                     >
                       <img src="/images/icons/trash2.svg" alt="delete" />
                     </button>
@@ -605,7 +609,7 @@ export default function ArticleContainer({
                       <img src="/images/icons/copy.svg" alt="draft" />
                     </button>
                     <button
-                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
+                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-red-50 hover:border-red-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
                         height: "32px",
@@ -614,7 +618,8 @@ export default function ArticleContainer({
                         borderWidth: "1px",
                       }}
                       title="Delete"
-                      onClick={onDelete}
+                      onClick={canDelete ? onDelete : undefined}
+                      disabled={!canDelete}
                     >
                       <img src="/images/icons/trash2.svg" alt="delete" />
                     </button>
@@ -669,7 +674,7 @@ export default function ArticleContainer({
                       <img src="/images/icons/copy.svg" alt="draft" />
                     </button>
                     <button
-                      className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-300"
+                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-red-50 hover:border-red-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
                         height: "32px",
@@ -678,7 +683,8 @@ export default function ArticleContainer({
                         borderWidth: "1px",
                       }}
                       title="Delete"
-                      onClick={onDelete}
+                      onClick={canDelete ? onDelete : undefined}
+                      disabled={!canDelete}
                     >
                       <img src="/images/icons/delete.svg" alt="delete" />
                     </button>
