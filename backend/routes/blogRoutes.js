@@ -26,125 +26,50 @@ import { requirePublicationContext } from "../middleware/subdomainMiddleware.js"
 const router = express.Router();
 
 // Helper function to check if user can modify a blog
-const canUserModifyBlog = async (userId, blogAuthorId) => {
-  console.log(
-    `Checking authorization: userId=${userId}, blogAuthorId=${blogAuthorId}`,
-  );
+// Rules:
+// 1) Author can always modify.
+// 2) Publication owner can modify any blog in that publication.
+// 3) Publication admin/editor can modify any blog in that publication.
+const canUserModifyBlog = async (userId, blogAuthorId, blogPublicationId) => {
+  if (!userId || !blogAuthorId) return false;
 
-  // If user is the author, they can always modify
   if (userId === blogAuthorId) {
-    console.log("User is the author - authorized");
     return true;
   }
 
-  // Check if the current user owns a publication and the blog author is a member of that publication
-  const userOwnedPublications = await db
-    .select()
+  if (!blogPublicationId) {
+    return false;
+  }
+
+  const [pub] = await db
+    .select({
+      id: publication.id,
+      ownerId: publication.userId,
+    })
     .from(publication)
-    .where(eq(publication.userId, userId));
+    .where(eq(publication.id, blogPublicationId));
 
-  for (const userPub of userOwnedPublications) {
-    console.log(
-      `Checking if blog author is member of user's publication: ${userPub.id}`,
+  if (!pub) {
+    return false;
+  }
+
+  if (pub.ownerId === userId) {
+    return true;
+  }
+
+  const [membership] = await db
+    .select({
+      role: publicationMember.role,
+    })
+    .from(publicationMember)
+    .where(
+      and(
+        eq(publicationMember.publicationId, blogPublicationId),
+        eq(publicationMember.userId, userId),
+      ),
     );
 
-    const [authorMembership] = await db
-      .select()
-      .from(publicationMember)
-      .where(
-        and(
-          eq(publicationMember.publicationId, userPub.id),
-          eq(publicationMember.userId, blogAuthorId),
-        ),
-      );
-
-    if (authorMembership) {
-      console.log(
-        `Blog author is ${authorMembership.role} in user's publication ${userPub.id} - authorized`,
-      );
-      return true;
-    }
-  }
-
-  // Check if both users are members of the same publication and current user is admin/editor
-  const blogAuthorMemberships = await db
-    .select()
-    .from(publicationMember)
-    .where(eq(publicationMember.userId, blogAuthorId));
-
-  for (const authorMembership of blogAuthorMemberships) {
-    console.log(
-      `Author is member of publication: ${authorMembership.publicationId}`,
-    );
-
-    const [currentUserMembership] = await db
-      .select()
-      .from(publicationMember)
-      .where(
-        and(
-          eq(publicationMember.publicationId, authorMembership.publicationId),
-          eq(publicationMember.userId, userId),
-        ),
-      );
-
-    if (currentUserMembership) {
-      console.log(
-        `Current user is ${currentUserMembership.role} in same publication ${authorMembership.publicationId}`,
-      );
-
-      if (
-        currentUserMembership.role === "admin" ||
-        currentUserMembership.role === "editor"
-      ) {
-        console.log(
-          `User is ${currentUserMembership.role} in same publication - authorized`,
-        );
-        return true;
-      } else {
-        console.log(
-          `User role ${currentUserMembership.role} is not sufficient for modification`,
-        );
-      }
-    } else {
-      console.log(
-        `Current user is not a member of publication ${authorMembership.publicationId}`,
-      );
-    }
-  }
-
-  // Check if current user is admin/editor in a publication where the blog author is also a member
-  const currentUserMemberships = await db
-    .select()
-    .from(publicationMember)
-    .where(eq(publicationMember.userId, userId));
-
-  for (const userMembership of currentUserMemberships) {
-    if (userMembership.role === "admin" || userMembership.role === "editor") {
-      console.log(
-        `User is ${userMembership.role} in publication ${userMembership.publicationId}`,
-      );
-
-      const [authorInSamePub] = await db
-        .select()
-        .from(publicationMember)
-        .where(
-          and(
-            eq(publicationMember.publicationId, userMembership.publicationId),
-            eq(publicationMember.userId, blogAuthorId),
-          ),
-        );
-
-      if (authorInSamePub) {
-        console.log(
-          `Blog author is also in publication ${userMembership.publicationId} - authorized`,
-        );
-        return true;
-      }
-    }
-  }
-
-  console.log("User not authorized to modify this blog");
-  return false;
+  return membership?.role === "admin" || membership?.role === "editor";
 };
 
 // Configure multer for blog image uploads
@@ -260,6 +185,76 @@ const syncStatusAndPublished = (status) => {
   };
 };
 
+const runInBackground = (label, task) => {
+  Promise.resolve()
+    .then(task)
+    .catch((error) => {
+      console.error(`[BLOG BACKGROUND] ${label} failed:`, error);
+    });
+};
+
+const notifyReviewSubmission = async ({
+  publicationId,
+  authorId,
+  actorId,
+  actorName,
+  blogId,
+}) => {
+  if (!publicationId) return;
+
+  const [pub] = await db
+    .select()
+    .from(publication)
+    .where(eq(publication.id, publicationId));
+
+  if (!pub) return;
+
+  await notificationService.notifyBlogSubmittedForReview({
+    authorId,
+    publicationName: pub.name,
+    blogId,
+    publicationId,
+  });
+
+  const admins = await db
+    .select({ userId: publicationMember.userId })
+    .from(publicationMember)
+    .where(
+      and(
+        eq(publicationMember.publicationId, publicationId),
+        or(
+          eq(publicationMember.role, "admin"),
+          eq(publicationMember.role, "editor"),
+        ),
+      ),
+    );
+
+  const recipients = new Set();
+
+  for (const admin of admins) {
+    if (admin.userId && admin.userId !== actorId) {
+      recipients.add(admin.userId);
+    }
+  }
+
+  if (pub.userId && pub.userId !== actorId) {
+    recipients.add(pub.userId);
+  }
+
+  if (recipients.size === 0) return;
+
+  await Promise.allSettled(
+    Array.from(recipients).map((recipientId) =>
+      notificationService.notifyBlogReview({
+        recipientId,
+        authorName: actorName || "Author",
+        authorId: actorId,
+        blogId,
+      }),
+    ),
+  );
+};
+
 // GET /api/blogs - Get all blogs with filters
 router.get("/", async (req, res) => {
   try {
@@ -283,15 +278,8 @@ router.get("/", async (req, res) => {
       limit = 50,
       offset = 0,
       includeUnpublished, // Only for authenticated requests
+      includeStats, // Optional: include expensive per-blog stats
     } = req.query;
-
-    console.log("[GET /api/blogs] Query params:", {
-      published,
-      status,
-      authorId,
-      publicationId,
-      includeUnpublished,
-    });
 
     // Check if user is authenticated (for viewing their own unpublished posts)
     let currentUserId = null;
@@ -300,10 +288,8 @@ router.get("/", async (req, res) => {
         headers: fromNodeHeaders(req.headers),
       });
       currentUserId = session?.user?.id;
-      console.log("[GET /api/blogs] Current user ID:", currentUserId);
     } catch (e) {
       // Not authenticated, that's fine for public requests
-      console.log("[GET /api/blogs] Not authenticated");
     }
 
     let query = db
@@ -377,8 +363,6 @@ router.get("/", async (req, res) => {
 
     let blogs = await query.limit(parseInt(limit)).offset(parseInt(offset));
 
-    console.log("[GET /api/blogs] Raw blogs count:", blogs.length);
-
     // Filter by categories if provided (since categories is an array field)
     if (categories) {
       const categoryArray = Array.isArray(categories)
@@ -391,16 +375,8 @@ router.get("/", async (req, res) => {
       );
     }
 
-    // Security: If not authenticated or not the author, filter out non-published posts
-    // This is a safety net in case someone bypasses the query filters
-    console.log(
-      "[GET /api/blogs] Security check - currentUserId:",
-      currentUserId,
-      "authorId:",
-      authorId,
-      "includeUnpublished:",
-      includeUnpublished,
-    );
+    // Security: If not authenticated or not the author, filter out non-published posts.
+    // This is a safety net in case someone bypasses the query filters.
 
     // Only apply security filters if status is NOT explicitly set to 'published'
     // If status=published is explicitly requested, trust the database filter
@@ -408,43 +384,38 @@ router.get("/", async (req, res) => {
 
     if (!statusExplicitlyPublished) {
       if (!currentUserId) {
-        console.log("[GET /api/blogs] No user - filtering to published only");
         blogs = blogs.filter((b) => b.status === "published");
       } else if (includeUnpublished === "true") {
         // User is requesting with includeUnpublished
         if (authorId && authorId === currentUserId) {
           // User is requesting their own blogs - show all
-          console.log(
-            "[GET /api/blogs] User requesting own blogs with includeUnpublished - showing all",
-          );
           // No filtering needed
         } else {
           // User is requesting all blogs with includeUnpublished - show published + own posts
-          console.log(
-            "[GET /api/blogs] includeUnpublished but not own blogs - showing published + own",
-          );
           blogs = blogs.filter(
             (b) => b.status === "published" || b.authorId === currentUserId,
           );
         }
       } else {
         // Authenticated but not requesting unpublished - show published + own posts
-        console.log("[GET /api/blogs] Filtering to published + own posts");
         blogs = blogs.filter(
           (b) => b.status === "published" || b.authorId === currentUserId,
         );
       }
-    } else {
-      console.log(
-        "[GET /api/blogs] Status explicitly set to published - trusting database filter",
-      );
     }
 
-    console.log("[GET /api/blogs] Final blogs count:", blogs.length);
-    console.log(
-      "[GET /api/blogs] Blog statuses:",
-      blogs.map((b) => ({ id: b.id, status: b.status, authorId: b.authorId })),
-    );
+    // Most dashboard pages do not display list stats. Skip expensive N+1 work unless explicitly requested.
+    if (includeStats !== "true") {
+      return res.json(
+        blogs.map((b) => ({
+          ...b,
+          views: 0,
+          comments: 0,
+          shares: 0,
+          revisits: 0,
+        })),
+      );
+    }
 
     // Add stats to each blog (limit to first 50 to avoid performance issues)
     const blogsToProcess = blogs.slice(0, 50);
@@ -548,15 +519,7 @@ router.get("/public", requirePublicationContext, async (req, res) => {
 router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
   try {
     const { publicationId } = req.params;
-    const { status, limit = 50, offset = 0 } = req.query;
-
-    console.log("[Publication Blogs] Request:", {
-      publicationId,
-      status,
-      limit,
-      offset,
-      userId: req.user.id,
-    });
+    const { status, limit = 50, offset = 0, includeStats } = req.query;
 
     // Check if user has access to this publication
     const [pub] = await db
@@ -565,7 +528,6 @@ router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
       .where(eq(publication.id, parseInt(publicationId)));
 
     if (!pub) {
-      console.log("[Publication Blogs] Publication not found:", publicationId);
       return res.status(404).json({ error: "Publication not found" });
     }
 
@@ -586,10 +548,7 @@ router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
       isMember = !!member;
     }
 
-    console.log("[Publication Blogs] Access check:", { isOwner, isMember });
-
     if (!isOwner && !isMember) {
-      console.log("[Publication Blogs] Access denied for user:", req.user.id);
       return res.status(403).json({ error: "Access denied" });
     }
 
@@ -600,11 +559,6 @@ router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
     if (status) {
       conditions.push(eq(blog.status, status));
     }
-
-    console.log("[Publication Blogs] Query conditions:", {
-      publicationId,
-      status,
-    });
 
     const blogs = await db
       .select({
@@ -636,7 +590,17 @@ router.get("/publication/:publicationId", getCurrentUser, async (req, res) => {
       .limit(parseInt(limit))
       .offset(parseInt(offset));
 
-    console.log("[Publication Blogs] Blogs found:", blogs.length);
+    if (includeStats !== "true") {
+      return res.json(
+        blogs.map((b) => ({
+          ...b,
+          views: 0,
+          comments: 0,
+          shares: 0,
+          revisits: 0,
+        })),
+      );
+    }
 
     // Add stats to each blog
     const blogsWithStats = await Promise.all(
@@ -755,7 +719,11 @@ router.get("/:id", async (req, res) => {
 
       // Check if user is author OR has permission to modify (Admin/Editor)
       // This aligns with the PUT permissions so editors can view the drafts they are allowed to edit
-      const canView = await canUserModifyBlog(currentUserId, blogData.authorId);
+      const canView = await canUserModifyBlog(
+        currentUserId,
+        blogData.authorId,
+        blogData.publicationId,
+      );
 
       if (!canView) {
         // Special check: If it's in review, current logic might still apply?
@@ -976,8 +944,6 @@ router.post("/", getCurrentUser, async (req, res) => {
       blogData.scheduledAt = new Date(scheduledAt);
     }
 
-    console.log("[CREATE BLOG] Creating blog with data:", blogData);
-
     const [newBlog] = await db.insert(blog).values(blogData).returning();
 
     // Notify scheduler if blog is scheduled
@@ -985,84 +951,17 @@ router.post("/", getCurrentUser, async (req, res) => {
       schedulerService.onBlogScheduled(newBlog.id);
     }
 
-    // Send notifications if blog is created with review status
+    // Run review notifications asynchronously so article actions return fast.
     if (newBlog.status === "review" && newBlog.publicationId) {
-      console.log(
-        `[CREATE BLOG] Blog created with review status, sending notifications for blog ${newBlog.id}`,
+      runInBackground("create-review-notifications", () =>
+        notifyReviewSubmission({
+          publicationId: newBlog.publicationId,
+          authorId: newBlog.authorId,
+          actorId: req.user.id,
+          actorName: req.user.name,
+          blogId: newBlog.id,
+        }),
       );
-      try {
-        const [pub] = await db
-          .select()
-          .from(publication)
-          .where(eq(publication.id, newBlog.publicationId));
-
-        console.log(`[CREATE BLOG] Found publication: ${pub?.name}`);
-
-        if (pub) {
-          // Notify author that their blog has been submitted for review
-          console.log(
-            `[CREATE BLOG] Notifying author ${newBlog.authorId} about review submission`,
-          );
-          await notificationService.notifyBlogSubmittedForReview({
-            authorId: newBlog.authorId,
-            publicationName: pub.name,
-            blogId: newBlog.id,
-            publicationId: newBlog.publicationId,
-          });
-
-          // Notify publication owner/admins
-          const admins = await db
-            .select({ userId: publicationMember.userId })
-            .from(publicationMember)
-            .where(
-              and(
-                eq(publicationMember.publicationId, newBlog.publicationId),
-                or(
-                  eq(publicationMember.role, "admin"),
-                  eq(publicationMember.role, "editor"),
-                ),
-              ),
-            );
-
-          console.log(
-            `[CREATE BLOG] Found ${admins.length} admins/editors to notify`,
-          );
-
-          // Notify each admin/editor
-          for (const admin of admins) {
-            if (admin.userId !== req.user.id) {
-              // Don't notify yourself
-              console.log(
-                `[CREATE BLOG] Notifying admin/editor ${admin.userId} about review`,
-              );
-              await notificationService.notifyBlogReview({
-                recipientId: admin.userId,
-                authorName: req.user.name,
-                authorId: req.user.id,
-                blogId: newBlog.id,
-              });
-            }
-          }
-
-          // Also notify publication owner if not already notified
-          if (
-            pub.userId !== req.user.id &&
-            !admins.some((a) => a.userId === pub.userId)
-          ) {
-            console.log(
-              `[CREATE BLOG] Notifying publication owner ${pub.userId} about review`,
-            );
-            await notificationService.notifyBlogReview({
-              recipientId: pub.userId,
-              authorName: req.user.name,
-              authorId: req.user.id,
-              blogId: newBlog.id,
-            });
-          }
-        }
-      } catch (notifError) {
-        console.error("Failed to create review notifications:", notifError);
-      }
     }
 
     res.status(201).json(newBlog);
@@ -1086,7 +985,7 @@ router.post("/auto-save", async (req, res) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { title, description, content, categories } = req.body;
+    const { title, description, content, categories, publicationId } = req.body;
 
     // Only save if there's meaningful content
     if (!title || !description || !content) {
@@ -1108,9 +1007,12 @@ router.post("/auto-save", async (req, res) => {
       updatedAt: new Date(),
     };
 
+    if (publicationId) {
+      blogData.publicationId = parseInt(publicationId);
+    }
+
     const [newBlog] = await db.insert(blog).values(blogData).returning();
 
-    console.log("[AUTO-SAVE] Blog saved as draft:", newBlog.id);
     res.status(201).json(newBlog);
   } catch (error) {
     console.error("Error auto-saving blog:", error);
@@ -1137,6 +1039,7 @@ router.post("/:id/edit-draft", getCurrentUser, async (req, res) => {
     const authorized = await canUserModifyBlog(
       req.user.id,
       originalBlog.authorId,
+      originalBlog.publicationId,
     );
     if (!authorized) {
       return res.status(403).json({ error: "Unauthorized" });
@@ -1202,10 +1105,6 @@ router.put("/:id", getCurrentUser, async (req, res) => {
       publicationId,
     } = req.body;
 
-    console.log(
-      `[PUT BLOG] Updating blog ${id} with status: ${status}, publicationId: ${publicationId}, existing status will be checked`,
-    );
-
     // Check if blog exists
     const [existingBlog] = await db
       .select()
@@ -1220,6 +1119,7 @@ router.put("/:id", getCurrentUser, async (req, res) => {
     const canModify = await canUserModifyBlog(
       req.user.id,
       existingBlog.authorId,
+      existingBlog.publicationId,
     );
     if (!canModify) {
       return res
@@ -1263,9 +1163,6 @@ router.put("/:id", getCurrentUser, async (req, res) => {
     if (categories !== undefined) updateData.categories = categories;
     if (scheduledAt !== undefined) {
       updateData.scheduledAt = new Date(scheduledAt);
-      console.log(
-        `[BLOG] Scheduling blog ${id} for: ${updateData.scheduledAt.toISOString()}`,
-      );
     }
 
     if (image !== undefined) {
@@ -1287,9 +1184,6 @@ router.put("/:id", getCurrentUser, async (req, res) => {
     // Handle publicationId update
     if (publicationId !== undefined) {
       updateData.publicationId = publicationId ? parseInt(publicationId) : null;
-      console.log(
-        `[PUT BLOG] Setting publicationId to: ${updateData.publicationId}`,
-      );
     }
 
     // Handle status update with strict synchronization
@@ -1307,25 +1201,13 @@ router.put("/:id", getCurrentUser, async (req, res) => {
 
     // MERGE LOGIC: If this is a draft of a published article and it is being published
     if (existingBlog.masterId) {
-      console.log(
-        `[PUT BLOG DEBUG] Blog ${id} has masterId ${existingBlog.masterId}. Checking for merge...`,
-      );
-
       // Determine the target status
       let targetStatus = existingBlog.status;
       if (status) targetStatus = status;
       else if (published !== undefined)
         targetStatus = published ? "published" : "draft";
 
-      console.log(
-        `[PUT BLOG DEBUG] Target status: ${targetStatus}, Existing status: ${existingBlog.status}`,
-      );
-
       if (targetStatus === "published") {
-        console.log(
-          `[PUT BLOG] Merging draft ${id} into master ${existingBlog.masterId}`,
-        );
-
         // Get Master Blog to ensure it exists
         const [masterBlog] = await db
           .select()
@@ -1347,8 +1229,6 @@ router.put("/:id", getCurrentUser, async (req, res) => {
             updatedAt: new Date(),
           };
 
-          console.log("[PUT BLOG] Updating master with merged data");
-
           // Update Master
           const [updatedMaster] = await db
             .update(blog)
@@ -1357,7 +1237,6 @@ router.put("/:id", getCurrentUser, async (req, res) => {
             .returning();
 
           // Delete the Draft
-          console.log(`[PUT BLOG] Deleting draft ${id} after merge`);
           await db.delete(blog).where(eq(blog.id, parseInt(id)));
 
           // Return the master blog as the result
@@ -1382,114 +1261,38 @@ router.put("/:id", getCurrentUser, async (req, res) => {
 
     // Notify scheduler if blog is scheduled or rescheduled
     if (updatedBlog.status === "scheduled" && updatedBlog.scheduledAt) {
-      console.log(`[BLOG] Notifying scheduler for blog ${id}`);
       schedulerService.onBlogScheduled(updatedBlog.id);
     } else if (
       existingBlog.status === "scheduled" &&
       updatedBlog.status !== "scheduled"
     ) {
       // Blog was unscheduled
-      console.log(`[BLOG] Cancelling schedule for blog ${id}`);
       schedulerService.onBlogUnscheduled(updatedBlog.id);
     }
 
-    // Create notifications based on status change
+    // Run notifications asynchronously to avoid delaying user actions.
     if (status !== undefined && status !== existingBlog.status) {
-      console.log(
-        `[PUT BLOG] Status changed from ${existingBlog.status} to ${status}, checking for notifications`,
-      );
-      try {
-        // If blog was submitted for review
-        if (status === "review" && existingBlog.publicationId) {
-          console.log(
-            `[PUT BLOG] Blog submitted for review, publicationId: ${existingBlog.publicationId}`,
-          );
-          const [pub] = await db
-            .select()
-            .from(publication)
-            .where(eq(publication.id, existingBlog.publicationId));
+      if (status === "review" && existingBlog.publicationId) {
+        runInBackground("put-review-notifications", () =>
+          notifyReviewSubmission({
+            publicationId: existingBlog.publicationId,
+            authorId: existingBlog.authorId,
+            actorId: req.user.id,
+            actorName: req.user.name,
+            blogId: parseInt(id),
+          }),
+        );
+      }
 
-          console.log(`[PUT BLOG] Found publication: ${pub?.name}`);
-
-          if (pub) {
-            // Notify author that their blog has been submitted for review
-            console.log(
-              `[PUT BLOG] Notifying author ${existingBlog.authorId} about review submission`,
-            );
-            await notificationService.notifyBlogSubmittedForReview({
-              authorId: existingBlog.authorId,
-              publicationName: pub.name,
-              blogId: parseInt(id),
-              publicationId: existingBlog.publicationId,
-            });
-
-            // Notify publication owner/admins
-            const admins = await db
-              .select({ userId: publicationMember.userId })
-              .from(publicationMember)
-              .where(
-                and(
-                  eq(
-                    publicationMember.publicationId,
-                    existingBlog.publicationId,
-                  ),
-                  or(
-                    eq(publicationMember.role, "admin"),
-                    eq(publicationMember.role, "editor"),
-                  ),
-                ),
-              );
-
-            console.log(
-              `[PUT BLOG] Found ${admins.length} admins/editors to notify`,
-            );
-
-            // Notify each admin/editor
-            for (const admin of admins) {
-              if (admin.userId !== req.user.id) {
-                // Don't notify yourself
-                console.log(
-                  `[PUT BLOG] Notifying admin/editor ${admin.userId} about review`,
-                );
-                await notificationService.notifyBlogReview({
-                  recipientId: admin.userId,
-                  authorName: req.user.name,
-                  authorId: req.user.id,
-                  blogId: parseInt(id),
-                });
-              }
-            }
-
-            // Also notify publication owner if not already notified
-            if (
-              pub.userId !== req.user.id &&
-              !admins.some((a) => a.userId === pub.userId)
-            ) {
-              console.log(
-                `[PUT BLOG] Notifying publication owner ${pub.userId} about review`,
-              );
-              await notificationService.notifyBlogReview({
-                recipientId: pub.userId,
-                authorName: req.user.name,
-                authorId: req.user.id,
-                blogId: parseInt(id),
-              });
-            }
-          }
-        }
-
-        // If blog was published
-        if (status === "published" && existingBlog.status !== "published") {
-          // Notify author when blog is published
-          await notificationService.notifyBlogPublished({
+      if (status === "published" && existingBlog.status !== "published") {
+        runInBackground("put-published-notification", () =>
+          notificationService.notifyBlogPublished({
             authorId: existingBlog.authorId,
             blogTitle: updatedBlog.title,
             blogId: parseInt(id),
             publicationId: updatedBlog.publicationId,
-          });
-        }
-      } catch (notifError) {
-        console.error("Failed to create notification:", notifError);
+          }),
+        );
       }
     }
 
@@ -1542,6 +1345,7 @@ router.patch("/:id/review-action", getCurrentUser, async (req, res) => {
     const canModify = await canUserModifyBlog(
       req.user.id,
       existingBlog.authorId,
+      existingBlog.publicationId,
     );
     if (!canModify) {
       return res
@@ -1577,44 +1381,41 @@ router.patch("/:id/review-action", getCurrentUser, async (req, res) => {
       .where(eq(blog.id, parseInt(id)))
       .returning();
 
-    // Create notification for author
-    try {
-      if (existingBlog.publicationId) {
-        const [pub] = await db
-          .select()
-          .from(publication)
-          .where(eq(publication.id, existingBlog.publicationId));
+    runInBackground("review-action-notifications", async () => {
+      if (!existingBlog.publicationId) return;
 
-        if (action === "accept") {
-          // If blog is being published, send published notification
-          if (targetStatus === "published") {
-            await notificationService.notifyBlogPublished({
-              authorId: existingBlog.authorId,
-              blogTitle: updatedBlog.title,
-              blogId: parseInt(id),
-              publicationId: existingBlog.publicationId,
-            });
-          } else {
-            // Otherwise send accepted notification
-            await notificationService.notifyBlogAccepted({
-              authorId: existingBlog.authorId,
-              publicationName: pub.name,
-              blogId: parseInt(id),
-              publicationId: existingBlog.publicationId,
-            });
-          }
+      const [pub] = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.id, existingBlog.publicationId));
+
+      if (!pub) return;
+
+      if (action === "accept") {
+        if (targetStatus === "published") {
+          await notificationService.notifyBlogPublished({
+            authorId: existingBlog.authorId,
+            blogTitle: updatedBlog.title,
+            blogId: parseInt(id),
+            publicationId: existingBlog.publicationId,
+          });
         } else {
-          await notificationService.notifyBlogRejected({
+          await notificationService.notifyBlogAccepted({
             authorId: existingBlog.authorId,
             publicationName: pub.name,
             blogId: parseInt(id),
             publicationId: existingBlog.publicationId,
           });
         }
+      } else {
+        await notificationService.notifyBlogRejected({
+          authorId: existingBlog.authorId,
+          publicationName: pub.name,
+          blogId: parseInt(id),
+          publicationId: existingBlog.publicationId,
+        });
       }
-    } catch (notifError) {
-      console.error("Failed to create notification:", notifError);
-    }
+    });
 
     res.json(updatedBlog);
   } catch (error) {
@@ -1628,10 +1429,6 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
   try {
     const { id } = req.params;
     const { published, status } = req.body;
-
-    console.log(`[PATCH /api/blogs/${id}/publish] Request received`);
-    console.log("Request body:", { published, status });
-    console.log("User:", req.user?.id);
 
     // Determine target status with strict validation
     let targetStatus;
@@ -1649,8 +1446,6 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
         .json({ error: "Either 'published' or 'status' must be provided" });
     }
 
-    console.log("Target status:", targetStatus);
-
     // Check if blog exists
     const [existingBlog] = await db
       .select()
@@ -1658,28 +1453,16 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
       .where(eq(blog.id, parseInt(id)));
 
     if (!existingBlog) {
-      console.error("Blog not found:", id);
       return res.status(404).json({ error: "Blog not found" });
     }
-
-    console.log("Existing blog:", {
-      id: existingBlog.id,
-      authorId: existingBlog.authorId,
-      currentStatus: existingBlog.status,
-    });
 
     // Check if user can modify this blog (author, admin, or editor)
     const canModify = await canUserModifyBlog(
       req.user.id,
       existingBlog.authorId,
+      existingBlog.publicationId,
     );
     if (!canModify) {
-      console.error(
-        "Authorization failed. Blog author:",
-        existingBlog.authorId,
-        "User:",
-        req.user.id,
-      );
       return res
         .status(403)
         .json({ error: "Not authorized to modify this blog" });
@@ -1687,7 +1470,6 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
 
     // Apply strict synchronization rules
     const syncedFields = syncStatusAndPublished(targetStatus);
-    console.log("Synced fields:", syncedFields);
 
     const updateData = {
       ...syncedFields,
@@ -1696,10 +1478,6 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
 
     // MERGE LOGIC: If this is a draft of a published article and it is being published
     if (existingBlog.masterId && targetStatus === "published") {
-      console.log(
-        `[PATCH BLOG] Merging draft ${id} into master ${existingBlog.masterId}`,
-      );
-
       // Get Master Blog to ensure it exists
       const [masterBlog] = await db
         .select()
@@ -1720,8 +1498,6 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
           ...syncedFields, // Ensure master gets 'published' status if it wasn't already (though it should be)
         };
 
-        console.log("[PATCH BLOG] Updating master with merged data");
-
         // Update Master
         const [updatedMaster] = await db
           .update(blog)
@@ -1729,8 +1505,7 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
           .where(eq(blog.id, existingBlog.masterId))
           .returning();
 
-        // Delete the Draft
-        console.log(`[PATCH BLOG] Deleting draft ${id} after merge`);
+        // Delete the draft after merge.
         await db.delete(blog).where(eq(blog.id, parseInt(id)));
 
         // Return the master blog as the result
@@ -1752,106 +1527,29 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
       .where(eq(blog.id, parseInt(id)))
       .returning();
 
-    console.log("Blog updated successfully:", {
-      id: updatedBlog.id,
-      status: updatedBlog.status,
-      published: updatedBlog.published,
-    });
-
-    // Create notifications based on status change
-    console.log(
-      "[Notification Check] targetStatus:",
-      targetStatus,
-      "existingBlog.status:",
-      existingBlog.status,
-    );
+    // Run notifications asynchronously to avoid slowing action responses.
     if (targetStatus !== existingBlog.status) {
-      console.log(
-        "[Notification] Status changed, checking notification triggers...",
-      );
-      try {
-        // If blog was published
-        if (
-          targetStatus === "published" &&
-          existingBlog.status !== "published"
-        ) {
-          console.log(
-            "[Notification] Creating blog published notification for author:",
-            existingBlog.authorId,
-          );
-          // Notify author when blog is published
-          await notificationService.notifyBlogPublished({
+      if (targetStatus === "published" && existingBlog.status !== "published") {
+        runInBackground("publish-status-notification", () =>
+          notificationService.notifyBlogPublished({
             authorId: existingBlog.authorId,
             blogTitle: updatedBlog.title,
             blogId: parseInt(id),
             publicationId: updatedBlog.publicationId,
-          });
-          console.log(
-            "[Notification] Blog published notification created successfully",
-          );
-        }
+          }),
+        );
+      }
 
-        // If blog was submitted for review
-        if (targetStatus === "review" && existingBlog.publicationId) {
-          const [pub] = await db
-            .select()
-            .from(publication)
-            .where(eq(publication.id, existingBlog.publicationId));
-
-          if (pub) {
-            // Notify author that their blog has been submitted for review
-            await notificationService.notifyBlogSubmittedForReview({
-              authorId: existingBlog.authorId,
-              publicationName: pub.name,
-              blogId: parseInt(id),
-              publicationId: existingBlog.publicationId,
-            });
-
-            // Notify publication owner/admins
-            const admins = await db
-              .select({ userId: publicationMember.userId })
-              .from(publicationMember)
-              .where(
-                and(
-                  eq(
-                    publicationMember.publicationId,
-                    existingBlog.publicationId,
-                  ),
-                  or(
-                    eq(publicationMember.role, "admin"),
-                    eq(publicationMember.role, "editor"),
-                  ),
-                ),
-              );
-
-            // Notify each admin/editor
-            for (const admin of admins) {
-              if (admin.userId !== req.user.id) {
-                await notificationService.notifyBlogReview({
-                  recipientId: admin.userId,
-                  authorName: req.user.name,
-                  authorId: req.user.id,
-                  blogId: parseInt(id),
-                });
-              }
-            }
-
-            // Also notify publication owner
-            if (
-              pub.userId !== req.user.id &&
-              !admins.some((a) => a.userId === pub.userId)
-            ) {
-              await notificationService.notifyBlogReview({
-                recipientId: pub.userId,
-                authorName: req.user.name,
-                authorId: req.user.id,
-                blogId: parseInt(id),
-              });
-            }
-          }
-        }
-      } catch (notifError) {
-        console.error("Failed to create notification:", notifError);
+      if (targetStatus === "review" && existingBlog.publicationId) {
+        runInBackground("publish-review-notifications", () =>
+          notifyReviewSubmission({
+            publicationId: existingBlog.publicationId,
+            authorId: existingBlog.authorId,
+            actorId: req.user.id,
+            actorName: req.user.name,
+            blogId: parseInt(id),
+          }),
+        );
       }
     }
 
@@ -1886,6 +1584,7 @@ router.delete("/:id", getCurrentUser, async (req, res) => {
     const canModify = await canUserModifyBlog(
       req.user.id,
       existingBlog.authorId,
+      existingBlog.publicationId,
     );
     if (!canModify) {
       return res
@@ -1946,6 +1645,7 @@ router.post(
       const canModify = await canUserModifyBlog(
         req.user.id,
         existingBlog.authorId,
+        existingBlog.publicationId,
       );
       if (!canModify) {
         return res

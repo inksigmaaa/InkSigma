@@ -7,7 +7,6 @@ import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
 import BlogStatsComponent from "../components/BlogStatsComponent/BlogStatsComponent";
 import { Pencil } from "lucide-react";
-import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
@@ -19,17 +18,13 @@ import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 export default function HomePage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
-  const { currentPublication, publicationDetails, loading } = usePublication();
+  const { currentPublication } = usePublication();
   const {
-    articles: allArticles,
     publicationArticles,
-    loadUserArticles,
     loadPublicationArticles,
   } = useArticles();
-  const [commentCounts, setCommentCounts] = useState({});
   const [viewStats, setViewStats] = useState({});
 
   // Check if this is a refresh from editor
@@ -37,24 +32,16 @@ export default function HomePage() {
 
   // Refresh articles when home page loads (especially after exiting editor)
   useEffect(() => {
-    console.log("[Home] Page loaded, shouldRefresh:", shouldRefresh);
-    
     if (currentPublication?.id) {
-      // Always refresh to get latest data
-      console.log("[Home] Refreshing publication articles");
       loadPublicationArticles(currentPublication.id, "published");
-      
-      // Also load drafts to ensure all data is fresh
-      loadUserArticles();
     }
-    
+
     // Remove refresh param from URL after handling
     if (shouldRefresh) {
-      console.log("[Home] Removing refresh param from URL");
       const url = window.location.pathname;
       window.history.replaceState({}, document.title, url);
     }
-  }, [currentPublication?.id, shouldRefresh, loadPublicationArticles, loadUserArticles]);
+  }, [currentPublication?.id, shouldRefresh, loadPublicationArticles]);
 
   // Get recent published articles (limit to 4)
   const recentArticles = publicationArticles
@@ -85,43 +72,17 @@ export default function HomePage() {
   // Fetch comment counts and view stats for recent articles
   useEffect(() => {
     const fetchStats = async () => {
-      console.log(
-        "[Home] publicationArticles length:",
-        publicationArticles.length,
-      );
-
       // Get published article IDs
       const publishedArticles = publicationArticles.filter(
         (article) => article.status === "published",
       );
-      console.log("[Home] Published articles:", publishedArticles);
 
       if (publishedArticles.length === 0) {
-        console.log("[Home] No published articles found");
         return;
       }
 
       try {
         const blogIds = publishedArticles.map((a) => a.id);
-        console.log("[Home] Fetching stats for:", blogIds);
-
-        // Fetch comment counts
-        const commentResponse = await fetch(`${API_URL}/api/comments/counts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ blogIds }),
-        });
-
-        if (commentResponse.ok) {
-          const counts = await commentResponse.json();
-          console.log("[Home] Comment counts:", counts);
-          setCommentCounts(counts);
-        } else {
-          console.error(
-            "[Home] Failed to fetch comment counts:",
-            commentResponse.status,
-          );
-        }
 
         // Fetch view stats
         const viewResponse = await fetch(`${API_URL}/api/views/stats`, {
@@ -132,7 +93,6 @@ export default function HomePage() {
 
         if (viewResponse.ok) {
           const stats = await viewResponse.json();
-          console.log("[Home] View stats:", stats);
           setViewStats(stats);
         } else {
           console.error(
@@ -149,11 +109,11 @@ export default function HomePage() {
   }, [publicationArticles]);
 
   const handleStartWriting = () => {
-    // Pass current publication ID to editor
+    // Pass current publication ID to editor - navigate instantly
     if (currentPublication?.id) {
-      router.push(`/editor?publicationId=${currentPublication.id}`);
+      window.location.href = `/editor?publicationId=${currentPublication.id}`;
     } else {
-      router.push("/editor");
+      window.location.href = "/editor";
     }
   };
 
@@ -171,7 +131,7 @@ export default function HomePage() {
 
   const handleEditPublication = () => {
     const sub = currentPublication?.subdomain;
-    router.push(sub ? `/${sub}/settings` : "/dashboard/settings");
+    window.location.href = sub ? `/${sub}/settings` : "/dashboard/settings";
   };
 
   return (
@@ -233,7 +193,7 @@ export default function HomePage() {
             <div className="px-20 py-10 border border-gray-200 text-center mt-10 max-md:p-0 max-md:border-0">
               <div className="max-md:bg-gray-50 flex flex-col items-center max-md:border max-md:border-gray-200 max-md:rounded-sm max-md:p-6 max-md:mx-4 max-md:mb-4 gap-2">
                 <h2 className="font-bold text-[16px] leading-[28px] tracking-normal text-[#2E2E2E] max-md:text-lg max-md:mb-3">
-                  What's on your mind?
+                  What&apos;s on your mind?
                 </h2>
                 <p className="text-sm text-[#A4A4A4] max-w-[425px] leading-normal max-md:text-xs max-md:mb-5 max-md:text-gray-600">
                   Craft persuasive articles showcasing your novel ideas by
@@ -268,7 +228,7 @@ export default function HomePage() {
                     <div
                       key={article.id}
                       className="border border-[#EAEAEA] rounded-lg hover:shadow-lg transition-shadow bg-white p-4 cursor-pointer"
-                      onClick={() => router.push(`/home/preview/${article.id}`)}
+                      onClick={() => window.location.href = `/home/preview/${article.id}`}
                     >
                       <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative">
                         <img
@@ -303,9 +263,7 @@ export default function HomePage() {
                               className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors flex-shrink-0"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                router.push(
-                                  `/editor?status=published&id=${article.id}`,
-                                );
+                                window.location.href = `/editor?status=published&id=${article.id}`;
                               }}
                             >
                               <Pencil className="w-5 h-5" />

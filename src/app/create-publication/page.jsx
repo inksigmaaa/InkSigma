@@ -186,16 +186,12 @@ export default function CreatePublication() {
 
           const uploadResult = await publicationService.uploadLogo(publication.id, file);
           console.log('Logo upload result:', uploadResult);
-
-          // Wait a bit to ensure database is updated
-          await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
           console.error('Failed to upload logo:', error);
           console.error('Error details:', error.message);
           // Show error but don't block navigation
           setErrorMessage('Publication created but logo upload failed. You can upload it later in settings.');
           setShowErrors(true);
-          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       } else {
         console.log('No image to upload or publication ID missing');
@@ -207,9 +203,6 @@ export default function CreatePublication() {
       try {
         // Refresh the publication context to include the new publication
         await loadUserPublications();
-
-        // Wait a bit to ensure the context is updated
-        await new Promise(resolve => setTimeout(resolve, 500));
 
         // Switch to the newly created publication
         const publicationWithMeta = {

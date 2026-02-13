@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { usePublication } from '@/contexts/PublicationContext';
-import { useRouter } from 'next/navigation';
 
 export default function PublicationSwitcher() {
   const {
@@ -13,7 +12,6 @@ export default function PublicationSwitcher() {
   } = usePublication();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const router = useRouter();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -100,12 +98,14 @@ export default function PublicationSwitcher() {
     }
 
     const endpointPath = endpointSegments.length ? `/${endpointSegments.join('/')}` : '/home';
-    router.push(`/${publication.subdomain}${endpointPath}${currentSearch}`);
+    // Use window.location for instant navigation
+    window.location.href = `/${publication.subdomain}${endpointPath}${currentSearch}`;
   };
 
   const handleViewMySpace = () => {
     setIsOpen(false);
-    router.push('/');
+    // Use window.location for instant navigation
+    window.location.href = '/';
   };
 
   if (loading || !currentPublication) {

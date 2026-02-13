@@ -65,9 +65,6 @@ export default function PublishedPage() {
       isWrongContext;
 
     if (shouldLoad && currentPublication?.id) {
-      console.log(
-        `[PublishedPage] Loading ALL publication articles for role: ${userRole}`,
-      );
       hasLoadedRef.current = true;
       loadedContextRef.current = targetContext;
       loadPublicationArticles(currentPublication.id, "published");
@@ -94,27 +91,9 @@ export default function PublishedPage() {
   const [actionArticleId, setActionArticleId] = useState(null);
   const [isBulkAction, setIsBulkAction] = useState(false);
 
-  // Debug logging
-  console.log(
-    "[PublishedPage] Display articles count:",
-    displayArticles?.length,
-  );
-  console.log("[PublishedPage] Loading state:", isLoading);
-
   const publishedArticles = displayArticles
     .filter((article) => {
-      const isPublished = article.status === "published";
-      console.log(
-        "[PublishedPage] Article:",
-        article.id,
-        "title:",
-        article.title,
-        "status:",
-        article.status,
-        "isPublished:",
-        isPublished,
-      );
-      return isPublished;
+      return article.status === "published";
     })
     .map((article) => {
       // Check if current user is the author of this article
@@ -157,11 +136,6 @@ export default function PublishedPage() {
       };
     });
 
-  console.log(
-    "[PublishedPage] Filtered published articles count:",
-    publishedArticles.length,
-  );
-
   const handleArticleSelect = (id, isSelected) => {
     // Only allow selection of own articles for authors
     const article = publishedArticles.find((a) => a.id === id);
@@ -184,10 +158,6 @@ export default function PublishedPage() {
     } else {
       setSelectedArticles([]);
     }
-  };
-
-  const handleCopy = () => {
-    console.log("Copy articles:", selectedArticles);
   };
 
   const handleBulkDraft = () => {

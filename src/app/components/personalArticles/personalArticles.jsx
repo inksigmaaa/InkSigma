@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import PersonalArticleContainer from "../personalArticleContainer/PersonalArticleContainer";
 import CategoryFilter from "../categoryFilter/CategoryFilter";
@@ -27,7 +27,7 @@ export default function PersonalArticles({
 }) {
   // Use selectedCategories from props if provided, otherwise use local state
   const [localCategories, setLocalCategories] = useState([]);
-  const [mounted, setMounted] = useState(false);
+  const canRenderPortal = typeof window !== "undefined";
   const categories =
     selectedCategories && selectedCategories.length > 0
       ? selectedCategories
@@ -44,10 +44,6 @@ export default function PersonalArticles({
   const mobileTopPosition =
     selectedArticles.length > 0 ? "max-md:top-[160px]" : "max-md:top-[120px]";
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // Add titleColor to articles so the container can use it for the dot
   const articlesWithTitleColor = articles.map((article) => ({
     ...article,
@@ -57,7 +53,7 @@ export default function PersonalArticles({
   return (
     <>
       {/* Mobile Action Bar - Fixed stripe below navbar using Portal */}
-      {mounted &&
+      {canRenderPortal &&
         showActions &&
         selectedArticles.length > 0 &&
         createPortal(

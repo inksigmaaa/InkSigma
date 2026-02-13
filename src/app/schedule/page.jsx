@@ -77,9 +77,6 @@ export default function SchedulePage() {
     const shouldLoad = needsRefresh || !hasMountedRef.current || isWrongContext;
 
     if (shouldLoad) {
-      console.log(
-        `[SchedulePage] Loading articles... Target: ${targetContext}, Prev: ${loadedContextRef.current}`,
-      );
       hasMountedRef.current = true;
       loadedContextRef.current = targetContext;
 
@@ -98,15 +95,9 @@ export default function SchedulePage() {
 
   // Filter scheduled articles - separate from action handlers to prevent re-renders
   const scheduledArticleIds = useMemo(() => {
-    console.log("[SchedulePage] All articles:", allArticles.length);
-    console.log(
-      "[SchedulePage] Articles statuses:",
-      allArticles.map((a) => ({ id: a.id, title: a.title, status: a.status })),
-    );
     const scheduled = allArticles.filter(
       (article) => article.status === "scheduled",
     );
-    console.log("[SchedulePage] Scheduled articles:", scheduled.length);
     return scheduled.map((article) => article.id);
   }, [allArticles]);
 
@@ -128,18 +119,6 @@ export default function SchedulePage() {
     const scheduled = allArticles.filter(
       (article) => article.status === "scheduled",
     );
-    console.log(
-      "[SchedulePage] Creating scheduledArticles array:",
-      scheduled.length,
-    );
-    scheduled.forEach((a) => {
-      console.log("[SchedulePage] Scheduled article:", {
-        id: a.id,
-        title: a.title,
-        status: a.status,
-        scheduledAt: a.scheduledAt,
-      });
-    });
     return scheduled.map((article) => {
       return {
         ...article,
@@ -182,9 +161,6 @@ export default function SchedulePage() {
 
     // Set a timer to refresh after the scheduled time + 2 seconds buffer
     const timer = setTimeout(() => {
-      console.log(
-        `[SCHEDULE] Article "${nextArticle.title}" should be published now, refreshing...`,
-      );
       const targetContext =
         isAdmin && currentPublication?.id ? "publication" : "user";
       if (targetContext === "publication") {
@@ -193,10 +169,6 @@ export default function SchedulePage() {
         loadUserArticlesRef.current(null, true); // Load all publications for scheduled articles
       }
     }, timeUntilPublish + 2000);
-
-    console.log(
-      `[SCHEDULE] Next publish: "${nextArticle.title}" in ${Math.round(timeUntilPublish / 1000)}s`,
-    );
 
     return () => clearTimeout(timer);
   }, [scheduledArticles, isAdmin, currentPublication?.id]);

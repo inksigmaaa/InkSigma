@@ -1,11 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
 import { ChevronRight } from "lucide-react";
 
 export default function MySpace() {
-  const router = useRouter();
   const { 
     currentPublication, 
     loading, 
@@ -28,12 +26,13 @@ export default function MySpace() {
   const joinedPublications = getJoinedPublications();
 
   const handlePublicationClick = (publication) => {
+    // Switch publication and navigate instantly without waiting
     switchPublication(publication);
-    // Canonical dashboard routing: /{subdomain}/{endpoint}
+    // Use window.location for instant navigation - no waiting for context
     if (publication.isOwner) {
-      router.push(`/${publication.subdomain}/home`);
+      window.location.href = `/${publication.subdomain}/home`;
     } else {
-      router.push(`/${publication.subdomain}/posts/home`);
+      window.location.href = `/${publication.subdomain}/posts/home`;
     }
   };
 
@@ -163,7 +162,7 @@ export default function MySpace() {
               Create your first publication or accept an invitation to get started.
             </p>
             <button
-              onClick={() => router.push('/create-publication')}
+              onClick={() => window.location.href = '/create-publication'}
               className="bg-violet-600 text-white px-6 py-2 rounded-lg text-xs font-medium hover:bg-violet-700 transition-colors"
             >
               Create Publication

@@ -2,11 +2,6 @@
 import { getApiBase } from "@/utils/apiBase";
 const API_URL = getApiBase();
 
-// Log API URL for debugging (only in development)
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  console.log('[memberService] API_URL:', API_URL);
-}
-
 export const memberService = {
   // Get all members of a publication
   async getMembers(publicationId) {
@@ -147,8 +142,6 @@ export const memberService = {
       }
 
       const url = `${API_URL}/api/publication-members/my-publications`;
-      console.log('[memberService] API_URL:', API_URL);
-      console.log('[memberService] Fetching user publications from:', url);
       
       const response = await fetch(url, {
         credentials: "include",
@@ -156,8 +149,6 @@ export const memberService = {
           "Content-Type": "application/json",
         },
       });
-
-      console.log('[memberService] Response status:', response.status);
 
       if (!response.ok) {
         const contentType = response.headers.get("content-type");
@@ -171,10 +162,6 @@ export const memberService = {
 
       return response.json();
     } catch (error) {
-      console.error('[memberService] Error in getUserPublications:', error);
-      console.error('[memberService] Error type:', error.constructor.name);
-      console.error('[memberService] Error message:', error.message);
-      
       // If it's a network error (Failed to fetch), provide more context
       if (error.message === 'Failed to fetch') {
         throw new Error(`Cannot connect to backend at ${API_URL}. Make sure the backend server is running.`);
