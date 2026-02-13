@@ -155,6 +155,7 @@ export default function EditorPageClient() {
   const [blogTitle, setBlogTitle] = useState("");
   const [blogDescription, setBlogDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle"); // 'idle' | 'saving' | 'saved'
   const [showPublishSuccess, setShowPublishSuccess] = useState(false);
   const [hasContent, setHasContent] = useState(false);
@@ -171,6 +172,7 @@ export default function EditorPageClient() {
   const calendarRef = useRef(null);
   const savedSuccessfullyRef = useRef(false);
   const handlingPopStateRef = useRef(false);
+  const isNavigatingAwayRef = useRef(false); // New ref to indicate explicit navigation
 
   // Auto-save functionality with debouncing
   useEffect(() => {
@@ -478,9 +480,11 @@ export default function EditorPageClient() {
       }
     }
 
-    setIsSaving(true);
-    // Only set saving status for manual saves, not auto-saves
-    if (!isAutoSave) {
+    // Use separate state for auto-save vs manual save
+    if (isAutoSave) {
+      setIsAutoSaving(true);
+    } else {
+      setIsSaving(true);
       setSaveStatus("saving");
     }
     try {
@@ -584,7 +588,11 @@ export default function EditorPageClient() {
       // alert(error.message || 'Failed to save blog')
       return false;
     } finally {
-      setIsSaving(false);
+      if (isAutoSave) {
+        setIsAutoSaving(false);
+      } else {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -720,6 +728,11 @@ export default function EditorPageClient() {
     };
 
     const handlePopState = () => {
+      // If we are explicitly navigating away (e.g., after publishing),
+      // prevent the popstate listener from interfering.
+      if (isNavigatingAwayRef.current) {
+        return;
+      }
       if (handlingPopStateRef.current) return;
       handlingPopStateRef.current = true;
       pushCurrentState();
@@ -1955,8 +1968,10 @@ export default function EditorPageClient() {
             {/* Close Button */}
             <button
               onClick={() => {
+                isNavigatingAwayRef.current = true;
+                savedSuccessfullyRef.current = true;
                 setShowPublishSuccess(false);
-                router.push("/published?refresh=true");
+                window.location.href = withPub("/home");
               }}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
             >
@@ -2080,10 +2095,10 @@ export default function EditorPageClient() {
             >
               <button
                 onClick={() => {
+                  isNavigatingAwayRef.current = true;
+                  savedSuccessfullyRef.current = true;
                   setShowPublishSuccess(false);
-                  setTimeout(() => {
-                    window.location.replace(withPub("/home?refresh=true"));
-                  }, 0);
+                  window.location.href = withPub("/home");
                 }}
                 style={{
                   width: "111px",
@@ -2109,7 +2124,9 @@ export default function EditorPageClient() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => {
+                  isNavigatingAwayRef.current = true; // Indicate explicit navigation
                   setShowPublishSuccess(false);
+                  router.push("/"); // Redirect to home page
                 }}
                 style={{
                   width: "110px",
