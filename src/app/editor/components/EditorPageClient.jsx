@@ -677,7 +677,7 @@ export default function EditorPageClient() {
         setShowExitModal(true);
       } else {
         // Auto-save as draft and redirect to home page
-        await performSaveAndExit("/draft?refresh=true", true);
+        await performSaveAndExit("/?refresh=true", true);
       }
     } else {
       // No unsaved changes
@@ -692,14 +692,14 @@ export default function EditorPageClient() {
         showToast("Post has been saved as Draft", "success");
         savedSuccessfullyRef.current = true;
         setTimeout(() => {
-          router.push(withPub("/draft?refresh=true"));
+          router.push(withPub("/?refresh=true"));
         }, 1000);
         return;
       }
 
       // For others, just redirect
       savedSuccessfullyRef.current = true;
-      router.push(withPub("/draft?refresh=true"));
+      router.push(withPub("/?refresh=true"));
     }
   };
 
