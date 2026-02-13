@@ -182,30 +182,60 @@ export default function EditorPageClient() {
     }
   }, []);
 
-  // Handle See Later navigation - go to published page instantly
+  // Handle See Later - dismiss popup and go to published page
   const handleSeeLater = () => {
+    // Prevent any auto-save or beforeunload handlers from interfering
+    savedSuccessfullyRef.current = true;
+    isNavigatingAwayRef.current = true;
+    isPublishingRef.current = true;
+
     setShowPublishSuccess(false);
-    // Use direct navigation without any delay or extra processing
-    const targetPath = currentPublication?.subdomain 
-      ? `/${currentPublication.subdomain}/published` 
-      : '/published';
-    window.location.href = targetPath;
+
+    const targetPath = currentPublication?.subdomain
+      ? `/${currentPublication.subdomain}/published`
+      : "/published";
+
+    const targetUrl = `http://dashboard.inksigma.local:3000${targetPath}`;
+    window.location.replace(targetUrl);
   };
 
-  // Handle View in Site - go to blog page instantly
+  // Handle View in Site - open blog in new tab ONLY
   const handleViewInSite = () => {
-    setShowPublishSuccess(false);
-    // Use direct navigation without any delay
-    const targetPath = publishedBlogSlug
-      ? currentPublication?.subdomain
-        ? `/${currentPublication.subdomain}/view-site/blog/${publishedBlogSlug}`
-        : `/view-site/blog/${publishedBlogSlug}`
-      : currentPublication?.subdomain
-        ? `/${currentPublication.subdomain}`
-        : `/view-site?publicationId=${publicationId || currentPublication?.id}`;
-    window.location.href = targetPath;
+    // Get the publication prefix (e.g., "/tennyson")
+    const pubPrefix = currentPublication?.subdomain
+      ? `/${currentPublication.subdomain}`
+      : "";
+
+    // Construct the blog URL for new tab
+    const blogUrl = publishedBlogSlug
+      ? `http://dashboard.inksigma.local:3000/view-site/blog/${publishedBlogSlug}`
+      : `http://dashboard.inksigma.local:3000`;
+
+    // Open blog in new tab
+    window.open(blogUrl, "_blank");
   };
-  
+
+  // Handle Close Modal - redirect to home
+  const handleClosePublishModal = () => {
+    // Prevent any auto-save or beforeunload handlers from interfering
+    savedSuccessfullyRef.current = true;
+    isNavigatingAwayRef.current = true;
+    isPublishingRef.current = true;
+
+    setShowPublishSuccess(false);
+
+    // Get the publication prefix (e.g., "/tennyson")
+    const pubPrefix = currentPublication?.subdomain
+      ? `/${currentPublication.subdomain}`
+      : "";
+
+    // Construct the home URL
+    const homeUrl = `http://dashboard.inksigma.local:3000${pubPrefix}/home`;
+
+    // Navigate to home
+    window.location.href = homeUrl;
+  };
+
   // Auto-save functionality with debouncing
   useEffect(() => {
     // Don't auto-save if publishing is in progress
@@ -260,7 +290,7 @@ export default function EditorPageClient() {
         // Set saving status right before actual save starts
         setIsAutoSaving(true);
         setSaveStatus("saving");
-        
+
         const result = await saveBlog("draft", null, true, true);
         if (result) {
           setSaveStatus("saved");
@@ -687,7 +717,7 @@ export default function EditorPageClient() {
     isPublishingRef.current = true;
     savedSuccessfullyRef.current = true;
     isNavigatingAwayRef.current = true;
-    
+
     try {
       const result = await saveBlog("published");
       if (result) {
@@ -1454,7 +1484,8 @@ export default function EditorPageClient() {
                 <div
                   className="hidden md:flex items-center flex-shrink-0"
                   style={{
-                    width: isAutoSaving || saveStatus === "saving" ? "98px" : "78px",
+                    width:
+                      isAutoSaving || saveStatus === "saving" ? "98px" : "78px",
                     height: "33px",
                     borderRadius: "4px",
                     border: "1px solid #EAEAEA",
@@ -2039,186 +2070,12 @@ export default function EditorPageClient() {
 
       {/* Publish Success Modal */}
       {showPublishSuccess && (
-        <div 
-          id="publish-success-modal"
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000]"
-          onClick={() => window.location.href = withPub("/?refresh=true")}
-        >
-          <div
-            className="relative flex flex-col items-center"
-            style={{
-              width: "489px",
-              height: "323.63px",
-              borderRadius: "4px",
-              padding: "56px 40px",
-              gap: "32px",
-              background: "#FEFEFE",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => {
-                window.location.href = withPub("/?refresh=true");
-              }}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer z-10"
-              style={{ padding: '8px' }}
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path
-                  d="M18 6L6 18M6 6l12 12"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-
-            {/* Content Area - Icon + Text */}
-            <div
-              className="flex flex-col items-center"
-              style={{
-                width: "357px",
-                height: "147.63px",
-                gap: "16px",
-              }}
-            >
-              {/* Success Logo */}
-              <svg
-                width="50"
-                height="58"
-                viewBox="0 0 50 58"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <g clipPath="url(#clip0_1312_5315)">
-                  <path d="M48.0003 0L36.0003 48L17.2207 38.5999L48.0003 0Z" fill="#E6E6E6" />
-                  <path d="M48 0L12 36L0 30L48 0Z" fill="#D0D0D0" />
-                  <path d="M12 36L14 48L17.3474 38.5999L47.9994 0L12 36Z" fill="#8D8D8D" />
-                  <path d="M14 47.9998L20 39.9998L17.322 38.5996L14 47.9998Z" fill="#D3D3D3" />
-                </g>
-                <g clipPath="url(#clip1_1312_5315)">
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M25.627 45.627C25.627 42.4444 26.8912 39.3921 29.1417 37.1417C31.3921 34.8912 34.4444 33.627 37.627 33.627C40.8096 33.627 43.8618 34.8912 46.1122 37.1417C48.3627 39.3921 49.627 42.4444 49.627 45.627C49.627 48.8096 48.3627 51.8618 46.1122 54.1122C43.8618 56.3627 40.8096 57.627 37.627 57.627C34.4444 57.627 31.3921 56.3627 29.1417 54.1122C26.8912 51.8618 25.627 48.8096 25.627 45.627ZM36.9422 50.763L43.851 42.1262L42.603 41.1278L36.7118 48.4894L32.539 45.0126L31.515 46.2414L36.9422 50.7646V50.763Z"
-                    fill="#72D770"
-                  />
-                </g>
-                <defs>
-                  <clipPath id="clip0_1312_5315">
-                    <rect width="48" height="48" fill="white" />
-                  </clipPath>
-                  <clipPath id="clip1_1312_5315">
-                    <rect width="24" height="24" fill="white" transform="translate(25.627 33.627)" />
-                  </clipPath>
-                </defs>
-              </svg>
-
-              {/* Success Message */}
-              <div className="text-center">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  Successfully Published
-                </h2>
-                <p className="text-gray-500 text-sm leading-relaxed">
-                  Your blog is successfully Published, Click the below
-                  <br />
-                  button to view in site
-                </p>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            {/* Mobile actions */}
-            <div className="flex flex-col items-center gap-3 md:hidden">
-              <a
-                href={
-                  publishedBlogSlug
-                    ? currentPublication?.subdomain
-                      ? `http://${currentPublication.subdomain}.localhost:3000/view-site/blog/${publishedBlogSlug}`
-                      : `/view-site/blog/${publishedBlogSlug}`
-                    : currentPublication?.subdomain
-                      ? `http://${currentPublication.subdomain}.localhost:3000`
-                      : `/view-site?publicationId=${publicationId || currentPublication?.id}`
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => {
-                  setShowPublishSuccess(false);
-                }}
-                className="flex items-center justify-center w-[180px] h-[40px] rounded-[4px] text-sm font-medium text-white hover:opacity-90 transition-opacity whitespace-nowrap"
-                style={{
-                  background:
-                    "linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)",
-                }}
-              >
-                View in Site
-              </a>
-              <button
-                onClick={() => {
-                  setShowPublishSuccess(false);
-                  // Go to published page instantly without delay
-                  const targetPath = currentPublication?.subdomain 
-                    ? `/${currentPublication.subdomain}/published` 
-                    : '/published';
-                  window.location.href = targetPath;
-                }}
-                className="text-sm font-medium text-[#8B5CF6] underline underline-offset-4 hover:text-[#6D28D9] transition-colors"
-              >
-                See it Later
-              </button>
-            </div>
-
-            {/* Desktop actions (original layout) */}
-            <div
-              className="hidden md:flex items-center"
-              style={{
-                width: "229px",
-                height: "32px",
-                gap: "8px",
-              }}
-            >
-              <button
-                type="button"
-                id="see-later-btn"
-                onClick={handleSeeLater}
-                style={{
-                  width: "111px",
-                  height: "32px",
-                  borderRadius: "4px",
-                  background: "#F8F8F8",
-                  border: "1px solid #ECECEC",
-                  cursor: "pointer",
-                }}
-                className="flex items-center justify-center text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors whitespace-nowrap"
-              >
-                See Later
-              </button>
-              <button
-                type="button"
-                id="view-in-site-btn"
-                onClick={handleViewInSite}
-                style={{
-                  width: "110px",
-                  height: "32px",
-                  borderRadius: "4px",
-                  background:
-                    "linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)",
-                  cursor: "pointer",
-                }}
-                className="flex items-center justify-center text-sm font-medium text-white hover:opacity-90 transition-opacity whitespace-nowrap"
-              >
-                View in Site
-              </button>
-            </div>
-          </div>
-        </div>
+        <PublishSuccessModal
+          isOpen={showPublishSuccess}
+          onClose={handleClosePublishModal}
+          onSeeLater={handleSeeLater}
+          onViewInSite={handleViewInSite}
+        />
       )}
       <ExitConfirmModal
         isOpen={showExitModal}
