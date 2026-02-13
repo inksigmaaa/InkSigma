@@ -245,6 +245,7 @@ export default function PersonalArticles({
                     onPublish={article.onPublish}
                     isSelected={selectedArticles.includes(article.id)}
                     onSelect={onArticleSelect}
+                    canEdit={article.canEdit}
                   />
                 </div>
               ))

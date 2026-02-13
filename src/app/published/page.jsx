@@ -118,12 +118,16 @@ export default function PublishedPage() {
     })
     .map((article) => {
       // Check if current user is the author of this article
-      const isOwnArticle = article.authorId === session?.user?.id;
-      
+      // article.author is an object (not a plain ID), so use article.author.id
+      const isOwnArticle =
+        session?.user?.id &&
+        article.author &&
+        String(article.author.id) === String(session.user.id);
+
       // For authors, only show actions for their own articles
       // For admins/editors, show actions for all articles
       const canEdit = isAdmin || isOwnArticle;
-      
+
       return {
         ...article,
         // Always pass the handlers, but PersonalArticleContainer will check canEdit
@@ -154,11 +158,11 @@ export default function PublishedPage() {
 
   const handleArticleSelect = (id, isSelected) => {
     // Only allow selection of own articles for authors
-    const article = publishedArticles.find(a => a.id === id);
+    const article = publishedArticles.find((a) => a.id === id);
     if (isAuthor && !article?.isOwnArticle) {
       return; // Don't allow selection of others' articles
     }
-    
+
     setSelectedArticles((prev) =>
       isSelected ? [...prev, id] : prev.filter((articleId) => articleId !== id),
     );
@@ -167,8 +171,8 @@ export default function PublishedPage() {
   const handleSelectAll = (checked) => {
     if (checked) {
       // For authors, only select their own articles
-      const selectableArticles = isAuthor 
-        ? publishedArticles.filter(a => a.isOwnArticle)
+      const selectableArticles = isAuthor
+        ? publishedArticles.filter((a) => a.isOwnArticle)
         : publishedArticles;
       setSelectedArticles(selectableArticles.map((article) => article.id));
     } else {
