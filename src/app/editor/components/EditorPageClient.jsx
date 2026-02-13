@@ -173,9 +173,38 @@ export default function EditorPageClient() {
   const savedSuccessfullyRef = useRef(false);
   const handlingPopStateRef = useRef(false);
   const isNavigatingAwayRef = useRef(false); // New ref to indicate explicit navigation
+  const isPublishingRef = useRef(false); // Track if publish is in progress
+
+  // Handle See Later navigation
+  const handleSeeLater = () => {
+    window.location.href = withPub("/?refresh=true");
+  };
+
+  // Handle View in Site
+  const handleViewInSite = () => {
+    const url = publishedBlogSlug
+      ? currentPublication?.subdomain
+        ? `http://${currentPublication.subdomain}.localhost:3000/view-site/blog/${publishedBlogSlug}`
+        : `/view-site/blog/${publishedBlogSlug}`
+      : currentPublication?.subdomain
+        ? `http://${currentPublication.subdomain}.localhost:3000`
+        : `/view-site?publicationId=${publicationId || currentPublication?.id}`;
+    window.open(url, '_blank');
+    window.location.href = withPub("/?refresh=true");
+  };
+  
+  // Debug: log when modal state changes
+  useEffect(() => {
+    console.log("showPublishSuccess changed:", showPublishSuccess);
+  }, [showPublishSuccess]);
 
   // Auto-save functionality with debouncing
   useEffect(() => {
+    // Don't auto-save if publishing is in progress
+    if (isPublishingRef.current) {
+      return;
+    }
+
     // Check if there's any content
     const contentExists =
       blogTitle.trim() ||
@@ -213,8 +242,8 @@ export default function EditorPageClient() {
       clearTimeout(autoSaveTimeoutRef.current);
     }
 
-    // Set saving status immediately
-    setSaveStatus("saving");
+    // Set auto-saving status immediately (doesn't affect publish button)
+    setIsAutoSaving(true);
 
     // Debounce auto-save by 1.5 seconds
     autoSaveTimeoutRef.current = setTimeout(async () => {
@@ -229,12 +258,14 @@ export default function EditorPageClient() {
           setSaveStatus("idle");
         }
       }
+      setIsAutoSaving(false);
     }, 1500);
 
     return () => {
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
       }
+      setIsAutoSaving(false);
     };
   }, [
     blogTitle,
@@ -480,11 +511,12 @@ export default function EditorPageClient() {
       }
     }
 
-    // Use separate state for auto-save vs manual save
-    if (isAutoSave) {
-      setIsAutoSaving(true);
-    } else {
+    // Only set isSaving for manual saves, not auto-saves (to avoid disabling publish button)
+    if (!isAutoSave) {
       setIsSaving(true);
+    }
+    // Only set saving status for manual saves, not auto-saves
+    if (!isAutoSave) {
       setSaveStatus("saving");
     }
     try {
@@ -538,11 +570,20 @@ export default function EditorPageClient() {
 
       console.log("Response status:", response.status);
 
-      const responseData = await response.json();
-      console.log("Response data:", responseData);
+      let responseData;
+      try {
+        responseData = await response.json();
+        console.log("Response data:", responseData);
+      } catch (parseError) {
+        console.error("Failed to parse response:", parseError);
+        const text = await response.text();
+        console.error("Response text:", text);
+        throw new Error(`Server error: ${response.status}`);
+      }
 
       if (!response.ok) {
-        throw new Error(responseData.error || "Failed to save blog");
+        console.error("Backend error:", responseData);
+        throw new Error(responseData.error || responseData.message || "Failed to save blog");
       }
 
       if (!currentBlogId && responseData?.id) {
@@ -588,9 +629,8 @@ export default function EditorPageClient() {
       // alert(error.message || 'Failed to save blog')
       return false;
     } finally {
-      if (isAutoSave) {
-        setIsAutoSaving(false);
-      } else {
+      // Only reset isSaving for manual saves, not auto-saves
+      if (!isAutoSave) {
         setIsSaving(false);
       }
     }
@@ -632,10 +672,25 @@ export default function EditorPageClient() {
 
   // Handle Publish
   const handlePublish = async () => {
-    const result = await saveBlog("published");
-    if (result) {
-      setPublishedBlogSlug(result.slug || "");
-      setShowPublishSuccess(true);
+    console.log("handlePublish called");
+    isPublishingRef.current = true;
+    savedSuccessfullyRef.current = true;
+    isNavigatingAwayRef.current = true;
+    
+    try {
+      const result = await saveBlog("published");
+      console.log("handlePublish result:", result);
+      if (result) {
+        console.log("Setting showPublishSuccess to true");
+        setPublishedBlogSlug(result.slug || "");
+        setShowPublishSuccess(true);
+      }
+    } catch (error) {
+      console.error("Publish failed:", error);
+      // Reset refs on error so user can try again
+      isPublishingRef.current = false;
+      savedSuccessfullyRef.current = false;
+      isNavigatingAwayRef.current = false;
     }
   };
 
@@ -700,7 +755,24 @@ export default function EditorPageClient() {
 
     if (isEmptyDraft) {
       savedSuccessfullyRef.current = true;
-      window.location.href = withPub("/?refresh=true");
+      isNavigatingAwayRef.current = true;
+      router.push(withPub("/?refresh=true"));
+      return;
+    }
+
+    // For published articles, go to published page
+    if (existingBlogStatus === "published") {
+      savedSuccessfullyRef.current = true;
+      isNavigatingAwayRef.current = true;
+      router.push(withPub("/published?refresh=true"));
+      return;
+    }
+
+    // For scheduled articles, go to schedule page
+    if (existingBlogStatus === "scheduled") {
+      savedSuccessfullyRef.current = true;
+      isNavigatingAwayRef.current = true;
+      router.push(withPub("/schedule?refresh=true"));
       return;
     }
 
@@ -712,7 +784,8 @@ export default function EditorPageClient() {
 
     // No unsaved changes but has content: go to drafts directly
     savedSuccessfullyRef.current = true;
-    window.location.href = withPub("/draft?refresh=true");
+    isNavigatingAwayRef.current = true;
+    router.push(withPub("/draft?refresh=true"));
   };
 
   // Intercept browser back/gesture to auto-save draft and navigate home
@@ -727,10 +800,10 @@ export default function EditorPageClient() {
       }
     };
 
-    const handlePopState = () => {
+    const handlePopState = (event) => {
       // If we are explicitly navigating away (e.g., after publishing),
       // prevent the popstate listener from interfering.
-      if (isNavigatingAwayRef.current) {
+      if (isNavigatingAwayRef.current || savedSuccessfullyRef.current) {
         return;
       }
       if (handlingPopStateRef.current) return;
@@ -1960,20 +2033,30 @@ export default function EditorPageClient() {
 
       {/* Publish Success Modal */}
       {showPublishSuccess && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000]">
+        <div 
+          id="publish-success-modal"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000]"
+          onClick={() => window.location.href = withPub("/?refresh=true")}
+        >
           <div
-            className="relative flex flex-col items-center w-[300px] md:w-[489px] h-[352px] md:h-[323.63px] rounded-[4px] px-[40px] py-[56px] gap-[32px]"
-            style={{ background: "#FEFEFE" }}
+            className="relative flex flex-col items-center"
+            style={{
+              width: "489px",
+              height: "323.63px",
+              borderRadius: "4px",
+              padding: "56px 40px",
+              gap: "32px",
+              background: "#FEFEFE",
+            }}
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
             <button
               onClick={() => {
-                isNavigatingAwayRef.current = true;
-                savedSuccessfullyRef.current = true;
-                setShowPublishSuccess(false);
-                window.location.href = withPub("/home");
+                window.location.href = withPub("/?refresh=true");
               }}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer z-10"
+              style={{ padding: '8px' }}
             >
               <svg
                 width="24"
@@ -2094,51 +2177,37 @@ export default function EditorPageClient() {
               }}
             >
               <button
-                onClick={() => {
-                  isNavigatingAwayRef.current = true;
-                  savedSuccessfullyRef.current = true;
-                  setShowPublishSuccess(false);
-                  window.location.href = withPub("/home");
-                }}
+                type="button"
+                id="see-later-btn"
+                onClick={handleSeeLater}
                 style={{
                   width: "111px",
                   height: "32px",
                   borderRadius: "4px",
                   background: "#F8F8F8",
                   border: "1px solid #ECECEC",
+                  cursor: "pointer",
                 }}
                 className="flex items-center justify-center text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors whitespace-nowrap"
               >
                 See Later
               </button>
-              <a
-                href={
-                  publishedBlogSlug
-                    ? currentPublication?.subdomain
-                      ? `http://${currentPublication.subdomain}.localhost:3000/view-site/blog/${publishedBlogSlug}`
-                      : `/view-site/blog/${publishedBlogSlug}`
-                    : currentPublication?.subdomain
-                      ? `http://${currentPublication.subdomain}.localhost:3000`
-                      : `/view-site?publicationId=${publicationId || currentPublication?.id}`
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => {
-                  isNavigatingAwayRef.current = true; // Indicate explicit navigation
-                  setShowPublishSuccess(false);
-                  router.push("/"); // Redirect to home page
-                }}
+              <button
+                type="button"
+                id="view-in-site-btn"
+                onClick={handleViewInSite}
                 style={{
                   width: "110px",
                   height: "32px",
                   borderRadius: "4px",
                   background:
                     "linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)",
+                  cursor: "pointer",
                 }}
                 className="flex items-center justify-center text-sm font-medium text-white hover:opacity-90 transition-opacity whitespace-nowrap"
               >
                 View in Site
-              </a>
+              </button>
             </div>
           </div>
         </div>

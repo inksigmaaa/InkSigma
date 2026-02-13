@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
@@ -19,6 +20,7 @@ const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 export default function HomePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { currentPublication, publicationDetails, loading } = usePublication();
   const {
@@ -30,13 +32,29 @@ export default function HomePage() {
   const [commentCounts, setCommentCounts] = useState({});
   const [viewStats, setViewStats] = useState({});
 
-  // Refresh articles when home page loads
+  // Check if this is a refresh from editor
+  const shouldRefresh = searchParams.get("refresh") === "true";
+
+  // Refresh articles when home page loads (especially after exiting editor)
   useEffect(() => {
+    console.log("[Home] Page loaded, shouldRefresh:", shouldRefresh);
+    
     if (currentPublication?.id) {
-      // Load ALL publication articles for everyone (including authors)
+      // Always refresh to get latest data
+      console.log("[Home] Refreshing publication articles");
       loadPublicationArticles(currentPublication.id, "published");
+      
+      // Also load drafts to ensure all data is fresh
+      loadUserArticles();
     }
-  }, [currentPublication?.id, loadPublicationArticles]);
+    
+    // Remove refresh param from URL after handling
+    if (shouldRefresh) {
+      console.log("[Home] Removing refresh param from URL");
+      const url = window.location.pathname;
+      window.history.replaceState({}, document.title, url);
+    }
+  }, [currentPublication?.id, shouldRefresh, loadPublicationArticles, loadUserArticles]);
 
   // Get recent published articles (limit to 4)
   const recentArticles = publicationArticles
