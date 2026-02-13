@@ -65,6 +65,13 @@ export default function EditorPageClient() {
   const articleId = searchParams.get("id");
   const blogId = articleId; // Alias for backward compatibility
   const publicationId = searchParams.get("publicationId"); // For joined publications
+  const [currentBlogId, setCurrentBlogId] = useState(blogId);
+
+  useEffect(() => {
+    if (blogId && blogId !== currentBlogId) {
+      setCurrentBlogId(blogId);
+    }
+  }, [blogId, currentBlogId]);
 
   // Determine if user is owner or member
   const isPublicationOwner = currentPublication?.isOwner ?? true; // Default to true if no publication context
@@ -318,8 +325,8 @@ export default function EditorPageClient() {
           blogData.publicationId = parseInt(pubId);
         }
 
-        const url = blogId
-          ? `${API_URL}/api/blogs/${blogId}`
+        const url = currentBlogId
+          ? `${API_URL}/api/blogs/${currentBlogId}`
           : `${API_URL}/api/blogs`;
 
         // Use sendBeacon for reliable save during page unload
@@ -330,7 +337,7 @@ export default function EditorPageClient() {
 
         // Also try fetch with keepalive as backup
         fetch(url, {
-          method: blogId ? "PUT" : "POST",
+          method: currentBlogId ? "PUT" : "POST",
           headers: {
             "Content-Type": "application/json",
           },
@@ -373,7 +380,7 @@ export default function EditorPageClient() {
     };
   }, [
     hasUnsavedChanges,
-    blogId,
+    currentBlogId,
     blogTitle,
     blogDescription,
     editorContent.html,
@@ -461,7 +468,7 @@ export default function EditorPageClient() {
   ) => {
     // Skip validation when reverting to draft or updating existing published articles
     // Also skip validation if blog already exists (updating)
-    if (!skipValidation && !blogId) {
+    if (!skipValidation && !currentBlogId) {
       if (!blogTitle.trim()) {
         console.warn("Validation failed: Missing title");
         return false;
@@ -511,13 +518,13 @@ export default function EditorPageClient() {
         blogData.image = null;
       }
 
-      console.log("Saving blog with data:", blogData, "blogId:", blogId);
+      console.log("Saving blog with data:", blogData, "blogId:", currentBlogId);
 
       // Use PUT for updates, POST for new blogs
-      const url = blogId
-        ? `${API_URL}/api/blogs/${blogId}`
+      const url = currentBlogId
+        ? `${API_URL}/api/blogs/${currentBlogId}`
         : `${API_URL}/api/blogs`;
-      const method = blogId ? "PUT" : "POST";
+      const method = currentBlogId ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method: method,
@@ -535,6 +542,21 @@ export default function EditorPageClient() {
 
       if (!response.ok) {
         throw new Error(responseData.error || "Failed to save blog");
+      }
+
+      if (!currentBlogId && responseData?.id) {
+        setCurrentBlogId(String(responseData.id));
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("id", String(responseData.id));
+        if (!params.get("status")) {
+          params.set("status", status);
+        }
+        if (publicationId) {
+          params.set("publicationId", publicationId);
+        }
+        router.replace(withPub(`/editor?${params.toString()}`), {
+          scroll: false,
+        });
       }
 
       // Upload thumbnail if one was selected
@@ -668,46 +690,28 @@ export default function EditorPageClient() {
   // Handle Back - Check for unsaved changes
   // Handle Back - Save as draft and redirect to home
   const handleBack = async () => {
-    if (hasUnsavedChanges) {
-      // Only show confirmation for sensitive statuses that shouldn't be auto-updated blindly
-      const sensitiveStatuses = [
-        "published",
-        "unpublished",
-        "review",
-        "scheduled",
-      ];
+    const isEmptyDraft =
+      !currentBlogId &&
+      !blogTitle.trim() &&
+      !blogDescription.trim() &&
+      (!editorContent.html || editorContent.html === "<p></p>") &&
+      (!selectedCategories || selectedCategories.length === 0);
 
-      if (
-        existingBlogStatus &&
-        sensitiveStatuses.includes(existingBlogStatus)
-      ) {
-        setShowExitModal(true);
-      } else {
-        // Auto-save as draft and redirect to home page
-        await performSaveAndExit("/?refresh=true", true);
-      }
-    } else {
-      // No unsaved changes
-      // Check if it's a draft or new article - if so, show the toast for reassurance
-      const isSensitive =
-        existingBlogStatus &&
-        ["published", "scheduled", "review", "unpublished"].includes(
-          existingBlogStatus,
-        );
-
-      if (!isSensitive) {
-        showToast("Post has been saved as Draft", "success");
-        savedSuccessfullyRef.current = true;
-        setTimeout(() => {
-          router.push(withPub("/?refresh=true"));
-        }, 1000);
-        return;
-      }
-
-      // For others, just redirect
+    if (isEmptyDraft) {
       savedSuccessfullyRef.current = true;
       router.push(withPub("/?refresh=true"));
+      return;
     }
+
+    // For any content: save as draft and go to Drafts
+    if (hasUnsavedChanges) {
+      await performSaveAndExit("/draft?refresh=true", true);
+      return;
+    }
+
+    // No unsaved changes but has content: go to drafts directly
+    savedSuccessfullyRef.current = true;
+    router.push(withPub("/draft?refresh=true"));
   };
 
   // Intercept browser back/gesture to auto-save draft and navigate home
@@ -1429,7 +1433,7 @@ export default function EditorPageClient() {
               </div>
             ) : (
               <TiptapEditor
-                key={blogId || "new"}
+                key={currentBlogId || "new"}
                 onUpdate={(data) => setEditorContent(data)}
                 initialContent={initialContent}
               />

@@ -69,7 +69,10 @@ function LoginForm() {
         const errorMessage = result.error.message || "Oops! Credentials do not match"
 
         // Check if it's a "no password account" error
-        if (errorMessage.toLowerCase().includes("no password account")) {
+        if (errorMessage.toLowerCase().includes("failed to fetch") || errorMessage.toLowerCase().includes("networkerror")) {
+          setError("Network error. Please try again.")
+          setShowUnregistered(false)
+        } else if (errorMessage.toLowerCase().includes("no password account")) {
           setError("This account was created with Google. Please use 'Login With Google' button below.")
         } else if (errorMessage.toLowerCase().includes("email not verified")) {
           setError("Please verify your email before logging in. Check your inbox for the verification link.")
@@ -161,16 +164,20 @@ function LoginForm() {
       router.push(redirectTo)
     } catch (err) {
       const errorMessage = err.message || "An unexpected error occurred"
+      const lowerError = errorMessage.toLowerCase()
 
       // Provide user-friendly error messages
-      if (errorMessage.toLowerCase().includes("no password account")) {
+      if (lowerError.includes("failed to fetch") || lowerError.includes("networkerror")) {
+        setError("Network error. Please try again.")
+        setShowUnregistered(false)
+      } else if (lowerError.includes("no password account")) {
         setError("This account was created with Google. Please use 'Login With Google' button below.")
-      } else if (errorMessage.toLowerCase().includes("email not verified")) {
+      } else if (lowerError.includes("email not verified")) {
         setError("Please verify your email before logging in. Check your inbox for the verification link.")
         setShowResendVerification(true)
       } else {
         setError(errorMessage)
-        setShowUnregistered(true)
+        setShowUnregistered(lowerError.includes("user not found"))
       }
       console.error(err)
     } finally {
