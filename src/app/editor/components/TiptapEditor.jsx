@@ -832,7 +832,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             title="Quote"
           >
-            <img src="/editor-icons/''.svg" alt="Quote" className="w-4 h-4" />
+            <img src="/editor-icons/quote.svg" alt="Quote" className="w-4 h-4" />
           </button>
           <div className="relative dropdown-container shrink-0">
             <button
@@ -1179,7 +1179,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             title="Quote"
           >
-            <img src="/editor-icons/''.svg" alt="Quote" className="w-4 h-4" />
+            <img src="/editor-icons/quote.svg" alt="Quote" className="w-4 h-4" />
           </button>
           <div className="relative dropdown-container shrink-0">
             <button
@@ -1500,7 +1500,7 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             title="Quote"
           >
-            <img src="/editor-icons/''.svg" alt="Quote" className="w-4 h-4" />
+            <img src="/editor-icons/quote.svg" alt="Quote" className="w-4 h-4" />
           </button>
           <div className="relative dropdown-container shrink-0">
             <button
@@ -1606,5 +1606,6 @@ export function TiptapEditor({ onUpdate, initialContent = '', onImageModalToggle
     </div>
   )
 }
+
 
 
