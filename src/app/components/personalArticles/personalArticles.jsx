@@ -246,6 +246,7 @@ export default function PersonalArticles({
                     isSelected={selectedArticles.includes(article.id)}
                     onSelect={onArticleSelect}
                     canEdit={article.canEdit}
+                    canDelete={article.canDelete}
                   />
                 </div>
               ))

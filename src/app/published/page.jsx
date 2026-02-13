@@ -128,6 +128,11 @@ export default function PublishedPage() {
       // For admins/editors, show actions for all articles
       const canEdit = isAdmin || isOwnArticle;
 
+      // Allow deletion only if user is owner/admin or if it's their own article
+      // Editors cannot delete articles they didn't create
+      const canDelete =
+        currentPublication?.isOwner || userRole === "admin" || isOwnArticle;
+
       return {
         ...article,
         // Always pass the handlers, but PersonalArticleContainer will check canEdit
@@ -148,6 +153,7 @@ export default function PublishedPage() {
         },
         isOwnArticle, // Pass this flag to the component
         canEdit, // Pass this flag to control button visibility
+        canDelete,
       };
     });
 
@@ -199,7 +205,21 @@ export default function PublishedPage() {
   const confirmDelete = async () => {
     try {
       if (isBulkAction) {
-        await bulkMoveToTrashStatus(selectedArticles);
+        // Filter out articles that the user cannot delete
+        const articlesToDelete = selectedArticles.filter((id) => {
+          const article = publishedArticles.find((a) => a.id === id);
+          return article && article.canDelete;
+        });
+
+        if (articlesToDelete.length !== selectedArticles.length) {
+          console.warn(
+            "Some selected articles could not be deleted due to permissions.",
+          );
+        }
+
+        if (articlesToDelete.length > 0) {
+          await bulkMoveToTrashStatus(articlesToDelete);
+        }
         setSelectedArticles([]);
       } else if (actionArticleId) {
         await moveToTrashStatus(actionArticleId);

@@ -9,6 +9,7 @@ import Articles from "../components/articles/Articles";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { useSearchParams } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
 
 export default function Posts() {
   const {
@@ -91,6 +92,28 @@ export default function Posts() {
     currentPublication?.id,
   ]);
 
+  const { data: session } = useSession();
+
+  // Calculate permissions for each article
+  const articlesWithPermissions = displayArticles.map((article) => {
+    // Only restrict deletion for published articles
+    let canDelete = true;
+    if (article.status === "published") {
+      const isOwnArticle =
+        session?.user?.id &&
+        article.author &&
+        String(article.author.id) === String(session.user.id);
+
+      canDelete =
+        currentPublication?.isOwner || userRole === "admin" || isOwnArticle;
+    }
+
+    return {
+      ...article,
+      canDelete,
+    };
+  });
+
   return (
     <AuthGuard>
       <NavbarLoggedin />
@@ -98,7 +121,7 @@ export default function Posts() {
       <Verify />
       <Articles
         title={"All Articles"}
-        articles={displayArticles}
+        articles={articlesWithPermissions}
         loading={isLoading}
       />
     </AuthGuard>
