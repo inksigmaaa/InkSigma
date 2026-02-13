@@ -172,6 +172,7 @@ export default function EditorPageClient() {
   const calendarRef = useRef(null);
   const savedSuccessfullyRef = useRef(false);
   const handlingPopStateRef = useRef(false);
+  const isNavigatingAwayRef = useRef(false); // New ref to indicate explicit navigation
 
   // Auto-save functionality with debouncing
   useEffect(() => {
@@ -727,6 +728,11 @@ export default function EditorPageClient() {
     };
 
     const handlePopState = () => {
+      // If we are explicitly navigating away (e.g., after publishing),
+      // prevent the popstate listener from interfering.
+      if (isNavigatingAwayRef.current) {
+        return;
+      }
       if (handlingPopStateRef.current) return;
       handlingPopStateRef.current = true;
       pushCurrentState();
@@ -1969,8 +1975,10 @@ export default function EditorPageClient() {
             {/* Close Button */}
             <button
               onClick={() => {
+                isNavigatingAwayRef.current = true;
+                savedSuccessfullyRef.current = true;
                 setShowPublishSuccess(false);
-                router.push("/published?refresh=true");
+                window.location.href = withPub("/home");
               }}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
             >
@@ -2051,8 +2059,10 @@ export default function EditorPageClient() {
             >
               <button
                 onClick={() => {
+                  isNavigatingAwayRef.current = true;
+                  savedSuccessfullyRef.current = true;
                   setShowPublishSuccess(false);
-                  router.push("/published?refresh=true");
+                  window.location.href = withPub("/home");
                 }}
                 style={{
                   width: "111px",
@@ -2078,7 +2088,9 @@ export default function EditorPageClient() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => {
+                  isNavigatingAwayRef.current = true; // Indicate explicit navigation
                   setShowPublishSuccess(false);
+                  router.push("/"); // Redirect to home page
                 }}
                 style={{
                   width: "110px",
