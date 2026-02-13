@@ -262,8 +262,14 @@ export default function Articles(props) {
                 <span className="w-2 h-2 bg-violet-500 rounded-full"></span>
                 {props.title || "All Articles"}
               </h1>
+              <CategoryFilter
+                selectedCategories={selectedCategories}
+                onCategoriesChange={setSelectedCategories}
+                buttonText="Choose Category"
+                disabled={filteredArticles.length === 0}
+              />
             </div>
-            <div className="flex items-center justify-between gap-5">
+            <div className="flex items-center gap-5">
               {filteredArticles.length > 0 && (
                 <label className={styles.selectAllContainer}>
                   <input
@@ -284,12 +290,6 @@ export default function Articles(props) {
                   <span className={styles.selectAllText}>Select all</span>
                 </label>
               )}
-              <CategoryFilter
-                selectedCategories={selectedCategories}
-                onCategoriesChange={setSelectedCategories}
-                buttonText="Choose Category"
-                disabled={filteredArticles.length === 0}
-              />
             </div>
           </div>
 

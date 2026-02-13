@@ -470,24 +470,13 @@ export default function Members() {
 
           {/* Add Member Section */}
           <div className="mb-8 max-[767px]:mb-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-2 max-[767px]:text-lg max-[767px]:mb-4 max-[767px]:text-center">
+            <h2 className="text-xl font-bold text-gray-900 pb-4 mb-4 max-[767px]:text-lg max-[767px]:mb-4 max-[767px]:text-center border-b border-#EDEDED">
               Add Members
             </h2>
-            <hr 
-              className="hidden md:block max-lg:!w-[550px]"
-              style={{
-                width: '770px',
-                maxWidth: '100%',
-                height: '0px',
-                border: '1px solid #EDEDED',
-                borderWidth: '1px',
-                opacity: 1,
-                marginBottom: '24px',
-              }}
-            />
+        
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-900 mb-2">
                 Email
               </label>
               <div className="flex gap-4 items-end justify-between max-[767px]:gap-3 max-[639px]:flex-col max-[639px]:justify-start">
@@ -496,7 +485,7 @@ export default function Members() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter the Email"
-                  className="w-[258px] px-0 py-2 border-0 border-b border-gray-300 text-sm focus:outline-none focus:border-gray-900 focus:ring-0 placeholder:text-gray-400 max-[639px]:w-full"
+                  className="w-[258px] px-0 py-2 border-0 border-b-2 border-gray-300 text-sm focus:outline-none focus:border-gray-900 focus:ring-0 placeholder:text-gray-400 max-[639px]:w-full"
                 />
                 <div className="flex gap-6 max-[639px]:w-full">
                   <div className="relative min-w-[130px] max-[639px]:flex-1 role-dropdown-container">
