@@ -692,7 +692,7 @@ export default function EditorPageClient() {
 
     if (isEmptyDraft) {
       savedSuccessfullyRef.current = true;
-      router.push(withPub("/?refresh=true"));
+      window.location.href = withPub("/?refresh=true");
       return;
     }
 
@@ -704,7 +704,7 @@ export default function EditorPageClient() {
 
     // No unsaved changes but has content: go to drafts directly
     savedSuccessfullyRef.current = true;
-    router.push(withPub("/draft?refresh=true"));
+    window.location.href = withPub("/draft?refresh=true");
   };
 
   // Intercept browser back/gesture to auto-save draft and navigate home
@@ -1949,15 +1949,8 @@ export default function EditorPageClient() {
       {showPublishSuccess && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000]">
           <div
-            className="relative flex flex-col items-center"
-            style={{
-              width: "489px",
-              height: "323.63px",
-              borderRadius: "4px",
-              padding: "56px 40px",
-              gap: "32px",
-              background: "#FEFEFE",
-            }}
+            className="relative flex flex-col items-center w-[300px] md:w-[489px] h-[352px] md:h-[323.63px] rounded-[4px] px-[40px] py-[56px] gap-[32px]"
+            style={{ background: "#FEFEFE" }}
           >
             {/* Close Button */}
             <button
@@ -1992,33 +1985,37 @@ export default function EditorPageClient() {
                 gap: "16px",
               }}
             >
-              {/* Paper Plane Icon with Checkmark */}
-              <div className="relative">
-                <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+              {/* Success Logo */}
+              <svg
+                width="50"
+                height="58"
+                viewBox="0 0 50 58"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <g clipPath="url(#clip0_1312_5315)">
+                  <path d="M48.0003 0L36.0003 48L17.2207 38.5999L48.0003 0Z" fill="#E6E6E6" />
+                  <path d="M48 0L12 36L0 30L48 0Z" fill="#D0D0D0" />
+                  <path d="M12 36L14 48L17.3474 38.5999L47.9994 0L12 36Z" fill="#8D8D8D" />
+                  <path d="M14 47.9998L20 39.9998L17.322 38.5996L14 47.9998Z" fill="#D3D3D3" />
+                </g>
+                <g clipPath="url(#clip1_1312_5315)">
                   <path
-                    d="M52 12L28 36M52 12L36 52L28 36M52 12L12 28L28 36"
-                    stroke="#9CA3AF"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M25.627 45.627C25.627 42.4444 26.8912 39.3921 29.1417 37.1417C31.3921 34.8912 34.4444 33.627 37.627 33.627C40.8096 33.627 43.8618 34.8912 46.1122 37.1417C48.3627 39.3921 49.627 42.4444 49.627 45.627C49.627 48.8096 48.3627 51.8618 46.1122 54.1122C43.8618 56.3627 40.8096 57.627 37.627 57.627C34.4444 57.627 31.3921 56.3627 29.1417 54.1122C26.8912 51.8618 25.627 48.8096 25.627 45.627ZM36.9422 50.763L43.851 42.1262L42.603 41.1278L36.7118 48.4894L32.539 45.0126L31.515 46.2414L36.9422 50.7646V50.763Z"
+                    fill="#72D770"
                   />
-                </svg>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                  <svg
-                    className="w-3.5 h-3.5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-              </div>
+                </g>
+                <defs>
+                  <clipPath id="clip0_1312_5315">
+                    <rect width="48" height="48" fill="white" />
+                  </clipPath>
+                  <clipPath id="clip1_1312_5315">
+                    <rect width="24" height="24" fill="white" transform="translate(25.627 33.627)" />
+                  </clipPath>
+                </defs>
+              </svg>
 
               {/* Success Message */}
               <div className="text-center">
@@ -2034,8 +2031,47 @@ export default function EditorPageClient() {
             </div>
 
             {/* Action Buttons */}
+            {/* Mobile actions */}
+            <div className="flex flex-col items-center gap-3 md:hidden">
+              <a
+                href={
+                  publishedBlogSlug
+                    ? currentPublication?.subdomain
+                      ? `http://${currentPublication.subdomain}.localhost:3000/view-site/blog/${publishedBlogSlug}`
+                      : `/view-site/blog/${publishedBlogSlug}`
+                    : currentPublication?.subdomain
+                      ? `http://${currentPublication.subdomain}.localhost:3000`
+                      : `/view-site?publicationId=${publicationId || currentPublication?.id}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  setShowPublishSuccess(false);
+                }}
+                className="flex items-center justify-center w-[180px] h-[40px] rounded-[4px] text-sm font-medium text-white hover:opacity-90 transition-opacity whitespace-nowrap"
+                style={{
+                  background:
+                    "linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)",
+                }}
+              >
+                View in Site
+              </a>
+              <button
+                onClick={() => {
+                  setShowPublishSuccess(false);
+                  setTimeout(() => {
+                    window.location.replace(withPub("/home?refresh=true"));
+                  }, 0);
+                }}
+                className="text-sm font-medium text-[#8B5CF6] underline underline-offset-4 hover:text-[#6D28D9] transition-colors"
+              >
+                See it Later
+              </button>
+            </div>
+
+            {/* Desktop actions (original layout) */}
             <div
-              className="flex items-center"
+              className="hidden md:flex items-center"
               style={{
                 width: "229px",
                 height: "32px",
@@ -2045,7 +2081,9 @@ export default function EditorPageClient() {
               <button
                 onClick={() => {
                   setShowPublishSuccess(false);
-                  router.push("/published?refresh=true");
+                  setTimeout(() => {
+                    window.location.replace(withPub("/home?refresh=true"));
+                  }, 0);
                 }}
                 style={{
                   width: "111px",
