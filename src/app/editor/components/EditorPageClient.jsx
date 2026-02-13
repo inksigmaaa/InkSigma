@@ -173,9 +173,38 @@ export default function EditorPageClient() {
   const savedSuccessfullyRef = useRef(false);
   const handlingPopStateRef = useRef(false);
   const isNavigatingAwayRef = useRef(false); // New ref to indicate explicit navigation
+  const isPublishingRef = useRef(false); // Track if publish is in progress
+
+  // Handle See Later navigation
+  const handleSeeLater = () => {
+    window.location.href = withPub("/?refresh=true");
+  };
+
+  // Handle View in Site
+  const handleViewInSite = () => {
+    const url = publishedBlogSlug
+      ? currentPublication?.subdomain
+        ? `http://${currentPublication.subdomain}.localhost:3000/view-site/blog/${publishedBlogSlug}`
+        : `/view-site/blog/${publishedBlogSlug}`
+      : currentPublication?.subdomain
+        ? `http://${currentPublication.subdomain}.localhost:3000`
+        : `/view-site?publicationId=${publicationId || currentPublication?.id}`;
+    window.open(url, '_blank');
+    window.location.href = withPub("/?refresh=true");
+  };
+  
+  // Debug: log when modal state changes
+  useEffect(() => {
+    console.log("showPublishSuccess changed:", showPublishSuccess);
+  }, [showPublishSuccess]);
 
   // Auto-save functionality with debouncing
   useEffect(() => {
+    // Don't auto-save if publishing is in progress
+    if (isPublishingRef.current) {
+      return;
+    }
+
     // Check if there's any content
     const contentExists =
       blogTitle.trim() ||
@@ -213,8 +242,8 @@ export default function EditorPageClient() {
       clearTimeout(autoSaveTimeoutRef.current);
     }
 
-    // Set saving status immediately
-    setSaveStatus("saving");
+    // Set auto-saving status immediately (doesn't affect publish button)
+    setIsAutoSaving(true);
 
     // Debounce auto-save by 1.5 seconds
     autoSaveTimeoutRef.current = setTimeout(async () => {
@@ -229,12 +258,14 @@ export default function EditorPageClient() {
           setSaveStatus("idle");
         }
       }
+      setIsAutoSaving(false);
     }, 1500);
 
     return () => {
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
       }
+      setIsAutoSaving(false);
     };
   }, [
     blogTitle,
@@ -480,11 +511,12 @@ export default function EditorPageClient() {
       }
     }
 
-    // Use separate state for auto-save vs manual save
-    if (isAutoSave) {
-      setIsAutoSaving(true);
-    } else {
+    // Only set isSaving for manual saves, not auto-saves (to avoid disabling publish button)
+    if (!isAutoSave) {
       setIsSaving(true);
+    }
+    // Only set saving status for manual saves, not auto-saves
+    if (!isAutoSave) {
       setSaveStatus("saving");
     }
     try {
@@ -538,11 +570,20 @@ export default function EditorPageClient() {
 
       console.log("Response status:", response.status);
 
-      const responseData = await response.json();
-      console.log("Response data:", responseData);
+      let responseData;
+      try {
+        responseData = await response.json();
+        console.log("Response data:", responseData);
+      } catch (parseError) {
+        console.error("Failed to parse response:", parseError);
+        const text = await response.text();
+        console.error("Response text:", text);
+        throw new Error(`Server error: ${response.status}`);
+      }
 
       if (!response.ok) {
-        throw new Error(responseData.error || "Failed to save blog");
+        console.error("Backend error:", responseData);
+        throw new Error(responseData.error || responseData.message || "Failed to save blog");
       }
 
       if (!currentBlogId && responseData?.id) {
@@ -588,9 +629,8 @@ export default function EditorPageClient() {
       // alert(error.message || 'Failed to save blog')
       return false;
     } finally {
-      if (isAutoSave) {
-        setIsAutoSaving(false);
-      } else {
+      // Only reset isSaving for manual saves, not auto-saves
+      if (!isAutoSave) {
         setIsSaving(false);
       }
     }
@@ -632,10 +672,25 @@ export default function EditorPageClient() {
 
   // Handle Publish
   const handlePublish = async () => {
-    const result = await saveBlog("published");
-    if (result) {
-      setPublishedBlogSlug(result.slug || "");
-      setShowPublishSuccess(true);
+    console.log("handlePublish called");
+    isPublishingRef.current = true;
+    savedSuccessfullyRef.current = true;
+    isNavigatingAwayRef.current = true;
+    
+    try {
+      const result = await saveBlog("published");
+      console.log("handlePublish result:", result);
+      if (result) {
+        console.log("Setting showPublishSuccess to true");
+        setPublishedBlogSlug(result.slug || "");
+        setShowPublishSuccess(true);
+      }
+    } catch (error) {
+      console.error("Publish failed:", error);
+      // Reset refs on error so user can try again
+      isPublishingRef.current = false;
+      savedSuccessfullyRef.current = false;
+      isNavigatingAwayRef.current = false;
     }
   };
 
@@ -700,7 +755,24 @@ export default function EditorPageClient() {
 
     if (isEmptyDraft) {
       savedSuccessfullyRef.current = true;
+      isNavigatingAwayRef.current = true;
       router.push(withPub("/?refresh=true"));
+      return;
+    }
+
+    // For published articles, go to published page
+    if (existingBlogStatus === "published") {
+      savedSuccessfullyRef.current = true;
+      isNavigatingAwayRef.current = true;
+      router.push(withPub("/published?refresh=true"));
+      return;
+    }
+
+    // For scheduled articles, go to schedule page
+    if (existingBlogStatus === "scheduled") {
+      savedSuccessfullyRef.current = true;
+      isNavigatingAwayRef.current = true;
+      router.push(withPub("/schedule?refresh=true"));
       return;
     }
 
@@ -712,6 +784,7 @@ export default function EditorPageClient() {
 
     // No unsaved changes but has content: go to drafts directly
     savedSuccessfullyRef.current = true;
+    isNavigatingAwayRef.current = true;
     router.push(withPub("/draft?refresh=true"));
   };
 
@@ -727,10 +800,10 @@ export default function EditorPageClient() {
       }
     };
 
-    const handlePopState = () => {
+    const handlePopState = (event) => {
       // If we are explicitly navigating away (e.g., after publishing),
       // prevent the popstate listener from interfering.
-      if (isNavigatingAwayRef.current) {
+      if (isNavigatingAwayRef.current || savedSuccessfullyRef.current) {
         return;
       }
       if (handlingPopStateRef.current) return;
@@ -1960,7 +2033,11 @@ export default function EditorPageClient() {
 
       {/* Publish Success Modal */}
       {showPublishSuccess && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000]">
+        <div 
+          id="publish-success-modal"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000]"
+          onClick={() => window.location.href = withPub("/?refresh=true")}
+        >
           <div
             className="relative flex flex-col items-center"
             style={{
@@ -1971,16 +2048,15 @@ export default function EditorPageClient() {
               gap: "32px",
               background: "#FEFEFE",
             }}
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
             <button
               onClick={() => {
-                isNavigatingAwayRef.current = true;
-                savedSuccessfullyRef.current = true;
-                setShowPublishSuccess(false);
-                window.location.href = withPub("/home");
+                window.location.href = withPub("/?refresh=true");
               }}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer z-10"
+              style={{ padding: '8px' }}
             >
               <svg
                 width="24"
@@ -2007,33 +2083,37 @@ export default function EditorPageClient() {
                 gap: "16px",
               }}
             >
-              {/* Paper Plane Icon with Checkmark */}
-              <div className="relative">
-                <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+              {/* Success Logo */}
+              <svg
+                width="50"
+                height="58"
+                viewBox="0 0 50 58"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <g clipPath="url(#clip0_1312_5315)">
+                  <path d="M48.0003 0L36.0003 48L17.2207 38.5999L48.0003 0Z" fill="#E6E6E6" />
+                  <path d="M48 0L12 36L0 30L48 0Z" fill="#D0D0D0" />
+                  <path d="M12 36L14 48L17.3474 38.5999L47.9994 0L12 36Z" fill="#8D8D8D" />
+                  <path d="M14 47.9998L20 39.9998L17.322 38.5996L14 47.9998Z" fill="#D3D3D3" />
+                </g>
+                <g clipPath="url(#clip1_1312_5315)">
                   <path
-                    d="M52 12L28 36M52 12L36 52L28 36M52 12L12 28L28 36"
-                    stroke="#9CA3AF"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M25.627 45.627C25.627 42.4444 26.8912 39.3921 29.1417 37.1417C31.3921 34.8912 34.4444 33.627 37.627 33.627C40.8096 33.627 43.8618 34.8912 46.1122 37.1417C48.3627 39.3921 49.627 42.4444 49.627 45.627C49.627 48.8096 48.3627 51.8618 46.1122 54.1122C43.8618 56.3627 40.8096 57.627 37.627 57.627C34.4444 57.627 31.3921 56.3627 29.1417 54.1122C26.8912 51.8618 25.627 48.8096 25.627 45.627ZM36.9422 50.763L43.851 42.1262L42.603 41.1278L36.7118 48.4894L32.539 45.0126L31.515 46.2414L36.9422 50.7646V50.763Z"
+                    fill="#72D770"
                   />
-                </svg>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                  <svg
-                    className="w-3.5 h-3.5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-              </div>
+                </g>
+                <defs>
+                  <clipPath id="clip0_1312_5315">
+                    <rect width="48" height="48" fill="white" />
+                  </clipPath>
+                  <clipPath id="clip1_1312_5315">
+                    <rect width="24" height="24" fill="white" transform="translate(25.627 33.627)" />
+                  </clipPath>
+                </defs>
+              </svg>
 
               {/* Success Message */}
               <div className="text-center">
@@ -2049,32 +2129,8 @@ export default function EditorPageClient() {
             </div>
 
             {/* Action Buttons */}
-            <div
-              className="flex items-center"
-              style={{
-                width: "229px",
-                height: "32px",
-                gap: "8px",
-              }}
-            >
-              <button
-                onClick={() => {
-                  isNavigatingAwayRef.current = true;
-                  savedSuccessfullyRef.current = true;
-                  setShowPublishSuccess(false);
-                  window.location.href = withPub("/home");
-                }}
-                style={{
-                  width: "111px",
-                  height: "32px",
-                  borderRadius: "4px",
-                  background: "#F8F8F8",
-                  border: "1px solid #ECECEC",
-                }}
-                className="flex items-center justify-center text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors whitespace-nowrap"
-              >
-                See Later
-              </button>
+            {/* Mobile actions */}
+            <div className="flex flex-col items-center gap-3 md:hidden">
               <a
                 href={
                   publishedBlogSlug
@@ -2088,21 +2144,70 @@ export default function EditorPageClient() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => {
-                  isNavigatingAwayRef.current = true; // Indicate explicit navigation
                   setShowPublishSuccess(false);
-                  router.push("/"); // Redirect to home page
                 }}
+                className="flex items-center justify-center w-[180px] h-[40px] rounded-[4px] text-sm font-medium text-white hover:opacity-90 transition-opacity whitespace-nowrap"
+                style={{
+                  background:
+                    "linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)",
+                }}
+              >
+                View in Site
+              </a>
+              <button
+                onClick={() => {
+                  setShowPublishSuccess(false);
+                  setTimeout(() => {
+                    window.location.replace(withPub("/home?refresh=true"));
+                  }, 0);
+                }}
+                className="text-sm font-medium text-[#8B5CF6] underline underline-offset-4 hover:text-[#6D28D9] transition-colors"
+              >
+                See it Later
+              </button>
+            </div>
+
+            {/* Desktop actions (original layout) */}
+            <div
+              className="hidden md:flex items-center"
+              style={{
+                width: "229px",
+                height: "32px",
+                gap: "8px",
+              }}
+            >
+              <button
+                type="button"
+                id="see-later-btn"
+                onClick={handleSeeLater}
+                style={{
+                  width: "111px",
+                  height: "32px",
+                  borderRadius: "4px",
+                  background: "#F8F8F8",
+                  border: "1px solid #ECECEC",
+                  cursor: "pointer",
+                }}
+                className="flex items-center justify-center text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors whitespace-nowrap"
+              >
+                See Later
+              </button>
+              <button
+                type="button"
+                id="view-in-site-btn"
+                onClick={handleViewInSite}
                 style={{
                   width: "110px",
                   height: "32px",
                   borderRadius: "4px",
                   background:
                     "linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)",
+                  cursor: "pointer",
                 }}
                 className="flex items-center justify-center text-sm font-medium text-white hover:opacity-90 transition-opacity whitespace-nowrap"
               >
                 View in Site
-              </a>
+              </button>
             </div>
           </div>
         </div>

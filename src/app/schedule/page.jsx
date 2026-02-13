@@ -1,6 +1,16 @@
 "use client";
 
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
+import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
+import Sidebar from "../components/sidebar/Sidebar";
+import Verify from "../components/verify/Verify";
+import PersonalArticles from "../components/personalArticles/personalArticles";
+import ConfirmModal from "../components/confirmModal/ConfirmModal";
+import { useArticles } from "@/contexts/ArticlesContext";
+import { usePublication } from "@/contexts/PublicationContext";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 export default function SchedulePage() {
   const {
