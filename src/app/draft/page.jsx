@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
@@ -27,6 +27,7 @@ export default function DraftPage() {
   const { currentPublication } = usePublication();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
   const hasLoadedRef = useRef(false);
   const pollIntervalRef = useRef(null);
   const isPollingRef = useRef(false);
@@ -57,39 +58,56 @@ export default function DraftPage() {
     loadUserArticles,
   ]);
 
-  // Clean up refresh param from URL if present
+  // Clean up refresh param from URL if present (preserve publication prefix)
   useEffect(() => {
     if (searchParams.get("refresh") === "true") {
-      router.replace("/draft", { scroll: false });
+      router.replace(pathname, { scroll: false });
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, pathname]);
 
   // Auto-refresh draft list on an interval (stay on draft page)
   useEffect(() => {
     if (!session?.user?.id) return;
 
+    const refreshDrafts = async () => {
+      if (isPollingRef.current) return;
+      isPollingRef.current = true;
+      try {
+        await loadUserArticles(currentPublication?.id, false);
+      } catch (error) {
+        console.error("[DraftPage] Auto-refresh failed:", error);
+      } finally {
+        isPollingRef.current = false;
+      }
+    };
+
     const startPolling = () => {
       if (pollIntervalRef.current) return;
       pollIntervalRef.current = setInterval(async () => {
-        if (isPollingRef.current) return;
-        isPollingRef.current = true;
-        try {
-          await loadUserArticles(currentPublication?.id, false);
-        } catch (error) {
-          console.error("[DraftPage] Auto-refresh failed:", error);
-        } finally {
-          isPollingRef.current = false;
-        }
+        await refreshDrafts();
       }, 20000);
     };
 
     startPolling();
+    refreshDrafts();
+
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        refreshDrafts();
+      }
+    };
+    const handleFocus = () => refreshDrafts();
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleFocus);
 
     return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = null;
       }
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleFocus);
     };
   }, [session?.user?.id, currentPublication?.id, loadUserArticles]);
   const [selectedArticles, setSelectedArticles] = useState([]);
