@@ -28,6 +28,8 @@ export default function DraftPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const hasLoadedRef = useRef(false);
+  const pollIntervalRef = useRef(null);
+  const isPollingRef = useRef(false);
   const { data: session } = useSession();
 
   // Only load articles if they haven't been loaded yet or if refresh param is present
@@ -61,6 +63,35 @@ export default function DraftPage() {
       router.replace("/draft", { scroll: false });
     }
   }, [searchParams, router]);
+
+  // Auto-refresh draft list on an interval (stay on draft page)
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const startPolling = () => {
+      if (pollIntervalRef.current) return;
+      pollIntervalRef.current = setInterval(async () => {
+        if (isPollingRef.current) return;
+        isPollingRef.current = true;
+        try {
+          await loadUserArticles(currentPublication?.id, false);
+        } catch (error) {
+          console.error("[DraftPage] Auto-refresh failed:", error);
+        } finally {
+          isPollingRef.current = false;
+        }
+      }, 20000);
+    };
+
+    startPolling();
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [session?.user?.id, currentPublication?.id, loadUserArticles]);
   const [selectedArticles, setSelectedArticles] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
