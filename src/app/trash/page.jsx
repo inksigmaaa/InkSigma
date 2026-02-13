@@ -12,8 +12,11 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { useToast } from "@/contexts/ToastContext";
 
+import { useSession } from "@/lib/auth-client";
+
 export default function TrashPage() {
   const { currentPublication } = usePublication();
+  const { data: session } = useSession();
   const {
     articles,
     loading,
@@ -91,17 +94,20 @@ export default function TrashPage() {
   };
 
   // Add handlers to articles
-  const articlesWithHandlers = trashArticles.map((article) => ({
-    ...article,
-    onDelete: (e) => {
-      e?.stopPropagation();
-      handleIndividualDelete(article.id);
-    },
-    onRestore: (e) => {
-      e?.stopPropagation();
-      handleIndividualRestore(article.id);
-    },
-  }));
+  const articlesWithHandlers = trashArticles.map((article) => {
+    return {
+      ...article,
+      canDelete: true, // No delete restriction for trashed articles
+      onDelete: (e) => {
+        e?.stopPropagation();
+        handleIndividualDelete(article.id);
+      },
+      onRestore: (e) => {
+        e?.stopPropagation();
+        handleIndividualRestore(article.id);
+      },
+    };
+  });
 
   const { showToast } = useToast();
 
@@ -118,24 +124,41 @@ export default function TrashPage() {
         }
       } else {
         // Bulk permanent delete
-        const results = await Promise.allSettled(
-          selectedArticles.map((id) => moveToTrash(id)),
-        );
+        // Filter out articles that the user cannot delete
+        const articlesToDelete = selectedArticles.filter((id) => {
+          const article = articlesWithHandlers.find((a) => a.id === id);
+          return article && article.canDelete;
+        });
 
-        const successes = results.filter(
-          (r) => r.status === "fulfilled",
-        ).length;
-        const failures = results.filter((r) => r.status === "rejected").length;
-        const failedIds = selectedArticles.filter(
-          (_, index) => results[index].status === "rejected",
-        );
+        if (articlesToDelete.length !== selectedArticles.length) {
+          showToast(
+            "Some articles could not be deleted due to permissions",
+            "error",
+          );
+        }
 
-        if (failures === 0) {
-          showToast(`${successes} article(s) deleted permanently`, "success");
-          setSelectedArticles([]);
-        } else {
-          showToast(`${successes} deleted. ${failures} failed.`, "error");
-          setSelectedArticles(failedIds);
+        if (articlesToDelete.length > 0) {
+          const results = await Promise.allSettled(
+            articlesToDelete.map((id) => moveToTrash(id)),
+          );
+
+          const successes = results.filter(
+            (r) => r.status === "fulfilled",
+          ).length;
+          const failures = results.filter(
+            (r) => r.status === "rejected",
+          ).length;
+          const failedIds = articlesToDelete.filter(
+            (_, index) => results[index].status === "rejected",
+          );
+
+          if (failures === 0) {
+            showToast(`${successes} article(s) deleted permanently`, "success");
+            setSelectedArticles([]);
+          } else {
+            showToast(`${successes} deleted. ${failures} failed.`, "error");
+            setSelectedArticles(failedIds);
+          }
         }
       }
 

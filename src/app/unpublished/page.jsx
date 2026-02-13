@@ -10,6 +10,8 @@ import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 
+import { useSession } from "@/lib/auth-client";
+
 export default function Unpublished() {
   const {
     articles,
@@ -24,6 +26,7 @@ export default function Unpublished() {
     loadPublicationArticles,
   } = useArticles();
 
+  const { data: session } = useSession();
   const { currentPublication, getCurrentUserRole } = usePublication();
   const [selectedArticles, setSelectedArticles] = useState([]);
   const [showRepublishModal, setShowRepublishModal] = useState(false);
@@ -62,24 +65,27 @@ export default function Unpublished() {
   // Filter unpublished articles (api already filters for pubArticles, but safety check)
   const unpublishedArticles = displayArticles
     .filter((article) => article.status === "unpublished")
-    .map((article) => ({
-      ...article,
-      onRepublish: () => {
-        setActionArticleId(article.id);
-        setIsBulkAction(false);
-        setShowRepublishModal(true);
-      },
-      onDraft: () => {
-        setActionArticleId(article.id);
-        setIsBulkAction(false);
-        setShowDraftModal(true);
-      },
-      onDelete: () => {
-        setActionArticleId(article.id);
-        setIsBulkAction(false);
-        setShowTrashModal(true);
-      },
-    }));
+    .map((article) => {
+      return {
+        ...article,
+        canDelete: true, // No delete restriction for unpublished articles
+        onRepublish: () => {
+          setActionArticleId(article.id);
+          setIsBulkAction(false);
+          setShowRepublishModal(true);
+        },
+        onDraft: () => {
+          setActionArticleId(article.id);
+          setIsBulkAction(false);
+          setShowDraftModal(true);
+        },
+        onDelete: () => {
+          setActionArticleId(article.id);
+          setIsBulkAction(false);
+          setShowTrashModal(true);
+        },
+      };
+    });
 
   // Add handlers to articles
   const articlesWithHandlers = unpublishedArticles.map((article) => ({
@@ -175,7 +181,19 @@ export default function Unpublished() {
   const confirmTrash = async () => {
     try {
       if (isBulkAction) {
-        for (const articleId of selectedArticles) {
+        // Filter out articles that the user cannot delete
+        const articlesToDelete = selectedArticles.filter((id) => {
+          const article = articlesWithHandlers.find((a) => a.id === id);
+          return article && article.canDelete;
+        });
+
+        if (articlesToDelete.length !== selectedArticles.length) {
+          console.warn(
+            "Some selected articles could not be deleted due to permissions.",
+          );
+        }
+
+        for (const articleId of articlesToDelete) {
           await moveToTrashStatus(articleId);
         }
         setSelectedArticles([]);

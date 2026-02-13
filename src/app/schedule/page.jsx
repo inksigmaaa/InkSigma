@@ -1,15 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import AuthGuard from "@/components/auth/AuthGuard";
-import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
-import Sidebar from "../components/sidebar/Sidebar";
-import Verify from "../components/verify/Verify";
-import PersonalArticles from "../components/personalArticles/personalArticles";
-import ConfirmModal from "../components/confirmModal/ConfirmModal";
-import { useArticles } from "@/contexts/ArticlesContext";
-import { usePublication } from "@/contexts/PublicationContext";
+import { useSession } from "@/lib/auth-client";
 
 export default function SchedulePage() {
   const {
@@ -26,6 +17,7 @@ export default function SchedulePage() {
     bulkMoveToDraft,
   } = useArticles();
   const { currentPublication, getCurrentUserRole } = usePublication();
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [selectedArticles, setSelectedArticles] = useState([]);
@@ -138,12 +130,22 @@ export default function SchedulePage() {
         scheduledAt: a.scheduledAt,
       });
     });
-    return scheduled.map((article) => ({
-      ...article,
-      onDelete: () => handleDeleteAction(article.id),
-      onDraft: () => handleDraftAction(article.id),
-    }));
-  }, [allArticles, handleDeleteAction, handleDraftAction]);
+    return scheduled.map((article) => {
+      return {
+        ...article,
+        canDelete: true, // No delete restriction for scheduled articles
+        onDelete: () => handleDeleteAction(article.id),
+        onDraft: () => handleDraftAction(article.id),
+      };
+    });
+  }, [
+    allArticles,
+    handleDeleteAction,
+    handleDraftAction,
+    session?.user?.id,
+    currentPublication,
+    userRole,
+  ]);
 
   // Smart refresh: set a single timer for the next scheduled article to publish
   useEffect(() => {
@@ -241,7 +243,21 @@ export default function SchedulePage() {
   const confirmDelete = useCallback(async () => {
     try {
       if (isBulkAction) {
-        await bulkMoveToTrashStatus(selectedArticles);
+        // Filter out articles that the user cannot delete
+        const articlesToDelete = selectedArticles.filter((id) => {
+          const article = scheduledArticles.find((a) => a.id === id);
+          return article && article.canDelete;
+        });
+
+        if (articlesToDelete.length !== selectedArticles.length) {
+          console.warn(
+            "Some selected articles could not be deleted due to permissions.",
+          );
+        }
+
+        if (articlesToDelete.length > 0) {
+          await bulkMoveToTrashStatus(articlesToDelete);
+        }
         setSelectedArticles([]);
       } else if (actionArticleId) {
         await moveToTrashStatus(actionArticleId);
@@ -257,6 +273,7 @@ export default function SchedulePage() {
     actionArticleId,
     bulkMoveToTrashStatus,
     moveToTrashStatus,
+    scheduledArticles,
   ]);
 
   const confirmDraft = useCallback(async () => {
