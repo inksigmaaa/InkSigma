@@ -142,26 +142,31 @@ function LoginForm() {
       }
 
       // Check if user has any publications (owned or joined) (only for default redirect)
-      try {
-        const pubsRes = await fetch(`${apiBase}/api/members/user/publications`, {
-          credentials: "include",
-        })
+      // Make this non-blocking to improve login speed
+      const checkPublications = async () => {
+        try {
+          const pubsRes = await fetch(`${apiBase}/api/members/user/publications`, {
+            credentials: "include",
+          })
 
-        if (pubsRes.ok) {
-          const data = await pubsRes.json().catch(() => null)
-          const publications = Array.isArray(data) ? data : (data?.publications || [])
-          const hasAny = Array.isArray(publications) && publications.length > 0
-          if (!hasAny) {
-            router.push('/create-publication')
-            return
+          if (pubsRes.ok) {
+            const data = await pubsRes.json().catch(() => null)
+            const publications = Array.isArray(data) ? data : (data?.publications || [])
+            const hasAny = Array.isArray(publications) && publications.length > 0
+            if (!hasAny) {
+              router.replace('/create-publication')
+              return
+            }
           }
+        } catch (err) {
+          console.error("Error checking publication:", err)
         }
-      } catch (err) {
-        console.error("Error checking publication:", err)
+        // User has publication or check failed, go to dashboard
+        router.replace(redirectTo)
       }
-
-      // User has publication or check failed, go to dashboard
-      router.push(redirectTo)
+      
+      // Don't await - let it run in background while user sees next screen
+      checkPublications()
     } catch (err) {
       const errorMessage = err.message || "An unexpected error occurred"
       const lowerError = errorMessage.toLowerCase()

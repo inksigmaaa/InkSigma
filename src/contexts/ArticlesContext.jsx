@@ -110,19 +110,21 @@ export function ArticlesProvider({ children }) {
 
   // Memoized loadUserArticles to prevent unnecessary re-renders
   const loadUserArticles = useCallback(
-    async (publicationId = null, includeAllPublications = false) => {
+    async (
+      publicationId = null,
+      includeAllPublications = false,
+      status = null,
+    ) => {
       // Use current session and publication context
       const currentSession = sessionRef.current || session;
       const effectivePublicationId =
         publicationId || currentPublicationRef.current?.id;
 
       if (!currentSession?.user?.id) {
-        console.log("[ArticlesContext] No session available");
         return;
       }
 
       if (isLoadingRef.current) {
-        console.log("[ArticlesContext] Already loading, skipping");
         return;
       }
 
@@ -137,20 +139,16 @@ export function ArticlesProvider({ children }) {
             ? { publicationId: effectivePublicationId }
             : { publicationId: null }; // Fixed: Use null instead of "null"
 
-        console.log("[ArticlesContext] Loading blogs with filters:", filters);
+        if (status) {
+          filters.status = status;
+        }
+
         const blogs = await blogService.getUserBlogs(
           currentSession.user.id,
           filters,
         );
 
-        console.log("[ArticlesContext] Blogs received:", blogs?.length, blogs);
-
         const convertedArticles = blogs.map(convertBlogToArticle);
-        console.log(
-          "[ArticlesContext] Converted articles:",
-          convertedArticles?.length,
-        );
-
         setArticles(convertedArticles);
       } catch (err) {
         console.error("Error loading articles:", err);
@@ -160,7 +158,7 @@ export function ArticlesProvider({ children }) {
           err.message.includes("401") ||
           err.message.includes("Unauthorized")
         ) {
-          console.log("Auth error detected, you may need to log in again");
+          // Optional hook for auth UI handling in the caller.
         }
       } finally {
         setLoading(false);
@@ -324,9 +322,7 @@ export function ArticlesProvider({ children }) {
 
   const publishArticle = useCallback(async (id) => {
     try {
-      console.log("Publishing article with ID:", id);
       const blog = await blogService.updateBlogStatus(id, "published");
-      console.log("Article published successfully:", blog);
       const updatedArticle = convertBlogToArticle(blog);
 
       setArticles((prev) =>
@@ -376,18 +372,9 @@ export function ArticlesProvider({ children }) {
     try {
       setReviewLoading(true);
       setReviewError(null);
-      console.log(
-        "[ArticlesContext] Loading review articles for publication:",
-        publicationId,
-      );
 
       const blogs = await blogService.getReviewArticles(publicationId);
       const convertedArticles = blogs.map(convertBlogToArticle);
-
-      console.log(
-        "[ArticlesContext] Review articles loaded:",
-        convertedArticles.length,
-      );
       setReviewArticles(convertedArticles);
       return convertedArticles;
     } catch (err) {
@@ -403,12 +390,6 @@ export function ArticlesProvider({ children }) {
   const acceptReviewArticle = useCallback(
     async (id, targetStatus = "unpublished") => {
       try {
-        console.log(
-          "[ArticlesContext] Accepting review article:",
-          id,
-          "with target status:",
-          targetStatus,
-        );
         const blog = await blogService.acceptReviewArticle(id, targetStatus);
         const updatedArticle = convertBlogToArticle(blog);
 
@@ -454,7 +435,6 @@ export function ArticlesProvider({ children }) {
   // Reject a review article (returns to author's draft)
   const rejectReviewArticle = useCallback(async (id) => {
     try {
-      console.log("[ArticlesContext] Rejecting review article:", id);
       const blog = await blogService.rejectReviewArticle(id);
       const updatedArticle = convertBlogToArticle(blog);
 
@@ -495,7 +475,6 @@ export function ArticlesProvider({ children }) {
   // Revert article from review back to draft (for author)
   const revertReviewToDraft = useCallback(async (id) => {
     try {
-      console.log("[ArticlesContext] Reverting review article to draft:", id);
       const blog = await blogService.revertReviewToDraft(id);
       const updatedArticle = convertBlogToArticle(blog);
 
@@ -630,7 +609,6 @@ export function ArticlesProvider({ children }) {
     try {
       // Use the dedicated endpoint to create a draft copy
       // This allows editing without unpublishing the original
-      console.log("Creating draft form published article:", id);
       const { getApiBase } = await import("@/utils/apiBase");
       const API_URL = getApiBase();
       const response = await fetch(`${API_URL}/api/blogs/${id}/edit-draft`, {

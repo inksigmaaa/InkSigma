@@ -41,13 +41,6 @@ export default function Posts() {
   const isLoading =
     isAdmin && currentPublication ? pubArticlesLoading : loading;
 
-  console.log("[PostsPage] State:", {
-    isAdmin,
-    hasPub: !!currentPublication,
-    articlesCount: displayArticles.length,
-    loading: isLoading,
-  });
-
   // Load appropriate articles
   useEffect(() => {
     const needsRefresh = searchParams.get("refresh") === "true";
@@ -70,9 +63,6 @@ export default function Posts() {
       isWrongContext;
 
     if (shouldLoad) {
-      console.log(
-        `[PostsPage] Loading articles... Target: ${targetContext}, Prev: ${loadedContextRef.current}`,
-      );
       hasLoadedRef.current = true;
       loadedContextRef.current = targetContext;
 

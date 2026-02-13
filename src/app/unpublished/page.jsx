@@ -53,7 +53,7 @@ export default function Unpublished() {
     if (isAdmin && currentPublication?.id) {
       loadPublicationArticles(currentPublication.id, "unpublished");
     } else {
-      loadUserArticles(currentPublication?.id);
+      loadUserArticles(currentPublication?.id, false, "unpublished");
     }
   }, [
     isAdmin,
@@ -106,10 +106,6 @@ export default function Unpublished() {
     } else {
       setSelectedArticles([]);
     }
-  };
-
-  const handleCopy = () => {
-    console.log("Copy articles:", selectedArticles);
   };
 
   const handleBulkRepublish = () => {

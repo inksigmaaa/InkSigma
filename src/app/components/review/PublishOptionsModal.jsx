@@ -21,9 +21,7 @@ export default function PublishOptionsModal({
   const handlePublish = async () => {
     setIsProcessing(true);
     try {
-      console.log("[PublishOptionsModal] Calling onPublish");
       await onPublish();
-      console.log("[PublishOptionsModal] onPublish completed");
       // Parent handler will close modal after success
     } catch (error) {
       console.error("[PublishOptionsModal] Error publishing article:", error);
@@ -36,9 +34,7 @@ export default function PublishOptionsModal({
   const handleUnpublish = async () => {
     setIsProcessing(true);
     try {
-      console.log("[PublishOptionsModal] Calling onUnpublish");
       await onUnpublish();
-      console.log("[PublishOptionsModal] onUnpublish completed");
       // Parent handler will close modal after success
     } catch (error) {
       console.error(

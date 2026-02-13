@@ -76,14 +76,6 @@ export default function EditorPageClient() {
   // Determine if user is owner or member
   const isPublicationOwner = currentPublication?.isOwner ?? true; // Default to true if no publication context
 
-  // Debug log
-  useEffect(() => {
-    console.log("Editor - publicationId:", publicationId);
-    console.log("Editor - articleStatus:", articleStatus);
-    console.log("Editor - isPublicationOwner:", isPublicationOwner);
-    console.log("Editor - currentPublication:", currentPublication);
-  }, [publicationId, articleStatus, isPublicationOwner, currentPublication]);
-
   // Check if user has a publication, redirect to create one if not
   useEffect(() => {
     const checkPublication = async () => {
@@ -174,34 +166,50 @@ export default function EditorPageClient() {
   const handlingPopStateRef = useRef(false);
   const isNavigatingAwayRef = useRef(false); // New ref to indicate explicit navigation
   const isPublishingRef = useRef(false); // Track if publish is in progress
+  const saveInFlightRef = useRef(false);
 
-  // Handle See Later navigation
+  const cancelPendingAutoSave = useCallback(() => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+      autoSaveTimeoutRef.current = null;
+    }
+    setIsAutoSaving(false);
+  }, []);
+
+  const waitForSaveSlot = useCallback(async () => {
+    while (saveInFlightRef.current) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }, []);
+
+  // Handle See Later navigation - go to published page instantly
   const handleSeeLater = () => {
-    window.location.href = withPub("/?refresh=true");
+    setShowPublishSuccess(false);
+    // Use direct navigation without any delay or extra processing
+    const targetPath = currentPublication?.subdomain 
+      ? `/${currentPublication.subdomain}/published` 
+      : '/published';
+    window.location.href = targetPath;
   };
 
-  // Handle View in Site
+  // Handle View in Site - go to blog page instantly
   const handleViewInSite = () => {
-    const url = publishedBlogSlug
+    setShowPublishSuccess(false);
+    // Use direct navigation without any delay
+    const targetPath = publishedBlogSlug
       ? currentPublication?.subdomain
-        ? `http://${currentPublication.subdomain}.localhost:3000/view-site/blog/${publishedBlogSlug}`
+        ? `/${currentPublication.subdomain}/view-site/blog/${publishedBlogSlug}`
         : `/view-site/blog/${publishedBlogSlug}`
       : currentPublication?.subdomain
-        ? `http://${currentPublication.subdomain}.localhost:3000`
+        ? `/${currentPublication.subdomain}`
         : `/view-site?publicationId=${publicationId || currentPublication?.id}`;
-    window.open(url, '_blank');
-    window.location.href = withPub("/?refresh=true");
+    window.location.href = targetPath;
   };
   
-  // Debug: log when modal state changes
-  useEffect(() => {
-    console.log("showPublishSuccess changed:", showPublishSuccess);
-  }, [showPublishSuccess]);
-
   // Auto-save functionality with debouncing
   useEffect(() => {
     // Don't auto-save if publishing is in progress
-    if (isPublishingRef.current) {
+    if (isPublishingRef.current || isSaving) {
       return;
     }
 
@@ -240,32 +248,35 @@ export default function EditorPageClient() {
     // Clear existing timeout
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
+      autoSaveTimeoutRef.current = null;
     }
 
-    // Set auto-saving status immediately (doesn't affect publish button)
-    setIsAutoSaving(true);
-
-    // Debounce auto-save by 1.5 seconds
+    // Debounce auto-save by 1.5 seconds - only show status when actually saving
     autoSaveTimeoutRef.current = setTimeout(async () => {
       // Only auto-save drafts or new blogs (not published/scheduled/review)
       const canAutoSave = !existingBlogStatus || existingBlogStatus === "draft";
 
       if (canAutoSave && blogTitle.trim()) {
+        // Set saving status right before actual save starts
+        setIsAutoSaving(true);
+        setSaveStatus("saving");
+        
         const result = await saveBlog("draft", null, true, true);
         if (result) {
           setSaveStatus("saved");
         } else {
           setSaveStatus("idle");
         }
+        setIsAutoSaving(false);
       }
-      setIsAutoSaving(false);
+      autoSaveTimeoutRef.current = null;
     }, 1500);
 
     return () => {
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
+        autoSaveTimeoutRef.current = null;
       }
-      setIsAutoSaving(false);
     };
   }, [
     blogTitle,
@@ -274,6 +285,7 @@ export default function EditorPageClient() {
     selectedCategories,
     hasUnsavedChanges,
     existingBlogStatus,
+    isSaving,
   ]);
 
   // Track unsaved changes
@@ -357,18 +369,19 @@ export default function EditorPageClient() {
           blogData.publicationId = parseInt(pubId);
         }
 
-        const url = currentBlogId
-          ? `${API_URL}/api/blogs/${currentBlogId}`
-          : `${API_URL}/api/blogs`;
+        const createUrl = `${API_URL}/api/blogs/auto-save`;
+        const updateUrl = `${API_URL}/api/blogs/${currentBlogId}`;
 
-        // Use sendBeacon for reliable save during page unload
+        // sendBeacon only supports POST. Use it only for new drafts.
         const blob = new Blob([JSON.stringify(blogData)], {
           type: "application/json",
         });
-        navigator.sendBeacon(url, blob);
+        if (!currentBlogId) {
+          navigator.sendBeacon(createUrl, blob);
+        }
 
-        // Also try fetch with keepalive as backup
-        fetch(url, {
+        // Also try fetch with keepalive as backup.
+        fetch(currentBlogId ? updateUrl : createUrl, {
           method: currentBlogId ? "PUT" : "POST",
           headers: {
             "Content-Type": "application/json",
@@ -432,24 +445,18 @@ export default function EditorPageClient() {
   const loadExistingBlog = async (id) => {
     setIsLoading(true);
     try {
-      console.log(`Loading blog with ID: ${id}`);
       const response = await fetch(`${API_URL}/api/blogs/${id}`, {
         credentials: "include",
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(
-          `Failed to load blog: ${response.status} ${response.statusText}`,
-          errorText,
-        );
         throw new Error(
           `Failed to load blog: ${response.status} ${errorText || response.statusText}`,
         );
       }
 
       const blog = await response.json();
-      console.log("Loaded blog for editing:", blog);
 
       setBlogTitle(blog.title || "");
       setInitialTitle(blog.title || "");
@@ -498,6 +505,13 @@ export default function EditorPageClient() {
     skipValidation = false,
     isAutoSave = false,
   ) => {
+    if (
+      isAutoSave &&
+      (isSaving || isPublishingRef.current || isNavigatingAwayRef.current)
+    ) {
+      return false;
+    }
+
     // Skip validation when reverting to draft or updating existing published articles
     // Also skip validation if blog already exists (updating)
     if (!skipValidation && !currentBlogId) {
@@ -513,12 +527,19 @@ export default function EditorPageClient() {
 
     // Only set isSaving for manual saves, not auto-saves (to avoid disabling publish button)
     if (!isAutoSave) {
+      cancelPendingAutoSave();
+      if (isSaving) return false;
       setIsSaving(true);
-    }
-    // Only set saving status for manual saves, not auto-saves
-    if (!isAutoSave) {
       setSaveStatus("saving");
+      await waitForSaveSlot();
     }
+
+    if (isAutoSave && saveInFlightRef.current) {
+      return false;
+    }
+
+    saveInFlightRef.current = true;
+
     try {
       const blogData = {
         title: blogTitle,
@@ -533,13 +554,6 @@ export default function EditorPageClient() {
       const pubId = publicationId || currentPublication?.id;
       if (pubId) {
         blogData.publicationId = parseInt(pubId);
-        console.log("Blog will be assigned to publication:", pubId);
-      } else {
-        console.warn(
-          "No publication ID available - blog may not be assigned to correct publication",
-        );
-        console.warn("publicationId from URL:", publicationId);
-        console.warn("currentPublication:", currentPublication);
       }
 
       // Add scheduledAt if scheduling
@@ -550,8 +564,6 @@ export default function EditorPageClient() {
       if (thumbnailRemoved) {
         blogData.image = null;
       }
-
-      console.log("Saving blog with data:", blogData, "blogId:", currentBlogId);
 
       // Use PUT for updates, POST for new blogs
       const url = currentBlogId
@@ -568,28 +580,29 @@ export default function EditorPageClient() {
         body: JSON.stringify(blogData),
       });
 
-      console.log("Response status:", response.status);
+      const contentType = response.headers.get("content-type") || "";
+      let responseData = null;
 
-      let responseData;
-      try {
-        responseData = await response.json();
-        console.log("Response data:", responseData);
-      } catch (parseError) {
-        console.error("Failed to parse response:", parseError);
+      if (contentType.includes("application/json")) {
+        responseData = await response.json().catch(() => null);
+      } else {
         const text = await response.text();
-        console.error("Response text:", text);
-        throw new Error(`Server error: ${response.status}`);
+        responseData = { error: text };
       }
 
       if (!response.ok) {
-        console.error("Backend error:", responseData);
-        throw new Error(responseData.error || responseData.message || "Failed to save blog");
+        throw new Error(
+          responseData?.error ||
+            responseData?.message ||
+            `Failed to save blog (${response.status})`,
+        );
       }
 
-      if (!currentBlogId && responseData?.id) {
-        setCurrentBlogId(String(responseData.id));
+      if (!currentBlogId && responseData?.id != null) {
+        const newId = String(responseData.id);
+        setCurrentBlogId(newId);
         const params = new URLSearchParams(searchParams.toString());
-        params.set("id", String(responseData.id));
+        params.set("id", newId);
         if (!params.get("status")) {
           params.set("status", status);
         }
@@ -604,9 +617,7 @@ export default function EditorPageClient() {
       // Upload thumbnail if one was selected
       if (thumbnailData && thumbnailData.file) {
         try {
-          console.log("Uploading thumbnail for blog:", responseData.id);
           await uploadArticleImage(responseData.id, thumbnailData.file);
-          console.log("Thumbnail uploaded successfully");
         } catch (error) {
           console.error("Error uploading thumbnail:", error);
           // Don't fail the whole save if thumbnail upload fails
@@ -629,6 +640,7 @@ export default function EditorPageClient() {
       // alert(error.message || 'Failed to save blog')
       return false;
     } finally {
+      saveInFlightRef.current = false;
       // Only reset isSaving for manual saves, not auto-saves
       if (!isAutoSave) {
         setIsSaving(false);
@@ -672,16 +684,13 @@ export default function EditorPageClient() {
 
   // Handle Publish
   const handlePublish = async () => {
-    console.log("handlePublish called");
     isPublishingRef.current = true;
     savedSuccessfullyRef.current = true;
     isNavigatingAwayRef.current = true;
     
     try {
       const result = await saveBlog("published");
-      console.log("handlePublish result:", result);
       if (result) {
-        console.log("Setting showPublishSuccess to true");
         setPublishedBlogSlug(result.slug || "");
         setShowPublishSuccess(true);
       }
@@ -698,8 +707,6 @@ export default function EditorPageClient() {
   const handleSendForReview = async () => {
     const result = await saveBlog("review", null, true);
     if (result) {
-      console.log("Article sent for review!");
-
       // Determine redirection path based on role
       const role = currentPublication?.role;
       const isOwner = currentPublication?.isOwner;
@@ -1119,7 +1126,6 @@ export default function EditorPageClient() {
   const handleThumbnailAdd = (data) => {
     setThumbnailData(data);
     setThumbnailRemoved(false);
-    console.log("Thumbnail added:", data);
   };
 
   const handleThumbnailRemove = () => {
@@ -1444,11 +1450,11 @@ export default function EditorPageClient() {
               <div className="flex-1 min-w-0"></div>
 
               {/* Save Status - Desktop and Tablet Only */}
-              {hasContent && saveStatus !== "idle" && (
+              {hasContent && (isAutoSaving || saveStatus !== "idle") && (
                 <div
                   className="hidden md:flex items-center flex-shrink-0"
                   style={{
-                    width: saveStatus === "saving" ? "98px" : "78px",
+                    width: isAutoSaving || saveStatus === "saving" ? "98px" : "78px",
                     height: "33px",
                     borderRadius: "4px",
                     border: "1px solid #EAEAEA",
@@ -1457,7 +1463,7 @@ export default function EditorPageClient() {
                     transition: "width 0.2s ease",
                   }}
                 >
-                  {saveStatus === "saving" ? (
+                  {isAutoSaving || saveStatus === "saving" ? (
                     <>
                       <div className="saving-spinner" />
                       <span
@@ -2157,9 +2163,11 @@ export default function EditorPageClient() {
               <button
                 onClick={() => {
                   setShowPublishSuccess(false);
-                  setTimeout(() => {
-                    window.location.replace(withPub("/home?refresh=true"));
-                  }, 0);
+                  // Go to published page instantly without delay
+                  const targetPath = currentPublication?.subdomain 
+                    ? `/${currentPublication.subdomain}/published` 
+                    : '/published';
+                  window.location.href = targetPath;
                 }}
                 className="text-sm font-medium text-[#8B5CF6] underline underline-offset-4 hover:text-[#6D28D9] transition-colors"
               >

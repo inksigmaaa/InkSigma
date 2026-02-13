@@ -2,7 +2,7 @@
 import express from "express";
 import { db } from "../config/database.js";
 import { publication, publicationMember, blog, user } from "../models/schema.js";
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, count } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -337,18 +337,27 @@ router.get("/:publicationId/details", getCurrentUser, async (req, res) => {
     // Get all member IDs including owner
     const memberIds = [pub.userId, ...members.map(m => m.userId)];
 
-    // Get post count from all members - handle case where there are no members
+    // Get post count from all members using SQL COUNT (much faster than fetching all posts)
     let postCount = 0;
     let publishedCount = 0;
 
     if (memberIds.length > 0) {
-      const posts = await db
-        .select()
+      // Use SQL COUNT for total posts
+      const postCountResult = await db
+        .select({ count: count() })
         .from(blog)
         .where(or(...memberIds.map(id => eq(blog.authorId, id))));
+      postCount = postCountResult[0]?.count || 0;
 
-      postCount = posts.length;
-      publishedCount = posts.filter(p => p.status === 'published').length;
+      // Use SQL COUNT for published posts only
+      const publishedCountResult = await db
+        .select({ count: count() })
+        .from(blog)
+        .where(and(
+          or(...memberIds.map(id => eq(blog.authorId, id))),
+          eq(blog.status, 'published')
+        ));
+      publishedCount = publishedCountResult[0]?.count || 0;
     }
 
     // Get owner info

@@ -181,10 +181,6 @@ function PublicationProviderInner({ children }) {
         while (retries > 0) {
           try {
             data = await memberService.getUserPublications();
-            console.log(
-              "[PublicationContext] Successfully loaded publications:",
-              data,
-            );
             break; // Success - exit retry loop
           } catch (err) {
             lastError = err;
@@ -251,9 +247,6 @@ function PublicationProviderInner({ children }) {
           );
           if (!stillHasAccess) {
             // User was removed from this publication, redirect to dashboard
-            console.log(
-              "[PublicationContext] User removed from publication, redirecting to dashboard",
-            );
             setCurrentPublication(null);
             setPublicationDetails(null);
             setUserPublications(publications);
@@ -399,17 +392,15 @@ function PublicationProviderInner({ children }) {
   };
 
   // Switch to a different publication
-  const switchPublication = async (publication) => {
+  const switchPublication = (publication) => {
     setCurrentPublication(publication);
-    // Try to load full details for the new publication, but don't fail if it doesn't work
-    try {
-      await loadPublicationDetails(publication.id);
-    } catch (error) {
+    // Load details in background without blocking
+    loadPublicationDetails(publication.id).catch((error) => {
       console.warn(
         "Failed to load publication details for switched publication, continuing without them:",
         error,
       );
-    }
+    });
   };
 
   // Switch to a publication by ID (useful when joining via invitation)

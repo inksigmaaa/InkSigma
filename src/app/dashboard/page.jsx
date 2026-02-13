@@ -188,9 +188,9 @@ export default function DashboardPage() {
                   </div>
                   <button
                     onClick={() => {
-                      // Switch to owned publication first
+                      // Switch publication and navigate instantly
                       switchPublication(ownedPublications[0]);
-                      router.push(`/${ownedPublications[0].subdomain}/home`);
+                      window.location.href = `/${ownedPublications[0].subdomain}/home`;
                     }}
                     className="flex-shrink-0 min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center w-full sm:w-auto"
                   >
@@ -314,9 +314,9 @@ export default function DashboardPage() {
                       </div>
                       <button
                         onClick={() => {
+                          // Switch publication and navigate instantly
                           switchPublication(joinedPub);
-                          // UNIFIED ROUTING: All roles (editor, author, admin) go to /home logic
-                          router.push(`/${joinedPub.subdomain}/home`);
+                          window.location.href = `/${joinedPub.subdomain}/home`;
                         }}
                         className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
                       >

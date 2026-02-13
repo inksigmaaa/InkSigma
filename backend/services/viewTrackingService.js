@@ -1,7 +1,7 @@
 // services/viewTrackingService.js
 import { db } from "../config/database.js";
 import { blogView, blogShare } from "../models/schema.js";
-import { eq, and } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 import { getRedisClient, isRedisAvailable } from "../config/redis.js";
 import crypto from "crypto";
 
@@ -31,8 +31,6 @@ export const trackBlogView = async (blogId, ip, userAgent) => {
         const viewerIdentifier = generateViewerIdentifier(ip, userAgent);
         const redisKey = `blog:${blogId}:view:${viewerIdentifier}`;
         
-        console.log(`[VIEW TRACKING] Tracking view for blog ${blogId} from ${viewerIdentifier.substring(0, 10)}...`);
-
         // Check Redis first if available
         if (isRedisAvailable()) {
             const redis = getRedisClient();
@@ -41,7 +39,6 @@ export const trackBlogView = async (blogId, ip, userAgent) => {
             // If key already exists → already counted → DON'T count again
             const setResult = await redis.set(redisKey, Date.now().toString(), "NX");
             if (!setResult) {
-                console.log(`[VIEW TRACKING] View already tracked in Redis - SKIPPED`);
                 return { viewed: true, isNewView: false };
             }
         } else {
@@ -58,7 +55,6 @@ export const trackBlogView = async (blogId, ip, userAgent) => {
                 .limit(1);
 
             if (existingView) {
-                console.log(`[VIEW TRACKING] View already tracked in database - SKIPPED`);
                 return { viewed: true, isNewView: false };
             }
         }
@@ -71,7 +67,6 @@ export const trackBlogView = async (blogId, ip, userAgent) => {
             createdAt: new Date(),
         });
 
-        console.log(`[VIEW TRACKING] New view recorded in database - COUNT INCREMENTED`);
         return { viewed: true, isNewView: true };
 
     } catch (error) {
@@ -88,15 +83,11 @@ export const trackBlogView = async (blogId, ip, userAgent) => {
  */
 export const trackBlogShare = async (blogId, platform) => {
     try {
-        console.log(`[SHARE TRACKING] Tracking share for blog ${blogId} on ${platform}`);
-
         await db.insert(blogShare).values({
             blogId,
             platform,
             createdAt: new Date(),
         });
-
-        console.log(`[SHARE TRACKING] Share recorded in database`);
         return true;
 
     } catch (error) {
@@ -112,12 +103,12 @@ export const trackBlogShare = async (blogId, platform) => {
  */
 export const getBlogViewCount = async (blogId) => {
     try {
-        const views = await db
-            .select()
+        const [result] = await db
+            .select({ count: count() })
             .from(blogView)
             .where(eq(blogView.blogId, blogId));
 
-        return views.length;
+        return parseInt(result?.count || 0);
     } catch (error) {
         console.error('[VIEW TRACKING] Error getting view count:', error);
         return 0;
@@ -131,12 +122,12 @@ export const getBlogViewCount = async (blogId) => {
  */
 export const getBlogShareCount = async (blogId) => {
     try {
-        const shares = await db
-            .select()
+        const [result] = await db
+            .select({ count: count() })
             .from(blogShare)
             .where(eq(blogShare.blogId, blogId));
 
-        return shares.length;
+        return parseInt(result?.count || 0);
     } catch (error) {
         console.error('[SHARE TRACKING] Error getting share count:', error);
         return 0;

@@ -102,20 +102,11 @@ export default function ReviewPage() {
   };
 
   const handlePublish = async () => {
-    console.log(
-      "[ReviewPage] handlePublish called, article:",
-      selectedArticleForPublish,
-    );
     if (selectedArticleForPublish) {
       try {
-        console.log(
-          "[ReviewPage] Calling acceptReviewArticle with published status",
-        );
         await acceptReviewArticle(selectedArticleForPublish.id, "published");
-        console.log("[ReviewPage] acceptReviewArticle succeeded");
         setShowPublishModal(false);
         setSelectedArticleForPublish(null);
-        console.log("Article published successfully!");
         // Refresh the review articles list
         if (currentPublication?.id) {
           loadReviewArticles(currentPublication.id);
@@ -127,20 +118,11 @@ export default function ReviewPage() {
   };
 
   const handleUnpublish = async () => {
-    console.log(
-      "[ReviewPage] handleUnpublish called, article:",
-      selectedArticleForPublish,
-    );
     if (selectedArticleForPublish) {
       try {
-        console.log(
-          "[ReviewPage] Calling acceptReviewArticle with unpublished status",
-        );
         await acceptReviewArticle(selectedArticleForPublish.id, "unpublished");
-        console.log("[ReviewPage] acceptReviewArticle succeeded");
         setShowPublishModal(false);
         setSelectedArticleForPublish(null);
-        console.log("Article stored to unpublished!");
         // Refresh the review articles list
         if (currentPublication?.id) {
           loadReviewArticles(currentPublication.id);
@@ -169,10 +151,8 @@ export default function ReviewPage() {
     try {
       if (actionType === "reject") {
         await rejectReviewArticle(selectedArticleForAction);
-        console.log("Article rejected and returned to draft.");
       } else if (actionType === "revert") {
         await revertReviewToDraft(selectedArticleForAction);
-        console.log("Article reverted to draft successfully!");
       }
 
       // Refresh the review articles list

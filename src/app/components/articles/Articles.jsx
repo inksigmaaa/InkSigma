@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import ArticleContainer from "../articleContainer/ArticleContainer";
 import ConfirmModal from "../confirmModal/ConfirmModal";
 import CategoryFilter from "../categoryFilter/CategoryFilter";
@@ -20,7 +20,6 @@ export default function Articles(props) {
     createDraftFromPublished,
   } = useArticles();
   const [selectedCategories, setSelectedCategories] = useState([]);
-  const [selectAll, setSelectAll] = useState(false);
   const [selectedArticles, setSelectedArticles] = useState(new Set());
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
@@ -46,6 +45,9 @@ export default function Articles(props) {
     : allArticles;
 
   const articleIds = filteredArticles.map((article) => article.id);
+  const isAllSelected =
+    articleIds.length > 0 &&
+    articleIds.every((id) => selectedArticles.has(id));
 
   const handleDeleteArticle = (articleId) => {
     setActionArticleId(articleId);
@@ -72,20 +74,10 @@ export default function Articles(props) {
   };
 
   const handleSelectAll = () => {
-    if (selectAll) {
+    if (isAllSelected) {
       setSelectedArticles(new Set());
-      setSelectAll(false);
     } else {
-      const allArticles = sourceArticles.filter(
-        (article) => article.status !== "trash",
-      );
-      const filteredArticles = filterStatus
-        ? allArticles.filter((article) => article.status === filterStatus)
-        : allArticles;
-      setSelectedArticles(
-        new Set(filteredArticles.map((article) => article.id)),
-      );
-      setSelectAll(true);
+      setSelectedArticles(new Set(articleIds));
     }
   };
 
@@ -174,13 +166,6 @@ export default function Articles(props) {
     }
   };
 
-  useEffect(() => {
-    const allSelected =
-      articleIds.length > 0 &&
-      articleIds.every((id) => selectedArticles.has(id));
-    setSelectAll(allSelected);
-  }, [selectedArticles, articleIds.length]);
-
   const topPosition = "top-[160px]";
   const mobileTopPosition = "max-md:top-[120px]";
   const isLoading = props.loading !== undefined ? props.loading : loading;
@@ -230,12 +215,12 @@ export default function Articles(props) {
                   <label className={styles.selectAllContainer}>
                     <input
                       type="checkbox"
-                      checked={selectAll}
+                      checked={isAllSelected}
                       onChange={handleSelectAll}
                       className={styles.selectAllCheckbox}
                     />
                     <span className={styles.selectAllCheckboxBox}>
-                      {selectAll && (
+                      {isAllSelected && (
                         <img
                           src="/images/icons/tick2.svg"
                           alt="checked"
@@ -274,12 +259,12 @@ export default function Articles(props) {
                 <label className={styles.selectAllContainer}>
                   <input
                     type="checkbox"
-                    checked={selectAll}
+                    checked={isAllSelected}
                     onChange={handleSelectAll}
                     className={styles.selectAllCheckbox}
                   />
                   <span className={styles.selectAllCheckboxBox}>
-                    {selectAll && (
+                    {isAllSelected && (
                       <img
                         src="/images/icons/tick2.svg"
                         alt="checked"

@@ -70,7 +70,8 @@ export const auth = betterAuth({
         expiresIn: 60 * 60 * 24 * 7, // 7 days
         updateAge: 60 * 60 * 24, // 1 day
         cookieCache: {
-            enabled: false, // Disable cache to ensure fresh session data
+            enabled: true, // Enable cookie cache to reduce Redis lookups and improve performance
+            maxAge: 60 * 5, // Cache session in cookie for 5 minutes
         },
         // Use Redis for session storage
         storage: redisSessionStorage,

@@ -162,10 +162,8 @@ export default function AuthorReviewPage() {
     try {
       if (actionType === "revert") {
         await revertReviewToDraft(selectedArticleForAction.id);
-        console.log("Article reverted to draft successfully!");
       } else if (actionType === "reject") {
         await rejectReviewArticle(selectedArticleForAction.id);
-        console.log("Article rejected and returned to author's draft.");
       }
       // Refresh the review articles list
       if (currentPublication?.id) {

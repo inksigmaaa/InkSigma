@@ -1,22 +1,28 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import { X } from "lucide-react"
 
-export default function PublishSuccessModal({ isOpen, onClose, blogSlug, blogTitle }) {
-  const router = useRouter()
+export default function PublishSuccessModal({ isOpen, onClose, blogSlug, blogTitle, currentPublication }) {
+  // Don't use useRouter - we'll use window.location for instant navigation
 
   if (!isOpen) return null
 
-  const handleSeeLateer = () => {
+  const handleSeeLater = () => {
     onClose()
-    router.push('/published')
+    // Use window.location for instant navigation without waiting for context
+    const baseUrl = currentPublication?.subdomain 
+      ? `/${currentPublication.subdomain}/published`
+      : '/published';
+    window.location.href = baseUrl;
   }
 
   const handleViewInSite = () => {
     onClose()
-    // Navigate to blog read page
-    router.push(`/view-site/blog/${blogSlug}`)
+    // Navigate to blog read page - use window.location for instant navigation
+    const baseUrl = currentPublication?.subdomain
+      ? `/${currentPublication.subdomain}/view-site/blog/${blogSlug}`
+      : `/view-site/blog/${blogSlug}`;
+    window.location.href = baseUrl;
   }
 
   return (
@@ -99,7 +105,7 @@ export default function PublishSuccessModal({ isOpen, onClose, blogSlug, blogTit
           >
             {/* See Later button */}
             <button
-              onClick={handleSeeLateer}
+              onClick={handleSeeLater}
               className="bg-[#F8F8F8] border border-[#ECECEC] text-gray-700 hover:bg-gray-200 transition-colors rounded text-sm font-medium flex items-center justify-center"
               style={{
                 width: '111px',

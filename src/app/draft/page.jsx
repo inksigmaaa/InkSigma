@@ -43,12 +43,8 @@ export default function DraftPage() {
       session?.user?.id &&
       (needsRefresh || articles.length === 0)
     ) {
-      console.log(
-        "[DraftPage] Loading articles with context:",
-        currentPublication?.id,
-      );
       hasLoadedRef.current = true;
-      loadUserArticles(currentPublication?.id, false);
+      loadUserArticles(currentPublication?.id, false, "draft");
     }
   }, [
     searchParams,
@@ -73,9 +69,9 @@ export default function DraftPage() {
       if (isPollingRef.current) return;
       isPollingRef.current = true;
       try {
-        await loadUserArticles(currentPublication?.id, false);
+        await loadUserArticles(currentPublication?.id, false, "draft");
       } catch (error) {
-        console.error("[DraftPage] Auto-refresh failed:", error);
+        console.error("Auto-refresh failed:", error);
       } finally {
         isPollingRef.current = false;
       }
@@ -250,14 +246,7 @@ export default function DraftPage() {
 
   const confirmPublish = async () => {
     try {
-      console.log("=== PUBLISH FLOW START ===");
-      console.log("Is bulk action:", isBulkAction);
-      console.log("Action article ID:", actionArticleId);
-      console.log("Selected articles:", selectedArticles);
-
       if (isBulkAction) {
-        console.log("Calling bulkPublish with IDs:", selectedArticles);
-
         const results = await Promise.allSettled(
           selectedArticles.map((id) => publishArticle(id)),
         );
@@ -284,10 +273,8 @@ export default function DraftPage() {
           setSelectedArticles(failedIds);
         }
       } else if (actionArticleId) {
-        console.log("Calling publishArticle with ID:", actionArticleId);
         try {
-          const result = await publishArticle(actionArticleId);
-          console.log("Publish result:", result);
+          await publishArticle(actionArticleId);
           showToast("Article published successfully", "success");
         } catch (error) {
           console.error("Publish failed:", error);
@@ -299,11 +286,8 @@ export default function DraftPage() {
 
       setShowPublishModal(false);
       setActionArticleId(null);
-      console.log("=== PUBLISH FLOW END ===");
     } catch (error) {
-      console.error("=== PUBLISH ERROR ===");
       console.error("Error publishing:", error);
-      console.error("Error details:", error.message, error.stack);
       showToast("An unexpected error occurred during publishing", "error");
     }
   };
