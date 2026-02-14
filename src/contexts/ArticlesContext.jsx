@@ -39,7 +39,7 @@ const formatDate = (date) => {
 };
 
 // Helper function to convert database blog to article format
-const convertBlogToArticle = (blog) => {
+const convertBlogToArticle = (blog, includeContent = false) => {
   // Use the status field if available, otherwise derive from published field
   let status = blog.status || (blog.published ? "published" : "draft");
 
@@ -55,7 +55,7 @@ const convertBlogToArticle = (blog) => {
     id: blog.id,
     title: blog.title,
     description: blog.description,
-    content: blog.content,
+    content: includeContent ? blog.content : undefined, // Only include content if requested
     categories: blog.categories || [],
     image: blog.image,
     status: status,
@@ -78,8 +78,10 @@ const convertBlogToArticle = (blog) => {
 export function ArticlesProvider({ children }) {
   const [articles, setArticles] = useState([]);
   const [reviewArticles, setReviewArticles] = useState([]);
+  const [publicationArticles, setPublicationArticles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [pubArticlesLoading, setPubArticlesLoading] = useState(false);
   const [error, setError] = useState(null);
   const [reviewError, setReviewError] = useState(null);
   const { data: session } = useSession();
@@ -179,7 +181,7 @@ export function ArticlesProvider({ children }) {
   const getArticleById = useCallback(async (id) => {
     try {
       const blog = await blogService.getBlog(id);
-      return convertBlogToArticle(blog);
+      return convertBlogToArticle(blog, true); // Include content for single article fetch
     } catch (err) {
       console.error("Error loading article:", err);
       throw err;
@@ -219,6 +221,7 @@ export function ArticlesProvider({ children }) {
 
       const newArticle = convertBlogToArticle(blog);
       setArticles((prev) => [newArticle, ...prev]);
+      setPublicationArticles((prev) => [newArticle, ...prev]);
       return newArticle;
     } catch (err) {
       console.error("Error creating article:", err);
@@ -247,7 +250,6 @@ export function ArticlesProvider({ children }) {
       setArticles((prev) =>
         prev.map((article) => (article.id === id ? updatedArticle : article)),
       );
-
       setPublicationArticles((prev) =>
         prev.map((article) => (article.id === id ? updatedArticle : article)),
       );
@@ -288,7 +290,6 @@ export function ArticlesProvider({ children }) {
       setArticles((prev) =>
         prev.map((article) => (article.id === id ? updatedArticle : article)),
       );
-
       setPublicationArticles((prev) =>
         prev.map((article) => (article.id === id ? updatedArticle : article)),
       );
@@ -308,7 +309,6 @@ export function ArticlesProvider({ children }) {
       setArticles((prev) =>
         prev.map((article) => (article.id === id ? updatedArticle : article)),
       );
-
       setPublicationArticles((prev) =>
         prev.map((article) => (article.id === id ? updatedArticle : article)),
       );
@@ -328,7 +328,6 @@ export function ArticlesProvider({ children }) {
       setArticles((prev) =>
         prev.map((article) => (article.id === id ? updatedArticle : article)),
       );
-
       setPublicationArticles((prev) =>
         prev.map((article) => (article.id === id ? updatedArticle : article)),
       );
@@ -348,7 +347,6 @@ export function ArticlesProvider({ children }) {
       setArticles((prev) =>
         prev.map((article) => (article.id === id ? updatedArticle : article)),
       );
-
       setPublicationArticles((prev) =>
         prev.map((article) => (article.id === id ? updatedArticle : article)),
       );
@@ -360,7 +358,6 @@ export function ArticlesProvider({ children }) {
     }
   }, []);
 
-  // Load articles with 'review' status for a publication
   const loadReviewArticles = useCallback(async (publicationId) => {
     if (!publicationId) {
       console.warn(
@@ -386,19 +383,16 @@ export function ArticlesProvider({ children }) {
     }
   }, []);
 
-  // Accept a review article (admin: choose published/unpublished, editor: unpublished only)
   const acceptReviewArticle = useCallback(
     async (id, targetStatus = "unpublished") => {
       try {
         const blog = await blogService.acceptReviewArticle(id, targetStatus);
         const updatedArticle = convertBlogToArticle(blog);
 
-        // Remove from review articles
         setReviewArticles((prev) =>
           prev.filter((article) => article.id !== id),
         );
 
-        // Add to main articles list (or update if already exists)
         setArticles((prev) => {
           const exists = prev.some((article) => article.id === id);
           if (exists) {
@@ -406,12 +400,9 @@ export function ArticlesProvider({ children }) {
               article.id === id ? updatedArticle : article,
             );
           } else {
-            // Add to the beginning of the list
             return [updatedArticle, ...prev];
           }
         });
-
-        // Also update publication articles if they exist
         setPublicationArticles((prev) => {
           const exists = prev.some((article) => article.id === id);
           if (exists) {
@@ -432,16 +423,13 @@ export function ArticlesProvider({ children }) {
     [],
   );
 
-  // Reject a review article (returns to author's draft)
   const rejectReviewArticle = useCallback(async (id) => {
     try {
       const blog = await blogService.rejectReviewArticle(id);
       const updatedArticle = convertBlogToArticle(blog);
 
-      // Remove from review articles
       setReviewArticles((prev) => prev.filter((article) => article.id !== id));
 
-      // Add to main articles list (or update if already exists)
       setArticles((prev) => {
         const exists = prev.some((article) => article.id === id);
         if (exists) {
@@ -452,8 +440,6 @@ export function ArticlesProvider({ children }) {
           return [updatedArticle, ...prev];
         }
       });
-
-      // Also update publication articles if they exist
       setPublicationArticles((prev) => {
         const exists = prev.some((article) => article.id === id);
         if (exists) {
@@ -472,16 +458,13 @@ export function ArticlesProvider({ children }) {
     }
   }, []);
 
-  // Revert article from review back to draft (for author)
   const revertReviewToDraft = useCallback(async (id) => {
     try {
       const blog = await blogService.revertReviewToDraft(id);
       const updatedArticle = convertBlogToArticle(blog);
 
-      // Remove from review articles
       setReviewArticles((prev) => prev.filter((article) => article.id !== id));
 
-      // Update in main articles
       setArticles((prev) =>
         prev.map((article) => (article.id === id ? updatedArticle : article)),
       );
@@ -495,12 +478,10 @@ export function ArticlesProvider({ children }) {
 
   const bulkMoveToTrash = useCallback(async (ids) => {
     try {
-      // Delete each blog, but continue even if some fail (already deleted)
       const results = await Promise.allSettled(
         ids.map((id) => blogService.deleteBlog(id)),
       );
 
-      // Log any failures but don't throw
       results.forEach((result, index) => {
         if (result.status === "rejected") {
           console.warn(
@@ -510,7 +491,6 @@ export function ArticlesProvider({ children }) {
         }
       });
 
-      // Remove all from local state regardless of API result
       setArticles((prev) =>
         prev.filter((article) => !ids.includes(article.id)),
       );
@@ -528,6 +508,13 @@ export function ArticlesProvider({ children }) {
       const updatedArticles = updatedBlogs.map(convertBlogToArticle);
 
       setArticles((prev) =>
+        prev.map((article) => {
+          const updated = updatedArticles.find((ua) => ua.id === article.id);
+          return updated || article;
+        }),
+      );
+
+      setPublicationArticles((prev) =>
         prev.map((article) => {
           const updated = updatedArticles.find((ua) => ua.id === article.id);
           return updated || article;
@@ -579,7 +566,6 @@ export function ArticlesProvider({ children }) {
 
   const uploadArticleImage = useCallback(async (id, imageFile) => {
     try {
-      // Validate that imageFile is actually a File object
       if (!imageFile || !(imageFile instanceof File)) {
         throw new Error("Invalid image file provided");
       }
@@ -596,7 +582,6 @@ export function ArticlesProvider({ children }) {
     }
   }, []);
 
-  // Legacy methods for backward compatibility (now just update status locally)
   const restoreFromTrash = useCallback((id) => {
     setArticles((prev) =>
       prev.map((article) =>
@@ -607,8 +592,6 @@ export function ArticlesProvider({ children }) {
 
   const createDraftFromPublished = useCallback(async (id) => {
     try {
-      // Use the dedicated endpoint to create a draft copy
-      // This allows editing without unpublishing the original
       const { getApiBase } = await import("@/utils/apiBase");
       const API_URL = getApiBase();
       const response = await fetch(`${API_URL}/api/blogs/${id}/edit-draft`, {
@@ -624,15 +607,29 @@ export function ArticlesProvider({ children }) {
       const blog = await response.json();
       const newDraftArticle = convertBlogToArticle(blog);
 
-      // Add the new draft to the articles list
       setArticles((prev) => [newDraftArticle, ...prev]);
-
-      // Also update publication articles if relevant
       setPublicationArticles((prev) => [newDraftArticle, ...prev]);
 
       return newDraftArticle;
     } catch (err) {
       console.error("Error creating draft from published:", err);
+      throw err;
+    }
+  }, []);
+
+  const addComment = useCallback(async (articleId, commentData) => {
+    try {
+      const comment = await blogService.addComment(articleId, commentData);
+      setArticles((prev) =>
+        prev.map((article) =>
+          article.id === articleId
+            ? { ...article, comments: article.comments + 1 }
+            : article,
+        ),
+      );
+      return comment;
+    } catch (err) {
+      console.error("Error adding comment:", err);
       throw err;
     }
   }, []);
@@ -653,11 +650,6 @@ export function ArticlesProvider({ children }) {
     setArticles((prev) => prev.filter((article) => !ids.includes(article.id)));
   }, []);
 
-  // Publication articles state (for admins/editors to see all articles in publication)
-  const [publicationArticles, setPublicationArticles] = useState([]);
-  const [pubArticlesLoading, setPubArticlesLoading] = useState(false);
-
-  // Load all articles for a publication (for admins/editors)
   const loadPublicationArticles = useCallback(
     async (publicationId, status = null) => {
       try {
@@ -680,20 +672,19 @@ export function ArticlesProvider({ children }) {
     [],
   );
 
-  // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(
     () => ({
       articles,
       reviewArticles,
-      publicationArticles, // New
+      publicationArticles,
       loading,
       reviewLoading,
-      pubArticlesLoading, // New
+      pubArticlesLoading,
       error,
       reviewError,
       loadUserArticles,
       loadReviewArticles,
-      loadPublicationArticles, // New
+      loadPublicationArticles,
       getArticleById,
       createArticle,
       updateArticle,
@@ -715,19 +706,20 @@ export function ArticlesProvider({ children }) {
       bulkPublish,
       uploadArticleImage,
       createDraftFromPublished,
+      addComment,
     }),
     [
       articles,
       reviewArticles,
-      publicationArticles, // New
+      publicationArticles,
       loading,
       reviewLoading,
-      pubArticlesLoading, // New
+      pubArticlesLoading,
       error,
       reviewError,
       loadUserArticles,
       loadReviewArticles,
-      loadPublicationArticles, // New
+      loadPublicationArticles,
       getArticleById,
       createArticle,
       updateArticle,
@@ -749,6 +741,7 @@ export function ArticlesProvider({ children }) {
       bulkPublish,
       uploadArticleImage,
       createDraftFromPublished,
+      addComment,
     ],
   );
 

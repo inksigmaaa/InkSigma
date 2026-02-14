@@ -2,28 +2,10 @@
 
 import { X } from "lucide-react"
 
-export default function PublishSuccessModal({ isOpen, onClose, blogSlug, blogTitle, currentPublication }) {
+export default function PublishSuccessModal({ isOpen, onClose, onSeeLater, onViewInSite }) {
   // Don't use useRouter - we'll use window.location for instant navigation
 
   if (!isOpen) return null
-
-  const handleSeeLater = () => {
-    onClose()
-    // Use window.location for instant navigation without waiting for context
-    const baseUrl = currentPublication?.subdomain 
-      ? `/${currentPublication.subdomain}/published`
-      : '/published';
-    window.location.href = baseUrl;
-  }
-
-  const handleViewInSite = () => {
-    onClose()
-    // Navigate to blog read page - use window.location for instant navigation
-    const baseUrl = currentPublication?.subdomain
-      ? `/${currentPublication.subdomain}/view-site/blog/${blogSlug}`
-      : `/view-site/blog/${blogSlug}`;
-    window.location.href = baseUrl;
-  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] px-4">
@@ -105,7 +87,7 @@ export default function PublishSuccessModal({ isOpen, onClose, blogSlug, blogTit
           >
             {/* See Later button */}
             <button
-              onClick={handleSeeLater}
+              onClick={onSeeLater}
               className="bg-[#F8F8F8] border border-[#ECECEC] text-gray-700 hover:bg-gray-200 transition-colors rounded text-sm font-medium flex items-center justify-center"
               style={{
                 width: '111px',
@@ -118,7 +100,7 @@ export default function PublishSuccessModal({ isOpen, onClose, blogSlug, blogTit
 
             {/* View in Site button */}
             <button
-              onClick={handleViewInSite}
+              onClick={onViewInSite}
               className="text-white hover:opacity-90 transition-opacity rounded text-sm font-medium flex items-center justify-center"
               style={{
                 width: '110px',
