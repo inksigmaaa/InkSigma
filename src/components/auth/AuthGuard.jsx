@@ -75,14 +75,8 @@ export default function AuthGuard({ children }) {
     };
   }, [isPending, userId, router, skipPublicationCheck]);
 
-  if (isPending || authState === "checking") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
-      </div>
-    );
-  }
-
+  // Allow content to render while session is being verified
+  // This prevents UI blocking on slow auth checks
   if (authState === "unauthorized") {
     return null;
   }

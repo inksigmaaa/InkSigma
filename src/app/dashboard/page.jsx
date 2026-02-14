@@ -50,7 +50,7 @@ export default function DashboardPage() {
     getJoinedPublications,
   ]);
 
-  // Check if profile is complete
+  // Check if profile is complete - don't block rendering
   useEffect(() => {
     const checkProfileCompletion = async () => {
       try {
@@ -60,7 +60,6 @@ export default function DashboardPage() {
 
         if (response.ok) {
           const data = await response.json();
-          // Profile is complete if all required fields are filled
           const isComplete = !!(
             data.profileName?.trim() &&
             data.username?.trim() &&
@@ -75,19 +74,16 @@ export default function DashboardPage() {
       }
     };
 
-    checkProfileCompletion();
+    // Delay profile check slightly to not block initial render
+    const timer = setTimeout(() => {
+      checkProfileCompletion();
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [API_URL]);
 
-  if (publicationLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-gray-500 text-sm">Loading your publications...</p>
-        </div>
-      </div>
-    );
-  }
+  // Show content immediately - don't wait for publications to load
+  // Publications will load in background and update the UI when ready
 
   const ownedPublications = getOwnedPublications();
   const joinedPublications = getJoinedPublications();

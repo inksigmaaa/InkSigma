@@ -37,9 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionLoadedRef.current = true;
 
     const loadSession = async (retryCount = 0) => {
-      const maxRetries = 2;
+      const maxRetries = 1; // Reduced from 2 to 1 for faster loading
       try {
-        // Ensure we have a valid API base before making the request
         const apiBase = getApiBase();
         const response = await fetch(`${apiBase}/api/auth/get-session`, {
           credentials: 'include',
@@ -53,16 +52,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error('Failed to load session:', err);
-        // Retry on network errors (common during hydration race conditions)
         if (retryCount < maxRetries) {
-          console.log(`Retrying session load (attempt ${retryCount + 2}/${maxRetries + 1})...`);
-          // Small delay before retry to allow hydration to complete
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 50)); // Reduced from 100ms to 50ms
           return loadSession(retryCount + 1);
         }
         setUser(null);
       } finally {
-        if (retryCount === 0 || retryCount >= maxRetries) {
+        if (retryCount >= maxRetries) {
           setLoading(false);
         }
       }
