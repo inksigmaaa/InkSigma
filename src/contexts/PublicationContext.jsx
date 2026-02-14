@@ -173,57 +173,15 @@ function PublicationProviderInner({ children }) {
           setLoading(true);
         }
 
-        // Add retry logic for network errors
-        let retries = 2; // Reduced retries to prevent long loading
-        let data = null;
-        let lastError = null;
+        const data = await memberService.getUserPublications();
 
-        while (retries > 0) {
-          try {
-            data = await memberService.getUserPublications();
-            break; // Success - exit retry loop
-          } catch (err) {
-            lastError = err;
-            retries--;
-
-            console.error(
-              `[PublicationContext] Failed to load publications (${retries} retries left):`,
-              {
-                message: err.message,
-                type: err.constructor.name,
-              },
-            );
-
-            // If it's an auth error, don't retry
-            if (
-              err.message.includes("Unauthorized") ||
-              err.message.includes("401")
-            ) {
-              console.warn("[PublicationContext] Auth error, not retrying");
-              break;
-            }
-
-            if (retries > 0) {
-              console.warn(
-                `[PublicationContext] Retrying in ${1000 * (3 - retries)}ms...`,
-              );
-              await new Promise((resolve) =>
-                setTimeout(resolve, 1000 * (3 - retries)),
-              );
-            }
-          }
+        if (!data) {
+          setUserPublications([]);
+          setLoading(false);
+          return;
         }
 
-        // If all retries failed and it's not an auth error, throw the last error
-        if (lastError && !data && !lastError.message.includes("Unauthorized")) {
-          throw lastError;
-        }
-
-        // Handle auth errors gracefully
-        if (lastError && lastError.message.includes("Unauthorized")) {
-          console.warn(
-            "[PublicationContext] Unauthorized access, clearing publications",
-          );
+        if (data.message?.includes("Unauthorized") || data.message?.includes("401")) {
           setUserPublications([]);
           setCurrentPublication(null);
           setPublicationDetails(null);

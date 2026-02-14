@@ -36,18 +36,6 @@ const DASHBOARD_ENDPOINT_PREFIXES = [
   '/dashboard',
 ];
 
-const getBackendBase = (request: NextRequest, hostname: string) => {
-  const envBase =
-    process.env.NEXT_PUBLIC_BACKEND_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.BACKEND_URL;
-
-  if (envBase) return envBase.replace(/\/$/, '');
-
-  const protocol = request.headers.get('x-forwarded-proto') || 'http';
-  return `${protocol}://${hostname}:5000`;
-};
-
 const isPublicPath = (pathname: string) =>
   PUBLIC_PATH_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
@@ -94,35 +82,10 @@ export async function middleware(request: NextRequest) {
     cleanHost === 'dashboard.localhost';
 
   if (isDashboardHost) {
-    const apiBase = getBackendBase(request, cleanHost);
-    const cookieHeader = request.headers.get('cookie') || '';
     const lastPubSub = request.cookies.get(DASHBOARD_PUB_COOKIE)?.value;
 
-    // Server-side "new user" redirect:
-    // If a signed-in user has *no owned OR joined publications*, send them to create-publication.
-    // (Uses /api/members/user/publications so invited members don't get blocked.)
-    if (request.method === 'GET' && !isPublicPath(pathname)) {
-      try {
-        // If there are no cookies at all, avoid the backend roundtrip.
-        if (cookieHeader) {
-          const pubsRes = await fetch(`${apiBase}/api/members/user/publications`, {
-            headers: { cookie: cookieHeader, accept: 'application/json' },
-            cache: 'no-store',
-          });
-
-          if (pubsRes.ok) {
-            const data = await pubsRes.json().catch(() => null);
-            const pubs = Array.isArray(data) ? data : data?.publications || [];
-            if (Array.isArray(pubs) && pubs.length === 0) {
-              return NextResponse.redirect(urlWithPathname(request, '/create-publication'));
-            }
-          }
-          // If unauthorized (no session), fall through to client-side auth handling.
-        }
-      } catch {
-        // If the check fails, fall through to client-side guards.
-      }
-    }
+    // Server-side "new user" redirect removed for performance.
+    // Now handled client-side in PublicationContext to avoid blocking requests.
 
     // Normalize legacy /dashboard URLs to the new shape.
     // We can't know the pub for sure without state; if we have a cookie, use it.
