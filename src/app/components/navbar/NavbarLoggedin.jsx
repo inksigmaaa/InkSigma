@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useSession, signOut, authClient } from "@/lib/auth-client";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { formatTimeAgo } from "@/utils/timeFormatter";
+import { getApiBase } from "@/utils/apiBase";
 
 export default function NavbarLoggedin() {
     const [open, setOpen] = useState(false);
@@ -16,6 +17,7 @@ export default function NavbarLoggedin() {
     const notificationRef = useRef(null);
     const notificationIntervalRef = useRef(null);
     const router = useRouter();
+    const API_URL = getApiBase();
 
     // Get current user session
     const { data: session, isPending } = useSession();
@@ -31,7 +33,7 @@ export default function NavbarLoggedin() {
         }
 
         try {
-            const response = await fetch(`http://localhost:5000/api/notifications/${user.id}`);
+            const response = await fetch(`${API_URL}/api/notifications/${user.id}`);
             const data = await response.json();
             setNotifications(data.notifications || []);
         } catch (error) {
@@ -41,7 +43,7 @@ export default function NavbarLoggedin() {
                 setLoading(false);
             }
         }
-    }, [user?.id, notifications.length]);
+    }, [user?.id, notifications.length, API_URL]);
 
     // Fetch notifications when user is available
     useEffect(() => {
@@ -121,7 +123,7 @@ export default function NavbarLoggedin() {
 
     const markAsRead = async (notificationId) => {
         try {
-            await fetch(`http://localhost:5000/api/notifications/${notificationId}/read`, {
+            await fetch(`${API_URL}/api/notifications/${notificationId}/read`, {
                 method: "PATCH",
             });
             // Update local state
