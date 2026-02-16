@@ -1,15 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { usePublication } from '@/contexts/PublicationContext';
+import { useState, useRef, useEffect } from "react";
+import { usePublication } from "@/contexts/PublicationContext";
 
 export default function PublicationSwitcher() {
-  const {
-    userPublications,
-    currentPublication,
-    switchPublication,
-    loading
-  } = usePublication();
+  const { userPublications, currentPublication, switchPublication, loading } =
+    usePublication();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -21,11 +17,11 @@ export default function PublicationSwitcher() {
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen]);
 
@@ -36,48 +32,52 @@ export default function PublicationSwitcher() {
     // Preserve the current endpoint, but swap the publication prefix:
     // /oldPub/posts/home -> /newPub/posts/home
     // /home             -> /newPub/home
-    const currentPath = window.location.pathname || '/';
-    const currentSearch = window.location.search || ''; // Preserve query params like ?refresh=true
+    const currentPath = window.location.pathname || "/";
+    const currentSearch = window.location.search || ""; // Preserve query params like ?refresh=true
 
     // Split path into segments
-    const segments = currentPath.split('/').filter(Boolean);
+    const segments = currentPath.split("/").filter(Boolean);
 
     const PUBLIC_PATH_PREFIXES = [
-      '/login',
-      '/signup',
-      '/forgot-password',
-      '/reset-password',
-      '/magic-link',
-      '/auth-callback',
-      '/create-publication',
-      '/invite',
-      '/view-site',
+      "/login",
+      "/signup",
+      "/forgot-password",
+      "/reset-password",
+      "/magic-link",
+      "/auth-callback",
+      "/create-publication",
+      "/invite",
+      "/view-site",
     ];
 
     const DASHBOARD_ENDPOINT_PREFIXES = [
-      '/home',
-      '/posts',
-      '/review',
-      '/author-review',
-      '/editor',
-      '/draft',
-      '/published',
-      '/unpublished',
-      '/trash',
-      '/schedule',
-      '/members',
-      '/my-blogs',
-      '/profile-settings',
-      '/domain',
-      '/dashboard',
+      "/home",
+      "/allArticle",
+      "/review",
+      "/author-review",
+      "/editor",
+      "/draft",
+      "/published",
+      "/unpublished",
+      "/trash",
+      "/schedule",
+      "/members",
+      "/my-blogs",
+      "/profile-settings",
+      "/domain",
+      "/dashboard",
     ];
 
     const isPublicPath = (p) =>
-      PUBLIC_PATH_PREFIXES.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
+      PUBLIC_PATH_PREFIXES.some(
+        (prefix) => p === prefix || p.startsWith(`${prefix}/`),
+      );
 
     // Check if path starts with any dashboard endpoint (after potential subdomain)
     const isOldEndpoint = (p) =>
-      DASHBOARD_ENDPOINT_PREFIXES.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
+      DASHBOARD_ENDPOINT_PREFIXES.some(
+        (prefix) => p === prefix || p.startsWith(`${prefix}/`),
+      );
 
     // Determine segments to keep
     let endpointSegments = segments;
@@ -97,7 +97,9 @@ export default function PublicationSwitcher() {
       }
     }
 
-    const endpointPath = endpointSegments.length ? `/${endpointSegments.join('/')}` : '/home';
+    const endpointPath = endpointSegments.length
+      ? `/${endpointSegments.join("/")}`
+      : "/home";
     // Use window.location for instant navigation
     window.location.href = `/${publication.subdomain}${endpointPath}${currentSearch}`;
   };
@@ -105,7 +107,7 @@ export default function PublicationSwitcher() {
   const handleViewMySpace = () => {
     setIsOpen(false);
     // Use window.location for instant navigation
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   if (loading || !currentPublication) {
@@ -140,12 +142,17 @@ export default function PublicationSwitcher() {
           {currentPublication.name}
         </span>
         <svg
-          className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </button>
 
@@ -161,8 +168,11 @@ export default function PublicationSwitcher() {
                 <button
                   key={pub.id}
                   onClick={() => handlePublicationSwitch(pub)}
-                  className={`w-full flex items-center gap-3 px-2 py-2 rounded-md text-left hover:bg-gray-50 transition-colors ${currentPublication.id === pub.id ? 'bg-violet-50 border border-violet-200' : ''
-                    }`}
+                  className={`w-full flex items-center gap-3 px-2 py-2 rounded-md text-left hover:bg-gray-50 transition-colors ${
+                    currentPublication.id === pub.id
+                      ? "bg-violet-50 border border-violet-200"
+                      : ""
+                  }`}
                 >
                   {pub.logoUrl ? (
                     <img
@@ -178,15 +188,23 @@ export default function PublicationSwitcher() {
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 truncate">{pub.name}</div>
+                    <div className="font-medium text-gray-900 truncate">
+                      {pub.name}
+                    </div>
                     <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${pub.isOwner
-                        ? 'bg-blue-100 text-blue-800'
-                        : pub.role === 'editor'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                        {pub.isOwner ? 'Owner' : pub.role.charAt(0).toUpperCase() + pub.role.slice(1)}
+                      <span
+                        className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                          pub.isOwner
+                            ? "bg-blue-100 text-blue-800"
+                            : pub.role === "editor"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {pub.isOwner
+                          ? "Owner"
+                          : pub.role.charAt(0).toUpperCase() +
+                            pub.role.slice(1)}
                       </span>
                       {currentPublication.id === pub.id && (
                         <span className="text-violet-600 text-xs">Current</span>
@@ -202,8 +220,18 @@ export default function PublicationSwitcher() {
                 onClick={handleViewMySpace}
                 className="w-full flex items-center gap-2 px-2 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                  />
                 </svg>
                 View My Space
               </button>

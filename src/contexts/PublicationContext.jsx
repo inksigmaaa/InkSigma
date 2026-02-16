@@ -32,7 +32,7 @@ const PUBLIC_PATH_PREFIXES = [
 
 const DASHBOARD_ENDPOINT_PREFIXES = [
   "/home",
-  "/posts",
+  "/allArticle",
   "/review",
   "/author-review",
   "/editor",
@@ -102,7 +102,7 @@ function PublicationProviderInner({ children }) {
     })();
 
     return (
-      effectivePathname?.startsWith("/posts/") ||
+      effectivePathname?.startsWith("/allArticle/") ||
       effectivePathname?.startsWith("/review") ||
       effectivePathname?.startsWith("/author-review") ||
       effectivePathname?.startsWith("/editorpage") ||
@@ -181,7 +181,10 @@ function PublicationProviderInner({ children }) {
           return;
         }
 
-        if (data.message?.includes("Unauthorized") || data.message?.includes("401")) {
+        if (
+          data.message?.includes("Unauthorized") ||
+          data.message?.includes("401")
+        ) {
           setUserPublications([]);
           setCurrentPublication(null);
           setPublicationDetails(null);

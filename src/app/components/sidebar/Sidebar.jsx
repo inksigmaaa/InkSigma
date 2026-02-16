@@ -92,7 +92,7 @@ export default function Sidebar() {
       Domain: "/domain",
       Members: "/members",
       Settings: "/settings",
-      "All Articles": "/posts",
+      "All Articles": "/allArticle",
       Published: "/published",
       Unpublished: "/unpublished",
       Schedule: "/schedule",

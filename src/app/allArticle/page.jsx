@@ -11,7 +11,7 @@ import { usePublication } from "@/contexts/PublicationContext";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 
-export default function Posts() {
+export default function AllArticlePage() {
   const {
     articles,
     publicationArticles,

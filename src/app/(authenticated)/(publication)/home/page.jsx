@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
-import Sidebar from "../components/sidebar/Sidebar";
-import Verify from "../components/verify/Verify";
-import BlogStatsComponent from "../components/BlogStatsComponent/BlogStatsComponent";
+import Verify from "@/app/components/verify/Verify";
+import BlogStatsComponent from "@/app/components/BlogStatsComponent/BlogStatsComponent";
 import { Pencil } from "lucide-react";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { useArticles } from "@/contexts/ArticlesContext";
@@ -21,10 +19,7 @@ export default function HomePage() {
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { currentPublication } = usePublication();
-  const {
-    publicationArticles,
-    loadPublicationArticles,
-  } = useArticles();
+  const { publicationArticles, loadPublicationArticles } = useArticles();
   const [viewStats, setViewStats] = useState({});
 
   // Check if this is a refresh from editor
@@ -50,8 +45,11 @@ export default function HomePage() {
     .slice(0, 4)
     .map((article) => {
       // Check if article has an image - use fallback if not
-      const thumbnailUrl = getThumbnailWithFallback(getImageUrl(article.image), article.id);
-      
+      const thumbnailUrl = getThumbnailWithFallback(
+        getImageUrl(article.image),
+        article.id,
+      );
+
       // Check if current user is the author of this article
       const isOwnArticle = article.authorId === session?.user?.id;
 
@@ -136,8 +134,6 @@ export default function HomePage() {
 
   return (
     <AuthGuard>
-      <NavbarLoggedin />
-      <Sidebar />
       <Verify />
 
       {/* Main Content */}
@@ -228,7 +224,9 @@ export default function HomePage() {
                     <div
                       key={article.id}
                       className="border border-[#EAEAEA] rounded-lg hover:shadow-lg transition-shadow bg-white p-4 cursor-pointer"
-                      onClick={() => window.location.href = `/home/preview/${article.id}`}
+                      onClick={() =>
+                        (window.location.href = `/home/preview/${article.id}`)
+                      }
                     >
                       <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative">
                         <img
@@ -258,7 +256,8 @@ export default function HomePage() {
                           {/* Show edit button only for:
                               1. Admins/Editors (not authors)
                               2. Authors but only for their own articles */}
-                          {(currentPublication?.role !== "author" || article.isOwnArticle) && (
+                          {(currentPublication?.role !== "author" ||
+                            article.isOwnArticle) && (
                             <button
                               className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors flex-shrink-0"
                               onClick={(e) => {

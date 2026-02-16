@@ -2,9 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
-import DashboardSimpleSidebar from "../components/sidebar/DashboardSimpleSidebar";
-import Verify from "../components/verify/Verify";
+
+import Verify from "@/app/components/verify/Verify";
 import { ChevronRight } from "lucide-react";
 import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
@@ -90,8 +89,6 @@ export default function DashboardPage() {
 
   return (
     <AuthGuard>
-      <NavbarLoggedin />
-      <DashboardSimpleSidebar />
       <main className="flex-1 bg-white px-4 sm:px-8 pt-0 mt-[120px] md:mt-[120px] sm:mt-[80px] pb-24 md:pb-0 ml-0 md:ml-[197px] relative z-[1]">
         <div className="w-full max-w-[819px] mx-auto space-y-6 sm:space-y-8">
           {/* Welcome Banner */}
@@ -280,7 +277,8 @@ export default function DashboardPage() {
                               className="w-full opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#A4A4A4] line-clamp-2"
                               style={{ fontFamily: "Public Sans" }}
                             >
-                              {joinedPub.description || "No description provided"}
+                              {joinedPub.description ||
+                                "No description provided"}
                             </p>
                             <div className="flex items-center gap-4 mt-2">
                               <span
@@ -354,8 +352,8 @@ export default function DashboardPage() {
                           style={{ fontFamily: "Public Sans" }}
                         >
                           Note: Edit/Upload your logo, Favicon & Publication
-                          Description inside the publication settings. Start with
-                          clicking this Publication card
+                          Description inside the publication settings. Start
+                          with clicking this Publication card
                         </p>
                       </div>
                     </div>
