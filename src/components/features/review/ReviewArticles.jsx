@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Clock } from "lucide-react"
-import CategoryFilter from "../categoryFilter/CategoryFilter"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Clock } from "lucide-react";
+import CategoryFilter from "../categoryFilter/CategoryFilter";
 
 export default function ReviewArticles({ title = "Review" }) {
-  const [selectedPosts, setSelectedPosts] = useState([])
-  const [selectedCategories, setSelectedCategories] = useState([])
+  const [selectedPosts, setSelectedPosts] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
 
   // Mock data - replace with actual data fetching
   const posts = [
@@ -17,54 +17,58 @@ export default function ReviewArticles({ title = "Review" }) {
       title: "Journey Beyond",
       author: "Mocas Nicota",
       tags: ["Sports", "Humour", "History"],
-      date: "FRI | 15 NOV, 2024"
+      date: "FRI | 15 NOV, 2024",
     },
     {
       id: 2,
       title: "Wanderlust Diaries",
       author: "John Cena",
       tags: ["Sports", "Humour", "History"],
-      date: "FRI | 15 NOV, 2024"
+      date: "FRI | 15 NOV, 2024",
     },
     {
       id: 3,
       title: "Globe Trotter",
       author: "Randy Ortan",
       tags: ["Sports", "Humour", "History"],
-      date: "FRI | 15 NOV, 2024"
-    }
-  ]
+      date: "FRI | 15 NOV, 2024",
+    },
+  ];
+
+  const filteredPosts = posts.filter((post) => {
+    if (selectedCategories.length === 0) return true;
+    return post.tags?.some((tag) => selectedCategories.includes(tag));
+  });
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedPosts(posts.map(p => p.id))
+      setSelectedPosts(filteredPosts.map((p) => p.id));
     } else {
-      setSelectedPosts([])
+      setSelectedPosts([]);
     }
-  }
+  };
 
   const handleSelectPost = (postId, checked) => {
     if (checked) {
-      setSelectedPosts([...selectedPosts, postId])
+      setSelectedPosts([...selectedPosts, postId]);
     } else {
-      setSelectedPosts(selectedPosts.filter(id => id !== postId))
+      setSelectedPosts(selectedPosts.filter((id) => id !== postId));
     }
-  }
+  };
 
   const handleAccept = (postId) => {
-    console.log("Accepting post:", postId)
+    console.log("Accepting post:", postId);
     // Add accept logic here
-  }
+  };
 
   const handleReject = (postId) => {
-    console.log("Rejecting post:", postId)
+    console.log("Rejecting post:", postId);
     // Add reject logic here
-  }
+  };
 
   return (
     <div className="absolute left-1/2 -translate-x-1/2 top-[215px] w-full max-w-[1034px] z-20 px-5">
       <div className="ml-0 md:ml-[195px]">
-
         {/* Mobile header */}
         <div className="flex flex-col justify-between gap-4 mb-6 px-2 md:hidden">
           <h1 className="font-bold text-lg leading-8 text-gray-800 m-0 flex items-center gap-3">
@@ -94,15 +98,18 @@ export default function ReviewArticles({ title = "Review" }) {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={selectedPosts.length === posts.length && posts.length > 0}
+                  checked={
+                    selectedPosts.length === filteredPosts.length &&
+                    filteredPosts.length > 0
+                  }
                   onChange={(e) => handleSelectAll(e.target.checked)}
                   className="cursor-pointer accent-violet-500"
                   style={{
-                    width: '16px',
-                    height: '16px',
-                    borderRadius: '4px',
-                    borderWidth: '1px',
-                    opacity: 1
+                    width: "16px",
+                    height: "16px",
+                    borderRadius: "4px",
+                    borderWidth: "1px",
+                    opacity: 1,
                   }}
                 />
                 <span className="font-bold text-base leading-6 text-gray-500">
@@ -122,13 +129,18 @@ export default function ReviewArticles({ title = "Review" }) {
 
         {/* Posts List */}
         <div className="mt-6 space-y-4 pb-[85px]">
-          {posts.map((post) => (
-            <div key={post.id} className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
+          {filteredPosts.map((post) => (
+            <div
+              key={post.id}
+              className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200"
+            >
               {/* Desktop Layout */}
               <div className="hidden md:flex items-start gap-4">
                 <Checkbox
                   checked={selectedPosts.includes(post.id)}
-                  onCheckedChange={(checked) => handleSelectPost(post.id, checked)}
+                  onCheckedChange={(checked) =>
+                    handleSelectPost(post.id, checked)
+                  }
                 />
 
                 <div className="flex-1 mt-[-5px]">
@@ -232,5 +244,5 @@ export default function ReviewArticles({ title = "Review" }) {
         </div>
       </div>
     </div>
-  )
+  );
 }

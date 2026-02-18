@@ -44,10 +44,15 @@ export default function Articles(props) {
     ? allArticles.filter((article) => article.status === filterStatus)
     : allArticles;
 
-  const articleIds = filteredArticles.map((article) => article.id);
+  // Filter by selected categories
+  const categoryFilteredArticles = filteredArticles.filter((article) => {
+    if (selectedCategories.length === 0) return true;
+    return article.categories?.some((cat) => selectedCategories.includes(cat));
+  });
+
+  const articleIds = categoryFilteredArticles.map((article) => article.id);
   const isAllSelected =
-    articleIds.length > 0 &&
-    articleIds.every((id) => selectedArticles.has(id));
+    articleIds.length > 0 && articleIds.every((id) => selectedArticles.has(id));
 
   const handleDeleteArticle = (articleId) => {
     setActionArticleId(articleId);
@@ -211,7 +216,7 @@ export default function Articles(props) {
             </h1>
             <div className="flex items-center justify-between gap-4 max-[410px]:gap-2">
               <div className="flex items-center gap-3">
-                {filteredArticles.length > 0 && (
+                {categoryFilteredArticles.length > 0 && (
                   <label className={styles.selectAllContainer}>
                     <input
                       type="checkbox"
@@ -255,7 +260,7 @@ export default function Articles(props) {
               />
             </div>
             <div className="flex items-center gap-5">
-              {filteredArticles.length > 0 && (
+              {categoryFilteredArticles.length > 0 && (
                 <label className={styles.selectAllContainer}>
                   <input
                     type="checkbox"
@@ -279,14 +284,14 @@ export default function Articles(props) {
           </div>
 
           <div className="mt-6 space-y-4 pb-[85px]">
-            {filteredArticles.length === 0 ? (
+            {categoryFilteredArticles.length === 0 ? (
               <div className="flex items-center justify-center min-h-[200px] py-20 px-10 bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)]">
                 <p className="font-['Public_Sans'] font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">
                   No articles found
                 </p>
               </div>
             ) : (
-              filteredArticles.map((article) => {
+              categoryFilteredArticles.map((article) => {
                 // Create stats array with mock data for now
 
                 return (

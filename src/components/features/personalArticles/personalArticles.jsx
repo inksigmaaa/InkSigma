@@ -34,21 +34,27 @@ export default function PersonalArticles({
       : localCategories;
   const handleCategoryChange = onCategoriesChange || setLocalCategories;
 
-  const selectAll =
-    showSelectAll &&
-    selectedArticles.length === articles.length &&
-    articles.length > 0;
-
-  // Fixed top position (no verify banner)
-  const topPosition = "top-[160px]";
-  const mobileTopPosition =
-    selectedArticles.length > 0 ? "max-md:top-[160px]" : "max-md:top-[120px]";
-
   // Add titleColor to articles so the container can use it for the dot
   const articlesWithTitleColor = articles.map((article) => ({
     ...article,
     titleColor: titleColor,
   }));
+
+  // Filter articles based on selected categories
+  const filteredArticles = articlesWithTitleColor.filter((article) => {
+    if (categories.length === 0) return true;
+    return article.categories?.some((cat) => categories.includes(cat));
+  });
+
+  const selectAll =
+    showSelectAll &&
+    selectedArticles.length === filteredArticles.length &&
+    filteredArticles.length > 0;
+
+  // Fixed top position (no verify banner)
+  const topPosition = "top-[160px]";
+  const mobileTopPosition =
+    selectedArticles.length > 0 ? "max-md:top-[160px]" : "max-md:top-[120px]";
 
   return (
     <>
@@ -145,14 +151,14 @@ export default function PersonalArticles({
             <div className="hidden md:flex items-center justify-between gap-4 mb-4">
               <div className="flex items-center gap-2">
                 <label
-                  className={`${styles.selectAllContainer} ${articles.length === 0 ? "opacity-40 pointer-events-none" : ""}`}
+                  className={`${styles.selectAllContainer} ${filteredArticles.length === 0 ? "opacity-40 pointer-events-none" : ""}`}
                 >
                   <input
                     type="checkbox"
                     checked={selectAll}
                     onChange={() => onSelectAll?.(!selectAll)}
                     className={styles.selectAllCheckbox}
-                    disabled={articles.length === 0}
+                    disabled={filteredArticles.length === 0}
                   />
                   <span className={styles.selectAllCheckboxBox}>
                     {selectAll && (
@@ -212,14 +218,14 @@ export default function PersonalArticles({
           )}
 
           <div className="mt-6 space-y-4 pb-[85px] animate-fadeIn">
-            {articlesWithTitleColor.length === 0 ? (
+            {filteredArticles.length === 0 ? (
               <div className="flex items-center justify-center min-h-[200px] py-20 px-10 bg-[repeating-linear-gradient(135deg,transparent,transparent_10px,#E5E7EB_10px,#E5E7EB_11px)] animate-fadeIn">
                 <p className=" font-normal text-base leading-6 text-gray-400 text-center bg-white px-6 py-3 relative z-[1]">
                   {emptyMessage}
                 </p>
               </div>
             ) : (
-              articlesWithTitleColor.map((article, index) => (
+              filteredArticles.map((article, index) => (
                 <div
                   key={article.id}
                   className="animate-slideUp"
