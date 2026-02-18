@@ -223,26 +223,26 @@ export default function HomePage() {
                   {recentArticles.map((article) => (
                     <div
                       key={article.id}
-                      className="border border-[#EAEAEA] rounded-lg hover:shadow-lg transition-shadow bg-white p-4 cursor-pointer"
+                      className="border border-[#EAEAEA] rounded-lg hover:shadow-lg transition-shadow bg-white p-4 cursor-pointer flex flex-col"
                       onClick={() =>
                         (window.location.href = `/home/preview/${article.id}`)
                       }
                     >
-                      <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative">
+                      <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative flex-shrink-0">
                         <img
                           src={article.thumbnail}
                           alt={article.title}
                           className="w-full h-full object-cover rounded-sm"
                         />
                       </div>
-                      <div>
+                      <div className="flex flex-col flex-grow">
                         <h4 className="font-semibold text-[#000000] mb-3 text-lg leading-snug">
                           {article.title}
                         </h4>
                         <p className="font-normal text-[14px] h-[42px] text-[#A4A4A4] mb-4 leading-normal line-clamp-2">
                           {article.description}
                         </p>
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center justify-between gap-2 mt-auto">
                           <div className="flex-1 overflow-hidden">
                             <CategoryBadgeList
                               categories={
