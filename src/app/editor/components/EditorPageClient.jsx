@@ -39,6 +39,7 @@ export default function EditorPageClient() {
     getArticleById,
     loadUserArticles,
     createDraftFromPublished,
+    refreshArticle,
   } = useArticles();
   const { currentPublication } = usePublication();
   const { showToast } = useToast();
@@ -456,6 +457,13 @@ export default function EditorPageClient() {
       markSaved();
       if (!isAutoSave) {
         setSaveStatus("saved");
+      }
+
+      // Refresh the article in context to update lists
+      if (responseData?.id) {
+        refreshArticle(responseData.id).catch((err) =>
+          console.error("Failed to refresh article context:", err),
+        );
       }
 
       return responseData;

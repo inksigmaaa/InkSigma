@@ -202,6 +202,44 @@ export function ArticlesProvider({ children }) {
     }
   }, []);
 
+  const refreshArticle = useCallback(async (id) => {
+    try {
+      const blog = await blogService.getBlog(id);
+      const updatedArticle = convertBlogToArticle(blog);
+
+      setArticles((prev) => {
+        const exists = prev.some(
+          (article) => String(article.id) === String(id),
+        );
+        if (exists) {
+          return prev.map((article) =>
+            String(article.id) === String(id) ? updatedArticle : article,
+          );
+        } else {
+          return [updatedArticle, ...prev];
+        }
+      });
+
+      setPublicationArticles((prev) => {
+        const exists = prev.some(
+          (article) => String(article.id) === String(id),
+        );
+        if (exists) {
+          return prev.map((article) =>
+            String(article.id) === String(id) ? updatedArticle : article,
+          );
+        } else {
+          return [updatedArticle, ...prev];
+        }
+      });
+
+      return updatedArticle;
+    } catch (err) {
+      console.error("Error refreshing article:", err);
+      // Suppress error so it doesn't break the caller flow
+    }
+  }, []);
+
   const createArticle = useCallback(async (articleData) => {
     try {
       const currentPub = currentPublicationRef.current;
@@ -834,6 +872,7 @@ export function ArticlesProvider({ children }) {
       loadReviewArticles,
       loadPublicationArticles,
       getArticleById,
+      refreshArticle,
       createArticle,
       updateArticle,
       moveToTrash,
@@ -869,6 +908,7 @@ export function ArticlesProvider({ children }) {
       loadReviewArticles,
       loadPublicationArticles,
       getArticleById,
+      refreshArticle,
       createArticle,
       updateArticle,
       moveToTrash,
