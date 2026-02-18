@@ -19,6 +19,7 @@ export default function MyBlogsPage() {
 
     moveToDraft,
     unpublishArticle,
+    publishArticle,
     loadUserArticles,
     createDraftFromPublished,
   } = useArticles();

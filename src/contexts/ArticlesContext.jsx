@@ -590,32 +590,36 @@ export function ArticlesProvider({ children }) {
     );
   }, []);
 
-  const createDraftFromPublished = useCallback(async (id) => {
-    try {
-      const { getApiBase } = await import("@/utils/apiBase");
-      const API_URL = getApiBase();
-      const response = await fetch(`${API_URL}/api/blogs/${id}/edit-draft`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
+  const createDraftFromPublished = useCallback(
+    async (id, draftOverrides = {}) => {
+      try {
+        const { getApiBase } = await import("@/utils/apiBase");
+        const API_URL = getApiBase();
+        const response = await fetch(`${API_URL}/api/blogs/${id}/edit-draft`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(draftOverrides),
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to create draft copy");
+        if (!response.ok) {
+          throw new Error("Failed to create draft copy");
+        }
+
+        const blog = await response.json();
+        const newDraftArticle = convertBlogToArticle(blog);
+
+        setArticles((prev) => [newDraftArticle, ...prev]);
+        setPublicationArticles((prev) => [newDraftArticle, ...prev]);
+
+        return newDraftArticle;
+      } catch (err) {
+        console.error("Error creating draft from published:", err);
+        throw err;
       }
-
-      const blog = await response.json();
-      const newDraftArticle = convertBlogToArticle(blog);
-
-      setArticles((prev) => [newDraftArticle, ...prev]);
-      setPublicationArticles((prev) => [newDraftArticle, ...prev]);
-
-      return newDraftArticle;
-    } catch (err) {
-      console.error("Error creating draft from published:", err);
-      throw err;
-    }
-  }, []);
+    },
+    [],
+  );
 
   const addComment = useCallback(async (articleId, commentData) => {
     try {

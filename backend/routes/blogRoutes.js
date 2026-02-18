@@ -1062,15 +1062,21 @@ router.post("/:id/edit-draft", getCurrentUser, async (req, res) => {
       return res.json(existingDraft);
     }
 
+    // Get optional overrides from request body (to save current editor state)
+    const { title, description, content, categories, image } = req.body;
+
     // Create new draft
     const draftSlug = await ensureUniqueSlug(`${originalBlog.slug}-draft`);
     const draftData = {
       slug: draftSlug,
-      title: `${originalBlog.title} [Draft update]`,
-      description: originalBlog.description,
-      content: originalBlog.content,
-      image: originalBlog.image,
-      categories: originalBlog.categories,
+      // Use provided title or append [update draft] to original
+      title: title || `${originalBlog.title} [Update draft]`,
+      description:
+        description !== undefined ? description : originalBlog.description,
+      content: content !== undefined ? content : originalBlog.content,
+      image: image !== undefined ? image : originalBlog.image,
+      categories:
+        categories !== undefined ? categories : originalBlog.categories,
       status: "draft",
       published: false,
       authorId: originalBlog.authorId, // Original author remains author of draft

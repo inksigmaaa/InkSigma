@@ -9,6 +9,7 @@ import { ThumbnailModal } from "./ThumbnailModal";
 import { DateTimePicker } from "./DateTimePicker";
 import PublishSuccessModal from "./PublishSuccessModal";
 import ExitConfirmModal from "./ExitConfirmModal";
+import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { useSession } from "@/lib/auth-client";
 import { usePublication } from "@/contexts/PublicationContext";
@@ -37,6 +38,7 @@ export default function EditorPageClient() {
     uploadArticleImage,
     getArticleById,
     loadUserArticles,
+    createDraftFromPublished,
   } = useArticles();
   const { currentPublication } = usePublication();
   const { showToast } = useToast();
@@ -154,6 +156,7 @@ export default function EditorPageClient() {
   const [initialContent, setInitialContent] = useState("");
   const [existingBlogStatus, setExistingBlogStatus] = useState(null);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [showDraftConfirmModal, setShowDraftConfirmModal] = useState(false);
   const [exitDestination, setExitDestination] = useState(null); // 'published', 'drafts', 'home'
   const calendarRef = useRef(null);
   const handlingPopStateRef = useRef(false);
@@ -484,12 +487,45 @@ export default function EditorPageClient() {
     await performSaveAndExit("/draft", false);
   };
 
-  // Handle Revert to Draft (for published articles)
-  const handleDraft = async () => {
-    const result = await saveBlog("draft", null, true);
-    if (result) {
-      router.replace(withPub("/draft"));
+  // Execute Revert to Draft (actual logic)
+  const executeDraft = async () => {
+    try {
+      setIsSaving(true);
+
+      // Gather current editor state
+      const draftData = {
+        title: `${blogTitle} [Update draft]`,
+        description: blogDescription,
+        content: editorContent.html,
+        categories: selectedCategories,
+        // image is handled separately via thumbnailData/thumbnailRemoved if needed,
+        // but for now we'll stick to text content to be safe.
+        // If thumbnail was changed but not saved to the original, we might need to handle it,
+        // but image upload usually happens immediately on selection or save.
+      };
+
+      // Create a draft copy of the current published article with CURRENT edits
+      const newDraft = await createDraftFromPublished(currentBlogId, draftData);
+
+      if (newDraft && newDraft.id) {
+        showToast("Saved current changes as a new draft", "success");
+        markNavigating();
+        setShowDraftConfirmModal(false); // Close modal
+
+        // Exit the editor -> Go to drafts list
+        router.replace(withPub("/draft"));
+      }
+    } catch (error) {
+      console.error("Error creating draft copy:", error);
+      showToast(error.message || "Failed to save draft version", "error");
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  // Trigger Revert to Draft (show confirmation)
+  const handleDraft = async () => {
+    setShowDraftConfirmModal(true);
   };
 
   // Handle Revert from Trash to Draft
@@ -614,7 +650,7 @@ export default function EditorPageClient() {
   const handleDiscard = () => {
     markNavigating();
     setShowExitModal(false);
-    
+
     // Navigate based on destination
     if (exitDestination === "published") {
       router.replace(withPub("/published"));
@@ -623,16 +659,16 @@ export default function EditorPageClient() {
     } else {
       router.replace(withPub("/"));
     }
-    
+
     setExitDestination(null);
   };
 
   const handleUpdateAndExit = async () => {
     setShowExitModal(false);
-    
+
     // Save first
     const result = await saveBlog("draft", null, true);
-    
+
     // Navigate based on destination
     if (exitDestination === "published" || existingBlogStatus === "published") {
       router.replace(withPub("/published"));
@@ -641,7 +677,7 @@ export default function EditorPageClient() {
     } else {
       router.replace(withPub("/"));
     }
-    
+
     setExitDestination(null);
   };
 
@@ -1881,6 +1917,16 @@ export default function EditorPageClient() {
         }}
         onDiscard={handleDiscard}
         onUpdate={handleUpdateAndExit}
+      />
+
+      <ConfirmModal
+        isOpen={showDraftConfirmModal}
+        onClose={() => setShowDraftConfirmModal(false)}
+        onConfirm={executeDraft}
+        title="Create a Draft?"
+        message="A draft copy will be created with your current changes. The original article will remain published."
+        confirmText="Create Draft"
+        confirmStyle="normal"
       />
     </div>
   );
