@@ -1224,7 +1224,10 @@ router.put("/:id", getCurrentUser, async (req, res) => {
           // Prepare data to update master
           // We use the draft's current data, overridden by any incoming updates in updateData
           const mergeData = {
-            title: updateData.title || existingBlog.title,
+            title: (updateData.title || existingBlog.title).replace(
+              /\s*\[Update draft\]$/i,
+              "",
+            ),
             description: updateData.description || existingBlog.description,
             content: updateData.content || existingBlog.content,
             // Use updateData.image if set (including null/empty), otherwise fall back to existingBlog.image
@@ -1495,7 +1498,7 @@ router.patch("/:id/publish", getCurrentUser, async (req, res) => {
         // We use the draft's current data (existingBlog) as the source of truth
         // since PATCH usually only updates status, but we want to merge the draft's content
         const mergeData = {
-          title: existingBlog.title,
+          title: existingBlog.title.replace(/\s*\[Update draft\]$/i, ""),
           description: existingBlog.description,
           content: existingBlog.content,
           image: existingBlog.image,

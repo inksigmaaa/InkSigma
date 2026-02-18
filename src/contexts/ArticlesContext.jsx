@@ -247,12 +247,31 @@ export function ArticlesProvider({ children }) {
       });
 
       const updatedArticle = convertBlogToArticle(blog);
-      setArticles((prev) =>
-        prev.map((article) => (article.id === id ? updatedArticle : article)),
-      );
-      setPublicationArticles((prev) =>
-        prev.map((article) => (article.id === id ? updatedArticle : article)),
-      );
+
+      // Check if this was a merge (draft ID != returned Master ID)
+      if (String(updatedArticle.id) !== String(id)) {
+        // It was a merge!
+        setArticles((prev) => {
+          const withoutDraft = prev.filter((a) => String(a.id) !== String(id));
+          return withoutDraft.map((a) =>
+            String(a.id) === String(updatedArticle.id) ? updatedArticle : a,
+          );
+        });
+        setPublicationArticles((prev) => {
+          const withoutDraft = prev.filter((a) => String(a.id) !== String(id));
+          return withoutDraft.map((a) =>
+            String(a.id) === String(updatedArticle.id) ? updatedArticle : a,
+          );
+        });
+      } else {
+        // Standard update
+        setArticles((prev) =>
+          prev.map((article) => (article.id === id ? updatedArticle : article)),
+        );
+        setPublicationArticles((prev) =>
+          prev.map((article) => (article.id === id ? updatedArticle : article)),
+        );
+      }
 
       return updatedArticle;
     } catch (err) {
@@ -325,12 +344,37 @@ export function ArticlesProvider({ children }) {
       const blog = await blogService.updateBlogStatus(id, "published");
       const updatedArticle = convertBlogToArticle(blog);
 
-      setArticles((prev) =>
-        prev.map((article) => (article.id === id ? updatedArticle : article)),
-      );
-      setPublicationArticles((prev) =>
-        prev.map((article) => (article.id === id ? updatedArticle : article)),
-      );
+      // Check if this was a merge (draft ID != returned Master ID)
+      if (String(updatedArticle.id) !== String(id)) {
+        // It was a merge! We need to:
+        // 1. Remove the draft (id)
+        // 2. Update the master (updatedArticle.id) with the new data
+        setArticles((prev) => {
+          // Remove draft
+          const withoutDraft = prev.filter((a) => String(a.id) !== String(id));
+          // Update master
+          return withoutDraft.map((a) =>
+            String(a.id) === String(updatedArticle.id) ? updatedArticle : a,
+          );
+        });
+
+        setPublicationArticles((prev) => {
+          // Remove draft
+          const withoutDraft = prev.filter((a) => String(a.id) !== String(id));
+          // Update master
+          return withoutDraft.map((a) =>
+            String(a.id) === String(updatedArticle.id) ? updatedArticle : a,
+          );
+        });
+      } else {
+        // Standard publish (no merge)
+        setArticles((prev) =>
+          prev.map((article) => (article.id === id ? updatedArticle : article)),
+        );
+        setPublicationArticles((prev) =>
+          prev.map((article) => (article.id === id ? updatedArticle : article)),
+        );
+      }
 
       return updatedArticle;
     } catch (err) {
