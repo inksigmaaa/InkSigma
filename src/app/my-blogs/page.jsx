@@ -16,7 +16,7 @@ export default function MyBlogsPage() {
     articles,
     moveToTrash, // Destructure persistent delete function
     moveToTrashStatus,
-    publishArticle,
+
     moveToDraft,
     unpublishArticle,
     loadUserArticles,
@@ -26,7 +26,7 @@ export default function MyBlogsPage() {
   const [selectedArticles, setSelectedArticles] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showPublishModal, setShowPublishModal] = useState(false);
+
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [showUnpublishModal, setShowUnpublishModal] = useState(false);
   const [showRepublishModal, setShowRepublishModal] = useState(false);
@@ -55,11 +55,7 @@ export default function MyBlogsPage() {
         setActionArticleId(article.id);
         setShowDeleteModal(true);
       },
-      onPublish: () => {
-        setIsBulkAction(false);
-        setActionArticleId(article.id);
-        setShowPublishModal(true);
-      },
+
       onDraft: () => {
         setIsBulkAction(false);
         setActionArticleId(article.id);
@@ -109,12 +105,6 @@ export default function MyBlogsPage() {
     setShowDraftModal(true);
   };
 
-  const handleBulkPublish = () => {
-    if (selectedArticles.length === 0) return;
-    setIsBulkAction(true);
-    setShowPublishModal(true);
-  };
-
   const handleBulkUnpublish = () => {
     if (selectedArticles.length === 0) return;
     setIsBulkAction(true);
@@ -159,23 +149,6 @@ export default function MyBlogsPage() {
       setActionArticleId(null);
     } catch (error) {
       console.error("Error deleting article:", error);
-    }
-  };
-
-  const confirmPublish = async () => {
-    try {
-      if (isBulkAction) {
-        for (const articleId of selectedArticles) {
-          await publishArticle(articleId);
-        }
-        setSelectedArticles([]);
-      } else if (actionArticleId) {
-        await publishArticle(actionArticleId);
-      }
-      setShowPublishModal(false);
-      setActionArticleId(null);
-    } catch (error) {
-      console.error("Error publishing article:", error);
     }
   };
 
@@ -275,11 +248,7 @@ export default function MyBlogsPage() {
       title: "Move to Draft",
       onClick: handleBulkDraft,
     },
-    {
-      icon: "/images/icons/publish.svg",
-      title: "Publish",
-      onClick: handleBulkPublish,
-    },
+
     {
       icon: "/images/icons/trash2.svg",
       title: "Delete",
@@ -318,23 +287,6 @@ export default function MyBlogsPage() {
         }}
         onConfirm={confirmDelete}
         {...getDeleteModalProps()}
-      />
-
-      <ConfirmModal
-        isOpen={showPublishModal}
-        onClose={() => {
-          setShowPublishModal(false);
-          setActionArticleId(null);
-        }}
-        onConfirm={confirmPublish}
-        title={isBulkAction ? "Publish articles?" : "Publish article?"}
-        message={
-          isBulkAction
-            ? `${selectedArticles.length} article(s) will be published`
-            : "This article will be published"
-        }
-        confirmText="Publish"
-        confirmStyle="normal"
       />
 
       <ConfirmModal
