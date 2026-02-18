@@ -3,7 +3,7 @@ const API_URL = getApiBase();
 
 export const blogService = {
   // Get all blogs with optional filters
-  async getBlogs(filters = {}) {
+  async getBlogs(filters = {}, options = {}) {
     const params = new URLSearchParams();
 
     Object.entries(filters).forEach(([key, value]) => {
@@ -19,6 +19,7 @@ export const blogService = {
     try {
       const response = await fetch(`${API_URL}/api/blogs?${params}`, {
         credentials: "include",
+        ...options,
       });
 
       if (!response.ok) {
@@ -35,21 +36,24 @@ export const blogService = {
 
       return response.json();
     } catch (error) {
-      console.error("Get blogs error:", error);
+      if (error.name !== "AbortError") {
+        console.error("Get blogs error:", error);
+      }
       throw error;
     }
   },
 
   // Get published blogs only
-  async getPublishedBlogs(filters = {}) {
-    return this.getBlogs({ ...filters, published: true });
+  async getPublishedBlogs(filters = {}, options = {}) {
+    return this.getBlogs({ ...filters, published: true }, options);
   },
 
   // Get all blogs (fallback method)
-  async getAllBlogs() {
+  async getAllBlogs(options = {}) {
     const response = await fetch(`${API_URL}/api/blogs`, {
       method: "GET",
       credentials: "include",
+      ...options,
     });
 
     if (!response.ok) {
@@ -68,18 +72,21 @@ export const blogService = {
   },
 
   // Get user's blogs (includes all statuses for the author)
-  async getUserBlogs(authorId, filters = {}) {
-    return this.getBlogs({
-      ...filters,
-      authorId,
-      includeUnpublished: "true",
-      includeTrash: "true",
-      includeReview: "true",
-    });
+  async getUserBlogs(authorId, filters = {}, options = {}) {
+    return this.getBlogs(
+      {
+        ...filters,
+        authorId,
+        includeUnpublished: "true",
+        includeTrash: "true",
+        includeReview: "true",
+      },
+      options,
+    );
   },
 
   // Get publication's blogs
-  async getPublicationBlogs(publicationId, filters = {}) {
+  async getPublicationBlogs(publicationId, filters = {}, options = {}) {
     const params = new URLSearchParams();
 
     Object.entries(filters).forEach(([key, value]) => {
@@ -95,23 +102,31 @@ export const blogService = {
     const query = params.toString();
     const url = `${API_URL}/api/blogs/publication/${publicationId}${query ? `?${query}` : ""}`;
 
-    const response = await fetch(url, {
-      credentials: "include",
-    });
+    try {
+      const response = await fetch(url, {
+        credentials: "include",
+        ...options,
+      });
 
-    if (!response.ok) {
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to fetch publication blogs");
-      } else {
-        throw new Error(
-          `Server error (${response.status}): ${response.statusText}`,
-        );
+      if (!response.ok) {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const data = await response.json();
+          throw new Error(data.error || "Failed to fetch publication blogs");
+        } else {
+          throw new Error(
+            `Server error (${response.status}): ${response.statusText}`,
+          );
+        }
       }
-    }
 
-    return response.json();
+      return response.json();
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        console.error("Get publication blogs error:", error);
+      }
+      throw error;
+    }
   },
 
   // Get single blog by ID

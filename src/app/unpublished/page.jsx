@@ -51,9 +51,9 @@ export default function Unpublished() {
   // Load appropriate articles on mount or when publication changes
   useEffect(() => {
     if (isAdmin && currentPublication?.id) {
-      loadPublicationArticles(currentPublication.id, "unpublished");
+      loadPublicationArticles(currentPublication.id);
     } else {
-      loadUserArticles(currentPublication?.id, false, "unpublished");
+      loadUserArticles(currentPublication?.id);
     }
   }, [
     isAdmin,

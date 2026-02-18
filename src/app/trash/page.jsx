@@ -33,7 +33,7 @@ export default function TrashPage() {
 
   // Load articles filtered by current publication when page mounts or publication changes
   useEffect(() => {
-    loadUserArticles(currentPublication?.id, false, "trash");
+    loadUserArticles(currentPublication?.id);
   }, [loadUserArticles, currentPublication?.id]);
 
   // Filter trash articles

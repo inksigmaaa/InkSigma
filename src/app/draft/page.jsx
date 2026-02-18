@@ -44,7 +44,7 @@ export default function DraftPage() {
       (needsRefresh || articles.length === 0)
     ) {
       hasLoadedRef.current = true;
-      loadUserArticles(currentPublication?.id, false, "draft");
+      loadUserArticles(currentPublication?.id);
     }
   }, [
     searchParams,
@@ -69,7 +69,7 @@ export default function DraftPage() {
       if (isPollingRef.current) return;
       isPollingRef.current = true;
       try {
-        await loadUserArticles(currentPublication?.id, false, "draft");
+        await loadUserArticles(currentPublication?.id);
       } catch (error) {
         console.error("Auto-refresh failed:", error);
       } finally {

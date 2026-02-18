@@ -67,7 +67,7 @@ export default function PublishedPage() {
     if (shouldLoad && currentPublication?.id) {
       hasLoadedRef.current = true;
       loadedContextRef.current = targetContext;
-      loadPublicationArticles(currentPublication.id, "published");
+      loadPublicationArticles(currentPublication.id);
     }
   }, [
     searchParams,

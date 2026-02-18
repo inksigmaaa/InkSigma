@@ -86,9 +86,11 @@ export function ArticlesProvider({ children }) {
   const [reviewError, setReviewError] = useState(null);
   const { data: session } = useSession();
 
-  // Refs to track current values without causing re-renders
+  // Refs to track current values and abort controllers
   const sessionRef = useRef(session);
   const isLoadingRef = useRef(false);
+  const abortControllerRef = useRef(null);
+  const pubAbortControllerRef = useRef(null);
 
   // Try to get publication context, but handle case where it might not be available
   let currentPublication = null;
@@ -126,12 +128,13 @@ export function ArticlesProvider({ children }) {
         return;
       }
 
-      if (isLoadingRef.current) {
-        return;
+      // Abort previous request if exists
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
+      abortControllerRef.current = new AbortController();
 
       try {
-        isLoadingRef.current = true;
         setLoading(true);
         setError(null);
 
@@ -148,11 +151,16 @@ export function ArticlesProvider({ children }) {
         const blogs = await blogService.getUserBlogs(
           currentSession.user.id,
           filters,
+          { signal: abortControllerRef.current.signal },
         );
 
         const convertedArticles = blogs.map(convertBlogToArticle);
         setArticles(convertedArticles);
       } catch (err) {
+        if (err.name === "AbortError") {
+          // Ignore abort errors
+          return;
+        }
         console.error("Error loading articles:", err);
         setError(err.message);
 
@@ -163,8 +171,14 @@ export function ArticlesProvider({ children }) {
           // Optional hook for auth UI handling in the caller.
         }
       } finally {
-        setLoading(false);
-        isLoadingRef.current = false;
+        // Only set loading false if this request wasn't aborted
+        if (
+          abortControllerRef.current &&
+          !abortControllerRef.current.signal.aborted
+        ) {
+          setLoading(false);
+          abortControllerRef.current = null;
+        }
       }
     },
     [session],
@@ -326,10 +340,14 @@ export function ArticlesProvider({ children }) {
       const updatedArticle = convertBlogToArticle(blog);
 
       setArticles((prev) =>
-        prev.map((article) => (article.id === id ? updatedArticle : article)),
+        prev.map((article) =>
+          String(article.id) === String(id) ? updatedArticle : article,
+        ),
       );
       setPublicationArticles((prev) =>
-        prev.map((article) => (article.id === id ? updatedArticle : article)),
+        prev.map((article) =>
+          String(article.id) === String(id) ? updatedArticle : article,
+        ),
       );
 
       return updatedArticle;
@@ -369,10 +387,14 @@ export function ArticlesProvider({ children }) {
       } else {
         // Standard publish (no merge)
         setArticles((prev) =>
-          prev.map((article) => (article.id === id ? updatedArticle : article)),
+          prev.map((article) =>
+            String(article.id) === String(id) ? updatedArticle : article,
+          ),
         );
         setPublicationArticles((prev) =>
-          prev.map((article) => (article.id === id ? updatedArticle : article)),
+          prev.map((article) =>
+            String(article.id) === String(id) ? updatedArticle : article,
+          ),
         );
       }
 
@@ -389,10 +411,14 @@ export function ArticlesProvider({ children }) {
       const updatedArticle = convertBlogToArticle(blog);
 
       setArticles((prev) =>
-        prev.map((article) => (article.id === id ? updatedArticle : article)),
+        prev.map((article) =>
+          String(article.id) === String(id) ? updatedArticle : article,
+        ),
       );
       setPublicationArticles((prev) =>
-        prev.map((article) => (article.id === id ? updatedArticle : article)),
+        prev.map((article) =>
+          String(article.id) === String(id) ? updatedArticle : article,
+        ),
       );
 
       return updatedArticle;
@@ -551,6 +577,9 @@ export function ArticlesProvider({ children }) {
         ids.map((id) => blogService.deleteBlog(id)),
       );
 
+      // Convert ids to strings for comparison
+      const stringIds = ids.map(String);
+
       results.forEach((result, index) => {
         if (result.status === "rejected") {
           console.warn(
@@ -561,7 +590,10 @@ export function ArticlesProvider({ children }) {
       });
 
       setArticles((prev) =>
-        prev.filter((article) => !ids.includes(article.id)),
+        prev.filter((article) => !stringIds.includes(String(article.id))),
+      );
+      setPublicationArticles((prev) =>
+        prev.filter((article) => !stringIds.includes(String(article.id))),
       );
     } catch (err) {
       console.error("Error bulk deleting articles:", err);
@@ -574,18 +606,22 @@ export function ArticlesProvider({ children }) {
       const updatedBlogs = await Promise.all(
         ids.map((id) => blogService.updateBlogStatus(id, "trash")),
       );
-      const updatedArticles = updatedBlogs.map(convertBlogToArticle);
+      const updatedArticles = updatedBlogs.map((b) => convertBlogToArticle(b));
 
       setArticles((prev) =>
         prev.map((article) => {
-          const updated = updatedArticles.find((ua) => ua.id === article.id);
+          const updated = updatedArticles.find(
+            (ua) => String(ua.id) === String(article.id),
+          );
           return updated || article;
         }),
       );
 
       setPublicationArticles((prev) =>
         prev.map((article) => {
-          const updated = updatedArticles.find((ua) => ua.id === article.id);
+          const updated = updatedArticles.find(
+            (ua) => String(ua.id) === String(article.id),
+          );
           return updated || article;
         }),
       );
@@ -600,11 +636,22 @@ export function ArticlesProvider({ children }) {
       const updatedBlogs = await Promise.all(
         ids.map((id) => blogService.updateBlogStatus(id, "published")),
       );
-      const updatedArticles = updatedBlogs.map(convertBlogToArticle);
+      const updatedArticles = updatedBlogs.map((b) => convertBlogToArticle(b));
 
       setArticles((prev) =>
         prev.map((article) => {
-          const updated = updatedArticles.find((ua) => ua.id === article.id);
+          const updated = updatedArticles.find(
+            (ua) => String(ua.id) === String(article.id),
+          );
+          return updated || article;
+        }),
+      );
+
+      setPublicationArticles((prev) =>
+        prev.map((article) => {
+          const updated = updatedArticles.find(
+            (ua) => String(ua.id) === String(article.id),
+          );
           return updated || article;
         }),
       );
@@ -619,11 +666,22 @@ export function ArticlesProvider({ children }) {
       const updatedBlogs = await Promise.all(
         ids.map((id) => blogService.updateBlogStatus(id, "draft")),
       );
-      const updatedArticles = updatedBlogs.map(convertBlogToArticle);
+      const updatedArticles = updatedBlogs.map((b) => convertBlogToArticle(b));
 
       setArticles((prev) =>
         prev.map((article) => {
-          const updated = updatedArticles.find((ua) => ua.id === article.id);
+          const updated = updatedArticles.find(
+            (ua) => String(ua.id) === String(article.id),
+          );
+          return updated || article;
+        }),
+      );
+
+      setPublicationArticles((prev) =>
+        prev.map((article) => {
+          const updated = updatedArticles.find(
+            (ua) => String(ua.id) === String(article.id),
+          );
           return updated || article;
         }),
       );
@@ -725,21 +783,38 @@ export function ArticlesProvider({ children }) {
 
   const loadPublicationArticles = useCallback(
     async (publicationId, status = null) => {
+      // Abort previous request if exists
+      if (pubAbortControllerRef.current) {
+        pubAbortControllerRef.current.abort();
+      }
+      pubAbortControllerRef.current = new AbortController();
+
       try {
         setPubArticlesLoading(true);
         const filters = status ? { status } : {};
         const blogs = await blogService.getPublicationBlogs(
           publicationId,
           filters,
+          { signal: pubAbortControllerRef.current.signal },
         );
         const convertedArticles = blogs.map(convertBlogToArticle);
         setPublicationArticles(convertedArticles);
         return convertedArticles;
       } catch (err) {
+        if (err.name === "AbortError") {
+          // Ignore abort errors
+          return;
+        }
         console.error("Error loading publication articles:", err);
         throw err;
       } finally {
-        setPubArticlesLoading(false);
+        if (
+          pubAbortControllerRef.current &&
+          !pubAbortControllerRef.current.signal.aborted
+        ) {
+          setPubArticlesLoading(false);
+          pubAbortControllerRef.current = null;
+        }
       }
     },
     [],

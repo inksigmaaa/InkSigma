@@ -42,7 +42,7 @@ export default function AllArticlePage() {
   const isLoading =
     isAdmin && currentPublication ? pubArticlesLoading : loading;
 
-  // Load appropriate articles
+  // Load appropriate articles on mount or when context changes
   useEffect(() => {
     const needsRefresh = searchParams.get("refresh") === "true";
 
@@ -50,18 +50,11 @@ export default function AllArticlePage() {
     const targetContext =
       isAdmin && currentPublication?.id ? "publication" : "user";
 
-    // Helper to check if we need to load or reload
-    // Re-load if:
-    // 1. Refresh requested
-    // 2. Data is empty AND not loading AND (not loaded OR loaded wrong context)
-    // 3. Context changed (e.g. from user to publication) - critical for switching to admin view
+    // Always load on first mount or context change
     const isWrongContext =
       hasLoadedRef.current && loadedContextRef.current !== targetContext;
 
-    const shouldLoad =
-      needsRefresh ||
-      (displayArticles.length === 0 && !isLoading && !hasLoadedRef.current) ||
-      isWrongContext;
+    const shouldLoad = needsRefresh || !hasLoadedRef.current || isWrongContext;
 
     if (shouldLoad) {
       hasLoadedRef.current = true;
@@ -75,8 +68,6 @@ export default function AllArticlePage() {
     }
   }, [
     searchParams,
-    displayArticles.length,
-    isLoading,
     loadUserArticles,
     loadPublicationArticles,
     isAdmin,
