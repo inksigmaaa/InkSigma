@@ -82,6 +82,11 @@ export async function middleware(request: NextRequest) {
     cleanHost === `dashboard.${rootDomain}` ||
     cleanHost === "dashboard.localhost";
 
+  // Prepare request headers with the current path
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-invoke-path", pathname);
+  requestHeaders.set("x-url", request.url);
+
   if (isDashboardHost) {
     const lastPubSub = request.cookies.get(DASHBOARD_PUB_COOKIE)?.value;
 
@@ -108,7 +113,9 @@ export async function middleware(request: NextRequest) {
     // Canonical dashboard entry:
     // Render the dashboard picker at "/" (internally served by /dashboard).
     if (pathname === "/") {
-      const res = NextResponse.rewrite(urlWithPathname(request, "/dashboard"));
+      const res = NextResponse.rewrite(urlWithPathname(request, "/dashboard"), {
+        request: { headers: requestHeaders },
+      });
       return res;
     }
 
@@ -147,7 +154,9 @@ export async function middleware(request: NextRequest) {
       const endpointPath = `/${(rest.length ? rest : ["home"]).join("/")}`;
       const internalPath = toInternalDashboardPath(endpointPath);
 
-      const res = NextResponse.rewrite(urlWithPathname(request, internalPath));
+      const res = NextResponse.rewrite(urlWithPathname(request, internalPath), {
+        request: { headers: requestHeaders },
+      });
       // Keep server-side cookie in sync so we can normalize old links.
       res.cookies.set(DASHBOARD_PUB_COOKIE, pubSub, {
         path: "/",
@@ -161,7 +170,9 @@ export async function middleware(request: NextRequest) {
   // Handle root domain - show landing page
   if (cleanHost === rootDomain || cleanHost === `www.${rootDomain}`) {
     // Landing page is already at "/" so just let it through
-    return NextResponse.next();
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    });
   }
 
   // Handle publication subdomains
@@ -188,11 +199,15 @@ export async function middleware(request: NextRequest) {
 
       viewSiteUrl.searchParams.set("subdomain", subdomain);
 
-      return NextResponse.rewrite(viewSiteUrl);
+      return NextResponse.rewrite(viewSiteUrl, {
+        request: { headers: requestHeaders },
+      });
     }
   }
 
-  return NextResponse.next();
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 }
 
 export const config = {
