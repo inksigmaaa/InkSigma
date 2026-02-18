@@ -99,12 +99,6 @@ export default function MyBlogsPage() {
     }
   };
 
-  const handleBulkDraft = () => {
-    if (selectedArticles.length === 0) return;
-    setIsBulkAction(true);
-    setShowDraftModal(true);
-  };
-
   const handleBulkUnpublish = () => {
     if (selectedArticles.length === 0) return;
     setIsBulkAction(true);
@@ -154,17 +148,7 @@ export default function MyBlogsPage() {
 
   const confirmDraft = async () => {
     try {
-      if (isBulkAction) {
-        for (const articleId of selectedArticles) {
-          const article = myArticles.find((a) => a.id === articleId);
-          if (article && article.status === "published") {
-            await createDraftFromPublished(articleId);
-          } else {
-            await moveToDraft(articleId);
-          }
-        }
-        setSelectedArticles([]);
-      } else if (actionArticleId) {
+      if (actionArticleId) {
         const article = myArticles.find((a) => a.id === actionArticleId);
         if (article && article.status === "published") {
           await createDraftFromPublished(actionArticleId);
@@ -243,12 +227,6 @@ export default function MyBlogsPage() {
   };
 
   const actionButtons = [
-    {
-      icon: "/images/icons/draft1.svg",
-      title: "Move to Draft",
-      onClick: handleBulkDraft,
-    },
-
     {
       icon: "/images/icons/trash2.svg",
       title: "Delete",
