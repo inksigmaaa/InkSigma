@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
-import Sidebar from "../components/sidebar/Sidebar";
-import Verify from "../components/verify/Verify";
-import PersonalArticles from "../components/personalArticles/personalArticles";
-import ConfirmModal from "../components/confirmModal/ConfirmModal";
+import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
+import Sidebar from "@/components/layout/sidebar/Sidebar";
+import Verify from "@/components/features/verify/Verify";
+import PersonalArticles from "@/components/features/personalArticles/personalArticles";
+import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";

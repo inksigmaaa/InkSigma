@@ -2,11 +2,11 @@
 
 import { useState, useMemo, useEffect } from "react";
 import AuthGuard from "@/components/auth/AuthGuard";
-import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
-import Sidebar from "../components/sidebar/Sidebar";
-import Verify from "../components/verify/Verify";
-import PersonalArticles from "../components/personalArticles/personalArticles";
-import ConfirmModal from "../components/confirmModal/ConfirmModal";
+import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
+import Sidebar from "@/components/layout/sidebar/Sidebar";
+import Verify from "@/components/features/verify/Verify";
+import PersonalArticles from "@/components/features/personalArticles/personalArticles";
+import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
@@ -31,6 +31,7 @@ export default function MyBlogsPage() {
   const [showUnpublishModal, setShowUnpublishModal] = useState(false);
   const [showRepublishModal, setShowRepublishModal] = useState(false);
   const [actionArticleId, setActionArticleId] = useState(null);
+  const [isBulkAction, setIsBulkAction] = useState(false);
 
   // Load articles filtered by current publication when page mounts or publication changes
   useEffect(() => {
@@ -50,22 +51,27 @@ export default function MyBlogsPage() {
     return filtered.map((article) => ({
       ...article,
       onDelete: () => {
+        setIsBulkAction(false);
         setActionArticleId(article.id);
         setShowDeleteModal(true);
       },
       onPublish: () => {
+        setIsBulkAction(false);
         setActionArticleId(article.id);
         setShowPublishModal(true);
       },
       onDraft: () => {
+        setIsBulkAction(false);
         setActionArticleId(article.id);
         setShowDraftModal(true);
       },
       onUnpublish: () => {
+        setIsBulkAction(false);
         setActionArticleId(article.id);
         setShowUnpublishModal(true);
       },
       onRepublish: () => {
+        setIsBulkAction(false);
         setActionArticleId(article.id);
         setShowRepublishModal(true);
       },
@@ -89,9 +95,57 @@ export default function MyBlogsPage() {
     }
   };
 
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedArticles(myArticles.map((article) => article.id));
+    } else {
+      setSelectedArticles([]);
+    }
+  };
+
+  const handleBulkDraft = () => {
+    if (selectedArticles.length === 0) return;
+    setIsBulkAction(true);
+    setShowDraftModal(true);
+  };
+
+  const handleBulkPublish = () => {
+    if (selectedArticles.length === 0) return;
+    setIsBulkAction(true);
+    setShowPublishModal(true);
+  };
+
+  const handleBulkUnpublish = () => {
+    if (selectedArticles.length === 0) return;
+    setIsBulkAction(true);
+    setShowUnpublishModal(true);
+  };
+
+  const handleBulkRepublish = () => {
+    if (selectedArticles.length === 0) return;
+    setIsBulkAction(true);
+    setShowRepublishModal(true);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedArticles.length === 0) return;
+    setIsBulkAction(true);
+    setShowDeleteModal(true);
+  };
+
   const confirmDelete = async () => {
     try {
-      if (actionArticleId) {
+      if (isBulkAction) {
+        for (const articleId of selectedArticles) {
+          const article = myArticles.find((a) => a.id === articleId);
+          if (article?.status === "trash") {
+            await moveToTrash(articleId);
+          } else {
+            await moveToTrashStatus(articleId);
+          }
+        }
+        setSelectedArticles([]);
+      } else if (actionArticleId) {
         const article = myArticles.find((a) => a.id === actionArticleId);
         // If already in trash, delete permanently
         if (article?.status === "trash") {
@@ -110,7 +164,12 @@ export default function MyBlogsPage() {
 
   const confirmPublish = async () => {
     try {
-      if (actionArticleId) {
+      if (isBulkAction) {
+        for (const articleId of selectedArticles) {
+          await publishArticle(articleId);
+        }
+        setSelectedArticles([]);
+      } else if (actionArticleId) {
         await publishArticle(actionArticleId);
       }
       setShowPublishModal(false);
@@ -122,7 +181,17 @@ export default function MyBlogsPage() {
 
   const confirmDraft = async () => {
     try {
-      if (actionArticleId) {
+      if (isBulkAction) {
+        for (const articleId of selectedArticles) {
+          const article = myArticles.find((a) => a.id === articleId);
+          if (article && article.status === "published") {
+            await createDraftFromPublished(articleId);
+          } else {
+            await moveToDraft(articleId);
+          }
+        }
+        setSelectedArticles([]);
+      } else if (actionArticleId) {
         const article = myArticles.find((a) => a.id === actionArticleId);
         if (article && article.status === "published") {
           await createDraftFromPublished(actionArticleId);
@@ -139,7 +208,12 @@ export default function MyBlogsPage() {
 
   const confirmUnpublish = async () => {
     try {
-      if (actionArticleId) {
+      if (isBulkAction) {
+        for (const articleId of selectedArticles) {
+          await unpublishArticle(articleId);
+        }
+        setSelectedArticles([]);
+      } else if (actionArticleId) {
         await unpublishArticle(actionArticleId);
       }
       setShowUnpublishModal(false);
@@ -151,7 +225,12 @@ export default function MyBlogsPage() {
 
   const confirmRepublish = async () => {
     try {
-      if (actionArticleId) {
+      if (isBulkAction) {
+        for (const articleId of selectedArticles) {
+          await publishArticle(articleId);
+        }
+        setSelectedArticles([]);
+      } else if (actionArticleId) {
         await publishArticle(actionArticleId);
       }
       setShowRepublishModal(false);
@@ -162,7 +241,20 @@ export default function MyBlogsPage() {
   };
 
   const getDeleteModalProps = () => {
-    const article = myArticles.find((a) => a.id === actionArticleId);
+    const article = actionArticleId
+      ? myArticles.find((a) => a.id === actionArticleId)
+      : null;
+
+    if (isBulkAction) {
+      return {
+        title: "Delete selected articles?",
+        message:
+          "Selected articles will be moved to trash or permanently deleted.",
+        confirmText: "Delete",
+        confirmStyle: "danger",
+      };
+    }
+
     const isTrash = article?.status === "trash";
 
     return {
@@ -177,6 +269,24 @@ export default function MyBlogsPage() {
     };
   };
 
+  const actionButtons = [
+    {
+      icon: "/images/icons/draft1.svg",
+      title: "Move to Draft",
+      onClick: handleBulkDraft,
+    },
+    {
+      icon: "/images/icons/publish.svg",
+      title: "Publish",
+      onClick: handleBulkPublish,
+    },
+    {
+      icon: "/images/icons/trash2.svg",
+      title: "Delete",
+      onClick: handleBulkDelete,
+    },
+  ];
+
   return (
     <AuthGuard>
       <NavbarLoggedin />
@@ -188,12 +298,14 @@ export default function MyBlogsPage() {
           titleColor="#F452E8"
           articles={myArticles}
           emptyMessage="No Articles yet"
-          showSelectAll={false}
+          showSelectAll={true}
           showActions={true}
           showCategoryInTitle={true}
+          actionButtons={actionButtons}
           selectedArticles={selectedArticles}
           selectedCategories={selectedCategories}
           onCategoriesChange={setSelectedCategories}
+          onSelectAll={handleSelectAll}
           onArticleSelect={handleArticleSelect}
         />
       </PageTransition>
@@ -215,8 +327,12 @@ export default function MyBlogsPage() {
           setActionArticleId(null);
         }}
         onConfirm={confirmPublish}
-        title="Publish article?"
-        message="This article will be published"
+        title={isBulkAction ? "Publish articles?" : "Publish article?"}
+        message={
+          isBulkAction
+            ? `${selectedArticles.length} article(s) will be published`
+            : "This article will be published"
+        }
         confirmText="Publish"
         confirmStyle="normal"
       />
@@ -229,25 +345,31 @@ export default function MyBlogsPage() {
         }}
         onConfirm={confirmDraft}
         title={
-          actionArticleId &&
-          myArticles.find((a) => a.id === actionArticleId)?.status ===
-            "published"
-            ? "Create a Draft?"
-            : "Move to Draft?"
+          isBulkAction
+            ? "Move to Draft?"
+            : actionArticleId &&
+                myArticles.find((a) => a.id === actionArticleId)?.status ===
+                  "published"
+              ? "Create a Draft?"
+              : "Move to Draft?"
         }
         message={
-          actionArticleId &&
-          myArticles.find((a) => a.id === actionArticleId)?.status ===
-            "published"
-            ? "A draft copy will be created. The original article will remain published."
-            : "This article will be moved to drafts"
+          isBulkAction
+            ? `${selectedArticles.length} article(s) will be moved to drafts`
+            : actionArticleId &&
+                myArticles.find((a) => a.id === actionArticleId)?.status ===
+                  "published"
+              ? "A draft copy will be created. The original article will remain published."
+              : "This article will be moved to drafts"
         }
         confirmText={
-          actionArticleId &&
-          myArticles.find((a) => a.id === actionArticleId)?.status ===
-            "published"
-            ? "Create Draft"
-            : "Move to Draft"
+          isBulkAction
+            ? "Move to Draft"
+            : actionArticleId &&
+                myArticles.find((a) => a.id === actionArticleId)?.status ===
+                  "published"
+              ? "Create Draft"
+              : "Move to Draft"
         }
         confirmStyle="normal"
       />
@@ -259,8 +381,12 @@ export default function MyBlogsPage() {
           setActionArticleId(null);
         }}
         onConfirm={confirmUnpublish}
-        title="Unpublish this article?"
-        message="This article will be unpublished and moved to unpublished section"
+        title={isBulkAction ? "Unpublish articles?" : "Unpublish this article?"}
+        message={
+          isBulkAction
+            ? `${selectedArticles.length} article(s) will be unpublished`
+            : "This article will be unpublished and moved to unpublished section"
+        }
         confirmText="Unpublish"
         confirmStyle="normal"
       />
@@ -272,8 +398,12 @@ export default function MyBlogsPage() {
           setActionArticleId(null);
         }}
         onConfirm={confirmRepublish}
-        title="Republish article?"
-        message="This article will be republished"
+        title={isBulkAction ? "Republish articles?" : "Republish article?"}
+        message={
+          isBulkAction
+            ? `${selectedArticles.length} article(s) will be republished`
+            : "This article will be republished"
+        }
         confirmText="Republish"
         confirmStyle="normal"
       />

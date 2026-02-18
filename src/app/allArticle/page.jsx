@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import AuthGuard from "@/components/auth/AuthGuard";
-import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
-import Sidebar from "../components/sidebar/Sidebar";
-import Verify from "../components/verify/Verify";
-import Articles from "../components/articles/Articles";
+import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
+import Sidebar from "@/components/layout/sidebar/Sidebar";
+import Verify from "@/components/features/verify/Verify";
+import Articles from "@/components/features/articles/Articles";
+import CategoryBadgeList from "@/components/CategoryBadgeList";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { useSearchParams } from "next/navigation";

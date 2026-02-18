@@ -1,31 +1,34 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Menu, X } from "lucide-react"
-import { useScrollToSection } from "@/hooks/useScrollToSection"
-import { MAIN_NAVIGATION, LOGOS } from "@/constants"
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Menu, X } from "lucide-react";
+import { useScrollToSection } from "@/hooks/useScrollToSection";
+import { MAIN_NAVIGATION, LOGOS } from "@/constants";
 
 export default function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const scrollToHome = useScrollToSection('home')
-  const scrollToFeatures = useScrollToSection('features')
-  const scrollToRoadmap = useScrollToSection('roadmap')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const scrollToHome = useScrollToSection("home");
+  const scrollToFeatures = useScrollToSection("features");
+  const scrollToRoadmap = useScrollToSection("roadmap");
 
   const handleNavClick = (item) => {
-    if (item.type === 'scroll') {
-      const sectionId = item.href.replace('#', '')
-      if (sectionId === 'home') scrollToHome()
-      if (sectionId === 'features') scrollToFeatures()
-      if (sectionId === 'roadmap') scrollToRoadmap()
+    if (item.type === "scroll") {
+      const sectionId = item.href.replace("#", "");
+      if (sectionId === "home") scrollToHome();
+      if (sectionId === "features") scrollToFeatures();
+      if (sectionId === "roadmap") scrollToRoadmap();
     }
-    setMobileMenuOpen(false)
-  }
+    setMobileMenuOpen(false);
+  };
 
   return (
-    <header className="fixed top-0 left-0 right-0 w-full max-w-[1920px] h-[84px] mx-auto z-50 pt-6 pb-6 border-b border-gray-200 opacity-100 overflow-hidden max-md:h-16 max-md:pt-0 max-md:pb-0 max-md:flex max-md:items-center" style={{ background: '#FEFEFE' }}>
+    <header
+      className="fixed top-0 left-0 right-0 w-full max-w-[1920px] h-[84px] mx-auto z-50 pt-6 pb-6 border-b border-gray-200 opacity-100 overflow-hidden max-md:h-16 max-md:pt-0 max-md:pb-0 max-md:flex max-md:items-center"
+      style={{ background: "#FEFEFE" }}
+    >
       <div className="w-full flex items-center justify-between max-w-[1920px] mx-auto px-[151.63px] max-md:px-5 relative">
         {/* Mobile Menu Button - Left Side */}
         <button
@@ -37,7 +40,10 @@ export default function Header() {
         </button>
 
         {/* Logo - Left on desktop, Center on mobile */}
-        <Link href="/" className="flex items-center max-md:absolute max-md:left-1/2 max-md:-translate-x-1/2">
+        <Link
+          href="/"
+          className="flex items-center max-md:absolute max-md:left-1/2 max-md:-translate-x-1/2"
+        >
           {/* Desktop logo with border */}
           <Image
             src={LOGOS.main}
@@ -51,7 +57,7 @@ export default function Header() {
             src={LOGOS.mobile}
             alt="Sigma Logo"
             width={76.79}
-            height={24.80}
+            height={24.8}
             className="w-[76.79px] h-[24.80px] md:hidden"
           />
         </Link>
@@ -63,28 +69,32 @@ export default function Header() {
               // Define specific dimensions for each nav item
               const getItemStyle = (itemId) => {
                 switch (itemId) {
-                  case 'home':
-                    return { width: '39px', height: '21px', opacity: 1 };
-                  case 'features':
-                    return { width: '51px', height: '21px', opacity: 1 };
-                  case 'roadmap':
-                    return { width: '62px', height: '21px', opacity: 1 };
+                  case "home":
+                    return { width: "39px", height: "21px", opacity: 1 };
+                  case "features":
+                    return { width: "51px", height: "21px", opacity: 1 };
+                  case "roadmap":
+                    return { width: "62px", height: "21px", opacity: 1 };
                   default:
-                    return { height: '21px', opacity: 1 };
+                    return { height: "21px", opacity: 1 };
                 }
               };
 
               return (
-                <div key={item.id} className="flex items-center justify-center" style={getItemStyle(item.id)}>
+                <div
+                  key={item.id}
+                  className="flex items-center justify-center"
+                  style={getItemStyle(item.id)}
+                >
                   <button
                     onClick={() => handleNavClick(item)}
                     className="flex items-center justify-center h-full cursor-pointer text-text-primary hover:opacity-80 transition-opacity"
                     style={{
-                      fontFamily: 'Public Sans, sans-serif',
+                      fontFamily: "Public Sans, sans-serif",
                       fontWeight: 400,
-                      fontSize: '14px',
-                      lineHeight: '150%',
-                      letterSpacing: '0%'
+                      fontSize: "14px",
+                      lineHeight: "150%",
+                      letterSpacing: "0%",
                     }}
                   >
                     {item.label}
@@ -96,27 +106,28 @@ export default function Header() {
         </nav>
 
         {/* Login Button - Right positioned */}
-        <a href="http://dashboard.inksigma.local:3000/login" className="flex items-center">
-          <Button
-            style={{
-              width: '85px',
-              height: '32px',
-              opacity: 1,
-              paddingTop: '8px',
-              paddingRight: '24px',
-              paddingBottom: '8px',
-              paddingLeft: '24px',
-              gap: '10px',
-              borderRadius: '4px',
-              background: '#080808',
-              animationDuration: '0ms',
-              border: 'none'
-            }}
-            className="text-white hover:bg-gray-800 transition-none duration-0 text-sm font-medium border-0 max-md:w-[70px] max-md:h-[28px] max-md:text-xs max-md:px-3"
-          >
+        <Button
+          asChild
+          style={{
+            width: "85px",
+            height: "32px",
+            opacity: 1,
+            paddingTop: "8px",
+            paddingRight: "24px",
+            paddingBottom: "8px",
+            paddingLeft: "24px",
+            gap: "10px",
+            borderRadius: "4px",
+            background: "#080808",
+            animationDuration: "0ms",
+            border: "none",
+          }}
+          className="text-white hover:bg-gray-800 transition-none duration-0 text-sm font-medium border-0 max-md:w-[70px] max-md:h-[28px] max-md:text-xs max-md:px-3"
+        >
+          <Link href="/login" className="flex items-center">
             Login
-          </Button>
-        </a>
+          </Link>
+        </Button>
       </div>
 
       {/* Mobile Menu - Full Screen Overlay */}
@@ -131,7 +142,11 @@ export default function Header() {
               <X size={24} />
             </button>
 
-            <Link href="/" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
+            <Link
+              href="/"
+              className="flex items-center"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               <Image
                 src={LOGOS.main}
                 alt="Sigma Logo"
@@ -156,30 +171,31 @@ export default function Header() {
               </div>
             ))}
 
-            <a href="http://dashboard.inksigma.local:3000/login" onClick={() => setMobileMenuOpen(false)}>
-              <Button
-                style={{
-                  width: '85px',
-                  height: '32px',
-                  opacity: 1,
-                  paddingTop: '8px',
-                  paddingRight: '24px',
-                  paddingBottom: '8px',
-                  paddingLeft: '24px',
-                  gap: '10px',
-                  borderRadius: '4px',
-                  background: '#080808',
-                  animationDuration: '0ms',
-                  border: 'none'
-                }}
-                className="text-white hover:bg-gray-800 transition-none duration-0 text-sm font-medium border-0"
-              >
+            <Button
+              asChild
+              style={{
+                width: "85px",
+                height: "32px",
+                opacity: 1,
+                paddingTop: "8px",
+                paddingRight: "24px",
+                paddingBottom: "8px",
+                paddingLeft: "24px",
+                gap: "10px",
+                borderRadius: "4px",
+                background: "#080808",
+                animationDuration: "0ms",
+                border: "none",
+              }}
+              className="text-white hover:bg-gray-800 transition-none duration-0 text-sm font-medium border-0"
+            >
+              <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
                 Login
-              </Button>
-            </a>
+              </Link>
+            </Button>
           </nav>
         </div>
       )}
     </header>
-  )
+  );
 }

@@ -5,17 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Clock } from "lucide-react";
 import Image from "next/image";
-import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
-import Sidebar from "../components/sidebar/Sidebar";
-import Verify from "../components/verify/Verify";
+import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
+import Sidebar from "@/components/layout/sidebar/Sidebar";
+import Verify from "@/components/features/verify/Verify";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
-import PublishOptionsModal from "../components/review/PublishOptionsModal";
-import CategoryFilter from "../components/categoryFilter/CategoryFilter";
+import PublishOptionsModal from "@/components/features/review/PublishOptionsModal";
+import CategoryFilter from "@/components/features/categoryFilter/CategoryFilter";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { useSession } from "@/lib/auth-client";
 import { usePathname, useRouter } from "next/navigation";
 import { formatTimeAgo } from "@/utils/timeFormatter";
+import styles from "@/components/features/articles/Articles.module.css";
 
 export default function ReviewPage() {
   const router = useRouter();
@@ -31,7 +32,8 @@ export default function ReviewPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedArticleForAction, setSelectedArticleForAction] =
     useState(null);
-  const [actionType, setActionType] = useState(null); // 'reject' or 'revert'
+  const [actionType, setActionType] = useState(null); // 'reject', 'revert', 'delete'
+  const [isBulkAction, setIsBulkAction] = useState(false);
 
   const {
     reviewArticles,
@@ -41,6 +43,7 @@ export default function ReviewPage() {
     acceptReviewArticle,
     rejectReviewArticle,
     revertReviewToDraft,
+    bulkMoveToTrash,
   } = useArticles();
 
   const { currentPublication, getCurrentUserRole } = usePublication();
@@ -54,11 +57,14 @@ export default function ReviewPage() {
     ? `/${currentPublication.subdomain}`
     : "";
 
-  const withPub = useCallback((path) => {
-    if (!path?.startsWith?.("/")) return path;
-    if (!pubPrefix) return path;
-    return path.startsWith(pubPrefix) ? path : `${pubPrefix}${path}`;
-  }, [pubPrefix]);
+  const withPub = useCallback(
+    (path) => {
+      if (!path?.startsWith?.("/")) return path;
+      if (!pubPrefix) return path;
+      return path.startsWith(pubPrefix) ? path : `${pubPrefix}${path}`;
+    },
+    [pubPrefix],
+  );
 
   // Load review articles when publication changes
   useEffect(() => {
@@ -91,68 +97,102 @@ export default function ReviewPage() {
   const filteredArticles =
     selectedCategories.length > 0
       ? reviewArticles.filter((article) =>
-        article.categories?.some((cat) => selectedCategories.includes(cat)),
-      )
+          article.categories?.some((cat) => selectedCategories.includes(cat)),
+        )
       : reviewArticles;
 
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedPosts(filteredArticles.map((article) => article.id));
+    } else {
+      setSelectedPosts([]);
+    }
+  };
+
   const handleAccept = (article) => {
+    setIsBulkAction(false);
     // Show publish options modal for admin
     setSelectedArticleForPublish(article);
     setShowPublishModal(true);
   };
 
+  const handleBulkAction = () => {
+    if (selectedPosts.length === 0) return;
+    setIsBulkAction(true);
+    // Editors and Admins reject, Authors revert to draft
+    if (isEditor || isAdmin) {
+      setActionType("reject");
+    } else {
+      setActionType("revert");
+    }
+    setShowConfirmModal(true);
+  };
+
   const handlePublish = async () => {
-    if (selectedArticleForPublish) {
-      try {
+    try {
+      if (selectedArticleForPublish) {
         await acceptReviewArticle(selectedArticleForPublish.id, "published");
-        setShowPublishModal(false);
-        setSelectedArticleForPublish(null);
-        // Refresh the review articles list
-        if (currentPublication?.id) {
-          loadReviewArticles(currentPublication.id);
-        }
-      } catch (error) {
-        console.error("[ReviewPage] Error publishing article:", error);
       }
+      setShowPublishModal(false);
+      setSelectedArticleForPublish(null);
+      // Refresh the review articles list
+      if (currentPublication?.id) {
+        loadReviewArticles(currentPublication.id);
+      }
+    } catch (error) {
+      console.error("[ReviewPage] Error publishing article:", error);
     }
   };
 
   const handleUnpublish = async () => {
-    if (selectedArticleForPublish) {
-      try {
+    try {
+      if (selectedArticleForPublish) {
         await acceptReviewArticle(selectedArticleForPublish.id, "unpublished");
-        setShowPublishModal(false);
-        setSelectedArticleForPublish(null);
-        // Refresh the review articles list
-        if (currentPublication?.id) {
-          loadReviewArticles(currentPublication.id);
-        }
-      } catch (error) {
-        console.error("[ReviewPage] Error storing to unpublished:", error);
       }
+      setShowPublishModal(false);
+      setSelectedArticleForPublish(null);
+      // Refresh the review articles list
+      if (currentPublication?.id) {
+        loadReviewArticles(currentPublication.id);
+      }
+    } catch (error) {
+      console.error("[ReviewPage] Error storing to unpublished:", error);
     }
   };
 
   const handleReject = (articleId) => {
+    setIsBulkAction(false);
     setSelectedArticleForAction(articleId);
     setActionType("reject");
     setShowConfirmModal(true);
   };
 
   const handleRevertToDraft = (articleId) => {
+    setIsBulkAction(false);
     setSelectedArticleForAction(articleId);
     setActionType("revert");
     setShowConfirmModal(true);
   };
 
   const handleConfirmAction = async () => {
-    if (!selectedArticleForAction) return;
-
     try {
-      if (actionType === "reject") {
-        await rejectReviewArticle(selectedArticleForAction);
-      } else if (actionType === "revert") {
-        await revertReviewToDraft(selectedArticleForAction);
+      if (isBulkAction) {
+        if (actionType === "reject") {
+          for (const articleId of selectedPosts) {
+            await rejectReviewArticle(articleId);
+          }
+        } else if (actionType === "revert") {
+          for (const articleId of selectedPosts) {
+            await revertReviewToDraft(articleId);
+          }
+        }
+        setSelectedPosts([]);
+      } else if (selectedArticleForAction) {
+        if (actionType === "reject") {
+          await rejectReviewArticle(selectedArticleForAction);
+        } else if (actionType === "revert") {
+          await revertReviewToDraft(selectedArticleForAction);
+        }
       }
 
       // Refresh the review articles list
@@ -206,6 +246,11 @@ export default function ReviewPage() {
     );
   }
 
+  // Calculate select all state
+  const isAllSelected =
+    filteredArticles.length > 0 &&
+    selectedPosts.length === filteredArticles.length;
+
   return (
     <>
       <NavbarLoggedin />
@@ -228,6 +273,54 @@ export default function ReviewPage() {
                 <span className="text-sm text-gray-500">
                   ({filteredArticles.length})
                 </span>
+              </div>
+            </div>
+
+            {/* Bulk Actions Bar */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <label
+                  className={`${styles.selectAllContainer} ${filteredArticles.length === 0 ? "opacity-40 pointer-events-none" : ""}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className={styles.selectAllCheckbox}
+                    disabled={filteredArticles.length === 0}
+                  />
+                  <span className={styles.selectAllCheckboxBox}>
+                    {isAllSelected && (
+                      <img
+                        src="/images/icons/tick2.svg"
+                        alt="checked"
+                        className={styles.selectAllCheckboxIcon}
+                      />
+                    )}
+                  </span>
+                  <span className={styles.selectAllText}>Select all</span>
+                </label>
+
+                {selectedPosts.length > 0 && (
+                  <button
+                    className="flex items-center justify-center transition-all cursor-pointer hover:bg-gray-50"
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      border: "1px solid #EDEDED",
+                      borderRadius: "4px",
+                      background: "#FFFFFF",
+                    }}
+                    onClick={handleBulkAction}
+                    title={isEditor || isAdmin ? "Reject" : "Revert to Draft"}
+                  >
+                    <img
+                      src="/images/icons/trash2.svg"
+                      alt={isEditor || isAdmin ? "Reject" : "Revert"}
+                      className="w-4 h-4"
+                    />
+                  </button>
+                )}
               </div>
 
               {/* Category Select */}
@@ -436,204 +529,228 @@ export default function ReviewPage() {
 
                     {/* Mobile Layout */}
                     <div className="md:hidden overflow-hidden">
-                      <div className="flex flex-col gap-4">
-                        {/* Title, Author, and Buttons */}
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h3
-                              className="font-semibold mb-1"
-                              style={{
-                                fontFamily: "Public Sans, sans-serif",
-                                fontWeight: 600,
-                                fontSize: "14px",
-                                lineHeight: "100%",
-                                color: "#000000",
-                              }}
-                            >
-                              {article.title}
-                            </h3>
-                            <p
-                              className="underline"
+                      <div className="flex gap-3">
+                        {/* Mobile Checkbox */}
+                        <div className="pt-1">
+                          <Checkbox
+                            checked={selectedPosts.includes(article.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedPosts([
+                                  ...selectedPosts,
+                                  article.id,
+                                ]);
+                              } else {
+                                setSelectedPosts(
+                                  selectedPosts.filter(
+                                    (id) => id !== article.id,
+                                  ),
+                                );
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-4 flex-1">
+                          {/* Title, Author, and Buttons */}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h3
+                                className="font-semibold mb-1"
+                                style={{
+                                  fontFamily: "Public Sans, sans-serif",
+                                  fontWeight: 600,
+                                  fontSize: "14px",
+                                  lineHeight: "100%",
+                                  color: "#000000",
+                                }}
+                              >
+                                {article.title}
+                              </h3>
+                              <p
+                                className="underline"
+                                style={{
+                                  fontFamily: "Public Sans, sans-serif",
+                                  fontWeight: 400,
+                                  fontSize: "14px",
+                                  lineHeight: "150%",
+                                  color: "#A4A4A4",
+                                  textDecorationLine: "underline",
+                                }}
+                              >
+                                {article.author?.name || "Unknown Author"}
+                              </p>
+                            </div>
+
+                            <div className="flex gap-2 ml-4 flex-shrink-0">
+                              {/* Show different actions based on user role and article ownership */}
+                              {article.author?.id === session?.user?.id ? (
+                                /* If it's user's own article, only show Revert to Draft */
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-gray-700 border-gray-300 hover:bg-gray-50"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRevertToDraft(article.id);
+                                  }}
+                                >
+                                  Revert
+                                </Button>
+                              ) : (
+                                /* If it's another author's article, show icon buttons for screens < 540px, text buttons for larger */
+                                <>
+                                  {/* Icon buttons for mobile (< 540px) */}
+                                  <div className="flex gap-2 max-[540px]:flex min-[540px]:hidden">
+                                    <button
+                                      className="hover:opacity-80 transition-opacity flex items-center justify-center"
+                                      style={{
+                                        width: "26px",
+                                        height: "26px",
+                                        borderRadius: "4px",
+                                        border: "1px solid #FFD6D6",
+                                        backgroundColor: "transparent",
+                                        cursor: "pointer",
+                                        padding: "0",
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleReject(article.id);
+                                      }}
+                                    >
+                                      <Image
+                                        src="/images/icons/cross.svg"
+                                        alt="Reject"
+                                        width={14}
+                                        height={14}
+                                      />
+                                    </button>
+                                    <button
+                                      className="hover:opacity-80 transition-opacity flex items-center justify-center"
+                                      style={{
+                                        width: "26px",
+                                        height: "26px",
+                                        borderRadius: "4px",
+                                        border: "1px solid #D5F2D4",
+                                        backgroundColor: "transparent",
+                                        cursor: "pointer",
+                                        padding: "0",
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAccept(article);
+                                      }}
+                                    >
+                                      <Image
+                                        src="/images/icons/tick3.svg"
+                                        alt="Accept"
+                                        width={14}
+                                        height={14}
+                                      />
+                                    </button>
+                                  </div>
+
+                                  {/* Text buttons for tablet/desktop (>= 540px) */}
+                                  <div className="hidden min-[540px]:flex gap-2">
+                                    <button
+                                      className="hover:opacity-80 transition-opacity flex items-center justify-center"
+                                      style={{
+                                        width: "66px",
+                                        height: "32px",
+                                        borderRadius: "4px",
+                                        padding: "8px",
+                                        backgroundColor: "#FEECEC",
+                                        fontFamily: "Public Sans, sans-serif",
+                                        fontWeight: 400,
+                                        fontSize: "14px",
+                                        lineHeight: "20px",
+                                        color: "#F53D3D",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        textAlign: "center",
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleReject(article.id);
+                                      }}
+                                    >
+                                      Reject
+                                    </button>
+                                    <button
+                                      className="hover:opacity-80 transition-opacity flex items-center justify-center"
+                                      style={{
+                                        width: "71px",
+                                        height: "32px",
+                                        borderRadius: "4px",
+                                        padding: "8px",
+                                        backgroundColor: "#E6F7EA",
+                                        fontFamily: "Public Sans, sans-serif",
+                                        fontWeight: 400,
+                                        fontSize: "14px",
+                                        lineHeight: "20px",
+                                        color: "#06AD2B",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        textAlign: "center",
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAccept(article);
+                                      }}
+                                    >
+                                      Accept
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Categories - scrollable */}
+                          <div
+                            className="flex gap-2 overflow-x-auto scrollbar-hide"
+                            style={{
+                              overflowY: "hidden",
+                            }}
+                          >
+                            <style jsx>{`
+                              .scrollbar-hide::-webkit-scrollbar {
+                                display: none;
+                              }
+                              .scrollbar-hide {
+                                -ms-overflow-style: none;
+                                scrollbar-width: none;
+                              }
+                            `}</style>
+                            {(article.categories || []).map((tag, index) => (
+                              <span
+                                key={index}
+                                className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded whitespace-nowrap flex-shrink-0"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+
+                          {/* Date */}
+                          <div className="flex items-center gap-2">
+                            <Clock
+                              className="h-4 w-4"
+                              style={{ color: "#A4A4A4" }}
+                            />
+                            <span
                               style={{
                                 fontFamily: "Public Sans, sans-serif",
                                 fontWeight: 400,
                                 fontSize: "14px",
-                                lineHeight: "150%",
                                 color: "#A4A4A4",
-                                textDecorationLine: "underline",
+                                whiteSpace: "nowrap",
                               }}
                             >
-                              {article.author?.name || "Unknown Author"}
-                            </p>
-                          </div>
-
-                          <div className="flex gap-2 ml-4 flex-shrink-0">
-                            {/* Show different actions based on user role and article ownership */}
-                            {article.author?.id === session?.user?.id ? (
-                              /* If it's user's own article, only show Revert to Draft */
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-gray-700 border-gray-300 hover:bg-gray-50"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRevertToDraft(article.id);
-                                }}
-                              >
-                                Revert
-                              </Button>
-                            ) : (
-                              /* If it's another author's article, show icon buttons for screens < 540px, text buttons for larger */
-                              <>
-                                {/* Icon buttons for mobile (< 540px) */}
-                                <div className="flex gap-2 max-[540px]:flex min-[540px]:hidden">
-                                  <button
-                                    className="hover:opacity-80 transition-opacity flex items-center justify-center"
-                                    style={{
-                                      width: "26px",
-                                      height: "26px",
-                                      borderRadius: "4px",
-                                      border: "1px solid #FFD6D6",
-                                      backgroundColor: "transparent",
-                                      cursor: "pointer",
-                                      padding: "0",
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleReject(article.id);
-                                    }}
-                                  >
-                                    <Image
-                                      src="/images/icons/cross.svg"
-                                      alt="Reject"
-                                      width={14}
-                                      height={14}
-                                    />
-                                  </button>
-                                  <button
-                                    className="hover:opacity-80 transition-opacity flex items-center justify-center"
-                                    style={{
-                                      width: "26px",
-                                      height: "26px",
-                                      borderRadius: "4px",
-                                      border: "1px solid #D5F2D4",
-                                      backgroundColor: "transparent",
-                                      cursor: "pointer",
-                                      padding: "0",
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleAccept(article);
-                                    }}
-                                  >
-                                    <Image
-                                      src="/images/icons/tick3.svg"
-                                      alt="Accept"
-                                      width={14}
-                                      height={14}
-                                    />
-                                  </button>
-                                </div>
-
-                                {/* Text buttons for tablet/desktop (>= 540px) */}
-                                <div className="hidden min-[540px]:flex gap-2">
-                                  <button
-                                    className="hover:opacity-80 transition-opacity flex items-center justify-center"
-                                    style={{
-                                      width: "66px",
-                                      height: "32px",
-                                      borderRadius: "4px",
-                                      padding: "8px",
-                                      backgroundColor: "#FEECEC",
-                                      fontFamily: "Public Sans, sans-serif",
-                                      fontWeight: 400,
-                                      fontSize: "14px",
-                                      lineHeight: "20px",
-                                      color: "#F53D3D",
-                                      border: "none",
-                                      cursor: "pointer",
-                                      textAlign: "center",
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleReject(article.id);
-                                    }}
-                                  >
-                                    Reject
-                                  </button>
-                                  <button
-                                    className="hover:opacity-80 transition-opacity flex items-center justify-center"
-                                    style={{
-                                      width: "71px",
-                                      height: "32px",
-                                      borderRadius: "4px",
-                                      padding: "8px",
-                                      backgroundColor: "#E6F7EA",
-                                      fontFamily: "Public Sans, sans-serif",
-                                      fontWeight: 400,
-                                      fontSize: "14px",
-                                      lineHeight: "20px",
-                                      color: "#06AD2B",
-                                      border: "none",
-                                      cursor: "pointer",
-                                      textAlign: "center",
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleAccept(article);
-                                    }}
-                                  >
-                                    Accept
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Categories - scrollable */}
-                        <div
-                          className="flex gap-2 overflow-x-auto scrollbar-hide"
-                          style={{
-                            overflowY: "hidden",
-                          }}
-                        >
-                          <style jsx>{`
-                            .scrollbar-hide::-webkit-scrollbar {
-                              display: none;
-                            }
-                            .scrollbar-hide {
-                              -ms-overflow-style: none;
-                              scrollbar-width: none;
-                            }
-                          `}</style>
-                          {(article.categories || []).map((tag, index) => (
-                            <span
-                              key={index}
-                              className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded whitespace-nowrap flex-shrink-0"
-                            >
-                              {tag}
+                              Sent {formatTimeAgo(article.createdAt)}
                             </span>
-                          ))}
-                        </div>
-
-                        {/* Date */}
-                        <div className="flex items-center gap-2">
-                          <Clock
-                            className="h-4 w-4"
-                            style={{ color: "#A4A4A4" }}
-                          />
-                          <span
-                            style={{
-                              fontFamily: "Public Sans, sans-serif",
-                              fontWeight: 400,
-                              fontSize: "14px",
-                              color: "#A4A4A4",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            Sent {formatTimeAgo(article.createdAt)}
-                          </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -667,11 +784,19 @@ export default function ReviewPage() {
           setActionType(null);
         }}
         onConfirm={handleConfirmAction}
-        title={actionType === "reject" ? "Reject Article?" : "Revert to Draft?"}
+        title={
+          actionType === "delete"
+            ? "Delete Articles?"
+            : actionType === "reject"
+              ? "Reject Article?"
+              : "Revert to Draft?"
+        }
         description={
-          actionType === "reject"
-            ? "This article will be returned to the author's drafts. They can edit and resubmit it."
-            : "This action will move the article back to your drafts. You can edit and resubmit it later."
+          actionType === "delete"
+            ? "These articles will be moved to trash. You can restore them later."
+            : actionType === "reject"
+              ? "This article will be returned to the author's drafts. They can edit and resubmit it."
+              : "This action will move the article back to your drafts. You can edit and resubmit it later."
         }
         confirmText="Confirm"
         cancelText="Cancel"

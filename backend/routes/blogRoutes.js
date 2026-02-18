@@ -1137,7 +1137,7 @@ router.put("/:id", getCurrentUser, async (req, res) => {
       updatedAt: new Date(),
     };
 
-    // Validate and set required fields
+    // Validate title - required for new blogs but allow updates without title change
     if (title !== undefined) {
       if (typeof title !== "string" || title.trim() === "") {
         return res.status(400).json({ error: "Title cannot be empty" });
@@ -1146,10 +1146,10 @@ router.put("/:id", getCurrentUser, async (req, res) => {
     }
 
     if (description !== undefined) {
-      if (typeof description !== "string" || description.trim() === "") {
-        return res.status(400).json({ error: "Description cannot be empty" });
+      // Allow empty description for updates - just trim it
+      if (typeof description === "string") {
+        updateData.description = description.trim();
       }
-      updateData.description = description.trim();
     }
 
     if (content !== undefined) {

@@ -22,6 +22,7 @@ import { rateLimitMiddleware } from "./middleware/rateLimitMiddleware.js";
 import { emailService } from "./services/emailService.js";
 import schedulerService from "./services/schedulerService.js";
 import InvitationService from "./services/invitationService.js";
+import { errorMiddleware, notFoundMiddleware } from "./src/middleware/errorHandler.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -70,20 +71,8 @@ app.get("/health", (req, res) => {
 });
 
 // Global error handler - must be after all routes
-app.use((err, req, res, next) => {
-  console.error("Global error handler caught:", err);
-  console.error("Error stack:", err.stack);
-
-  // Don't send response if headers already sent
-  if (res.headersSent) {
-    return next(err);
-  }
-
-  res.status(err.status || 500).json({
-    error: err.message || "Internal server error",
-    details: process.env.NODE_ENV === "development" ? err.stack : undefined,
-  });
-});
+app.use(notFoundMiddleware);
+app.use(errorMiddleware);
 
 app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);

@@ -1,149 +1,80 @@
-"use client";
+'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
-import { authService } from '@/services/auth.service';
-import { getApiBase } from '@/utils/apiBase';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  image?: string;
-}
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { useSession } from '@/lib/auth-client';
 
 interface AuthContextType {
-  user: User | null;
+  user: any;
   loading: boolean;
-  error: string | null;
   isAuthenticated: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<any>;
-  register: (userData: { name: string; email: string; password: string }) => Promise<any>;
+  login: (credentials: any) => Promise<any>;
+  register: (userData: any) => Promise<any>;
   logout: () => Promise<void>;
-  refreshSession: () => Promise<void>;
+  refreshSession: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const { data: session, isPending, refetch } = useSession();
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const sessionLoadedRef = useRef(false);
+  const initialized = useRef(false);
 
-  // Load current session on mount only once
   useEffect(() => {
-    // Prevent multiple session loads
-    if (sessionLoadedRef.current) return;
-    sessionLoadedRef.current = true;
+    if (isPending) return;
+    setUser(session?.user || null);
+    setLoading(false);
+  }, [session, isPending]);
 
-    const loadSession = async (retryCount = 0) => {
-      const maxRetries = 1; // Reduced from 2 to 1 for faster loading
-      try {
-        const apiBase = getApiBase();
-        const response = await fetch(`${apiBase}/api/auth/get-session`, {
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data?.user || null);
-        } else {
-          setUser(null);
-        }
-      } catch (err) {
-        console.error('Failed to load session:', err);
-        if (retryCount < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 50)); // Reduced from 100ms to 50ms
-          return loadSession(retryCount + 1);
-        }
-        setUser(null);
-      } finally {
-        if (retryCount >= maxRetries) {
-          setLoading(false);
-        }
-      }
-    };
-
-    loadSession();
-  }, []);
-
-  const login = async (credentials: { email: string; password: string }) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await authService.login(credentials);
-      setUser(data.user);
-      return data;
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+  const login = async (credentials: any) => {
+    const { signIn } = await import('@/lib/auth-client');
+    const result = await signIn.email({
+      email: credentials.email,
+      password: credentials.password,
+    });
+    if (result.error) throw new Error(result.error.message);
+    await refetch();
+    return result.data;
   };
 
-  const register = async (userData: { name: string; email: string; password: string }) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await authService.register(userData);
-      setUser(data.user);
-      return data;
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+  const register = async (userData: any) => {
+    const { signUp } = await import('@/lib/auth-client');
+    const result = await signUp.email({
+      name: userData.name,
+      email: userData.email,
+      password: userData.password,
+    });
+    if (result.error) throw new Error(result.error.message);
+    await refetch();
+    return result.data;
   };
 
   const logout = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await authService.logout();
-      setUser(null);
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+    const { signOut } = await import('@/lib/auth-client');
+    await signOut();
+    setUser(null);
   };
 
-  const refreshSession = async () => {
-    try {
-      const response = await fetch(`${getApiBase()}/api/auth/get-session`, {
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data?.user || null);
-      } else {
-        setUser(null);
-      }
-    } catch (err) {
-      console.error('Failed to refresh session:', err);
-      setUser(null);
-    }
+  const refreshSession = () => {
+    refetch();
   };
 
-  const value = {
-    user,
-    loading,
-    error,
-    isAuthenticated: !!user,
-    login,
-    register,
-    logout,
-    refreshSession,
-  };
-
-  return React.createElement(AuthContext.Provider, { value }, children);
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading: loading || isPending,
+        isAuthenticated: !!user,
+        login,
+        register,
+        logout,
+        refreshSession,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

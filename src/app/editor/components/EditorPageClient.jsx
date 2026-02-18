@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 
 import { TiptapEditor } from "./TiptapEditor";
+import { useAutoSave } from "./hooks/useAutoSave";
 import { getApiBase } from "@/utils/apiBase";
 
 const API_URL = getApiBase();
@@ -147,47 +148,19 @@ export default function EditorPageClient() {
   const [blogTitle, setBlogTitle] = useState("");
   const [blogDescription, setBlogDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState("idle"); // 'idle' | 'saving' | 'saved'
   const [showPublishSuccess, setShowPublishSuccess] = useState(false);
-  const [hasContent, setHasContent] = useState(false);
-  const autoSaveTimeoutRef = useRef(null);
   const [publishedBlogSlug, setPublishedBlogSlug] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [initialContent, setInitialContent] = useState("");
-  const [initialTitle, setInitialTitle] = useState("");
-  const [initialDescription, setInitialDescription] = useState("");
-  const [initialCategories, setInitialCategories] = useState([]);
   const [existingBlogStatus, setExistingBlogStatus] = useState(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
   const calendarRef = useRef(null);
-  const savedSuccessfullyRef = useRef(false);
   const handlingPopStateRef = useRef(false);
-  const isNavigatingAwayRef = useRef(false); // New ref to indicate explicit navigation
-  const isPublishingRef = useRef(false); // Track if publish is in progress
   const saveInFlightRef = useRef(false);
-
-  const cancelPendingAutoSave = useCallback(() => {
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-      autoSaveTimeoutRef.current = null;
-    }
-    setIsAutoSaving(false);
-  }, []);
-
-  const waitForSaveSlot = useCallback(async () => {
-    while (saveInFlightRef.current) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-  }, []);
 
   // Handle See Later - dismiss popup and go to published page
   const handleSeeLater = () => {
-    // Prevent any auto-save or beforeunload handlers from interfering
-    savedSuccessfullyRef.current = true;
-    isNavigatingAwayRef.current = true;
-    isPublishingRef.current = true;
+    markNavigating();
 
     setShowPublishSuccess(false);
 
@@ -195,7 +168,8 @@ export default function EditorPageClient() {
       ? `/${currentPublication.subdomain}/published`
       : "/published";
 
-    const targetUrl = `http://dashboard.inksigma.local:3000${targetPath}`;
+    const baseUrl = window.location.origin;
+    const targetUrl = `${baseUrl}${targetPath}`;
     window.location.replace(targetUrl);
   };
 
@@ -207,9 +181,10 @@ export default function EditorPageClient() {
       : "";
 
     // Construct the blog URL for new tab
+    const baseUrl = window.location.origin;
     const blogUrl = publishedBlogSlug
-      ? `http://dashboard.inksigma.local:3000/view-site/blog/${publishedBlogSlug}`
-      : `http://dashboard.inksigma.local:3000`;
+      ? `${baseUrl}/view-site/blog/${publishedBlogSlug}`
+      : `${baseUrl}`;
 
     // Open blog in new tab
     window.open(blogUrl, "_blank");
@@ -217,10 +192,7 @@ export default function EditorPageClient() {
 
   // Handle Close Modal - redirect to home
   const handleClosePublishModal = () => {
-    // Prevent any auto-save or beforeunload handlers from interfering
-    savedSuccessfullyRef.current = true;
-    isNavigatingAwayRef.current = true;
-    isPublishingRef.current = true;
+    markNavigating();
 
     setShowPublishSuccess(false);
 
@@ -230,240 +202,61 @@ export default function EditorPageClient() {
       : "";
 
     // Construct the home URL
-    const homeUrl = `http://dashboard.inksigma.local:3000${pubPrefix}/home`;
+    const baseUrl = window.location.origin;
+    const homeUrl = `${baseUrl}${pubPrefix}/home`;
 
     // Navigate to home
     window.location.href = homeUrl;
   };
 
-  // Auto-save functionality with debouncing
-  useEffect(() => {
-    // Don't auto-save if publishing is in progress
-    if (isPublishingRef.current || isSaving) {
-      return;
-    }
+  // ── Auto-save via custom hook ───────────────────────────────────────────
+  const saveFnForHook = useCallback(
+    async (isAutoSave) => {
+      return saveBlog("draft", null, true, isAutoSave);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      currentBlogId,
+      blogTitle,
+      blogDescription,
+      editorContent.html,
+      selectedCategories,
+      existingBlogStatus,
+      publicationId,
+      currentPublication,
+      thumbnailRemoved,
+      thumbnailData,
+    ],
+  );
 
-    // Check if there's any content
-    const contentExists =
-      blogTitle.trim() ||
-      blogDescription.trim() ||
-      (editorContent.html && editorContent.html !== "<p></p>");
-    setHasContent(contentExists);
-
-    // Don't auto-save if no title (minimum requirement for draft)
-    if (!blogTitle.trim()) {
-      setSaveStatus("idle");
-      return;
-    }
-
-    // Don't auto-save if there are no unsaved changes
-    if (!hasUnsavedChanges) {
-      return;
-    }
-
-    // IMPORTANT: Only auto-save for drafts or new articles
-    // Don't auto-save published, scheduled, or review articles
-    const isPublishedOrScheduled =
-      existingBlogStatus &&
-      ["published", "scheduled", "review", "unpublished"].includes(
-        existingBlogStatus,
-      );
-
-    if (isPublishedOrScheduled) {
-      // For published/scheduled articles, don't auto-save
-      setSaveStatus("idle");
-      return;
-    }
-
-    // Clear existing timeout
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-      autoSaveTimeoutRef.current = null;
-    }
-
-    // Debounce auto-save by 1.5 seconds - only show status when actually saving
-    autoSaveTimeoutRef.current = setTimeout(async () => {
-      // Only auto-save drafts or new blogs (not published/scheduled/review)
-      const canAutoSave = !existingBlogStatus || existingBlogStatus === "draft";
-
-      if (canAutoSave && blogTitle.trim()) {
-        // Set saving status right before actual save starts
-        setIsAutoSaving(true);
-        setSaveStatus("saving");
-
-        const result = await saveBlog("draft", null, true, true);
-        if (result) {
-          setSaveStatus("saved");
-        } else {
-          setSaveStatus("idle");
-        }
-        setIsAutoSaving(false);
-      }
-      autoSaveTimeoutRef.current = null;
-    }, 1500);
-
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-        autoSaveTimeoutRef.current = null;
-      }
-    };
-  }, [
-    blogTitle,
-    blogDescription,
-    editorContent.html,
-    selectedCategories,
+  const {
     hasUnsavedChanges,
-    existingBlogStatus,
-    isSaving,
-  ]);
-
-  // Track unsaved changes
-  // Track unsaved changes by comparing with initial values
-  useEffect(() => {
-    // Helper to compare arrays (categories)
-    const arraysEqual = (a, b) => {
-      if (a === b) return true;
-      if (a == null || b == null) return false;
-      if (a.length !== b.length) return false;
-      const sortedA = [...a].sort();
-      const sortedB = [...b].sort();
-      for (let i = 0; i < sortedA.length; ++i) {
-        if (sortedA[i] !== sortedB[i]) return false;
-      }
-      return true;
-    };
-
-    // Helper to normalize HTML content
-    const normalizeContent = (content) => {
-      if (!content) return "";
-      if (content === "<p></p>") return ""; // Treat empty paragraph as empty
-      return content;
-    };
-
-    const hasChanges =
-      blogTitle !== initialTitle ||
-      blogDescription !== initialDescription ||
-      normalizeContent(editorContent.html) !==
-        normalizeContent(initialContent) ||
-      !arraysEqual(selectedCategories, initialCategories);
-
-    setHasUnsavedChanges(hasChanges);
-  }, [
-    blogTitle,
-    blogDescription,
-    editorContent.html,
-    selectedCategories,
-    initialTitle,
-    initialDescription,
-    initialContent,
-    initialCategories,
-  ]);
-
-  // Auto-save when leaving the page with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = async (e) => {
-      // Auto-save if there are unsaved changes and title exists (minimum requirement)
-      const hasTitle = blogTitle.trim();
-
-      if (hasUnsavedChanges && hasTitle && !savedSuccessfullyRef.current) {
-        // IMPORTANT: Only auto-save as draft for new articles or existing drafts
-        // Don't create drafts for published/scheduled/review articles
-        const isPublishedOrScheduled =
-          existingBlogStatus &&
-          ["published", "scheduled", "review", "unpublished"].includes(
-            existingBlogStatus,
-          );
-
-        if (isPublishedOrScheduled) {
-          // For published/scheduled articles, show warning but don't auto-save
-          e.preventDefault();
-          e.returnValue =
-            "You have unsaved changes. Are you sure you want to leave?";
-          return e.returnValue;
-        }
-
-        // For new articles or drafts, auto-save silently
-        // Use sendBeacon for reliable save on page unload
-        const blogData = {
-          title: blogTitle,
-          description: blogDescription,
-          content: editorContent.html,
-          categories: selectedCategories,
-          status: "draft",
-          published: false,
-        };
-
-        const pubId = publicationId || currentPublication?.id;
-        if (pubId) {
-          blogData.publicationId = parseInt(pubId);
-        }
-
-        const createUrl = `${API_URL}/api/blogs/auto-save`;
-        const updateUrl = `${API_URL}/api/blogs/${currentBlogId}`;
-
-        // sendBeacon only supports POST. Use it only for new drafts.
-        const blob = new Blob([JSON.stringify(blogData)], {
-          type: "application/json",
-        });
-        if (!currentBlogId) {
-          navigator.sendBeacon(createUrl, blob);
-        }
-
-        // Also try fetch with keepalive as backup.
-        fetch(currentBlogId ? updateUrl : createUrl, {
-          method: currentBlogId ? "PUT" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(blogData),
-          keepalive: true, // Ensures request completes even if page is closed
-        }).catch(() => {
-          // Silently fail - sendBeacon should handle it
-        });
-      }
-    };
-
-    // Handle visibility change (tab switch, minimize, etc.)
-    const handleVisibilityChange = async () => {
-      if (document.hidden) {
-        const hasTitle = blogTitle.trim();
-
-        if (hasUnsavedChanges && hasTitle && !savedSuccessfullyRef.current) {
-          // Only auto-save as draft for new articles or existing drafts
-          const isPublishedOrScheduled =
-            existingBlogStatus &&
-            ["published", "scheduled", "review", "unpublished"].includes(
-              existingBlogStatus,
-            );
-
-          if (!isPublishedOrScheduled) {
-            // Save as draft when user switches tabs or minimizes
-            await saveBlog("draft", null, true, true);
-          }
-        }
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [
-    hasUnsavedChanges,
+    saveStatus,
+    setSaveStatus,
+    isAutoSaving,
+    markSaved,
+    markPublishing,
+    markNavigating,
+    cancelPendingAutoSave,
+    resetSnapshot,
+  } = useAutoSave({
     currentBlogId,
-    blogTitle,
-    blogDescription,
-    editorContent.html,
-    selectedCategories,
+    title: blogTitle,
+    description: blogDescription,
+    contentHtml: editorContent.html,
+    categories: selectedCategories,
     existingBlogStatus,
     publicationId,
     currentPublication,
-  ]);
+    isSaving,
+    saveFn: saveFnForHook,
+  });
+
+  // Derived: does the editor have any content at all?
+  const hasContent =
+    blogTitle.trim() ||
+    blogDescription.trim() ||
+    (editorContent.html && editorContent.html !== "<p></p>");
 
   // Load existing blog if editing
   useEffect(() => {
@@ -489,13 +282,8 @@ export default function EditorPageClient() {
       const blog = await response.json();
 
       setBlogTitle(blog.title || "");
-      setInitialTitle(blog.title || "");
-
       setBlogDescription(blog.description || "");
-      setInitialDescription(blog.description || "");
-
       setSelectedCategories(blog.categories || []);
-      setInitialCategories(blog.categories || []);
 
       setInitialContent(blog.content || "");
 
@@ -508,6 +296,14 @@ export default function EditorPageClient() {
       });
 
       setExistingBlogStatus(blog.status);
+
+      // Set the auto-save snapshot so change detection starts from the loaded state
+      resetSnapshot({
+        title: blog.title || "",
+        description: blog.description || "",
+        contentHtml: blog.content || "",
+        categories: blog.categories || [],
+      });
 
       if (blog.image) {
         setThumbnailData({ url: blog.image });
@@ -535,37 +331,29 @@ export default function EditorPageClient() {
     skipValidation = false,
     isAutoSave = false,
   ) => {
-    if (
-      isAutoSave &&
-      (isSaving || isPublishingRef.current || isNavigatingAwayRef.current)
-    ) {
+    // For auto-saves, skip if a manual save is already in flight
+    if (isAutoSave && (isSaving || saveInFlightRef.current)) {
       return false;
     }
 
     // Skip validation when reverting to draft or updating existing published articles
-    // Also skip validation if blog already exists (updating)
     if (!skipValidation && !currentBlogId) {
       if (!blogTitle.trim()) {
-        console.warn("Validation failed: Missing title");
+        showToast("Please enter a title for your blog", "error");
         return false;
       }
       if (!blogDescription.trim()) {
-        console.warn("Validation failed: Missing description");
+        showToast("Please enter a description for your blog", "error");
         return false;
       }
     }
 
-    // Only set isSaving for manual saves, not auto-saves (to avoid disabling publish button)
+    // Only set isSaving for manual saves (to avoid disabling publish button)
     if (!isAutoSave) {
       cancelPendingAutoSave();
       if (isSaving) return false;
       setIsSaving(true);
       setSaveStatus("saving");
-      await waitForSaveSlot();
-    }
-
-    if (isAutoSave && saveInFlightRef.current) {
-      return false;
     }
 
     saveInFlightRef.current = true;
@@ -650,13 +438,11 @@ export default function EditorPageClient() {
           await uploadArticleImage(responseData.id, thumbnailData.file);
         } catch (error) {
           console.error("Error uploading thumbnail:", error);
-          // Don't fail the whole save if thumbnail upload fails
         }
       }
 
-      // Mark as saved to prevent auto-save on exit
-      setHasUnsavedChanges(false);
-      savedSuccessfullyRef.current = true;
+      // Tell the hook the save succeeded
+      markSaved();
       if (!isAutoSave) {
         setSaveStatus("saved");
       }
@@ -666,12 +452,11 @@ export default function EditorPageClient() {
       console.error("Error saving blog:", error);
       if (!isAutoSave) {
         setSaveStatus("idle");
+        showToast(error.message || "Failed to save blog", "error");
       }
-      // alert(error.message || 'Failed to save blog')
       return false;
     } finally {
       saveInFlightRef.current = false;
-      // Only reset isSaving for manual saves, not auto-saves
       if (!isAutoSave) {
         setIsSaving(false);
       }
@@ -714,9 +499,7 @@ export default function EditorPageClient() {
 
   // Handle Publish
   const handlePublish = async () => {
-    isPublishingRef.current = true;
-    savedSuccessfullyRef.current = true;
-    isNavigatingAwayRef.current = true;
+    markPublishing();
 
     try {
       const result = await saveBlog("published");
@@ -726,10 +509,6 @@ export default function EditorPageClient() {
       }
     } catch (error) {
       console.error("Publish failed:", error);
-      // Reset refs on error so user can try again
-      isPublishingRef.current = false;
-      savedSuccessfullyRef.current = false;
-      isNavigatingAwayRef.current = false;
     }
   };
 
@@ -737,18 +516,23 @@ export default function EditorPageClient() {
   const handleSendForReview = async () => {
     const result = await saveBlog("review", null, true);
     if (result) {
+      showToast("Article submitted for review", "success");
+      markNavigating();
+
       // Determine redirection path based on role
       const role = currentPublication?.role;
       const isOwner = currentPublication?.isOwner;
       const isReviewer = isOwner || role === "editor" || role === "admin";
       const targetPath = isReviewer ? "/review" : "/author-review";
 
-      window.location.href = withPub(`${targetPath}?refresh=true`);
+      setTimeout(() => {
+        router.push(withPub(`${targetPath}?refresh=true`));
+      }, 1000);
     }
   };
 
   const handleExitNavigation = () => {
-    savedSuccessfullyRef.current = true; // Prevent beforeunload check
+    markNavigating();
     if (articleStatus === "published") {
       router.push(withPub("/published?refresh=true"));
     } else if (articleStatus === "review") {
@@ -770,10 +554,9 @@ export default function EditorPageClient() {
   const performSaveAndExit = async (targetPath, forceExit = false) => {
     const result = await saveBlog("draft", null, true);
 
-    // Show toast if save succeeded OR if we are forced to exit (user expectation)
     if (result || forceExit) {
       showToast("Post has been saved as Draft", "success");
-      savedSuccessfullyRef.current = true;
+      markNavigating();
       setTimeout(() => {
         router.push(withPub(targetPath));
       }, 1000);
@@ -791,24 +574,21 @@ export default function EditorPageClient() {
       (!selectedCategories || selectedCategories.length === 0);
 
     if (isEmptyDraft) {
-      savedSuccessfullyRef.current = true;
-      isNavigatingAwayRef.current = true;
+      markNavigating();
       router.push(withPub("/?refresh=true"));
       return;
     }
 
     // For published articles, go to published page
     if (existingBlogStatus === "published") {
-      savedSuccessfullyRef.current = true;
-      isNavigatingAwayRef.current = true;
+      markNavigating();
       router.push(withPub("/published?refresh=true"));
       return;
     }
 
     // For scheduled articles, go to schedule page
     if (existingBlogStatus === "scheduled") {
-      savedSuccessfullyRef.current = true;
-      isNavigatingAwayRef.current = true;
+      markNavigating();
       router.push(withPub("/schedule?refresh=true"));
       return;
     }
@@ -820,8 +600,7 @@ export default function EditorPageClient() {
     }
 
     // No unsaved changes but has content: go to drafts directly
-    savedSuccessfullyRef.current = true;
-    isNavigatingAwayRef.current = true;
+    markNavigating();
     router.push(withPub("/draft?refresh=true"));
   };
 
@@ -838,11 +617,6 @@ export default function EditorPageClient() {
     };
 
     const handlePopState = (event) => {
-      // If we are explicitly navigating away (e.g., after publishing),
-      // prevent the popstate listener from interfering.
-      if (isNavigatingAwayRef.current || savedSuccessfullyRef.current) {
-        return;
-      }
       if (handlingPopStateRef.current) return;
       handlingPopStateRef.current = true;
       pushCurrentState();
@@ -859,9 +633,8 @@ export default function EditorPageClient() {
   }, [isMounted, handleBack]);
 
   const handleDiscard = () => {
-    setHasUnsavedChanges(false);
+    markNavigating();
     setShowExitModal(false);
-    savedSuccessfullyRef.current = true;
     router.push(withPub("/?refresh=true"));
   };
 
@@ -874,7 +647,7 @@ export default function EditorPageClient() {
   // Handle Schedule
   const handleSchedule = async () => {
     if (!selectedDate) {
-      console.warn("Validation failed: Missing scheduled date");
+      showToast("Please select a date", "error");
       return;
     }
 
@@ -884,14 +657,27 @@ export default function EditorPageClient() {
 
     // Check if scheduled time is in the future
     if (scheduledDateTime <= new Date()) {
-      console.warn("Validation failed: Scheduled time must be in future");
+      showToast("Scheduled time must be in the future", "error");
       return;
     }
 
-    const result = await saveBlog("scheduled", scheduledDateTime);
-    if (result) {
-      setShowCalendar(false);
-      window.location.href = withPub("/schedule?refresh=true");
+    try {
+      const result = await saveBlog("scheduled", scheduledDateTime, true);
+      if (result) {
+        setShowCalendar(false);
+        showToast("Article scheduled successfully", "success");
+        // markNavigating AFTER saveBlog (which calls markSaved and resets phase to "idle")
+        // This ensures the phase is "navigating" when the redirect triggers beforeunload
+        markNavigating();
+        setTimeout(() => {
+          router.push(withPub("/schedule?refresh=true"));
+        }, 1000);
+      } else {
+        showToast("Failed to schedule article. Please try again.", "error");
+      }
+    } catch (error) {
+      console.error("Schedule error:", error);
+      showToast("Failed to schedule article. Please try again.", "error");
     }
   };
 
@@ -1744,7 +1530,7 @@ export default function EditorPageClient() {
                   onChange={handleManualInput}
                   maxLength={10}
                   className="date-time-input h-[21px] w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
-                  style={{ color: "#2e2e2e" }}
+                  style={{ color: "#2e2e2e", opacity: 1, fontWeight: 500 }}
                 />
                 <input
                   type="text"
@@ -1753,7 +1539,7 @@ export default function EditorPageClient() {
                   onChange={handleTimeInput}
                   maxLength={5}
                   className="date-time-input h-[21px] w-[40px] flex-shrink-0 text-sm bg-transparent outline-none ml-2"
-                  style={{ color: "#2e2e2e" }}
+                  style={{ color: "#2e2e2e", opacity: 1, fontWeight: 500 }}
                 />
                 <svg
                   className="w-4 h-4 flex-shrink-0 cursor-pointer mx-2"
@@ -1771,8 +1557,14 @@ export default function EditorPageClient() {
                 </svg>
                 <span
                   className="text-sm flex-shrink-0 h-full flex items-center justify-center border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
-                  style={{ backgroundColor: "#F8F8F8", color: "#C8C8C8" }}
+                  style={{
+                    backgroundColor: "#F8F8F8",
+                    color: selectedDate ? "#2E2E2E" : "#C8C8C8",
+                    opacity: isSaving ? 0.5 : 1,
+                    pointerEvents: isSaving ? "none" : "auto",
+                  }}
                   onClick={() => {
+                    if (isSaving) return;
                     if (selectedDate && (manualDate || manualTime)) {
                       handleSchedule();
                     } else {
@@ -1780,7 +1572,7 @@ export default function EditorPageClient() {
                     }
                   }}
                 >
-                  Reschedule
+                  {isSaving ? "..." : selectedDate ? "Schedule" : "Reschedule"}
                 </span>
               </div>
             </>
@@ -1827,7 +1619,7 @@ export default function EditorPageClient() {
                       onChange={handleManualInput}
                       maxLength={10}
                       className="mobile-date-input date-time-input h-[21px] md:w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
-                      style={{ color: "#2e2e2e" }}
+                      style={{ color: "#2e2e2e", opacity: 1, fontWeight: 500 }}
                     />
                     <input
                       type="text"
@@ -1836,7 +1628,7 @@ export default function EditorPageClient() {
                       onChange={handleTimeInput}
                       maxLength={5}
                       className="mobile-date-input date-time-input h-[21px] md:w-[40px] flex-shrink-0 text-sm bg-transparent outline-none md:ml-2"
-                      style={{ color: "#2e2e2e" }}
+                      style={{ color: "#2e2e2e", opacity: 1, fontWeight: 500 }}
                     />
                     <svg
                       className="w-4 h-4 flex-shrink-0 cursor-pointer md:mx-2"
@@ -1854,8 +1646,14 @@ export default function EditorPageClient() {
                     </svg>
                     <span
                       className="mobile-schedule-btn md:text-sm text-xs flex-shrink-0 h-full flex items-center justify-center border-l border-gray-200 cursor-pointer md:px-3 hover:bg-gray-200 transition-colors"
-                      style={{ backgroundColor: "#F8F8F8", color: "#C8C8C8" }}
+                      style={{
+                        backgroundColor: "#F8F8F8",
+                        color: selectedDate ? "#2E2E2E" : "#C8C8C8",
+                        opacity: isSaving ? 0.5 : 1,
+                        pointerEvents: isSaving ? "none" : "auto",
+                      }}
                       onClick={() => {
+                        if (isSaving) return;
                         // If date and time are already set, schedule directly
                         if (selectedDate && (manualDate || manualTime)) {
                           handleSchedule();
@@ -1864,7 +1662,7 @@ export default function EditorPageClient() {
                         }
                       }}
                     >
-                      Schedule
+                      {isSaving ? "..." : "Schedule"}
                     </span>
                   </div>
                 </>
@@ -2044,14 +1842,13 @@ export default function EditorPageClient() {
               </div>
             </div>
 
-            {/* Apply Button */}
+            {/* Done Button */}
             <button
-              onClick={handleSchedule}
-              disabled={isSaving || !selectedDate}
-              className="w-full py-1.5 text-sm text-white bg-black rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setShowCalendar(false)}
+              className="w-full py-1.5 text-sm text-white bg-black rounded-md hover:bg-gray-800"
               style={{ marginTop: "20px" }}
             >
-              {isSaving ? "Scheduling..." : "Schedule"}
+              Done
             </button>
           </div>
         </div>

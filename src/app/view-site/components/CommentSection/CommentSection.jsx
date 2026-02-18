@@ -4,7 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
-import ConfirmModal from "../../../components/confirmModal/ConfirmModal";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { formatTimeAgo } from "../../../../utils/timeFormatter";
+import UserAvatar from "@/components/ui/UserAvatar";
+import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import { useToast } from "@/contexts/ToastContext";
 
 export default function CommentSection({ blogId }) {

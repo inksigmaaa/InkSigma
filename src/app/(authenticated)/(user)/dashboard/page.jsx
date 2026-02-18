@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import Verify from "@/app/components/verify/Verify";
+import Verify from "@/components/features/verify/Verify";
 import { ChevronRight } from "lucide-react";
 import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";

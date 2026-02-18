@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { memberService } from "@/services/memberService";
 import { usePublication } from "@/contexts/PublicationContext";
-import NavbarLoggedin from "@/app/components/navbar/NavbarLoggedin";
+import SetPasswordForm from "@/components/auth/SetPasswordForm";
 import { signOut } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
 

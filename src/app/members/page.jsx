@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePublication } from "@/contexts/PublicationContext";
-import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
-import Sidebar from "../components/sidebar/Sidebar";
-import Verify from "../components/verify/Verify";
-import Members from "../components/members/Members";
+import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
+import Sidebar from "@/components/layout/sidebar/Sidebar";
+import Verify from "@/components/features/verify/Verify";
+import Members from "@/components/features/members/Members";
 
 export default function MembersPage() {
   const { currentPublication } = usePublication();

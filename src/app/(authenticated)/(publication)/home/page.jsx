@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Verify from "@/app/components/verify/Verify";
-import BlogStatsComponent from "@/app/components/BlogStatsComponent/BlogStatsComponent";
+import Verify from "@/components/features/verify/Verify";
+import BlogStatsComponent from "@/components/features/BlogStatsComponent/BlogStatsComponent";
 import { Pencil } from "lucide-react";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { useArticles } from "@/contexts/ArticlesContext";

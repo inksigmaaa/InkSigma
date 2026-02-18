@@ -17,12 +17,14 @@
     "backend:install": "cd backend && npm install"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@neondatabase/serverless": "^1.0.2",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-navigation-menu": "^1.2.14",
     "@radix-ui/react-slot": "^1.2.4",
+    "@tanstack/react-query": "^5.90.21",
     "@tiptap/extension-blockquote": "^3.10.7",
     "@tiptap/extension-bullet-list": "^3.10.7",
     "@tiptap/extension-code-block": "^3.10.7",
@@ -59,11 +61,13 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-easy-crop": "^5.5.6",
+    "react-hook-form": "^7.71.1",
     "react-image-crop": "^11.0.10",
     "resend": "^6.4.2",
     "sharp": "^0.33.1",
     "tailwind-merge": "^3.3.1",
-    "typography": "^0.16.24"
+    "typography": "^0.16.24",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",
