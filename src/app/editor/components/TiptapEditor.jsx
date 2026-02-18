@@ -83,11 +83,11 @@ const DropdownMenu = ({ isOpen, position, onClose, children, className = "" }) =
     setMounted(true);
   }, []);
 
-  if (!isOpen || !mounted || !position.top) return null;
+  if (!isOpen || !mounted || position.top === undefined || position.top === null) return null;
 
   return createPortal(
     <div
-      className={`fixed bg-white border rounded-md shadow-xl py-1 border-gray-300 ${className}`}
+      className={`tiptap-dropdown fixed bg-white border rounded-md shadow-xl py-1 border-gray-300 ${className}`}
       style={{ zIndex: 9999, top: `${position.top}px`, left: `${position.left}px` }}
     >
       {children}
@@ -96,7 +96,7 @@ const DropdownMenu = ({ isOpen, position, onClose, children, className = "" }) =
   );
 };
 
-const EditorToolbar = ({ editor, currentFont, onFontChange, onDropdownToggle, dropdownState, linkState, onLinkSubmit, onLinkCancel }) => {
+const EditorToolbar = ({ editor, currentFont, onFontChange, onDropdownToggle, dropdownState, linkState, onLinkSubmit, onLinkCancel, onImageInsert }) => {
   const buttonBaseClass = "p-1.5 hover:bg-gray-100 rounded shrink-0";
   const buttonActiveClass = (isActive) => isActive ? "bg-gray-200" : "";
 
@@ -115,6 +115,7 @@ const EditorToolbar = ({ editor, currentFont, onFontChange, onDropdownToggle, dr
   ];
 
   const insertButtons = [
+    { action: () => onImageInsert?.(), title: "Insert Image", src: "/editor-icons/image.svg" },
     { action: () => editor.chain().focus().toggleCodeBlock().run(), isActive: editor.isActive("codeBlock"), title: "Code Block", src: "/editor-icons/block.svg" },
     { action: () => editor.chain().focus().toggleBlockquote().run(), isActive: editor.isActive("blockquote"), title: "Quote", src: "/editor-icons/''.svg" },
   ];
@@ -125,26 +126,26 @@ const EditorToolbar = ({ editor, currentFont, onFontChange, onDropdownToggle, dr
       <div className="hidden xl:flex items-center gap-1 md:gap-2 px-4 bg-white overflow-x-auto scrollbar-hide whitespace-nowrap w-full xl:max-w-[917px]" style={{ height: "52px", borderBottom: "1px solid #E5E7EB" }}>
         <FontSelector currentFont={currentFont} onFontChange={onFontChange} />
         
-        <HeadingSelector editor={editor} isOpen={dropdownState.heading.isOpen} position={dropdownState.heading.position} onToggle={(e) => onDropdownToggle("heading", e)} onClose={() => onDropdownToggle("heading", null)} onSelect={(level) => { editor.chain().focus().setParagraph().run(); if (level !== "P") { const levelNum = parseInt(level.replace("H", "")); editor.chain().focus().toggleHeading({ level: levelNum }).run(); } onDropdownToggle("heading", null); }} />
+        <HeadingSelector editor={editor} isOpen={dropdownState.heading.isOpen} position={dropdownState.heading.position} onToggle={(e) => onDropdownToggle("heading", e)} onClose={() => onDropdownToggle("heading", null)} onSelect={(level) => { editor.chain().focus().setParagraph().run(); if (level !== "P") { const levelNum = parseInt(level.replace("H", "")); editor.chain().focus().toggleHeading({ level: levelNum }).run(); } onDropdownToggle("heading", null); }} dropdownKey="heading" />
         
         <FormatButtons buttons={formatButtons} buttonBaseClass={buttonBaseClass} buttonActiveClass={buttonActiveClass} />
         
-        <ListSelector editor={editor} isOpen={dropdownState.list.isOpen} position={dropdownState.list.position} onToggle={(e) => onDropdownToggle("list", e)} onClose={() => onDropdownToggle("list", null)} />
+        <ListSelector editor={editor} isOpen={dropdownState.list.isOpen} position={dropdownState.list.position} onToggle={(e) => onDropdownToggle("list", e)} onClose={() => onDropdownToggle("list", null)} dropdownKey="list" />
         
-        <AlignSelector editor={editor} isOpen={dropdownState.align.isOpen} position={dropdownState.align.position} onToggle={(e) => onDropdownToggle("align", e)} onClose={() => onDropdownToggle("align", null)} />
+        <AlignSelector editor={editor} isOpen={dropdownState.align.isOpen} position={dropdownState.align.position} onToggle={(e) => onDropdownToggle("align", e)} onClose={() => onDropdownToggle("align", null)} dropdownKey="align" />
         
         <InsertButtons buttons={insertButtons} buttonBaseClass={buttonBaseClass} buttonActiveClass={buttonActiveClass} />
         
-        <LinkButton editor={editor} isOpen={dropdownState.link.isOpen} position={dropdownState.link.position} onToggle={(e) => onDropdownToggle("link", e)} onClose={() => onDropdownToggle("link", null)} linkState={linkState} onLinkSubmit={onLinkSubmit} onLinkCancel={onLinkCancel} />
+        <LinkButton editor={editor} isOpen={dropdownState.link.isOpen} position={dropdownState.link.position} onToggle={(e) => onDropdownToggle("link", e)} onClose={() => onDropdownToggle("link", null)} linkState={linkState} onLinkSubmit={onLinkSubmit} onLinkCancel={onLinkCancel} dropdownKey="link" />
         
-        <AdvancedOptions editor={editor} isOpen={dropdownState.advanced.isOpen} position={dropdownState.advanced.position} onToggle={(e) => onDropdownToggle("advanced", e)} onClose={() => onDropdownToggle("advanced", null)} />
+        <AdvancedOptions editor={editor} isOpen={dropdownState.advanced.isOpen} position={dropdownState.advanced.position} onToggle={(e) => onDropdownToggle("advanced", e)} onClose={() => onDropdownToggle("advanced", null)} dropdownKey="advanced" />
       </div>
 
       {/* Mobile Toolbar */}
-      <MobileToolbar editor={editor} currentFont={currentFont} onDropdownToggle={onDropdownToggle} dropdownState={dropdownState} linkState={linkState} onLinkSubmit={onLinkSubmit} onLinkCancel={onLinkCancel} buttonBaseClass={buttonBaseClass} buttonActiveClass={buttonActiveClass} />
+      <MobileToolbar editor={editor} currentFont={currentFont} onDropdownToggle={onDropdownToggle} dropdownState={dropdownState} linkState={linkState} onLinkSubmit={onLinkSubmit} onLinkCancel={onLinkCancel} buttonBaseClass={buttonBaseClass} buttonActiveClass={buttonActiveClass} onImageInsert={onImageInsert} />
 
       {/* Tablet Toolbar */}
-      <TabletToolbar editor={editor} onDropdownToggle={onDropdownToggle} dropdownState={dropdownState} />
+      <TabletToolbar editor={editor} onDropdownToggle={onDropdownToggle} dropdownState={dropdownState} onImageInsert={onImageInsert} />
     </>
   );
 };
@@ -169,22 +170,22 @@ const FontSelector = ({ currentFont, onFontChange }) => {
   );
 };
 
-const HeadingSelector = ({ editor, isOpen, position, onToggle, onClose, onSelect }) => {
+const HeadingSelector = ({ editor, isOpen, position, onToggle, onClose, onSelect, dropdownKey }) => {
   const headings = ["P", "H1", "H2", "H3", "H4", "H5", "H6"];
 
   return (
-    <div className="flex items-center gap-1 dropdown-container shrink-0 px-1 border-r border-gray-200">
-      <button onClick={() => editor.chain().focus().setParagraph().run()} className={`p-1.5 hover:bg-gray-100 rounded ${editor.isActive("paragraph") ? "bg-gray-200" : ""}`} title="Paragraph">
+    <div className="flex items-center gap-1 dropdown-container shrink-0 px-1 border-r border-gray-200" data-key={dropdownKey} onMouseEnter={(e) => { if (!isOpen) onToggle(e); }} onMouseLeave={() => {}}>
+      <button type="button" onClick={() => editor.chain().focus().setParagraph().run()} className={`p-1.5 hover:bg-gray-100 rounded ${editor.isActive("paragraph") ? "bg-gray-200" : ""}`} title="Paragraph">
         <img src="/editor-icons/P.svg" alt="P" className="w-4 h-4" />
       </button>
       <div className="relative">
-        <button className="flex items-center hover:bg-gray-100 rounded px-1 py-1.5" onMouseDown={(e) => { e.preventDefault(); isOpen ? onClose() : onToggle(e); }}>
+        <button type="button" className="flex items-center hover:bg-gray-100 rounded px-1 py-1.5" onClick={(e) => { e.preventDefault(); e.stopPropagation(); isOpen ? onClose() : onToggle(e); }}>
           <img src="/editor-icons/H.svg" alt="H" className="w-5 h-5" />
           <ChevronDown className="h-3 w-3 text-gray-600 ml-0.5" />
         </button>
-        <DropdownMenu isOpen={isOpen} position={position} className="min-w-[80px]">
+        <DropdownMenu isOpen={isOpen} position={position} className="min-w-[80px]" onClose={onClose}>
           {headings.map((heading) => (
-            <button key={heading} className="flex items-center px-4 py-2 hover:bg-gray-100 w-full text-left text-sm font-medium" onMouseDown={(e) => { e.preventDefault(); onSelect(heading); }}>
+            <button type="button" key={heading} className="flex items-center px-4 py-2 hover:bg-gray-100 w-full text-left text-sm font-medium" onMouseDown={(e) => { e.preventDefault(); onSelect(heading); }}>
               {heading}
             </button>
           ))}
@@ -214,24 +215,24 @@ const InsertButtons = ({ buttons, buttonBaseClass, buttonActiveClass }) => (
   </div>
 );
 
-const ListSelector = ({ editor, isOpen, position, onToggle, onClose }) => (
-  <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
-    <button className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5" onMouseDown={(e) => { e.preventDefault(); isOpen ? onClose() : onToggle(e); }} title="Lists">
+const ListSelector = ({ editor, isOpen, position, onToggle, onClose, dropdownKey }) => (
+  <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200" data-key={dropdownKey} onMouseEnter={(e) => { if (!isOpen) onToggle(e); }} onMouseLeave={() => {}}>
+    <button type="button" className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5" onClick={(e) => { e.preventDefault(); e.stopPropagation(); isOpen ? onClose() : onToggle(e); }} title="Lists">
       <img src="/editor-icons/list.svg" alt="Lists" className="w-4 h-4" />
       <ChevronDown className="h-3 w-3 text-gray-700" />
     </button>
-    <DropdownMenu isOpen={isOpen} position={position} className="min-w-[150px]">
-      <button className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm" onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleBulletList().run(); onClose(); }}>
+    <DropdownMenu isOpen={isOpen} position={position} className="min-w-[150px]" onClose={onClose}>
+      <button type="button" className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm" onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleBulletList().run(); onClose(); }}>
         <List className="h-4 w-4" /> Bullet List
       </button>
-      <button className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm" onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleOrderedList().run(); onClose(); }}>
+      <button type="button" className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm" onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleOrderedList().run(); onClose(); }}>
         <ListOrdered className="h-4 w-4" /> Numbered List
       </button>
     </DropdownMenu>
   </div>
 );
 
-const AlignSelector = ({ editor, isOpen, position, onToggle, onClose }) => {
+const AlignSelector = ({ editor, isOpen, position, onToggle, onClose, dropdownKey }) => {
   const alignOptions = [
     { align: "left", icon: AlignLeft, label: "Align Left" },
     { align: "center", icon: AlignCenter, label: "Align Center" },
@@ -240,14 +241,14 @@ const AlignSelector = ({ editor, isOpen, position, onToggle, onClose }) => {
   ];
 
   return (
-    <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
-      <button className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5" onMouseDown={(e) => { e.preventDefault(); isOpen ? onClose() : onToggle(e); }} title="Alignment">
+    <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200" data-key={dropdownKey} onMouseEnter={(e) => { if (!isOpen) onToggle(e); }} onMouseLeave={() => {}}>
+      <button type="button" className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5" onClick={(e) => { e.preventDefault(); e.stopPropagation(); isOpen ? onClose() : onToggle(e); }} title="Alignment">
         <img src="/editor-icons/Paragraph.svg" alt="Alignment" className="w-4 h-4" />
         <ChevronDown className="h-3 w-3 text-gray-700" />
       </button>
-      <DropdownMenu isOpen={isOpen} position={position} className="min-w-[150px]">
+      <DropdownMenu isOpen={isOpen} position={position} className="min-w-[150px]" onClose={onClose}>
         {alignOptions.map((opt) => (
-          <button key={opt.align} className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm" onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().setTextAlign(opt.align).run(); onClose(); }}>
+          <button type="button" key={opt.align} className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm" onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().setTextAlign(opt.align).run(); onClose(); }}>
             <opt.icon className="h-4 w-4" /> {opt.label}
           </button>
         ))}
@@ -256,37 +257,37 @@ const AlignSelector = ({ editor, isOpen, position, onToggle, onClose }) => {
   );
 };
 
-const LinkButton = ({ editor, isOpen, position, onToggle, onClose, linkState, onLinkSubmit, onLinkCancel }) => (
-  <div className="relative dropdown-container shrink-0">
-    <button className="p-1.5 hover:bg-gray-100 rounded" onClick={() => { const { from, to } = editor.state.selection; const text = editor.state.doc.textBetween(from, to, ""); onToggle(null, text); }} title="Insert Link">
+const LinkButton = ({ editor, isOpen, position, onToggle, onClose, linkState, onLinkSubmit, onLinkCancel, dropdownKey }) => (
+  <div className="relative dropdown-container shrink-0" data-key={dropdownKey} onMouseEnter={(e) => { if (!isOpen) onToggle(e); }} onMouseLeave={() => {}}>
+    <button type="button" className="p-1.5 hover:bg-gray-100 rounded" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const { from, to } = editor.state.selection; const text = editor.state.doc.textBetween(from, to, ""); onToggle(null, text); }} title="Insert Link">
       <img src="/editor-icons/link.svg" alt="Link" className="w-4 h-4" />
     </button>
-    <DropdownMenu isOpen={isOpen} position={position} className="min-w-[250px] p-3">
+    <DropdownMenu isOpen={isOpen} position={position} className="min-w-[250px] p-3" onClose={onClose}>
       <input type="text" placeholder="Enter URL" value={linkState.url} onChange={(e) => linkState.setUrl(e.target.value)} className="w-full px-2 py-1 border rounded text-sm mb-2" autoFocus />
       <div className="flex gap-2 justify-end">
-        <button onClick={onLinkCancel} className="px-3 py-1 text-sm hover:bg-gray-100 rounded">Cancel</button>
-        <button onClick={onLinkSubmit} className="px-3 py-1 text-sm bg-black text-white rounded hover:opacity-90">Add Link</button>
+        <button type="button" onClick={onLinkCancel} className="px-3 py-1 text-sm hover:bg-gray-100 rounded">Cancel</button>
+        <button type="button" onClick={onLinkSubmit} className="px-3 py-1 text-sm bg-black text-white rounded hover:opacity-90">Add Link</button>
       </div>
     </DropdownMenu>
   </div>
 );
 
-const AdvancedOptions = ({ editor, isOpen, position, onToggle, onClose }) => {
+const AdvancedOptions = ({ editor, isOpen, position, onToggle, onClose, dropdownKey }) => {
   const handleLineHeight = (height) => { editor.chain().focus().setLineHeight(height).run(); onClose(); };
   const lineHeights = ["1", "1.15", "1.5", "2", "2.5", "3"];
 
   return (
-    <div className="relative dropdown-container shrink-0">
-      <button className="text-sm text-gray-600 px-3 py-1.5 hover:bg-gray-200 rounded whitespace-nowrap" style={{ backgroundColor: "#F8F8F8" }} onClick={(e) => { e.preventDefault(); isOpen ? onClose() : onToggle(e, { alignRight: true, width: 300 }); }}>
+    <div className="relative dropdown-container shrink-0" data-key={dropdownKey} onMouseEnter={(e) => { if (!isOpen) onToggle(e); }} onMouseLeave={() => {}}>
+      <button type="button" className="text-sm text-gray-600 px-3 py-1.5 hover:bg-gray-200 rounded whitespace-nowrap" style={{ backgroundColor: "#F8F8F8" }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); isOpen ? onClose() : onToggle(e, { alignRight: true, width: 300 }); }}>
         Advanced Options
       </button>
-      <DropdownMenu isOpen={isOpen} position={position} className="min-w-[300px] p-3">
+      <DropdownMenu isOpen={isOpen} position={position} className="min-w-[300px] p-3" onClose={onClose}>
         <div className="flex items-center gap-2 mb-3">
           <span className="text-xs text-gray-500 w-20">Script:</span>
-          <button onClick={() => { editor.chain().focus().toggleSuperscript().run(); onClose(); }} className={`flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm ${editor.isActive("superscript") ? "bg-gray-200" : ""}`}>
+          <button type="button" onClick={() => { editor.chain().focus().toggleSuperscript().run(); onClose(); }} className={`flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm ${editor.isActive("superscript") ? "bg-gray-200" : ""}`}>
             <img src="/editor-icons/advance/super.svg" alt="Superscript" className="w-4 h-4" /> Superscript
           </button>
-          <button onClick={() => { editor.chain().focus().toggleSubscript().run(); onClose(); }} className={`flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm ${editor.isActive("subscript") ? "bg-gray-200" : ""}`}>
+          <button type="button" onClick={() => { editor.chain().focus().toggleSubscript().run(); onClose(); }} className={`flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm ${editor.isActive("subscript") ? "bg-gray-200" : ""}`}>
             <img src="/editor-icons/advance/sub.svg" alt="Subscript" className="w-4 h-4" /> Subscript
           </button>
         </div>
@@ -294,16 +295,16 @@ const AdvancedOptions = ({ editor, isOpen, position, onToggle, onClose }) => {
           <span className="text-xs text-gray-500 w-20">Line Height:</span>
           <div className="flex gap-1">
             {lineHeights.map((h) => (
-              <button key={h} className="px-2 py-1 text-xs hover:bg-gray-100 rounded" onClick={() => handleLineHeight(h)}>{h}</button>
+              <button type="button" key={h} className="px-2 py-1 text-xs hover:bg-gray-100 rounded" onClick={() => handleLineHeight(h)}>{h}</button>
             ))}
           </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500 w-20">Indent:</span>
-          <button onClick={() => { editor.isActive("listItem") ? editor.chain().focus().sinkListItem("listItem").run() : editor.chain().focus().indent().run(); onClose(); }} className="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm">
+          <button type="button" onClick={() => { editor.isActive("listItem") ? editor.chain().focus().sinkListItem("listItem").run() : editor.chain().focus().indent().run(); onClose(); }} className="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm">
             <img src="/editor-icons/advance/increase-indent.svg" alt="Increase" className="w-4 h-4" /> Increase
           </button>
-          <button onClick={() => { editor.isActive("listItem") ? editor.chain().focus().liftListItem("listItem").run() : editor.chain().focus().outdent().run(); onClose(); }} className="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm">
+          <button type="button" onClick={() => { editor.isActive("listItem") ? editor.chain().focus().liftListItem("listItem").run() : editor.chain().focus().outdent().run(); onClose(); }} className="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm">
             <img src="/editor-icons/advance/decrease-indent.svg" alt="Decrease" className="w-4 h-4" /> Decrease
           </button>
         </div>
@@ -312,7 +313,7 @@ const AdvancedOptions = ({ editor, isOpen, position, onToggle, onClose }) => {
   );
 };
 
-const MobileToolbar = ({ editor, currentFont, onDropdownToggle, dropdownState, linkState, onLinkSubmit, onLinkCancel, buttonBaseClass, buttonActiveClass }) => {
+const MobileToolbar = ({ editor, currentFont, onDropdownToggle, dropdownState, linkState, onLinkSubmit, onLinkCancel, buttonBaseClass, buttonActiveClass, onImageInsert }) => {
   const headingOptions = ["H1", "H2", "H3", "H4", "H5", "H6"];
   const lineHeightOptions = ["1", "1.15", "1.5", "2", "2.5", "3"];
 
@@ -327,7 +328,7 @@ const MobileToolbar = ({ editor, currentFont, onDropdownToggle, dropdownState, l
           <img src="/editor-icons/P.svg" alt="P" className="w-4 h-4" />
         </button>
         <div className="relative">
-          <button className="flex items-center hover:bg-gray-100 rounded px-1 py-1.5" onMouseDown={(e) => { e.preventDefault(); onDropdownToggle("heading", e); }}>
+          <button type="button" className="flex items-center hover:bg-gray-100 rounded px-1 py-1.5" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDropdownToggle("heading", e); }}>
             <img src="/editor-icons/H.svg" alt="H" className="w-5 h-5" />
             <ChevronDown className="h-3 w-3 text-gray-600 ml-0.5" />
           </button>
@@ -380,7 +381,7 @@ const MobileToolbar = ({ editor, currentFont, onDropdownToggle, dropdownState, l
       </div>
 
       <div className="flex items-center gap-0.5 px-1 border-r border-gray-200 shrink-0">
-        <button className="p-1.5 hover:bg-gray-100 rounded" onClick={() => {}} title="Insert Image">
+        <button className="p-1.5 hover:bg-gray-100 rounded" onClick={() => onImageInsert?.()} title="Insert Image">
           <img src="/editor-icons/image.svg" alt="Image" className="w-4 h-4" />
         </button>
         <button onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={`${buttonBaseClass} ${buttonActiveClass(editor.isActive("codeBlock"))}`} title="Code Block">
@@ -427,7 +428,7 @@ const MobileToolbar = ({ editor, currentFont, onDropdownToggle, dropdownState, l
   );
 };
 
-const TabletToolbar = ({ editor, onDropdownToggle, dropdownState }) => {
+const TabletToolbar = ({ editor, onDropdownToggle, dropdownState, onImageInsert }) => {
   const headings = ["P", "H1", "H2", "H3", "H4", "H5", "H6"];
 
   const getHeadingLabel = () => {
@@ -500,7 +501,7 @@ const TabletToolbar = ({ editor, onDropdownToggle, dropdownState }) => {
         </DropdownMenu>
       </div>
 
-      <InsertButtons buttons={[{ action: () => {}, title: "Insert Image", src: "/editor-icons/image.svg" }, { action: () => editor.chain().focus().toggleCodeBlock().run(), isActive: editor.isActive("codeBlock"), title: "Code Block", src: "/editor-icons/block.svg" }, { action: () => editor.chain().focus().toggleBlockquote().run(), isActive: editor.isActive("blockquote"), title: "Quote", src: "/editor-icons/''.svg" }]} buttonBaseClass="p-1.5 hover:bg-gray-100 rounded shrink-0" buttonActiveClass={(isActive) => isActive ? "bg-gray-200" : ""} />
+      <InsertButtons buttons={[{ action: () => onImageInsert?.(), title: "Insert Image", src: "/editor-icons/image.svg" }, { action: () => editor.chain().focus().toggleCodeBlock().run(), isActive: editor.isActive("codeBlock"), title: "Code Block", src: "/editor-icons/block.svg" }, { action: () => editor.chain().focus().toggleBlockquote().run(), isActive: editor.isActive("blockquote"), title: "Quote", src: "/editor-icons/''.svg" }]} buttonBaseClass="p-1.5 hover:bg-gray-100 rounded shrink-0" buttonActiveClass={(isActive) => isActive ? "bg-gray-200" : ""} />
 
       <div className="relative dropdown-container shrink-0">
         <button className="text-sm text-gray-600 px-3 py-1.5 hover:bg-gray-200 rounded whitespace-nowrap" style={{ backgroundColor: "#F8F8F8" }} onClick={(e) => { e.preventDefault(); onDropdownToggle("advanced", e, { alignRight: true, width: 300 }); }}>
@@ -582,23 +583,36 @@ export function TiptapEditor({ onUpdate, initialContent = "", onImageModalToggle
       const willOpen = !current.isOpen;
       
       const updated = { ...prev };
+      
+      // Close all other dropdowns first
       dropdownKeys.forEach((k) => {
-        updated[k] = { ...updated[k], isOpen: false };
+        if (k !== key) {
+          updated[k] = { ...updated[k], isOpen: false, position: { top: 0, left: 0 } };
+        }
       });
 
-      if (willOpen && event) {
-        const rect = event.currentTarget?.getBoundingClientRect?.();
-        if (rect) {
+      if (willOpen) {
+        // Opening dropdown - find position from dropdown container
+        const container = document.querySelector(`.dropdown-container[data-key="${key}"]`);
+        if (container) {
+          const rect = container.getBoundingClientRect();
           updated[key] = {
             isOpen: true,
             position: {
-              top: rect.bottom + (options.offsetY || 4),
-              left: options.alignRight ? rect.right - (options.width || 300) : rect.left,
+              top: rect.bottom + 4,
+              left: rect.left,
             },
           };
+        } else {
+          // Fallback
+          updated[key] = {
+            isOpen: true,
+            position: current.position || { top: 0, left: 0 },
+          };
         }
-      } else if (willOpen && key === "link") {
-        updated[key] = { ...current, isOpen: true };
+      } else {
+        // Closing the dropdown
+        updated[key] = { ...current, isOpen: false };
       }
 
       return updated;
@@ -690,22 +704,35 @@ export function TiptapEditor({ onUpdate, initialContent = "", onImageModalToggle
       const isAnyOpen = Object.values(dropdownState).some((d) => d.isOpen);
       if (!isAnyOpen) return;
 
-      const isInside = event.target.closest(".dropdown-container") || event.target.closest(".color-picker") || event.target.closest(".line-spacing-picker") || event.target.closest(".link-popup") || event.target.closest('[role="dialog"]');
+      const target = event.target;
+      
+      // Check if click is inside any dropdown element
+      const isInside = 
+        target.closest(".dropdown-container") || 
+        target.closest(".tiptap-dropdown");
 
       if (!isInside) {
         closeAllDropdowns();
       }
     };
 
-    const handleScroll = () => closeAllDropdowns();
-    const handleResize = () => closeAllDropdowns();
+    document.addEventListener("click", handleClickOutside);
+    
+    const handleScroll = () => {
+      const isAnyOpen = Object.values(dropdownState).some((d) => d.isOpen);
+      if (isAnyOpen) closeAllDropdowns();
+    };
+    
+    const handleResize = () => {
+      const isAnyOpen = Object.values(dropdownState).some((d) => d.isOpen);
+      if (isAnyOpen) closeAllDropdowns();
+    };
 
-    document.addEventListener("mousedown", handleClickOutside);
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleResize);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
     };
@@ -778,6 +805,7 @@ export function TiptapEditor({ onUpdate, initialContent = "", onImageModalToggle
         linkState={linkState}
         onLinkSubmit={handleLinkSubmit}
         onLinkCancel={handleLinkCancel}
+        onImageInsert={handleImageInsert}
       />
 
       <EditorContent editor={editor} />
