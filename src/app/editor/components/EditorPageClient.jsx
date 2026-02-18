@@ -154,14 +154,22 @@ export default function EditorPageClient() {
   const [initialContent, setInitialContent] = useState("");
   const [existingBlogStatus, setExistingBlogStatus] = useState(null);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [exitDestination, setExitDestination] = useState(null); // 'published', 'drafts', 'home'
   const calendarRef = useRef(null);
   const handlingPopStateRef = useRef(false);
   const saveInFlightRef = useRef(false);
 
-  // Handle See Later - dismiss popup and go to published page
-  const handleSeeLater = () => {
-    markNavigating();
+  // Handle See Later - dismiss popup and check for unsaved changes first
+  const handleSeeLater = async () => {
+    // Check for unsaved changes before redirecting
+    if (hasUnsavedChanges && currentBlogId) {
+      setShowPublishSuccess(false);
+      setExitDestination("published");
+      setShowExitModal(true);
+      return;
+    }
 
+    markNavigating();
     setShowPublishSuccess(false);
 
     const targetPath = currentPublication?.subdomain
@@ -467,21 +475,20 @@ export default function EditorPageClient() {
   const handleSave = async () => {
     const result = await saveBlog(existingBlogStatus || "draft", null, true);
     if (result && existingBlogStatus === "published") {
-      // For published articles, redirect to published page
-      window.location.href = withPub("/published?refresh=true");
+      router.replace(withPub("/published"));
     }
   };
 
   // Handle Save to Draft (with redirect)
   const handleSaveDraft = async () => {
-    await performSaveAndExit("/draft?refresh=true", false);
+    await performSaveAndExit("/draft", false);
   };
 
   // Handle Revert to Draft (for published articles)
   const handleDraft = async () => {
     const result = await saveBlog("draft", null, true);
     if (result) {
-      window.location.href = withPub("/draft?refresh=true");
+      router.replace(withPub("/draft"));
     }
   };
 
@@ -490,7 +497,7 @@ export default function EditorPageClient() {
     try {
       const result = await saveBlog("draft", null, true);
       if (result) {
-        window.location.href = withPub("/draft?refresh=true");
+        router.replace(withPub("/draft"));
       }
     } catch (error) {
       console.error("Error reverting from trash:", error);
@@ -526,7 +533,7 @@ export default function EditorPageClient() {
       const targetPath = isReviewer ? "/review" : "/author-review";
 
       setTimeout(() => {
-        router.push(withPub(`${targetPath}?refresh=true`));
+        router.replace(withPub(targetPath));
       }, 1000);
     }
   };
@@ -534,7 +541,7 @@ export default function EditorPageClient() {
   const handleExitNavigation = () => {
     markNavigating();
     if (articleStatus === "published") {
-      router.push(withPub("/published?refresh=true"));
+      router.replace(withPub("/published"));
     } else if (articleStatus === "review") {
       const targetPath =
         currentPublication?.isOwner ||
@@ -542,11 +549,11 @@ export default function EditorPageClient() {
         currentPublication?.role === "admin"
           ? "/review"
           : "/author-review";
-      router.push(withPub(`${targetPath}?refresh=true`));
+      router.replace(withPub(targetPath));
     } else if (articleStatus === "trash") {
-      router.push(withPub("/trash?refresh=true"));
+      router.replace(withPub("/trash"));
     } else {
-      router.push(withPub("/draft?refresh=true"));
+      router.replace(withPub("/draft"));
     }
   };
 
@@ -558,13 +565,12 @@ export default function EditorPageClient() {
       showToast("Post has been saved as Draft", "success");
       markNavigating();
       setTimeout(() => {
-        router.push(withPub(targetPath));
+        router.replace(withPub(targetPath));
       }, 1000);
     }
   };
 
-  // Handle Back - Check for unsaved changes
-  // Handle Back - Save as draft and redirect to home
+  // Handle Back - Check for unsaved changes and show exit modal if needed
   const handleBack = async () => {
     const isEmptyDraft =
       !currentBlogId &&
@@ -575,73 +581,68 @@ export default function EditorPageClient() {
 
     if (isEmptyDraft) {
       markNavigating();
-      router.push(withPub("/?refresh=true"));
+      router.replace(withPub("/"));
       return;
     }
 
     // For published articles, go to published page
     if (existingBlogStatus === "published") {
       markNavigating();
-      router.push(withPub("/published?refresh=true"));
+      router.replace(withPub("/published"));
       return;
     }
 
     // For scheduled articles, go to schedule page
     if (existingBlogStatus === "scheduled") {
       markNavigating();
-      router.push(withPub("/schedule?refresh=true"));
+      router.replace(withPub("/schedule"));
       return;
     }
 
-    // For any content: save as draft and go to Drafts
-    if (hasUnsavedChanges) {
-      await performSaveAndExit("/draft?refresh=true", true);
+    // If there are unsaved changes, show exit confirmation modal
+    if (hasUnsavedChanges && currentBlogId) {
+      setExitDestination("drafts");
+      setShowExitModal(true);
       return;
     }
 
     // No unsaved changes but has content: go to drafts directly
     markNavigating();
-    router.push(withPub("/draft?refresh=true"));
+    router.replace(withPub("/draft"));
   };
-
-  // Intercept browser back/gesture to auto-save draft and navigate home
-  useEffect(() => {
-    if (!isMounted) return;
-
-    const pushCurrentState = () => {
-      try {
-        window.history.pushState({ editor: true }, "", window.location.href);
-      } catch {
-        // Ignore history errors
-      }
-    };
-
-    const handlePopState = (event) => {
-      if (handlingPopStateRef.current) return;
-      handlingPopStateRef.current = true;
-      pushCurrentState();
-      handleBack().finally(() => {
-        handlingPopStateRef.current = false;
-      });
-    };
-
-    pushCurrentState();
-    window.addEventListener("popstate", handlePopState);
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [isMounted, handleBack]);
 
   const handleDiscard = () => {
     markNavigating();
     setShowExitModal(false);
-    router.push(withPub("/?refresh=true"));
+    
+    // Navigate based on destination
+    if (exitDestination === "published") {
+      router.replace(withPub("/published"));
+    } else if (exitDestination === "drafts") {
+      router.replace(withPub("/draft"));
+    } else {
+      router.replace(withPub("/"));
+    }
+    
+    setExitDestination(null);
   };
 
   const handleUpdateAndExit = async () => {
-    // Save as draft and redirect to home page
     setShowExitModal(false);
-    await performSaveAndExit("/?refresh=true", false);
+    
+    // Save first
+    const result = await saveBlog("draft", null, true);
+    
+    // Navigate based on destination
+    if (exitDestination === "published" || existingBlogStatus === "published") {
+      router.replace(withPub("/published"));
+    } else if (exitDestination === "drafts") {
+      router.replace(withPub("/draft"));
+    } else {
+      router.replace(withPub("/"));
+    }
+    
+    setExitDestination(null);
   };
 
   // Handle Schedule
@@ -666,11 +667,9 @@ export default function EditorPageClient() {
       if (result) {
         setShowCalendar(false);
         showToast("Article scheduled successfully", "success");
-        // markNavigating AFTER saveBlog (which calls markSaved and resets phase to "idle")
-        // This ensures the phase is "navigating" when the redirect triggers beforeunload
         markNavigating();
         setTimeout(() => {
-          router.push(withPub("/schedule?refresh=true"));
+          router.replace(withPub("/schedule"));
         }, 1000);
       } else {
         showToast("Failed to schedule article. Please try again.", "error");
@@ -1876,7 +1875,10 @@ export default function EditorPageClient() {
       )}
       <ExitConfirmModal
         isOpen={showExitModal}
-        onClose={() => setShowExitModal(false)}
+        onClose={() => {
+          setShowExitModal(false);
+          setExitDestination(null);
+        }}
         onDiscard={handleDiscard}
         onUpdate={handleUpdateAndExit}
       />
