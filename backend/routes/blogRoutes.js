@@ -1381,6 +1381,58 @@ router.patch("/:id/review-action", getCurrentUser, async (req, res) => {
     }
     const syncedFields = syncStatusAndPublished(targetStatus);
 
+    // MERGE LOGIC: If this is a draft of a published article and it is being published via review acceptance
+    if (
+      action === "accept" &&
+      targetStatus === "published" &&
+      existingBlog.masterId
+    ) {
+      // Get Master Blog to ensure it exists
+      const [masterBlog] = await db
+        .select()
+        .from(blog)
+        .where(eq(blog.id, existingBlog.masterId));
+
+      if (masterBlog) {
+        // Prepare data to update master
+        // We use the draft's current data (existingBlog) as the source of truth
+        const mergeData = {
+          title: existingBlog.title.replace(/\s*\[Update draft\]$/i, ""),
+          description: existingBlog.description,
+          content: existingBlog.content,
+          image: existingBlog.image,
+          categories: existingBlog.categories,
+          updatedAt: new Date(),
+          ...syncedFields, // Ensure master gets 'published' status
+        };
+
+        // Update Master
+        const [updatedMaster] = await db
+          .update(blog)
+          .set(mergeData)
+          .where(eq(blog.id, existingBlog.masterId))
+          .returning();
+
+        // Delete the draft after merge
+        await db.delete(blog).where(eq(blog.id, parseInt(id)));
+
+        // Run notifications for the MERGED article (using updatedMaster)
+        runInBackground("review-action-notifications-merged", async () => {
+          if (!existingBlog.publicationId) return;
+
+          // Notify author that their changes are live
+          await notificationService.notifyBlogPublished({
+            authorId: existingBlog.authorId,
+            blogTitle: updatedMaster.title,
+            blogId: updatedMaster.id,
+            publicationId: existingBlog.publicationId,
+          });
+        });
+
+        return res.json(updatedMaster);
+      }
+    }
+
     const [updatedBlog] = await db
       .update(blog)
       .set({

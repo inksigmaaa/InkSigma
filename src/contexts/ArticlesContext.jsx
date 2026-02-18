@@ -437,26 +437,51 @@ export function ArticlesProvider({ children }) {
           prev.filter((article) => article.id !== id),
         );
 
-        setArticles((prev) => {
-          const exists = prev.some((article) => article.id === id);
-          if (exists) {
-            return prev.map((article) =>
-              article.id === id ? updatedArticle : article,
+        // Check if this was a merge (draft ID != returned Master ID)
+        if (String(updatedArticle.id) !== String(id)) {
+          // It was a merge!
+          // 1. Remove draft (id) from lists
+          setArticles((prev) => {
+            const withoutDraft = prev.filter(
+              (a) => String(a.id) !== String(id),
             );
-          } else {
-            return [updatedArticle, ...prev];
-          }
-        });
-        setPublicationArticles((prev) => {
-          const exists = prev.some((article) => article.id === id);
-          if (exists) {
-            return prev.map((article) =>
-              article.id === id ? updatedArticle : article,
+            // 2. Update master (updatedArticle.id) if present
+            return withoutDraft.map((a) =>
+              String(a.id) === String(updatedArticle.id) ? updatedArticle : a,
             );
-          } else {
-            return [updatedArticle, ...prev];
-          }
-        });
+          });
+
+          setPublicationArticles((prev) => {
+            const withoutDraft = prev.filter(
+              (a) => String(a.id) !== String(id),
+            );
+            return withoutDraft.map((a) =>
+              String(a.id) === String(updatedArticle.id) ? updatedArticle : a,
+            );
+          });
+        } else {
+          // Standard update (no merge)
+          setArticles((prev) => {
+            const exists = prev.some((article) => article.id === id);
+            if (exists) {
+              return prev.map((article) =>
+                article.id === id ? updatedArticle : article,
+              );
+            } else {
+              return [updatedArticle, ...prev];
+            }
+          });
+          setPublicationArticles((prev) => {
+            const exists = prev.some((article) => article.id === id);
+            if (exists) {
+              return prev.map((article) =>
+                article.id === id ? updatedArticle : article,
+              );
+            } else {
+              return [updatedArticle, ...prev];
+            }
+          });
+        }
 
         return updatedArticle;
       } catch (err) {
