@@ -165,7 +165,7 @@ export default function AllArticles({
                   </div>
 
                   <Link
-                    href={`${basePath}/blog/${article.slug}${publicationId ? `?from=${publicationId}&view=site` : ""}`}
+                    href={`${basePath}/blog/${article.slug}${publicationId ? `?publicationId=${publicationId}&from=${publicationId}&view=site` : ""}`}
                     className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block"
                   >
                     {/* Background Image */}

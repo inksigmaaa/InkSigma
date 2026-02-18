@@ -136,7 +136,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
           />
         </div>
 
-                  <Link href={`${basePath}/blog/${latestBlog.slug}${publicationId ? `?from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block">          {/* Background Image */}
+                  <Link href={`${basePath}/blog/${latestBlog.slug}${publicationId ? `?publicationId=${publicationId}&from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block">          {/* Background Image */}
           <div className="absolute inset-0">
             <Image
               src={thumbnailUrl}
@@ -225,7 +225,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
             />
           </div>
 
-          <Link href={`${basePath}/blog/${latestBlog.slug}${publicationId ? `?from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-md overflow-hidden cursor-pointer block">
+          <Link href={`${basePath}/blog/${latestBlog.slug}${publicationId ? `?publicationId=${publicationId}&from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-md overflow-hidden cursor-pointer block">
             <Image
               src={thumbnailUrl}
               alt={latestBlog.title}

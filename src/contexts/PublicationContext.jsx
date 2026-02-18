@@ -117,8 +117,21 @@ function PublicationProviderInner({ children }) {
     publicationsForLookup = userPublications,
   ) => {
     // Try searchParams first (client-side, when available)
+    // Check for 'pub' parameter
     if (searchParams?.get("pub")) {
       return parseInt(searchParams.get("pub"));
+    }
+
+    // Check for 'publicationId' parameter (used in view-site and blog pages)
+    if (searchParams?.get("publicationId")) {
+      return parseInt(searchParams.get("publicationId"));
+    }
+
+    // Check for 'subdomain' parameter and lookup publication by subdomain
+    if (searchParams?.get("subdomain") && Array.isArray(publicationsForLookup) && publicationsForLookup.length > 0) {
+      const subdomain = searchParams.get("subdomain");
+      const match = publicationsForLookup.find((pub) => pub?.subdomain === subdomain);
+      if (match) return match.id;
     }
 
     // Fallback to window.location.search if searchParams isn't ready yet
@@ -127,6 +140,15 @@ function PublicationProviderInner({ children }) {
       const params = new URLSearchParams(window.location.search);
       const pub = params.get("pub");
       if (pub) return parseInt(pub);
+
+      const publicationId = params.get("publicationId");
+      if (publicationId) return parseInt(publicationId);
+
+      const subdomain = params.get("subdomain");
+      if (subdomain && Array.isArray(publicationsForLookup) && publicationsForLookup.length > 0) {
+        const match = publicationsForLookup.find((pub) => pub?.subdomain === subdomain);
+        if (match) return match.id;
+      }
 
       // New dashboard URL shape: /{pubSubdomain}/{endpoint}
       if (
@@ -488,7 +510,8 @@ function PublicationProviderInner({ children }) {
     const urlPubId = getPublicationIdFromUrl(userPublications);
 
     // If URL has a publication ID and it's different from current, switch to it
-    if (urlPubId && currentPublication && urlPubId !== currentPublication.id) {
+    // Use loose equality to handle string/number ID mismatches
+    if (urlPubId && currentPublication && urlPubId != currentPublication.id) {
       const urlPub = userPublications.find((pub) => pub.id == urlPubId); // Loose equality match
       if (urlPub) {
         setCurrentPublication(urlPub);
