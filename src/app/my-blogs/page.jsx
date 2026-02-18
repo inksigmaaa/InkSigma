@@ -31,6 +31,7 @@ export default function MyBlogsPage() {
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [showUnpublishModal, setShowUnpublishModal] = useState(false);
   const [showRepublishModal, setShowRepublishModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
   const [actionArticleId, setActionArticleId] = useState(null);
   const [isBulkAction, setIsBulkAction] = useState(false);
 
@@ -56,7 +57,11 @@ export default function MyBlogsPage() {
         setActionArticleId(article.id);
         setShowDeleteModal(true);
       },
-
+      onPublish: () => {
+        setIsBulkAction(false);
+        setActionArticleId(article.id);
+        setShowPublishModal(true);
+      },
       onDraft: () => {
         setIsBulkAction(false);
         setActionArticleId(article.id);
@@ -336,6 +341,29 @@ export default function MyBlogsPage() {
             : "This article will be republished"
         }
         confirmText="Republish"
+        confirmStyle="normal"
+      />
+
+      <ConfirmModal
+        isOpen={showPublishModal}
+        onClose={() => {
+          setShowPublishModal(false);
+          setActionArticleId(null);
+        }}
+        onConfirm={async () => {
+          try {
+            if (actionArticleId) {
+              await publishArticle(actionArticleId);
+            }
+            setShowPublishModal(false);
+            setActionArticleId(null);
+          } catch (error) {
+            console.error("Error publishing article:", error);
+          }
+        }}
+        title="Publish article?"
+        message="This article will be published"
+        confirmText="Publish"
         confirmStyle="normal"
       />
     </AuthGuard>
