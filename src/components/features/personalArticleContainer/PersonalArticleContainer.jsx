@@ -1,5 +1,5 @@
 import ArticleDropdown from "../articleDropdown/ArticleDropdown.jsx";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
 import React from "react";
 
@@ -85,11 +85,14 @@ export default function PersonalArticleContainer({
     currentPublication?.role === "admin" ||
     currentPublication?.role === "editor";
 
+  const pathname = usePathname();
   const handleEdit = () => {
     const publicationQuery = currentPublication?.id
       ? `&publicationId=${currentPublication.id}`
       : "";
-    router.push(`/editor?status=${status}&id=${id}${publicationQuery}`);
+    router.push(
+      `/editor?status=${status}&id=${id}${publicationQuery}&source=${pathname}`,
+    );
   };
 
   // Long press handlers for mobile

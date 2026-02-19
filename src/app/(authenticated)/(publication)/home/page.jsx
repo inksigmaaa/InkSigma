@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import Verify from "@/components/features/verify/Verify";
 import BlogStatsComponent from "@/components/features/BlogStatsComponent/BlogStatsComponent";
 import { Pencil } from "lucide-react";
@@ -17,6 +17,7 @@ const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 export default function HomePage() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const { data: session } = useSession();
   const { currentPublication } = usePublication();
   const { publicationArticles, loadPublicationArticles } = useArticles();
@@ -262,7 +263,7 @@ export default function HomePage() {
                               className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors flex-shrink-0"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                window.location.href = `/editor?status=published&id=${article.id}`;
+                                window.location.href = `/editor?status=published&id=${article.id}&source=${pathname}`;
                               }}
                             >
                               <Pencil className="w-5 h-5" />

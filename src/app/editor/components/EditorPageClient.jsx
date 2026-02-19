@@ -641,8 +641,15 @@ export default function EditorPageClient() {
     }
   };
 
+  const source = searchParams.get("source");
+
   const handleExitNavigation = () => {
     markNavigating();
+    if (source) {
+      router.replace(withPub(source));
+      return;
+    }
+
     if (articleStatus === "published") {
       router.replace(withPub("/published"));
     } else if (articleStatus === "review") {
@@ -684,34 +691,34 @@ export default function EditorPageClient() {
 
     if (isEmptyDraft) {
       markNavigating();
-      router.replace(withPub("/"));
+      router.replace(withPub(source || "/"));
       return;
     }
 
-    // For published articles, go to published page
-    if (existingBlogStatus === "published") {
+    // Direct navigation if no unsaved changes
+    if (!hasUnsavedChanges || !currentBlogId) {
       markNavigating();
-      router.replace(withPub("/published"));
-      return;
-    }
+      if (source) {
+        router.replace(withPub(source));
+        return;
+      }
 
-    // For scheduled articles, go to schedule page
-    if (existingBlogStatus === "scheduled") {
-      markNavigating();
-      router.replace(withPub("/schedule"));
+      // Fallback based on status
+      if (existingBlogStatus === "published") {
+        router.replace(withPub("/published"));
+      } else if (existingBlogStatus === "scheduled") {
+        router.replace(withPub("/schedule"));
+      } else {
+        router.replace(withPub("/draft"));
+      }
       return;
     }
 
     // If there are unsaved changes, show exit confirmation modal
-    if (hasUnsavedChanges && currentBlogId) {
-      setExitDestination("drafts");
-      setShowExitModal(true);
-      return;
-    }
-
-    // No unsaved changes but has content: go to drafts directly
-    markNavigating();
-    router.replace(withPub("/draft"));
+    setExitDestination(
+      source || (existingBlogStatus === "published" ? "published" : "drafts"),
+    );
+    setShowExitModal(true);
   };
 
   const handleDiscard = () => {
@@ -719,7 +726,9 @@ export default function EditorPageClient() {
     setShowExitModal(false);
 
     // Navigate based on destination
-    if (exitDestination === "published") {
+    if (exitDestination && exitDestination.startsWith("/")) {
+      router.replace(withPub(exitDestination));
+    } else if (exitDestination === "published") {
       router.replace(withPub("/published"));
     } else if (exitDestination === "drafts") {
       router.replace(withPub("/draft"));
@@ -734,10 +743,18 @@ export default function EditorPageClient() {
     setShowExitModal(false);
 
     // Save first
-    const result = await saveBlog("draft", null, true);
+    // If article is already published, keep it published. Otherwise default to draft.
+    const statusToSave =
+      existingBlogStatus === "published" ? "published" : "draft";
+    const result = await saveBlog(statusToSave, null, true);
 
     // Navigate based on destination
-    if (exitDestination === "published" || existingBlogStatus === "published") {
+    if (exitDestination && exitDestination.startsWith("/")) {
+      router.replace(withPub(exitDestination));
+    } else if (
+      exitDestination === "published" ||
+      existingBlogStatus === "published"
+    ) {
       router.replace(withPub("/published"));
     } else if (exitDestination === "drafts") {
       router.replace(withPub("/draft"));
