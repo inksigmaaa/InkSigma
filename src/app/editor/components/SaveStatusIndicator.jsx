@@ -32,7 +32,7 @@ export default function SaveStatusIndicator({
     >
       {isSaving ? (
         <>
-          <div className="saving-spinner" />
+          <div className="animate-spin h-3.5 w-3.5 border-2 border-gray-200 border-t-blue-600 rounded-full" />
           <span
             style={{
               width: "56px",
