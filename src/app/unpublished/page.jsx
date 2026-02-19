@@ -238,7 +238,7 @@ export default function Unpublished() {
       onClick: handleBulkDraft,
     },
     {
-      icon: "/images/icons/publish.svg",
+      icon: "/images/icons/publish-ideal.svg",
       title: "Republish",
       onClick: handleBulkRepublish,
     },
