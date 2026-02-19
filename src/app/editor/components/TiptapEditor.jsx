@@ -414,10 +414,6 @@ const HeadingSelector = ({
     <div
       className="flex items-center gap-1 dropdown-container shrink-0 px-1 border-r border-gray-200"
       data-key={dropdownKey}
-      onMouseEnter={(e) => {
-        if (!isOpen) onToggle(e);
-      }}
-      onMouseLeave={onClose}
     >
       <button
         type="button"
@@ -506,10 +502,6 @@ const ListSelector = ({
   <div
     className="relative dropdown-container shrink-0 px-1 border-r border-gray-200"
     data-key={dropdownKey}
-    onMouseEnter={(e) => {
-      if (!isOpen) onToggle(e);
-    }}
-    onMouseLeave={onClose}
   >
     <button
       type="button"
@@ -575,10 +567,6 @@ const AlignSelector = ({
     <div
       className="relative dropdown-container shrink-0 px-1 border-r border-gray-200"
       data-key={dropdownKey}
-      onMouseEnter={(e) => {
-        if (!isOpen) onToggle(e);
-      }}
-      onMouseLeave={onClose}
     >
       <button
         type="button"
@@ -633,14 +621,7 @@ const LinkButton = ({
   onLinkCancel,
   dropdownKey,
 }) => (
-  <div
-    className="relative dropdown-container shrink-0"
-    data-key={dropdownKey}
-    onMouseEnter={(e) => {
-      if (!isOpen) onToggle(e);
-    }}
-    onMouseLeave={onClose}
-  >
+  <div className="relative dropdown-container shrink-0" data-key={dropdownKey}>
     <button
       type="button"
       className="p-1.5 hover:bg-gray-100 rounded"
@@ -707,10 +688,6 @@ const AdvancedOptions = ({
     <div
       className="relative dropdown-container shrink-0"
       data-key={dropdownKey}
-      onMouseEnter={(e) => {
-        if (!isOpen) onToggle(e);
-      }}
-      onMouseLeave={onClose}
     >
       <button
         type="button"
