@@ -469,7 +469,7 @@ export default function PersonalArticleContainer({
                       <img src="/images/icons/restore.svg" alt="restore" />
                     </button>
                     <button
-                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-red-50 hover:border-red-300" : "cursor-not-allowed opacity-40"}`}
+                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
                         height: "32px",
@@ -517,7 +517,7 @@ export default function PersonalArticleContainer({
                       <img src="/images/icons/edit.svg" alt="edit" />
                     </button>
                     <button
-                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-red-50 hover:border-red-300" : "cursor-not-allowed opacity-40"}`}
+                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
                         height: "32px",
@@ -599,7 +599,7 @@ export default function PersonalArticleContainer({
                       <img src="/images/icons/copy.svg" alt="draft" />
                     </button>
                     <button
-                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-red-50 hover:border-red-300" : "cursor-not-allowed opacity-40"}`}
+                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
                         height: "32px",
@@ -666,7 +666,7 @@ export default function PersonalArticleContainer({
                       <img src="/images/icons/copy.svg" alt="draft" />
                     </button>
                     <button
-                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-red-50 hover:border-red-300" : "cursor-not-allowed opacity-40"}`}
+                      className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
                         height: "32px",
