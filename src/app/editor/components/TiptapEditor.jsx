@@ -184,6 +184,60 @@ const DropdownMenu = ({
   );
 };
 
+const getToolbarActiveState = (editor) => ({
+  bold: editor?.isActive("bold") ?? false,
+  italic: editor?.isActive("italic") ?? false,
+  underline: editor?.isActive("underline") ?? false,
+  strike: editor?.isActive("strike") ?? false,
+  codeBlock: editor?.isActive("codeBlock") ?? false,
+  blockquote: editor?.isActive("blockquote") ?? false,
+  superscript: editor?.isActive("superscript") ?? false,
+  subscript: editor?.isActive("subscript") ?? false,
+});
+
+const isSameToolbarState = (prev, next) =>
+  prev.bold === next.bold &&
+  prev.italic === next.italic &&
+  prev.underline === next.underline &&
+  prev.strike === next.strike &&
+  prev.codeBlock === next.codeBlock &&
+  prev.blockquote === next.blockquote &&
+  prev.superscript === next.superscript &&
+  prev.subscript === next.subscript;
+
+const useToolbarActiveState = (editor) => {
+  const [activeState, setActiveState] = useState(() =>
+    getToolbarActiveState(editor),
+  );
+
+  useEffect(() => {
+    if (!editor) return;
+
+    const updateActiveState = () => {
+      setActiveState((prev) => {
+        const next = getToolbarActiveState(editor);
+        return isSameToolbarState(prev, next) ? prev : next;
+      });
+    };
+
+    updateActiveState();
+
+    editor.on("selectionUpdate", updateActiveState);
+    editor.on("transaction", updateActiveState);
+    editor.on("focus", updateActiveState);
+    editor.on("blur", updateActiveState);
+
+    return () => {
+      editor.off("selectionUpdate", updateActiveState);
+      editor.off("transaction", updateActiveState);
+      editor.off("focus", updateActiveState);
+      editor.off("blur", updateActiveState);
+    };
+  }, [editor]);
+
+  return activeState;
+};
+
 const EditorToolbar = ({
   editor,
   currentFont,
@@ -195,8 +249,12 @@ const EditorToolbar = ({
   onLinkCancel,
   onImageInsert,
 }) => {
-  const buttonBaseClass = "p-1.5 hover:bg-gray-100 rounded shrink-0";
-  const buttonActiveClass = (isActive) => (isActive ? "bg-gray-200" : "");
+  const activeState = useToolbarActiveState(editor);
+  const buttonBaseClass = "p-1.5 rounded shrink-0 shadow-none";
+  const buttonActiveClass = (isActive) =>
+    isActive
+      ? "bg-gray-200 hover:bg-gray-200 shadow-none"
+      : "hover:bg-gray-100";
 
   const handleMouseDown = (e) => {
     e.preventDefault();
@@ -208,28 +266,28 @@ const EditorToolbar = ({
   const formatButtons = [
     {
       action: () => editor.chain().focus().toggleBold().run(),
-      isActive: editor.isActive("bold"),
+      isActive: activeState.bold,
       icon: "B",
       title: "Bold",
       src: "/editor-icons/B.svg",
     },
     {
       action: () => editor.chain().focus().toggleItalic().run(),
-      isActive: editor.isActive("italic"),
+      isActive: activeState.italic,
       icon: "I",
       title: "Italic",
       src: "/editor-icons/italic.svg",
     },
     {
       action: () => editor.chain().focus().toggleUnderline().run(),
-      isActive: editor.isActive("underline"),
+      isActive: activeState.underline,
       icon: "U",
       title: "Underline",
       src: "/editor-icons/underline.svg",
     },
     {
       action: () => editor.chain().focus().toggleStrike().run(),
-      isActive: editor.isActive("strike"),
+      isActive: activeState.strike,
       icon: "S",
       title: "Strikethrough",
       src: "/editor-icons/strike.svg",
@@ -244,13 +302,13 @@ const EditorToolbar = ({
     },
     {
       action: () => editor.chain().focus().toggleCodeBlock().run(),
-      isActive: editor.isActive("codeBlock"),
+      isActive: activeState.codeBlock,
       title: "Code Block",
       src: "/editor-icons/block.svg",
     },
     {
       action: () => editor.chain().focus().toggleBlockquote().run(),
-      isActive: editor.isActive("blockquote"),
+      isActive: activeState.blockquote,
       title: "Quote",
       src: "/editor-icons/''.svg",
     },
@@ -346,6 +404,7 @@ const EditorToolbar = ({
         buttonBaseClass={buttonBaseClass}
         buttonActiveClass={buttonActiveClass}
         onImageInsert={onImageInsert}
+        activeState={activeState}
       />
 
       {/* Tablet Toolbar */}
@@ -354,6 +413,7 @@ const EditorToolbar = ({
         onDropdownToggle={onDropdownToggle}
         dropdownState={dropdownState}
         onImageInsert={onImageInsert}
+        activeState={activeState}
       />
     </>
   );
@@ -461,35 +521,69 @@ const HeadingSelector = ({
   );
 };
 
-const FormatButtons = ({ buttons, buttonBaseClass, buttonActiveClass }) => (
-  <div className="flex items-center gap-0.5 px-1 border-r border-gray-200">
-    {buttons.map((btn, idx) => (
-      <Tooltip key={idx} text={btn.title}>
-        <button
-          onClick={btn.action}
-          className={`${buttonBaseClass} ${buttonActiveClass(btn.isActive)}`}
-        >
-          <img src={btn.src} alt={btn.title} className="w-4 h-4" />
-        </button>
-      </Tooltip>
-    ))}
-  </div>
-);
+const FormatButtons = ({ buttons, buttonBaseClass, buttonActiveClass }) => {
+  const [clickedState, setClickedState] = useState({});
 
-const InsertButtons = ({ buttons, buttonBaseClass, buttonActiveClass }) => (
-  <div className="flex items-center gap-0.5 px-1 border-r border-gray-200">
-    {buttons.map((btn, idx) => (
-      <Tooltip key={idx} text={btn.title}>
-        <button
-          onClick={btn.action}
-          className={`${buttonBaseClass} ${buttonActiveClass(btn.isActive)}`}
-        >
-          <img src={btn.src} alt={btn.title} className="w-4 h-4" />
-        </button>
-      </Tooltip>
-    ))}
-  </div>
-);
+  return (
+    <div className="flex items-center gap-0.5 px-1 border-r border-gray-200">
+      {buttons.map((btn, idx) => {
+        const isActive = Boolean(btn.isActive || clickedState[idx]);
+
+        return (
+          <Tooltip key={idx} text={btn.title}>
+            <button
+              type="button"
+              aria-pressed={isActive}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                btn.action();
+                if (typeof btn.isActive === "boolean") {
+                  setClickedState((prev) => ({ ...prev, [idx]: !prev[idx] }));
+                }
+              }}
+              className={`${buttonBaseClass} ${buttonActiveClass(isActive)}`}
+              style={isActive ? { backgroundColor: "#E5E7EB" } : undefined}
+            >
+              <img src={btn.src} alt={btn.title} className="w-4 h-4" />
+            </button>
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
+};
+
+const InsertButtons = ({ buttons, buttonBaseClass, buttonActiveClass }) => {
+  const [clickedState, setClickedState] = useState({});
+
+  return (
+    <div className="flex items-center gap-0.5 px-1 border-r border-gray-200">
+      {buttons.map((btn, idx) => {
+        const isActive = Boolean(btn.isActive || clickedState[idx]);
+
+        return (
+          <Tooltip key={idx} text={btn.title}>
+            <button
+              type="button"
+              aria-pressed={isActive}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                btn.action();
+                if (typeof btn.isActive === "boolean") {
+                  setClickedState((prev) => ({ ...prev, [idx]: !prev[idx] }));
+                }
+              }}
+              className={`${buttonBaseClass} ${buttonActiveClass(isActive)}`}
+              style={isActive ? { backgroundColor: "#E5E7EB" } : undefined}
+            >
+              <img src={btn.src} alt={btn.title} className="w-4 h-4" />
+            </button>
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
+};
 
 const ListSelector = ({
   editor,
@@ -808,6 +902,7 @@ const MobileToolbar = ({
   buttonBaseClass,
   buttonActiveClass,
   onImageInsert,
+  activeState,
 }) => {
   const headingOptions = ["H1", "H2", "H3", "H4", "H5", "H6"];
   const lineHeightOptions = ["1", "1.15", "1.5", "2", "2.5", "3"];
@@ -881,25 +976,25 @@ const MobileToolbar = ({
         buttons={[
           {
             action: () => editor.chain().focus().toggleBold().run(),
-            isActive: editor.isActive("bold"),
+            isActive: activeState.bold,
             title: "Bold",
             src: "/editor-icons/B.svg",
           },
           {
             action: () => editor.chain().focus().toggleItalic().run(),
-            isActive: editor.isActive("italic"),
+            isActive: activeState.italic,
             title: "Italic",
             src: "/editor-icons/italic.svg",
           },
           {
             action: () => editor.chain().focus().toggleUnderline().run(),
-            isActive: editor.isActive("underline"),
+            isActive: activeState.underline,
             title: "Underline",
             src: "/editor-icons/underline.svg",
           },
           {
             action: () => editor.chain().focus().toggleStrike().run(),
-            isActive: editor.isActive("strike"),
+            isActive: activeState.strike,
             title: "Strikethrough",
             src: "/editor-icons/strike.svg",
           },
@@ -1028,7 +1123,7 @@ const MobileToolbar = ({
         <Tooltip text="Code Block">
           <button
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-            className={`${buttonBaseClass} ${buttonActiveClass(editor.isActive("codeBlock"))}`}
+            className={`${buttonBaseClass} ${buttonActiveClass(activeState.codeBlock)}`}
           >
             <img
               src="/editor-icons/block.svg"
@@ -1040,7 +1135,7 @@ const MobileToolbar = ({
         <Tooltip text="Quote">
           <button
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            className={`${buttonBaseClass} ${buttonActiveClass(editor.isActive("blockquote"))}`}
+            className={`${buttonBaseClass} ${buttonActiveClass(activeState.blockquote)}`}
           >
             <img src="/editor-icons/''.svg" alt="Quote" className="w-4 h-4" />
           </button>
@@ -1061,7 +1156,7 @@ const MobileToolbar = ({
         <Tooltip text="Superscript">
           <button
             onClick={() => editor.chain().focus().toggleSuperscript().run()}
-            className={`${buttonBaseClass} ${buttonActiveClass(editor.isActive("superscript"))}`}
+            className={`${buttonBaseClass} ${buttonActiveClass(activeState.superscript)}`}
           >
             <img
               src="/editor-icons/advance/super.svg"
@@ -1073,7 +1168,7 @@ const MobileToolbar = ({
         <Tooltip text="Subscript">
           <button
             onClick={() => editor.chain().focus().toggleSubscript().run()}
-            className={`${buttonBaseClass} ${buttonActiveClass(editor.isActive("subscript"))}`}
+            className={`${buttonBaseClass} ${buttonActiveClass(activeState.subscript)}`}
           >
             <img
               src="/editor-icons/advance/sub.svg"
@@ -1165,6 +1260,7 @@ const TabletToolbar = ({
   onDropdownToggle,
   dropdownState,
   onImageInsert,
+  activeState,
 }) => {
   const headings = ["P", "H1", "H2", "H3", "H4", "H5", "H6"];
 
@@ -1270,25 +1366,25 @@ const TabletToolbar = ({
         buttons={[
           {
             action: () => editor.chain().focus().toggleBold().run(),
-            isActive: editor.isActive("bold"),
+            isActive: activeState.bold,
             title: "Bold",
             src: "/editor-icons/B.svg",
           },
           {
             action: () => editor.chain().focus().toggleItalic().run(),
-            isActive: editor.isActive("italic"),
+            isActive: activeState.italic,
             title: "Italic",
             src: "/editor-icons/italic.svg",
           },
           {
             action: () => editor.chain().focus().toggleUnderline().run(),
-            isActive: editor.isActive("underline"),
+            isActive: activeState.underline,
             title: "Underline",
             src: "/editor-icons/underline.svg",
           },
           {
             action: () => editor.chain().focus().toggleStrike().run(),
-            isActive: editor.isActive("strike"),
+            isActive: activeState.strike,
             title: "Strikethrough",
             src: "/editor-icons/strike.svg",
           },
@@ -1410,13 +1506,13 @@ const TabletToolbar = ({
           },
           {
             action: () => editor.chain().focus().toggleCodeBlock().run(),
-            isActive: editor.isActive("codeBlock"),
+            isActive: activeState.codeBlock,
             title: "Code Block",
             src: "/editor-icons/block.svg",
           },
           {
             action: () => editor.chain().focus().toggleBlockquote().run(),
-            isActive: editor.isActive("blockquote"),
+            isActive: activeState.blockquote,
             title: "Quote",
             src: "/editor-icons/''.svg",
           },
@@ -1693,6 +1789,7 @@ export function TiptapEditor({
     ],
     content: initialContent,
     immediatelyRender: false,
+    shouldRerenderOnTransaction: true,
     onUpdate: ({ editor: ed }) => {
       const html = ed.getHTML();
       const text = ed.getText();
