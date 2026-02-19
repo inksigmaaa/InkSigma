@@ -25,6 +25,11 @@ import {
 import { TiptapEditor } from "./TiptapEditor";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { getApiBase } from "@/utils/apiBase";
+import {
+  getDraft as dexieGetDraft,
+  deleteDraft as dexieDeleteDraft,
+} from "./services/DexieService";
+import SaveStatusIndicator from "./SaveStatusIndicator";
 
 const API_URL = getApiBase();
 
@@ -159,9 +164,11 @@ export default function EditorPageClient() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [showDraftConfirmModal, setShowDraftConfirmModal] = useState(false);
   const [exitDestination, setExitDestination] = useState(null); // 'published', 'drafts', 'home'
+  const [recoveryDraft, setRecoveryDraft] = useState(null); // Dexie draft for recovery banner
   const calendarRef = useRef(null);
   const handlingPopStateRef = useRef(false);
   const saveInFlightRef = useRef(false);
+  const editorInstanceRef = useRef(null); // Ref to TipTap editor for uncontrolled reads
 
   // Handle See Later - dismiss popup and check for unsaved changes first
   const handleSeeLater = async () => {
@@ -241,6 +248,24 @@ export default function EditorPageClient() {
     ],
   );
 
+  // Callback for when the first server save creates a new blog ID
+  const handleBlogIdCreated = useCallback(
+    (result) => {
+      if (result?.id != null) {
+        const newId = String(result.id);
+        setCurrentBlogId(newId);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("id", newId);
+        if (!params.get("status")) params.set("status", "draft");
+        if (publicationId) params.set("publicationId", publicationId);
+        router.replace(withPub(`/editor?${params.toString()}`), {
+          scroll: false,
+        });
+      }
+    },
+    [searchParams, publicationId, router, withPub],
+  );
+
   const {
     hasUnsavedChanges,
     saveStatus,
@@ -251,6 +276,8 @@ export default function EditorPageClient() {
     markNavigating,
     cancelPendingAutoSave,
     resetSnapshot,
+    clearDraft,
+    getDexieId,
   } = useAutoSave({
     currentBlogId,
     title: blogTitle,
@@ -262,6 +289,7 @@ export default function EditorPageClient() {
     currentPublication,
     isSaving,
     saveFn: saveFnForHook,
+    onBlogIdCreated: handleBlogIdCreated,
   });
 
   // Derived: does the editor have any content at all?
@@ -274,8 +302,18 @@ export default function EditorPageClient() {
   useEffect(() => {
     if (blogId) {
       loadExistingBlog(blogId);
+    } else if (isMounted) {
+      // New post: check Dexie for a recovered draft
+      const checkNewDraft = async () => {
+        const dexieId = getDexieId();
+        const localDraft = await dexieGetDraft(dexieId);
+        if (localDraft && (localDraft.title || localDraft.content)) {
+          setRecoveryDraft(localDraft);
+        }
+      };
+      checkNewDraft();
     }
-  }, [blogId]);
+  }, [blogId, isMounted, getDexieId]);
 
   const loadExistingBlog = async (id) => {
     setIsLoading(true);
@@ -302,7 +340,7 @@ export default function EditorPageClient() {
       // Initialize editorContent state to prevent data loss if saving without editing body
       setEditorContent({
         html: blog.content || "",
-        text: "", // Initial text representation (will be updated by editor on load)
+        text: "",
         charCount: (blog.content || "").length,
         wordCount: 0,
       });
@@ -316,6 +354,25 @@ export default function EditorPageClient() {
         contentHtml: blog.content || "",
         categories: blog.categories || [],
       });
+
+      // Check Dexie for a local draft that's newer than the server version
+      try {
+        const localDraft = await dexieGetDraft(String(id));
+        if (localDraft && localDraft.lastModified) {
+          const serverTime = new Date(
+            blog.updatedAt || blog.createdAt,
+          ).getTime();
+          if (localDraft.lastModified > serverTime) {
+            // Local draft is newer — show recovery banner
+            setRecoveryDraft(localDraft);
+          } else {
+            // Stale local draft — clean it up
+            dexieDeleteDraft(String(id));
+          }
+        }
+      } catch (err) {
+        console.warn("[Editor] Dexie draft check failed:", err);
+      }
 
       if (blog.image) {
         setThumbnailData({ url: blog.image });
@@ -555,6 +612,8 @@ export default function EditorPageClient() {
     try {
       const result = await saveBlog("published");
       if (result) {
+        // Clean up Dexie draft after successful publish
+        clearDraft();
         setPublishedBlogSlug(result.slug || "");
         setShowPublishSuccess(true);
       }
@@ -1309,61 +1368,11 @@ export default function EditorPageClient() {
               <div className="flex-1 min-w-0"></div>
 
               {/* Save Status - Desktop and Tablet Only */}
-              {hasContent && (isAutoSaving || saveStatus !== "idle") && (
-                <div
-                  className="hidden md:flex items-center flex-shrink-0"
-                  style={{
-                    width:
-                      isAutoSaving || saveStatus === "saving" ? "98px" : "78px",
-                    height: "33px",
-                    borderRadius: "4px",
-                    border: "1px solid #EAEAEA",
-                    padding: "6px 8px",
-                    gap: "8px",
-                    transition: "width 0.2s ease",
-                  }}
-                >
-                  {isAutoSaving || saveStatus === "saving" ? (
-                    <>
-                      <div className="saving-spinner" />
-                      <span
-                        style={{
-                          width: "56px",
-                          height: "21px",
-                          fontFamily: "Public Sans",
-                          fontWeight: 400,
-                          fontSize: "14px",
-                          lineHeight: "150%",
-                          letterSpacing: "0%",
-                          color: "#696969",
-                        }}
-                      >
-                        Saving...
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <img
-                        src="/images/icons/tick4.svg"
-                        alt="saved"
-                        style={{ width: "13px", height: "13px" }}
-                      />
-                      <span
-                        style={{
-                          fontFamily: "Public Sans",
-                          fontWeight: 400,
-                          fontSize: "14px",
-                          lineHeight: "150%",
-                          letterSpacing: "0%",
-                          color: "#696969",
-                        }}
-                      >
-                        Saved
-                      </span>
-                    </>
-                  )}
-                </div>
-              )}
+              <SaveStatusIndicator
+                saveStatus={saveStatus}
+                isAutoSaving={isAutoSaving}
+                hasContent={hasContent}
+              />
             </div>
           </div>
 
@@ -1381,6 +1390,7 @@ export default function EditorPageClient() {
                 key={currentBlogId || "new"}
                 onUpdate={(data) => setEditorContent(data)}
                 initialContent={initialContent}
+                editorRef={editorInstanceRef}
               />
             )}
           </div>

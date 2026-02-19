@@ -1630,6 +1630,7 @@ export function TiptapEditor({
   onUpdate,
   initialContent = "",
   onImageModalToggle,
+  editorRef: externalEditorRef,
 }) {
   const [isMounted, setIsMounted] = useState(false);
   const [currentFont, setCurrentFont] = useState("Roboto");
@@ -1805,6 +1806,8 @@ export function TiptapEditor({
     },
     onCreate: ({ editor: ed }) => {
       editorRef.current = ed;
+      // Expose editor instance to parent via ref (for uncontrolled reads)
+      if (externalEditorRef) externalEditorRef.current = ed;
     },
     editorProps: {
       attributes: {
