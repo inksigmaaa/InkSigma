@@ -117,8 +117,22 @@ export default function HomePage() {
   };
 
   const handleVisitSite = () => {
-    // Pass the current publication ID to view-site
-    if (currentPublication?.id) {
+    if (currentPublication?.subdomain) {
+      const protocol = window.location.protocol;
+      const host = window.location.host;
+      const parts = host.split(".");
+
+      let newHost = host;
+      // Replace the first part (current subdomain) with the publication subdomain
+      // This handles dashboard.inksigma.local -> tennyson.inksigma.local
+      if (parts.length >= 2) {
+        parts[0] = currentPublication.subdomain;
+        newHost = parts.join(".");
+      }
+
+      window.open(`${protocol}//${newHost}`, "_blank");
+    } else if (currentPublication?.id) {
+      // Fallback for no subdomain
       window.open(
         `/view-site?publicationId=${currentPublication.id}`,
         "_blank",

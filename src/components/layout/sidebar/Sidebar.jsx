@@ -249,7 +249,7 @@ export default function Sidebar() {
               <a
                 href={
                   currentPublication?.subdomain
-                    ? `http://${currentPublication.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"}:3000?publicationId=${currentPublication.id}`
+                    ? `http://${currentPublication.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"}:3000`
                     : currentPublication?.id
                       ? `/view-site?publicationId=${currentPublication.id}`
                       : "/view-site"
