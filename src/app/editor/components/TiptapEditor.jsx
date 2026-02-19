@@ -525,7 +525,7 @@ const FormatButtons = ({ buttons, buttonBaseClass, buttonActiveClass }) => {
   const [clickedState, setClickedState] = useState({});
 
   return (
-    <div className="flex items-center gap-0.5 px-1 border-r border-gray-200">
+    <div className="flex items-center gap-0.5 px-1 border-r border-gray-200 shrink-0">
       {buttons.map((btn, idx) => {
         const isActive = Boolean(btn.isActive || clickedState[idx]);
 
@@ -557,7 +557,7 @@ const InsertButtons = ({ buttons, buttonBaseClass, buttonActiveClass }) => {
   const [clickedState, setClickedState] = useState({});
 
   return (
-    <div className="flex items-center gap-0.5 px-1 border-r border-gray-200">
+    <div className="flex items-center gap-0.5 px-1 border-r border-gray-200 shrink-0">
       {buttons.map((btn, idx) => {
         const isActive = Boolean(btn.isActive || clickedState[idx]);
 
