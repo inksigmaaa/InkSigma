@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { use, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft, Info, Bell } from 'lucide-react';
-import { formatTimeAgo } from '@/utils/timeFormatter';
-import { getImageUrl } from '@/utils/imageUrl';
-import { getApiBase } from '@/utils/apiBase';
+import { use, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronLeft, Info, Bell } from "lucide-react";
+import { formatTimeAgo } from "@/utils/timeFormatter";
+import { getImageUrl } from "@/utils/imageUrl";
+import { getApiBase } from "@/utils/apiBase";
 
 export default function PreviewPage({ params }) {
   const { id } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const publicationId = searchParams.get('publicationId');
+  const publicationId = searchParams.get("publicationId");
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,21 +24,24 @@ export default function PreviewPage({ params }) {
         const url = `${apiBase}/api/blogs/${id}`;
 
         const response = await fetch(url, {
-          credentials: 'include'
+          credentials: "include",
         });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Failed to fetch article');
+          throw new Error(errorData.error || "Failed to fetch article");
         }
 
         const data = await response.json();
 
         // Fetch publication details if publicationId exists
         if (data.publicationId) {
-          const pubResponse = await fetch(`${apiBase}/api/publications/${data.publicationId}`, {
-            credentials: 'include'
-          });
+          const pubResponse = await fetch(
+            `${apiBase}/api/publications/${data.publicationId}`,
+            {
+              credentials: "include",
+            },
+          );
 
           if (pubResponse.ok) {
             const pubData = await pubResponse.json();
@@ -48,7 +51,7 @@ export default function PreviewPage({ params }) {
 
         setArticle(data);
       } catch (err) {
-        console.error('Error fetching article:', err);
+        console.error("Error fetching article:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -74,7 +77,7 @@ export default function PreviewPage({ params }) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-500 mb-4">{error || 'Article not found'}</p>
+          <p className="text-red-500 mb-4">{error || "Article not found"}</p>
           <button
             onClick={handleClose}
             className="text-purple-600 hover:text-purple-700 underline"
@@ -101,12 +104,14 @@ export default function PreviewPage({ params }) {
                     alt={article.publication.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-xs">${article.publication?.name?.charAt(0).toUpperCase() || 'P'}</span></div>`;
+                      e.target.style.display = "none";
+                      e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-xs">${article.publication?.name?.charAt(0).toUpperCase() || "P"}</span></div>`;
                     }}
                   />
                 </div>
-                <span className="text-lg font-bold text-black">{article.publication.name}</span>
+                <span className="text-lg font-bold text-black">
+                  {article.publication.name}
+                </span>
               </div>
             ) : (
               <span className="text-xl font-bold">
@@ -127,18 +132,22 @@ export default function PreviewPage({ params }) {
             <div className="w-9 h-9 rounded-full bg-gray-300 overflow-hidden">
               {article.author?.image ? (
                 <img
-                  src={article.author.image.startsWith('http') ? article.author.image : `${getApiBase()}${article.author.image}`}
-                  alt={article.author.name || 'User'}
+                  src={
+                    article.author.image.startsWith("http")
+                      ? article.author.image
+                      : `${getApiBase()}${article.author.image}`
+                  }
+                  alt={article.author.name || "User"}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${article.author?.name?.charAt(0).toUpperCase() || 'U'}</span></div>`;
+                    e.target.style.display = "none";
+                    e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${article.author?.name?.charAt(0).toUpperCase() || "U"}</span></div>`;
                   }}
                 />
               ) : (
                 <div className="w-full h-full bg-purple-100 flex items-center justify-center">
                   <span className="text-purple-600 font-semibold text-sm">
-                    {article.author?.name?.charAt(0).toUpperCase() || 'U'}
+                    {article.author?.name?.charAt(0).toUpperCase() || "U"}
                   </span>
                 </div>
               )}
@@ -156,7 +165,9 @@ export default function PreviewPage({ params }) {
             className="flex items-center px-2 py-1 gap-2 text-[#696969] hover:text-gray-900 transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span className="text-sm text-nowrap font-semibold leading-none">Close Preview</span>
+            <span className="text-sm text-nowrap font-semibold leading-none">
+              Close Preview
+            </span>
           </button>
         </div>
 
@@ -165,32 +176,46 @@ export default function PreviewPage({ params }) {
           {/* Preview Banner */}
           <div className="bg-[#F3EEFF] border-b border-purple-100 px-4 md:px-8 py-3 mx-4 md:mx-0 mt-4 md:mt-0 rounded-lg md:rounded-none">
             <div className="flex items-center gap-2 text-[#7A37AE] font-medium text-[14px] leading-normal tracking-normal">
-              <img src="/svg/preview_icon.svg" alt="" className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm">This is a preview of your draft article</span>
+              <img
+                src="/svg/preview_icon.svg"
+                alt=""
+                className="w-5 h-5 flex-shrink-0"
+              />
+              <span className="text-sm">
+                This is a preview of your draft article
+              </span>
             </div>
           </div>
 
           {/* Article Content */}
-          <div className="w-[900px] flex-grow">
+          <div className="w-full max-w-[900px] mx-auto flex-grow">
             {/* Title */}
-            <h1 className="text-2xl md:text-4xl px-11 py-6 font-bold text-black leading-tight">
+            <h1 className="text-2xl md:text-4xl px-4 md:px-11 py-6 font-bold text-black leading-tight">
               {article.title}
             </h1>
 
-            <div className='pl-11 pr-6 py-4 border-y border-gray-200'>
+            <div className="px-4 md:pl-11 md:pr-6 py-4 border-y border-gray-200">
               {/* Categories and Date - Mobile */}
               <div className="md:hidden mb-6">
                 {article.categories && article.categories.length > 0 && (
                   <div className="flex items-center gap-2 mb-3">
                     {article.categories.map((category, index) => (
-                      <span key={index} className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded">
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded"
+                      >
                         {category}
                       </span>
                     ))}
                   </div>
                 )}
                 <div className="flex items-center gap-1.5 text-gray-400 text-sm">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -209,7 +234,10 @@ export default function PreviewPage({ params }) {
                   {article.categories && article.categories.length > 0 && (
                     <div className="flex items-center gap-2">
                       {article.categories.map((category, index) => (
-                        <span key={index} className="px-[12px] py-[6px] bg-gray-100 font-normal text-[#808080] text-sm leading-normal tracking-normal rounded">
+                        <span
+                          key={index}
+                          className="px-[12px] py-[6px] bg-gray-100 font-normal text-[#808080] text-sm leading-normal tracking-normal rounded"
+                        >
                           {category}
                         </span>
                       ))}
@@ -219,7 +247,12 @@ export default function PreviewPage({ params }) {
 
                 {/* Right side - Created Date */}
                 <div className="flex items-center gap-1 text-[#808080] font-normal text-xs leading-normal tracking-normal flex-shrink-0">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -227,27 +260,36 @@ export default function PreviewPage({ params }) {
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span className="whitespace-nowrap">Created {formatTimeAgo(article.createdAt)}</span>
+                  <span className="whitespace-nowrap">
+                    Created {formatTimeAgo(article.createdAt)}
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className='px-11 py-8'>
+            <div className="px-4 md:px-11 py-8">
               {/* Article Body */}
               <article
-                className="prose prose-sm md:prose-lg max-w-none prose-headings:mt-0 prose-headings:mb-3 md:prose-headings:mb-4 [&_:is(h1,h2,h3,h4,h5,h6)]:!font-bold [&_:is(h1,h2,h3,h4,h5,h6)]:!text-[20px] [&_:is(h1,h2,h3,h4,h5,h6)]:!leading-[100%] [&_:is(h1,h2,h3,h4,h5,h6)]:!tracking-[0%] [&_:is(h1,h2,h3,h4,h5,h6)]:!text-black [&_:is(h1,h2,h3,h4,h5,h6)_span]:!font-bold [&_:is(h1,h2,h3,h4,h5,h6)_span]:!text-[20px] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!leading-[100%] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!tracking-[0%] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!text-black [&_p]:!text-[#404040] [&_p_span]:!text-[#404040] [&_p_span]:!font-normal [&_p_span]:!text-[16px] [&_p_span]:!leading-[28px] [&_p_span]:!tracking-[0.01em] prose-p:font-normal prose-p:text-[16px] prose-p:leading-[28px] prose-p:tracking-[0.01em] prose-p:mb-4 md:prose-p:mb-6 prose-img:rounded-lg prose-img:my-6 md:prose-img:my-8 prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-600 text-[#404040]"
+                className="prose prose-sm md:prose-lg max-w-none prose-headings:mt-0 prose-headings:mb-3 md:prose-headings:mb-4 [&_:is(h1,h2,h3,h4,h5,h6)]:!font-bold [&_:is(h1,h2,h3,h4,h5,h6)]:!text-[20px] [&_:is(h1,h2,h3,h4,h5,h6)]:!leading-[100%] [&_:is(h1,h2,h3,h4,h5,h6)]:!tracking-[0%] [&_:is(h1,h2,h3,h4,h5,h6)]:!text-black [&_:is(h1,h2,h3,h4,h5,h6)_span]:!font-bold [&_:is(h1,h2,h3,h4,h5,h6)_span]:!text-[20px] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!leading-[100%] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!tracking-[0%] [&_:is(h1,h2,h3,h4,h5,h6)_span]:!text-black [&_p]:!text-[#404040] [&_p_span]:!text-[#404040] [&_p_span]:!font-normal [&_p_span]:!text-[16px] [&_p_span]:!leading-[28px] [&_p_span]:!tracking-[0.01em] prose-p:font-normal prose-p:text-[16px] prose-p:leading-[28px] prose-p:tracking-[0.01em] prose-p:mb-4 md:prose-p:mb-6 prose-img:rounded-lg prose-img:my-6 md:prose-img:my-8 prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-600 text-[#404040] [&_img]:!max-w-full [&_img]:!h-auto"
                 dangerouslySetInnerHTML={{
                   __html: (() => {
-                    if (!article.content) return '';
+                    if (!article.content) return "";
                     // Convert relative image URLs to full URLs for display
                     const apiUrl = getApiBase();
-                    return article.content.replace(/src="([^"]*)"/g, (match, src) => {
-                      if (!src) return match;
-                      if (src.startsWith('http://') || src.startsWith('https://')) return match;
-                      if (src.startsWith('/')) return `src="${apiUrl}${src}"`;
-                      return `src="${apiUrl}/${src}"`;
-                    });
-                  })()
+                    return article.content.replace(
+                      /src="([^"]*)"/g,
+                      (match, src) => {
+                        if (!src) return match;
+                        if (
+                          src.startsWith("http://") ||
+                          src.startsWith("https://")
+                        )
+                          return match;
+                        if (src.startsWith("/")) return `src="${apiUrl}${src}"`;
+                        return `src="${apiUrl}/${src}"`;
+                      },
+                    );
+                  })(),
                 }}
               />
             </div>
@@ -256,7 +298,7 @@ export default function PreviewPage({ params }) {
           {/* Footer */}
           <footer className="text-center py-8 px-4">
             <p className="text-sm text-gray-300">
-              Copyright © 2023 designed & developed by{' '}
+              Copyright © 2023 designed & developed by{" "}
               <a
                 href="https://inksigma.com"
                 target="_blank"
@@ -265,7 +307,7 @@ export default function PreviewPage({ params }) {
               >
                 Inksigma
               </a>
-              , a{' '}
+              , a{" "}
               <a
                 href="https://zemuria.com"
                 target="_blank"
