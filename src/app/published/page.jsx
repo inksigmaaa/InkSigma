@@ -26,6 +26,7 @@ export default function PublishedPage() {
     unpublishArticle,
     loadUserArticles,
     loadPublicationArticles,
+    arePubArticlesLoaded,
   } = useArticles();
 
   const { currentPublication, getCurrentUserRole } = usePublication();
@@ -61,7 +62,7 @@ export default function PublishedPage() {
 
     const shouldLoad =
       needsRefresh ||
-      (displayArticles.length === 0 && !isLoading && !hasLoadedRef.current) ||
+      (!arePubArticlesLoaded && !isLoading && !hasLoadedRef.current) ||
       isWrongContext;
 
     if (shouldLoad && currentPublication?.id) {

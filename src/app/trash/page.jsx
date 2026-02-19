@@ -25,6 +25,7 @@ export default function TrashPage() {
     moveToTrash,
     bulkMoveToTrash,
     loadUserArticles,
+    areUserArticlesLoaded,
   } = useArticles();
   const [selectedArticles, setSelectedArticles] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -33,8 +34,10 @@ export default function TrashPage() {
 
   // Load articles filtered by current publication when page mounts or publication changes
   useEffect(() => {
-    loadUserArticles(currentPublication?.id);
-  }, [loadUserArticles, currentPublication?.id]);
+    if (!areUserArticlesLoaded) {
+      loadUserArticles(currentPublication?.id);
+    }
+  }, [loadUserArticles, currentPublication?.id, areUserArticlesLoaded]);
 
   // Filter trash articles
   const trashArticles = articles.filter((article) => {

@@ -23,6 +23,7 @@ export default function DraftPage() {
     bulkPublish,
     publishArticle,
     loadUserArticles,
+    areUserArticlesLoaded,
   } = useArticles();
   const { currentPublication } = usePublication();
   const searchParams = useSearchParams();
@@ -41,7 +42,7 @@ export default function DraftPage() {
     if (
       !hasLoadedRef.current &&
       session?.user?.id &&
-      (needsRefresh || articles.length === 0)
+      (needsRefresh || !areUserArticlesLoaded)
     ) {
       hasLoadedRef.current = true;
       loadUserArticles(currentPublication?.id);
@@ -50,7 +51,7 @@ export default function DraftPage() {
     searchParams,
     session?.user?.id,
     currentPublication?.id,
-    articles.length,
+    areUserArticlesLoaded,
     loadUserArticles,
   ]);
 

@@ -84,6 +84,9 @@ export function ArticlesProvider({ children }) {
   const [pubArticlesLoading, setPubArticlesLoading] = useState(false);
   const [error, setError] = useState(null);
   const [reviewError, setReviewError] = useState(null);
+  // Track continuous loading state for full lists
+  const [areUserArticlesLoaded, setAreUserArticlesLoaded] = useState(false);
+  const [arePubArticlesLoaded, setArePubArticlesLoaded] = useState(false);
   const { data: session } = useSession();
 
   // Refs to track current values and abort controllers
@@ -156,6 +159,10 @@ export function ArticlesProvider({ children }) {
 
         const convertedArticles = blogs.map(convertBlogToArticle);
         setArticles(convertedArticles);
+        // Only mark as loaded if we fetched the full list (no status filter)
+        if (!status) {
+          setAreUserArticlesLoaded(true);
+        }
       } catch (err) {
         if (err.name === "AbortError") {
           // Ignore abort errors
@@ -837,6 +844,10 @@ export function ArticlesProvider({ children }) {
         );
         const convertedArticles = blogs.map(convertBlogToArticle);
         setPublicationArticles(convertedArticles);
+        // Only mark as loaded if we fetched the full list (no status filter)
+        if (!status) {
+          setArePubArticlesLoaded(true);
+        }
         return convertedArticles;
       } catch (err) {
         if (err.name === "AbortError") {
@@ -904,6 +915,8 @@ export function ArticlesProvider({ children }) {
       pubArticlesLoading,
       error,
       reviewError,
+      areUserArticlesLoaded,
+      arePubArticlesLoaded,
       loadUserArticles,
       loadReviewArticles,
       loadPublicationArticles,
