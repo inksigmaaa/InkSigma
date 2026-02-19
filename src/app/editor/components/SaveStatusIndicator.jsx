@@ -21,7 +21,7 @@ export default function SaveStatusIndicator({
       className="hidden md:flex items-center flex-shrink-0"
       style={{
         width: isSaving ? "98px" : isFailed ? "88px" : "78px",
-        height: "33px",
+        height: "32px",
         borderRadius: "4px",
         border: `1px solid ${isFailed ? "#FCA5A5" : "#EAEAEA"}`,
         padding: "6px 8px",
