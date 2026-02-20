@@ -10,6 +10,7 @@ import AuthGuard from "@/components/auth/AuthGuard";
 import { getApiBase } from "@/utils/apiBase";
 
 export default function DashboardPage() {
+  const PROFILE_COMPLETION_CACHE_KEY = "dashboard-profile-complete";
   const router = useRouter();
   const {
     getOwnedPublications,
@@ -19,8 +20,13 @@ export default function DashboardPage() {
     loading: publicationLoading,
   } = usePublication();
   const API_URL = getApiBase();
-  const [isProfileComplete, setIsProfileComplete] = useState(false);
-  const [checkingProfile, setCheckingProfile] = useState(true);
+  const [profileCompletionState, setProfileCompletionState] = useState(() => {
+    if (typeof window === "undefined") return "unknown";
+    const cached = sessionStorage.getItem(PROFILE_COMPLETION_CACHE_KEY);
+    if (cached === "true") return "complete";
+    if (cached === "false") return "incomplete";
+    return "unknown";
+  });
 
   // Effect to handle potential context refresh issues
   useEffect(() => {
@@ -49,12 +55,15 @@ export default function DashboardPage() {
     getJoinedPublications,
   ]);
 
-  // Check if profile is complete - don't block rendering
+  // Check profile completion immediately; use cache to avoid CTA flicker on repeated visits.
   useEffect(() => {
+    const controller = new AbortController();
+
     const checkProfileCompletion = async () => {
       try {
         const response = await fetch(`${API_URL}/api/profile`, {
           credentials: "include",
+          signal: controller.signal,
         });
 
         if (response.ok) {
@@ -64,22 +73,24 @@ export default function DashboardPage() {
             data.username?.trim() &&
             data.bio?.trim()
           );
-          setIsProfileComplete(isComplete);
+          const nextState = isComplete ? "complete" : "incomplete";
+          setProfileCompletionState(nextState);
+          sessionStorage.setItem(
+            PROFILE_COMPLETION_CACHE_KEY,
+            String(isComplete),
+          );
         }
       } catch (error) {
-        console.error("Error checking profile completion:", error);
-      } finally {
-        setCheckingProfile(false);
+        if (error.name !== "AbortError") {
+          console.error("Error checking profile completion:", error);
+        }
       }
     };
 
-    // Delay profile check slightly to not block initial render
-    const timer = setTimeout(() => {
-      checkProfileCompletion();
-    }, 500);
+    checkProfileCompletion();
 
-    return () => clearTimeout(timer);
-  }, [API_URL]);
+    return () => controller.abort();
+  }, [API_URL, PROFILE_COMPLETION_CACHE_KEY]);
 
   // Show content immediately - don't wait for publications to load
   // Publications will load in background and update the UI when ready
@@ -107,7 +118,7 @@ export default function DashboardPage() {
               showcasing your innovative ideas, thereby disseminating them to
               the global audience.
             </p>
-            {!isProfileComplete && (
+            {profileCompletionState === "incomplete" && (
               <button
                 onClick={() => router.push("/profile-settings")}
                 className="min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center mt-2"
