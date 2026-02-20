@@ -200,29 +200,46 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                <div className="text-center py-8">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center  mb-3">
-                    <img
-                      src="/icons/nib.svg"
-                      alt="publication"
-                      className="w-12 h-12"
-                    />
+              <div className="w-full max-w-[819px] h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-[88px]">
+                  <div className="flex gap-6 items-center flex-1 min-w-0 w-full">
+                    <div className="w-[66px] h-[66px] opacity-100 border-[0.92px] border-[#EAEAEA] rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <img
+                        src="/icons/nib.svg"
+                        alt="publication"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 w-full max-w-[414px]">
+                      <div className="w-full h-auto opacity-100 flex flex-col gap-1">
+                        <h3
+                          className="font-bold text-[16px] leading-[28px] tracking-[0%] text-[#000000] overflow-hidden text-ellipsis"
+                          style={{ fontFamily: "Public Sans" }}
+                        >
+                          No Publication Yet
+                        </h3>
+                        <p
+                          className="w-full opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#A4A4A4] line-clamp-2"
+                          style={{ fontFamily: "Public Sans" }}
+                        >
+                          Create your first publication to get started.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="mx-auto">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                      No Publication Yet
-                    </h3>
-                    <p className="text-xs text-gray-400">
-                      Create your first publication to get started.
-                    </p>
-                  </div>
-
                   <button
                     onClick={() => router.push("/create-publication")}
-                    className="mt-4 bg-violet-600 text-white px-6 py-2 rounded-lg text-xs font-medium hover:bg-violet-700 transition-colors"
+                    className="flex-shrink-0 min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center w-full sm:w-auto"
                   >
-                    Create Publication
+                    <span
+                      className="font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
+                      style={{
+                        fontFamily: "Public Sans",
+                      }}
+                    >
+                      Create Publication
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#A941FB]" />
                   </button>
                 </div>
               </div>
