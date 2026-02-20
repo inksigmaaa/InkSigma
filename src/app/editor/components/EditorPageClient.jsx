@@ -412,12 +412,57 @@ export default function EditorPageClient() {
     skipValidation = false,
     isAutoSave = false,
   ) => {
+    const hasBodyContent = (() => {
+      const html = editorContent.html || "";
+      if (!html) return false;
+      if (/<img\b[^>]*>/i.test(html)) return true;
+      const plainText = html
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&nbsp;/gi, " ")
+        .trim();
+      return plainText.length > 0;
+    })();
+
+    const requiresSubmissionFields = [
+      "published",
+      "scheduled",
+      "review",
+    ].includes(status);
+    const submissionActionLabel =
+      status === "published"
+        ? "publishing"
+        : status === "scheduled"
+          ? "scheduling"
+          : "sending for review";
+
     // For auto-saves, skip if a manual save is already in flight
     if (isAutoSave && (isSaving || saveInFlightRef.current)) {
       return false;
     }
 
-    // Skip validation when reverting to draft or updating existing published articles
+    // Always validate required fields for submission statuses.
+    if (requiresSubmissionFields) {
+      if (!blogTitle.trim()) {
+        showToast(`Title is required before ${submissionActionLabel}`, "error");
+        return false;
+      }
+      if (!blogDescription.trim()) {
+        showToast(
+          `Description is required before ${submissionActionLabel}`,
+          "error",
+        );
+        return false;
+      }
+      if (!hasBodyContent) {
+        showToast(
+          `Content is required before ${submissionActionLabel}`,
+          "error",
+        );
+        return false;
+      }
+    }
+
+    // Existing draft-only validation behavior.
     if (!skipValidation && !currentBlogId) {
       if (!blogTitle.trim()) {
         showToast("Please enter a title for your blog", "error");
