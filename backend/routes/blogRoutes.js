@@ -193,6 +193,8 @@ const runInBackground = (label, task) => {
     });
 };
 
+const DEFAULT_DRAFT_TITLE = "Untitled";
+
 const notifyReviewSubmission = async ({
   publicationId,
   authorId,
@@ -852,20 +854,24 @@ router.post("/", getCurrentUser, async (req, res) => {
       publicationId,
     } = req.body;
 
-    // For drafts, only require at least a title to save
-    // For publishing, require all fields
-    const isDraft = status === "draft" || (!status && !published);
+    // Determine status: use status if provided, otherwise use published for backward compatibility
+    let targetStatus = "draft";
+    if (status) {
+      targetStatus = status;
+    } else if (published) {
+      targetStatus = "published";
+    }
 
-    if (isDraft) {
-      // For drafts, only require a title to save
-      if (!title || !title.trim()) {
-        return res.status(400).json({
-          error: "Title is required to save as draft",
-        });
-      }
-    } else {
+    const isDraft = targetStatus === "draft";
+    const normalizedTitle =
+      typeof title === "string" ? title.trim() : "";
+    const finalTitle = isDraft
+      ? normalizedTitle || DEFAULT_DRAFT_TITLE
+      : normalizedTitle;
+
+    if (!isDraft) {
       // For publishing/scheduling, require all fields
-      if (!title || !description || !content) {
+      if (!finalTitle || !description || !content) {
         return res.status(400).json({
           error: "Title, description, and content are required",
         });
@@ -908,23 +914,14 @@ router.post("/", getCurrentUser, async (req, res) => {
       }
     }
 
-    const slug = await ensureUniqueSlug(generateSlug(title));
-
-    // Determine status: use status if provided, otherwise use published for backward compatibility
-    let targetStatus = "draft";
-
-    if (status) {
-      targetStatus = status;
-    } else if (published) {
-      targetStatus = "published";
-    }
+    const slug = await ensureUniqueSlug(generateSlug(finalTitle));
 
     // Apply strict synchronization rules
     const syncedFields = syncStatusAndPublished(targetStatus);
 
     const blogData = {
       slug,
-      title,
+      title: finalTitle,
       description,
       content,
       categories: categories || [],
@@ -987,16 +984,27 @@ router.post("/auto-save", async (req, res) => {
 
     const { title, description, content, categories, publicationId } = req.body;
 
+    const normalizedTitle = typeof title === "string" ? title.trim() : "";
+    const normalizedDescription =
+      typeof description === "string" ? description.trim() : "";
+    const normalizedContent = typeof content === "string" ? content.trim() : "";
+    const hasMeaningfulContent =
+      normalizedTitle ||
+      normalizedDescription ||
+      (normalizedContent && normalizedContent !== "<p></p>") ||
+      (Array.isArray(categories) && categories.length > 0);
+
     // Only save if there's meaningful content
-    if (!title || !description || !content) {
+    if (!hasMeaningfulContent) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const slug = await ensureUniqueSlug(generateSlug(title));
+    const finalTitle = normalizedTitle || DEFAULT_DRAFT_TITLE;
+    const slug = await ensureUniqueSlug(generateSlug(finalTitle));
 
     const blogData = {
       slug,
-      title,
+      title: finalTitle,
       description,
       content,
       categories: categories || [],
@@ -1133,22 +1141,37 @@ router.put("/:id", getCurrentUser, async (req, res) => {
         .json({ error: "Not authorized to update this blog" });
     }
 
-    // Generate new slug if title changed
-    let slug = existingBlog.slug;
-    if (title && title !== existingBlog.title) {
-      slug = await ensureUniqueSlug(generateSlug(title), parseInt(id));
+    let targetStatusForUpdate = existingBlog.status;
+    if (status !== undefined) {
+      targetStatusForUpdate = status;
+    } else if (published !== undefined) {
+      targetStatusForUpdate = published ? "published" : "draft";
     }
 
     const updateData = {
       updatedAt: new Date(),
     };
 
-    // Validate title - required for new blogs but allow updates without title change
+    // Validate title - allow empty title only when saving as draft.
+    let slug = existingBlog.slug;
     if (title !== undefined) {
-      if (typeof title !== "string" || title.trim() === "") {
+      if (typeof title !== "string") {
         return res.status(400).json({ error: "Title cannot be empty" });
       }
-      updateData.title = title.trim();
+      const trimmedTitle = title.trim();
+      const nextTitle =
+        trimmedTitle === "" && targetStatusForUpdate === "draft"
+          ? DEFAULT_DRAFT_TITLE
+          : trimmedTitle;
+
+      if (!nextTitle) {
+        return res.status(400).json({ error: "Title cannot be empty" });
+      }
+
+      updateData.title = nextTitle;
+      if (nextTitle !== existingBlog.title) {
+        slug = await ensureUniqueSlug(generateSlug(nextTitle), parseInt(id));
+      }
     }
 
     if (description !== undefined) {

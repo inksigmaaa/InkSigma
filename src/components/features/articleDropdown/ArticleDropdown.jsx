@@ -12,6 +12,7 @@ export default function ArticleDropdown({
   onRepublish,
   onDraft,
   canPublish,
+  canPublishDraft = true,
   canDelete = true,
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -57,7 +58,7 @@ export default function ArticleDropdown({
               <>
                 {canPublish && (
                   <button
-                    className="flex items-center w-full text-left cursor-pointer transition-colors border-none"
+                    className={`flex items-center w-full text-left transition-colors border-none ${canPublishDraft ? "cursor-pointer" : "cursor-not-allowed opacity-40"}`}
                     style={{
                       width: "131px",
                       height: "26px",
@@ -81,8 +82,10 @@ export default function ArticleDropdown({
                       (e.currentTarget.style.background = "transparent")
                     }
                     onClick={() =>
+                      canPublishDraft &&
                       handleAction(onPublish || (() => console.log("Publish")))
                     }
+                    disabled={!canPublishDraft}
                   >
                     <img
                       src="/images/icons/share.svg"

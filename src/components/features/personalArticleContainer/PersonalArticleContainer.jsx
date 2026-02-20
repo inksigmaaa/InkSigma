@@ -72,6 +72,7 @@ export default function PersonalArticleContainer({
   isSelected,
   onSelect,
   titleColor,
+  canPublishAction = true,
   canEdit = true, // Default to true for backward compatibility
   canDelete = true, // Default to true for backward compatibility
 }) {
@@ -84,6 +85,7 @@ export default function PersonalArticleContainer({
     currentPublication?.isOwner ||
     currentPublication?.role === "admin" ||
     currentPublication?.role === "editor";
+  const canPublishDraft = canPublish && canPublishAction;
 
   const pathname = usePathname();
   const handleEdit = () => {
@@ -223,6 +225,7 @@ export default function PersonalArticleContainer({
               onRepublish={onRepublish}
               onDraft={onDraft}
               canPublish={canPublish}
+              canPublishDraft={canPublishDraft}
               canDelete={canDelete}
             />
           </div>
@@ -488,7 +491,7 @@ export default function PersonalArticleContainer({
                   <>
                     {canPublish && (
                       <button
-                        className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
+                        className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canPublishDraft ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                         style={{
                           width: "32px",
                           height: "32px",
@@ -497,7 +500,8 @@ export default function PersonalArticleContainer({
                           borderWidth: "1px",
                         }}
                         title="Publish"
-                        onClick={onPublish}
+                        onClick={canPublishDraft ? onPublish : undefined}
+                        disabled={!canPublishDraft}
                       >
                         <img src="/images/icons/share.svg" alt="publish" />
                       </button>

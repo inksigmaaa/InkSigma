@@ -14,6 +14,20 @@ import AuthGuard from "@/components/auth/AuthGuard";
 import { useSession } from "@/lib/auth-client";
 import { useToast } from "@/contexts/ToastContext";
 
+const DEFAULT_DRAFT_TITLE = "Untitled";
+const LEGACY_DRAFT_TITLE = "untitle";
+
+const isMissingRealTitle = (title) => {
+  const normalized = typeof title === "string" ? title.trim().toLowerCase() : "";
+  return (
+    !normalized ||
+    normalized === DEFAULT_DRAFT_TITLE.toLowerCase() ||
+    normalized === LEGACY_DRAFT_TITLE
+  );
+};
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const BULK_PUBLISH_TOAST_TYPE = "info";
+
 export default function DraftPage() {
   const {
     articles,
@@ -127,19 +141,28 @@ export default function DraftPage() {
         return isDraft;
       })
       .map((article) => {
+        const canPublishArticle = !isMissingRealTitle(article.title);
+        const displayTitle = canPublishArticle
+          ? article.title
+          : DEFAULT_DRAFT_TITLE;
+
         return {
           ...article,
+          title: displayTitle,
+          canPublishArticle,
           canDelete: true, // No delete restriction for drafts
           onDelete: () => {
             setActionArticleId(article.id);
             setIsBulkAction(false);
             setShowDeleteModal(true);
           },
-          onPublish: () => {
-            setActionArticleId(article.id);
-            setIsBulkAction(false);
-            setShowPublishModal(true);
-          },
+          onPublish: canPublishArticle
+            ? () => {
+                setActionArticleId(article.id);
+                setIsBulkAction(false);
+                setShowPublishModal(true);
+              }
+            : undefined,
         };
       });
   }, [articles, currentPublication]);
@@ -248,32 +271,62 @@ export default function DraftPage() {
   const confirmPublish = async () => {
     try {
       if (isBulkAction) {
+        const publishableSelectedIds = selectedArticles.filter((id) => {
+          const article = draftArticles.find((a) => a.id === id);
+          return article?.canPublishArticle;
+        });
+
+        const skippedIds = selectedArticles.filter(
+          (id) => !publishableSelectedIds.includes(id),
+        );
+
+        if (publishableSelectedIds.length === 0) {
+          showToast("No selected articles have a valid title to publish.", "info");
+          setShowPublishModal(false);
+          return;
+        }
+
         const results = await Promise.allSettled(
-          selectedArticles.map((id) => publishArticle(id)),
+          publishableSelectedIds.map((id) => publishArticle(id)),
         );
 
         const successes = results.filter(
           (r) => r.status === "fulfilled",
         ).length;
         const failures = results.filter((r) => r.status === "rejected").length;
-        const failedIds = selectedArticles.filter(
+        const failedIds = publishableSelectedIds.filter(
           (_, index) => results[index].status === "rejected",
         );
+
+        if (skippedIds.length > 0) {
+          showToast(
+            `${skippedIds.length} Untitled article(s) were skipped.`,
+            BULK_PUBLISH_TOAST_TYPE,
+          );
+          await delay(300);
+        }
 
         if (failures === 0) {
           showToast(
             `${successes} article(s) published successfully`,
-            "success",
+            BULK_PUBLISH_TOAST_TYPE,
           );
-          setSelectedArticles([]);
+          setSelectedArticles(skippedIds);
         } else {
           showToast(
             `${successes} published successfully. ${failures} failed.`,
-            "error",
+            BULK_PUBLISH_TOAST_TYPE,
           );
-          setSelectedArticles(failedIds);
+          setSelectedArticles([...skippedIds, ...failedIds]);
         }
       } else if (actionArticleId) {
+        const targetArticle = draftArticles.find((a) => a.id === actionArticleId);
+        if (!targetArticle?.canPublishArticle) {
+          showToast("Cannot publish an Untitled draft.", "error");
+          setShowPublishModal(false);
+          setActionArticleId(null);
+          return;
+        }
         try {
           await publishArticle(actionArticleId);
           showToast("Article published successfully", "success");
@@ -298,6 +351,16 @@ export default function DraftPage() {
     currentPublication?.role === "admin" ||
     currentPublication?.role === "editor";
 
+  const hasPublishableSelection = selectedArticles.some((id) => {
+    const article = draftArticles.find((a) => a.id === id);
+    return article?.canPublishArticle;
+  });
+  const publishableSelectedCount = selectedArticles.filter((id) => {
+    const article = draftArticles.find((a) => a.id === id);
+    return article?.canPublishArticle;
+  }).length;
+  const skippedUntitledCount = selectedArticles.length - publishableSelectedCount;
+
   const actionButtons = [
     ...(canPublish
       ? [
@@ -305,6 +368,7 @@ export default function DraftPage() {
             title: "Publish",
             icon: "/images/icons/share.svg",
             onClick: handleBulkPublish,
+            disabled: !hasPublishableSelection,
           },
         ]
       : []),
@@ -357,10 +421,12 @@ export default function DraftPage() {
           setActionArticleId(null);
         }}
         onConfirm={confirmPublish}
-        title="Publish article?"
+        title={isBulkAction ? "Publish selected drafts?" : "Publish article?"}
         message={
           isBulkAction
-            ? `${selectedArticles.length} article(s) will be published`
+            ? skippedUntitledCount > 0
+              ? `${publishableSelectedCount} article(s) will be published. ${skippedUntitledCount} Untitled draft(s) will be skipped.`
+              : `${publishableSelectedCount} article(s) will be published.`
             : "This article will be published"
         }
         confirmText="Publish"

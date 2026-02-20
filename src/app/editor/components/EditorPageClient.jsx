@@ -32,6 +32,8 @@ import {
 import SaveStatusIndicator from "./SaveStatusIndicator";
 
 const API_URL = getApiBase();
+const DEFAULT_DRAFT_TITLE = "Untitled";
+const LEGACY_DRAFT_TITLE = "untitle";
 
 export default function EditorPageClient() {
   const router = useRouter();
@@ -331,7 +333,14 @@ export default function EditorPageClient() {
 
       const blog = await response.json();
 
-      setBlogTitle(blog.title || "");
+      const normalizedTitle = (blog.title || "").trim().toLowerCase();
+      const displayTitle =
+        normalizedTitle === DEFAULT_DRAFT_TITLE.toLowerCase() ||
+        normalizedTitle === LEGACY_DRAFT_TITLE
+          ? ""
+          : blog.title || "";
+
+      setBlogTitle(displayTitle);
       setBlogDescription(blog.description || "");
       setSelectedCategories(blog.categories || []);
 
@@ -349,7 +358,7 @@ export default function EditorPageClient() {
 
       // Set the auto-save snapshot so change detection starts from the loaded state
       resetSnapshot({
-        title: blog.title || "",
+        title: displayTitle,
         description: blog.description || "",
         contentHtml: blog.content || "",
         categories: blog.categories || [],

@@ -34,6 +34,15 @@ function normalizeContent(content) {
   return content;
 }
 
+function hasDraftData({ title, description, contentHtml, categories }) {
+  return Boolean(
+    (title && title.trim()) ||
+      (description && description.trim()) ||
+      normalizeContent(contentHtml) ||
+      (Array.isArray(categories) && categories.length > 0),
+  );
+}
+
 /** Wait ms milliseconds (for retry backoff). */
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -153,7 +162,7 @@ export function useAutoSave({
 
   useEffect(() => {
     if (phaseRef.current !== "idle" || isSaving) return;
-    if (!title.trim()) {
+    if (!hasDraftData({ title, description, contentHtml, categories })) {
       setSaveStatus("idle");
       return;
     }
@@ -263,7 +272,15 @@ export function useAutoSave({
   useEffect(() => {
     const handleOnline = () => {
       const l = latestRef.current;
-      if (l.hasUnsavedChanges && l.title.trim()) {
+      if (
+        l.hasUnsavedChanges &&
+        hasDraftData({
+          title: l.title,
+          description: l.description,
+          contentHtml: l.contentHtml,
+          categories: l.categories,
+        })
+      ) {
         // Clear existing timer and trigger a save soon
         if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(async () => {
@@ -296,7 +313,17 @@ export function useAutoSave({
   useEffect(() => {
     const canSaveOnLeave = () => {
       const l = latestRef.current;
-      if (!l.hasUnsavedChanges || !l.title.trim()) return false;
+      if (
+        !l.hasUnsavedChanges ||
+        !hasDraftData({
+          title: l.title,
+          description: l.description,
+          contentHtml: l.contentHtml,
+          categories: l.categories,
+        })
+      ) {
+        return false;
+      }
       if (
         phaseRef.current === "publishing" ||
         phaseRef.current === "navigating"
@@ -317,7 +344,17 @@ export function useAutoSave({
 
     const handleBeforeUnload = (e) => {
       const l = latestRef.current;
-      if (!l.hasUnsavedChanges || !l.title.trim()) return;
+      if (
+        !l.hasUnsavedChanges ||
+        !hasDraftData({
+          title: l.title,
+          description: l.description,
+          contentHtml: l.contentHtml,
+          categories: l.categories,
+        })
+      ) {
+        return;
+      }
       if (
         phaseRef.current === "publishing" ||
         phaseRef.current === "navigating"

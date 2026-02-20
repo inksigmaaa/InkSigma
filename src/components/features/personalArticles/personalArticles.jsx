@@ -105,12 +105,15 @@ export default function PersonalArticles({
               </div>
               {actionButtons
                 .filter((button) => !button.hidden)
-                .map((button, index) => (
+                .map((button, index) => {
+                  const isDisabled =
+                    selectedArticles.length === 0 || button.disabled;
+                  return (
                   <button
                     key={index}
                     title={button.title}
                     onClick={button.onClick}
-                    className="flex items-center justify-center transition-all bg-white cursor-pointer active:bg-gray-50"
+                    className={`flex items-center justify-center transition-all bg-white active:bg-gray-50 ${isDisabled ? "opacity-40 pointer-events-none" : "cursor-pointer"}`}
                     style={{
                       width: "26px",
                       height: "26px",
@@ -118,6 +121,7 @@ export default function PersonalArticles({
                       borderRadius: "4px",
                       marginLeft: index === 0 ? "4px" : "0",
                     }}
+                    disabled={isDisabled}
                   >
                     <img
                       src={button.icon}
@@ -125,7 +129,8 @@ export default function PersonalArticles({
                       className="w-4 h-4"
                     />
                   </button>
-                ))}
+                  );
+                })}
             </div>
           </div>,
           document.body,
@@ -173,12 +178,15 @@ export default function PersonalArticles({
                 </label>
                 {actionButtons
                   .filter((button) => !button.hidden)
-                  .map((button, index) => (
+                  .map((button, index) => {
+                    const isDisabled =
+                      selectedArticles.length === 0 || button.disabled;
+                    return (
                     <button
                       key={index}
                       title={button.title}
                       onClick={button.onClick}
-                      className={`flex items-center justify-center transition-all cursor-pointer hover:bg-gray-50 ${selectedArticles.length === 0 ? "opacity-40 pointer-events-none" : ""}`}
+                      className={`flex items-center justify-center transition-all hover:bg-gray-50 ${isDisabled ? "opacity-40 pointer-events-none" : "cursor-pointer"}`}
                       style={{
                         width: "32px",
                         height: "32px",
@@ -186,7 +194,7 @@ export default function PersonalArticles({
                         borderRadius: "4px",
                         background: "#FFFFFF",
                       }}
-                      disabled={selectedArticles.length === 0}
+                      disabled={isDisabled}
                     >
                       <img
                         src={button.icon}
@@ -194,7 +202,8 @@ export default function PersonalArticles({
                         className="w-4 h-4"
                       />
                     </button>
-                  ))}
+                    );
+                  })}
               </div>
               <CategoryFilter
                 selectedCategories={categories}
@@ -245,6 +254,7 @@ export default function PersonalArticles({
                     onUnpublish={article.onUnpublish}
                     onRepublish={article.onRepublish}
                     onPublish={article.onPublish}
+                    canPublishAction={article.canPublishArticle}
                     isSelected={selectedArticles.includes(article.id)}
                     onSelect={onArticleSelect}
                     canEdit={article.canEdit}
