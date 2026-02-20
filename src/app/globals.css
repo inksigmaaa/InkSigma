@@ -132,12 +132,16 @@ body {
   margin: 0.25rem 0;
 }
 
+.ProseMirror li::marker {
+  color: inherit;
+}
+
 .ProseMirror blockquote {
   border-left: 4px solid #d1d5db;
   padding-left: 1rem;
   margin: 1rem 0;
   font-style: italic;
-  color: #6b7280;
+  color: inherit;
 }
 
 .ProseMirror pre {
@@ -148,6 +152,7 @@ body {
   margin: 1rem 0;
   font-family: "Courier New", monospace;
   font-size: 0.875rem;
+  color: inherit;
 }
 
 .ProseMirror code {
@@ -156,6 +161,11 @@ body {
   border-radius: 0.25rem;
   font-family: "Courier New", monospace;
   font-size: 0.875rem;
+  color: inherit;
+}
+
+.ProseMirror pre code {
+  color: inherit;
 }
 
 .ProseMirror img {
