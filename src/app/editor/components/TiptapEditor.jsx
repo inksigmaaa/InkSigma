@@ -13,7 +13,14 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
 import { LineHeight } from "./extensions/LineHeight";
 import { Indent } from "./extensions/Indent";
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  memo,
+} from "react";
 import { createPortal } from "react-dom";
 import {
   ChevronDown,
@@ -1626,7 +1633,7 @@ const TabletToolbar = ({
   );
 };
 
-export function TiptapEditor({
+export const TiptapEditor = memo(function TiptapEditor({
   onUpdate,
   initialContent = "",
   onImageModalToggle,
@@ -1973,4 +1980,4 @@ export function TiptapEditor({
       )}
     </div>
   );
-}
+});

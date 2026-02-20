@@ -155,6 +155,9 @@ export default function EditorPageClient() {
     html: "",
     text: "",
   });
+  const handleEditorUpdate = useCallback((data) => {
+    setEditorContent(data);
+  }, []);
   const [blogTitle, setBlogTitle] = useState("");
   const [blogDescription, setBlogDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -1414,7 +1417,7 @@ export default function EditorPageClient() {
             ) : (
               <TiptapEditor
                 key={currentBlogId || "new"}
-                onUpdate={(data) => setEditorContent(data)}
+                onUpdate={handleEditorUpdate}
                 initialContent={initialContent}
                 editorRef={editorInstanceRef}
               />
