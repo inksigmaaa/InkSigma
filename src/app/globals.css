@@ -33,7 +33,7 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-public-sans), sans-serif;
+  font-family: var(--font-public-sans);
   overflow-x: hidden;
   max-width: 100vw;
 }

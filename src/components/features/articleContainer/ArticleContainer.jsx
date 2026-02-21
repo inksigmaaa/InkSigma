@@ -108,40 +108,28 @@ export default function ArticleContainer({
 
   const statusConfig = {
     published: {
-      bg: "#D5F2D4",
-      color: "#267F24",
+      className: "bg-[#D5F2D4] text-[#267F24]",
       text: "Published",
-      dotColor: "#72D770",
     },
     draft: {
-      bg: "#FFEADB",
-      color: "#A34200",
+      className: "bg-[#FFEADB] text-[#A34200]",
       text: "Draft",
-      dotColor: "#FF9247",
     },
     scheduled: {
-      bg: "#D6EEFB",
-      color: "#0048B5",
+      className: "bg-[#D6EEFB] text-[#0048B5]",
       text: "Scheduled",
-      dotColor: "#0048B5",
     },
     trash: {
-      bg: "#FFD6D6",
-      color: "#A30000",
+      className: "bg-[#FFD6D6] text-[#A30000]",
       text: "Trash",
-      dotColor: "#F13434",
     },
     review: {
-      bg: "#E9D5FF",
-      color: "#7C3AED",
+      className: "bg-[#E9D5FF] text-[#7C3AED]",
       text: "Under Review",
-      dotColor: "#7C3AED",
     },
     unpublished: {
-      bg: "#FEF3C7",
-      color: "#D97706",
+      className: "bg-[#FEF3C7] text-[#D97706]",
       text: "Unpublished",
-      dotColor: "#D97706",
     },
   };
 
@@ -161,10 +149,7 @@ export default function ArticleContainer({
 
   return (
     <div
-      className={`relative rounded-[8px] mb-4 cursor-pointer hover:shadow-md transition-shadow duration-200 min-[768px]:bg-white max-[767px]:bg-[#FEFEFE] w-full max-[640px]:p-4 max-[640px]:pt-10 min-[641px]:p-6 min-[641px]:pt-10 border min-[641px]:border-[#EDEDED] ${isSelected ? "max-[640px]:border-[#202020]" : "max-[640px]:border-[#EDEDED]"}`}
-      style={{
-        overflow: "hidden",
-      }}
+      className={`relative rounded-[8px] mb-4 cursor-pointer overflow-hidden hover:shadow-md transition-shadow duration-200 min-[768px]:bg-white max-[767px]:bg-[#FEFEFE] w-full max-[640px]:p-4 max-[640px]:pt-10 min-[641px]:p-6 min-[641px]:pt-10 border min-[641px]:border-[#EDEDED] ${isSelected ? "max-[640px]:border-[#202020]" : "max-[640px]:border-[#EDEDED]"}`}
       onClick={handleCardClick}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -180,8 +165,7 @@ export default function ArticleContainer({
         }
       `}</style>
       <div
-        className="absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center max-[640px]:flex max-[640px]:min-w-[88px] max-[640px]:w-auto min-[641px]:max-[767px]:hidden min-[768px]:flex min-[768px]:min-w-[88px] min-[768px]:w-auto"
-        style={{ background: config.bg, color: config.color }}
+        className={`absolute top-0 left-0 w-22 h-[26px] px-4 py-1 rounded-tl-lg rounded-br-lg font-['Public_Sans'] font-normal text-xs leading-[150%] flex items-center justify-center max-[640px]:flex max-[640px]:min-w-[88px] max-[640px]:w-auto min-[641px]:max-[767px]:hidden min-[768px]:flex min-[768px]:min-w-[88px] min-[768px]:w-auto ${config.className}`}
       >
         {config.text}
       </div>
