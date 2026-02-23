@@ -174,6 +174,8 @@ export default function EditorPageClient() {
   const handlingPopStateRef = useRef(false);
   const saveInFlightRef = useRef(false);
   const editorInstanceRef = useRef(null); // Ref to TipTap editor for uncontrolled reads
+  const shadowIdRef = useRef(null); // Server-created ID stored silently during auto-save (no re-render)
+  const initialBlogIdRef = useRef(blogId); // The blogId from the URL at mount time
 
   // Handle See Later - dismiss popup and check for unsaved changes first
   const handleSeeLater = async () => {
@@ -254,22 +256,29 @@ export default function EditorPageClient() {
   );
 
   // Callback for when the first server save creates a new blog ID
-  const handleBlogIdCreated = useCallback(
-    (result) => {
-      if (result?.id != null) {
-        const newId = String(result.id);
-        setCurrentBlogId(newId);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("id", newId);
-        if (!params.get("status")) params.set("status", "draft");
-        if (publicationId) params.set("publicationId", publicationId);
-        router.replace(withPub(`/editor?${params.toString()}`), {
-          scroll: false,
-        });
-      }
-    },
-    [searchParams, publicationId, router, withPub],
-  );
+  // Only stores the ID in a ref — no state change, no URL update, no re-render.
+  // The ID is "flushed" to state + URL only on explicit user action (save/publish/exit).
+  const handleBlogIdCreated = useCallback((result) => {
+    if (result?.id != null) {
+      shadowIdRef.current = String(result.id);
+    }
+  }, []);
+
+  // Promote shadowIdRef to state + URL (called on manual save / publish / exit)
+  const flushShadowId = useCallback(() => {
+    if (shadowIdRef.current && !currentBlogId) {
+      const newId = shadowIdRef.current;
+      setCurrentBlogId(newId);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("id", newId);
+      if (!params.get("status")) params.set("status", "draft");
+      if (publicationId) params.set("publicationId", publicationId);
+      router.replace(withPub(`/editor?${params.toString()}`), {
+        scroll: false,
+      });
+      shadowIdRef.current = null;
+    }
+  }, [currentBlogId, searchParams, publicationId, router, withPub]);
 
   const {
     hasUnsavedChanges,
@@ -285,6 +294,7 @@ export default function EditorPageClient() {
     getDexieId,
   } = useAutoSave({
     currentBlogId,
+    shadowId: shadowIdRef.current,
     title: blogTitle,
     description: blogDescription,
     contentHtml: editorContent.html,
@@ -303,10 +313,15 @@ export default function EditorPageClient() {
     blogDescription.trim() ||
     (editorContent.html && editorContent.html !== "<p></p>");
 
-  // Load existing blog if editing
+  // Load existing blog if editing.
+  // Guard: only load when the blogId comes from the initial URL, not when
+  // shadowIdRef gets promoted to state/URL after a manual save.
   useEffect(() => {
-    if (blogId) {
+    if (blogId && blogId === initialBlogIdRef.current) {
       loadExistingBlog(blogId);
+    } else if (blogId && blogId !== initialBlogIdRef.current) {
+      // Shadow ID was just promoted — update the ref but don't reload
+      initialBlogIdRef.current = blogId;
     } else if (isMounted) {
       // New post: check Dexie for a recovered draft
       const checkNewDraft = async () => {
@@ -509,11 +524,14 @@ export default function EditorPageClient() {
         blogData.image = null;
       }
 
-      // Use PUT for updates, POST for new blogs
-      const url = currentBlogId
-        ? `${API_URL}/api/blogs/${currentBlogId}`
+      // Use PUT for updates, POST for new blogs.
+      // Check shadowIdRef first — it holds the server ID from a previous auto-save
+      // that hasn't been promoted to state yet.
+      const effectiveId = currentBlogId || shadowIdRef.current;
+      const url = effectiveId
+        ? `${API_URL}/api/blogs/${effectiveId}`
         : `${API_URL}/api/blogs`;
-      const method = currentBlogId ? "PUT" : "POST";
+      const method = effectiveId ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method: method,
@@ -535,27 +553,48 @@ export default function EditorPageClient() {
       }
 
       if (!response.ok) {
-        throw new Error(
+        const errMsg =
           responseData?.error ||
-            responseData?.message ||
-            `Failed to save blog (${response.status})`,
-        );
+          responseData?.message ||
+          responseData?.details ||
+          `Failed to save blog (${response.status})`;
+        console.error("[saveBlog] request failed:", {
+          url,
+          method,
+          status: response.status,
+          effectiveId,
+          isAutoSave,
+          responseData,
+        });
+        throw new Error(errMsg);
       }
 
-      if (!currentBlogId && responseData?.id != null) {
-        const newId = String(responseData.id);
-        setCurrentBlogId(newId);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("id", newId);
-        if (!params.get("status")) {
-          params.set("status", status);
+      // When a new blog is created for the first time:
+      if (!effectiveId && responseData?.id != null) {
+        if (isAutoSave) {
+          // Auto-save: silently store in shadowIdRef — no state change, no URL change, no re-render
+          shadowIdRef.current = String(responseData.id);
+        } else {
+          // Manual save: promote to state + URL immediately
+          const newId = String(responseData.id);
+          setCurrentBlogId(newId);
+          const params = new URLSearchParams(searchParams.toString());
+          params.set("id", newId);
+          if (!params.get("status")) {
+            params.set("status", status);
+          }
+          if (publicationId) {
+            params.set("publicationId", publicationId);
+          }
+          router.replace(withPub(`/editor?${params.toString()}`), {
+            scroll: false,
+          });
         }
-        if (publicationId) {
-          params.set("publicationId", publicationId);
-        }
-        router.replace(withPub(`/editor?${params.toString()}`), {
-          scroll: false,
-        });
+      }
+
+      // On manual save, flush any previously shadow-stored ID
+      if (!isAutoSave && shadowIdRef.current && !currentBlogId) {
+        flushShadowId();
       }
 
       // Upload thumbnail if one was selected

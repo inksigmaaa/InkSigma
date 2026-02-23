@@ -37,9 +37,9 @@ function normalizeContent(content) {
 function hasDraftData({ title, description, contentHtml, categories }) {
   return Boolean(
     (title && title.trim()) ||
-      (description && description.trim()) ||
-      normalizeContent(contentHtml) ||
-      (Array.isArray(categories) && categories.length > 0),
+    (description && description.trim()) ||
+    normalizeContent(contentHtml) ||
+    (Array.isArray(categories) && categories.length > 0),
   );
 }
 
@@ -60,6 +60,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
  */
 export function useAutoSave({
   currentBlogId,
+  shadowId, // server-created ID stored silently during auto-save (lives in a ref in the parent)
   title,
   description,
   contentHtml,
@@ -97,6 +98,7 @@ export function useAutoSave({
   // Always-current values readable from event handlers without re-registering
   const latestRef = useRef({
     currentBlogId,
+    shadowId,
     title,
     description,
     contentHtml,
@@ -109,6 +111,7 @@ export function useAutoSave({
 
   latestRef.current = {
     currentBlogId,
+    shadowId,
     title,
     description,
     contentHtml,
@@ -383,10 +386,11 @@ export function useAutoSave({
         const pubId = l.publicationId || l.currentPublication?.id;
         if (pubId) blogData.publicationId = parseInt(pubId);
 
-        const url = l.currentBlogId
-          ? `${API_URL}/api/blogs/${l.currentBlogId}`
+        const effectiveId = l.currentBlogId || l.shadowId;
+        const url = effectiveId
+          ? `${API_URL}/api/blogs/${effectiveId}`
           : `${API_URL}/api/blogs/auto-save`;
-        const method = l.currentBlogId ? "PUT" : "POST";
+        const method = effectiveId ? "PUT" : "POST";
 
         // sendBeacon for reliability (survives tab close)
         const blob = new Blob([JSON.stringify(blogData)], {
