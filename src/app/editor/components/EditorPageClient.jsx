@@ -511,8 +511,9 @@ export default function EditorPageClient() {
 
       // Add publicationId if available
       const pubId = publicationId || currentPublication?.id;
-      if (pubId) {
-        blogData.publicationId = parseInt(pubId);
+      const parsedPublicationId = Number(pubId);
+      if (Number.isInteger(parsedPublicationId) && parsedPublicationId > 0) {
+        blogData.publicationId = parsedPublicationId;
       }
 
       // Add scheduledAt if scheduling

@@ -7,7 +7,7 @@ import {
   comment,
   blogShare,
 } from "../models/schema.js";
-import { eq, desc, and, or, ilike, count, isNull, inArray } from "drizzle-orm";
+import { eq, ne, desc, and, or, ilike, count, isNull, inArray } from "drizzle-orm";
 import fs from "fs";
 import notificationService from "./notificationService.js";
 import schedulerService from "./schedulerService.js";
@@ -83,19 +83,26 @@ class BlogService {
 
   // Helper function to ensure unique slug
   async ensureUniqueSlug(baseSlug, excludeId = null) {
-    let slug = baseSlug;
+    const normalizedBaseSlug =
+      typeof baseSlug === "string" && baseSlug.trim()
+        ? baseSlug.trim()
+        : this.generateSlug(DEFAULT_DRAFT_TITLE);
+    let slug = normalizedBaseSlug;
     let counter = 1;
 
     while (true) {
-      const query = db.select().from(blog).where(eq(blog.slug, slug));
-      if (excludeId) {
-        query.where(and(eq(blog.slug, slug), eq(blog.id, excludeId)));
+      const conditions = [eq(blog.slug, slug)];
+      if (excludeId != null) {
+        conditions.push(ne(blog.id, excludeId));
       }
 
-      const [existing] = await query;
+      const [existing] = await db
+        .select({ id: blog.id })
+        .from(blog)
+        .where(and(...conditions));
       if (!existing) break;
 
-      slug = `${baseSlug}-${counter}`;
+      slug = `${normalizedBaseSlug}-${counter}`;
       counter++;
     }
 
