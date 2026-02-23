@@ -1,9 +1,29 @@
 export const getApiBase = () => {
   const envBase = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
 
-  // Always use the configured backend URL if available
   if (envBase) {
-    return envBase.replace(/\/$/, ''); // Remove trailing slash
+    const normalizedEnvBase = envBase.replace(/\/$/, "");
+
+    // Safari can treat *.local subdomains as cross-site and drop auth cookies.
+    // In local development, prefer same-host backend origin to keep auth first-party.
+    if (typeof window !== "undefined") {
+      try {
+        const envUrl = new URL(normalizedEnvBase);
+        const { protocol, hostname } = window.location;
+        const isLocalDevHost =
+          hostname.endsWith(".local") || hostname.endsWith(".localhost");
+        const usesApiSubdomain = envUrl.hostname.startsWith("api.");
+
+        if (isLocalDevHost && usesApiSubdomain) {
+          const backendPort = envUrl.port || "5000";
+          return `${protocol}//${hostname}:${backendPort}`;
+        }
+      } catch {
+        // Ignore malformed env URL and continue using fallback behavior.
+      }
+    }
+
+    return normalizedEnvBase;
   }
 
   // Fallback for development without env config
