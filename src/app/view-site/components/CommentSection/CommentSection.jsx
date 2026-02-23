@@ -4,10 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { formatTimeAgo } from "../../../../utils/timeFormatter";
-import UserAvatar from "@/components/ui/UserAvatar";
 import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import { useToast } from "@/contexts/ToastContext";
 
@@ -75,30 +72,26 @@ export default function CommentSection({ blogId }) {
     fetchComments();
   }, [fetchComments]);
 
-  // Update current time every minute
+  // Update exactly on minute boundaries so "x min ago" changes on time.
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 60000);
-    return () => clearInterval(interval);
+    let intervalId;
+    const updateNow = () => setCurrentTime(Date.now());
+
+    updateNow();
+
+    const now = Date.now();
+    const msUntilNextMinute = 60000 - (now % 60000);
+
+    const timeoutId = setTimeout(() => {
+      updateNow();
+      intervalId = setInterval(updateNow, 60000);
+    }, msUntilNextMinute);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
-
-  const getRelativeTime = (timestamp) => {
-    const seconds = Math.floor(
-      (currentTime - new Date(timestamp).getTime()) / 1000,
-    );
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (seconds < 60) return "Just now";
-    if (minutes === 1) return "1 min ago";
-    if (minutes < 60) return `${minutes} mins ago`;
-    if (hours === 1) return "1 hour ago";
-    if (hours < 24) return `${hours} hours ago`;
-    if (days === 1) return "1 day ago";
-    return `${days} days ago`;
-  };
 
   const handleSubmitComment = async () => {
     if (!newComment.trim()) {
@@ -422,7 +415,7 @@ export default function CommentSection({ blogId }) {
                           {getDisplayName(comment)}
                         </span>
                         <span className="text-[#A4A4A4] text-xs font-normal leading-5 tracking-normal max-md:text-[10px]">
-                          {getRelativeTime(comment.createdAt)}
+                          {formatTimeAgo(comment.createdAt, currentTime)}
                         </span>
                       </div>
 
@@ -577,7 +570,7 @@ export default function CommentSection({ blogId }) {
                                       {getDisplayName(reply)}
                                     </span>
                                     <span className="text-xs text-[#A4A4A4] max-md:text-[10px]">
-                                      {getRelativeTime(reply.createdAt)}
+                                      {formatTimeAgo(reply.createdAt, currentTime)}
                                     </span>
                                   </div>
                                   <p className="text-[#696969] text-sm break-words whitespace-pre-wrap max-md:text-xs">
