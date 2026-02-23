@@ -11,7 +11,9 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "checkJs": false,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
   "include": ["**/*.ts", "**/*.js"],
   "exclude": ["node_modules", "dist"]
