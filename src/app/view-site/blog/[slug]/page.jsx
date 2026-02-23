@@ -33,6 +33,7 @@ export default function BlogDetailPage({ params }) {
   const contentRef = useRef(null);
   const tocRailRef = useRef(null);
   const footerRef = useRef(null);
+  const footerPreviousTopRef = useRef(null);
   const [tocRailPosition, setTocRailPosition] = useState({
     left: 0,
     width: 240,
@@ -253,6 +254,56 @@ export default function BlogDetailPage({ params }) {
       window.removeEventListener("scroll", updateTocRailLayout);
     };
   }, [loading]);
+
+  useEffect(() => {
+    const handleCommentWillAdd = () => {
+      if (!footerRef.current) return;
+      footerPreviousTopRef.current =
+        footerRef.current.getBoundingClientRect().top;
+    };
+
+    const handleCommentDidAdd = () => {
+      if (!footerRef.current || footerPreviousTopRef.current === null) return;
+
+      const footerEl = footerRef.current;
+      const nextTop = footerEl.getBoundingClientRect().top;
+      const deltaY = footerPreviousTopRef.current - nextTop;
+      footerPreviousTopRef.current = null;
+
+      if (Math.abs(deltaY) < 1) return;
+
+      footerEl.style.transition = "none";
+      footerEl.style.transform = `translateY(${deltaY}px)`;
+      footerEl.style.willChange = "transform";
+      footerEl.getBoundingClientRect();
+
+      requestAnimationFrame(() => {
+        footerEl.style.transition =
+          "transform 1550ms cubic-bezier(0.16, 1, 0.3, 1)";
+        footerEl.style.transform = "translateY(0)";
+      });
+
+      const cleanup = (event) => {
+        if (event.target !== footerEl || event.propertyName !== "transform") {
+          return;
+        }
+        footerEl.style.transition = "";
+        footerEl.style.transform = "";
+        footerEl.style.willChange = "";
+        footerEl.removeEventListener("transitionend", cleanup);
+      };
+
+      footerEl.addEventListener("transitionend", cleanup);
+    };
+
+    window.addEventListener("blog:comment-will-add", handleCommentWillAdd);
+    window.addEventListener("blog:comment-did-add", handleCommentDidAdd);
+
+    return () => {
+      window.removeEventListener("blog:comment-will-add", handleCommentWillAdd);
+      window.removeEventListener("blog:comment-did-add", handleCommentDidAdd);
+    };
+  }, []);
 
   // Content processing moved to fetchBlog
   const [sections, setSections] = useState([]);

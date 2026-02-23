@@ -9,6 +9,7 @@ const API_URL = getApiBase();
 import { formatTimeAgo } from "../../../../utils/timeFormatter";
 import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import { useToast } from "@/contexts/ToastContext";
+import { flushSync } from "react-dom";
 
 export default function CommentSection({ blogId }) {
   const [comments, setComments] = useState([]);
@@ -123,11 +124,19 @@ export default function CommentSection({ blogId }) {
       if (response.ok) {
         const comment = await response.json();
         console.log("[CommentSection] New comment created:", comment);
-        setComments((prev) => [comment, ...prev]);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("blog:comment-will-add"));
+        }
+        flushSync(() => {
+          setComments((prev) => [comment, ...prev]);
+        });
 
         setNewComment("");
         setError(null);
         showToast("Comment added successfully", "success");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("blog:comment-did-add"));
+        }
       } else {
         let errorMessage = "Failed to post comment";
         let responseData = null;
