@@ -75,24 +75,30 @@ export default function TableOfContents({ sections = [] }) {
       <h3 className="text-[#14142D] text-xl font-bold leading-[19.2px] tracking-normal mb-6">
         Table of Contents
       </h3>
-      <nav className="flex-1 min-h-0 overflow-y-auto pr-4 pb-20">
-        <ul className="space-y-4 relative pl-0 ml-0">
-          {sections.map((section) => (
-            <li key={section.id} className="relative pl-4">
-              <button
-                onClick={() => scrollToSection(section.id)}
-                className={`text-left text-sm transition-all duration-200 font-normal leading-5 tracking-normal hover:text-[#202020] block w-full outline-none focus:outline-none ${
-                  activeSection === section.id
-                    ? "text-[#202020] font-bold"
-                    : "text-[#696969] hover:translate-x-1"
-                }`}
-              >
-                {section.title}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <div className="relative flex-1 min-h-0 flex flex-col">
+        <nav className="toc-scroll flex-1 min-h-0 overflow-y-auto pr-4 pb-12">
+          <ul className="space-y-4 relative pl-0 ml-0">
+            {sections.map((section) => (
+              <li key={section.id} className="relative pl-4">
+                <button
+                  onClick={() => scrollToSection(section.id)}
+                  className={`text-left text-sm transition-all duration-200 font-normal leading-5 tracking-normal hover:text-[#202020] block w-full outline-none focus:outline-none ${
+                    activeSection === section.id
+                      ? "text-[#202020] font-bold"
+                      : "text-[#696969]"
+                  }`}
+                >
+                  {section.title}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div
+          aria-hidden="true"
+          className="toc-fade-overlay pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14"
+        />
+      </div>
     </div>
   );
 }

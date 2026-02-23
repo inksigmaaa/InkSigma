@@ -510,6 +510,10 @@ export default function BlogDetailPage({ params }) {
       </section>
 
       <div ref={footerRef} className="relative z-40 bg-white">
+        <div
+          aria-hidden="true"
+          className="footer-top-fade pointer-events-none absolute -top-14 inset-x-0 z-10 h-14"
+        />
         <Footer publicationName={blog.publication?.name} />
       </div>
       <ScrollToTop />
