@@ -20,6 +20,7 @@ import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 import { getApiBase } from "@/utils/apiBase";
 
 const API_URL = getApiBase();
+const TOC_TOP_OFFSET_PX = 96;
 
 export default function BlogDetailPage({ params }) {
   const { slug } = use(params);
@@ -30,6 +31,14 @@ export default function BlogDetailPage({ params }) {
   const searchParams = useSearchParams();
   const { captureSnapshot, isSnapshotting } = useSnapshot();
   const contentRef = useRef(null);
+  const tocRailRef = useRef(null);
+  const footerRef = useRef(null);
+  const [tocRailPosition, setTocRailPosition] = useState({
+    left: 0,
+    width: 240,
+    ready: false,
+  });
+  const [tocRailHeight, setTocRailHeight] = useState(null);
 
   const handleSnapshot = () => {
     if (contentRef.current) {
@@ -99,9 +108,7 @@ export default function BlogDetailPage({ params }) {
       try {
         setLoading(true);
         // Fetch blog by slug (without incrementing view here)
-        const response = await fetch(
-          `${API_URL}/api/blogs/slug/${slug}`,
-        );
+        const response = await fetch(`${API_URL}/api/blogs/slug/${slug}`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch blog");
@@ -119,8 +126,7 @@ export default function BlogDetailPage({ params }) {
 
             // Fix Images
             const images = doc.querySelectorAll("img");
-            const backendUrl =
-              API_URL;
+            const backendUrl = API_URL;
 
             images.forEach((img, index) => {
               const src = img.getAttribute("src");
@@ -189,17 +195,14 @@ export default function BlogDetailPage({ params }) {
               }
 
               if (shouldTrack) {
-                await fetch(
-                  `${API_URL}/api/views/track`,
-                  {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({ blogId: foundBlog.id }),
+                await fetch(`${API_URL}/api/views/track`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
                   },
-                );
+                  credentials: "include",
+                  body: JSON.stringify({ blogId: foundBlog.id }),
+                });
               }
             } catch (viewError) {
               console.error("Error tracking view:", viewError);
@@ -216,6 +219,40 @@ export default function BlogDetailPage({ params }) {
 
     fetchBlog();
   }, [slug]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const updateTocRailLayout = () => {
+      if (!tocRailRef.current) return;
+
+      const rect = tocRailRef.current.getBoundingClientRect();
+      setTocRailPosition({
+        left: rect.left,
+        width: rect.width,
+        ready: rect.width > 0,
+      });
+
+      const defaultHeight = window.innerHeight - TOC_TOP_OFFSET_PX;
+      let nextHeight = defaultHeight;
+
+      if (footerRef.current) {
+        const footerTop = footerRef.current.getBoundingClientRect().top;
+        nextHeight = Math.min(defaultHeight, footerTop - TOC_TOP_OFFSET_PX);
+      }
+
+      setTocRailHeight(Math.max(0, nextHeight));
+    };
+
+    updateTocRailLayout();
+    window.addEventListener("resize", updateTocRailLayout);
+    window.addEventListener("scroll", updateTocRailLayout, { passive: true });
+
+    return () => {
+      window.removeEventListener("resize", updateTocRailLayout);
+      window.removeEventListener("scroll", updateTocRailLayout);
+    };
+  }, [loading]);
 
   // Content processing moved to fetchBlog
   const [sections, setSections] = useState([]);
@@ -331,22 +368,38 @@ export default function BlogDetailPage({ params }) {
       <section className="flex-grow flex justify-center w-full pt-20 ">
         <div className="flex w-[90%] lg:w-[78%] max-w-[1600px] gap-6 relative">
           {/* Left Sidebar - Navigation & TOC */}
-          <aside className="hidden lg:block w-[240px] flex-shrink-0 pt-5 sticky top-28 h-[calc(100vh-6rem)] overflow-y-auto z-30">
-            <div className="flex flex-col gap-8">
-              <button
-                onClick={handleBack}
-                className="inline-flex items-center gap-1 px-4 py-3 bg-[#F4F4F4] hover:bg-[#EAEAEA] text-[#696969] text-sm font-semibold leading-none tracking-normal rounded-3xl w-fit transition-colors"
-                type="button"
-              >
-                <Image
-                  src="/svg/arrow_back.svg"
-                  alt="Arrow Left"
-                  width={12}
-                  height={5}
-                />
-                Go to homepage
-              </button>
-              <TableOfContents sections={sections} />
+          <aside
+            ref={tocRailRef}
+            className="hidden lg:block w-[240px] flex-shrink-0 pt-8"
+          >
+            <div
+              className="fixed top-28 z-30"
+              style={{
+                left: tocRailPosition.left,
+                width: tocRailPosition.width,
+                height:
+                  tocRailHeight === null
+                    ? "calc(100vh - 6rem)"
+                    : `${tocRailHeight}px`,
+                visibility: tocRailPosition.ready ? "visible" : "hidden",
+              }}
+            >
+              <div className="flex flex-col gap-8 h-full min-h-0 pt-4">
+                <button
+                  onClick={handleBack}
+                  className="inline-flex items-center gap-1 px-4 py-3 bg-[#F4F4F4] hover:bg-[#EAEAEA] text-[#696969] text-sm font-semibold leading-none tracking-normal rounded-3xl w-fit transition-colors"
+                  type="button"
+                >
+                  <Image
+                    src="/svg/arrow_back.svg"
+                    alt="Arrow Left"
+                    width={12}
+                    height={5}
+                  />
+                  Go to homepage
+                </button>
+                <TableOfContents sections={sections} />
+              </div>
             </div>
           </aside>
 
@@ -456,7 +509,9 @@ export default function BlogDetailPage({ params }) {
         </div>
       </section>
 
-      <Footer publicationName={blog.publication?.name} />
+      <div ref={footerRef} className="relative z-40 bg-white">
+        <Footer publicationName={blog.publication?.name} />
+      </div>
       <ScrollToTop />
 
       {/* Mobile Bottom Navigation */}

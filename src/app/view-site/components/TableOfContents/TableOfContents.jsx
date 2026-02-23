@@ -2,10 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 
-// Constants for layout and scroll behavior
+// Constants for scroll behavior
 const HEADER_OFFSET = 0; // Matches fixed header height
 const SCROLL_OFFSET = 180; // Offset for active section detection (must be > HEADER_OFFSET + padding)
-const STICKY_TOP_OFFSET = 100; // Sticky position from top
 
 export default function TableOfContents({ sections = [] }) {
   const [activeSection, setActiveSection] = useState("");
@@ -72,33 +71,28 @@ export default function TableOfContents({ sections = [] }) {
   }
 
   return (
-    <div
-      className={`w-full sticky top-[${STICKY_TOP_OFFSET}px] h-fit max-h-[80vh] overflow-y-auto pr-4 pb-20`}
-    >
-      {/* Added max-h and overflow for long TOCs */}
-      <div>
-        <h3 className="text-[#14142D] text-xl font-bold leading-[19.2px] tracking-normal mb-6">
-          Table of Contents
-        </h3>
-        <nav>
-          <ul className="space-y-4 relative pl-0 ml-0">
-            {sections.map((section) => (
-              <li key={section.id} className="relative pl-4">
-                <button
-                  onClick={() => scrollToSection(section.id)}
-                  className={`text-left text-sm transition-all duration-200 font-normal leading-5 tracking-normal hover:text-[#202020] block w-full outline-none focus:outline-none ${
-                    activeSection === section.id
-                      ? "text-[#202020] font-bold"
-                      : "text-[#696969] hover:translate-x-1"
-                  }`}
-                >
-                  {section.title}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
+    <div className="w-full flex-1 min-h-0 flex flex-col">
+      <h3 className="text-[#14142D] text-xl font-bold leading-[19.2px] tracking-normal mb-6">
+        Table of Contents
+      </h3>
+      <nav className="flex-1 min-h-0 overflow-y-auto pr-4 pb-20">
+        <ul className="space-y-4 relative pl-0 ml-0">
+          {sections.map((section) => (
+            <li key={section.id} className="relative pl-4">
+              <button
+                onClick={() => scrollToSection(section.id)}
+                className={`text-left text-sm transition-all duration-200 font-normal leading-5 tracking-normal hover:text-[#202020] block w-full outline-none focus:outline-none ${
+                  activeSection === section.id
+                    ? "text-[#202020] font-bold"
+                    : "text-[#696969] hover:translate-x-1"
+                }`}
+              >
+                {section.title}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </div>
   );
 }
