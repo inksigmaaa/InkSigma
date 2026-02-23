@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Calendar, Clock, User, Eye } from "lucide-react";
 import ViewSiteHeader from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 import TableOfContents from "../../components/TableOfContents/TableOfContents";
@@ -14,13 +13,10 @@ import MobileBottomNav from "../../components/MobileBottomNav/MobileBottomNav";
 import CommentSection from "../../components/CommentSection/CommentSection";
 import { use, useEffect, useState, useRef } from "react";
 import ClockIcon from "../../components/icons/ClockIcon";
-import { getImageUrl } from "@/utils/imageUrl";
 import { useSnapshot } from "@/hooks/useSnapshot";
-import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 import { getApiBase } from "@/utils/apiBase";
 
 const API_URL = getApiBase();
-const TOC_TOP_OFFSET_PX = 96;
 
 export default function BlogDetailPage({ params }) {
   const { slug } = use(params);
@@ -29,17 +25,11 @@ export default function BlogDetailPage({ params }) {
   const [error, setError] = useState(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { captureSnapshot, isSnapshotting } = useSnapshot();
+  const { captureSnapshot } = useSnapshot();
   const contentRef = useRef(null);
-  const tocRailRef = useRef(null);
+  const tocStickyRef = useRef(null);
   const footerRef = useRef(null);
   const footerPreviousTopRef = useRef(null);
-  const [tocRailPosition, setTocRailPosition] = useState({
-    left: 0,
-    width: 240,
-    ready: false,
-  });
-  const [tocRailHeight, setTocRailHeight] = useState(null);
 
   const handleSnapshot = () => {
     if (contentRef.current) {
@@ -224,34 +214,42 @@ export default function BlogDetailPage({ params }) {
   useEffect(() => {
     if (loading) return;
 
-    const updateTocRailLayout = () => {
-      if (!tocRailRef.current) return;
+    const topOffset = 96; // matches top-28
+    let rafId = null;
+    let lastHeight = null;
 
-      const rect = tocRailRef.current.getBoundingClientRect();
-      setTocRailPosition({
-        left: rect.left,
-        width: rect.width,
-        ready: rect.width > 0,
-      });
+    const updateTocHeight = () => {
+      rafId = null;
+      if (!tocStickyRef.current) return;
 
-      const defaultHeight = window.innerHeight - TOC_TOP_OFFSET_PX;
+      const defaultHeight = window.innerHeight - topOffset;
       let nextHeight = defaultHeight;
 
       if (footerRef.current) {
         const footerTop = footerRef.current.getBoundingClientRect().top;
-        nextHeight = Math.min(defaultHeight, footerTop - TOC_TOP_OFFSET_PX);
+        nextHeight = Math.min(defaultHeight, footerTop - topOffset);
       }
 
-      setTocRailHeight(Math.max(0, nextHeight));
+      const clampedHeight = Math.max(0, Math.round(nextHeight));
+      if (clampedHeight === lastHeight) return;
+
+      lastHeight = clampedHeight;
+      tocStickyRef.current.style.height = `${clampedHeight}px`;
     };
 
-    updateTocRailLayout();
-    window.addEventListener("resize", updateTocRailLayout);
-    window.addEventListener("scroll", updateTocRailLayout, { passive: true });
+    const scheduleUpdate = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(updateTocHeight);
+    };
+
+    scheduleUpdate();
+    window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
 
     return () => {
-      window.removeEventListener("resize", updateTocRailLayout);
-      window.removeEventListener("scroll", updateTocRailLayout);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", scheduleUpdate);
+      window.removeEventListener("scroll", scheduleUpdate);
     };
   }, [loading]);
 
@@ -383,10 +381,6 @@ export default function BlogDetailPage({ params }) {
   }
 
   const dateFormatted = formatDate(blog.createdAt);
-  const thumbnailUrl = getThumbnailWithFallback(
-    getImageUrl(blog.image),
-    blog.id,
-  );
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -419,21 +413,10 @@ export default function BlogDetailPage({ params }) {
       <section className="flex-grow flex justify-center w-full pt-20 ">
         <div className="flex w-[90%] lg:w-[78%] max-w-[1600px] gap-6 relative">
           {/* Left Sidebar - Navigation & TOC */}
-          <aside
-            ref={tocRailRef}
-            className="hidden lg:block w-[240px] flex-shrink-0 pt-8"
-          >
+          <aside className="hidden lg:block w-[240px] flex-shrink-0 pt-8">
             <div
-              className="fixed top-28 z-30"
-              style={{
-                left: tocRailPosition.left,
-                width: tocRailPosition.width,
-                height:
-                  tocRailHeight === null
-                    ? "calc(100vh - 6rem)"
-                    : `${tocRailHeight}px`,
-                visibility: tocRailPosition.ready ? "visible" : "hidden",
-              }}
+              ref={tocStickyRef}
+              className="sticky top-28 z-30 h-[calc(100vh-6rem)]"
             >
               <div className="flex flex-col gap-8 h-full min-h-0 pt-4">
                 <button
