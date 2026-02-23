@@ -31,7 +31,7 @@ export const ToastProvider = ({ children }) => {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[10001] flex flex-col gap-3">
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[10001] flex w-[90%] max-w-[400px] flex-col gap-3 sm:w-auto">
         {toasts.map((toast) => {
           const isError = toast.type === 'error';
           const isSuccess = toast.type === 'success';
@@ -41,8 +41,8 @@ export const ToastProvider = ({ children }) => {
               key={toast.id}
               className={
                 isSuccess
-                  ? "bg-[#ECF0FE] rounded-[8px] px-6 h-[50px] shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex items-center gap-2.5 w-fit animate-slide-in pointer-events-auto"
-                  : "bg-white border border-[#EAEAEA] px-4 py-3 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex items-center gap-3 min-w-[300px] max-w-[400px] animate-slide-in pointer-events-auto"
+                  ? "bg-[#ECF0FE] rounded-[8px] px-6 h-[50px] shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex items-center gap-2.5 w-full sm:w-fit animate-slide-in pointer-events-auto"
+                  : "bg-white border border-[#EAEAEA] px-4 py-3 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex items-center gap-3 w-full sm:min-w-[300px] sm:max-w-[400px] animate-slide-in pointer-events-auto"
               }
             >
               {/* Icon */}
