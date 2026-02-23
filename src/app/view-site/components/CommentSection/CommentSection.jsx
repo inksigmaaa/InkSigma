@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "@/lib/auth-client";
+import { getApiBase } from "@/utils/apiBase";
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const API_URL = getApiBase();
 
 import { formatTimeAgo } from "../../../../utils/timeFormatter";
 import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
@@ -20,31 +22,14 @@ export default function CommentSection({ blogId }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
+  const { data: session, isPending: sessionPending } = useSession();
+  const currentUser = session?.user || null;
 
   // Delete confirmation state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
 
   const { showToast } = useToast();
-
-  // Fetch current user session
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/auth/get-session`, {
-          credentials: "include",
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setCurrentUser(data?.user || null);
-        }
-      } catch (err) {
-        console.log("Not authenticated");
-      }
-    };
-    fetchUser();
-  }, []);
 
   // Fetch comments
   const fetchComments = useCallback(async () => {
@@ -98,8 +83,8 @@ export default function CommentSection({ blogId }) {
       setError("Please enter a comment");
       return;
     }
-    if (!currentUser) {
-      setError("Please sign in to comment");
+    if (sessionPending) {
+      setError("Checking sign-in status. Please try again.");
       return;
     }
 
@@ -152,6 +137,9 @@ export default function CommentSection({ blogId }) {
           console.error("[CommentSection] Error response data:", responseData);
           errorMessage =
             responseData.error || responseData.message || errorMessage;
+          if (errorMessage === "Name is required for guest comments") {
+            errorMessage = "Please sign in to comment";
+          }
         } catch (parseErr) {
           console.error(
             "[CommentSection] Failed to parse error response:",
@@ -182,8 +170,8 @@ export default function CommentSection({ blogId }) {
       setError("Please enter a reply");
       return;
     }
-    if (!currentUser) {
-      setError("Please sign in to reply");
+    if (sessionPending) {
+      setError("Checking sign-in status. Please try again.");
       return;
     }
 
@@ -230,6 +218,9 @@ export default function CommentSection({ blogId }) {
           const data = await response.json();
           console.error("[CommentSection] Failed to post reply:", data);
           errorMessage = data.error || data.message || errorMessage;
+          if (errorMessage === "Name is required for guest comments") {
+            errorMessage = "Please sign in to reply";
+          }
         } catch (parseErr) {
           console.error(
             "[CommentSection] Failed to parse error response:",

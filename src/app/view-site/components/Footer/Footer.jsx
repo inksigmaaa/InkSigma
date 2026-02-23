@@ -2,8 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/lib/auth-client';
+import { getApiBase } from '@/utils/apiBase';
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+const API_URL = getApiBase();
 
 export default function Footer({ publicationName = 'Jasmin blogs' }) {
   const currentYear = new Date().getFullYear();

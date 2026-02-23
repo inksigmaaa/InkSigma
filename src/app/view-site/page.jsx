@@ -9,8 +9,9 @@ import LatestBlog from './components/LatestBlog/LatestBlog';
 import AllArticles from './components/AllArticles/AllArticles';
 import Footer from './components/Footer/Footer';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
+import { getApiBase } from '@/utils/apiBase';
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+const API_URL = getApiBase();
 
 function ViewSiteContent() {
   const [searchQuery, setSearchQuery] = useState('');

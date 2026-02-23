@@ -17,6 +17,9 @@ import ClockIcon from "../../components/icons/ClockIcon";
 import { getImageUrl } from "@/utils/imageUrl";
 import { useSnapshot } from "@/hooks/useSnapshot";
 import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
+import { getApiBase } from "@/utils/apiBase";
+
+const API_URL = getApiBase();
 
 export default function BlogDetailPage({ params }) {
   const { slug } = use(params);
@@ -97,7 +100,7 @@ export default function BlogDetailPage({ params }) {
         setLoading(true);
         // Fetch blog by slug (without incrementing view here)
         const response = await fetch(
-          `http://localhost:5000/api/blogs/slug/${slug}`,
+          `${API_URL}/api/blogs/slug/${slug}`,
         );
 
         if (!response.ok) {
@@ -117,7 +120,7 @@ export default function BlogDetailPage({ params }) {
             // Fix Images
             const images = doc.querySelectorAll("img");
             const backendUrl =
-              process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+              API_URL;
 
             images.forEach((img, index) => {
               const src = img.getAttribute("src");
@@ -154,7 +157,7 @@ export default function BlogDetailPage({ params }) {
           // Fetch publication details if publicationId exists
           if (foundBlog.publicationId) {
             const pubResponse = await fetch(
-              `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/publications/${foundBlog.publicationId}`,
+              `${API_URL}/api/publications/${foundBlog.publicationId}`,
               {
                 credentials: "include",
               },
@@ -187,7 +190,7 @@ export default function BlogDetailPage({ params }) {
 
               if (shouldTrack) {
                 await fetch(
-                  `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/views/track`,
+                  `${API_URL}/api/views/track`,
                   {
                     method: "POST",
                     headers: {
@@ -307,11 +310,11 @@ export default function BlogDetailPage({ params }) {
         }
         userAvatar={
           blog.publication?.logoUrl
-            ? `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${blog.publication.logoUrl}`
+            ? `${API_URL}${blog.publication.logoUrl}`
             : blog.author?.image
               ? blog.author.image.startsWith("http")
                 ? blog.author.image
-                : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${blog.author.image}`
+                : `${API_URL}${blog.author.image}`
               : null
         }
         shareButton={
@@ -393,8 +396,8 @@ export default function BlogDetailPage({ params }) {
                         blog.author.image.startsWith("https")
                           ? blog.author.image
                           : blog.author.image.startsWith("/")
-                            ? `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${blog.author.image}`
-                            : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${blog.author.image}`
+                            ? `${API_URL}${blog.author.image}`
+                            : `${API_URL}/${blog.author.image}`
                       }
                       alt={blog.author?.name || "Author"}
                       className="w-full h-full object-cover"

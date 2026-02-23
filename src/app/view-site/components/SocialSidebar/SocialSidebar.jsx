@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { getApiBase } from '@/utils/apiBase';
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+const API_URL = getApiBase();
 
 export default function SocialSidebar({ title, url, slug, blogId, onSnapshot }) {
   const [showCopied, setShowCopied] = useState(false);

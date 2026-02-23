@@ -19,6 +19,15 @@ const getBaseDomains = () => {
     .filter(Boolean);
 };
 
+const getPreferredBaseDomain = () => {
+  const baseDomains = getBaseDomains();
+  return (
+    baseDomains.find((d) => d.includes(".") && d !== "localhost") ||
+    baseDomains[0] ||
+    "localhost"
+  );
+};
+
 const buildTrustedOrigins = () => {
   const fromEnv =
     process.env.TRUSTED_ORIGINS ||
@@ -38,8 +47,10 @@ const buildTrustedOrigins = () => {
   for (const baseDomain of baseDomains) {
     origins.add(`http://${baseDomain}:3000`);
     origins.add(`http://dashboard.${baseDomain}:3000`);
+    origins.add(`http://*.${baseDomain}:3000`);
     origins.add(`https://${baseDomain}`);
     origins.add(`https://dashboard.${baseDomain}`);
+    origins.add(`https://*.${baseDomain}`);
   }
 
   return Array.from(origins);
@@ -48,22 +59,40 @@ const buildTrustedOrigins = () => {
 const buildBaseUrl = () => {
   if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
 
-  const baseDomains = getBaseDomains();
+  const preferredBaseDomain = getPreferredBaseDomain();
   const dashboardSub = process.env.DASHBOARD_SUBDOMAIN || "dashboard";
 
   // Prefer dashboard.<base>:5000 so cookies align with dashboard host in local dev
-  if (baseDomains.length > 0) {
-    return `http://${dashboardSub}.${baseDomains[0]}:5000`;
+  return `http://${dashboardSub}.${preferredBaseDomain}:5000`;
+};
+
+const getCrossSubdomainCookieDomain = () => {
+  const preferredBaseDomain = getPreferredBaseDomain();
+
+  // Prefer a real local/prod domain (e.g. inksigma.local / inksigma.com)
+  // and avoid localhost because cross-subdomain cookies there are unreliable.
+  if (preferredBaseDomain && preferredBaseDomain !== "localhost") {
+    return preferredBaseDomain;
   }
 
-  return "http://localhost:5000";
+  return undefined;
 };
+
+const crossSubdomainCookieDomain = getCrossSubdomainCookieDomain();
 
 export const auth = betterAuth({
   baseURL: buildBaseUrl(),
   basePath: "/api/auth",
   secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: buildTrustedOrigins(),
+  advanced: crossSubdomainCookieDomain
+    ? {
+        crossSubDomainCookies: {
+          enabled: true,
+          domain: crossSubdomainCookieDomain,
+        },
+      }
+    : undefined,
 
   database: drizzleAdapter(db, {
     provider: "pg",

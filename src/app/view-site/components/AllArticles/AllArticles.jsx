@@ -8,8 +8,9 @@ import ShareMenu from "../ShareMenu/ShareMenu";
 import { getImageUrl } from "@/utils/imageUrl";
 import CategoryBadgeList from "@/components/CategoryBadgeList";
 import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
+import { getApiBase } from "@/utils/apiBase";
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const API_URL = getApiBase();
 
 export default function AllArticles({
   searchQuery = "",
@@ -124,7 +125,7 @@ export default function AllArticles({
                           src={
                             article.author.image.startsWith("http")
                               ? article.author.image
-                              : `http://localhost:5000${article.author.image}`
+                              : `${API_URL}${article.author.image}`
                           }
                           alt={article.author.name}
                           className="w-full h-full object-cover"

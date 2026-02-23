@@ -8,8 +8,9 @@ import ShareMenu from '../ShareMenu/ShareMenu';
 import { formatTimeAgo } from '@/utils/timeFormatter';
 import { getImageUrl } from '@/utils/imageUrl';
 import { getThumbnailWithFallback } from '@/utils/fallbackThumbnail';
+import { getApiBase } from '@/utils/apiBase';
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+const API_URL = getApiBase();
 
 export default function LatestBlog({ searchQuery = '', blogs = [], publicationId }) {
   const [commentCount, setCommentCount] = useState(0);
@@ -98,7 +99,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
           <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
             {latestBlog.author?.image ? (
               <img
-                src={latestBlog.author.image.startsWith('http') ? latestBlog.author.image : `http://localhost:5000${latestBlog.author.image}`} 
+                src={latestBlog.author.image.startsWith('http') ? latestBlog.author.image : `${API_URL}${latestBlog.author.image}`} 
                 alt={latestBlog.author.name} 
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -189,7 +190,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
             <div className="w-[29px] h-[29px] rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
               {latestBlog.author?.image ? (
                 <img
-                  src={latestBlog.author.image.startsWith('http') ? latestBlog.author.image : `http://localhost:5000${latestBlog.author.image}`} 
+                  src={latestBlog.author.image.startsWith('http') ? latestBlog.author.image : `${API_URL}${latestBlog.author.image}`} 
                   alt={latestBlog.author.name} 
                   className="w-full h-full object-cover"
                   onError={(e) => {

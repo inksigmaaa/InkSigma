@@ -132,7 +132,6 @@ export default function HomePage() {
 
       window.open(`${protocol}//${newHost}`, "_blank");
     } else if (currentPublication?.id) {
-      // Fallback for no subdomain
       window.open(
         `/view-site?publicationId=${currentPublication.id}`,
         "_blank",
