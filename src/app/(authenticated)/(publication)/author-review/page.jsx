@@ -306,13 +306,14 @@ export default function AuthorReviewPage() {
     <>
                   <Verify />
 
-      <div className="absolute left-1/2 -translate-x-1/2 top-[160px] max-md:top-[170px] w-full max-w-[1034px] z-20 px-5">
-        {/* Review Header */}
-
-        <div className="ml-0 md:ml-[195px] py-4 flex items-center justify-between">
+      <div className="absolute left-1/2 -translate-x-1/2 top-[160px] max-md:top-[120px] w-full max-w-[1034px] z-20 px-5">
+        <div className="ml-0 md:ml-[195px] flex items-center justify-between mb-4 max-md:mt-3">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <h1 className="text-lg font-semibold text-gray-900">Review</h1>
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: "#267F24" }}
+            ></div>
+            <h1 className="text-base font-bold text-gray-800">Review</h1>
             <span className="text-sm text-gray-500">
               ({filteredArticles.length})
             </span>
@@ -320,7 +321,7 @@ export default function AuthorReviewPage() {
         </div>
 
         {/* Bulk Actions Bar */}
-        <div className="ml-0 md:ml-[195px] flex items-center justify-between gap-4 mb-6">
+        <div className="ml-0 md:ml-[195px] flex items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-2">
             <label
               className={`${styles.selectAllContainer} ${filteredArticles.length === 0 ? "opacity-40 pointer-events-none" : ""}`}

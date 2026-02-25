@@ -253,9 +253,9 @@ export default function ReviewPage() {
         className={`absolute left-1/2 -translate-x-1/2 top-[160px] w-full max-w-[1034px] z-20 px-5 max-md:top-[120px]`}
       >
         <div className="ml-0 md:ml-[195px]">
-          <div className="space-y-6">
+          <div>
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4 max-md:mt-3">
               <div className="flex items-center gap-2">
                 <div
                   className="w-2 h-2 rounded-full"
@@ -269,7 +269,7 @@ export default function ReviewPage() {
             </div>
 
             {/* Bulk Actions Bar */}
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4 mb-4">
               <div className="flex items-center gap-2">
                 <label
                   className={`${styles.selectAllContainer} ${filteredArticles.length === 0 ? "opacity-40 pointer-events-none" : ""}`}

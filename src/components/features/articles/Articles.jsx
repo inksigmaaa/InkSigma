@@ -209,56 +209,45 @@ export default function Articles(props) {
         className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}
       >
         <div className="ml-0 md:ml-[195px]">
-          <div className="flex flex-col justify-between gap-4 mb-6 px-2 md:hidden max-md:mt-3">
-            <h1 className="font-bold text-lg leading-8 text-gray-800 m-0 flex items-center gap-3">
-              <span className="w-3 h-3 bg-violet-500 rounded-full shrink-0"></span>
+          <div className="flex items-center justify-between gap-4 mb-4 max-md:mt-3">
+            <h1 className="font-['Public_Sans'] font-bold text-base leading-6 text-gray-800 m-0 flex items-center gap-2">
+              <span className="w-2 h-2 bg-violet-500 rounded-full shrink-0"></span>
               {props.title || "All Articles"}
             </h1>
-            <div className="flex items-center justify-between gap-4 max-[410px]:gap-2">
-              <div className="flex items-center gap-3">
-                {categoryFilteredArticles.length > 0 && (
-                  <label className={styles.selectAllContainer}>
-                    <input
-                      type="checkbox"
-                      checked={isAllSelected}
-                      onChange={handleSelectAll}
-                      className={styles.selectAllCheckbox}
-                    />
-                    <span className={styles.selectAllCheckboxBox}>
-                      {isAllSelected && (
-                        <img
-                          src="/images/icons/tick2.svg"
-                          alt="checked"
-                          className={styles.selectAllCheckboxIcon}
-                        />
-                      )}
-                    </span>
-                    <span className={styles.selectAllText}>Select all</span>
-                  </label>
-                )}
-              </div>
-              <CategoryFilter
-                selectedCategories={selectedCategories}
-                onCategoriesChange={setSelectedCategories}
-                buttonText="Category"
-                disabled={filteredArticles.length === 0}
-              />
-            </div>
           </div>
 
-          <div className="hidden md:flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h1 className="m-0 font-bold text-base leading-6 text-gray-800 flex items-center gap-2">
-                <span className="w-2 h-2 bg-violet-500 rounded-full"></span>
-                {props.title || "All Articles"}
-              </h1>
-              <CategoryFilter
-                selectedCategories={selectedCategories}
-                onCategoriesChange={setSelectedCategories}
-                buttonText="Choose Category"
-                disabled={filteredArticles.length === 0}
-              />
+          <div className="flex items-center justify-between gap-4 mb-4 md:hidden max-[410px]:gap-2">
+            <div className="flex items-center gap-3">
+              {categoryFilteredArticles.length > 0 && (
+                <label className={styles.selectAllContainer}>
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={handleSelectAll}
+                    className={styles.selectAllCheckbox}
+                  />
+                  <span className={styles.selectAllCheckboxBox}>
+                    {isAllSelected && (
+                      <img
+                        src="/images/icons/tick2.svg"
+                        alt="checked"
+                        className={styles.selectAllCheckboxIcon}
+                      />
+                    )}
+                  </span>
+                  <span className={styles.selectAllText}>Select all</span>
+                </label>
+              )}
             </div>
+            <CategoryFilter
+              selectedCategories={selectedCategories}
+              onCategoriesChange={setSelectedCategories}
+              buttonText="Category"
+              disabled={filteredArticles.length === 0}
+            />
+          </div>
+
+          <div className="hidden md:flex items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-5">
               {categoryFilteredArticles.length > 0 && (
                 <label className={styles.selectAllContainer}>
@@ -281,6 +270,12 @@ export default function Articles(props) {
                 </label>
               )}
             </div>
+            <CategoryFilter
+              selectedCategories={selectedCategories}
+              onCategoriesChange={setSelectedCategories}
+              buttonText="Choose Category"
+              disabled={filteredArticles.length === 0}
+            />
           </div>
 
           <div className="mt-6 space-y-4 pb-[85px]">
