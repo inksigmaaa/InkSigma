@@ -136,7 +136,9 @@ export default function Members() {
       if (isInitialLoad) setIsInitialLoad(false);
 
       const interval = setInterval(() => {
-        loadData(true);
+        if (currentPublication?.id) {
+          loadData(true);
+        }
       }, 30000);
 
       return () => clearInterval(interval);
