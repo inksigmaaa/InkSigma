@@ -249,8 +249,7 @@ class BlogService {
         },
       })
       .from(blog)
-      .leftJoin(user, eq(blog.authorId, user.id))
-      .orderBy(desc(blog.createdAt));
+      .leftJoin(user, eq(blog.authorId, user.id));
 
     const conditions = [];
 
@@ -280,7 +279,11 @@ class BlogService {
       );
     }
 
-    if (conditions.length > 0) dbQuery = dbQuery.where(and(...conditions));
+    if (conditions.length > 0) {
+      dbQuery = dbQuery.where(and(...conditions)) as typeof dbQuery;
+    }
+
+    dbQuery = dbQuery.orderBy(desc(blog.createdAt)) as typeof dbQuery;
 
     let blogs = await dbQuery.limit(parseInt(limit)).offset(parseInt(offset));
 
@@ -326,8 +329,8 @@ class BlogService {
 
     const blogsToProcess = blogs.slice(0, 50);
     const blogIds = blogsToProcess.map((b) => b.id);
-    let statsMap = {};
-    let commentMap = {};
+    let statsMap: Record<string, { views: number; shares: number }> = {};
+    let commentMap: Record<string, number> = {};
 
     if (blogIds.length > 0) {
       try {
@@ -339,7 +342,7 @@ class BlogService {
           .groupBy(comment.blogId);
 
         for (const row of commentsResult) {
-          commentMap[row.blogId] = parseInt(row.count) || 0;
+          commentMap[String(row.blogId)] = Number(row.count) || 0;
         }
       } catch (err) {
         logger.error(err, "Batch stat fetch failed:");
@@ -348,9 +351,9 @@ class BlogService {
 
     return blogsToProcess.map((b) => ({
       ...b,
-      views: statsMap[b.id]?.views || 0,
-      shares: statsMap[b.id]?.shares || 0,
-      comments: commentMap[b.id] || 0,
+      views: statsMap[String(b.id)]?.views || 0,
+      shares: statsMap[String(b.id)]?.shares || 0,
+      comments: commentMap[String(b.id)] || 0,
       revisits: 0,
     }));
   }
@@ -465,8 +468,8 @@ class BlogService {
     }
 
     const blogIds = blogs.map((b) => b.id);
-    let statsMap = {};
-    let commentMap = {};
+    let statsMap: Record<string, { views: number; shares: number }> = {};
+    let commentMap: Record<string, number> = {};
 
     if (blogIds.length > 0) {
       try {
@@ -478,7 +481,7 @@ class BlogService {
           .groupBy(comment.blogId);
 
         for (const row of commentsResult) {
-          commentMap[row.blogId] = parseInt(row.count) || 0;
+          commentMap[String(row.blogId)] = Number(row.count) || 0;
         }
       } catch (err) {
         logger.error(err, "Batch stat fetch failed:");
@@ -487,9 +490,9 @@ class BlogService {
 
     return blogs.map((b) => ({
       ...b,
-      views: statsMap[b.id]?.views || 0,
-      shares: statsMap[b.id]?.shares || 0,
-      comments: commentMap[b.id] || 0,
+      views: statsMap[String(b.id)]?.views || 0,
+      shares: statsMap[String(b.id)]?.shares || 0,
+      comments: commentMap[String(b.id)] || 0,
       revisits: 0,
     }));
   }
@@ -609,7 +612,7 @@ class BlogService {
       publicationId,
     } = data;
 
-    let targetStatus = BLOG_STATUS.DRAFT;
+    let targetStatus: typeof BLOG_STATUS[keyof typeof BLOG_STATUS] = BLOG_STATUS.DRAFT;
     if (status) targetStatus = status;
     else if (published) targetStatus = BLOG_STATUS.PUBLISHED;
 
@@ -657,7 +660,7 @@ class BlogService {
     const slug = await this.ensureUniqueSlug(this.generateSlug(finalTitle));
     const syncedFields = this.syncStatusAndPublished(targetStatus);
 
-    const blogData = {
+    const blogData: Record<string, any> = {
       slug,
       title: finalTitle,
       description,
@@ -672,7 +675,8 @@ class BlogService {
     if (publicationId) blogData.publicationId = parseInt(publicationId);
     if (scheduledAt) blogData.scheduledAt = new Date(scheduledAt);
 
-    const [newBlog] = await db.insert(blog).values(blogData).returning();
+    const result = await db.insert(blog).values(blogData).returning();
+    const newBlog = result[0];
 
     if (newBlog.status === BLOG_STATUS.SCHEDULED && newBlog.scheduledAt) {
       schedulerService.onBlogScheduled(newBlog.id);
@@ -713,7 +717,7 @@ class BlogService {
     const finalTitle = normalizedTitle || DEFAULT_DRAFT_TITLE;
     const slug = await this.ensureUniqueSlug(this.generateSlug(finalTitle));
 
-    const blogData = {
+    const blogData: Record<string, any> = {
       slug,
       title: finalTitle,
       description,
@@ -728,7 +732,8 @@ class BlogService {
 
     if (publicationId) blogData.publicationId = parseInt(publicationId);
 
-    const [newBlog] = await db.insert(blog).values(blogData).returning();
+    const result = await db.insert(blog).values(blogData).returning();
+    const newBlog = result[0];
     return newBlog;
   }
 
@@ -761,7 +766,7 @@ class BlogService {
     const { title, description, content, categories, image } = data;
 
     const draftSlug = await this.ensureUniqueSlug(`${originalBlog.slug}-draft`);
-    const draftData = {
+    const draftData: Record<string, any> = {
       slug: draftSlug,
       title: title || `${originalBlog.title} [Update draft]`,
       description:
@@ -779,7 +784,8 @@ class BlogService {
       updatedAt: new Date(),
     };
 
-    const [newDraft] = await db.insert(blog).values(draftData).returning();
+    const result = await db.insert(blog).values(draftData).returning();
+    const newDraft = result[0];
     return newDraft;
   }
   async updateBlog(id, data, currentUser) {
@@ -815,7 +821,7 @@ class BlogService {
         ? BLOG_STATUS.PUBLISHED
         : BLOG_STATUS.DRAFT;
 
-    const updateData = { updatedAt: new Date() };
+    const updateData: Record<string, any> = { updatedAt: new Date() };
     let slug = existingBlog.slug;
 
     if (title !== undefined) {
