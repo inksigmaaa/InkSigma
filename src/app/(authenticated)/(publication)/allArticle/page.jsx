@@ -5,6 +5,7 @@ import AuthGuard from "@/components/auth/AuthGuard";
 import Verify from "@/components/features/verify/Verify";
 import Articles from "@/components/features/articles/Articles";
 import CategoryBadgeList from "@/components/CategoryBadgeList";
+import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { useSearchParams } from "next/navigation";
@@ -96,12 +97,14 @@ export default function AllArticlePage() {
 
   return (
     <AuthGuard>
-                  <Verify />
-      <Articles
-        title={"All Articles"}
-        articles={articlesWithPermissions}
-        loading={isLoading}
-      />
+      <Verify />
+      <PageTransition>
+        <Articles
+          title={"All Articles"}
+          articles={articlesWithPermissions}
+          loading={isLoading}
+        />
+      </PageTransition>
     </AuthGuard>
   );
 }

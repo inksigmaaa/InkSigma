@@ -10,6 +10,7 @@ import SchedulePageClient from "@/components/features/schedule/SchedulePageClien
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
+import PageTransition from "@/components/PageTransition";
 
 export default function SchedulePage() {
   const {
@@ -308,7 +309,7 @@ export default function SchedulePage() {
   if (isLoading && allArticles.length === 0) {
     return (
       <AuthGuard>
-                        <Verify />
+        <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-gray-500">Loading scheduled articles...</div>
         </div>
@@ -319,7 +320,7 @@ export default function SchedulePage() {
   if (error) {
     return (
       <AuthGuard>
-                        <Verify />
+        <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-red-500">Error: {error}</div>
         </div>
@@ -329,21 +330,23 @@ export default function SchedulePage() {
 
   return (
     <AuthGuard>
-                  <Verify />
-      <PersonalArticles
-        title="Scheduled"
-        titleColor="#0048B5"
-        articles={scheduledArticles}
-        emptyMessage="No scheduled articles yet"
-        showSelectAll={true}
-        showActions={true}
-        actionButtons={actionButtons}
-        selectedArticles={selectedArticles}
-        onSelectAll={handleSelectAll}
-        onArticleSelect={handleArticleSelect}
-        onRefresh={handleRefresh}
-        isRefreshing={isRefreshing}
-      />
+      <Verify />
+      <PageTransition>
+        <PersonalArticles
+          title="Scheduled"
+          titleColor="#0048B5"
+          articles={scheduledArticles}
+          emptyMessage="No scheduled articles yet"
+          showSelectAll={true}
+          showActions={true}
+          actionButtons={actionButtons}
+          selectedArticles={selectedArticles}
+          onSelectAll={handleSelectAll}
+          onArticleSelect={handleArticleSelect}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
+        />
+      </PageTransition>
 
       <ConfirmModal
         isOpen={showDeleteModal}
