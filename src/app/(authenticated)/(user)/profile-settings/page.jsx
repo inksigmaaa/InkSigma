@@ -543,7 +543,7 @@ export default function ProfileSettingsPage() {
       {/* Success Modal - Password Reset */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg py-12 px-14 max-w-[353px] w-full mx-4 relative">
+          <div className="bg-white rounded-lg py-2 px-14 max-w-[353px] w-full mx-4 relative">
             <button
               onClick={() => setShowSuccessModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
