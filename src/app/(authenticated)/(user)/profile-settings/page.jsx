@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useSession } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
@@ -13,7 +13,11 @@ export default function ProfileSettingsPage() {
   const API_URL = getApiBase(); // Get API URL dynamically based on current hostname
   const [showResetModal, setShowResetModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showUpdateMessage, setShowUpdateMessage] = useState(false);
+  const [initialProfile, setInitialProfile] = useState({
+    profileName: "",
+    username: "",
+    bio: "",
+  });
   const [bio, setBio] = useState("");
   const [profileName, setProfileName] = useState("");
   const [username, setUsername] = useState("");
@@ -22,10 +26,49 @@ export default function ProfileSettingsPage() {
   const [imagePreview, setImagePreview] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
+  const [isImageRemoved, setIsImageRemoved] = useState(false);
   const [error, setError] = useState("");
   const [hasPasswordAccount, setHasPasswordAccount] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [bottomToast, setBottomToast] = useState({
+    id: 0,
+    message: "",
+    type: "success",
+  });
+  const toastTimerRef = useRef(null);
+
+  const showBottomToast = useCallback(
+    (message, type = "error", duration = 3000) => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+
+      const id = Date.now();
+      setBottomToast({ id, message, type });
+
+      toastTimerRef.current = setTimeout(() => {
+        setBottomToast((prev) =>
+          prev.id === id ? { ...prev, message: "" } : prev,
+        );
+      }, duration);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!error) return;
+    showBottomToast(error, "error", 3000);
+    setError("");
+  }, [error, showBottomToast]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   // Fetch profile data on mount
   useEffect(() => {
@@ -51,6 +94,11 @@ export default function ProfileSettingsPage() {
           setProfileName(data.profileName || "");
           setUsername(data.username || "");
           setBio(data.bio || "");
+          setInitialProfile({
+            profileName: data.profileName || "",
+            username: data.username || "",
+            bio: data.bio || "",
+          });
           setImage(data.image || "");
           setImagePreview(data.image || "");
           setHasPasswordAccount(data.hasPasswordAccount || false);
@@ -91,109 +139,88 @@ export default function ProfileSettingsPage() {
     }
   }, [session, isPending, router, API_URL]);
 
-  const handleImageChange = async (e) => {
+  const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      setError("Please select an image file");
+      showBottomToast("Please select an image file", "error", 3000);
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      setError("Image must be less than 5MB");
+      showBottomToast("Image must be less than 5MB", "error", 3000);
       return;
     }
 
     setError("");
-    setIsUploadingImage(true);
+    setSelectedImageFile(file);
+    setIsImageRemoved(false);
 
-    try {
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-
-      // Upload image
-      const formData = new FormData();
-      formData.append("image", file);
-
-      const response = await fetch(`${API_URL}/api/profile/image`, {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "Failed to upload image");
-        setImagePreview(image); // Revert preview
-        return;
-      }
-
-      setImage(data.imageUrl);
-      setImagePreview(data.imageUrl);
-      setIsUploadingImage(false);
-
-      // Show success message
-      setShowUpdateMessage(true);
-
-      // Refresh data without full page reload
-      setTimeout(() => {
-        router.refresh();
-      }, 1500);
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      setError("Failed to upload image");
-      setImagePreview(image); // Revert preview
-      setIsUploadingImage(false);
-    }
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleRemoveImage = async () => {
-    setIsUploadingImage(true);
+  const handleRemoveImage = () => {
     setError("");
-
-    try {
-      const response = await fetch(`${API_URL}/api/profile/image`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        setError(data.error || "Failed to remove image");
-        return;
-      }
-
-      setImage("");
-      setImagePreview("");
-      setIsUploadingImage(false);
-
-      // Show success message
-      setShowUpdateMessage(true);
-
-      // Refresh data without full page reload
-      setTimeout(() => {
-        router.refresh();
-      }, 1500);
-    } catch (error) {
-      console.error("Error removing image:", error);
-      setError("Failed to remove image");
-      setIsUploadingImage(false);
-    }
+    setImagePreview("");
+    setSelectedImageFile(null);
+    setIsImageRemoved(true);
   };
 
   const handleSave = async () => {
+    if (!hasProfileChanges) return;
+
     try {
       setIsSaving(true);
       setError("");
 
+      // Handle Image Remove
+      if (isImageRemoved) {
+        const imgRes = await fetch(`${API_URL}/api/profile/image`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        if (!imgRes.ok) {
+          const d = await imgRes.json();
+          setError(d.error || "Failed to remove image");
+          setIsSaving(false);
+          return;
+        }
+      }
+      // Handle Image Upload
+      else if (selectedImageFile) {
+        const formData = new FormData();
+        formData.append("image", selectedImageFile);
+
+        const imgRes = await fetch(`${API_URL}/api/profile/image`, {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+
+        if (!imgRes.ok) {
+          const d = await imgRes.json();
+          setError(d.error || "Failed to upload image");
+          setIsSaving(false);
+          return;
+        }
+
+        const d = await imgRes.json();
+        setImage(d.imageUrl);
+        setImagePreview(d.imageUrl);
+      } else if (!isImageRemoved) {
+        // If image wasn't changed, keep existing image
+        setImagePreview(imagePreview);
+      }
+
+      // Handle Content Update
       const response = await fetch(`${API_URL}/api/profile`, {
         method: "PUT",
         headers: {
@@ -211,11 +238,17 @@ export default function ProfileSettingsPage() {
 
       if (!response.ok) {
         setError(data.error || "Failed to save profile");
+        setIsSaving(false);
         return;
       }
 
       setIsSaving(false);
-      setShowUpdateMessage(true);
+      setInitialProfile({ profileName, username, bio });
+      setSelectedImageFile(null);
+      setIsImageRemoved(false);
+      if (isImageRemoved) setImage("");
+
+      showBottomToast("Settings Updated", "success", 2500);
 
       // Refresh data without full page reload
       setTimeout(() => {
@@ -251,10 +284,17 @@ export default function ProfileSettingsPage() {
     image: imagePreview,
   };
 
+  const hasProfileChanges =
+    profileName !== initialProfile.profileName ||
+    username !== initialProfile.username ||
+    bio !== initialProfile.bio ||
+    selectedImageFile !== null ||
+    isImageRemoved;
+
   return (
     <>
       <div className="min-h-screen bg-white flex justify-center p-4 sm:p-6 md:p-8 pt-[140px] md:pt-32 md:pl-64 pb-24 md:pb-8">
-        <div className="w-full max-w-[800px] min-h-[927px] space-y-8">
+        <div className="w-full max-w-[800px] space-y-8">
           <h1 className="h-[28px] opacity-100 font-bold text-[16px] text-center leading-[28px] tracking-[0%] text-[#000000]">
             Profile Settings
           </h1>
@@ -263,7 +303,7 @@ export default function ProfileSettingsPage() {
             {/* Profile Image */}
             <div className="flex flex-col items-center">
               <div
-                className={`w-[100px] h-[100px] rounded-[52px] overflow-hidden bg-gray-200 flex items-center justify-center border-gray-300 ${isUploadingImage ? "opacity-50" : "opacity-100"}`}
+                className={`w-[100px] h-[100px] rounded-[52px] overflow-hidden bg-gray-200 flex items-center justify-center border-gray-300 ${isSaving ? "opacity-50" : "opacity-100"}`}
               >
                 <UserAvatar
                   user={userForAvatar}
@@ -285,14 +325,14 @@ export default function ProfileSettingsPage() {
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingImage}
+                  disabled={isSaving}
                   className="w-[69px] h-[24px] opacity-100 gap-2 pt-[4px] pr-[8px] pb-[4px] pl-[8px] text-purple-500 hover:text-purple-600 text-sm font-medium disabled:opacity-50"
                 >
-                  {isUploadingImage ? "Uploading..." : "Change"}
+                  Change
                 </button>
                 <button
                   onClick={handleRemoveImage}
-                  disabled={isUploadingImage || !imagePreview}
+                  disabled={isSaving || !imagePreview}
                   className="w-[69px] h-[24px] opacity-100 gap-2 pt-[4px] pr-[8px] pb-[4px] pl-[8px] text-gray-400 hover:text-gray-600 text-sm font-medium disabled:opacity-50"
                 >
                   Remove
@@ -388,32 +428,12 @@ export default function ProfileSettingsPage() {
                 </div>
               )}
 
-              {/* Error Message */}
-              {error && (
-                <div className="flex justify-center mt-4">
-                  <div className="bg-red-100 text-red-800 text-center font-medium px-4 py-2 rounded text-sm">
-                    {error}
-                  </div>
-                </div>
-              )}
-
-              {/* Settings Updated Message */}
-              {showUpdateMessage && (
-                <div className="flex justify-center mt-8 mb-2">
-                  <div className="w-[259px] h-[32px] bg-green-100 text-green-800 text-center font-medium flex items-center justify-center rounded-md text-sm">
-                    Settings Updated
-                  </div>
-                </div>
-              )}
-
               {/* Update Button */}
-              <div
-                className={`flex justify-center ${showUpdateMessage ? "mt-0" : "mt-8"}`}
-              >
+              <div className="flex justify-center mt-8">
                 <button
                   onClick={handleSave}
-                  disabled={isSaving}
-                  className="w-[259px] h-[32px] rounded-[4px] bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  disabled={isSaving || !hasProfileChanges}
+                  className="w-[259px] h-[32px] rounded-[4px] bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black text-sm"
                 >
                   {isSaving ? "Saving..." : "Save"}
                 </button>
@@ -422,6 +442,20 @@ export default function ProfileSettingsPage() {
           </div>
         </div>
       </div>
+
+      {bottomToast.message && (
+        <div className="fixed bottom-0 left-1/2 md:left-[calc(50%+8rem)] -translate-x-1/2 z-[10001] w-[90%] max-w-[380px] pb-[max(8px,env(safe-area-inset-bottom))]">
+          <div
+            className={`w-full rounded-md px-4 py-2 text-sm font-medium text-center shadow-md ${
+              bottomToast.type === "error"
+                ? "bg-red-100 text-red-800 border border-red-200"
+                : "bg-green-100 text-green-800 border border-green-200"
+            }`}
+          >
+            {bottomToast.message}
+          </div>
+        </div>
+      )}
 
       {/* Reset Password Modal */}
       {showResetModal && (
