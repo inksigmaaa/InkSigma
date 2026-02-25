@@ -15,6 +15,7 @@ import { use, useEffect, useState, useRef } from "react";
 import ClockIcon from "../../components/icons/ClockIcon";
 import { useSnapshot } from "@/hooks/useSnapshot";
 import { getApiBase } from "@/utils/apiBase";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
 const API_URL = getApiBase();
 
@@ -78,14 +79,29 @@ export default function BlogDetailPage({ params }) {
     e.preventDefault();
     const fromPub = searchParams.get("from");
 
+    // Check if we are on a custom domain / subdomain by looking at the URL
+    // If we're on a clean domain without /view-site in the URL path, we should go to /
+    const isSubdomain =
+      typeof window !== "undefined" &&
+      !window.location.pathname.startsWith("/view-site");
+
     // Navigate directly to the publication view site
     // Don't use router.back() as it may go back to the editor
     if (fromPub) {
-      router.push(`/view-site?publicationId=${fromPub}`);
+      router.push(
+        isSubdomain
+          ? `/?from=${fromPub}`
+          : `/view-site?publicationId=${fromPub}`,
+      );
     } else {
       const pubId =
         blog?.publication?.id || blog?.publicationId || blog?.publication_id;
-      router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");
+
+      if (isSubdomain) {
+        router.push("/");
+      } else {
+        router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");
+      }
     }
   };
 
@@ -516,7 +532,7 @@ export default function BlogDetailPage({ params }) {
             <article
               className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px]"
               dangerouslySetInnerHTML={{
-                __html: blog.content,
+                __html: sanitizeHtml(blog.content),
               }}
             />
 

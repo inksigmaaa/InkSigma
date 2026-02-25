@@ -21,6 +21,7 @@
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.44.2",
     "express": "^4.21.2",
+    "isomorphic-dompurify": "^3.0.0",
     "multer": "^2.0.2",
     "nodemailer": "^6.9.16",
     "pg": "^8.13.1",

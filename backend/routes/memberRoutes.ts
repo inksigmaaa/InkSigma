@@ -13,6 +13,7 @@ import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 import nodemailer from "nodemailer";
 import notificationService from "../services/notificationService.js";
+import { redactEmail } from "../utils/redactPII.js";
 import logger from "../utils/logger.js";
 
 const router = express.Router();
@@ -1184,7 +1185,7 @@ async function sendInvitationEmail(
     };
 
     await transporter.sendMail(mailOptions);
-    logger.info(`Invitation email sent to ${email}`);
+    logger.info(`Invitation email sent to ${redactEmail(email)}`);
   } catch (error) {
     logger.error(error, "Error sending invitation email:");
     throw error;

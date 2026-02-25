@@ -1,32 +1,44 @@
 import { db } from "../config/database.js";
-import { notification } from "../models/schema.js";
+import { notification, notificationTypeEnum } from "../models/schema.js";
+import { and, eq } from "drizzle-orm";
 import logger from "../utils/logger.js";
 
+type NotificationType = typeof notificationTypeEnum.enumValues[number];
+
+interface NotificationRow {
+    id: number;
+    userId: string;
+    type: NotificationType;
+    title: string;
+    message: string;
+    relatedUserId: string | null;
+    relatedBlogId: number | null;
+    relatedPublicationId: number | null;
+    isRead: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface CreateNotificationParams {
+    userId: string;
+    type: NotificationType;
+    title: string;
+    message: string;
+    relatedUserId?: string | null;
+    relatedBlogId?: number | null;
+    relatedPublicationId?: number | null;
+}
+
 class NotificationService {
-    // Create a notification
-    async createNotification({ 
-        userId, 
-        type, 
-        title, 
-        message, 
-        relatedUserId, 
-        relatedBlogId, 
-        relatedPublicationId 
-    }: {
-        userId: string;
-        type: string;
-        title: string;
-        message: string;
-        relatedUserId?: string | null;
-        relatedBlogId?: number | null;
-        relatedPublicationId?: number | null;
-    }) {
+    async createNotification(params: CreateNotificationParams): Promise<NotificationRow> {
+        const { userId, type, title, message, relatedUserId, relatedBlogId, relatedPublicationId } = params;
+        
         try {
             const result = await db
                 .insert(notification)
                 .values({
                     userId,
-                    type: type as any,
+                    type,
                     title,
                     message,
                     relatedUserId,
@@ -43,8 +55,8 @@ class NotificationService {
         }
     }
 
-    // Notify user about publication invitation
-    async notifyInvitation({ userId, publicationName, inviterName, inviterId, publicationId }) {
+    async notifyInvitation(params: { userId: string; publicationName: string; inviterName: string; inviterId: string; publicationId: number }): Promise<NotificationRow> {
+        const { userId, publicationName, inviterName, inviterId, publicationId } = params;
         return this.createNotification({
             userId,
             type: "invitation",
@@ -55,8 +67,8 @@ class NotificationService {
         });
     }
 
-    // Notify author that their blog was accepted
-    async notifyBlogAccepted({ authorId, publicationName, blogId, publicationId }) {
+    async notifyBlogAccepted(params: { authorId: string; publicationName: string; blogId: number; publicationId: number }): Promise<NotificationRow> {
+        const { authorId, publicationName, blogId, publicationId } = params;
         return this.createNotification({
             userId: authorId,
             type: "blog_accepted",
@@ -67,8 +79,8 @@ class NotificationService {
         });
     }
 
-    // Notify author that their blog was rejected
-    async notifyBlogRejected({ authorId, publicationName, blogId, publicationId }) {
+    async notifyBlogRejected(params: { authorId: string; publicationName: string; blogId: number; publicationId: number }): Promise<NotificationRow> {
+        const { authorId, publicationName, blogId, publicationId } = params;
         return this.createNotification({
             userId: authorId,
             type: "blog_rejected",
@@ -79,8 +91,8 @@ class NotificationService {
         });
     }
 
-    // Notify publication members about blog review request
-    async notifyBlogReview({ recipientId, authorName, authorId, blogId }) {
+    async notifyBlogReview(params: { recipientId: string; authorName: string; authorId: string; blogId: number }): Promise<NotificationRow> {
+        const { recipientId, authorName, authorId, blogId } = params;
         return this.createNotification({
             userId: recipientId,
             type: "blog_review",
@@ -91,8 +103,8 @@ class NotificationService {
         });
     }
 
-    // Notify author that their blog has been submitted for review
-    async notifyBlogSubmittedForReview({ authorId, publicationName, blogId, publicationId }) {
+    async notifyBlogSubmittedForReview(params: { authorId: string; publicationName: string; blogId: number; publicationId: number }): Promise<NotificationRow> {
+        const { authorId, publicationName, blogId, publicationId } = params;
         return this.createNotification({
             userId: authorId,
             type: "blog_submitted_review",
@@ -103,8 +115,8 @@ class NotificationService {
         });
     }
 
-    // Notify when invitation is declined
-    async notifyInvitationDeclined({ ownerId, memberName, memberId, publicationId }) {
+    async notifyInvitationDeclined(params: { ownerId: string; memberName: string; memberId: string; publicationId: number }): Promise<NotificationRow> {
+        const { ownerId, memberName, memberId, publicationId } = params;
         return this.createNotification({
             userId: ownerId,
             type: "invitation_declined",
@@ -115,8 +127,8 @@ class NotificationService {
         });
     }
 
-    // Notify when blog is published
-    async notifyBlogPublished({ authorId, blogTitle, blogId, publicationId }) {
+    async notifyBlogPublished(params: { authorId: string; blogTitle: string; blogId: number; publicationId: number }): Promise<NotificationRow> {
+        const { authorId, blogTitle, blogId, publicationId } = params;
         return this.createNotification({
             userId: authorId,
             type: "blog_published",
@@ -127,8 +139,8 @@ class NotificationService {
         });
     }
 
-    // Notify publication owner when member joins
-    async notifyMemberJoined({ ownerId, memberName, memberId, publicationId }) {
+    async notifyMemberJoined(params: { ownerId: string; memberName: string; memberId: string; publicationId: number }): Promise<NotificationRow> {
+        const { ownerId, memberName, memberId, publicationId } = params;
         return this.createNotification({
             userId: ownerId,
             type: "member_joined",
@@ -137,6 +149,18 @@ class NotificationService {
             relatedUserId: memberId,
             relatedPublicationId: publicationId,
         });
+    }
+
+    async markAsRead(userId: string, notificationId: number): Promise<void> {
+        await db.update(notification)
+            .set({ isRead: true })
+            .where(and(eq(notification.id, notificationId), eq(notification.userId, userId)));
+    }
+
+    async markAllAsRead(userId: string): Promise<void> {
+        await db.update(notification)
+            .set({ isRead: true })
+            .where(eq(notification.userId, userId));
     }
 }
 

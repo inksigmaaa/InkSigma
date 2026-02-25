@@ -4,80 +4,76 @@ import { invitation } from "../models/schema.js";
 import { eq, and, lt, or } from "drizzle-orm";
 import logger from "../utils/logger.js";
 
-export class InvitationService {
-  // Mark expired invitations
-  static async markExpiredInvitations() {
-    try {
-      const now = new Date();
-      
-      const result = await db
-        .update(invitation)
-        .set({
-          status: "expired",
-          updatedAt: now,
-        })
-        .where(
-          and(
-            eq(invitation.status, "pending"),
-            lt(invitation.expiresAt, now)
-          )
-        )
-        .returning();
+class InvitationService {
+    async markExpiredInvitations(): Promise<number> {
+        try {
+            const now = new Date();
+            
+            const result = await db
+                .update(invitation)
+                .set({
+                    status: "expired",
+                    updatedAt: now,
+                })
+                .where(
+                    and(
+                        eq(invitation.status, "pending"),
+                        lt(invitation.expiresAt, now)
+                    )
+                )
+                .returning();
 
-      if (result.length > 0) {
-        logger.info(`📧 Marked ${result.length} invitations as expired`);
-      }
+            if (result.length > 0) {
+                logger.info(`📧 Marked ${result.length} invitations as expired`);
+            }
 
-      return result.length;
-    } catch (error) {
-      logger.error(error, "Error marking expired invitations:");
-      return 0;
+            return result.length;
+        } catch (error) {
+            logger.error(error, "Error marking expired invitations:");
+            return 0;
+        }
     }
-  }
 
-  // Clean up old invitations (optional - remove declined/expired after 30 days)
-  static async cleanupOldInvitations() {
-    try {
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      
-      const result = await db
-        .delete(invitation)
-        .where(
-          and(
-            or(
-              eq(invitation.status, "declined"),
-              eq(invitation.status, "expired")
-            ),
-            lt(invitation.updatedAt, thirtyDaysAgo)
-          )
-        )
-        .returning();
+    async cleanupOldInvitations(): Promise<number> {
+        try {
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            
+            const result = await db
+                .delete(invitation)
+                .where(
+                    and(
+                        or(
+                            eq(invitation.status, "declined"),
+                            eq(invitation.status, "expired")
+                        ),
+                        lt(invitation.updatedAt, thirtyDaysAgo)
+                    )
+                )
+                .returning();
 
-      if (result.length > 0) {
-        logger.info(`🗑️  Cleaned up ${result.length} old invitations`);
-      }
+            if (result.length > 0) {
+                logger.info(`🗑️  Cleaned up ${result.length} old invitations`);
+            }
 
-      return result.length;
-    } catch (error) {
-      logger.error(error, "Error cleaning up old invitations:");
-      return 0;
+            return result.length;
+        } catch (error) {
+            logger.error(error, "Error cleaning up old invitations:");
+            return 0;
+        }
     }
-  }
 
-  // Start the invitation cleanup scheduler
-  static startScheduler() {
-    // Check for expired invitations every hour
-    setInterval(async () => {
-      await this.markExpiredInvitations();
-    }, 60 * 60 * 1000); // 1 hour
+    startScheduler(): void {
+        setInterval(async () => {
+            await this.markExpiredInvitations();
+        }, 60 * 60 * 1000);
 
-    // Clean up old invitations once a day
-    setInterval(async () => {
-      await this.cleanupOldInvitations();
-    }, 24 * 60 * 60 * 1000); // 24 hours
+        setInterval(async () => {
+            await this.cleanupOldInvitations();
+        }, 24 * 60 * 60 * 1000);
 
-    logger.info("📧 Invitation cleanup scheduler started");
-  }
+        logger.info("📧 Invitation cleanup scheduler started");
+    }
 }
 
-export default InvitationService;
+const invitationService = new InvitationService();
+export default invitationService;

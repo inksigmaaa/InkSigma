@@ -60,11 +60,16 @@ export default function NavbarLoggedin() {
         }
 
         try {
-            const response = await fetch(`${API_URL}/api/notifications/${user.id}`);
+            const response = await fetch(`${API_URL}/api/notifications/${user.id}`, {
+                credentials: "include",
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const data = await response.json();
             setNotifications(data.notifications || []);
         } catch (error) {
-            console.error("Error fetching notifications:", error);
+            console.error("Error fetching notifications:", error.message);
         } finally {
             if (isInitialLoad) {
                 setLoading(false);

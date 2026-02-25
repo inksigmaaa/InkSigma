@@ -13,6 +13,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import { auth } from "../config/betterAuth.js";
+import { redactEmail, redactUserId } from "../utils/redactPII.js";
 import { fromNodeHeaders } from "better-auth/node";
 // NOTE: Domain validation logic moved to frontend (src/utils/subdomainRules.js, src/utils/domainValidation.js)
 // Backend now only checks database availability and handles data persistence
@@ -100,8 +101,8 @@ const getCurrentUser = async (req, res, next) => {
       `[getCurrentUser] Session result: ${session ? "found" : "not found"}`,
     );
     if (session?.user) {
-      logger.info(`[getCurrentUser] User ID: ${session.user.id}`);
-      logger.info(`[getCurrentUser] User email: ${session.user.email}`);
+      logger.info(`[getCurrentUser] User ID: ${redactUserId(session.user.id)}`);
+      logger.info(`[getCurrentUser] User email: ${redactEmail(session.user.email)}`);
     }
 
     if (!session?.user) {
@@ -111,7 +112,7 @@ const getCurrentUser = async (req, res, next) => {
 
     req.user = session.user;
     logger.info(
-      `[getCurrentUser] Authentication successful for user: ${req.user.id}`,
+      `[getCurrentUser] Authentication successful for user: ${redactUserId(req.user.id)}`,
     );
     next();
   } catch (error) {

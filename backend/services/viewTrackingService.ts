@@ -6,44 +6,35 @@ import { getRedisClient, isRedisAvailable } from "../config/redis.js";
 import crypto from "crypto";
 import logger from "../utils/logger.js";
 
-/**
- * Generate a unique identifier for a viewer based on IP and User Agent
- */
-const generateViewerIdentifier = (ip, userAgent) => {
+interface ViewResult {
+    viewed: boolean;
+    isNewView: boolean;
+}
+
+interface BlogStats {
+    views: number;
+    shares: number;
+}
+
+const generateViewerIdentifier = (ip: string, userAgent: string): string => {
   const hash = crypto.createHash("sha256");
   hash.update(`${ip}:${userAgent}`);
   return hash.digest("hex");
 };
 
-/**
- * Track a blog view with Redis caching and lifetime deduplication
- *
- * LIFETIME DEDUPE RULES:
- * ✅ First view (per viewerIdentifier): Recorded in database
- * ❌ Repeat views (same viewerIdentifier): NOT recorded (skipped)
- *
- * @param {number} blogId - The blog ID
- * @param {string} ip - The viewer's IP address
- * @param {string} userAgent - The viewer's user agent
- * @returns {Promise<{viewed: boolean, isNewView: boolean}>}
- */
-export const trackBlogView = async (blogId, ip, userAgent) => {
+export const trackBlogView = async (blogId: number, ip: string, userAgent: string): Promise<ViewResult> => {
   try {
     const viewerIdentifier = generateViewerIdentifier(ip, userAgent);
     const redisKey = `blog:${blogId}:view:${viewerIdentifier}`;
 
-    // Check Redis first if available
     if (isRedisAvailable()) {
       const redis = getRedisClient();
 
-      // RULE: Attempt to claim the view in Redis (atomic)
-      // If key already exists → already counted → DON'T count again
       const setResult = await redis.set(redisKey, Date.now().toString(), "NX");
       if (!setResult) {
         return { viewed: true, isNewView: false };
       }
     } else {
-      // Fallback: Check database for any prior view
       const [existingView] = await db
         .select()
         .from(blogView)
@@ -60,7 +51,6 @@ export const trackBlogView = async (blogId, ip, userAgent) => {
       }
     }
 
-    // RULE: No existing view found → Record as NEW VIEW
     await db.insert(blogView).values({
       blogId,
       viewerIdentifier,
@@ -75,13 +65,7 @@ export const trackBlogView = async (blogId, ip, userAgent) => {
   }
 };
 
-/**
- * Track a blog share
- * @param {number} blogId - The blog ID
- * @param {string} platform - The platform (twitter, facebook, linkedin, copy)
- * @returns {Promise<boolean>}
- */
-export const trackBlogShare = async (blogId, platform) => {
+export const trackBlogShare = async (blogId: number, platform: string): Promise<boolean> => {
   try {
     await db.insert(blogShare).values({
       blogId,
@@ -95,12 +79,7 @@ export const trackBlogShare = async (blogId, platform) => {
   }
 };
 
-/**
- * Get view count for a blog by counting records in blogView table
- * @param {number} blogId - The blog ID
- * @returns {Promise<number>}
- */
-export const getBlogViewCount = async (blogId) => {
+export const getBlogViewCount = async (blogId: number): Promise<number> => {
   try {
     const result = await db
       .select({ count: count() })
@@ -114,12 +93,7 @@ export const getBlogViewCount = async (blogId) => {
   }
 };
 
-/**
- * Get share count for a blog
- * @param {number} blogId - The blog ID
- * @returns {Promise<number>}
- */
-export const getBlogShareCount = async (blogId) => {
+export const getBlogShareCount = async (blogId: number): Promise<number> => {
   try {
     const result = await db
       .select({ count: count() })
@@ -133,36 +107,27 @@ export const getBlogShareCount = async (blogId) => {
   }
 };
 
-/**
- * Get view and share stats for multiple blogs
- * @param {number[]} blogIds - Array of blog IDs
- * @returns {Promise<Object>}
- */
-export const getBlogStats = async (blogIds: number[]) => {
+export const getBlogStats = async (blogIds: number[]): Promise<Record<string, BlogStats>> => {
   try {
-    const stats: Record<string, { views: number; shares: number }> = {};
+    const stats: Record<string, BlogStats> = {};
     if (!blogIds || blogIds.length === 0) return stats;
 
-    // Initialize with default 0s
     for (const id of blogIds) {
       stats[String(id)] = { views: 0, shares: 0 };
     }
 
-    // Batch fetch views
     const viewsResult = await db
       .select({ blogId: blogView.blogId, count: count() })
       .from(blogView)
       .where(inArray(blogView.blogId, blogIds))
       .groupBy(blogView.blogId);
 
-    // Batch fetch shares
     const sharesResult = await db
       .select({ blogId: blogShare.blogId, count: count() })
       .from(blogShare)
       .where(inArray(blogShare.blogId, blogIds))
       .groupBy(blogShare.blogId);
 
-    // Map results
     for (const row of viewsResult) {
       if (stats[String(row.blogId)]) stats[String(row.blogId)].views = Number(row.count) || 0;
     }

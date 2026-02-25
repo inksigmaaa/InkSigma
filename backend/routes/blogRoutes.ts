@@ -11,6 +11,7 @@ import { validate } from "../middleware/validate.js";
 import * as blogValidator from "../validators/blogValidator.js";
 import logger from "../utils/logger.js";
 import { BLOG_STATUS } from "../config/constants.js";
+import { config } from "../config/appConfig.js";
 
 const router = express.Router();
 
@@ -363,8 +364,7 @@ router.post(
         );
       }
 
-      const { NEXT_PUBLIC_SERVER_URL = "http://localhost:5000" } = process.env;
-      const imageUrl = `${NEXT_PUBLIC_SERVER_URL}/uploads/blog-images/${req.file.filename}`;
+      const imageUrl = `${config.backend.url}/uploads/blog-images/${req.file.filename}`;
 
       const updatedBlog = await blogService.updateBlog(
         blogId,
@@ -372,7 +372,7 @@ router.post(
         req.user,
       );
 
-      res.json({ success: true, image: updatedBlog.image });
+      res.json({ success: true, blog: updatedBlog, image: updatedBlog.image });
     } catch (error) {
       if (req.file && fs.existsSync(req.file.path))
         fs.unlinkSync(req.file.path);

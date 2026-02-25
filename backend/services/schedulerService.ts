@@ -4,6 +4,16 @@ import { blog } from '../models/schema.js';
 import { eq, and } from 'drizzle-orm';
 import logger from "../utils/logger.js";
 import { BLOG_STATUS } from "../config/constants.js";
+import type { InferSelectModel } from "drizzle-orm";
+
+type BlogRow = InferSelectModel<typeof blog>;
+
+type ScheduledBlog = {
+    id: number;
+    title: string;
+    status: string;
+    scheduledAt: Date | null;
+};
 
 class SchedulerService {
     private scheduledTimers: Map<number, NodeJS.Timeout> = new Map();
@@ -12,18 +22,18 @@ class SchedulerService {
         // Empty constructor - initialization happens in start()
     }
 
-    async start() {
+    async start(): Promise<void> {
         await this.loadScheduledBlogs();
     }
 
-    stop() {
+    stop(): void {
         for (const [blogId, timerId] of this.scheduledTimers) {
             clearTimeout(timerId);
         }
         this.scheduledTimers.clear();
     }
 
-    async loadScheduledBlogs() {
+    async loadScheduledBlogs(): Promise<void> {
         try {
             const scheduledBlogs = await db
                 .select()
@@ -39,7 +49,7 @@ class SchedulerService {
         }
     }
 
-    schedulePublish(blogPost) {
+    schedulePublish(blogPost: ScheduledBlog): void {
         if (!blogPost.scheduledAt) return;
 
         const now = new Date();
@@ -65,7 +75,7 @@ class SchedulerService {
         }
     }
 
-    cancelSchedule(blogId) {
+    cancelSchedule(blogId: number): void {
         const timerId = this.scheduledTimers.get(blogId);
         if (timerId) {
             clearTimeout(timerId);
@@ -73,7 +83,7 @@ class SchedulerService {
         }
     }
 
-    async publishScheduledBlog(blogPost: any) {
+    async publishScheduledBlog(blogPost: ScheduledBlog): Promise<BlogRow | undefined> {
         try {
             this.scheduledTimers.delete(blogPost.id);
             const now = new Date();
@@ -100,22 +110,26 @@ class SchedulerService {
             logger.error(error, `❌ [SCHEDULER] Error publishing "${blogPost.title}":`);
             try {
                 await db.update(blog).set({ status: BLOG_STATUS.DRAFT, updatedAt: new Date() }).where(eq(blog.id, blogPost.id));
-            } catch (e) {}
+                logger.info(`[SCHEDULER] Reverted blog "${blogPost.title}" to draft after publish failure`);
+            } catch (revertError) {
+                logger.error(revertError, `[SCHEDULER] Failed to revert blog "${blogPost.title}" to draft:`);
+            }
+            return undefined;
         }
     }
 
-    async onBlogScheduled(blogId) {
+    async onBlogScheduled(blogId: number): Promise<void> {
         try {
             const [blogPost] = await db.select().from(blog).where(eq(blog.id, blogId));
-            if (blogPost?.status === BLOG_STATUS.SCHEDULED) {
-                this.schedulePublish(blogPost);
+            if (blogPost?.status === BLOG_STATUS.SCHEDULED && blogPost.scheduledAt) {
+                this.schedulePublish(blogPost as ScheduledBlog);
             }
         } catch (error) {
             logger.error(error, '[SCHEDULER] Error:');
         }
     }
 
-    onBlogUnscheduled(blogId) {
+    onBlogUnscheduled(blogId: number): void {
         this.cancelSchedule(blogId);
     }
 }

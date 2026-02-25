@@ -6,6 +6,7 @@ import { auth } from "../config/betterAuth.js";
 import { validate } from "../middleware/validate.js";
 import * as authValidator from "../validators/authValidator.js";
 import logger from "../utils/logger.js";
+import { redactEmail } from "../utils/redactPII.js";
 
 const router = express.Router();
 
@@ -27,7 +28,7 @@ router.post(
   async (req, res) => {
     try {
       const { email, redirectTo } = req.body;
-      logger.info(`[AUTH] Forgot password request for: ${email}`);
+      logger.info(`[AUTH] Forgot password request for: ${redactEmail(email)}`);
 
       if (!email) {
         return res.status(400).json({ error: "Email is required" });
@@ -36,8 +37,7 @@ router.post(
       const user = await authService.findUserByEmail(email);
 
       if (!user) {
-        // Security: Don't reveal if user exists
-        logger.info(`[AUTH] User not found: ${email} (returning success)`);
+        logger.info(`[AUTH] User not found: ${redactEmail(email)} (returning success)`);
         return res.json({ success: true });
       }
 
@@ -50,7 +50,7 @@ router.post(
         resetUrl,
       });
 
-      logger.info(`[AUTH] Password reset email sent to: ${email}`);
+      logger.info(`[AUTH] Password reset email sent to: ${redactEmail(email)}`);
       res.json({ success: true });
     } catch (error) {
       logger.error(error, `[AUTH] Forgot password error:`);
@@ -66,7 +66,7 @@ router.post(
   async (req, res) => {
     try {
       const { token, email, newPassword } = req.body;
-      logger.info(`[AUTH] Reset password for: ${email}`);
+      logger.info(`[AUTH] Reset password for: ${redactEmail(email)}`);
 
       if (!token || !email || !newPassword) {
         return res
@@ -114,7 +114,7 @@ router.post(
       await authService.updatePassword(credentialAccount.id, newPassword);
       await authService.deleteToken(validToken.id);
 
-      logger.info(`[AUTH] Password reset successful for: ${email}`);
+      logger.info(`[AUTH] Password reset successful for: ${redactEmail(email)}`);
       res.json({ success: true });
     } catch (error) {
       logger.error(error, `[AUTH] Reset password error:`);
@@ -130,7 +130,7 @@ router.post(
   async (req, res) => {
     try {
       const { email, redirectTo } = req.body;
-      logger.info(`[AUTH] Send verification for: ${email}`);
+      logger.info(`[AUTH] Send verification for: ${redactEmail(email)}`);
 
       if (!email) {
         return res.status(400).json({ error: "Email is required" });
@@ -154,7 +154,7 @@ router.post(
         verifyUrl,
       });
 
-      logger.info(`[AUTH] Verification email sent to: ${email}`);
+      logger.info(`[AUTH] Verification email sent to: ${redactEmail(email)}`);
       res.json({ success: true });
     } catch (error) {
       logger.error(error, `[AUTH] Send verification error:`);
@@ -170,7 +170,7 @@ router.post(
   async (req, res) => {
     try {
       const { token, email } = req.body;
-      logger.info(`[AUTH] Verify email for: ${email}`);
+      logger.info(`[AUTH] Verify email for: ${redactEmail(email)}`);
 
       const validToken = await authService.validateVerificationToken(
         email,
@@ -183,7 +183,7 @@ router.post(
       await authService.verifyUserEmail(email);
       await authService.deleteToken(validToken.id);
 
-      logger.info(`[AUTH] Email verified for: ${email}`);
+      logger.info(`[AUTH] Email verified for: ${redactEmail(email)}`);
       res.json({ success: true });
     } catch (error) {
       logger.error(error, `[AUTH] Verify email error:`);

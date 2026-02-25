@@ -19,7 +19,7 @@ import { subdomainMiddleware } from "./middleware/subdomainMiddleware.js";
 import { rateLimitMiddleware } from "./middleware/rateLimitMiddleware.js";
 import { emailService } from "./services/emailService.js";
 import schedulerService from "./services/schedulerService.js";
-import InvitationService from "./services/invitationService.js";
+import invitationService from "./services/invitationService.js";
 import logger from "./utils/logger.js";
 import {
   errorMiddleware,
@@ -102,7 +102,7 @@ app.listen(PORT, async () => {
   schedulerService.start();
 
   // Initialize invitation cleanup
-  InvitationService.startScheduler();
+  invitationService.startScheduler();
 });
 
 // Graceful shutdown

@@ -1,4 +1,4 @@
-import { BLOG_STATUS } from "../config/constants.ts";
+import { BLOG_STATUS } from "../config/constants.js";
 
 // models/schema.js
 import {

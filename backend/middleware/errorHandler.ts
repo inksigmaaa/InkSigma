@@ -4,6 +4,24 @@ export const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
+const parsePipeError = (err: Error): { message: string; statusCode: number } => {
+  const message = err.message;
+  const pipeIndex = message.lastIndexOf("|");
+  
+  if (pipeIndex > 0) {
+    const statusPart = message.slice(pipeIndex + 1);
+    const statusCode = parseInt(statusPart, 10);
+    if (!isNaN(statusCode)) {
+      return {
+        message: message.slice(0, pipeIndex),
+        statusCode,
+      };
+    }
+  }
+  
+  return { message: err.message, statusCode: 500 };
+};
+
 export const errorMiddleware = (err, req, res, next) => {
   logger.error(err, "Error:");
 
@@ -29,6 +47,43 @@ export const errorMiddleware = (err, req, res, next) => {
     });
   }
 
+  const { message, statusCode } = parsePipeError(err);
+
+  if (statusCode === 404) {
+    return res.status(404).json({
+      error: message,
+      code: "NOT_FOUND",
+    });
+  }
+
+  if (statusCode === 403) {
+    return res.status(403).json({
+      error: message,
+      code: "FORBIDDEN",
+    });
+  }
+
+  if (statusCode === 401) {
+    return res.status(401).json({
+      error: message,
+      code: "UNAUTHORIZED",
+    });
+  }
+
+  if (statusCode === 400) {
+    return res.status(400).json({
+      error: message,
+      code: "BAD_REQUEST",
+    });
+  }
+
+  if (statusCode === 409) {
+    return res.status(409).json({
+      error: message,
+      code: "CONFLICT",
+    });
+  }
+
   if (err.code === "23505") {
     return res.status(409).json({
       error: "Resource already exists",
@@ -36,11 +91,11 @@ export const errorMiddleware = (err, req, res, next) => {
     });
   }
 
-  res.status(500).json({
+  res.status(statusCode).json({
     error:
       process.env.NODE_ENV === "production"
         ? "Internal server error"
-        : err.message,
+        : message,
     code: "INTERNAL_ERROR",
   });
 };

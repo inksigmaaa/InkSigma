@@ -5,6 +5,7 @@ import { eq, desc, and } from "drizzle-orm";
 import { validate } from "../middleware/validate.js";
 import * as generalValidator from "../validators/generalValidator.js";
 import logger from "../utils/logger.js";
+import { config } from "../config/appConfig.js";
 
 const router = express.Router();
 
@@ -80,13 +81,11 @@ router.get(
         let avatar = notif.relatedUserImage || "/images/icons/profileuser.svg";
 
         if (notif.relatedPublicationId && notif.publicationLogoUrl) {
-          // Use publication logo for publication-related notifications
-          avatar = `http://localhost:5000${notif.publicationLogoUrl}`;
+          avatar = `${config.backend.url}${notif.publicationLogoUrl}`;
         } else if (notif.relatedUserImage) {
-          // Use user image for user-related notifications
           avatar = notif.relatedUserImage.startsWith("http")
             ? notif.relatedUserImage
-            : `http://localhost:5000${notif.relatedUserImage}`;
+            : `${config.backend.url}${notif.relatedUserImage}`;
         }
 
         return {

@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { emailService } from "../services/emailService.js";
 import crypto from "crypto";
 import logger from "../utils/logger.js";
+import { redactEmail } from "../utils/redactPII.js";
 
 const router = express.Router();
 
@@ -55,7 +56,7 @@ router.post("/resend-verification", async (req, res) => {
             verifyUrl,
         });
 
-        logger.info(`[RESEND-VERIFICATION] Sent to ${email}`);
+        logger.info(`[RESEND-VERIFICATION] Sent to ${redactEmail(email)}`);
         res.json({ message: "Verification email sent successfully" });
     } catch (error) {
         logger.error(error, "[RESEND-VERIFICATION] Error:");

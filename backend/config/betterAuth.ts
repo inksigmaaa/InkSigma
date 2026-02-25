@@ -6,6 +6,7 @@ import { emailService } from "../services/emailService.js";
 import { emailValidationService } from "../services/emailValidationService.js";
 import { redisSessionStorage } from "./redis.js";
 import logger from "../utils/logger.js";
+import { redactEmail } from "../utils/redactPII.js";
 
 // Inline helper to get base domains from environment
 const getBaseDomains = () => {
@@ -124,20 +125,20 @@ export const auth = betterAuth({
 
     // Validate email before signup
     async beforeSignUp({ email }) {
-      logger.info(`[EMAIL-VALIDATION] Validating email: ${email}`);
+      logger.info(`[EMAIL-VALIDATION] Validating email: ${redactEmail(email)}`);
 
       const validation = await emailValidationService.validateEmail(email);
       if (!validation.isValid) {
         const errorMessage = validation.errors.join(", ");
-        logger.info(`[EMAIL-VALIDATION] Rejected: ${email} - ${errorMessage}`);
+        logger.info(`[EMAIL-VALIDATION] Rejected: ${redactEmail(email)} - ${errorMessage}`);
         throw new Error(errorMessage);
       }
 
-      logger.info(`[EMAIL-VALIDATION] Approved: ${email}`);
+      logger.info(`[EMAIL-VALIDATION] Approved: ${redactEmail(email)}`);
     },
 
     sendResetPassword: async ({ user, url }) => {
-      logger.info(`[BETTER-AUTH] sendResetPassword called for: ${user.email}`);
+      logger.info(`[BETTER-AUTH] sendResetPassword called for: ${redactEmail(user.email)}`);
       try {
         await emailService.sendPasswordReset({
           email: user.email,
@@ -145,7 +146,7 @@ export const auth = betterAuth({
           resetUrl: url,
         });
         logger.info(
-          `[BETTER-AUTH] Reset password email sent successfully to ${user.email}`,
+          `[BETTER-AUTH] Reset password email sent successfully to ${redactEmail(user.email)}`,
         );
       } catch (error) {
         logger.error(

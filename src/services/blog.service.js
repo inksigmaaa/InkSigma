@@ -294,15 +294,21 @@ export const blogService = {
       throw new Error("A valid image file is required");
     }
 
-    // Validate file type
-    const allowedTypes = [
+    // Validate file type - check both MIME type and extension
+    const allowedMimeTypes = [
       "image/jpeg",
-      "image/jpg",
       "image/png",
       "image/gif",
       "image/webp",
     ];
-    if (!allowedTypes.includes(imageFile.type)) {
+    const allowedExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
+    
+    const fileName = imageFile.name?.toLowerCase() || "";
+    const fileExtension = fileName.includes(".") ? fileName.substring(fileName.lastIndexOf(".")) : "";
+    const hasValidExtension = allowedExtensions.includes(fileExtension);
+    const hasValidMimeType = allowedMimeTypes.includes(imageFile.type);
+    
+    if (!hasValidMimeType && !hasValidExtension) {
       throw new Error(
         "Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.",
       );

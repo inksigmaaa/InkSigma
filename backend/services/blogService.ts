@@ -17,6 +17,7 @@ import {
   count,
   isNull,
   inArray,
+  sql,
 } from "drizzle-orm";
 import fs from "fs";
 import notificationService from "./notificationService.js";
@@ -24,6 +25,42 @@ import schedulerService from "./schedulerService.js";
 import { getBlogStats } from "./viewTrackingService.js";
 import logger from "../utils/logger.js";
 import { BLOG_STATUS } from "../config/constants.js";
+import { sanitizeHtml } from "../utils/sanitizeHtml.js";
+
+interface BlogInsertData {
+  slug: string;
+  title: string;
+  description: string;
+  content: string;
+  categories?: string[];
+  status?: string;
+  published?: boolean;
+  authorId: string;
+  publicationId?: number | null;
+  masterId?: number | null;
+  scheduledAt?: Date | null;
+  image?: string | null;
+  readTime?: number | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+interface BlogUpdateData {
+  slug?: string;
+  title?: string;
+  description?: string;
+  content?: string;
+  categories?: string[];
+  status?: string;
+  published?: boolean;
+  scheduledAt?: Date | null;
+  publishedAt?: Date | null;
+  image?: string | null;
+  publicationId?: number | null;
+  masterId?: number | null;
+  readTime?: number | null;
+  updatedAt?: Date;
+}
 
 const DEFAULT_DRAFT_TITLE = "[Untitled]";
 
@@ -178,7 +215,7 @@ class BlogService {
         ),
       );
 
-    const recipients = new Set();
+    const recipients = new Set<string>();
 
     for (const admin of admins) {
       if (admin.userId && admin.userId !== actorId) {
@@ -260,7 +297,16 @@ class BlogService {
     } else if (published !== undefined) {
       conditions.push(eq(blog.published, published === "true"));
     } else if (!includeUnpublished || includeUnpublished !== "true") {
-      conditions.push(eq(blog.status, BLOG_STATUS.PUBLISHED));
+      if (currentUserId) {
+        conditions.push(
+          or(
+            eq(blog.status, BLOG_STATUS.PUBLISHED),
+            eq(blog.authorId, currentUserId)
+          )
+        );
+      } else {
+        conditions.push(eq(blog.status, BLOG_STATUS.PUBLISHED));
+      }
     }
 
     if (authorId) conditions.push(eq(blog.authorId, authorId));
@@ -279,6 +325,16 @@ class BlogService {
       );
     }
 
+    if (categories) {
+      const categoryArray = Array.isArray(categories)
+        ? categories
+        : [categories];
+      const categoryConditions = categoryArray.map((cat) =>
+        sql`${blog.categories} @> ${JSON.stringify([cat])}`
+      );
+      conditions.push(or(...categoryConditions));
+    }
+
     if (conditions.length > 0) {
       dbQuery = dbQuery.where(and(...conditions)) as typeof dbQuery;
     }
@@ -286,36 +342,6 @@ class BlogService {
     dbQuery = dbQuery.orderBy(desc(blog.createdAt)) as typeof dbQuery;
 
     let blogs = await dbQuery.limit(parseInt(limit)).offset(parseInt(offset));
-
-    if (categories) {
-      const categoryArray = Array.isArray(categories)
-        ? categories
-        : [categories];
-      blogs = blogs.filter(
-        (b) =>
-          b.categories &&
-          b.categories.some((cat) => categoryArray.includes(cat)),
-      );
-    }
-
-    if (!statusExplicitlyPublished) {
-      if (!currentUserId) {
-        blogs = blogs.filter((b) => b.status === BLOG_STATUS.PUBLISHED);
-      } else if (includeUnpublished === "true") {
-        if (!(authorId && authorId === currentUserId)) {
-          blogs = blogs.filter(
-            (b) =>
-              b.status === BLOG_STATUS.PUBLISHED ||
-              b.authorId === currentUserId,
-          );
-        }
-      } else {
-        blogs = blogs.filter(
-          (b) =>
-            b.status === BLOG_STATUS.PUBLISHED || b.authorId === currentUserId,
-        );
-      }
-    }
 
     if (includeStats !== "true") {
       return blogs.map((b) => ({
@@ -659,12 +685,13 @@ class BlogService {
 
     const slug = await this.ensureUniqueSlug(this.generateSlug(finalTitle));
     const syncedFields = this.syncStatusAndPublished(targetStatus);
+    const sanitizedContent = content ? sanitizeHtml(content) : content;
 
-    const blogData: Record<string, any> = {
+    const blogData: BlogInsertData = {
       slug,
       title: finalTitle,
       description,
-      content,
+      content: sanitizedContent,
       categories: categories || [],
       ...syncedFields,
       authorId: currentUser.id,
@@ -717,7 +744,7 @@ class BlogService {
     const finalTitle = normalizedTitle || DEFAULT_DRAFT_TITLE;
     const slug = await this.ensureUniqueSlug(this.generateSlug(finalTitle));
 
-    const blogData: Record<string, any> = {
+    const blogData: BlogInsertData = {
       slug,
       title: finalTitle,
       description,
@@ -766,12 +793,13 @@ class BlogService {
     const { title, description, content, categories, image } = data;
 
     const draftSlug = await this.ensureUniqueSlug(`${originalBlog.slug}-draft`);
-    const draftData: Record<string, any> = {
+    const sanitizedContent = content ? sanitizeHtml(content) : originalBlog.content;
+    const draftData: BlogInsertData = {
       slug: draftSlug,
       title: title || `${originalBlog.title} [Update draft]`,
       description:
         description !== undefined ? description : originalBlog.description,
-      content: content !== undefined ? content : originalBlog.content,
+      content: content !== undefined ? sanitizedContent : originalBlog.content,
       image: image !== undefined ? image : originalBlog.image,
       categories:
         categories !== undefined ? categories : originalBlog.categories,
@@ -821,7 +849,7 @@ class BlogService {
         ? BLOG_STATUS.PUBLISHED
         : BLOG_STATUS.DRAFT;
 
-    const updateData: Record<string, any> = { updatedAt: new Date() };
+    const updateData: BlogUpdateData = { updatedAt: new Date() };
     let slug = existingBlog.slug;
 
     if (title !== undefined) {
@@ -842,8 +870,9 @@ class BlogService {
 
     if (description !== undefined && typeof description === "string")
       updateData.description = description.trim();
-    if (content !== undefined && typeof content === "string")
-      updateData.content = content.trim();
+    if (content !== undefined && typeof content === "string") {
+      updateData.content = sanitizeHtml(content.trim());
+    }
     if (categories !== undefined) updateData.categories = categories;
     if (scheduledAt !== undefined)
       updateData.scheduledAt = new Date(scheduledAt);
@@ -887,12 +916,16 @@ class BlogService {
           categories: updateData.categories || existingBlog.categories,
           updatedAt: new Date(),
         };
-        const [updatedMaster] = await db
-          .update(blog)
-          .set(mergeData)
-          .where(eq(blog.id, existingBlog.masterId))
-          .returning();
-        await db.delete(blog).where(eq(blog.id, parseInt(id)));
+
+        const [updatedMaster] = await db.transaction(async (tx) => {
+          const [updated] = await tx
+            .update(blog)
+            .set(mergeData)
+            .where(eq(blog.id, existingBlog.masterId))
+            .returning();
+          await tx.delete(blog).where(eq(blog.id, parseInt(id)));
+          return [updated];
+        });
         return updatedMaster;
       } else {
         throw new Error(
@@ -996,12 +1029,16 @@ class BlogService {
           updatedAt: new Date(),
           ...syncedFields,
         };
-        const [updatedMaster] = await db
-          .update(blog)
-          .set(mergeData)
-          .where(eq(blog.id, existingBlog.masterId))
-          .returning();
-        await db.delete(blog).where(eq(blog.id, parseInt(id)));
+
+        const [updatedMaster] = await db.transaction(async (tx) => {
+          const [updated] = await tx
+            .update(blog)
+            .set(mergeData)
+            .where(eq(blog.id, existingBlog.masterId))
+            .returning();
+          await tx.delete(blog).where(eq(blog.id, parseInt(id)));
+          return [updated];
+        });
 
         runInBackground("review-action-notifications-merged", async () => {
           if (!existingBlog.publicationId) return;
@@ -1100,12 +1137,16 @@ class BlogService {
           image: existingBlog.image,
           categories: existingBlog.categories,
         };
-        const [updatedMaster] = await db
-          .update(blog)
-          .set(mergeData)
-          .where(eq(blog.id, existingBlog.masterId))
-          .returning();
-        await db.delete(blog).where(eq(blog.id, parseInt(id)));
+
+        const [updatedMaster] = await db.transaction(async (tx) => {
+          const [updated] = await tx
+            .update(blog)
+            .set(mergeData)
+            .where(eq(blog.id, existingBlog.masterId))
+            .returning();
+          await tx.delete(blog).where(eq(blog.id, parseInt(id)));
+          return [updated];
+        });
         return updatedMaster;
       }
     }
@@ -1132,25 +1173,31 @@ class BlogService {
     );
     if (!canModify) throw new Error("Not authorized to delete this blog|403");
 
-    if (existingBlog.image?.includes("/uploads/blog-images/")) {
-      const filePath = `uploads/blog-images/${existingBlog.image.split("/uploads/blog-images/")[1]}`;
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    }
-
-    await db.delete(blog).where(eq(blog.id, parseInt(id)));
-
-    // Clean up associated drafts
     const drafts = await db
       .select()
       .from(blog)
       .where(eq(blog.masterId, parseInt(id)));
-    for (const draft of drafts) {
-      if (draft.image?.includes("/uploads/blog-images/")) {
-        const filePath = `uploads/blog-images/${draft.image.split("/uploads/blog-images/")[1]}`;
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+    await db.transaction(async (tx) => {
+      if (existingBlog.image?.includes("/uploads/blog-images/")) {
+        const filePath = `uploads/blog-images/${existingBlog.image.split("/uploads/blog-images/")[1]}`;
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
       }
-    }
-    await db.delete(blog).where(eq(blog.masterId, parseInt(id)));
+
+      for (const draft of drafts) {
+        if (draft.image?.includes("/uploads/blog-images/")) {
+          const filePath = `uploads/blog-images/${draft.image.split("/uploads/blog-images/")[1]}`;
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+        }
+      }
+
+      await tx.delete(blog).where(eq(blog.id, parseInt(id)));
+      await tx.delete(blog).where(eq(blog.masterId, parseInt(id)));
+    });
 
     if (existingBlog.status === BLOG_STATUS.SCHEDULED)
       schedulerService.onBlogUnscheduled(parseInt(id));

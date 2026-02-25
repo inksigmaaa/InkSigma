@@ -9,6 +9,7 @@ import { eq, and, ne } from "drizzle-orm";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 import logger from "../utils/logger.js";
+import { config } from "../config/appConfig.js";
 
 const router = express.Router();
 
@@ -185,7 +186,7 @@ router.post(
       }
 
       const userId = req.user.id;
-      const imageUrl = `${process.env.BACKEND_URL || "http://localhost:5000"}/${req.file.path.replace(/\\/g, "/")}`;
+      const imageUrl = `${config.backend.url}/${req.file.path.replace(/\\/g, "/")}`;
 
       // Get current user to delete old image
       const [userData] = await db
