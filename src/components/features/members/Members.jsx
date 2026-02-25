@@ -244,11 +244,11 @@ export default function Members() {
       }
     }
 
-    // Check if maximum member limit reached (5 total: 1 admin + 1 editor + 3 authors)
+    // Check if maximum member limit reached (6 total: 1 admin + 1 editor + 4 authors)
     const totalMembers =
       members.length +
       pendingInvitations.filter((i) => i.status === "pending").length;
-    if (totalMembers >= 5) {
+    if (totalMembers >= 6) {
       setShowMaxMembersToast(true);
       setTimeout(() => setShowMaxMembersToast(false), 3000);
       return;
