@@ -497,7 +497,7 @@ export default function ProfileSettingsPage() {
                   setIsResettingPassword(true);
                   try {
                     const response = await fetch(
-                      `${API_URL}/api/auth/forget-password`,
+                      `${API_URL}/api/custom/forgot-password`,
                       {
                         method: "POST",
                         headers: {
@@ -511,11 +511,17 @@ export default function ProfileSettingsPage() {
                       },
                     );
 
-                    if (response.ok) {
+                    let data = {};
+                    try {
+                      data = await response.json();
+                    } catch (e) {
+                      console.error("Could not parse JSON response", e);
+                    }
+
+                    if (response.ok && data?.success !== false) {
                       setShowSuccessModal(true);
                     } else {
-                      const data = await response.json();
-                      setError(data.error || "Failed to send reset email");
+                      setError(data?.error || "Failed to send reset email");
                     }
                   } catch (error) {
                     console.error("Error sending reset email:", error);
