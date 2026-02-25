@@ -6,7 +6,6 @@ import { useSession } from "@/lib/auth-client";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
 import imagePlaceholder from "@/icons/image-placeholder.svg";
 import cameraIcon from "@/icons/camera.svg";
 import { publicationService } from "@/services/publicationService";
@@ -356,8 +355,7 @@ export default function CreatePublication() {
 
   return (
     <AuthGuard>
-      <NavbarLoggedin />
-
+      
       <div className="min-h-screen bg-white px-4 md:px-8 flex items-center justify-center">
         <div
           className="w-full max-w-[300px] md:max-w-[400px] mx-auto"

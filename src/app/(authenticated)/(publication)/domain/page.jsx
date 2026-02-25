@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
-import Sidebar from "@/components/layout/sidebar/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getApiBase } from "@/utils/apiBase";
@@ -107,9 +105,7 @@ export default function DomainPage() {
 
   return (
     <>
-      <NavbarLoggedin />
-      <Sidebar />
-
+            
       <div className="w-full min-h-screen md:absolute md:left-1/2 md:-translate-x-1/2 md:top-[120px] md:max-w-[1034px] z-20 px-0 md:px-5 pt-24 md:pt-0 pb-24 md:pb-0">
         <div className="ml-0 md:ml-[165px] md:border-r md:border-gray-200">
           <div className="flex flex-col pb-8 md:pb-20">

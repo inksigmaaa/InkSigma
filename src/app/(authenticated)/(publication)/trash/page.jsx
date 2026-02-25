@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import AuthGuard from "@/components/auth/AuthGuard";
-import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
-import Sidebar from "@/components/layout/sidebar/Sidebar";
 import Verify from "@/components/features/verify/Verify";
 import PersonalArticles from "@/components/features/personalArticles/personalArticles";
 import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
@@ -204,9 +202,7 @@ export default function TrashPage() {
   if (loading) {
     return (
       <>
-        <NavbarLoggedin />
-        <Sidebar />
-        <Verify />
+                        <Verify />
         <div className="flex justify-center items-center min-h-[400px] animate-pulse">
           <div className="text-gray-500">Loading trash articles...</div>
         </div>
@@ -217,9 +213,7 @@ export default function TrashPage() {
   if (error) {
     return (
       <>
-        <NavbarLoggedin />
-        <Sidebar />
-        <Verify />
+                        <Verify />
         <div className="flex justify-center items-center min-h-[400px] animate-fadeIn">
           <div className="text-red-500">Error: {error}</div>
         </div>
@@ -244,9 +238,7 @@ export default function TrashPage() {
 
   return (
     <AuthGuard>
-      <NavbarLoggedin />
-      <Sidebar />
-      <Verify />
+                  <Verify />
       <PageTransition>
         <PersonalArticles
           title="Trash"

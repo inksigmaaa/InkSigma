@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import AuthGuard from "@/components/auth/AuthGuard";
-import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
-import Sidebar from "@/components/layout/sidebar/Sidebar";
 import Verify from "@/components/features/verify/Verify";
 import Articles from "@/components/features/articles/Articles";
 import CategoryBadgeList from "@/components/CategoryBadgeList";
@@ -98,9 +96,7 @@ export default function AllArticlePage() {
 
   return (
     <AuthGuard>
-      <NavbarLoggedin />
-      <Sidebar />
-      <Verify />
+                  <Verify />
       <Articles
         title={"All Articles"}
         articles={articlesWithPermissions}

@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Clock } from "lucide-react";
-import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
 import Verify from "@/components/features/verify/Verify";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import CategoryFilter from "@/components/features/categoryFilter/CategoryFilter";
@@ -13,7 +12,6 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { useSession } from "@/lib/auth-client";
 import { usePathname, useRouter } from "next/navigation";
-import Sidebar from "@/components/layout/sidebar/Sidebar";
 import PublishOptionsModal from "@/components/features/review/PublishOptionsModal";
 import styles from "@/components/features/articles/Articles.module.css";
 import Image from "next/image";
@@ -285,9 +283,7 @@ export default function AuthorReviewPage() {
   if (reviewLoading) {
     return (
       <>
-        <NavbarLoggedin />
-        <Sidebar />
-        <Verify />
+                        <Verify />
         <div className="flex justify-center items-center min-h-[400px] animate-pulse">
           <div className="text-gray-500">Loading review articles...</div>
         </div>
@@ -298,9 +294,7 @@ export default function AuthorReviewPage() {
   if (reviewError) {
     return (
       <>
-        <NavbarLoggedin />
-        <Sidebar />
-        <Verify />
+                        <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-red-500">Error: {reviewError}</div>
         </div>
@@ -310,9 +304,7 @@ export default function AuthorReviewPage() {
 
   return (
     <>
-      <NavbarLoggedin />
-      <Sidebar />
-      <Verify />
+                  <Verify />
 
       <div className="absolute left-1/2 -translate-x-1/2 top-[160px] max-md:top-[170px] w-full max-w-[1034px] z-20 px-5">
         {/* Review Header */}

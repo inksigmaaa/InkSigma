@@ -2,8 +2,6 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
-import Sidebar from "@/components/layout/sidebar/Sidebar";
 import Verify from "@/components/features/verify/Verify";
 import PersonalArticles from "@/components/features/personalArticles/personalArticles";
 import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
@@ -389,9 +387,7 @@ export default function DraftPage() {
   return (
     <>
       <AuthGuard />
-      <NavbarLoggedin />
-      <Sidebar />
-      <Verify />
+                  <Verify />
       <PageTransition>
         <PersonalArticles
           title="Drafts"

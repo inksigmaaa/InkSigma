@@ -3,8 +3,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
-import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
-import Sidebar from "@/components/layout/sidebar/Sidebar";
 import Verify from "@/components/features/verify/Verify";
 import PersonalArticles from "@/components/features/personalArticles/personalArticles";
 import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
@@ -310,9 +308,7 @@ export default function SchedulePage() {
   if (isLoading && allArticles.length === 0) {
     return (
       <AuthGuard>
-        <NavbarLoggedin />
-        <Sidebar />
-        <Verify />
+                        <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-gray-500">Loading scheduled articles...</div>
         </div>
@@ -323,9 +319,7 @@ export default function SchedulePage() {
   if (error) {
     return (
       <AuthGuard>
-        <NavbarLoggedin />
-        <Sidebar />
-        <Verify />
+                        <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-red-500">Error: {error}</div>
         </div>
@@ -335,9 +329,7 @@ export default function SchedulePage() {
 
   return (
     <AuthGuard>
-      <NavbarLoggedin />
-      <Sidebar />
-      <Verify />
+                  <Verify />
       <PersonalArticles
         title="Scheduled"
         titleColor="#0048B5"

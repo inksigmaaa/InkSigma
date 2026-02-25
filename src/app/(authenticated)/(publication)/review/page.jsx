@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Clock } from "lucide-react";
 import Image from "next/image";
-import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
-import Sidebar from "@/components/layout/sidebar/Sidebar";
 import Verify from "@/components/features/verify/Verify";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import PublishOptionsModal from "@/components/features/review/PublishOptionsModal";
@@ -223,9 +221,7 @@ export default function ReviewPage() {
   if (reviewLoading) {
     return (
       <>
-        <NavbarLoggedin />
-        <Sidebar />
-        <Verify />
+                        <Verify />
         <div className="flex justify-center items-center min-h-[400px] animate-pulse">
           <div className="text-gray-500">Loading review articles...</div>
         </div>
@@ -236,9 +232,7 @@ export default function ReviewPage() {
   if (reviewError) {
     return (
       <>
-        <NavbarLoggedin />
-        <Sidebar />
-        <Verify />
+                        <Verify />
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="text-red-500">Error: {reviewError}</div>
         </div>
@@ -253,9 +247,7 @@ export default function ReviewPage() {
 
   return (
     <>
-      <NavbarLoggedin />
-      <Sidebar />
-      <Verify />
+                  <Verify />
 
       <div
         className={`absolute left-1/2 -translate-x-1/2 top-[160px] w-full max-w-[1034px] z-20 px-5 max-md:top-[120px]`}

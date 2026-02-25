@@ -2,8 +2,6 @@
 
 import { useState, useMemo, useEffect } from "react";
 import AuthGuard from "@/components/auth/AuthGuard";
-import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
-import Sidebar from "@/components/layout/sidebar/Sidebar";
 import Verify from "@/components/features/verify/Verify";
 import PersonalArticles from "@/components/features/personalArticles/personalArticles";
 import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
@@ -242,9 +240,7 @@ export default function MyBlogsPage() {
 
   return (
     <AuthGuard>
-      <NavbarLoggedin />
-      <Sidebar />
-      <Verify />
+                  <Verify />
       <PageTransition>
         <PersonalArticles
           title="My Blogs"
