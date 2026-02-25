@@ -138,6 +138,7 @@ export default function ProfileSettingsPage() {
 
       setImage(data.imageUrl);
       setImagePreview(data.imageUrl);
+      setIsUploadingImage(false);
 
       // Show success message
       setShowUpdateMessage(true);
@@ -172,6 +173,7 @@ export default function ProfileSettingsPage() {
 
       setImage("");
       setImagePreview("");
+      setIsUploadingImage(false);
 
       // Show success message
       setShowUpdateMessage(true);
@@ -212,6 +214,7 @@ export default function ProfileSettingsPage() {
         return;
       }
 
+      setIsSaving(false);
       setShowUpdateMessage(true);
 
       // Refresh data without full page reload
