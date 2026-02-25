@@ -18,7 +18,7 @@ export const USER_ROLES = {
 
 export const DEFAULT_VALUES = {
   PAGINATION_LIMIT: 50,
-  DRAFT_TITLE: "Untitled",
+  DRAFT_TITLE: "[Untitled]",
 } as const;
 
 export const HTTP_STATUS = {

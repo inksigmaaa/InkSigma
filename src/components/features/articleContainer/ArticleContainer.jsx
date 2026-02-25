@@ -232,7 +232,7 @@ export default function ArticleContainer({
           <div className="flex max-[640px]:gap-0 min-[641px]:gap-3 flex-1 max-[640px]:w-full min-[641px]:max-[767px]:min-w-0 overflow-hidden">
             {/* Checkbox - Tablet and Desktop (641px+) */}
             {showActions && (
-              <label className="hidden min-[641px]:flex items-start cursor-pointer mt-1">
+              <label className="hidden min-[641px]:flex items-start cursor-pointer">
                 <input
                   type="checkbox"
                   style={{ display: "none" }}

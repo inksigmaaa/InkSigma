@@ -7,7 +7,17 @@ import {
   comment,
   blogShare,
 } from "../models/schema.js";
-import { eq, ne, desc, and, or, ilike, count, isNull, inArray } from "drizzle-orm";
+import {
+  eq,
+  ne,
+  desc,
+  and,
+  or,
+  ilike,
+  count,
+  isNull,
+  inArray,
+} from "drizzle-orm";
 import fs from "fs";
 import notificationService from "./notificationService.js";
 import schedulerService from "./schedulerService.js";
@@ -15,7 +25,7 @@ import { getBlogStats } from "./viewTrackingService.js";
 import logger from "../utils/logger.js";
 import { BLOG_STATUS } from "../config/constants.js";
 
-const DEFAULT_DRAFT_TITLE = "Untitled";
+const DEFAULT_DRAFT_TITLE = "[Untitled]";
 
 const runInBackground = (label, task) => {
   setImmediate(async () => {
@@ -291,12 +301,15 @@ class BlogService {
       } else if (includeUnpublished === "true") {
         if (!(authorId && authorId === currentUserId)) {
           blogs = blogs.filter(
-            (b) => b.status === BLOG_STATUS.PUBLISHED || b.authorId === currentUserId,
+            (b) =>
+              b.status === BLOG_STATUS.PUBLISHED ||
+              b.authorId === currentUserId,
           );
         }
       } else {
         blogs = blogs.filter(
-          (b) => b.status === BLOG_STATUS.PUBLISHED || b.authorId === currentUserId,
+          (b) =>
+            b.status === BLOG_STATUS.PUBLISHED || b.authorId === currentUserId,
         );
       }
     }
@@ -798,7 +811,9 @@ class BlogService {
     let targetStatusForUpdate = existingBlog.status;
     if (status !== undefined) targetStatusForUpdate = status;
     else if (published !== undefined)
-      targetStatusForUpdate = published ? BLOG_STATUS.PUBLISHED : BLOG_STATUS.DRAFT;
+      targetStatusForUpdate = published
+        ? BLOG_STATUS.PUBLISHED
+        : BLOG_STATUS.DRAFT;
 
     const updateData = { updatedAt: new Date() };
     let slug = existingBlog.slug;
@@ -844,7 +859,10 @@ class BlogService {
     }
     if (slug !== existingBlog.slug) updateData.slug = slug;
 
-    if (existingBlog.masterId && targetStatusForUpdate === BLOG_STATUS.PUBLISHED) {
+    if (
+      existingBlog.masterId &&
+      targetStatusForUpdate === BLOG_STATUS.PUBLISHED
+    ) {
       const [masterBlog] = await db
         .select()
         .from(blog)
@@ -903,7 +921,10 @@ class BlogService {
           }),
         );
       }
-      if (status === BLOG_STATUS.PUBLISHED && existingBlog.status !== BLOG_STATUS.PUBLISHED) {
+      if (
+        status === BLOG_STATUS.PUBLISHED &&
+        existingBlog.status !== BLOG_STATUS.PUBLISHED
+      ) {
         runInBackground("put-published-notification", () =>
           notificationService.notifyBlogPublished({
             authorId: existingBlog.authorId,
@@ -940,7 +961,9 @@ class BlogService {
     if (action === "accept") {
       targetStatus =
         requestedTargetStatus &&
-        [BLOG_STATUS.PUBLISHED, BLOG_STATUS.UNPUBLISHED].includes(requestedTargetStatus)
+        [BLOG_STATUS.PUBLISHED, BLOG_STATUS.UNPUBLISHED].includes(
+          requestedTargetStatus,
+        )
           ? requestedTargetStatus
           : BLOG_STATUS.UNPUBLISHED;
     } else {
@@ -1033,8 +1056,13 @@ class BlogService {
     let targetStatus;
     if (status !== undefined) targetStatus = status;
     else if (published !== undefined)
-      targetStatus = published ? BLOG_STATUS.PUBLISHED : BLOG_STATUS.UNPUBLISHED;
-    else throw new Error("Either BLOG_STATUS.PUBLISHED or 'status' must be provided|400");
+      targetStatus = published
+        ? BLOG_STATUS.PUBLISHED
+        : BLOG_STATUS.UNPUBLISHED;
+    else
+      throw new Error(
+        "Either BLOG_STATUS.PUBLISHED or 'status' must be provided|400",
+      );
 
     const [existingBlog] = await db
       .select()
