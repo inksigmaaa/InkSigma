@@ -8,7 +8,7 @@ import { getApiBase } from "@/utils/apiBase";
 
 export default function ProfileSettingsPage() {
   const router = useRouter();
-  const { data: session, isPending } = useSession();
+  const { data: session, isPending, refetch } = useSession();
   const fileInputRef = useRef(null);
   const API_URL = getApiBase(); // Get API URL dynamically based on current hostname
   const [showResetModal, setShowResetModal] = useState(false);
@@ -250,10 +250,27 @@ export default function ProfileSettingsPage() {
 
       showBottomToast("Settings Updated", "success", 2500);
 
-      // Refresh data without full page reload
-      setTimeout(() => {
-        router.refresh();
-      }, 1500);
+      // Emit storage event to signal other components to refresh
+      localStorage.setItem('profileUpdated', Date.now().toString());
+
+      // Force refresh by re-fetching profile data directly and updating localStorage
+      try {
+        // Fetch fresh profile data directly from API
+        const profileRes = await fetch(`${API_URL}/api/profile`, {
+          credentials: "include",
+        });
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          // Store fresh data for other components to access
+          localStorage.setItem('freshUserData', JSON.stringify(profileData));
+        }
+        await refetch();
+      } catch (refetchError) {
+        console.error("Failed to refresh session:", refetchError);
+      }
+
+      // Refresh Next.js router for server components
+      router.refresh();
     } catch (error) {
       console.error("Error saving profile:", error);
       setError("Failed to save profile. Please try again.");

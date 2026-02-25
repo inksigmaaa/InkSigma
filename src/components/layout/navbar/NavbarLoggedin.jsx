@@ -21,8 +21,34 @@ export default function NavbarLoggedin() {
     const API_URL = getApiBase();
 
     // Get current user session
-    const { data: session, isPending } = useSession();
+    const { data: session, isPending, refetch } = useSession();
+    const [localUserData, setLocalUserData] = useState(null);
     const user = session?.user;
+
+    // Check for locally stored fresh user data
+    useEffect(() => {
+        const checkLocalUserData = () => {
+            const stored = localStorage.getItem('freshUserData');
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    setLocalUserData(parsed);
+                } catch (e) {
+                    console.error("Error parsing freshUserData:", e);
+                }
+            }
+        };
+        checkLocalUserData();
+    }, [session]);
+
+    // Merge session user with locally stored fresh user data
+    const mergedUser = user ? {
+        ...user,
+        ...(localUserData && {
+            name: localUserData.profileName || user.name,
+            image: localUserData.image || user.image,
+        })
+    } : null;
 
     // Fetch notifications with useCallback to prevent unnecessary re-renders
     const fetchNotifications = useCallback(async () => {
@@ -87,14 +113,15 @@ export default function NavbarLoggedin() {
     useEffect(() => {
         const handleStorageChange = (e) => {
             if (e.key === 'profileUpdated') {
-                // Refresh data without full page reload
+                // Refresh session data and router
+                refetch();
                 router.refresh();
             }
         };
 
         window.addEventListener('storage', handleStorageChange);
         return () => window.removeEventListener('storage', handleStorageChange);
-    }, []);
+    }, [refetch, router]);
 
     // Handle scroll behavior for mobile - hide on scroll down, show on scroll up
     useEffect(() => {
@@ -171,7 +198,7 @@ export default function NavbarLoggedin() {
         router.push("/");
     };
 
-    const userName = user?.name || "User";
+    const userName = mergedUser?.name || user?.name || "User";
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
     return (
@@ -355,7 +382,7 @@ export default function NavbarLoggedin() {
                                 onClick={() => setOpen((prev) => !prev)}
                             >
                                 <UserAvatar
-                                    user={user}
+                                    user={mergedUser}
                                     size="md"
                                     className="w-[34px] h-[34px] opacity-100 md:w-[34px] md:h-[34px] sm:w-[40px] sm:h-[40px]"
                                 />

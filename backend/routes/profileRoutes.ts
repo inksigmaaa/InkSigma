@@ -211,15 +211,7 @@ router.post(
         })
         .where(eq(user.id, userId));
 
-      // Update the session with new image using better-auth
-      try {
-        // Better-auth automatically updates the session when user data changes
-        // Just need to ensure the database is updated (which we did above)
-        logger.info(`[Profile] Image updated for user ${userId}: ${imageUrl}`);
-      } catch (sessionError) {
-        logger.error(sessionError, "Failed to update session:");
-        // Continue anyway as DB is updated
-      }
+      logger.info(`[Profile] Image updated for user ${userId}: ${imageUrl}`);
 
       res.json({ success: true, imageUrl });
     } catch (error) {
@@ -255,16 +247,7 @@ router.delete("/image", getCurrentUser, async (req, res) => {
       })
       .where(eq(user.id, userId));
 
-    // Update the session to remove image
-    try {
-      await auth.api.updateUser({
-        userId: userId,
-        image: null,
-      } as any);
-    } catch (sessionError) {
-      logger.error(sessionError, "Failed to update session:");
-      // Continue anyway as DB is updated
-    }
+    logger.info(`[Profile] Image removed for user ${userId}`);
 
     res.json({ success: true, message: "Image removed successfully" });
   } catch (error) {
