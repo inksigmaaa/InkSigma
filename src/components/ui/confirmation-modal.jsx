@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { X } from "lucide-react"
 import { Button } from "./button"
+import ModalOverlay from "./ModalOverlay"
 
 export function ConfirmationModal({ 
   isOpen, 
@@ -39,15 +40,14 @@ export function ConfirmationModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={handleClose}
-      />
-      
-      {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-2xl max-w-md w-full mx-4 p-6 z-10">
+    <ModalOverlay
+      isOpen={isOpen}
+      onClose={handleClose}
+      zIndexClass="z-[200]"
+      backdropClassName="bg-black/60 backdrop-blur-sm"
+      contentPaddingClass="px-4"
+    >
+      <div className="relative bg-white rounded-lg shadow-2xl max-w-md w-full p-6 z-10">
         {/* Close button */}
         <button
           onClick={handleClose}
@@ -88,6 +88,6 @@ export function ConfirmationModal({
           </div>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   )
 }

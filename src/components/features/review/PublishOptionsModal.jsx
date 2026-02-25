@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 /**
  * Modal for admin to choose between publishing or storing to unpublished when accepting a review article
@@ -48,7 +49,12 @@ export default function PublishOptionsModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000]">
+    <ModalOverlay
+      isOpen={isOpen}
+      onClose={onClose}
+      zIndexClass="z-[2000]"
+      closeOnBackdrop={false}
+    >
       <div
         className="relative flex flex-col items-center bg-white rounded-lg shadow-xl"
         style={{
@@ -104,7 +110,10 @@ export default function PublishOptionsModal({
           <p className="text-gray-500 text-sm leading-relaxed">
             What would you like to do with
             <br />
-            <span className="font-medium text-gray-700">"{articleTitle}"</span>?
+            <span className="font-medium text-gray-700">
+              &quot;{articleTitle}&quot;
+            </span>
+            ?
           </p>
         </div>
 
@@ -130,6 +139,6 @@ export default function PublishOptionsModal({
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

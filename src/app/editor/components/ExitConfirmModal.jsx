@@ -1,4 +1,5 @@
 import React from "react";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 export default function ExitConfirmModal({
   isOpen,
@@ -9,14 +10,15 @@ export default function ExitConfirmModal({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10001] px-4"
-      onClick={onClose}
+    <ModalOverlay
+      isOpen={isOpen}
+      onClose={onClose}
+      zIndexClass="z-[10001]"
+      contentPaddingClass="px-4"
     >
       <div
         className="bg-white rounded-lg w-[408px] max-w-[90vw] shadow-[0_20px_60px_rgba(0,0,0,0.3)] text-center flex flex-col gap-[9px]"
         style={{ padding: "40px 56px" }}
-        onClick={(e) => e.stopPropagation()}
       >
         <h2 className="font-['Public_Sans'] font-bold text-base leading-[150%] text-black">
           Unsaved Changes
@@ -61,6 +63,6 @@ export default function ExitConfirmModal({
           </svg>
         </button>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

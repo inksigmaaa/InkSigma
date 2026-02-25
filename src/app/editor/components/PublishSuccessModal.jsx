@@ -1,6 +1,7 @@
 "use client"
 
 import { X } from "lucide-react"
+import ModalOverlay from "@/components/ui/ModalOverlay"
 
 export default function PublishSuccessModal({ isOpen, onClose, onSeeLater, onViewInSite }) {
   // Don't use useRouter - we'll use window.location for instant navigation
@@ -8,7 +9,12 @@ export default function PublishSuccessModal({ isOpen, onClose, onSeeLater, onVie
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] px-4">
+    <ModalOverlay
+      isOpen={isOpen}
+      onClose={onClose}
+      zIndexClass="z-[1000]"
+      contentPaddingClass="px-4"
+    >
       <div 
         className="bg-[#FEFEFE] rounded border border-gray-200 shadow-lg relative flex flex-col items-center justify-center"
         style={{ 
@@ -115,6 +121,6 @@ export default function PublishSuccessModal({ isOpen, onClose, onSeeLater, onVie
           </div>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   )
 }
