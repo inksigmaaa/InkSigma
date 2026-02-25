@@ -540,11 +540,11 @@ export default function SettingsPage() {
       {/* Reset Password Modal */}
       {showResetModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="bg-white rounded-lg py-12 px-14 max-w-[353px] w-full mx-4">
+            <h2 className="text-sm font-semibold leading-none tracking-normal mb-4">
               Do you want to reset your password?
             </h2>
-            <p className="text-gray-500 mb-8">
+            <p className="text-sm font-normal leading-normal tracking-normal text-[#808080] mb-8">
               we will send you a link to your Email and You will be logged out
             </p>
             <div className="flex gap-4">

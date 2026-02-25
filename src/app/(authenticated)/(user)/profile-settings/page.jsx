@@ -251,7 +251,7 @@ export default function ProfileSettingsPage() {
       showBottomToast("Settings Updated", "success", 2500);
 
       // Emit storage event to signal other components to refresh
-      localStorage.setItem('profileUpdated', Date.now().toString());
+      localStorage.setItem("profileUpdated", Date.now().toString());
 
       // Force refresh by re-fetching profile data directly and updating localStorage
       try {
@@ -262,7 +262,7 @@ export default function ProfileSettingsPage() {
         if (profileRes.ok) {
           const profileData = await profileRes.json();
           // Store fresh data for other components to access
-          localStorage.setItem('freshUserData', JSON.stringify(profileData));
+          localStorage.setItem("freshUserData", JSON.stringify(profileData));
         }
         await refetch();
       } catch (refetchError) {
@@ -477,17 +477,17 @@ export default function ProfileSettingsPage() {
       {/* Reset Password Modal */}
       {showResetModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="bg-white rounded-lg py-12 px-14 max-w-[353px] w-full mx-4">
+            <h2 className="text-sm font-semibold leading-none tracking-normal mb-4">
               Do you want to reset your password?
             </h2>
-            <p className="text-gray-500 mb-8">
+            <p className="text-sm font-normal leading-normal tracking-normal text-[#808080] mb-8">
               we will send you a link to your Email and You will be logged out
             </p>
             <div className="flex gap-4">
               <button
                 onClick={() => setShowResetModal(false)}
-                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-md hover:bg-gray-300 transition-colors"
+                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300 transition-colors"
               >
                 Close
               </button>
@@ -525,7 +525,7 @@ export default function ProfileSettingsPage() {
                   }
                 }}
                 disabled={isResettingPassword}
-                className="flex-1 bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50"
+                className="flex-1 bg-[#080808] text-[#EDEDED] text-sm font-medium leading-normal tracking-normal py-2 rounded hover:bg-gray-800 transition-colors disabled:opacity-50"
               >
                 {isResettingPassword ? "Sending..." : "Confirm"}
               </button>
@@ -537,7 +537,7 @@ export default function ProfileSettingsPage() {
       {/* Success Modal - Password Reset */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 relative">
+          <div className="bg-white rounded-lg py-12 px-14 max-w-[353px] w-full mx-4 relative">
             <button
               onClick={() => setShowSuccessModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
@@ -573,7 +573,7 @@ export default function ProfileSettingsPage() {
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              <h2 className="text-sm font-semibold leading-none tracking-normal mb-4">
                 Mail Sent
               </h2>
               <p className="text-gray-500">
