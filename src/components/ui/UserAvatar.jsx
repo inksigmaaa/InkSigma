@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const UserAvatar = ({ 
     user, 
@@ -8,6 +8,11 @@ const UserAvatar = ({
     className = '' 
 }) => {
     const [imageError, setImageError] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     // Size classes
     const sizeClasses = {
@@ -60,8 +65,8 @@ const UserAvatar = ({
 
     const { initial, colorClass } = getInitialAndColor();
 
-    // Show fallback when there's no avatar
-    if (!hasAvatar) {
+    // Show fallback on server or until mounted to prevent hydration mismatch
+    if (!isMounted || !hasAvatar) {
         return (
             <div className={`${sizeClass} rounded-full ${colorClass} flex items-center justify-center text-white font-semibold ${className}`}>
                 {initial}

@@ -32,7 +32,7 @@ import {
 import SaveStatusIndicator from "./SaveStatusIndicator";
 
 const API_URL = getApiBase();
-const DEFAULT_DRAFT_TITLE = "Untitled";
+const DEFAULT_DRAFT_TITLE = "[Untitled]";
 const LEGACY_DRAFT_TITLE = "untitle";
 
 export default function EditorPageClient() {

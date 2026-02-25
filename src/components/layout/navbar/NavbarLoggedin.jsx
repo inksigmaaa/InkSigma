@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut, authClient } from "@/lib/auth-client";
+import Link from "next/link";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { formatTimeAgo } from "@/utils/timeFormatter";
 import { getApiBase } from "@/utils/apiBase";
@@ -86,8 +87,8 @@ export default function NavbarLoggedin() {
     useEffect(() => {
         const handleStorageChange = (e) => {
             if (e.key === 'profileUpdated') {
-                // Reload page when profile is updated in another tab
-                window.location.reload();
+                // Refresh data without full page reload
+                router.refresh();
             }
         };
 
@@ -179,10 +180,10 @@ export default function NavbarLoggedin() {
                 <div className="w-full h-[82px] flex justify-between items-center rounded-[8px] pt-[16px] pr-[24px] pb-[16px] pl-[24px] bg-[#FFFFFF] shadow-[0px_4px_25px_0px_rgba(0,0,0,0.07)] md:px-4 md:py-3 md:h-[70px] sm:px-6 sm:py-4 sm:h-[70px] sm:rounded-none sm:shadow-none sm:pt-4 sm:pb-4 md:rounded-[8px] md:shadow-[0px_4px_25px_0px_rgba(0,0,0,0.07)]">
 
                     {/* Logo */}
-                    <a href="/" className="flex items-center border-0 outline-none flex-shrink-0 ml-3">
+                    <Link href="/" className="flex items-center border-0 outline-none flex-shrink-0 ml-3">
                         <img src="/icons/inksigma-logo.svg" alt="Inksigma logo"
                             className="h-8 w-auto md:h-8 sm:w-[98px] sm:h-[32px] border-0" />
-                    </a>
+                    </Link>
 
                     {/* Profile Section */}
                     <div className="flex items-center gap-[16px] opacity-100 md:gap-4 mr-3">
@@ -379,10 +380,10 @@ export default function NavbarLoggedin() {
                                     onClick={(e) => e.stopPropagation()}
                                     className="absolute top-full -right-6 mt-4 w-[201px] h-auto bg-[#FEFEFE] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.07)] border border-[#EDEDED] rounded-[8px] flex flex-col gap-[4px] p-[8px] z-50"
                                 >
-                                    <a href="/profile-settings"
+                                    <Link href="/profile-settings"
                                         className="w-[185px] h-[29px] opacity-100 font-normal text-[14px] leading-[150%] tracking-[0%] text-[#B0B0B0] hover:text-black rounded-[4px] gap-[10px] pt-[4px] pr-[8px] pb-[4px] pl-[8px] bg-[#FEFEFE] whitespace-nowrap flex items-center">
                                         My Profile
-                                    </a>
+                                    </Link>
 
                                     <button
                                         onClick={handleLogout}

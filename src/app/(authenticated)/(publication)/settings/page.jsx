@@ -328,8 +328,8 @@ export default function SettingsPage() {
       // Refresh the publication context with updated data
       await refreshCurrentPublication();
 
-      // Redirect to home page with full reload to show updated changes
-      window.location.href = `/${updatedPub.subdomain}/home`;
+      // Redirect to home page using router for client-side navigation
+      router.push(`/${updatedPub.subdomain}/home`);
     } catch (err) {
       console.error("Save error:", err);
       setError(err.message);

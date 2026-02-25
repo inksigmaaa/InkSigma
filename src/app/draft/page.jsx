@@ -14,11 +14,12 @@ import AuthGuard from "@/components/auth/AuthGuard";
 import { useSession } from "@/lib/auth-client";
 import { useToast } from "@/contexts/ToastContext";
 
-const DEFAULT_DRAFT_TITLE = "Untitled";
+const DEFAULT_DRAFT_TITLE = "[Untitled]";
 const LEGACY_DRAFT_TITLE = "untitle";
 
 const isMissingRealTitle = (title) => {
-  const normalized = typeof title === "string" ? title.trim().toLowerCase() : "";
+  const normalized =
+    typeof title === "string" ? title.trim().toLowerCase() : "";
   return (
     !normalized ||
     normalized === DEFAULT_DRAFT_TITLE.toLowerCase() ||
@@ -281,7 +282,10 @@ export default function DraftPage() {
         );
 
         if (publishableSelectedIds.length === 0) {
-          showToast("No selected articles have a valid title to publish.", "info");
+          showToast(
+            "No selected articles have a valid title to publish.",
+            "info",
+          );
           setShowPublishModal(false);
           return;
         }
@@ -320,7 +324,9 @@ export default function DraftPage() {
           setSelectedArticles([...skippedIds, ...failedIds]);
         }
       } else if (actionArticleId) {
-        const targetArticle = draftArticles.find((a) => a.id === actionArticleId);
+        const targetArticle = draftArticles.find(
+          (a) => a.id === actionArticleId,
+        );
         if (!targetArticle?.canPublishArticle) {
           showToast("Cannot publish an Untitled draft.", "error");
           setShowPublishModal(false);
@@ -359,7 +365,8 @@ export default function DraftPage() {
     const article = draftArticles.find((a) => a.id === id);
     return article?.canPublishArticle;
   }).length;
-  const skippedUntitledCount = selectedArticles.length - publishableSelectedCount;
+  const skippedUntitledCount =
+    selectedArticles.length - publishableSelectedCount;
 
   const actionButtons = [
     ...(canPublish

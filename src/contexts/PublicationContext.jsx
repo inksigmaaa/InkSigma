@@ -229,13 +229,13 @@ function PublicationProviderInner({ children }) {
             (pub) => pub.id === currentPub.id,
           );
           if (!stillHasAccess) {
-            // User was removed from this publication, redirect to dashboard
+            // User was removed from this publication, redirect to home
             setCurrentPublication(null);
             setPublicationDetails(null);
             setUserPublications(publications);
             setLoading(false);
-            // Use window.location for a full page redirect to ensure clean state
-            window.location.href = "/";
+            // Use router for client-side navigation
+            router.push("/");
             return;
           }
         }

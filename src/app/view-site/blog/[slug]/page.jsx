@@ -78,16 +78,11 @@ export default function BlogDetailPage({ params }) {
     e.preventDefault();
     const fromPub = searchParams.get("from");
 
-    // Try browser history first
-    if (window.history.length > 1) {
-      router.back();
-    }
-    // Fallback to explicit navigation
-    else if (fromPub) {
+    // Navigate directly to the publication view site
+    // Don't use router.back() as it may go back to the editor
+    if (fromPub) {
       router.push(`/view-site?publicationId=${fromPub}`);
-    }
-    // Default fallback
-    else {
+    } else {
       const pubId =
         blog?.publication?.id || blog?.publicationId || blog?.publication_id;
       router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");

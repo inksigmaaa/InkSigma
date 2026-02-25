@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams, usePathname } from "next/navigation";
+import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import Verify from "@/components/features/verify/Verify";
 import BlogStatsComponent from "@/components/features/BlogStatsComponent/BlogStatsComponent";
 import { Pencil } from "lucide-react";
@@ -18,6 +18,7 @@ const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 export default function HomePage() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
   const { currentPublication } = usePublication();
   const { publicationArticles, loadPublicationArticles } = useArticles();
@@ -108,11 +109,11 @@ export default function HomePage() {
   }, [publicationArticles]);
 
   const handleStartWriting = () => {
-    // Pass current publication ID to editor - navigate instantly
+    // Pass current publication ID to editor - navigate using router
     if (currentPublication?.id) {
-      window.location.href = `/editor?publicationId=${currentPublication.id}`;
+      router.push(`/editor?publicationId=${currentPublication.id}`);
     } else {
-      window.location.href = "/editor";
+      router.push("/editor");
     }
   };
 
@@ -143,7 +144,7 @@ export default function HomePage() {
 
   const handleEditPublication = () => {
     const sub = currentPublication?.subdomain;
-    window.location.href = sub ? `/${sub}/settings` : "/dashboard/settings";
+    router.push(sub ? `/${sub}/settings` : "/dashboard/settings");
   };
 
   return (
@@ -239,7 +240,7 @@ export default function HomePage() {
                       key={article.id}
                       className="border border-[#EAEAEA] rounded-lg hover:shadow-lg transition-shadow bg-white p-4 cursor-pointer flex flex-col"
                       onClick={() =>
-                        (window.location.href = `/home/preview/${article.id}`)
+                        router.push(`/home/preview/${article.id}`)
                       }
                     >
                       <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative flex-shrink-0">
@@ -276,7 +277,7 @@ export default function HomePage() {
                               className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors flex-shrink-0"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                window.location.href = `/editor?status=published&id=${article.id}&source=${pathname}`;
+                                router.push(`/editor?status=published&id=${article.id}&source=${pathname}`);
                               }}
                             >
                               <Pencil className="w-5 h-5" />

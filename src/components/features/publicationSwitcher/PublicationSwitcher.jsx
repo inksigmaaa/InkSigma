@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
 
 export default function PublicationSwitcher() {
+  const router = useRouter();
   const { userPublications, currentPublication, switchPublication, loading } =
     usePublication();
   const [isOpen, setIsOpen] = useState(false);
@@ -100,14 +102,14 @@ export default function PublicationSwitcher() {
     const endpointPath = endpointSegments.length
       ? `/${endpointSegments.join("/")}`
       : "/home";
-    // Use window.location for instant navigation
-    window.location.href = `/${publication.subdomain}${endpointPath}${currentSearch}`;
+    // Use router.push for client-side navigation
+    router.push(`/${publication.subdomain}${endpointPath}${currentSearch}`);
   };
 
   const handleViewMySpace = () => {
     setIsOpen(false);
-    // Use window.location for instant navigation
-    window.location.href = "/";
+    // Use router.push for client-side navigation
+    router.push("/");
   };
 
   if (loading || !currentPublication) {

@@ -2,12 +2,88 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo, memo } from "react";
 import { usePublication } from "@/contexts/PublicationContext";
 import { hasPermission } from "@/utils/permissions";
 
+const MENU_SECTIONS = [
+  {
+    title: "PUBLICATION",
+    items: [
+      { label: "Home", icon: "home.svg", check: () => true },
+      {
+        label: "Domain",
+        icon: "domain.svg",
+        check: (r) => hasPermission(r, "canAccessDomain"),
+      },
+      {
+        label: "Members",
+        icon: "Member.svg",
+        check: (r) => hasPermission(r, "canAccessMembers"),
+      },
+      {
+        label: "Settings",
+        icon: "settings.svg",
+        check: (r) => hasPermission(r, "canAccessSettings"),
+      },
+    ],
+  },
+  {
+    title: "ARTICLES",
+    items: [
+      {
+        label: "All Articles",
+        icon: "all_articles.svg",
+        check: (r) => hasPermission(r, "canAccessAllArticles"),
+      },
+      {
+        label: "Published",
+        icon: "Publish.svg",
+        check: (r) => hasPermission(r, "canAccessPublished"),
+      },
+      {
+        label: "Unpublished",
+        icon: "unpublished.svg",
+        check: (r) => hasPermission(r, "canAccessAllArticles"),
+      },
+      {
+        label: "Schedule",
+        icon: "Schedule.svg",
+        check: (r) => hasPermission(r, "canAccessScheduled"),
+      },
+      {
+        label: "Review",
+        icon: "Review.svg",
+        check: (r) => hasPermission(r, "canAccessReviewQueue"),
+        getRoute: (role) =>
+          role === "author" ? "/author-review" : "/review",
+      },
+    ],
+  },
+  {
+    title: "PERSONAL",
+    items: [
+      {
+        label: "My Blogs",
+        icon: "myblogs.svg",
+        check: (r) => hasPermission(r, "viewOwnArticles"),
+      },
+      {
+        label: "Draft",
+        icon: "draft.svg",
+        check: (r) => hasPermission(r, "canAccessDrafts"),
+      },
+      {
+        label: "Trash",
+        icon: "trash.svg",
+        check: (r) => hasPermission(r, "viewOwnArticles"),
+      },
+    ],
+  },
+];
+
 // Extracted component for individual menu items to comply with Rules of Hooks
-function SidebarMenuItem({ label, icon, route, isActive }) {
+const SidebarMenuItem = memo(function SidebarMenuItem({ label, icon, route, isActive }) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -33,10 +109,10 @@ function SidebarMenuItem({ label, icon, route, isActive }) {
       </div>
     </Link>
   );
-}
+});
 
 // Extracted component for My Space item
-function MySpaceItem({ pathname }) {
+const MySpaceItem = memo(function MySpaceItem({ pathname }) {
   const [isHovered, setIsHovered] = useState(false);
   const isActive = pathname === "/";
 
@@ -59,9 +135,9 @@ function MySpaceItem({ pathname }) {
       </Link>
     </div>
   );
-}
+});
 
-export default function Sidebar() {
+function Sidebar() {
   const pathname = usePathname();
   const { currentPublication, loading } = usePublication();
   const pubPrefix = currentPublication?.subdomain
@@ -306,3 +382,5 @@ export default function Sidebar() {
     </>
   );
 }
+
+export default memo(Sidebar);

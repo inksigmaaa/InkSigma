@@ -9,27 +9,15 @@ export default function ViewSiteHeader({ userName, userAvatar = null, shareButto
   const searchParams = useSearchParams();
 
   const handleBack = () => {
-    // Check if we have history to go back to
-    if (window.history.length > 2) {
-       router.back();
-    } else {
-       // Fallback to publication home or root if no history
-       // If we have a publication ID in params (though header might not have it directly),
-       // we might want to go to that.
-       // For now, let's try to go back, else root.
-       // Actually, the user said "return the that publication".
-       // If we are on a blog post, we likely have the publication context or params.
-       
-       // Simple back behavior often works best for "like back button"
-       router.back(); 
-       // If back doesn't work (new tab), we might ultimately want to redirect to home.
-       // But router.back() is what was requested ("like the go back button")
-    }
+    // Navigate directly to view-site instead of using router.back()
+    // which may go back to the editor
+    const pubId = searchParams.get("publicationId") || searchParams.get("pub");
+    router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");
   };
 
   // Improved handleBack to be more robust
   const onLogoClick = () => {
-     router.back();
+    handleBack();
   };
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { memberService } from "@/services/memberService";
 import { usePublication } from "@/contexts/PublicationContext";
@@ -9,6 +10,7 @@ import ConfirmModal from "../confirmModal/ConfirmModal";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 export default function Members() {
+  const router = useRouter();
   const { data: session } = useSession();
   const {
     currentPublication,
@@ -302,7 +304,7 @@ export default function Members() {
       await memberService.leavePublication(currentPublication.id);
       setShowLeaveModal(false);
       await refreshCurrentPublication();
-      window.location.href = "/";
+      router.push("/");
     } catch (error) {
       setError(error.message);
       setShowLeaveModal(false);
@@ -345,7 +347,7 @@ export default function Members() {
           <div className="flex flex-col justify-center items-center min-h-[400px] text-center">
             <div className="text-red-500 mb-4">{error}</div>
             <button
-              onClick={() => (window.location.href = "/")}
+              onClick={() => router.push("/")}
               className="bg-violet-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-violet-700"
             >
               Go to Dashboard

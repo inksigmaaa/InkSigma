@@ -1,14 +1,18 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 
 export default function BackToHomeButton() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleClick = (e) => {
     e.preventDefault();
-    router.back();
+    // Navigate directly to view-site instead of using router.back()
+    // which may go back to the editor
+    const pubId = searchParams.get("publicationId") || searchParams.get("pub");
+    router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");
   };
 
   return (

@@ -40,7 +40,7 @@ export default function DashboardSidebar() {
             {(() => {
               const [isHovered, setIsHovered] = useState(false);
               return (
-                <a href="/profile-settings">
+                <Link href="/profile-settings">
                   <div
                     className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered ? "bg-[#F6F6F6]" : ""}`}
                     onMouseEnter={() => setIsHovered(true)}
@@ -58,7 +58,7 @@ export default function DashboardSidebar() {
                       </p>
                     </div>
                   </div>
-                </a>
+                </Link>
               );
             })()}
           </div>

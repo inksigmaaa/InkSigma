@@ -142,9 +142,9 @@ export default function ProfileSettingsPage() {
       // Show success message
       setShowUpdateMessage(true);
 
-      // Reload page to refresh session with updated image
+      // Refresh data without full page reload
       setTimeout(() => {
-        window.location.reload();
+        router.refresh();
       }, 1500);
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -176,9 +176,9 @@ export default function ProfileSettingsPage() {
       // Show success message
       setShowUpdateMessage(true);
 
-      // Reload page to refresh session with updated image
+      // Refresh data without full page reload
       setTimeout(() => {
-        window.location.reload();
+        router.refresh();
       }, 1500);
     } catch (error) {
       console.error("Error removing image:", error);
@@ -214,9 +214,9 @@ export default function ProfileSettingsPage() {
 
       setShowUpdateMessage(true);
 
-      // Reload page after a short delay to show success message
+      // Refresh data without full page reload
       setTimeout(() => {
-        window.location.reload();
+        router.refresh();
       }, 1500);
     } catch (error) {
       console.error("Error saving profile:", error);
