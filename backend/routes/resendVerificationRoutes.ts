@@ -41,6 +41,7 @@ router.post("/resend-verification", async (req, res) => {
 
         // Create new verification token
         await db.insert(verification).values({
+            id: crypto.randomUUID(),
             identifier: email,
             value: token,
             expiresAt,

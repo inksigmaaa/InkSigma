@@ -129,8 +129,8 @@ export const getBlogsQuerySchema = z.object({
   publicationId: z.string().regex(/^\d+$/).transform(Number).optional(),
   categories: z.union([z.string(), z.array(z.string())]).optional(),
   search: z.string().optional(),
-  limit: z.string().regex(/^\d+$/).transform(Number).optional().default('50'),
-  offset: z.string().regex(/^\d+$/).transform(Number).optional().default('0'),
+  limit: z.string().regex(/^\d+$/).transform(Number).optional().default(50),
+  offset: z.string().regex(/^\d+$/).transform(Number).optional().default(0),
   includeUnpublished: z.enum(['true', 'false']).optional(),
 });
 
@@ -214,7 +214,7 @@ export const checkSubdomainSchema = z.object({
 export const inviteMemberSchema = z.object({
   email: emailValidator,
   role: z.enum(['editor', 'author'], {
-    errorMap: () => ({ message: "Invalid role. Must be 'editor' or 'author'" }),
+    message: "Invalid role. Must be 'editor' or 'author'",
   }),
 });
 
@@ -237,7 +237,7 @@ export const trackViewSchema = z.object({
 export const trackShareSchema = z.object({
   blogId: z.number().int().positive(),
   platform: z.enum(['twitter', 'facebook', 'linkedin', 'whatsapp', 'copy'], {
-    errorMap: () => ({ message: 'Invalid platform' }),
+    message: 'Invalid platform',
   }),
 });
 

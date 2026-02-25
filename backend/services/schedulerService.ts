@@ -6,8 +6,10 @@ import logger from "../utils/logger.js";
 import { BLOG_STATUS } from "../config/constants.js";
 
 class SchedulerService {
+    private scheduledTimers: Map<number, NodeJS.Timeout> = new Map();
+
     constructor() {
-        this.scheduledTimers = new Map();
+        // Empty constructor - initialization happens in start()
     }
 
     async start() {
@@ -71,12 +73,12 @@ class SchedulerService {
         }
     }
 
-    async publishScheduledBlog(blogPost) {
+    async publishScheduledBlog(blogPost: any) {
         try {
             this.scheduledTimers.delete(blogPost.id);
             const now = new Date();
 
-            const [updatedBlog] = await db
+            const result = await db
                 .update(blog)
                 .set({
                     status: BLOG_STATUS.PUBLISHED,
@@ -87,6 +89,8 @@ class SchedulerService {
                 })
                 .where(and(eq(blog.id, blogPost.id), eq(blog.status, BLOG_STATUS.SCHEDULED)))
                 .returning();
+
+            const updatedBlog = result[0];
 
             if (updatedBlog) {
                 logger.info(`✅ [SCHEDULER] Published: "${blogPost.title}"`);

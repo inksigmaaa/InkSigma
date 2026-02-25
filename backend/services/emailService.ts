@@ -1,13 +1,11 @@
 // services/emailService.js
-import nodemailer from "nodemailer";
+import nodemailer, { Transporter } from "nodemailer";
 import logger from "../utils/logger.js";
 
 class EmailService {
-    constructor() {
-        this.transporter = null;
-    }
+    private transporter: Transporter | null = null;
 
-    getTransporter() {
+    getTransporter(): Transporter {
         if (!this.transporter) {
             this.transporter = nodemailer.createTransport({
                 host: process.env.SMTP_HOST || "smtp.gmail.com",

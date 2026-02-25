@@ -102,12 +102,12 @@ export const trackBlogShare = async (blogId, platform) => {
  */
 export const getBlogViewCount = async (blogId) => {
   try {
-    const [result] = await db
+    const result = await db
       .select({ count: count() })
       .from(blogView)
       .where(eq(blogView.blogId, blogId));
 
-    return parseInt(result?.count || 0);
+    return Number(result[0]?.count || 0);
   } catch (error) {
     logger.error(error, "[VIEW TRACKING] Error getting view count:");
     return 0;
@@ -121,12 +121,12 @@ export const getBlogViewCount = async (blogId) => {
  */
 export const getBlogShareCount = async (blogId) => {
   try {
-    const [result] = await db
+    const result = await db
       .select({ count: count() })
       .from(blogShare)
       .where(eq(blogShare.blogId, blogId));
 
-    return parseInt(result?.count || 0);
+    return Number(result[0]?.count || 0);
   } catch (error) {
     logger.error(error, "[SHARE TRACKING] Error getting share count:");
     return 0;
@@ -138,14 +138,14 @@ export const getBlogShareCount = async (blogId) => {
  * @param {number[]} blogIds - Array of blog IDs
  * @returns {Promise<Object>}
  */
-export const getBlogStats = async (blogIds) => {
+export const getBlogStats = async (blogIds: number[]) => {
   try {
-    const stats = {};
+    const stats: Record<string, { views: number; shares: number }> = {};
     if (!blogIds || blogIds.length === 0) return stats;
 
     // Initialize with default 0s
     for (const id of blogIds) {
-      stats[id] = { views: 0, shares: 0 };
+      stats[String(id)] = { views: 0, shares: 0 };
     }
 
     // Batch fetch views
@@ -164,12 +164,12 @@ export const getBlogStats = async (blogIds) => {
 
     // Map results
     for (const row of viewsResult) {
-      if (stats[row.blogId]) stats[row.blogId].views = parseInt(row.count) || 0;
+      if (stats[String(row.blogId)]) stats[String(row.blogId)].views = Number(row.count) || 0;
     }
 
     for (const row of sharesResult) {
-      if (stats[row.blogId])
-        stats[row.blogId].shares = parseInt(row.count) || 0;
+      if (stats[String(row.blogId)])
+        stats[String(row.blogId)].shares = Number(row.count) || 0;
     }
 
     return stats;

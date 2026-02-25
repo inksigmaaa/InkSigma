@@ -4,13 +4,29 @@ import logger from "../utils/logger.js";
 
 class NotificationService {
     // Create a notification
-    async createNotification({ userId, type, title, message, relatedUserId, relatedBlogId, relatedPublicationId }) {
+    async createNotification({ 
+        userId, 
+        type, 
+        title, 
+        message, 
+        relatedUserId, 
+        relatedBlogId, 
+        relatedPublicationId 
+    }: {
+        userId: string;
+        type: string;
+        title: string;
+        message: string;
+        relatedUserId?: string | null;
+        relatedBlogId?: number | null;
+        relatedPublicationId?: number | null;
+    }) {
         try {
-            const [newNotification] = await db
+            const result = await db
                 .insert(notification)
                 .values({
                     userId,
-                    type,
+                    type: type as any,
                     title,
                     message,
                     relatedUserId,
@@ -20,7 +36,7 @@ class NotificationService {
                 })
                 .returning();
 
-            return newNotification;
+            return result[0];
         } catch (error) {
             logger.error(error, "Error creating notification:");
             throw error;
