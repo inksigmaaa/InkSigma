@@ -128,9 +128,15 @@ function PublicationProviderInner({ children }) {
     }
 
     // Check for 'subdomain' parameter and lookup publication by subdomain
-    if (searchParams?.get("subdomain") && Array.isArray(publicationsForLookup) && publicationsForLookup.length > 0) {
+    if (
+      searchParams?.get("subdomain") &&
+      Array.isArray(publicationsForLookup) &&
+      publicationsForLookup.length > 0
+    ) {
       const subdomain = searchParams.get("subdomain");
-      const match = publicationsForLookup.find((pub) => pub?.subdomain === subdomain);
+      const match = publicationsForLookup.find(
+        (pub) => pub?.subdomain === subdomain,
+      );
       if (match) return match.id;
     }
 
@@ -145,8 +151,14 @@ function PublicationProviderInner({ children }) {
       if (publicationId) return parseInt(publicationId);
 
       const subdomain = params.get("subdomain");
-      if (subdomain && Array.isArray(publicationsForLookup) && publicationsForLookup.length > 0) {
-        const match = publicationsForLookup.find((pub) => pub?.subdomain === subdomain);
+      if (
+        subdomain &&
+        Array.isArray(publicationsForLookup) &&
+        publicationsForLookup.length > 0
+      ) {
+        const match = publicationsForLookup.find(
+          (pub) => pub?.subdomain === subdomain,
+        );
         if (match) return match.id;
       }
 
@@ -182,12 +194,12 @@ function PublicationProviderInner({ children }) {
         if (!isPending) {
           setLoading(false);
         }
-        return;
+        return [];
       }
 
       // Only fetch on client side
       if (typeof window === "undefined") {
-        return;
+        return [];
       }
 
       try {
@@ -200,7 +212,7 @@ function PublicationProviderInner({ children }) {
         if (!data) {
           setUserPublications([]);
           setLoading(false);
-          return;
+          return [];
         }
 
         if (
@@ -214,7 +226,7 @@ function PublicationProviderInner({ children }) {
           if (!silent) {
             setLoading(false);
           }
-          return;
+          return [];
         }
 
         // Backend returns either array (legacy) or object with publications array (new)
@@ -236,7 +248,7 @@ function PublicationProviderInner({ children }) {
             setLoading(false);
             // Use router for client-side navigation
             router.push("/");
-            return;
+            return publications;
           }
         }
 
@@ -322,6 +334,8 @@ function PublicationProviderInner({ children }) {
             }
           }
         }
+
+        return publications;
       } catch (error) {
         console.error("Error loading user publications:", error);
         if (!silent) {
@@ -331,6 +345,7 @@ function PublicationProviderInner({ children }) {
         setUserPublications([]);
         setCurrentPublication(null);
         setPublicationDetails(null);
+        return [];
       } finally {
         if (!silent) {
           setLoading(false);
@@ -445,8 +460,16 @@ function PublicationProviderInner({ children }) {
 
     try {
       // Reload the publication data
-      await loadUserPublications();
-      await loadPublicationDetails(currentPublication.id);
+      const latestPublications = await loadUserPublications();
+
+      // Check if user still has access to this publication before loading details
+      const stillHasAccess =
+        Array.isArray(latestPublications) &&
+        latestPublications.some((pub) => pub.id === currentPublication.id);
+
+      if (stillHasAccess) {
+        await loadPublicationDetails(currentPublication.id);
+      }
     } catch (error) {
       console.error("Error refreshing publication:", error);
     }

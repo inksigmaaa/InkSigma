@@ -15,6 +15,7 @@ export default function Members() {
   const {
     currentPublication,
     refreshCurrentPublication,
+    loadUserPublications,
     getCurrentUserRole,
     isCurrentUserAdmin,
     loading: publicationLoading,
@@ -34,13 +35,16 @@ export default function Members() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isRoleDropdownOpen && !event.target.closest('.role-dropdown-container')) {
+      if (
+        isRoleDropdownOpen &&
+        !event.target.closest(".role-dropdown-container")
+      ) {
         setIsRoleDropdownOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isRoleDropdownOpen]);
 
   // Memoized admin check to prevent flickering during state updates
@@ -117,6 +121,14 @@ export default function Members() {
     setUserRole(null);
   }, [currentPublication?.id]);
 
+  // Handle publication loading state independently of data fetching
+  useEffect(() => {
+    if (!publicationLoading && !currentPublication) {
+      setLoading(false);
+      setIsInitialLoad(false);
+    }
+  }, [publicationLoading, currentPublication]);
+
   // Initial and periodic data loading
   useEffect(() => {
     if (currentPublication?.id && session?.user?.id) {
@@ -128,11 +140,8 @@ export default function Members() {
       }, 30000);
 
       return () => clearInterval(interval);
-    } else if (!publicationLoading && !currentPublication) {
-      setLoading(false);
-      setIsInitialLoad(false);
     }
-  }, [currentPublication?.id, session?.user?.id, publicationLoading]);
+  }, [currentPublication?.id, session?.user?.id]);
 
   const loadData = async (silent = false) => {
     if (!currentPublication) {
@@ -303,8 +312,7 @@ export default function Members() {
     try {
       await memberService.leavePublication(currentPublication.id);
       setShowLeaveModal(false);
-      await refreshCurrentPublication();
-      router.push("/");
+      await loadUserPublications();
     } catch (error) {
       setError(error.message);
       setShowLeaveModal(false);
@@ -379,7 +387,13 @@ export default function Members() {
                 Members
               </h2>
 
-              <div className={members && members.length > 0 ? "border-y border-[#EDEDED]" : ""}>
+              <div
+                className={
+                  members && members.length > 0
+                    ? "border-y border-[#EDEDED]"
+                    : ""
+                }
+              >
                 {members &&
                   members.length > 0 &&
                   members.map((member, index) => (
@@ -407,7 +421,7 @@ export default function Members() {
 
                         <div className="flex-1 flex items-center justify-end">
                           {member.userId === session?.user?.id &&
-                            member.role !== "admin" ? (
+                          member.role !== "admin" ? (
                             <button
                               onClick={() => setShowLeaveModal(true)}
                               className="px-6 py-2 text-sm font-medium text-red-500 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
@@ -475,7 +489,6 @@ export default function Members() {
             <h2 className="text-xl font-bold text-gray-900 pb-4 mb-4 max-[767px]:text-lg max-[767px]:mb-4 max-[767px]:text-center border-b border-#EDEDED">
               Add Members
             </h2>
-        
 
             <div className="mb-4">
               <label className="block text-sm font-bold text-gray-900 mb-2">
@@ -498,19 +511,19 @@ export default function Members() {
                     >
                       <span
                         style={{
-                          fontFamily: 'Public Sans, sans-serif',
+                          fontFamily: "Public Sans, sans-serif",
                           fontWeight: 400,
-                          fontSize: '14px',
-                          lineHeight: '150%',
-                          letterSpacing: '0%',
-                          color: '#2E2E2E',
+                          fontSize: "14px",
+                          lineHeight: "150%",
+                          letterSpacing: "0%",
+                          color: "#2E2E2E",
                         }}
                       >
-                        {role || 'Select Role'}
+                        {role || "Select Role"}
                       </span>
                       <svg
                         className="w-4 h-4 flex-shrink-0"
-                        style={{ color: '#2E2E2E' }}
+                        style={{ color: "#2E2E2E" }}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -523,48 +536,48 @@ export default function Members() {
                         />
                       </svg>
                     </button>
-                    
+
                     {isRoleDropdownOpen && (
                       <div
                         className="absolute top-full left-0 mt-1 z-50 flex flex-col"
                         style={{
-                          width: '130px',
-                          borderBottomRightRadius: '4px',
-                          borderBottomLeftRadius: '4px',
-                          padding: '8px',
-                          background: '#FEFEFE',
-                          border: '1px solid #EDEDED',
-                          boxShadow: '0px 4px 24px 0px rgba(0, 0, 0, 0.07)',
-                          gap: '4px',
+                          width: "130px",
+                          borderBottomRightRadius: "4px",
+                          borderBottomLeftRadius: "4px",
+                          padding: "8px",
+                          background: "#FEFEFE",
+                          border: "1px solid #EDEDED",
+                          boxShadow: "0px 4px 24px 0px rgba(0, 0, 0, 0.07)",
+                          gap: "4px",
                         }}
                       >
                         {isAdmin && (
                           <div
                             onClick={() => {
-                              setRole('Editor');
+                              setRole("Editor");
                               setIsRoleDropdownOpen(false);
                             }}
                             className="cursor-pointer hover:bg-gray-50 transition-colors"
                             style={{
-                              width: '110px',
-                              height: '29px',
-                              borderRadius: '4px',
-                              paddingTop: '4px',
-                              paddingRight: '8px',
-                              paddingBottom: '4px',
-                              paddingLeft: '8px',
-                              background: '#FEFEFE',
-                              display: 'flex',
-                              alignItems: 'center',
+                              width: "110px",
+                              height: "29px",
+                              borderRadius: "4px",
+                              paddingTop: "4px",
+                              paddingRight: "8px",
+                              paddingBottom: "4px",
+                              paddingLeft: "8px",
+                              background: "#FEFEFE",
+                              display: "flex",
+                              alignItems: "center",
                             }}
                           >
                             <span
                               style={{
-                                fontFamily: 'Public Sans, sans-serif',
+                                fontFamily: "Public Sans, sans-serif",
                                 fontWeight: 400,
-                                fontSize: '14px',
-                                lineHeight: '150%',
-                                color: '#696969',
+                                fontSize: "14px",
+                                lineHeight: "150%",
+                                color: "#696969",
                               }}
                             >
                               Editor
@@ -573,30 +586,30 @@ export default function Members() {
                         )}
                         <div
                           onClick={() => {
-                            setRole('Author');
+                            setRole("Author");
                             setIsRoleDropdownOpen(false);
                           }}
                           className="cursor-pointer hover:bg-gray-50 transition-colors"
                           style={{
-                            width: '110px',
-                            height: '29px',
-                            borderRadius: '4px',
-                            paddingTop: '4px',
-                            paddingRight: '8px',
-                            paddingBottom: '4px',
-                            paddingLeft: '8px',
-                            background: '#FEFEFE',
-                            display: 'flex',
-                            alignItems: 'center',
+                            width: "110px",
+                            height: "29px",
+                            borderRadius: "4px",
+                            paddingTop: "4px",
+                            paddingRight: "8px",
+                            paddingBottom: "4px",
+                            paddingLeft: "8px",
+                            background: "#FEFEFE",
+                            display: "flex",
+                            alignItems: "center",
                           }}
                         >
                           <span
                             style={{
-                              fontFamily: 'Public Sans, sans-serif',
+                              fontFamily: "Public Sans, sans-serif",
                               fontWeight: 400,
-                              fontSize: '14px',
-                              lineHeight: '150%',
-                              color: '#696969',
+                              fontSize: "14px",
+                              lineHeight: "150%",
+                              color: "#696969",
                             }}
                           >
                             Author
@@ -610,8 +623,9 @@ export default function Members() {
                     disabled={sending}
                     className="px-6 py-2 text-white rounded-md text-sm font-medium transition-colors whitespace-nowrap disabled:opacity-50 max-[639px]:flex-1"
                     style={{
-                      background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
-                      boxShadow: '0px 4px 8px 0px #EADBF9',
+                      background:
+                        "linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)",
+                      boxShadow: "0px 4px 8px 0px #EADBF9",
                     }}
                   >
                     {sending ? "Sending..." : "Send Invite"}
@@ -627,7 +641,11 @@ export default function Members() {
               Members
             </h2>
 
-            <div className={members && members.length > 0 ? "border-y border-[#EDEDED]" : ""}>
+            <div
+              className={
+                members && members.length > 0 ? "border-y border-[#EDEDED]" : ""
+              }
+            >
               {members &&
                 members.length > 0 &&
                 members.map((member, index) => (
@@ -688,8 +706,8 @@ export default function Members() {
                     </div>
                     {(index < members.length - 1 ||
                       pendingInvitations.length > 0) && (
-                        <hr className="border-[#EDEDED]" />
-                      )}
+                      <hr className="border-[#EDEDED]" />
+                    )}
                   </div>
                 ))}
 
@@ -712,12 +730,13 @@ export default function Members() {
 
                       <div className="w-1/3 flex justify-center max-[639px]:hidden">
                         <span
-                          className={`px-2 py-0 text-sm font-medium border-2 rounded-full ${invitation.status === "pending"
-                            ? "text-[#72D770] border-[#D5F2D4]"
-                            : invitation.status === "declined"
-                              ? "text-red-500 border-red-200"
-                              : "text-gray-400 border-gray-400"
-                            }`}
+                          className={`px-2 py-0 text-sm font-medium border-2 rounded-full ${
+                            invitation.status === "pending"
+                              ? "text-[#72D770] border-[#D5F2D4]"
+                              : invitation.status === "declined"
+                                ? "text-red-500 border-red-200"
+                                : "text-gray-400 border-gray-400"
+                          }`}
                         >
                           {invitation.status === "pending"
                             ? "Pending"
