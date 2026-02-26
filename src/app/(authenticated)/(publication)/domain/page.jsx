@@ -8,7 +8,10 @@ import { getApiBase } from "@/utils/apiBase";
 export default function DomainPage() {
   const [customDomain, setCustomDomain] = useState("");
   const [subdomain, setSubdomain] = useState("Subdomain");
+  const [publicationId, setPublicationId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [savedCustomDomain, setSavedCustomDomain] = useState("");
   const [editDomain, setEditDomain] = useState("");
 
@@ -23,6 +26,7 @@ export default function DomainPage() {
 
   const loadPublicationData = async () => {
     try {
+      setError("");
       const apiBase = getApiBase();
 
       const sessionRes = await fetch(`${apiBase}/api/auth/get-session`, {
@@ -40,10 +44,15 @@ export default function DomainPage() {
 
       if (pubRes.ok) {
         const pubData = await pubRes.json();
+        setPublicationId(pubData.id);
         setSubdomain(pubData.subdomain || "Subdomain");
+        const existingCustomDomain = pubData.customDomain || "";
+        setSavedCustomDomain(existingCustomDomain);
+        setEditDomain(existingCustomDomain);
       }
     } catch (err) {
       console.error("Error loading publication:", err);
+      setError("Failed to load domain settings.");
     } finally {
       setLoading(false);
     }
@@ -75,12 +84,41 @@ export default function DomainPage() {
     }
   };
 
-  const handleConfirmSave = () => {
-    setSavedCustomDomain(pendingDomain);
-    setEditDomain(pendingDomain);
-    setCustomDomain("");
-    setShowConfirmation(false);
-    console.log("Saving domain changes:", pendingDomain);
+  const handleConfirmSave = async () => {
+    if (!publicationId) return;
+
+    try {
+      setSaving(true);
+      setError("");
+      const apiBase = getApiBase();
+      const response = await fetch(`${apiBase}/api/publications/${publicationId}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customDomain: pendingDomain,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to save domain");
+      }
+
+      const updated = await response.json();
+      const normalizedDomain = updated.customDomain || pendingDomain;
+      setSavedCustomDomain(normalizedDomain);
+      setEditDomain(normalizedDomain);
+      setCustomDomain("");
+      setShowConfirmation(false);
+      setPendingDomain("");
+    } catch (err) {
+      setError(err.message || "Failed to save domain");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancelSave = () => {
@@ -88,11 +126,38 @@ export default function DomainPage() {
     setPendingDomain("");
   };
 
-  const handleConfirmRevert = () => {
-    setSavedCustomDomain("");
-    setEditDomain("");
-    setCustomDomain("");
-    setShowRevertConfirmation(false);
+  const handleConfirmRevert = async () => {
+    if (!publicationId) return;
+
+    try {
+      setSaving(true);
+      setError("");
+      const apiBase = getApiBase();
+      const response = await fetch(`${apiBase}/api/publications/${publicationId}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customDomain: "",
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to revert to subdomain");
+      }
+
+      setSavedCustomDomain("");
+      setEditDomain("");
+      setCustomDomain("");
+      setShowRevertConfirmation(false);
+    } catch (err) {
+      setError(err.message || "Failed to revert to subdomain");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancelRevert = () => {
@@ -103,9 +168,16 @@ export default function DomainPage() {
     navigator.clipboard.writeText(text);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm text-gray-500">
+        Loading domain settings...
+      </div>
+    );
+  }
+
   return (
     <>
-            
       <div className="w-full min-h-screen md:absolute md:left-1/2 md:-translate-x-1/2 md:top-[120px] md:max-w-[1034px] z-20 px-0 md:px-5 pt-24 md:pt-0 pb-24 md:pb-0">
         <div className="ml-0 md:ml-[165px] md:border-r md:border-gray-200">
           <div className="flex flex-col pb-8 md:pb-20">
@@ -141,6 +213,12 @@ export default function DomainPage() {
                 </a>
               </p>
             </div>
+
+            {error && (
+              <div className="mx-auto w-full max-w-[400px] md:max-w-[447px] mb-5 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded">
+                {error}
+              </div>
+            )}
 
             {/* Current Domain Section */}
             {!savedCustomDomain ? (
@@ -185,9 +263,10 @@ export default function DomainPage() {
                   />
                   <Button
                     onClick={handleSaveChanges}
+                    disabled={saving || !customDomain.trim()}
                     className="bg-black text-white hover:bg-gray-800 w-full md:w-auto max-md:w-[112px] max-md:text-[10px] max-md:font-bold max-md:px-2 px-8 text-sm h-10"
                   >
-                    Save Changes
+                    {saving ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
               </div>
@@ -286,7 +365,7 @@ export default function DomainPage() {
                   <span className="font-bold max-md:font-normal">COPY</span> and{" "}
                   <span className="font-bold max-md:font-normal">PASTE</span>{" "}
                   the subdomain above into the below text field and click on
-                  'Save Changes'.
+                  &apos;Save Changes&apos;.
                 </div>
 
                 {/* Edit Domain Section */}
@@ -330,6 +409,7 @@ export default function DomainPage() {
                   />
                   <button
                     onClick={handleEditSave}
+                    disabled={saving}
                     className="max-md:!w-[112px] max-md:text-[10px] max-md:!px-2"
                     style={{
                       width: "141px",
@@ -349,7 +429,7 @@ export default function DomainPage() {
                       justifyContent: "center",
                     }}
                   >
-                    Save Changes
+                    {saving ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
               </div>
@@ -381,13 +461,13 @@ export default function DomainPage() {
 
                 <p>
                   <span className="font-semibold max-md:font-normal">2.</span>{" "}
-                  Copy the IP Address that's given there by clicking the copy
+                  Copy the IP Address that&apos;s given there by clicking the copy
                   button
                 </p>
 
                 <p>
                   <span className="font-semibold max-md:font-normal">3.</span>{" "}
-                  Open your domain's{" "}
+                  Open your domain&apos;s{" "}
                   <span className="font-semibold max-md:font-normal">DNS</span>{" "}
                   (Domain Name System) Management in your domain provider -like
                   GoDaddy, Cloudflare, Bluehost, Hostgator, etc.
@@ -395,7 +475,7 @@ export default function DomainPage() {
 
                 <p>
                   <span className="font-semibold max-md:font-normal">4.</span>{" "}
-                  If there's an existing A record in your domain- please click
+                  If there&apos;s an existing A record in your domain- please click
                   edit and remove the existing IP Address and paste the NEW
                   copied IP Address in the respective IP/IPv4 address field
                 </p>
@@ -443,7 +523,7 @@ export default function DomainPage() {
 
                 <p>
                   <span className="font-semibold max-md:font-normal">8.</span>{" "}
-                  You will be redirected to a 404 Error Page. Please don't
+                  You will be redirected to a 404 Error Page. Please don&apos;t
                   worry. We are just now transferring your blog site to your new
                   domain.
                 </p>
@@ -577,6 +657,7 @@ export default function DomainPage() {
             <div className="flex gap-4 ml-auto" style={{ marginTop: "20px" }}>
               <button
                 onClick={handleCancelSave}
+                disabled={saving}
                 className="max-md:min-w-[80px] max-md:text-[12px] max-md:px-4"
                 style={{
                   minWidth: "94px",
@@ -601,6 +682,7 @@ export default function DomainPage() {
               </button>
               <button
                 onClick={handleConfirmSave}
+                disabled={saving}
                 className="max-md:min-w-[100px] max-md:text-[12px] max-md:px-4"
                 style={{
                   minWidth: "123px",
@@ -622,7 +704,7 @@ export default function DomainPage() {
                   justifyContent: "center",
                 }}
               >
-                Save changes
+                {saving ? "Saving..." : "Save changes"}
               </button>
             </div>
           </div>
@@ -663,6 +745,7 @@ export default function DomainPage() {
             <div className="flex gap-2">
               <button
                 onClick={handleCancelRevert}
+                disabled={saving}
                 className="max-md:min-w-[80px] max-md:text-[12px] max-md:px-4"
                 style={{
                   minWidth: "94px",
@@ -687,6 +770,7 @@ export default function DomainPage() {
               </button>
               <button
                 onClick={handleConfirmRevert}
+                disabled={saving}
                 className="max-md:min-w-[80px] max-md:text-[12px] max-md:px-4"
                 style={{
                   minWidth: "82px",
@@ -708,7 +792,7 @@ export default function DomainPage() {
                   justifyContent: "center",
                 }}
               >
-                Yes
+                {saving ? "Saving..." : "Yes"}
               </button>
             </div>
           </div>
