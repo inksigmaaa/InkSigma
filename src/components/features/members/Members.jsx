@@ -6,12 +6,14 @@ import { useSession } from "@/lib/auth-client";
 import { memberService } from "@/services/memberService";
 import { usePublication } from "@/contexts/PublicationContext";
 import { hasPermission } from "@/utils/permissions";
+import { useToast } from "@/hooks/use-toast";
 import ConfirmModal from "../confirmModal/ConfirmModal";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 export default function Members() {
   const router = useRouter();
   const { data: session } = useSession();
+  const { toast } = useToast();
   const {
     currentPublication,
     refreshCurrentPublication,
@@ -28,8 +30,6 @@ export default function Members() {
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Close dropdown when clicking outside
@@ -73,45 +73,10 @@ export default function Members() {
     return hasPermission(currentUserRole, "changeAnyRole");
   }, [currentUserRole]);
 
-  // Toast visibility states for smooth animations
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [showErrorToast, setShowErrorToast] = useState(false);
-
   // Modal states
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
-  const [showInviteSentToast, setShowInviteSentToast] = useState(false);
-  const [showInviteErrorToast, setShowInviteErrorToast] = useState(false);
-  const [showMemberExistsToast, setShowMemberExistsToast] = useState(false);
-  const [showMaxMembersToast, setShowMaxMembersToast] = useState(false);
-  const [showSingleEditorToast, setShowSingleEditorToast] = useState(false);
-
-  // Smooth toast animation for success
-  useEffect(() => {
-    if (success) {
-      setShowSuccessToast(true);
-      const hideTimer = setTimeout(() => setShowSuccessToast(false), 2500);
-      const clearTimer = setTimeout(() => setSuccess(""), 3000);
-      return () => {
-        clearTimeout(hideTimer);
-        clearTimeout(clearTimer);
-      };
-    }
-  }, [success]);
-
-  // Smooth toast animation for error
-  useEffect(() => {
-    if (error) {
-      setShowErrorToast(true);
-      const hideTimer = setTimeout(() => setShowErrorToast(false), 4500);
-      const clearTimer = setTimeout(() => setError(""), 5000);
-      return () => {
-        clearTimeout(hideTimer);
-        clearTimeout(clearTimer);
-      };
-    }
-  }, [error]);
 
   // Reset state when switching publications to prevent showing stale data
   useEffect(() => {
@@ -155,7 +120,6 @@ export default function Members() {
     try {
       if (!silent) {
         setLoading(true);
-        setError("");
       }
 
       const membersData = await memberService.getMembers(currentPublication.id);
@@ -195,7 +159,10 @@ export default function Members() {
     } catch (error) {
       console.error("Error loading data:", error);
       if (!silent) {
-        setError(error.message || "Failed to load members data");
+        toast({
+          description: error.message || "Failed to load members data",
+          variant: "error",
+        });
       }
     } finally {
       if (!silent) {
@@ -206,12 +173,18 @@ export default function Members() {
 
   const handleSendInvite = async () => {
     if (!email || !role) {
-      setError("Please enter email and select a role");
+      toast({
+        description: "Please enter email and select a role",
+        variant: "error",
+      });
       return;
     }
 
     if (!currentPublication || !currentPublication.id) {
-      setError("No publication selected. Please select a publication first.");
+      toast({
+        description: "No publication selected. Please select a publication first.",
+        variant: "error",
+      });
       return;
     }
 
@@ -225,8 +198,10 @@ export default function Members() {
     );
 
     if (existingMember || pendingInvitation) {
-      setShowMemberExistsToast(true);
-      setTimeout(() => setShowMemberExistsToast(false), 3000);
+      toast({
+        description: "Member already exists in this publication",
+        variant: "error",
+      });
       return;
     }
 
@@ -238,8 +213,10 @@ export default function Members() {
       );
 
       if (existingEditors.length > 0 || pendingEditors.length > 0) {
-        setShowSingleEditorToast(true);
-        setTimeout(() => setShowSingleEditorToast(false), 3000);
+        toast({
+          description: "Only one editor is allowed per publication",
+          variant: "error",
+        });
         return;
       }
     }
@@ -249,14 +226,14 @@ export default function Members() {
       members.length +
       pendingInvitations.filter((i) => i.status === "pending").length;
     if (totalMembers >= 6) {
-      setShowMaxMembersToast(true);
-      setTimeout(() => setShowMaxMembersToast(false), 3000);
+      toast({
+        description: "Maximum of 6 members allowed per publication",
+        variant: "error",
+      });
       return;
     }
 
     setSending(true);
-    setError("");
-    setSuccess("");
 
     try {
       await memberService.sendInvitation(
@@ -266,8 +243,10 @@ export default function Members() {
       );
 
       // Show custom invitation sent toast
-      setShowInviteSentToast(true);
-      setTimeout(() => setShowInviteSentToast(false), 3000);
+      toast({
+        description: "Invitation sent successfully",
+        variant: "success",
+      });
 
       setEmail("");
       setRole(null);
@@ -276,8 +255,10 @@ export default function Members() {
       await refreshCurrentPublication();
     } catch (error) {
       // Show custom error toast for network/server issues
-      setShowInviteErrorToast(true);
-      setTimeout(() => setShowInviteErrorToast(false), 3000);
+      toast({
+        description: error.message || "Failed to send invitation. Please try again.",
+        variant: "error",
+      });
     } finally {
       setSending(false);
     }
@@ -286,10 +267,16 @@ export default function Members() {
   const handleResendInvite = async (invitationId) => {
     try {
       await memberService.resendInvitation(currentPublication.id, invitationId);
-      setSuccess("Invitation resent successfully!");
+      toast({
+        description: "Invitation resent successfully!",
+        variant: "success",
+      });
       await loadData();
     } catch (error) {
-      setError(error.message);
+      toast({
+        description: error.message,
+        variant: "error",
+      });
     }
   };
 
@@ -303,9 +290,16 @@ export default function Members() {
       );
       setShowRemoveModal(false);
       setSelectedMember(null);
+      toast({
+        description: "Member removed successfully",
+        variant: "success",
+      });
       await loadData();
     } catch (error) {
-      setError(error.message);
+      toast({
+        description: error.message,
+        variant: "error",
+      });
       setShowRemoveModal(false);
     }
   };
@@ -314,9 +308,16 @@ export default function Members() {
     try {
       await memberService.leavePublication(currentPublication.id);
       setShowLeaveModal(false);
+      toast({
+        description: "You have left the publication",
+        variant: "success",
+      });
       await loadUserPublications();
     } catch (error) {
-      setError(error.message);
+      toast({
+        description: error.message || "Failed to leave publication",
+        variant: "error",
+      });
       setShowLeaveModal(false);
     }
   };
@@ -324,10 +325,16 @@ export default function Members() {
   const handleCancelInvitation = async (invitationId) => {
     try {
       await memberService.cancelInvitation(currentPublication.id, invitationId);
-      setSuccess("Invitation cancelled!");
+      toast({
+        description: "Invitation cancelled!",
+        variant: "success",
+      });
       await loadData();
     } catch (error) {
-      setError(error.message);
+      toast({
+        description: error.message,
+        variant: "error",
+      });
     }
   };
 
@@ -355,7 +362,6 @@ export default function Members() {
       >
         <div className="ml-[220px] max-[767px]:ml-0">
           <div className="flex flex-col justify-center items-center min-h-[400px] text-center">
-            <div className="text-red-500 mb-4">{error}</div>
             <button
               onClick={() => router.push("/")}
               className="bg-violet-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-violet-700"
@@ -376,14 +382,7 @@ export default function Members() {
           className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5 pb-20 max-[767px]:px-4.5 max-md:pb-32`}
         >
           <div className="ml-[220px] max-[767px]:ml-0">
-            {error && (
-              <div
-                className={`mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-center transition-all duration-300 ease-in-out ${showErrorToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
-              >
-                <p className="text-red-600 text-sm">{error}</p>
-              </div>
-            )}
-
+            
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-6 max-[767px]:text-lg max-[767px]:mb-4">
                 Members
@@ -471,20 +470,7 @@ export default function Members() {
         className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5 pb-20 max-[767px]:px-4.5 max-md:pb-32`}
       >
         <div className="ml-[220px] max-[767px]:ml-0">
-          {error && (
-            <div
-              className={`mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-center transition-all duration-300 ease-in-out ${showErrorToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
-            >
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
-          )}
-          {success && (
-            <div
-              className={`mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-center transition-all duration-300 ease-in-out ${showSuccessToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
-            >
-              <p className="text-green-600 text-sm">{success}</p>
-            </div>
-          )}
+          
 
           {/* Add Member Section */}
           <div className="mb-8 max-[767px]:mb-6">
@@ -814,294 +800,6 @@ export default function Members() {
         confirmText="Leave"
         confirmStyle="danger"
       />
-
-      {/* Custom Invitation Sent Toast */}
-      {showInviteSentToast && (
-        <div className="fixed inset-0 flex items-center justify-center z-[10000] bg-black/50">
-          <div
-            className="bg-white rounded-lg shadow-2xl flex flex-col items-center justify-center gap-6 animate-fade-in relative"
-            style={{
-              width: "353px",
-              minHeight: "218px",
-              paddingTop: "48px",
-              paddingRight: "56px",
-              paddingBottom: "48px",
-              paddingLeft: "56px",
-            }}
-          >
-            <button
-              onClick={() => setShowInviteSentToast(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-            <div
-              className="rounded-full flex items-center justify-center"
-              style={{
-                width: "64px",
-                height: "64px",
-                background:
-                  "linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)",
-              }}
-            >
-              <svg
-                className="text-white"
-                width="25"
-                height="25"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <div className="text-center">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                Mail Sent
-              </h3>
-              <p className="text-sm text-gray-500">
-                An invitation link has been sent to the registered Email ID
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Custom Invitation Error Toast */}
-      {showInviteErrorToast && (
-        <div className="fixed inset-0 flex items-center justify-center z-[10000] bg-black/50">
-          <div
-            className="bg-white rounded-lg shadow-2xl flex flex-col items-center justify-center gap-6 animate-fade-in relative"
-            style={{
-              width: "353px",
-              minHeight: "218px",
-              paddingTop: "48px",
-              paddingRight: "56px",
-              paddingBottom: "48px",
-              paddingLeft: "56px",
-            }}
-          >
-            <button
-              onClick={() => setShowInviteErrorToast(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-red-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </div>
-            <div className="text-center">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Oops!</h3>
-              <p className="text-sm text-gray-500">
-                Something went wrong. Your email wasn't sent. Please try again.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Member Already Exists Toast */}
-      {showMemberExistsToast && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[10000] animate-slide-down">
-          <div
-            className="flex items-center gap-2.5 rounded"
-            style={{
-              width: "227px",
-              height: "45px",
-              paddingTop: "12px",
-              paddingRight: "16px",
-              paddingBottom: "12px",
-              paddingLeft: "16px",
-              background: "#F9F9F9",
-              boxShadow: "0px 4px 25px 0px rgba(0, 0, 0, 0.25)",
-            }}
-          >
-            <div
-              className="flex-shrink-0 rounded-full flex items-center justify-center"
-              style={{
-                width: "20px",
-                height: "20px",
-                background: "#FC6161",
-              }}
-            >
-              <svg
-                className="text-white"
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                fill="none"
-              >
-                <path
-                  d="M6 1V7M6 9V11"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <p
-              style={{
-                fontFamily: "Public Sans, sans-serif",
-                fontWeight: 400,
-                fontSize: "14px",
-                lineHeight: "150%",
-                color: "#808080",
-              }}
-            >
-              Member already exists.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Single Editor Access Only Toast */}
-      {showSingleEditorToast && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[10000] animate-slide-down">
-          <div
-            className="flex items-center gap-2.5 rounded"
-            style={{
-              width: "227px",
-              height: "45px",
-              paddingTop: "12px",
-              paddingRight: "16px",
-              paddingBottom: "12px",
-              paddingLeft: "16px",
-              background: "#F9F9F9",
-              boxShadow: "0px 4px 25px 0px rgba(0, 0, 0, 0.25)",
-            }}
-          >
-            <div
-              className="flex-shrink-0 rounded-full flex items-center justify-center"
-              style={{
-                width: "20px",
-                height: "20px",
-                background: "#FC6161",
-              }}
-            >
-              <svg
-                className="text-white"
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                fill="none"
-              >
-                <path
-                  d="M6 1V7M6 9V11"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <p
-              style={{
-                fontFamily: "Public Sans, sans-serif",
-                fontWeight: 400,
-                fontSize: "14px",
-                lineHeight: "150%",
-                color: "#808080",
-              }}
-            >
-              Single editor access only.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Maximum Members Reached Toast */}
-      {showMaxMembersToast && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[10000] animate-slide-down">
-          <div
-            className="flex items-center gap-2.5 rounded"
-            style={{
-              width: "270px",
-              height: "45px",
-              paddingTop: "12px",
-              paddingRight: "16px",
-              paddingBottom: "12px",
-              paddingLeft: "16px",
-              background: "#F9F9F9",
-              boxShadow: "0px 4px 25px 0px rgba(0, 0, 0, 0.25)",
-            }}
-          >
-            <div
-              className="flex-shrink-0 rounded-full flex items-center justify-center"
-              style={{
-                width: "20px",
-                height: "20px",
-                background: "#FC6161",
-              }}
-            >
-              <svg
-                className="text-white"
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                fill="none"
-              >
-                <path
-                  d="M6 1V7M6 9V11"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <p
-              style={{
-                fontFamily: "Public Sans, sans-serif",
-                fontWeight: 400,
-                fontSize: "14px",
-                lineHeight: "150%",
-                color: "#808080",
-              }}
-            >
-              Reached the maximum invite.
-            </p>
-          </div>
-        </div>
-      )}
     </>
   );
 }

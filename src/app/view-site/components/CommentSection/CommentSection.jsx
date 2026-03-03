@@ -8,7 +8,7 @@ const API_URL = getApiBase();
 
 import { formatTimeAgo } from "../../../../utils/timeFormatter";
 import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
-import { useToast } from "@/contexts/ToastContext";
+import { useToast } from "@/hooks/use-toast";
 import { flushSync } from "react-dom";
 
 export default function CommentSection({ blogId }) {
@@ -30,7 +30,7 @@ export default function CommentSection({ blogId }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
 
-  const { showToast } = useToast();
+  const { toast } = useToast();
 
   // Fetch comments
   const fetchComments = useCallback(async () => {
@@ -133,7 +133,10 @@ export default function CommentSection({ blogId }) {
 
         setNewComment("");
         setError(null);
-        showToast("Comment added successfully", "success");
+        toast({
+          description: "Comment added successfully",
+          variant: "success",
+        });
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("blog:comment-did-add"));
         }
@@ -161,14 +164,20 @@ export default function CommentSection({ blogId }) {
 
         console.error("[CommentSection] Failed to post comment:", errorMessage);
         setError(errorMessage);
-        showToast(errorMessage, "error");
+        toast({
+          description: errorMessage,
+          variant: "error",
+        });
       }
     } catch (err) {
       console.error("[CommentSection] Fetch error:", err);
       console.error("[CommentSection] Error type:", err?.constructor?.name);
       console.error("[CommentSection] Error message:", err?.message);
       setError("Failed to post comment. Please try again.");
-      showToast("Failed to post comment. Please try again.", "error");
+      toast({
+        description: "Failed to post comment. Please try again.",
+        variant: "error",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -220,7 +229,10 @@ export default function CommentSection({ blogId }) {
         setReplyingTo(null);
         setExpandedReplies((prev) => ({ ...prev, [commentId]: true }));
         setError(null);
-        showToast("Reply added successfully", "success");
+        toast({
+          description: "Reply added successfully",
+          variant: "success",
+        });
       } else {
         let errorMessage = "Failed to post reply";
         try {
@@ -238,12 +250,18 @@ export default function CommentSection({ blogId }) {
           errorMessage = `Error: ${response.status} ${response.statusText}`;
         }
         setError(errorMessage);
-        showToast(errorMessage, "error");
+        toast({
+          description: errorMessage,
+          variant: "error",
+        });
       }
     } catch (err) {
       console.error("Error posting reply:", err);
       setError("Failed to post reply. Please try again.");
-      showToast("Failed to post reply. Please try again.", "error");
+      toast({
+        description: "Failed to post reply. Please try again.",
+        variant: "error",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -281,16 +299,25 @@ export default function CommentSection({ blogId }) {
             return c;
           });
         });
-        showToast("Comment deleted successfully", "success");
+        toast({
+          description: "Comment deleted successfully",
+          variant: "success",
+        });
       } else {
         const data = await response.json();
         setError(data.error || "Failed to delete comment");
-        showToast(data.error || "Failed to delete comment", "error");
+        toast({
+          description: data.error || "Failed to delete comment",
+          variant: "error",
+        });
       }
     } catch (err) {
       console.error("Error deleting comment:", err);
       setError("Failed to delete comment");
-      showToast("Failed to delete comment", "error");
+      toast({
+        description: "Failed to delete comment",
+        variant: "error",
+      });
     } finally {
       setShowDeleteModal(false);
       setCommentToDelete(null);

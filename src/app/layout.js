@@ -13,7 +13,7 @@ const allison = Allison({
   variable: "--font-allison",
 });
 import ConditionalLayout from "@/components/ConditionalLayout";
-import { ToastProvider } from "@/contexts/ToastContext";
+import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "@/components/Providers";
 import { headers } from "next/headers";
 
@@ -91,16 +91,15 @@ export default async function RootLayout({ children }) {
         className={`${publicSans.variable} ${allison.variable} antialiased`}
         suppressHydrationWarning
       >
-        <ToastProvider>
-          <Providers isDashboard={needsDashboard}>
-            <ConditionalLayout
-              isDashboardHost={isDashboardHost}
-              isPublicationSubdomain={isPublicationSubdomain}
-            >
-              {children}
-            </ConditionalLayout>
-          </Providers>
-        </ToastProvider>
+        <Providers isDashboard={needsDashboard}>
+          <ConditionalLayout
+            isDashboardHost={isDashboardHost}
+            isPublicationSubdomain={isPublicationSubdomain}
+          >
+            {children}
+          </ConditionalLayout>
+        </Providers>
+        <Toaster />
       </body>
     </html>
   );

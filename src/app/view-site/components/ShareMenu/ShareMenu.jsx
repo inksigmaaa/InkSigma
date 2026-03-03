@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import LinkIcon from '../icons/LinkIcon';
 import CameraIcon from '../icons/CameraIcon';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from "@/hooks/use-toast";
 import { getApiBase } from '@/utils/apiBase';
 
 const API_URL = getApiBase();
@@ -13,7 +13,7 @@ export default function ShareMenu({ title, url, slug, blogId, variant = 'icon', 
   const [isOpen, setIsOpen] = useState(false);
   const [showCopied, setShowCopied] = useState(false);
   const menuRef = useRef(null);
-  const { showToast } = useToast();
+  const { toast } = useToast();
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -56,7 +56,10 @@ export default function ShareMenu({ title, url, slug, blogId, variant = 'icon', 
       trackShare('copy');
       
       if (variant === 'outline') {
-        showToast('Link copied', 'success-dark');
+        toast({
+          description: 'Link copied',
+          variant: 'success',
+        });
       } else {
         setShowCopied(true);
         setTimeout(() => {

@@ -10,7 +10,7 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { useSession } from "@/lib/auth-client";
-import { useToast } from "@/contexts/ToastContext";
+import { useToast } from "@/hooks/use-toast";
 
 const DEFAULT_DRAFT_TITLE = "[Untitled]";
 const LEGACY_DRAFT_TITLE = "untitle";
@@ -198,7 +198,7 @@ export default function DraftPage() {
     }
   };
 
-  const { showToast } = useToast();
+  const { toast } = useToast();
 
   const confirmDelete = async () => {
     try {
@@ -213,10 +213,10 @@ export default function DraftPage() {
           console.warn(
             "Some selected articles could not be deleted due to permissions.",
           );
-          showToast(
-            "Some articles could not be deleted due to permissions.",
-            "warning",
-          );
+          toast({
+            description: "Some articles could not be deleted due to permissions.",
+            variant: "warning",
+          });
         }
 
         if (articlesToDelete.length > 0) {
@@ -235,27 +235,36 @@ export default function DraftPage() {
           );
 
           if (failures === 0) {
-            showToast(
-              `${successes} article(s) moved to trash successfully`,
-              "success",
-            );
+            toast({
+              description: `${successes} article(s) moved to trash successfully`,
+              variant: "success",
+            });
             setSelectedArticles([]);
           } else {
-            showToast(
-              `${successes} moved to trash. ${failures} failed.`,
-              "error",
-            );
+            toast({
+              description: `${successes} moved to trash. ${failures} failed.`,
+              variant: "error",
+            });
             setSelectedArticles(failedIds);
           }
         } else {
-          showToast("No deletable articles selected.", "info");
+          toast({
+            description: "No deletable articles selected.",
+            variant: "default",
+          });
         }
       } else if (actionArticleId) {
         try {
           await moveToTrashStatus(actionArticleId);
-          showToast("Article moved to trash successfully", "success");
+          toast({
+            description: "Article moved to trash successfully",
+            variant: "success",
+          });
         } catch (error) {
-          showToast("Failed to move article to trash", "error");
+          toast({
+            description: "Failed to move article to trash",
+            variant: "error",
+          });
           console.error(error);
         }
       }
@@ -263,7 +272,10 @@ export default function DraftPage() {
       setActionArticleId(null);
     } catch (error) {
       console.error("Error moving to trash:", error);
-      showToast("An unexpected error occurred", "error");
+      toast({
+        description: "An unexpected error occurred",
+        variant: "error",
+      });
     }
   };
 
@@ -280,10 +292,10 @@ export default function DraftPage() {
         );
 
         if (publishableSelectedIds.length === 0) {
-          showToast(
-            "No selected articles have a valid title to publish.",
-            "info",
-          );
+          toast({
+            description: "No selected articles have a valid title to publish.",
+            variant: "default",
+          });
           setShowPublishModal(false);
           return;
         }
@@ -301,24 +313,24 @@ export default function DraftPage() {
         );
 
         if (skippedIds.length > 0) {
-          showToast(
-            `${skippedIds.length} Untitled article(s) were skipped.`,
-            BULK_PUBLISH_TOAST_TYPE,
-          );
+          toast({
+            description: `${skippedIds.length} Untitled article(s) were skipped.`,
+            variant: "default",
+          });
           await delay(300);
         }
 
         if (failures === 0) {
-          showToast(
-            `${successes} article(s) published successfully`,
-            BULK_PUBLISH_TOAST_TYPE,
-          );
+          toast({
+            description: `${successes} article(s) published successfully`,
+            variant: "success",
+          });
           setSelectedArticles(skippedIds);
         } else {
-          showToast(
-            `${successes} published successfully. ${failures} failed.`,
-            BULK_PUBLISH_TOAST_TYPE,
-          );
+          toast({
+            description: `${successes} published successfully. ${failures} failed.`,
+            variant: "error",
+          });
           setSelectedArticles([...skippedIds, ...failedIds]);
         }
       } else if (actionArticleId) {
@@ -326,17 +338,26 @@ export default function DraftPage() {
           (a) => a.id === actionArticleId,
         );
         if (!targetArticle?.canPublishArticle) {
-          showToast("Cannot publish an Untitled draft.", "error");
+          toast({
+            description: "Cannot publish an Untitled draft.",
+            variant: "error",
+          });
           setShowPublishModal(false);
           setActionArticleId(null);
           return;
         }
         try {
           await publishArticle(actionArticleId);
-          showToast("Article published successfully", "success");
+          toast({
+            description: "Article published successfully",
+            variant: "success",
+          });
         } catch (error) {
           console.error("Publish failed:", error);
-          showToast("Failed to publish article", "error");
+          toast({
+            description: "Failed to publish article",
+            variant: "error",
+          });
         }
       } else {
         console.error("No article ID to publish!");
@@ -346,7 +367,10 @@ export default function DraftPage() {
       setActionArticleId(null);
     } catch (error) {
       console.error("Error publishing:", error);
-      showToast("An unexpected error occurred during publishing", "error");
+      toast({
+        description: "An unexpected error occurred during publishing",
+        variant: "error",
+      });
     }
   };
 

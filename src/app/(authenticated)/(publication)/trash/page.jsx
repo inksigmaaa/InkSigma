@@ -8,7 +8,7 @@ import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
-import { useToast } from "@/contexts/ToastContext";
+import { useToast } from "@/hooks/use-toast";
 
 import { useSession } from "@/lib/auth-client";
 
@@ -110,7 +110,7 @@ export default function TrashPage() {
     };
   });
 
-  const { showToast } = useToast();
+  const { toast } = useToast();
 
   const confirmDelete = async () => {
     try {
@@ -118,9 +118,15 @@ export default function TrashPage() {
         // Single article permanent delete
         try {
           await moveToTrash(deleteArticleId);
-          showToast("Article deleted permanently", "success");
+          toast({
+            description: "Article deleted permanently",
+            variant: "success",
+          });
         } catch (error) {
-          showToast("Failed to delete article", "error");
+          toast({
+            description: "Failed to delete article",
+            variant: "error",
+          });
           console.error(error);
         }
       } else {
@@ -132,10 +138,10 @@ export default function TrashPage() {
         });
 
         if (articlesToDelete.length !== selectedArticles.length) {
-          showToast(
-            "Some articles could not be deleted due to permissions",
-            "error",
-          );
+          toast({
+            description: "Some articles could not be deleted due to permissions",
+            variant: "error",
+          });
         }
 
         if (articlesToDelete.length > 0) {
@@ -154,10 +160,16 @@ export default function TrashPage() {
           );
 
           if (failures === 0) {
-            showToast(`${successes} article(s) deleted permanently`, "success");
+            toast({
+              description: `${successes} article(s) deleted permanently`,
+              variant: "success",
+            });
             setSelectedArticles([]);
           } else {
-            showToast(`${successes} deleted. ${failures} failed.`, "error");
+            toast({
+              description: `${successes} deleted. ${failures} failed.`,
+              variant: "error",
+            });
             setSelectedArticles(failedIds);
           }
         }
@@ -167,7 +179,10 @@ export default function TrashPage() {
       setDeleteArticleId(null);
     } catch (error) {
       console.error("Error permanently deleting articles:", error);
-      showToast("An unexpected error occurred", "error");
+      toast({
+        description: "An unexpected error occurred",
+        variant: "error",
+      });
     }
   };
 
@@ -185,17 +200,26 @@ export default function TrashPage() {
       );
 
       if (failures === 0) {
-        showToast(`${successes} article(s) restored to drafts`, "success");
+        toast({
+          description: `${successes} article(s) restored to drafts`,
+          variant: "success",
+        });
         setSelectedArticles([]);
       } else {
-        showToast(`${successes} restored. ${failures} failed.`, "error");
+        toast({
+          description: `${successes} restored. ${failures} failed.`,
+          variant: "error",
+        });
         setSelectedArticles(failedIds);
       }
 
       setShowRestoreModal(false);
     } catch (error) {
       console.error("Error restoring articles:", error);
-      showToast("An unexpected error occurred during restore", "error");
+      toast({
+        description: "An unexpected error occurred during restore",
+        variant: "error",
+      });
     }
   };
 

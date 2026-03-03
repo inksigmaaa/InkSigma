@@ -13,7 +13,7 @@ import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { useSession } from "@/lib/auth-client";
 import { usePublication } from "@/contexts/PublicationContext";
-import { useToast } from "@/contexts/ToastContext";
+import { useToast } from "@/hooks/use-toast";
 
 import {
   Image as ImageIcon,
@@ -49,7 +49,7 @@ export default function EditorPageClient() {
     refreshArticle,
   } = useArticles();
   const { currentPublication } = usePublication();
-  const { showToast } = useToast();
+  const { toast } = useToast();
   const pubPrefix = currentPublication?.subdomain
     ? `/${currentPublication.subdomain}`
     : "";
@@ -458,21 +458,24 @@ export default function EditorPageClient() {
     // Always validate required fields for submission statuses.
     if (requiresSubmissionFields) {
       if (!blogTitle.trim()) {
-        showToast(`Title is required before ${submissionActionLabel}`, "error");
+        toast({
+          description: `Title is required before ${submissionActionLabel}`,
+          variant: "error",
+        });
         return false;
       }
       if (!blogDescription.trim()) {
-        showToast(
-          `Description is required before ${submissionActionLabel}`,
-          "error",
-        );
+        toast({
+          description: `Description is required before ${submissionActionLabel}`,
+          variant: "error",
+        });
         return false;
       }
       if (!hasBodyContent) {
-        showToast(
-          `Content is required before ${submissionActionLabel}`,
-          "error",
-        );
+        toast({
+          description: `Content is required before ${submissionActionLabel}`,
+          variant: "error",
+        });
         return false;
       }
     }
@@ -480,11 +483,17 @@ export default function EditorPageClient() {
     // Existing draft-only validation behavior.
     if (!skipValidation && !currentBlogId) {
       if (!blogTitle.trim()) {
-        showToast("Please enter a title for your blog", "error");
+        toast({
+          description: "Please enter a title for your blog",
+          variant: "error",
+        });
         return false;
       }
       if (!blogDescription.trim()) {
-        showToast("Please enter a description for your blog", "error");
+        toast({
+          description: "Please enter a description for your blog",
+          variant: "error",
+        });
         return false;
       }
     }
@@ -625,7 +634,10 @@ export default function EditorPageClient() {
       console.error("Error saving blog:", error);
       if (!isAutoSave) {
         setSaveStatus("idle");
-        showToast(error.message || "Failed to save blog", "error");
+        toast({
+          description: error.message || "Failed to save blog",
+          variant: "error",
+        });
       }
       return false;
     } finally {
@@ -670,7 +682,10 @@ export default function EditorPageClient() {
       const newDraft = await createDraftFromPublished(currentBlogId, draftData);
 
       if (newDraft && newDraft.id) {
-        showToast("Saved current changes as a new draft", "success");
+        toast({
+          description: "Saved current changes as a new draft",
+          variant: "success",
+        });
         markNavigating();
         setShowDraftConfirmModal(false); // Close modal
 
@@ -679,7 +694,10 @@ export default function EditorPageClient() {
       }
     } catch (error) {
       console.error("Error creating draft copy:", error);
-      showToast(error.message || "Failed to save draft version", "error");
+      toast({
+        description: error.message || "Failed to save draft version",
+        variant: "error",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -723,7 +741,10 @@ export default function EditorPageClient() {
   const handleSendForReview = async () => {
     const result = await saveBlog("review", null, true);
     if (result) {
-      showToast("Article submitted for review", "success");
+      toast({
+        description: "Article submitted for review",
+        variant: "success",
+      });
       markNavigating();
 
       // Determine redirection path based on role
@@ -769,7 +790,10 @@ export default function EditorPageClient() {
     const result = await saveBlog("draft", null, true);
 
     if (result || forceExit) {
-      showToast("Post has been saved as Draft", "success");
+      toast({
+        description: "Post has been saved as Draft",
+        variant: "success",
+      });
       markNavigating();
       setTimeout(() => {
         router.replace(withPub(targetPath));
@@ -865,7 +889,10 @@ export default function EditorPageClient() {
   // Handle Schedule
   const handleSchedule = async () => {
     if (!selectedDate) {
-      showToast("Please select a date", "error");
+      toast({
+        description: "Please select a date",
+        variant: "error",
+      });
       return;
     }
 
@@ -875,7 +902,10 @@ export default function EditorPageClient() {
 
     // Check if scheduled time is in the future
     if (scheduledDateTime <= new Date()) {
-      showToast("Scheduled time must be in the future", "error");
+      toast({
+        description: "Scheduled time must be in the future",
+        variant: "error",
+      });
       return;
     }
 
@@ -883,17 +913,26 @@ export default function EditorPageClient() {
       const result = await saveBlog("scheduled", scheduledDateTime, true);
       if (result) {
         setShowCalendar(false);
-        showToast("Article scheduled successfully", "success");
+        toast({
+          description: "Article scheduled successfully",
+          variant: "success",
+        });
         markNavigating();
         setTimeout(() => {
           router.replace(withPub("/schedule"));
         }, 1000);
       } else {
-        showToast("Failed to schedule article. Please try again.", "error");
+        toast({
+          description: "Failed to schedule article. Please try again.",
+          variant: "error",
+        });
       }
     } catch (error) {
       console.error("Schedule error:", error);
-      showToast("Failed to schedule article. Please try again.", "error");
+      toast({
+        description: "Failed to schedule article. Please try again.",
+        variant: "error",
+      });
     }
   };
 
