@@ -26,6 +26,24 @@ export default function AuthGuard({ children }) {
       }
 
       if (!userId) {
+        // Confirm with server once before redirecting.
+        // This avoids false redirects right after login while client session is still hydrating.
+        try {
+          const response = await fetch(`${getApiBase()}/api/auth/get-session`, {
+            credentials: "include",
+          });
+          const sessionData = response.ok
+            ? await response.json().catch(() => null)
+            : null;
+
+          if (sessionData?.user?.id) {
+            if (!cancelled) setAuthState("authorized");
+            return;
+          }
+        } catch {
+          // Continue to login redirect on network/auth errors.
+        }
+
         if (!cancelled) setAuthState("unauthorized");
         router.replace("/login");
         return;

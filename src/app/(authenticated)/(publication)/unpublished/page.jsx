@@ -10,6 +10,19 @@ import { usePublication } from "@/contexts/PublicationContext";
 
 import { useSession } from "@/lib/auth-client";
 
+const DEFAULT_DRAFT_TITLE = "[Untitled]";
+const LEGACY_DRAFT_TITLE = "untitle";
+
+const isMissingRealTitle = (title) => {
+  const normalized =
+    typeof title === "string" ? title.trim().toLowerCase() : "";
+  return (
+    !normalized ||
+    normalized === DEFAULT_DRAFT_TITLE.toLowerCase() ||
+    normalized === LEGACY_DRAFT_TITLE
+  );
+};
+
 export default function Unpublished() {
   const {
     articles,
@@ -64,14 +77,23 @@ export default function Unpublished() {
   const unpublishedArticles = displayArticles
     .filter((article) => article.status === "unpublished")
     .map((article) => {
+      const canPublishArticle = !isMissingRealTitle(article.title);
+      const displayTitle = !canPublishArticle
+        ? DEFAULT_DRAFT_TITLE
+        : article.title;
+
       return {
         ...article,
+        title: displayTitle,
+        canPublishArticle,
         canDelete: true, // No delete restriction for unpublished articles
-        onRepublish: () => {
-          setActionArticleId(article.id);
-          setIsBulkAction(false);
-          setShowRepublishModal(true);
-        },
+        onRepublish: canPublishArticle
+          ? () => {
+              setActionArticleId(article.id);
+              setIsBulkAction(false);
+              setShowRepublishModal(true);
+            }
+          : undefined,
         onDraft: () => {
           setActionArticleId(article.id);
           setIsBulkAction(false);
@@ -88,6 +110,7 @@ export default function Unpublished() {
   // Add handlers to articles
   const articlesWithHandlers = unpublishedArticles.map((article) => ({
     ...article,
+    canPublishArticle: article.canPublishArticle,
     onDraft: () => handleIndividualDraft(article.id),
     onDelete: () => handleIndividualDelete(article.id),
   }));
@@ -141,7 +164,12 @@ export default function Unpublished() {
   const confirmRepublish = async () => {
     try {
       if (isBulkAction) {
-        for (const articleId of selectedArticles) {
+        const publishableSelectedIds = selectedArticles.filter((id) => {
+          const article = articlesWithHandlers.find((a) => a.id === id);
+          return article?.canPublishArticle;
+        });
+
+        for (const articleId of publishableSelectedIds) {
           await publishArticle(articleId);
         }
         setSelectedArticles([]);
@@ -235,6 +263,10 @@ export default function Unpublished() {
       icon: "/images/icons/publish-ideal.svg",
       title: "Republish",
       onClick: handleBulkRepublish,
+      disabled: !selectedArticles.some((id) => {
+        const article = articlesWithHandlers.find((a) => a.id === id);
+        return article?.canPublishArticle;
+      }),
     },
     {
       icon: "/images/icons/trash2.svg",

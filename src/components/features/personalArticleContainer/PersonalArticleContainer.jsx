@@ -491,7 +491,7 @@ export default function PersonalArticleContainer({
                   <>
                     {canPublish && (
                       <button
-                        className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canPublishDraft ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
+                        className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canPublishDraft && canPublishAction ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                         style={{
                           width: "32px",
                           height: "32px",
@@ -500,8 +500,8 @@ export default function PersonalArticleContainer({
                           borderWidth: "1px",
                         }}
                         title="Publish"
-                        onClick={canPublishDraft ? onPublish : undefined}
-                        disabled={!canPublishDraft}
+                        onClick={canPublishDraft && canPublishAction ? onPublish : undefined}
+                        disabled={!(canPublishDraft && canPublishAction)}
                       >
                         <img src="/images/icons/share.svg" alt="publish" />
                       </button>

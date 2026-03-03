@@ -13,6 +13,24 @@ function AuthCallbackContent() {
     const checkPublicationAndRedirect = async () => {
       try {
         const apiBase = getApiBase()
+        const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+        const fetchWithRetry = async (url, options = {}, maxAttempts = 3) => {
+          for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            try {
+              const response = await fetch(url, options)
+              if (response.ok) return response
+              if (response.status !== 401 || attempt === maxAttempts) {
+                return response
+              }
+            } catch (error) {
+              if (attempt === maxAttempts) throw error
+            }
+
+            await delay(250 * attempt)
+          }
+          return null
+        }
 
         // If there's a specific redirect (like invitation), handle it first.
         if (redirectTo) {
@@ -43,12 +61,26 @@ function AuthCallbackContent() {
           return
         }
 
-        const pubsRes = await fetch(`${apiBase}/api/members/user/publications`, {
+        const pubsRes = await fetchWithRetry(`${apiBase}/api/members/user/publications`, {
           credentials: "include",
         })
-        
-        if (!pubsRes.ok) {
-          router.push('/login')
+
+        if (!pubsRes?.ok) {
+          // Avoid redirect-looping to /login on transient auth propagation delays.
+          // If session exists, continue to dashboard and let app context settle.
+          const sessionRes = await fetchWithRetry(`${apiBase}/api/auth/get-session`, {
+            credentials: "include",
+          })
+
+          if (sessionRes?.ok) {
+            const sessionData = await sessionRes.json().catch(() => null)
+            if (sessionData?.user?.id) {
+              router.push("/")
+              return
+            }
+          }
+
+          router.push("/login")
           return
         }
 

@@ -20,6 +20,9 @@ export default function DomainPage() {
 
   const [showRevertConfirmation, setShowRevertConfirmation] = useState(false);
 
+  const [verifying, setVerifying] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState(null);
+
   useEffect(() => {
     loadPublicationData();
   }, []);
@@ -162,6 +165,34 @@ export default function DomainPage() {
 
   const handleCancelRevert = () => {
     setShowRevertConfirmation(false);
+  };
+
+  const handleVerifyDomain = async () => {
+    if (!savedCustomDomain) return;
+
+    setVerifying(true);
+    setVerificationStatus(null);
+
+    try {
+      const apiBase = getApiBase();
+      const response = await fetch(
+        `${apiBase}/api/publications/verify-domain/${savedCustomDomain}`,
+        { credentials: "include" }
+      );
+
+      const data = await response.json();
+
+      if (data.verified) {
+        setVerificationStatus("verified");
+      } else {
+        setVerificationStatus("failed");
+      }
+    } catch (err) {
+      console.error("Error verifying domain:", err);
+      setVerificationStatus("failed");
+    } finally {
+      setVerifying(false);
+    }
   };
 
   const copyToClipboard = (text) => {
@@ -352,6 +383,74 @@ export default function DomainPage() {
                     >
                       Custom Domain
                     </span>
+                  </div>
+                </div>
+
+                {/* Domain Verification Status */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                  }}
+                >
+                  <div
+                    className="font-semibold text-[#A4A4A4] text-[12px] max-md:text-[8px] max-md:font-normal leading-[150%]"
+                    style={{ fontFamily: "Public Sans" }}
+                  >
+                    DOMAIN STATUS
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    {verificationStatus === "verified" && (
+                      <span
+                        className="bg-green-100 text-green-700 rounded-[71px] flex items-center justify-center h-[26px] px-3 text-[12px] max-md:text-[8px] leading-[150%]"
+                        style={{ fontFamily: "Public Sans" }}
+                      >
+                        Verified
+                      </span>
+                    )}
+                    {verificationStatus === "failed" && (
+                      <span
+                        className="bg-red-100 text-red-700 rounded-[71px] flex items-center justify-center h-[26px] px-3 text-[12px] max-md:text-[8px] leading-[150%]"
+                        style={{ fontFamily: "Public Sans" }}
+                      >
+                        Not Verified
+                      </span>
+                    )}
+                    {!verificationStatus && (
+                      <span
+                        className="bg-gray-100 text-gray-600 rounded-[71px] flex items-center justify-center h-[26px] px-3 text-[12px] max-md:text-[8px] leading-[150%]"
+                        style={{ fontFamily: "Public Sans" }}
+                      >
+                        Not Checked
+                      </span>
+                    )}
+                    <button
+                      onClick={handleVerifyDomain}
+                      disabled={verifying}
+                      style={{
+                        height: "26px",
+                        borderRadius: "4px",
+                        padding: "4px 12px",
+                        background: "#080808",
+                        border: "none",
+                        fontFamily: "Public Sans",
+                        fontWeight: 500,
+                        fontSize: "12px",
+                        lineHeight: "150%",
+                        color: "#EDEDED",
+                        cursor: verifying ? "not-allowed" : "pointer",
+                        opacity: verifying ? 0.6 : 1,
+                      }}
+                    >
+                      {verifying ? "Checking..." : "Check Status"}
+                    </button>
                   </div>
                 </div>
 

@@ -9,6 +9,19 @@ import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 
+const DEFAULT_DRAFT_TITLE = "[Untitled]";
+const LEGACY_DRAFT_TITLE = "untitle";
+
+const isMissingRealTitle = (title) => {
+  const normalized =
+    typeof title === "string" ? title.trim().toLowerCase() : "";
+  return (
+    !normalized ||
+    normalized === DEFAULT_DRAFT_TITLE.toLowerCase() ||
+    normalized === LEGACY_DRAFT_TITLE
+  );
+};
+
 export default function MyBlogsPage() {
   const {
     articles,
@@ -48,41 +61,54 @@ export default function MyBlogsPage() {
       );
     }
 
-    return filtered.map((article) => ({
-      ...article,
-      onDelete: () => {
-        setIsBulkAction(false);
-        setActionArticleId(article.id);
-        setShowDeleteModal(true);
-      },
-      onPublish: () => {
-        setIsBulkAction(false);
-        setActionArticleId(article.id);
-        setShowPublishModal(true);
-      },
-      onDraft: () => {
-        setIsBulkAction(false);
-        setActionArticleId(article.id);
-        setShowDraftModal(true);
-      },
-      onUnpublish: () => {
-        setIsBulkAction(false);
-        setActionArticleId(article.id);
-        setShowUnpublishModal(true);
-      },
-      onRepublish: () => {
-        setIsBulkAction(false);
-        setActionArticleId(article.id);
-        setShowRepublishModal(true);
-      },
-      onRestore: async () => {
-        try {
-          await moveToDraft(article.id);
-        } catch (error) {
-          console.error("Error restoring article:", error);
-        }
-      },
-    }));
+    return filtered.map((article) => {
+      const canPublishArticle = !isMissingRealTitle(article.title);
+      const displayTitle =
+        article.status === "draft" && !canPublishArticle
+          ? DEFAULT_DRAFT_TITLE
+          : article.title;
+
+      return {
+        ...article,
+        title: displayTitle,
+        canPublishArticle,
+        onDelete: () => {
+          setIsBulkAction(false);
+          setActionArticleId(article.id);
+          setShowDeleteModal(true);
+        },
+        onPublish:
+          article.status === "draft" && !canPublishArticle
+            ? undefined
+            : () => {
+                setIsBulkAction(false);
+                setActionArticleId(article.id);
+                setShowPublishModal(true);
+              },
+        onDraft: () => {
+          setIsBulkAction(false);
+          setActionArticleId(article.id);
+          setShowDraftModal(true);
+        },
+        onUnpublish: () => {
+          setIsBulkAction(false);
+          setActionArticleId(article.id);
+          setShowUnpublishModal(true);
+        },
+        onRepublish: () => {
+          setIsBulkAction(false);
+          setActionArticleId(article.id);
+          setShowRepublishModal(true);
+        },
+        onRestore: async () => {
+          try {
+            await moveToDraft(article.id);
+          } catch (error) {
+            console.error("Error restoring article:", error);
+          }
+        },
+      };
+    });
   }, [articles, moveToDraft, selectedCategories]);
 
   const handleArticleSelect = (id, checked) => {

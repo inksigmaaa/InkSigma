@@ -1,7 +1,7 @@
 import express from "express";
 import { db } from "../config/database.js";
 import { notification, user, publication } from "../models/schema.js";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, count } from "drizzle-orm";
 import { validate } from "../middleware/validate.js";
 import * as generalValidator from "../validators/generalValidator.js";
 import logger from "../utils/logger.js";
@@ -16,6 +16,8 @@ router.get(
   async (req, res) => {
     try {
       const { userId } = req.params;
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+      const offset = parseInt(req.query.offset as string) || 0;
 
       const notifications = await db
         .select({
@@ -41,7 +43,8 @@ router.get(
         )
         .where(eq(notification.userId, userId))
         .orderBy(desc(notification.createdAt))
-        .limit(50);
+        .limit(limit)
+        .offset(offset);
 
       // Helper function to generate navigation URL based on notification type
       const getNavigationUrl = (notif) => {
@@ -192,14 +195,14 @@ router.get(
     try {
       const { userId } = req.params;
 
-      const unreadNotifications = await db
-        .select()
+      const [unreadResult] = await db
+        .select({ count: count() })
         .from(notification)
         .where(
           and(eq(notification.userId, userId), eq(notification.isRead, false)),
         );
 
-      res.json({ count: unreadNotifications.length });
+      res.json({ count: Number(unreadResult?.count) || 0 });
     } catch (error) {
       logger.error(error, "Error fetching unread count:");
       res.status(500).json({ error: "Failed to fetch unread count" });

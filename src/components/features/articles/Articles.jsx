@@ -310,6 +310,11 @@ export default function Articles(props) {
                     canDelete={
                       article.canDelete !== undefined ? article.canDelete : true
                     }
+                    canPublishDraft={
+                      article.canPublishDraft !== undefined
+                        ? article.canPublishDraft
+                        : true
+                    }
                     // stats prop removed to hide stats button as requested
                   />
                 );

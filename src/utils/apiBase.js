@@ -28,12 +28,12 @@ export const getApiBase = () => {
 
   // Fallback for development without env config
   if (typeof window !== "undefined") {
-    const { protocol, hostname } = window.location;
-    // Use api subdomain if on a subdomain, otherwise use same host
-    if (hostname.includes('.')) {
-      const parts = hostname.split('.');
-      parts[0] = 'api';
-      return `${protocol}//${parts.join('.')}:5000`;
+    const { protocol, hostname, port } = window.location;
+    // Use same host with backend port for dashboard and local development
+    // Don't try to create api subdomain - just use localhost:5000
+    if (hostname.includes('.localhost') || hostname.includes('.local')) {
+      const backendPort = port || "5000";
+      return `${protocol}//localhost:${backendPort}`;
     }
     return `${protocol}//${hostname}:5000`;
   }

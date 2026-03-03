@@ -86,9 +86,10 @@ export default async function RootLayout({ children }) {
     (isDashboardPath && !isPublicOnlyPath);
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${publicSans.variable} ${allison.variable} antialiased`}
+        suppressHydrationWarning
       >
         <ToastProvider>
           <Providers isDashboard={needsDashboard}>

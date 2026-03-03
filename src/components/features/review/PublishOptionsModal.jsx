@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import ModalOverlay from "@/components/ui/ModalOverlay";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { X } from "lucide-react";
 
 /**
  * Modal for admin to choose between publishing or storing to unpublished when accepting a review article
@@ -17,16 +24,12 @@ export default function PublishOptionsModal({
 }) {
   const [isProcessing, setIsProcessing] = useState(false);
 
-  if (!isOpen) return null;
-
   const handlePublish = async () => {
     setIsProcessing(true);
     try {
       await onPublish();
-      // Parent handler will close modal after success
     } catch (error) {
       console.error("[PublishOptionsModal] Error publishing article:", error);
-      // Keep modal open on error so user can try again
     } finally {
       setIsProcessing(false);
     }
@@ -36,86 +39,59 @@ export default function PublishOptionsModal({
     setIsProcessing(true);
     try {
       await onUnpublish();
-      // Parent handler will close modal after success
     } catch (error) {
       console.error(
         "[PublishOptionsModal] Error storing to unpublished:",
         error,
       );
-      // Keep modal open on error so user can try again
     } finally {
       setIsProcessing(false);
     }
   };
 
   return (
-    <ModalOverlay
-      isOpen={isOpen}
-      onClose={onClose}
-      zIndexClass="z-[2000]"
-      closeOnBackdrop={false}
-    >
-      <div
-        className="relative flex flex-col items-center bg-white rounded-lg shadow-xl"
-        style={{
-          width: "420px",
-          padding: "32px 40px",
-          gap: "24px",
-        }}
-      >
-        {/* Close Button */}
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !isProcessing && onClose()}>
+      <DialogContent className="sm:max-w-[420px]" showClose={false}>
         <button
           onClick={onClose}
           disabled={isProcessing}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+          className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path
-              d="M18 6L6 18M6 6l12 12"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <X className="h-5 w-5" />
         </button>
 
-        {/* Icon */}
-        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-100">
-          <svg
-            className="w-8 h-8 text-green-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-        </div>
+        <DialogHeader className="text-center items-center space-y-4">
+          {/* Icon */}
+          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-100">
+            <svg
+              className="w-8 h-8 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
 
-        {/* Title */}
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Article Accepted
-          </h2>
-          <p className="text-gray-500 text-sm leading-relaxed">
-            What would you like to do with
-            <br />
-            <span className="font-medium text-gray-700">
-              &quot;{articleTitle}&quot;
-            </span>
-            ?
-          </p>
-        </div>
+          <div className="space-y-2">
+            <DialogTitle className="text-xl font-semibold">
+              Article Accepted
+            </DialogTitle>
+            <DialogDescription className="text-gray-500">
+              What would you like to do with
+              <br />
+              <span className="font-medium text-gray-700">
+                &quot;{articleTitle}&quot;
+              </span>
+              ?
+            </DialogDescription>
+          </div>
+        </DialogHeader>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3 w-full">
@@ -138,7 +114,7 @@ export default function PublishOptionsModal({
             {isProcessing ? "Publishing..." : "Publish Now"}
           </button>
         </div>
-      </div>
-    </ModalOverlay>
+      </DialogContent>
+    </Dialog>
   );
 }

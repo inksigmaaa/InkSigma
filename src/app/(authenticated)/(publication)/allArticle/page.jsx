@@ -11,6 +11,19 @@ import { usePublication } from "@/contexts/PublicationContext";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 
+const DEFAULT_DRAFT_TITLE = "[Untitled]";
+const LEGACY_DRAFT_TITLE = "untitle";
+
+const isMissingRealTitle = (title) => {
+  const normalized =
+    typeof title === "string" ? title.trim().toLowerCase() : "";
+  return (
+    !normalized ||
+    normalized === DEFAULT_DRAFT_TITLE.toLowerCase() ||
+    normalized === LEGACY_DRAFT_TITLE
+  );
+};
+
 export default function AllArticlePage() {
   const {
     articles,
@@ -77,6 +90,9 @@ export default function AllArticlePage() {
 
   // Calculate permissions for each article
   const articlesWithPermissions = displayArticles.map((article) => {
+    const isDraft = article.status === "draft";
+    const canPublishArticle = !isMissingRealTitle(article.title);
+
     // Only restrict deletion for published articles
     let canDelete = true;
     if (article.status === "published") {
@@ -89,9 +105,14 @@ export default function AllArticlePage() {
         currentPublication?.isOwner || userRole === "admin" || isOwnArticle;
     }
 
+    const displayTitle =
+      isDraft && !canPublishArticle ? DEFAULT_DRAFT_TITLE : article.title;
+
     return {
       ...article,
+      title: displayTitle,
       canDelete,
+      canPublishDraft: isDraft ? canPublishArticle : true,
     };
   });
 

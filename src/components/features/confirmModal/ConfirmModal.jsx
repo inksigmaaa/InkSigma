@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import ModalOverlay from "@/components/ui/ModalOverlay";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 export default function ConfirmModal({
   isOpen,
@@ -37,29 +45,30 @@ export default function ConfirmModal({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <ModalOverlay
-      isOpen={isOpen}
-      onClose={handleClose}
-      zIndexClass="z-[10001]"
-      contentPaddingClass="px-4"
-    >
-      <div
-        className="bg-white rounded-lg w-[408px] max-w-[90vw] shadow-[0_20px_60px_rgba(0,0,0,0.3)] text-center flex flex-col gap-[9px]"
-        style={{ padding: "40px 56px" }}
-      >
-        <h2
-          className={`font-['Public_Sans'] font-bold text-base leading-[150%] ${titleColor}`}
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="sm:max-w-[408px]" showClose={false}>
+        <button
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600"
+          onClick={handleClose}
+          disabled={isProcessing}
         >
-          {title}
-        </h2>
-        {message && (
-          <p className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-[#A4A4A4]">
-            {message}
-          </p>
-        )}
+          <X className="h-4 w-4" />
+        </button>
+
+        <DialogHeader className="text-center space-y-2">
+          <DialogTitle
+            className={`font-['Public_Sans'] font-bold text-base leading-[150%] ${titleColor}`}
+          >
+            {title}
+          </DialogTitle>
+          {message && (
+            <DialogDescription className="font-['Public_Sans'] font-normal text-sm leading-[150%] text-[#A4A4A4]">
+              {message}
+            </DialogDescription>
+          )}
+        </DialogHeader>
+
         <div className="flex gap-2 mt-4 justify-center">
           <button
             className="font-['Public_Sans'] font-medium text-sm h-10 rounded bg-[#F5F5F5] text-[#4A4A4A] hover:bg-gray-200 transition-colors duration-200"
@@ -78,7 +87,7 @@ export default function ConfirmModal({
             {isProcessing ? "Processing..." : confirmText}
           </button>
         </div>
-      </div>
-    </ModalOverlay>
+      </DialogContent>
+    </Dialog>
   );
 }

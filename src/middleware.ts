@@ -46,6 +46,28 @@ const isOldDashboardEndpointPath = (pathname: string) =>
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 
+const isKnownBaseDomain = (
+  host: string,
+  rootDomain: string,
+  mainDomain: string,
+): boolean => {
+  const hostWithoutPort = host.split(":")[0];
+  const knownDomains = [
+    rootDomain,
+    mainDomain,
+    `www.${rootDomain}`,
+    `www.${mainDomain}`,
+    `dashboard.${rootDomain}`,
+    `dashboard.${mainDomain}`,
+    "localhost",
+    "localhost:3000",
+    // Also check without port
+    hostWithoutPort,
+    `${hostWithoutPort}:3000`,
+  ];
+  return knownDomains.includes(host) || knownDomains.includes(hostWithoutPort);
+};
+
 const toInternalDashboardPath = (endpointPath: string) => {
   // Some pages live under /dashboard/* in the app router.
 
@@ -65,27 +87,56 @@ const urlWithPathname = (request: NextRequest, pathname: string) => {
   return url;
 };
 
+const rewriteToViewSite = (
+  request: NextRequest,
+  requestHeaders: Headers,
+  params: { subdomain?: string; customDomain?: string },
+) => {
+  const viewSiteUrl = new URL(request.url);
+  const pathname = viewSiteUrl.pathname;
+
+  if (pathname === "/") {
+    viewSiteUrl.pathname = "/view-site";
+  } else if (pathname.startsWith("/view-site")) {
+    viewSiteUrl.pathname = pathname;
+  } else {
+    viewSiteUrl.pathname = `/view-site${pathname}`;
+  }
+
+  if (params.subdomain) {
+    viewSiteUrl.searchParams.set("subdomain", params.subdomain);
+  }
+  if (params.customDomain) {
+    viewSiteUrl.searchParams.set("customDomain", params.customDomain);
+  }
+
+  return NextResponse.rewrite(viewSiteUrl, {
+    request: { headers: requestHeaders },
+  });
+};
+
 export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") || "";
-  const hostname = host.split(":")[0]; // Remove port if present
+  const hostname = host.split(":")[0];
+  const cleanHost = hostname.replace(/^www\./, "").toLowerCase();
 
-  // Remove www prefix if present
-  const cleanHost = hostname.replace(/^www\./, "");
-
-  // Development environment handling
   const isDev = process.env.NODE_ENV === "development";
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
+  const rootDomain = (
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"
+  ).toLowerCase();
+  const mainDomain = (
+    process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.com"
+  ).toLowerCase();
   const pathname = request.nextUrl.pathname;
 
-  // Dashboard subdomain
-  const isDashboardHost =
-    cleanHost === `dashboard.${rootDomain}` ||
-    cleanHost === "dashboard.localhost";
-
-  // Prepare request headers with the current path
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-invoke-path", pathname);
   requestHeaders.set("x-url", request.url);
+
+  const isDashboardHost =
+    cleanHost === `dashboard.${rootDomain}` ||
+    cleanHost === "dashboard.localhost" ||
+    cleanHost === `dashboard.${mainDomain}`;
 
   if (isDashboardHost) {
     const lastPubSub = request.cookies.get(DASHBOARD_PUB_COOKIE)?.value;
@@ -168,41 +219,60 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle root domain - show landing page
-  if (cleanHost === rootDomain || cleanHost === `www.${rootDomain}`) {
-    // Landing page is already at "/" so just let it through
+  if (
+    cleanHost === rootDomain ||
+    cleanHost === mainDomain ||
+    cleanHost === `www.${rootDomain}` ||
+    cleanHost === `www.${mainDomain}`
+  ) {
     return NextResponse.next({
       request: { headers: requestHeaders },
     });
   }
 
-  // Handle publication subdomains
-  const isSubdomain =
-    cleanHost.endsWith(`.${rootDomain}`) && cleanHost !== `www.${rootDomain}`;
+  // Handle publication subdomains (both rootDomain and mainDomain)
+  const isSubdomainForRoot =
+    cleanHost.endsWith(`.${rootDomain}`) &&
+    cleanHost !== `www.${rootDomain}` &&
+    !isDashboardHost;
 
-  if (isSubdomain && !isDashboardHost) {
+  const isSubdomainForMain =
+    cleanHost.endsWith(`.${mainDomain}`) &&
+    cleanHost !== `www.${mainDomain}` &&
+    !cleanHost.startsWith(`dashboard.`) &&
+    !isDashboardHost;
+
+  if (isSubdomainForRoot) {
     const subdomain = cleanHost.replace(`.${rootDomain}`, "");
 
-    // Don't route reserved subdomains
     if (
       subdomain !== "dashboard" &&
       subdomain !== "www" &&
       subdomain !== "api"
     ) {
-      // Route all publication subdomain requests to view-site with subdomain parameter
-      const viewSiteUrl = new URL(request.url);
-
-      if (viewSiteUrl.pathname === "/") {
-        viewSiteUrl.pathname = "/view-site";
-      } else {
-        viewSiteUrl.pathname = `/view-site${viewSiteUrl.pathname}`;
-      }
-
-      viewSiteUrl.searchParams.set("subdomain", subdomain);
-
-      return NextResponse.rewrite(viewSiteUrl, {
-        request: { headers: requestHeaders },
-      });
+      return rewriteToViewSite(request, requestHeaders, { subdomain });
     }
+  }
+
+  if (isSubdomainForMain) {
+    const subdomain = cleanHost.replace(`.${mainDomain}`, "");
+
+    if (
+      subdomain !== "dashboard" &&
+      subdomain !== "www" &&
+      subdomain !== "api"
+    ) {
+      return rewriteToViewSite(request, requestHeaders, { subdomain });
+    }
+  }
+
+  // Handle custom domains
+  // If we reach here, the host doesn't match any known base domains
+  // This is a custom domain - route to view-site with customDomain parameter
+  if (!isKnownBaseDomain(cleanHost, rootDomain, mainDomain)) {
+    return rewriteToViewSite(request, requestHeaders, {
+      customDomain: cleanHost,
+    });
   }
 
   return NextResponse.next({

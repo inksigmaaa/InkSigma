@@ -64,6 +64,53 @@ interface BlogUpdateData {
 
 const DEFAULT_DRAFT_TITLE = "[Untitled]";
 
+const LIGHT_BLOG_SELECT = {
+  id: blog.id,
+  slug: blog.slug,
+  title: blog.title,
+  description: blog.description,
+  image: blog.image,
+  publicationId: blog.publicationId,
+  categories: blog.categories,
+  status: blog.status,
+  published: blog.published,
+  scheduledAt: blog.scheduledAt,
+  createdAt: blog.createdAt,
+  updatedAt: blog.updatedAt,
+  authorId: blog.authorId,
+  masterId: blog.masterId,
+  author: {
+    id: user.id,
+    name: user.name,
+    image: user.image,
+    username: user.username,
+  },
+};
+
+const FULL_BLOG_SELECT = {
+  id: blog.id,
+  slug: blog.slug,
+  title: blog.title,
+  description: blog.description,
+  content: blog.content,
+  image: blog.image,
+  categories: blog.categories,
+  status: blog.status,
+  published: blog.published,
+  publicationId: blog.publicationId,
+  scheduledAt: blog.scheduledAt,
+  createdAt: blog.createdAt,
+  updatedAt: blog.updatedAt,
+  authorId: blog.authorId,
+  masterId: blog.masterId,
+  author: {
+    id: user.id,
+    name: user.name,
+    image: user.image,
+    username: user.username,
+  },
+};
+
 const runInBackground = (label, task) => {
   setImmediate(async () => {
     try {
@@ -87,13 +134,21 @@ class BlogService {
       return false;
     }
 
-    const [pub] = await db
-      .select({
-        id: publication.id,
-        ownerId: publication.userId,
-      })
-      .from(publication)
-      .where(eq(publication.id, blogPublicationId));
+    const [[pub], [membership]] = await Promise.all([
+      db.select({ id: publication.id, ownerId: publication.userId })
+        .from(publication)
+        .where(eq(publication.id, blogPublicationId))
+        .limit(1),
+      db.select({ role: publicationMember.role })
+        .from(publicationMember)
+        .where(
+          and(
+            eq(publicationMember.publicationId, blogPublicationId),
+            eq(publicationMember.userId, userId),
+          ),
+        )
+        .limit(1),
+    ]);
 
     if (!pub) {
       return false;
@@ -102,18 +157,6 @@ class BlogService {
     if (pub.ownerId === userId) {
       return true;
     }
-
-    const [membership] = await db
-      .select({
-        role: publicationMember.role,
-      })
-      .from(publicationMember)
-      .where(
-        and(
-          eq(publicationMember.publicationId, blogPublicationId),
-          eq(publicationMember.userId, userId),
-        ),
-      );
 
     return membership?.role === "admin" || membership?.role === "editor";
   }
@@ -262,29 +305,7 @@ class BlogService {
     }
 
     let dbQuery = db
-      .select({
-        id: blog.id,
-        slug: blog.slug,
-        title: blog.title,
-        description: blog.description,
-        content: blog.content,
-        image: blog.image,
-        publicationId: blog.publicationId,
-        categories: blog.categories,
-        status: blog.status,
-        published: blog.published,
-        scheduledAt: blog.scheduledAt,
-        createdAt: blog.createdAt,
-        updatedAt: blog.updatedAt,
-        authorId: blog.authorId,
-        masterId: blog.masterId,
-        author: {
-          id: user.id,
-          name: user.name,
-          image: user.image,
-          username: user.username,
-        },
-      })
+      .select(LIGHT_BLOG_SELECT)
       .from(blog)
       .leftJoin(user, eq(blog.authorId, user.id));
 
@@ -386,28 +407,7 @@ class BlogService {
 
   async getPublicBlogs(publicationId) {
     return db
-      .select({
-        id: blog.id,
-        slug: blog.slug,
-        title: blog.title,
-        description: blog.description,
-        content: blog.content,
-        image: blog.image,
-        publicationId: blog.publicationId,
-        categories: blog.categories,
-        status: blog.status,
-        published: blog.published,
-        publishedAt: blog.publishedAt,
-        createdAt: blog.createdAt,
-        updatedAt: blog.updatedAt,
-        authorId: blog.authorId,
-        author: {
-          id: user.id,
-          name: user.name,
-          image: user.image,
-          username: user.username,
-        },
-      })
+      .select(LIGHT_BLOG_SELECT)
       .from(blog)
       .leftJoin(user, eq(blog.authorId, user.id))
       .where(
@@ -422,29 +422,23 @@ class BlogService {
   async getPublicationBlogs(publicationId, query, currentUser) {
     const { status, limit = 50, offset = 0, includeStats } = query;
 
-    const [pub] = await db
-      .select()
-      .from(publication)
-      .where(eq(publication.id, parseInt(publicationId)));
+    const [[pub], memberCheck] = await Promise.all([
+      db.select().from(publication).where(eq(publication.id, parseInt(publicationId))),
+      !currentUser.id ? Promise.resolve(null) : 
+        db.select().from(publicationMember).where(
+          and(
+            eq(publicationMember.publicationId, parseInt(publicationId)),
+            eq(publicationMember.userId, currentUser.id),
+          ),
+        ).then(m => m[0])
+    ]);
 
     if (!pub) {
       throw new Error("Publication not found|404");
     }
 
     const isOwner = pub.userId === currentUser.id;
-    let isMember = false;
-    if (!isOwner) {
-      const [member] = await db
-        .select()
-        .from(publicationMember)
-        .where(
-          and(
-            eq(publicationMember.publicationId, parseInt(publicationId)),
-            eq(publicationMember.userId, currentUser.id),
-          ),
-        );
-      isMember = !!member;
-    }
+    const isMember = !!memberCheck;
 
     if (!isOwner && !isMember) {
       throw new Error("Access denied|403");
@@ -454,28 +448,7 @@ class BlogService {
     if (status) conditions.push(eq(blog.status, status));
 
     const blogs = await db
-      .select({
-        id: blog.id,
-        slug: blog.slug,
-        title: blog.title,
-        description: blog.description,
-        content: blog.content,
-        image: blog.image,
-        publicationId: blog.publicationId,
-        categories: blog.categories,
-        status: blog.status,
-        published: blog.published,
-        scheduledAt: blog.scheduledAt,
-        createdAt: blog.createdAt,
-        updatedAt: blog.updatedAt,
-        masterId: blog.masterId,
-        author: {
-          id: user.id,
-          name: user.name,
-          image: user.image,
-          username: user.username,
-        },
-      })
+      .select(LIGHT_BLOG_SELECT)
       .from(blog)
       .leftJoin(user, eq(blog.authorId, user.id))
       .where(and(...conditions))

@@ -146,16 +146,18 @@ router.get("/:id", validate(blogValidator.byIdSchema), async (req, res) => {
       req.query.incrementView === "true" &&
       blog.status === BLOG_STATUS.PUBLISHED
     ) {
-      const ip =
-        (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ||
-        req.headers["x-real-ip"] ||
+      const forwardedFor = req.headers["x-forwarded-for"];
+      const realIp = req.headers["x-real-ip"];
+      const ip = (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor)?.split(",")[0].trim() ||
+        (Array.isArray(realIp) ? realIp[0] : realIp) ||
         req.connection.remoteAddress ||
         req.ip ||
         "unknown";
       const userAgent = req.headers["user-agent"] || "unknown";
-      const viewResult = await trackBlogView(blog.id, ip, userAgent);
-      if (viewResult.isNewView)
-        (blog as any).views = ((blog as any).views || 0) + 1;
+      trackBlogView(blog.id, ip, userAgent).then((viewResult) => {
+        if (viewResult?.isNewView)
+          (blog as any).views = ((blog as any).views || 0) + 1;
+      }).catch(() => {});
     }
 
     res.json(blog);
@@ -188,16 +190,18 @@ router.get(
         req.query.incrementView === "true" &&
         blog.status === BLOG_STATUS.PUBLISHED
       ) {
-        const ip =
-          (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ||
-          req.headers["x-real-ip"] ||
+        const forwardedFor = req.headers["x-forwarded-for"];
+        const realIp = req.headers["x-real-ip"];
+        const ip = (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor)?.split(",")[0].trim() ||
+          (Array.isArray(realIp) ? realIp[0] : realIp) ||
           req.connection.remoteAddress ||
           req.ip ||
           "unknown";
         const userAgent = req.headers["user-agent"] || "unknown";
-        const viewResult = await trackBlogView(blog.id, ip, userAgent);
-        if (viewResult.isNewView)
-          (blog as any).views = ((blog as any).views || 0) + 1;
+        trackBlogView(blog.id, ip, userAgent).then((viewResult) => {
+          if (viewResult?.isNewView)
+            (blog as any).views = ((blog as any).views || 0) + 1;
+        }).catch(() => {});
       }
 
       res.json(blog);

@@ -65,6 +65,7 @@ export default function ArticleContainer({
   showActions = true,
   stats,
   titleColor,
+  canPublishDraft = true,
   canDelete = true, // Default to true for backward compatibility
 }) {
   const router = useRouter();
@@ -214,6 +215,7 @@ export default function ArticleContainer({
                 onRepublish={onRepublish}
                 onDraft={onDraft}
                 canPublish={canPublish}
+                canPublishDraft={canPublishDraft}
                 canDelete={canDelete}
               />
             </div>
@@ -482,7 +484,7 @@ export default function ArticleContainer({
                   <>
                     {canPublish && (
                       <button
-                        className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
+                        className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canPublishDraft ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                         style={{
                           width: "32px",
                           height: "32px",
@@ -491,7 +493,8 @@ export default function ArticleContainer({
                           borderWidth: "1px",
                         }}
                         title="Publish"
-                        onClick={onPublish}
+                        onClick={canPublishDraft ? onPublish : undefined}
+                        disabled={!canPublishDraft}
                       >
                         <img src="/images/icons/share.svg" alt="publish" />
                       </button>

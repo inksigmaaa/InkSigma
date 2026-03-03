@@ -241,34 +241,27 @@ router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
     const { publicationId } = req.params;
     const userId = req.user.id;
 
-    // First check if user is the publication owner (fallback for legacy publications)
-    const [pub] = await db
-      .select()
-      .from(publication)
-      .where(eq(publication.id, parseInt(publicationId)));
+    // Get publication and user membership in parallel
+    const [[pub], userMember] = await Promise.all([
+      db.select().from(publication).where(eq(publication.id, parseInt(publicationId))),
+      db.select().from(publicationMember).where(
+        and(
+          eq(publicationMember.publicationId, parseInt(publicationId)),
+          eq(publicationMember.userId, userId),
+        ),
+      )
+    ]);
 
     if (!pub) {
       return res.status(404).json({ error: "Publication not found" });
     }
 
     let userRole = null;
-    let isOwner = pub.userId === userId;
-
-    // Check if user is a member of this publication
-    const userMember = await db
-      .select()
-      .from(publicationMember)
-      .where(
-        and(
-          eq(publicationMember.publicationId, parseInt(publicationId)),
-          eq(publicationMember.userId, userId),
-        ),
-      );
+    const isOwner = pub.userId === userId;
 
     if (userMember.length > 0) {
       userRole = userMember[0].role;
     } else if (isOwner) {
-      // If user is the publication owner but not in members table, add them as admin
       logger.info(
         `Adding publication owner as admin member: ${userId} for publication ${publicationId}`,
       );
@@ -285,12 +278,11 @@ router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
       return res.status(403).json({ error: "Access denied" });
     }
 
-    const isAdmin = userRole === "admin";
     const canManageInvites = userRole === "admin" || userRole === "editor";
 
-    // Get all active members
-    const members = await db
-      .select({
+    // Get all active members and pending invitations in parallel
+    const [members, pendingInvitations] = await Promise.all([
+      db.select({
         id: publicationMember.id,
         userId: publicationMember.userId,
         role: publicationMember.role,
@@ -301,7 +293,27 @@ router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
       })
       .from(publicationMember)
       .innerJoin(user, eq(publicationMember.userId, user.id))
-      .where(eq(publicationMember.publicationId, parseInt(publicationId)));
+      .where(eq(publicationMember.publicationId, parseInt(publicationId))),
+      canManageInvites ? db.select({
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        status: invitation.status,
+        createdAt: invitation.createdAt,
+        expiresAt: invitation.expiresAt,
+      })
+      .from(invitation)
+      .where(
+        and(
+          eq(invitation.publicationId, parseInt(publicationId)),
+          or(
+            eq(invitation.status, "pending"),
+            eq(invitation.status, "expired"),
+            eq(invitation.status, "declined"),
+          ),
+        ),
+      ) : Promise.resolve([])
+    ]);
 
     // Deduplicate members by userId (in case there are duplicates in the database)
     const uniqueMembers = [];
@@ -311,31 +323,6 @@ router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
         seenUserIds.add(member.userId);
         uniqueMembers.push(member);
       }
-    }
-
-    // If admin or editor, also get pending invitations
-    let pendingInvitations = [];
-    if (canManageInvites) {
-      pendingInvitations = await db
-        .select({
-          id: invitation.id,
-          email: invitation.email,
-          role: invitation.role,
-          status: invitation.status,
-          createdAt: invitation.createdAt,
-          expiresAt: invitation.expiresAt,
-        })
-        .from(invitation)
-        .where(
-          and(
-            eq(invitation.publicationId, parseInt(publicationId)),
-            or(
-              eq(invitation.status, "pending"),
-              eq(invitation.status, "expired"),
-              eq(invitation.status, "declined"),
-            ),
-          ),
-        );
     }
 
     res.json({

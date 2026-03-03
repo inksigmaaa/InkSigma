@@ -20,6 +20,7 @@ import { fromNodeHeaders } from "better-auth/node";
 import {
   invalidatePublicationCache,
   resolvePublicationBySubdomain,
+  resolvePublicationByCustomDomain,
 } from "../services/publicationResolver.js";
 import { validate } from "../middleware/validate.js";
 import * as publicationValidator from "../validators/publicationValidator.js";
@@ -232,6 +233,66 @@ router.get(
   },
 );
 
+// Get publication by custom domain
+router.get(
+  "/by-custom-domain/:domain",
+  async (req, res) => {
+    try {
+      const { domain } = req.params;
+
+      if (!domain) {
+        return res.status(400).json({ error: "Domain is required" });
+      }
+
+      const normalizedDomain = String(domain).trim().toLowerCase();
+      const publication = await resolvePublicationByCustomDomain(normalizedDomain);
+
+      if (!publication) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+
+      res.json(publication);
+    } catch (error) {
+      logger.error(error, "Error fetching publication by custom domain:");
+      res.status(500).json({ error: "Failed to fetch publication" });
+    }
+  },
+);
+
+// Verify custom domain configuration
+router.get(
+  "/verify-domain/:domain",
+  async (req, res) => {
+    try {
+      const { domain } = req.params;
+
+      if (!domain) {
+        return res.status(400).json({ error: "Domain is required" });
+      }
+
+      const normalizedDomain = String(domain).trim().toLowerCase();
+      const publication = await resolvePublicationByCustomDomain(normalizedDomain);
+
+      if (!publication) {
+        return res.json({
+          verified: false,
+          message: "No publication found for this domain",
+        });
+      }
+
+      res.json({
+        verified: true,
+        publicationId: publication.id,
+        publicationName: publication.name,
+        customDomain: publication.customDomain,
+      });
+    } catch (error) {
+      logger.error(error, "Error verifying domain:");
+      res.status(500).json({ error: "Failed to verify domain" });
+    }
+  },
+);
+
 // Resolve publication by current host
 router.get("/resolve", async (req, res) => {
   try {
@@ -322,11 +383,16 @@ router.get(
         `Publication details request: publicationId=${publicationId}, userId=${userId}`,
       );
 
-      // Get publication
-      const [pub] = await db
-        .select()
-        .from(publication)
-        .where(eq(publication.id, parseInt(publicationId)));
+      // Get publication and member check in parallel
+      const [[pub], memberResult] = await Promise.all([
+        db.select().from(publication).where(eq(publication.id, parseInt(publicationId))),
+        db.select().from(publicationMember).where(
+          and(
+            eq(publicationMember.publicationId, parseInt(publicationId)),
+            eq(publicationMember.userId, userId),
+          ),
+        ).then(m => m[0])
+      ]);
 
       if (!pub) {
         logger.info(`Publication not found: ${publicationId}`);
@@ -337,28 +403,17 @@ router.get(
 
       // Check if user is owner or member
       const isOwner = pub.userId === userId;
+      const member = memberResult;
 
       let userRole = null;
       let isMember = false;
 
-      if (!isOwner) {
-        const [member] = await db
-          .select()
-          .from(publicationMember)
-          .where(
-            and(
-              eq(publicationMember.publicationId, parseInt(publicationId)),
-              eq(publicationMember.userId, userId),
-            ),
-          );
-
-        if (member) {
-          isMember = true;
-          userRole = member.role;
-          logger.info(`User is member with role: ${userRole}`);
-        } else {
-          logger.info(`User is not a member of this publication`);
-        }
+      if (!isOwner && member) {
+        isMember = true;
+        userRole = member.role;
+        logger.info(`User is member with role: ${userRole}`);
+      } else if (!isOwner) {
+        logger.info(`User is not a member of this publication`);
       } else {
         userRole = "admin";
         logger.info(`User is owner/admin`);
@@ -371,15 +426,18 @@ router.get(
         return res.status(403).json({ error: "Access denied" });
       }
 
-      // Get member count
-      const members = await db
-        .select()
-        .from(publicationMember)
-        .where(eq(publicationMember.publicationId, parseInt(publicationId)));
+      // Get members, post counts, and owner info in parallel
+      const [members, owner] = await Promise.all([
+        db.select().from(publicationMember).where(eq(publicationMember.publicationId, parseInt(publicationId))),
+        db.select({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+        }).from(user).where(eq(user.id, pub.userId)).then(u => u[0])
+      ]);
 
       const memberCount = members.length;
-
-      // Get all member IDs including owner
       const memberIds = [pub.userId, ...members.map((m) => m.userId)];
 
       // Get post count from all members using SQL COUNT (much faster than fetching all posts)
@@ -387,36 +445,18 @@ router.get(
       let publishedCount = 0;
 
       if (memberIds.length > 0) {
-        // Use SQL COUNT for total posts
-        const postCountResult = await db
-          .select({ count: count() })
-          .from(blog)
-          .where(or(...memberIds.map((id) => eq(blog.authorId, id))));
-        postCount = postCountResult[0]?.count || 0;
-
-        // Use SQL COUNT for published posts only
-        const publishedCountResult = await db
-          .select({ count: count() })
-          .from(blog)
-          .where(
+        const [postCountResult, publishedCountResult] = await Promise.all([
+          db.select({ count: count() }).from(blog).where(or(...memberIds.map((id) => eq(blog.authorId, id)))),
+          db.select({ count: count() }).from(blog).where(
             and(
               or(...memberIds.map((id) => eq(blog.authorId, id))),
               eq(blog.status, BLOG_STATUS.PUBLISHED),
             ),
-          );
+          )
+        ]);
+        postCount = postCountResult[0]?.count || 0;
         publishedCount = publishedCountResult[0]?.count || 0;
       }
-
-      // Get owner info
-      const [owner] = await db
-        .select({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          image: user.image,
-        })
-        .from(user)
-        .where(eq(user.id, pub.userId));
 
       const response = {
         ...pub,

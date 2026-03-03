@@ -19,7 +19,7 @@ export default function CommentSection({ blogId }) {
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyContent, setReplyContent] = useState("");
   const [expandedReplies, setExpandedReplies] = useState({});
-  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [currentTime, setCurrentTime] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -415,7 +415,7 @@ export default function CommentSection({ blogId }) {
                           {getDisplayName(comment)}
                         </span>
                         <span className="text-[#A4A4A4] text-xs font-normal leading-5 tracking-normal max-md:text-[10px]">
-                          {formatTimeAgo(comment.createdAt, currentTime)}
+                          {currentTime ? formatTimeAgo(comment.createdAt, currentTime) : "Just now"}
                         </span>
                       </div>
 
@@ -570,7 +570,7 @@ export default function CommentSection({ blogId }) {
                                       {getDisplayName(reply)}
                                     </span>
                                     <span className="text-xs text-[#A4A4A4] max-md:text-[10px]">
-                                      {formatTimeAgo(reply.createdAt, currentTime)}
+                                      {currentTime ? formatTimeAgo(reply.createdAt, currentTime) : "Just now"}
                                     </span>
                                   </div>
                                   <p className="text-[#696969] text-sm break-words whitespace-pre-wrap max-md:text-xs">
