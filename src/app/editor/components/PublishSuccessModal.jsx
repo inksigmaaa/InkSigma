@@ -1,15 +1,21 @@
 "use client"
 
-import { X } from "lucide-react"
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
 
 export default function PublishSuccessModal({ isOpen, onClose, onSeeLater, onViewInSite }) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[489px] max-h-[90vh] p-0 border-none" showClose={true}>
+      <DialogContent
+        className="sm:max-w-[489px] max-h-[90vh] p-0 border-none"
+        showClose={true}
+        onInteractOutside={(event) => event.preventDefault()}
+        onEscapeKeyDown={(event) => event.preventDefault()}
+      >
         <div 
           className="bg-[#FEFEFE] rounded border border-gray-200 shadow-lg relative flex flex-col items-center justify-center"
           style={{ 
@@ -59,14 +65,14 @@ export default function PublishSuccessModal({ isOpen, onClose, onSeeLater, onVie
             </div>
 
             {/* Title */}
-            <h2 className="text-2xl font-bold text-black mb-2">
+            <DialogTitle className="text-2xl font-bold text-black mb-2">
               Successfully Published
-            </h2>
+            </DialogTitle>
 
             {/* Description */}
-            <p className="text-gray-500 text-base mb-6">
+            <DialogDescription className="text-gray-500 text-base mb-6">
               Your blog is successfully Published, Click the below button to view in site
-            </p>
+            </DialogDescription>
 
             {/* Buttons container */}
             <div className="flex gap-2 justify-center w-full max-w-[229px]">
