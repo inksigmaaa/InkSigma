@@ -16,6 +16,7 @@ import { useSession } from "@/lib/auth-client";
 import { usePathname, useRouter } from "next/navigation";
 import { formatTimeAgo } from "@/utils/timeFormatter";
 import styles from "@/components/features/articles/Articles.module.css";
+import { toast } from "sonner";
 
 export default function ReviewPage() {
   const router = useRouter();
@@ -131,6 +132,7 @@ export default function ReviewPage() {
     try {
       if (selectedArticleForPublish) {
         await acceptReviewArticle(selectedArticleForPublish.id, "published");
+        toast.success("Article published from review");
       }
       setShowPublishModal(false);
       setSelectedArticleForPublish(null);
@@ -140,6 +142,7 @@ export default function ReviewPage() {
       }
     } catch (error) {
       console.error("[ReviewPage] Error publishing article:", error);
+      toast.error("Failed to publish article");
     }
   };
 
@@ -147,6 +150,7 @@ export default function ReviewPage() {
     try {
       if (selectedArticleForPublish) {
         await acceptReviewArticle(selectedArticleForPublish.id, "unpublished");
+        toast.success("Article moved to unpublished");
       }
       setShowPublishModal(false);
       setSelectedArticleForPublish(null);
@@ -156,6 +160,7 @@ export default function ReviewPage() {
       }
     } catch (error) {
       console.error("[ReviewPage] Error storing to unpublished:", error);
+      toast.error("Failed to move article to unpublished");
     }
   };
 
@@ -180,17 +185,21 @@ export default function ReviewPage() {
           for (const articleId of selectedPosts) {
             await rejectReviewArticle(articleId);
           }
+          toast.success(`${selectedPosts.length} article(s) rejected`);
         } else if (actionType === "revert") {
           for (const articleId of selectedPosts) {
             await revertReviewToDraft(articleId);
           }
+          toast.success(`${selectedPosts.length} article(s) moved to drafts`);
         }
         setSelectedPosts([]);
       } else if (selectedArticleForAction) {
         if (actionType === "reject") {
           await rejectReviewArticle(selectedArticleForAction);
+          toast.success("Article rejected");
         } else if (actionType === "revert") {
           await revertReviewToDraft(selectedArticleForAction);
+          toast.success("Article moved to drafts");
         }
       }
 
@@ -200,6 +209,7 @@ export default function ReviewPage() {
       }
     } catch (error) {
       console.error("Error performing action:", error);
+      toast.error("Failed to complete review action");
     } finally {
       setShowConfirmModal(false);
       setSelectedArticleForAction(null);

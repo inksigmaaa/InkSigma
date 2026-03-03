@@ -6,6 +6,7 @@ import ConfirmModal from "../confirmModal/ConfirmModal";
 import CategoryFilter from "../categoryFilter/CategoryFilter";
 import { useArticles } from "@/contexts/ArticlesContext";
 import styles from "./Articles.module.css";
+import { toast } from "sonner";
 
 export default function Articles(props) {
   const {
@@ -120,29 +121,37 @@ export default function Articles(props) {
           console.warn(
             "Some selected articles could not be deleted due to permissions.",
           );
+          toast.warning(
+            "Some selected articles could not be deleted due to permissions.",
+          );
         }
 
         if (articlesToDelete.length > 0) {
           await bulkMoveToTrashStatus(articlesToDelete);
+          toast.success(`${articlesToDelete.length} article(s) moved to trash`);
         }
         setSelectedArticles(new Set());
       } else {
         await moveToTrashStatus(actionArticleId);
+        toast.success("Article moved to trash");
       }
       setShowDeleteModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error moving articles to trash:", error);
+      toast.error("Failed to move article(s) to trash");
     }
   };
 
   const confirmPublish = async () => {
     try {
       await publishArticle(actionArticleId);
+      toast.success("Article published");
       setShowPublishModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error publishing article:", error);
+      toast.error("Failed to publish article");
     }
   };
 
@@ -151,23 +160,28 @@ export default function Articles(props) {
       const article = allArticles.find((a) => a.id === actionArticleId);
       if (article && article.status === "published") {
         await createDraftFromPublished(actionArticleId);
+        toast.success("Draft created from published article");
       } else {
         await moveToDraft(actionArticleId);
+        toast.success("Article moved to drafts");
       }
       setShowDraftModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error moving to draft:", error);
+      toast.error("Failed to move article to drafts");
     }
   };
 
   const confirmUnpublish = async () => {
     try {
       await unpublishArticle(actionArticleId);
+      toast.success("Article unpublished");
       setShowUnpublishModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error unpublishing article:", error);
+      toast.error("Failed to unpublish article");
     }
   };
 

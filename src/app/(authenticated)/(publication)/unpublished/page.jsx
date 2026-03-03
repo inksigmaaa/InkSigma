@@ -9,6 +9,7 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 
 import { useSession } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 const DEFAULT_DRAFT_TITLE = "[Untitled]";
 const LEGACY_DRAFT_TITLE = "untitle";
@@ -169,17 +170,32 @@ export default function Unpublished() {
           return article?.canPublishArticle;
         });
 
+        if (publishableSelectedIds.length !== selectedArticles.length) {
+          toast(
+            `${selectedArticles.length - publishableSelectedIds.length} article(s) skipped due to missing title.`,
+          );
+        }
+
         for (const articleId of publishableSelectedIds) {
           await publishArticle(articleId);
+        }
+        if (publishableSelectedIds.length > 0) {
+          toast.success(
+            `${publishableSelectedIds.length} article(s) republished successfully`,
+          );
+        } else {
+          toast("No publishable articles selected.");
         }
         setSelectedArticles([]);
       } else if (actionArticleId) {
         await publishArticle(actionArticleId);
+        toast.success("Article republished successfully");
       }
       setShowRepublishModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error republishing articles:", error);
+      toast.error("Failed to republish article(s)");
     }
   };
 
@@ -189,14 +205,17 @@ export default function Unpublished() {
         for (const articleId of selectedArticles) {
           await moveToDraft(articleId);
         }
+        toast.success(`${selectedArticles.length} article(s) moved to drafts`);
         setSelectedArticles([]);
       } else if (actionArticleId) {
         await moveToDraft(actionArticleId);
+        toast.success("Article moved to drafts");
       }
       setShowDraftModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error moving articles to draft:", error);
+      toast.error("Failed to move article(s) to drafts");
     }
   };
 
@@ -213,19 +232,31 @@ export default function Unpublished() {
           console.warn(
             "Some selected articles could not be deleted due to permissions.",
           );
+          toast.warning(
+            "Some selected articles could not be deleted due to permissions.",
+          );
         }
 
         for (const articleId of articlesToDelete) {
           await moveToTrashStatus(articleId);
         }
+        if (articlesToDelete.length > 0) {
+          toast.success(
+            `${articlesToDelete.length} article(s) moved to trash successfully`,
+          );
+        } else {
+          toast("No deletable articles selected.");
+        }
         setSelectedArticles([]);
       } else {
         await moveToTrashStatus(actionArticleId);
+        toast.success("Article moved to trash successfully");
       }
       setShowTrashModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error moving articles to trash:", error);
+      toast.error("Failed to move article(s) to trash");
     }
   };
 

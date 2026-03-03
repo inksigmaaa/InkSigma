@@ -6,14 +6,13 @@ import { useSession } from "@/lib/auth-client";
 import { memberService } from "@/services/memberService";
 import { usePublication } from "@/contexts/PublicationContext";
 import { hasPermission } from "@/utils/permissions";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import ConfirmModal from "../confirmModal/ConfirmModal";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 export default function Members() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { toast } = useToast();
   const {
     currentPublication,
     refreshCurrentPublication,
@@ -159,10 +158,7 @@ export default function Members() {
     } catch (error) {
       console.error("Error loading data:", error);
       if (!silent) {
-        toast({
-          description: error.message || "Failed to load members data",
-          variant: "error",
-        });
+        toast.error(error.message || "Failed to load members data");
       }
     } finally {
       if (!silent) {
@@ -173,18 +169,12 @@ export default function Members() {
 
   const handleSendInvite = async () => {
     if (!email || !role) {
-      toast({
-        description: "Please enter email and select a role",
-        variant: "error",
-      });
+      toast.error("Please enter email and select a role");
       return;
     }
 
     if (!currentPublication || !currentPublication.id) {
-      toast({
-        description: "No publication selected. Please select a publication first.",
-        variant: "error",
-      });
+      toast.error("No publication selected. Please select a publication first.");
       return;
     }
 
@@ -198,10 +188,7 @@ export default function Members() {
     );
 
     if (existingMember || pendingInvitation) {
-      toast({
-        description: "Member already exists in this publication",
-        variant: "error",
-      });
+      toast.error("Member already exists in this publication");
       return;
     }
 
@@ -213,10 +200,7 @@ export default function Members() {
       );
 
       if (existingEditors.length > 0 || pendingEditors.length > 0) {
-        toast({
-          description: "Only one editor is allowed per publication",
-          variant: "error",
-        });
+        toast.error("Only one editor is allowed per publication");
         return;
       }
     }
@@ -226,10 +210,7 @@ export default function Members() {
       members.length +
       pendingInvitations.filter((i) => i.status === "pending").length;
     if (totalMembers >= 6) {
-      toast({
-        description: "Maximum of 6 members allowed per publication",
-        variant: "error",
-      });
+      toast.error("Maximum of 6 members allowed per publication");
       return;
     }
 
@@ -243,10 +224,7 @@ export default function Members() {
       );
 
       // Show custom invitation sent toast
-      toast({
-        description: "Invitation sent successfully",
-        variant: "success",
-      });
+      toast.success("Invitation sent successfully");
 
       setEmail("");
       setRole(null);
@@ -255,10 +233,7 @@ export default function Members() {
       await refreshCurrentPublication();
     } catch (error) {
       // Show custom error toast for network/server issues
-      toast({
-        description: error.message || "Failed to send invitation. Please try again.",
-        variant: "error",
-      });
+      toast.error(error.message || "Failed to send invitation. Please try again.");
     } finally {
       setSending(false);
     }
@@ -267,16 +242,10 @@ export default function Members() {
   const handleResendInvite = async (invitationId) => {
     try {
       await memberService.resendInvitation(currentPublication.id, invitationId);
-      toast({
-        description: "Invitation resent successfully!",
-        variant: "success",
-      });
+      toast.success("Invitation resent successfully!");
       await loadData();
     } catch (error) {
-      toast({
-        description: error.message,
-        variant: "error",
-      });
+      toast.error(error.message);
     }
   };
 
@@ -290,16 +259,10 @@ export default function Members() {
       );
       setShowRemoveModal(false);
       setSelectedMember(null);
-      toast({
-        description: "Member removed successfully",
-        variant: "success",
-      });
+      toast.success("Member removed successfully");
       await loadData();
     } catch (error) {
-      toast({
-        description: error.message,
-        variant: "error",
-      });
+      toast.error(error.message);
       setShowRemoveModal(false);
     }
   };
@@ -308,16 +271,10 @@ export default function Members() {
     try {
       await memberService.leavePublication(currentPublication.id);
       setShowLeaveModal(false);
-      toast({
-        description: "You have left the publication",
-        variant: "success",
-      });
+      toast.success("You have left the publication");
       await loadUserPublications();
     } catch (error) {
-      toast({
-        description: error.message || "Failed to leave publication",
-        variant: "error",
-      });
+      toast.error(error.message || "Failed to leave publication");
       setShowLeaveModal(false);
     }
   };
@@ -325,16 +282,10 @@ export default function Members() {
   const handleCancelInvitation = async (invitationId) => {
     try {
       await memberService.cancelInvitation(currentPublication.id, invitationId);
-      toast({
-        description: "Invitation cancelled!",
-        variant: "success",
-      });
+      toast.success("Invitation cancelled!");
       await loadData();
     } catch (error) {
-      toast({
-        description: error.message,
-        variant: "error",
-      });
+      toast.error(error.message);
     }
   };
 

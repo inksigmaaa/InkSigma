@@ -8,6 +8,7 @@ import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
+import { toast } from "sonner";
 
 const DEFAULT_DRAFT_TITLE = "[Untitled]";
 const LEGACY_DRAFT_TITLE = "untitle";
@@ -103,8 +104,10 @@ export default function MyBlogsPage() {
         onRestore: async () => {
           try {
             await moveToDraft(article.id);
+            toast.success("Article restored to drafts");
           } catch (error) {
             console.error("Error restoring article:", error);
+            toast.error("Failed to restore article");
           }
         },
       };
@@ -158,21 +161,25 @@ export default function MyBlogsPage() {
             await moveToTrashStatus(articleId);
           }
         }
+        toast.success(`${selectedArticles.length} article(s) moved successfully`);
         setSelectedArticles([]);
       } else if (actionArticleId) {
         const article = myArticles.find((a) => a.id === actionArticleId);
         // If already in trash, delete permanently
         if (article?.status === "trash") {
           await moveToTrash(actionArticleId);
+          toast.success("Article deleted permanently");
         } else {
           // Otherwise move to trash
           await moveToTrashStatus(actionArticleId);
+          toast.success("Article moved to trash");
         }
       }
       setShowDeleteModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error deleting article:", error);
+      toast.error("Failed to delete article");
     }
   };
 
@@ -182,14 +189,17 @@ export default function MyBlogsPage() {
         const article = myArticles.find((a) => a.id === actionArticleId);
         if (article && article.status === "published") {
           await createDraftFromPublished(actionArticleId);
+          toast.success("Draft created from published article");
         } else {
           await moveToDraft(actionArticleId);
+          toast.success("Article moved to drafts");
         }
       }
       setShowDraftModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error moving to draft:", error);
+      toast.error("Failed to move article to drafts");
     }
   };
 
@@ -199,14 +209,17 @@ export default function MyBlogsPage() {
         for (const articleId of selectedArticles) {
           await unpublishArticle(articleId);
         }
+        toast.success(`${selectedArticles.length} article(s) unpublished`);
         setSelectedArticles([]);
       } else if (actionArticleId) {
         await unpublishArticle(actionArticleId);
+        toast.success("Article unpublished");
       }
       setShowUnpublishModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error unpublishing article:", error);
+      toast.error("Failed to unpublish article");
     }
   };
 
@@ -216,14 +229,17 @@ export default function MyBlogsPage() {
         for (const articleId of selectedArticles) {
           await publishArticle(articleId);
         }
+        toast.success(`${selectedArticles.length} article(s) published`);
         setSelectedArticles([]);
       } else if (actionArticleId) {
         await publishArticle(actionArticleId);
+        toast.success("Article published");
       }
       setShowRepublishModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error republishing article:", error);
+      toast.error("Failed to publish article");
     }
   };
 
@@ -376,11 +392,13 @@ export default function MyBlogsPage() {
           try {
             if (actionArticleId) {
               await publishArticle(actionArticleId);
+              toast.success("Article published");
             }
             setShowPublishModal(false);
             setActionArticleId(null);
           } catch (error) {
             console.error("Error publishing article:", error);
+            toast.error("Failed to publish article");
           }
         }}
         title="Publish article?"

@@ -8,7 +8,7 @@ const API_URL = getApiBase();
 
 import { formatTimeAgo } from "../../../../utils/timeFormatter";
 import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { flushSync } from "react-dom";
 
 export default function CommentSection({ blogId }) {
@@ -29,9 +29,6 @@ export default function CommentSection({ blogId }) {
   // Delete confirmation state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
-
-  const { toast } = useToast();
-
   // Fetch comments
   const fetchComments = useCallback(async () => {
     if (!blogId) return;
@@ -133,10 +130,7 @@ export default function CommentSection({ blogId }) {
 
         setNewComment("");
         setError(null);
-        toast({
-          description: "Comment added successfully",
-          variant: "success",
-        });
+        toast.success("Comment added successfully");
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("blog:comment-did-add"));
         }
@@ -164,20 +158,14 @@ export default function CommentSection({ blogId }) {
 
         console.error("[CommentSection] Failed to post comment:", errorMessage);
         setError(errorMessage);
-        toast({
-          description: errorMessage,
-          variant: "error",
-        });
+        toast.error(errorMessage);
       }
     } catch (err) {
       console.error("[CommentSection] Fetch error:", err);
       console.error("[CommentSection] Error type:", err?.constructor?.name);
       console.error("[CommentSection] Error message:", err?.message);
       setError("Failed to post comment. Please try again.");
-      toast({
-        description: "Failed to post comment. Please try again.",
-        variant: "error",
-      });
+      toast.error("Failed to post comment. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -229,10 +217,7 @@ export default function CommentSection({ blogId }) {
         setReplyingTo(null);
         setExpandedReplies((prev) => ({ ...prev, [commentId]: true }));
         setError(null);
-        toast({
-          description: "Reply added successfully",
-          variant: "success",
-        });
+        toast.success("Reply added successfully");
       } else {
         let errorMessage = "Failed to post reply";
         try {
@@ -250,18 +235,12 @@ export default function CommentSection({ blogId }) {
           errorMessage = `Error: ${response.status} ${response.statusText}`;
         }
         setError(errorMessage);
-        toast({
-          description: errorMessage,
-          variant: "error",
-        });
+        toast.error(errorMessage);
       }
     } catch (err) {
       console.error("Error posting reply:", err);
       setError("Failed to post reply. Please try again.");
-      toast({
-        description: "Failed to post reply. Please try again.",
-        variant: "error",
-      });
+      toast.error("Failed to post reply. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -299,25 +278,16 @@ export default function CommentSection({ blogId }) {
             return c;
           });
         });
-        toast({
-          description: "Comment deleted successfully",
-          variant: "success",
-        });
+        toast.success("Comment deleted successfully");
       } else {
         const data = await response.json();
         setError(data.error || "Failed to delete comment");
-        toast({
-          description: data.error || "Failed to delete comment",
-          variant: "error",
-        });
+        toast.error(data.error || "Failed to delete comment");
       }
     } catch (err) {
       console.error("Error deleting comment:", err);
       setError("Failed to delete comment");
-      toast({
-        description: "Failed to delete comment",
-        variant: "error",
-      });
+      toast.error("Failed to delete comment");
     } finally {
       setShowDeleteModal(false);
       setCommentToDelete(null);

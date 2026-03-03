@@ -13,7 +13,7 @@ const allison = Allison({
   variable: "--font-allison",
 });
 import ConditionalLayout from "@/components/ConditionalLayout";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/Providers";
 import { headers } from "next/headers";
 

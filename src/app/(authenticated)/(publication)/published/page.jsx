@@ -9,6 +9,7 @@ import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
+import { toast } from "sonner";
 
 export default function PublishedPage() {
   const {
@@ -70,6 +71,7 @@ export default function PublishedPage() {
     }
   }, [
     searchParams,
+    arePubArticlesLoaded,
     displayArticles.length,
     isLoading,
     loadPublicationArticles,
@@ -184,19 +186,29 @@ export default function PublishedPage() {
           console.warn(
             "Some selected articles could not be deleted due to permissions.",
           );
+          toast.warning(
+            "Some selected articles could not be deleted due to permissions.",
+          );
         }
 
         if (articlesToDelete.length > 0) {
           await bulkMoveToTrashStatus(articlesToDelete);
+          toast.success(
+            `${articlesToDelete.length} article(s) moved to trash successfully`,
+          );
+        } else {
+          toast("No deletable articles selected.");
         }
         setSelectedArticles([]);
       } else if (actionArticleId) {
         await moveToTrashStatus(actionArticleId);
+        toast.success("Article moved to trash successfully");
       }
       setShowDeleteModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error moving article to trash:", error);
+      toast.error("Failed to move article to trash");
     }
   };
 
@@ -207,27 +219,42 @@ export default function PublishedPage() {
           // For published articles, we create a draft copy
           await createDraftFromPublished(articleId);
         }
+        toast.success(
+          `${selectedArticles.length} draft copy/copies created successfully`,
+        );
         setSelectedArticles([]);
       } else if (actionArticleId) {
         // For published articles, we create a draft copy
         await createDraftFromPublished(actionArticleId);
+        toast.success("Draft copy created successfully");
       }
       setShowDraftModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error creating draft copy:", error);
+      toast.error("Failed to create draft copy");
     }
   };
 
   const confirmUnpublish = async () => {
     try {
-      if (actionArticleId) {
+      if (isBulkAction) {
+        for (const articleId of selectedArticles) {
+          await unpublishArticle(articleId);
+        }
+        toast.success(
+          `${selectedArticles.length} article(s) moved to unpublished`,
+        );
+        setSelectedArticles([]);
+      } else if (actionArticleId) {
         await unpublishArticle(actionArticleId);
+        toast.success("Article moved to unpublished");
       }
       setShowUnpublishModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error unpublishing article:", error);
+      toast.error("Failed to unpublish article");
     }
   };
 

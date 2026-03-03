@@ -8,7 +8,7 @@ import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 import { useSession } from "@/lib/auth-client";
 
@@ -89,8 +89,10 @@ export default function TrashPage() {
   const handleIndividualRestore = async (id) => {
     try {
       await moveToDraft(id);
+      toast.success("Article restored to drafts");
     } catch (error) {
       console.error("Error restoring article:", error);
+      toast.error("Failed to restore article");
     }
   };
 
@@ -109,24 +111,15 @@ export default function TrashPage() {
       },
     };
   });
-
-  const { toast } = useToast();
-
   const confirmDelete = async () => {
     try {
       if (deleteArticleId) {
         // Single article permanent delete
         try {
           await moveToTrash(deleteArticleId);
-          toast({
-            description: "Article deleted permanently",
-            variant: "success",
-          });
+          toast.success("Article deleted permanently");
         } catch (error) {
-          toast({
-            description: "Failed to delete article",
-            variant: "error",
-          });
+          toast.error("Failed to delete article");
           console.error(error);
         }
       } else {
@@ -138,10 +131,7 @@ export default function TrashPage() {
         });
 
         if (articlesToDelete.length !== selectedArticles.length) {
-          toast({
-            description: "Some articles could not be deleted due to permissions",
-            variant: "error",
-          });
+          toast.error("Some articles could not be deleted due to permissions");
         }
 
         if (articlesToDelete.length > 0) {
@@ -160,18 +150,14 @@ export default function TrashPage() {
           );
 
           if (failures === 0) {
-            toast({
-              description: `${successes} article(s) deleted permanently`,
-              variant: "success",
-            });
+            toast.success(`${successes} article(s) deleted permanently`);
             setSelectedArticles([]);
           } else {
-            toast({
-              description: `${successes} deleted. ${failures} failed.`,
-              variant: "error",
-            });
+            toast.error(`${successes} deleted. ${failures} failed.`);
             setSelectedArticles(failedIds);
           }
+        } else {
+          toast("No deletable articles selected.");
         }
       }
 
@@ -179,15 +165,18 @@ export default function TrashPage() {
       setDeleteArticleId(null);
     } catch (error) {
       console.error("Error permanently deleting articles:", error);
-      toast({
-        description: "An unexpected error occurred",
-        variant: "error",
-      });
+      toast.error("An unexpected error occurred");
     }
   };
 
   const confirmRestore = async () => {
     try {
+      if (selectedArticles.length === 0) {
+        toast("No articles selected for restore.");
+        setShowRestoreModal(false);
+        return;
+      }
+
       // Restore selected articles to draft
       const results = await Promise.allSettled(
         selectedArticles.map((id) => moveToDraft(id)),
@@ -200,26 +189,17 @@ export default function TrashPage() {
       );
 
       if (failures === 0) {
-        toast({
-          description: `${successes} article(s) restored to drafts`,
-          variant: "success",
-        });
+        toast.success(`${successes} article(s) restored to drafts`);
         setSelectedArticles([]);
       } else {
-        toast({
-          description: `${successes} restored. ${failures} failed.`,
-          variant: "error",
-        });
+        toast.error(`${successes} restored. ${failures} failed.`);
         setSelectedArticles(failedIds);
       }
 
       setShowRestoreModal(false);
     } catch (error) {
       console.error("Error restoring articles:", error);
-      toast({
-        description: "An unexpected error occurred during restore",
-        variant: "error",
-      });
+      toast.error("An unexpected error occurred during restore");
     }
   };
 

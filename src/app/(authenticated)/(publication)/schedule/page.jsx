@@ -11,6 +11,7 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
 import PageTransition from "@/components/PageTransition";
+import { toast } from "sonner";
 
 export default function SchedulePage() {
   const {
@@ -186,6 +187,7 @@ export default function SchedulePage() {
       }
     } catch (error) {
       console.error("Error refreshing articles:", error);
+      toast.error("Failed to refresh scheduled articles");
     } finally {
       setIsRefreshing(false);
     }
@@ -235,19 +237,25 @@ export default function SchedulePage() {
           console.warn(
             "Some selected articles could not be deleted due to permissions.",
           );
+          toast.warning(
+            "Some selected articles could not be deleted due to permissions.",
+          );
         }
 
         if (articlesToDelete.length > 0) {
           await bulkMoveToTrashStatus(articlesToDelete);
+          toast.success(`${articlesToDelete.length} article(s) moved to trash`);
         }
         setSelectedArticles([]);
       } else if (actionArticleId) {
         await moveToTrashStatus(actionArticleId);
+        toast.success("Article moved to trash");
       }
       setShowDeleteModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error moving to trash:", error);
+      toast.error("Failed to move article(s) to trash");
     }
   }, [
     isBulkAction,
@@ -262,14 +270,17 @@ export default function SchedulePage() {
     try {
       if (isBulkAction) {
         await bulkMoveToDraft(selectedArticles);
+        toast.success(`${selectedArticles.length} article(s) moved to drafts`);
         setSelectedArticles([]);
       } else if (actionArticleId) {
         await moveToDraft(actionArticleId);
+        toast.success("Article moved to drafts");
       }
       setShowDraftModal(false);
       setActionArticleId(null);
     } catch (error) {
       console.error("Error moving to draft:", error);
+      toast.error("Failed to move article(s) to drafts");
     }
   }, [
     isBulkAction,

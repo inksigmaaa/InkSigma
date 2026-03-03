@@ -3,14 +3,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { useArticles } from '@/contexts/ArticlesContext'
 import { usePublication } from '@/contexts/PublicationContext'
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
 const BlogStatsComponent = () => {
   const { articles, publicationArticles: contextPublicationArticles } = useArticles()
   const { currentPublication } = usePublication()
-  const { toast } = useToast()
   const [selectedPeriod, setSelectedPeriod] = useState('Monthly')
   const [showPeriodMenu, setShowPeriodMenu] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
@@ -208,10 +207,7 @@ const BlogStatsComponent = () => {
         const [toDay, toMonth, toYear] = toDate.split('/').map(Number)
         const toDateObj = new Date(toYear, toMonth - 1, toDay)
         if (date > toDateObj) {
-          toast({
-            description: 'From date cannot be after To date',
-            variant: 'error',
-          })
+          toast.error('From date cannot be after To date')
           return
         }
       }
@@ -222,10 +218,7 @@ const BlogStatsComponent = () => {
         const [fromDay, fromMonth, fromYear] = fromDate.split('/').map(Number)
         const fromDateObj = new Date(fromYear, fromMonth - 1, fromDay)
         if (date < fromDateObj) {
-          toast({
-            description: 'To date cannot be before From date',
-            variant: 'error',
-          })
+          toast.error('To date cannot be before From date')
           return
         }
       }

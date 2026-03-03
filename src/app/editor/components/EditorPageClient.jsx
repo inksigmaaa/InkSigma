@@ -13,7 +13,7 @@ import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { useSession } from "@/lib/auth-client";
 import { usePublication } from "@/contexts/PublicationContext";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 import {
   Image as ImageIcon,
@@ -49,7 +49,6 @@ export default function EditorPageClient() {
     refreshArticle,
   } = useArticles();
   const { currentPublication } = usePublication();
-  const { toast } = useToast();
   const pubPrefix = currentPublication?.subdomain
     ? `/${currentPublication.subdomain}`
     : "";
@@ -458,24 +457,15 @@ export default function EditorPageClient() {
     // Always validate required fields for submission statuses.
     if (requiresSubmissionFields) {
       if (!blogTitle.trim()) {
-        toast({
-          description: `Title is required before ${submissionActionLabel}`,
-          variant: "error",
-        });
+        toast.error(`Title is required before ${submissionActionLabel}`);
         return false;
       }
       if (!blogDescription.trim()) {
-        toast({
-          description: `Description is required before ${submissionActionLabel}`,
-          variant: "error",
-        });
+        toast.error(`Description is required before ${submissionActionLabel}`);
         return false;
       }
       if (!hasBodyContent) {
-        toast({
-          description: `Content is required before ${submissionActionLabel}`,
-          variant: "error",
-        });
+        toast.error(`Content is required before ${submissionActionLabel}`);
         return false;
       }
     }
@@ -483,17 +473,11 @@ export default function EditorPageClient() {
     // Existing draft-only validation behavior.
     if (!skipValidation && !currentBlogId) {
       if (!blogTitle.trim()) {
-        toast({
-          description: "Please enter a title for your blog",
-          variant: "error",
-        });
+        toast.error("Please enter a title for your blog");
         return false;
       }
       if (!blogDescription.trim()) {
-        toast({
-          description: "Please enter a description for your blog",
-          variant: "error",
-        });
+        toast.error("Please enter a description for your blog");
         return false;
       }
     }
@@ -634,10 +618,7 @@ export default function EditorPageClient() {
       console.error("Error saving blog:", error);
       if (!isAutoSave) {
         setSaveStatus("idle");
-        toast({
-          description: error.message || "Failed to save blog",
-          variant: "error",
-        });
+        toast.error(error.message || "Failed to save blog");
       }
       return false;
     } finally {
@@ -651,8 +632,11 @@ export default function EditorPageClient() {
   // Handle Save to Draft (without redirect - just save and stay on page)
   const handleSave = async () => {
     const result = await saveBlog(existingBlogStatus || "draft", null, true);
-    if (result && existingBlogStatus === "published") {
-      router.replace(withPub("/published"));
+    if (result) {
+      toast.success("Article updated successfully");
+      if (existingBlogStatus === "published") {
+        router.replace(withPub("/published"));
+      }
     }
   };
 
@@ -682,10 +666,7 @@ export default function EditorPageClient() {
       const newDraft = await createDraftFromPublished(currentBlogId, draftData);
 
       if (newDraft && newDraft.id) {
-        toast({
-          description: "Saved current changes as a new draft",
-          variant: "success",
-        });
+        toast.success("Saved current changes as a new draft");
         markNavigating();
         setShowDraftConfirmModal(false); // Close modal
 
@@ -694,10 +675,7 @@ export default function EditorPageClient() {
       }
     } catch (error) {
       console.error("Error creating draft copy:", error);
-      toast({
-        description: error.message || "Failed to save draft version",
-        variant: "error",
-      });
+      toast.error(error.message || "Failed to save draft version");
     } finally {
       setIsSaving(false);
     }
@@ -741,10 +719,7 @@ export default function EditorPageClient() {
   const handleSendForReview = async () => {
     const result = await saveBlog("review", null, true);
     if (result) {
-      toast({
-        description: "Article submitted for review",
-        variant: "success",
-      });
+      toast.success("Article submitted for review");
       markNavigating();
 
       // Determine redirection path based on role
@@ -790,10 +765,7 @@ export default function EditorPageClient() {
     const result = await saveBlog("draft", null, true);
 
     if (result || forceExit) {
-      toast({
-        description: "Post has been saved as Draft",
-        variant: "success",
-      });
+      toast.success("Post has been saved as Draft");
       markNavigating();
       setTimeout(() => {
         router.replace(withPub(targetPath));
@@ -868,6 +840,11 @@ export default function EditorPageClient() {
     const statusToSave =
       existingBlogStatus === "published" ? "published" : "draft";
     const result = await saveBlog(statusToSave, null, true);
+    if (!result) {
+      // saveBlog already shows an error toast; keep user on editor so they can retry
+      return;
+    }
+    toast.success("Article updated successfully");
 
     // Navigate based on destination
     if (exitDestination && exitDestination.startsWith("/")) {
@@ -889,10 +866,7 @@ export default function EditorPageClient() {
   // Handle Schedule
   const handleSchedule = async () => {
     if (!selectedDate) {
-      toast({
-        description: "Please select a date",
-        variant: "error",
-      });
+      toast.error("Please select a date");
       return;
     }
 
@@ -902,10 +876,7 @@ export default function EditorPageClient() {
 
     // Check if scheduled time is in the future
     if (scheduledDateTime <= new Date()) {
-      toast({
-        description: "Scheduled time must be in the future",
-        variant: "error",
-      });
+      toast.error("Scheduled time must be in the future");
       return;
     }
 
@@ -913,26 +884,17 @@ export default function EditorPageClient() {
       const result = await saveBlog("scheduled", scheduledDateTime, true);
       if (result) {
         setShowCalendar(false);
-        toast({
-          description: "Article scheduled successfully",
-          variant: "success",
-        });
+        toast.success("Article scheduled successfully");
         markNavigating();
         setTimeout(() => {
           router.replace(withPub("/schedule"));
         }, 1000);
       } else {
-        toast({
-          description: "Failed to schedule article. Please try again.",
-          variant: "error",
-        });
+        toast.error("Failed to schedule article. Please try again.");
       }
     } catch (error) {
       console.error("Schedule error:", error);
-      toast({
-        description: "Failed to schedule article. Please try again.",
-        variant: "error",
-      });
+      toast.error("Failed to schedule article. Please try again.");
     }
   };
 

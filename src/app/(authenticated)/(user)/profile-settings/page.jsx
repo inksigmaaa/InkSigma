@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useSession } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
+import { toast } from "sonner";
 
 export default function ProfileSettingsPage() {
   const router = useRouter();
@@ -31,44 +32,12 @@ export default function ProfileSettingsPage() {
   const [error, setError] = useState("");
   const [hasPasswordAccount, setHasPasswordAccount] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [bottomToast, setBottomToast] = useState({
-    id: 0,
-    message: "",
-    type: "success",
-  });
-  const toastTimerRef = useRef(null);
-
-  const showBottomToast = useCallback(
-    (message, type = "error", duration = 3000) => {
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-      }
-
-      const id = Date.now();
-      setBottomToast({ id, message, type });
-
-      toastTimerRef.current = setTimeout(() => {
-        setBottomToast((prev) =>
-          prev.id === id ? { ...prev, message: "" } : prev,
-        );
-      }, duration);
-    },
-    [],
-  );
 
   useEffect(() => {
     if (!error) return;
-    showBottomToast(error, "error", 3000);
+    toast.error(error);
     setError("");
-  }, [error, showBottomToast]);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-      }
-    };
-  }, []);
+  }, [error]);
 
   // Fetch profile data on mount
   useEffect(() => {
@@ -145,13 +114,13 @@ export default function ProfileSettingsPage() {
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      showBottomToast("Please select an image file", "error", 3000);
+      toast.error("Please select an image file");
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      showBottomToast("Image must be less than 5MB", "error", 3000);
+      toast.error("Image must be less than 5MB");
       return;
     }
 
@@ -248,7 +217,7 @@ export default function ProfileSettingsPage() {
       setIsImageRemoved(false);
       if (isImageRemoved) setImage("");
 
-      showBottomToast("Settings Updated", "success", 2500);
+      toast.success("Settings Updated");
 
       // Emit storage event to signal other components to refresh
       localStorage.setItem("profileUpdated", Date.now().toString());
@@ -459,20 +428,6 @@ export default function ProfileSettingsPage() {
           </div>
         </div>
       </div>
-
-      {bottomToast.message && (
-        <div className="fixed bottom-0 left-1/2 md:left-[calc(50%+8rem)] -translate-x-1/2 z-[10001] w-[90%] max-w-[380px] pb-[max(8px,env(safe-area-inset-bottom))]">
-          <div
-            className={`w-full rounded-md px-4 py-2 text-sm font-medium text-center shadow-md ${
-              bottomToast.type === "error"
-                ? "bg-red-100 text-red-800 border border-red-200"
-                : "bg-green-100 text-green-800 border border-green-200"
-            }`}
-          >
-            {bottomToast.message}
-          </div>
-        </div>
-      )}
 
       {/* Reset Password Modal */}
       {showResetModal && (
