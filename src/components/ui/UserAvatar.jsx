@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from './avatar';
 
 const sizeClasses = {
@@ -38,21 +38,26 @@ function getInitialAndColor(email) {
   return { initial, colorClass };
 }
 
+const subscribe = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 const UserAvatar = ({ 
     user, 
     size = 'md', 
     className = '' 
 }) => {
     const [imageError, setImageError] = useState(false);
-    const [isMounted, setIsMounted] = useState(false);
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
+    const isMounted = useSyncExternalStore(
+        subscribe,
+        getClientSnapshot,
+        getServerSnapshot
+    );
 
     const sizeClass = sizeClasses[size] || sizeClasses.md;
 
-    const userEmail = user?.email || "";
+    // Keep server render and first client render identical to avoid hydration drift.
+    const userEmail = isMounted ? (user?.email || "") : "";
     const userName = user?.name || "User";
     
     const avatarUrl = user?.avatar || user?.image || user?.picture || user?.photo;
