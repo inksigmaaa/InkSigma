@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useArticles } from '@/contexts/ArticlesContext'
 import { usePublication } from '@/contexts/PublicationContext'
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
@@ -21,8 +22,6 @@ const BlogStatsComponent = () => {
   const [viewStats, setViewStats] = useState({})
 
   const periodMenuRef = useRef(null)
-  const datePickerRef = useRef(null)
-  const calendarRef = useRef(null)
 
   const today = new Date()
   const periods = ['Today', 'Weekly', 'Monthly', 'Yearly', 'Custom Date']
@@ -250,40 +249,6 @@ const BlogStatsComponent = () => {
     }
   }, [showPeriodMenu])
 
-  // Close date picker when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
-        setShowDatePicker(false)
-      }
-    }
-
-    if (showDatePicker && !showCalendar) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showDatePicker, showCalendar])
-
-  // Close calendar when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
-        setShowCalendar(null)
-      }
-    }
-
-    if (showCalendar) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showCalendar])
-
   return (
     <div className="w-full">
       {/* Period Selector */}
@@ -319,10 +284,21 @@ const BlogStatsComponent = () => {
         )}
 
         {/* Date Picker Modal */}
-        {showDatePicker && !showCalendar && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[9999]">
+        <Dialog
+          open={showDatePicker && !showCalendar}
+          onOpenChange={(open) => {
+            if (!open) {
+              setShowDatePicker(false)
+              setShowCalendar(null)
+            }
+          }}
+        >
+          <DialogContent
+            className="max-w-none border-none p-0 shadow-none bg-transparent"
+            showClose={false}
+          >
+            <DialogTitle className="sr-only">Select Custom Date Range</DialogTitle>
             <div
-              ref={datePickerRef}
               className="bg-white rounded-lg shadow-xl relative z-[10000]"
               style={{ width: '276px', padding: '32px' }}
             >
@@ -420,14 +396,22 @@ const BlogStatsComponent = () => {
                 </button>
               </div>
             </div>
-          </div>
-        )}
+          </DialogContent>
+        </Dialog>
 
         {/* Calendar Popup */}
-        {showCalendar && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[9999]">
+        <Dialog
+          open={Boolean(showCalendar)}
+          onOpenChange={(open) => {
+            if (!open) setShowCalendar(null)
+          }}
+        >
+          <DialogContent
+            className="max-w-none border-none p-0 shadow-none bg-transparent"
+            showClose={false}
+          >
+            <DialogTitle className="sr-only">Choose Calendar Date</DialogTitle>
             <div
-              ref={calendarRef}
               className="bg-gray-100 rounded-2xl shadow-2xl relative z-[10000] font-['Public_Sans'] font-normal text-sm leading-normal tracking-normal text-[#696969]"
               style={{ width: '260px', padding: '20px' }}
             >
@@ -495,8 +479,8 @@ const BlogStatsComponent = () => {
                 })}
               </div>
             </div>
-          </div>
-        )}
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Stats Grid */}

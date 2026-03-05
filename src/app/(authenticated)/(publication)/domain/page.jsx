@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getApiBase } from "@/utils/apiBase";
 
 export default function DomainPage() {
@@ -677,8 +678,15 @@ export default function DomainPage() {
         </div>
       </div>
 
-      {showConfirmation && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
+      <Dialog
+        open={showConfirmation}
+        onOpenChange={(open) => !open && !saving && handleCancelSave()}
+      >
+        <DialogContent
+          className="max-w-none w-auto border-none bg-transparent p-0 shadow-none"
+          showClose={false}
+        >
+          <DialogTitle className="sr-only">Confirm Domain Change</DialogTitle>
           <div
             style={{
               width: "350px",
@@ -807,11 +815,18 @@ export default function DomainPage() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
-      {showRevertConfirmation && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
+      <Dialog
+        open={showRevertConfirmation}
+        onOpenChange={(open) => !open && !saving && handleCancelRevert()}
+      >
+        <DialogContent
+          className="max-w-none w-auto border-none bg-transparent p-0 shadow-none"
+          showClose={false}
+        >
+          <DialogTitle className="sr-only">Confirm Revert To Subdomain</DialogTitle>
           <div
             style={{
               width: "350px",
@@ -895,8 +910,8 @@ export default function DomainPage() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

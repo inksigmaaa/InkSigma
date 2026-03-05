@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState } from "react"
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 const months = [
   "January", "February", "March", "April", "May", "June",
@@ -15,8 +16,6 @@ export function DateTimePicker({ isOpen, onClose, onDateTimeSelect, selectedDate
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDay, setSelectedDay] = useState(selectedDate ? new Date(selectedDate.split('-').reverse().join('-')) : null)
   const [time, setTime] = useState(selectedTime || "09:00")
-
-  const pickerRef = useRef(null)
 
   // Get current month and year
   const currentMonth = currentDate.getMonth()
@@ -163,31 +162,10 @@ export function DateTimePicker({ isOpen, onClose, onDateTimeSelect, selectedDate
     return days
   }
 
-  // Close picker when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (pickerRef.current && !pickerRef.current.contains(event.target)) {
-        onClose()
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isOpen, onClose])
-
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div 
-        ref={pickerRef}
-        className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto"
-      >
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="w-full max-w-md p-6" showClose={false}>
+        <DialogTitle className="sr-only">Select Date and Time</DialogTitle>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-900">
@@ -324,7 +302,7 @@ export function DateTimePicker({ isOpen, onClose, onDateTimeSelect, selectedDate
             Apply
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useSession } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export default function ProfileSettingsPage() {
@@ -430,120 +431,128 @@ export default function ProfileSettingsPage() {
       </div>
 
       {/* Reset Password Modal */}
-      {showResetModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg py-12 px-14 max-w-[353px] w-full mx-4">
-            <h2 className="text-sm font-semibold leading-none tracking-normal mb-4">
-              Do you want to reset your password?
-            </h2>
-            <p className="text-sm font-normal leading-normal tracking-normal text-[#808080] mb-8">
-              we will send you a link to your Email and You will be logged out
-            </p>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowResetModal(false)}
-                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300 transition-colors"
-              >
-                Close
-              </button>
-              <button
-                onClick={async () => {
-                  setShowResetModal(false);
-                  setIsResettingPassword(true);
-                  try {
-                    const response = await fetch(
-                      `${API_URL}/api/custom/forgot-password`,
-                      {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                        },
-                        credentials: "include",
-                        body: JSON.stringify({
-                          email: email,
-                          redirectTo: `${window.location.origin}/reset-password`,
-                        }),
+      <Dialog
+        open={showResetModal}
+        onOpenChange={(open) => !open && setShowResetModal(false)}
+      >
+        <DialogContent
+          className="max-w-[353px] w-[calc(100%-2rem)] py-12 px-14"
+          showClose={false}
+        >
+          <DialogTitle className="text-sm font-semibold leading-none tracking-normal mb-4">
+            Do you want to reset your password?
+          </DialogTitle>
+          <p className="text-sm font-normal leading-normal tracking-normal text-[#808080] mb-8">
+            we will send you a link to your Email and You will be logged out
+          </p>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setShowResetModal(false)}
+              className="flex-1 bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300 transition-colors"
+            >
+              Close
+            </button>
+            <button
+              onClick={async () => {
+                setShowResetModal(false);
+                setIsResettingPassword(true);
+                try {
+                  const response = await fetch(
+                    `${API_URL}/api/custom/forgot-password`,
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
                       },
-                    );
+                      credentials: "include",
+                      body: JSON.stringify({
+                        email: email,
+                        redirectTo: `${window.location.origin}/reset-password`,
+                      }),
+                    },
+                  );
 
-                    let data = {};
-                    try {
-                      data = await response.json();
-                    } catch (e) {
-                      console.error("Could not parse JSON response", e);
-                    }
-
-                    if (response.ok && data?.success !== false) {
-                      setShowSuccessModal(true);
-                    } else {
-                      setError(data?.error || "Failed to send reset email");
-                    }
-                  } catch (error) {
-                    console.error("Error sending reset email:", error);
-                    setError("Failed to send reset email. Please try again.");
-                  } finally {
-                    setIsResettingPassword(false);
+                  let data = {};
+                  try {
+                    data = await response.json();
+                  } catch (e) {
+                    console.error("Could not parse JSON response", e);
                   }
-                }}
-                disabled={isResettingPassword}
-                className="flex-1 bg-[#080808] text-[#EDEDED] text-sm font-medium leading-normal tracking-normal py-2 rounded hover:bg-gray-800 transition-colors disabled:opacity-50"
-              >
-                {isResettingPassword ? "Sending..." : "Confirm"}
-              </button>
-            </div>
+
+                  if (response.ok && data?.success !== false) {
+                    setShowSuccessModal(true);
+                  } else {
+                    setError(data?.error || "Failed to send reset email");
+                  }
+                } catch (error) {
+                  console.error("Error sending reset email:", error);
+                  setError("Failed to send reset email. Please try again.");
+                } finally {
+                  setIsResettingPassword(false);
+                }
+              }}
+              disabled={isResettingPassword}
+              className="flex-1 bg-[#080808] text-[#EDEDED] text-sm font-medium leading-normal tracking-normal py-2 rounded hover:bg-gray-800 transition-colors disabled:opacity-50"
+            >
+              {isResettingPassword ? "Sending..." : "Confirm"}
+            </button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* Success Modal - Password Reset */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg py-2 px-14 max-w-[353px] w-full mx-4 relative">
-            <button
-              onClick={() => setShowSuccessModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+      <Dialog
+        open={showSuccessModal}
+        onOpenChange={(open) => !open && setShowSuccessModal(false)}
+      >
+        <DialogContent
+          className="max-w-[353px] w-[calc(100%-2rem)] py-2 px-14 relative"
+          showClose={false}
+        >
+          <DialogTitle className="sr-only">Password Reset Mail Sent</DialogTitle>
+          <button
+            onClick={() => setShowSuccessModal(false)}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            aria-label="Close success modal"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          <div className="flex flex-col items-center text-center py-8">
+            <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mb-6">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
+                width="32"
+                height="32"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
+                stroke="white"
+                strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
+                <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-            </button>
-            <div className="flex flex-col items-center text-center py-8">
-              <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mb-6">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-              </div>
-              <h2 className="text-sm font-semibold leading-none tracking-normal mb-4">
-                Mail Sent
-              </h2>
-              <p className="text-gray-500">
-                A link has been to your registered Email ID
-              </p>
             </div>
+            <h2 className="text-sm font-semibold leading-none tracking-normal mb-4">
+              Mail Sent
+            </h2>
+            <p className="text-gray-500">A link has been to your registered Email ID</p>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
