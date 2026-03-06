@@ -8,6 +8,7 @@ import { ChevronRight } from "lucide-react";
 import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { getApiBase } from "@/utils/apiBase";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function DashboardPage() {
   const PROFILE_COMPLETION_CACHE_KEY = "dashboard-profile-complete";
@@ -151,27 +152,19 @@ export default function DashboardPage() {
               <div className="w-full max-w-[819px] h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-[88px]">
                   <div className="flex gap-6 items-center flex-1 min-w-0 w-full">
-                    <div className="w-[66px] h-[66px] opacity-100 border-[0.92px] border-[#EAEAEA] rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      {ownedPublications[0]?.logoUrl ? (
-                        <img
+                    <Avatar className="w-[66px] h-[66px] opacity-100 border-[0.92px] border-[#EAEAEA] bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      {ownedPublications[0]?.logoUrl && (
+                        <AvatarImage
                           src={`http://localhost:5000${ownedPublications[0].logoUrl}`}
                           alt="publication logo"
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = "/icons/nib.svg";
-                          }}
                         />
-                      ) : (
-                        <div className="w-full h-full bg-violet-100 rounded-full flex items-center justify-center">
-                          <span className="text-violet-600 font-bold text-lg">
-                            {ownedPublications[0]?.name
-                              ?.charAt(0)
-                              .toUpperCase() || "P"}
-                          </span>
-                        </div>
                       )}
-                    </div>
+                      <AvatarFallback className="w-full h-full bg-violet-100 text-violet-600 font-bold text-lg">
+                        {ownedPublications[0]?.name?.charAt(0).toUpperCase() ||
+                          "P"}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex-1 min-w-0 w-full max-w-[414px]">
                       <div className="w-full h-auto opacity-100 flex flex-col gap-1">
                         <h3
@@ -214,13 +207,16 @@ export default function DashboardPage() {
               <div className="w-full max-w-[819px] h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-[88px]">
                   <div className="flex gap-6 items-center flex-1 min-w-0 w-full">
-                    <div className="w-[66px] h-[66px] opacity-100 border-[0.92px] border-[#EAEAEA] rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      <img
+                    <Avatar className="w-[66px] h-[66px] opacity-100 border-[0.92px] border-[#EAEAEA] bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <AvatarImage
                         src="/icons/nib.svg"
                         alt="publication"
                         className="w-full h-full object-cover"
                       />
-                    </div>
+                      <AvatarFallback className="w-full h-full bg-gray-100 text-gray-600 font-bold text-lg">
+                        P
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex-1 min-w-0 w-full max-w-[414px]">
                       <div className="w-full h-auto opacity-100 flex flex-col gap-1">
                         <h3
@@ -274,25 +270,18 @@ export default function DashboardPage() {
                   >
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-[88px]">
                       <div className="flex gap-6 items-center flex-1 w-full">
-                        <div className="w-[66px] h-[66px] border-[0.92px] border-[#EAEAEA] rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                          {joinedPub.logoUrl ? (
-                            <img
+                        <Avatar className="w-[66px] h-[66px] border-[0.92px] border-[#EAEAEA] bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          {joinedPub.logoUrl && (
+                            <AvatarImage
                               src={`http://localhost:5000${joinedPub.logoUrl}`}
                               alt={`${joinedPub.name} logo`}
                               className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = "/icons/pen.svg";
-                              }}
                             />
-                          ) : (
-                            <div className="w-full h-full bg-blue-100 rounded-full flex items-center justify-center">
-                              <span className="text-blue-600 font-bold text-lg">
-                                {joinedPub.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
                           )}
-                        </div>
+                          <AvatarFallback className="w-full h-full bg-blue-100 text-blue-600 font-bold text-lg">
+                            {joinedPub.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                         <div className="flex-1 min-w-0 w-full max-w-[414px]">
                           <div className="w-full h-auto opacity-100 flex flex-col gap-1">
                             <h3
@@ -360,13 +349,16 @@ export default function DashboardPage() {
               <div className="w-full max-w-[819px] h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-[88px] h-full w-full">
                   <div className="flex gap-6 items-center flex-1 min-w-0 w-full">
-                    <div className="w-[66px] h-[66px] border-[0.92px] border-[#EAEAEA] rounded-full opacity-100 bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      <img
+                    <Avatar className="w-[66px] h-[66px] border-[0.92px] border-[#EAEAEA] opacity-100 bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <AvatarImage
                         src="/icons/pen.svg"
                         alt="publication"
                         className="w-full h-full object-cover"
                       />
-                    </div>
+                      <AvatarFallback className="w-full h-full bg-gray-100 text-gray-600 font-bold text-lg">
+                        P
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex-1 min-w-0 w-full max-w-[414px]">
                       <div className="w-full h-auto opacity-100 flex flex-col gap-1">
                         <h3

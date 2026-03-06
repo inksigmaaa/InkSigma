@@ -13,6 +13,7 @@ import { usePublication } from "@/contexts/PublicationContext";
 import { getApiBase } from "@/utils/apiBase";
 import { validateSubdomain, isReservedSubdomain } from "@/utils/subdomainRules";
 import { validatePublicationName } from "@/utils/domainValidation";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function CreatePublication() {
   const router = useRouter();
@@ -381,19 +382,16 @@ export default function CreatePublication() {
 
           <div className="flex justify-center mb-6 md:mb-10">
             <div className="relative">
-              {uploadedImage ? (
-                <img
-                  src={uploadedImage}
-                  alt="Publication"
-                  className="w-[100px] h-[100px] md:w-[114px] md:h-[114px] rounded-full object-cover"
+              <Avatar className="w-[100px] h-[100px] md:w-[114px] md:h-[114px] bg-gray-100">
+                <AvatarImage
+                  src={uploadedImage || imagePlaceholder.src}
+                  alt={uploadedImage ? "Publication" : "Upload placeholder"}
+                  className="w-full h-full object-cover"
                 />
-              ) : (
-                <img
-                  src={imagePlaceholder.src}
-                  alt="Upload placeholder"
-                  className="w-[100px] h-[100px] md:w-[114px] md:h-[116px] rounded-full object-cover"
-                />
-              )}
+                <AvatarFallback className="w-full h-full bg-violet-100 text-violet-600 font-bold text-2xl">
+                  {publicationName?.charAt(0).toUpperCase() || "P"}
+                </AvatarFallback>
+              </Avatar>
 
               <button
                 onClick={uploadedImage ? handleEditClick : handleCameraClick}

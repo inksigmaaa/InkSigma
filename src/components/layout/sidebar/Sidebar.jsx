@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useMemo, memo } from "react";
 import { usePublication } from "@/contexts/PublicationContext";
 import { hasPermission } from "@/utils/permissions";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const MENU_SECTIONS = [
   {
@@ -98,6 +99,7 @@ const SidebarMenuItem = memo(function SidebarMenuItem({ label, icon, route, isAc
             src={
               label === "Settings" ? `/icons/${icon}` : `/images/icons/${icon}`
             }
+            alt=""
             className={`w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isActive ? "opacity-100 brightness-0" : isHovered ? "opacity-100 brightness-50" : "opacity-60"}`}
           />
           <p
@@ -124,6 +126,7 @@ const MySpaceItem = memo(function MySpaceItem({ pathname }) {
     >
       <img
         src="/images/icons/myspace.svg"
+        alt=""
         className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${isActive ? "brightness-0" : isHovered ? "brightness-50" : ""}`}
       />
       <Link href="/">
@@ -299,27 +302,32 @@ function Sidebar() {
         <div className="relative w-[165px] h-[612px] bg-white border-r border-gray-200 p-[14px] pr-[10px] flex flex-col gap-[10px] overflow-hidden pointer-events-auto max-md:w-auto max-md:min-w-max max-md:h-[70px] max-md:px-4 max-md:py-2 max-md:flex-row max-md:gap-2 max-md:border-r-0 max-md:overflow-visible ">
           {/* PROFILE */}
           <div className="flex items-center gap-2 pb-[10px] max-md:hidden">
-            <div className="w-[34px] h-[34px] rounded-full overflow-hidden border-2 border-violet-500 flex-shrink-0 bg-gray-100 flex items-center justify-center">
+            <Avatar className="w-[34px] h-[34px] border-2 border-violet-500 flex-shrink-0 bg-gray-100">
               {loading ? (
-                <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
-              ) : currentPublication?.logoUrl ? (
-                <img
-                  src={`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${currentPublication.logoUrl}`}
-                  alt={currentPublication.name || "Publication"}
-                  className="w-full h-full object-cover"
-                />
-              ) : currentPublication?.name ? (
-                <span className="text-violet-600 font-bold text-sm">
-                  {currentPublication.name.charAt(0).toUpperCase()}
-                </span>
+                <AvatarFallback className="w-full h-full bg-gray-100 flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+                </AvatarFallback>
               ) : (
-                <img
-                  src="/images/icons/profileuser.svg"
-                  alt="profileImg"
-                  className="w-full h-full object-cover"
-                />
+                <>
+                  {currentPublication?.logoUrl ? (
+                    <AvatarImage
+                      src={`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${currentPublication.logoUrl}`}
+                      alt={currentPublication.name || "Publication"}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <AvatarImage
+                      src="/images/icons/profileuser.svg"
+                      alt="profileImg"
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                  <AvatarFallback className="w-full h-full bg-gray-100 text-violet-600 font-bold text-sm">
+                    {currentPublication?.name?.charAt(0).toUpperCase() || "P"}
+                  </AvatarFallback>
+                </>
               )}
-            </div>
+            </Avatar>
 
             <div className="flex-1 min-w-0">
               <a

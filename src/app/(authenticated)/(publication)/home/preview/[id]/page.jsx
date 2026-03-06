@@ -7,6 +7,7 @@ import { formatTimeAgo } from "@/utils/timeFormatter";
 import { getImageUrl } from "@/utils/imageUrl";
 import { getApiBase } from "@/utils/apiBase";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function PreviewPage({ params }) {
   const { id } = use(params);
@@ -99,17 +100,16 @@ export default function PreviewPage({ params }) {
           <div className="flex items-center gap-2 md:hidden">
             {article.publication?.logoUrl ? (
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200">
-                  <img
+                <Avatar className="w-8 h-8 bg-gray-200">
+                  <AvatarImage
                     src={`${getApiBase()}${article.publication.logoUrl}`}
                     alt={article.publication.name}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = "none";
-                      e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-xs">${article.publication?.name?.charAt(0).toUpperCase() || "P"}</span></div>`;
-                    }}
                   />
-                </div>
+                  <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold text-xs">
+                    {article.publication?.name?.charAt(0).toUpperCase() || "P"}
+                  </AvatarFallback>
+                </Avatar>
                 <span className="text-lg font-bold text-black">
                   {article.publication.name}
                 </span>
@@ -130,9 +130,9 @@ export default function PreviewPage({ params }) {
             </button>
 
             {/* User Avatar */}
-            <div className="w-9 h-9 rounded-full bg-gray-300 overflow-hidden">
-              {article.author?.image ? (
-                <img
+            <Avatar className="w-9 h-9 bg-gray-300">
+              {article.author?.image && (
+                <AvatarImage
                   src={
                     article.author.image.startsWith("http")
                       ? article.author.image
@@ -140,19 +140,12 @@ export default function PreviewPage({ params }) {
                   }
                   alt={article.author.name || "User"}
                   className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = "none";
-                    e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${article.author?.name?.charAt(0).toUpperCase() || "U"}</span></div>`;
-                  }}
                 />
-              ) : (
-                <div className="w-full h-full bg-purple-100 flex items-center justify-center">
-                  <span className="text-purple-600 font-semibold text-sm">
-                    {article.author?.name?.charAt(0).toUpperCase() || "U"}
-                  </span>
-                </div>
               )}
-            </div>
+              <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold text-sm">
+                {article.author?.name?.charAt(0).toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
           </div>
         </div>
       </div>

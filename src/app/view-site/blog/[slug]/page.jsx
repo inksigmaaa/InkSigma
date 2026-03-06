@@ -16,6 +16,7 @@ import ClockIcon from "../../components/icons/ClockIcon";
 import { useSnapshot } from "@/hooks/useSnapshot";
 import { getApiBase } from "@/utils/apiBase";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const API_URL = getApiBase();
 
@@ -486,9 +487,9 @@ export default function BlogDetailPage({ params }) {
             <div className="flex items-center justify-between py-3 border-t border-b border-[#EAEAEA] mb-10 max-md:mb-6">
               {/* Author */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 max-md:w-7 max-md:h-7 ">
-                  {blog.author?.image ? (
-                    <img
+                <Avatar className="w-10 h-10 bg-gray-200 flex-shrink-0 max-md:w-7 max-md:h-7">
+                  {blog.author?.image && (
+                    <AvatarImage
                       src={
                         blog.author.image.startsWith("http") ||
                         blog.author.image.startsWith("https")
@@ -499,19 +500,12 @@ export default function BlogDetailPage({ params }) {
                       }
                       alt={blog.author?.name || "Author"}
                       className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                        e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${blog.author?.name?.charAt(0).toUpperCase() || "A"}</span></div>`;
-                      }}
                     />
-                  ) : (
-                    <div className="w-full h-full bg-purple-100 flex items-center justify-center">
-                      <span className="text-purple-600 font-semibold text-sm">
-                        {blog.author?.name?.charAt(0).toUpperCase() || "A"}
-                      </span>
-                    </div>
                   )}
-                </div>
+                  <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold text-sm">
+                    {blog.author?.name?.charAt(0).toUpperCase() || "A"}
+                  </AvatarFallback>
+                </Avatar>
                 <span className="text-[#404040] text-base font-normal italic leading-[1.88] tracking-normal max-md:text-[12px] max-md:leading-[1.5]">
                   {blog.author?.name || "Anonymous"}
                 </span>

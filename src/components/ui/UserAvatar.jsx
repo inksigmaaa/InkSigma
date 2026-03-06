@@ -21,20 +21,22 @@ const colors = [
   'bg-teal-500'
 ];
 
-function getInitialAndColor(email) {
-  if (!email) {
+function getInitialAndColor(identifier, name) {
+  const seed = (identifier || name || '').trim();
+
+  if (!seed) {
     return { initial: 'U', colorClass: 'bg-gray-300' };
   }
-  
-  const initial = email.charAt(0).toUpperCase();
-  
+
+  const initial = (name || identifier).charAt(0).toUpperCase();
+
   let hash = 0;
-  for (let i = 0; i < email.length; i++) {
-    hash = email.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < seed.length; i++) {
+    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
   }
-  
+
   const colorClass = colors[Math.abs(hash) % colors.length];
-  
+
   return { initial, colorClass };
 }
 
@@ -57,20 +59,20 @@ const UserAvatar = ({
     const sizeClass = sizeClasses[size] || sizeClasses.md;
 
     // Keep server render and first client render identical to avoid hydration drift.
-    const userEmail = isMounted ? (user?.email || "") : "";
+    const userIdentifier = isMounted ? (user?.email || user?.name || "") : "";
     const userName = user?.name || "User";
     
     const avatarUrl = user?.avatar || user?.image || user?.picture || user?.photo;
     
     const hasAvatar = avatarUrl && avatarUrl.trim() !== '' && !imageError;
     
-    const { initial, colorClass } = getInitialAndColor(userEmail);
+    const { initial, colorClass } = getInitialAndColor(userIdentifier, userName);
 
     // Show fallback on server or until mounted to prevent hydration mismatch
     if (!isMounted || !hasAvatar) {
         return (
             <Avatar className={`${sizeClass} ${colorClass} ${className}`}>
-                <AvatarFallback className={`${sizeClass} ${colorClass} text-white font-semibold`}>
+                <AvatarFallback className={`h-full w-full ${colorClass} text-white font-semibold`}>
                     {initial}
                 </AvatarFallback>
             </Avatar>
@@ -78,16 +80,14 @@ const UserAvatar = ({
     }
 
     return (
-        <Avatar className={className}>
+        <Avatar className={`${sizeClass} ${className}`}>
             <AvatarImage 
                 src={avatarUrl} 
                 alt={`${userName}'s avatar`}
-                className={sizeClass}
-                referrerPolicy="no-referrer"
-                crossOrigin="anonymous"
+                className="h-full w-full object-cover"
                 onError={() => setImageError(true)}
             />
-            <AvatarFallback className={`${sizeClass} ${colorClass} text-white font-semibold`}>
+            <AvatarFallback className={`h-full w-full ${colorClass} text-white font-semibold`}>
                 {initial}
             </AvatarFallback>
         </Avatar>

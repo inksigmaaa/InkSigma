@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const API_URL = getApiBase();
 
@@ -339,19 +340,18 @@ export default function CommentSection({ blogId }) {
         )}
 
         <div className="flex gap-3 md:gap-4 mb-6">
-          <div className="w-8 h-8 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center max-md:w-6 max-md:h-6">
-            {currentUser?.image ? (
-              <img
+          <Avatar className="w-8 h-8 bg-purple-100 flex-shrink-0 max-md:w-6 max-md:h-6">
+            {currentUser?.image && (
+              <AvatarImage
                 src={getAuthorAvatar(currentUser)}
                 alt={currentUser.name}
                 className="w-full h-full object-cover"
               />
-            ) : (
-              <span className="text-purple-600 font-semibold">
-                {currentUser?.name?.charAt(0).toUpperCase() || "?"}
-              </span>
             )}
-          </div>
+            <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold">
+              {currentUser?.name?.charAt(0).toUpperCase() || "?"}
+            </AvatarFallback>
+          </Avatar>
           <div className="flex-1 min-w-0">
             <textarea
               placeholder="Share your thoughts..."
@@ -393,19 +393,18 @@ export default function CommentSection({ blogId }) {
                   className="border border-[#EDEDED] rounded-lg px-10 py-4 max-md:px-4"
                 >
                   <div className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center max-md:w-6 max-md:h-6">
-                      {comment.author?.image ? (
-                        <img
+                    <Avatar className="w-8 h-8 bg-purple-100 flex-shrink-0 max-md:w-6 max-md:h-6">
+                      {comment.author?.image && (
+                        <AvatarImage
                           src={getAuthorAvatar(comment.author)}
                           alt={getDisplayName(comment)}
                           className="w-full h-full object-cover"
                         />
-                      ) : (
-                        <span className="text-purple-600 font-semibold">
-                          {getInitial(comment)}
-                        </span>
                       )}
-                    </div>
+                      <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold">
+                        {getInitial(comment)}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 my-1.5 flex-wrap max-md:my-0">
                         <span className="text-[#404040] text-sm font-semibold leading-5 tracking-normal max-md:text-xs">
@@ -479,12 +478,19 @@ export default function CommentSection({ blogId }) {
                       {replyingTo === comment.id && (
                         <div className="mt-4 bg-white rounded-lg p-3 ">
                           <div className="flex gap-3">
-                            <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center max-md:w-6 max-md:h-6">
-                              <span className="text-purple-600 font-semibold text-sm">
+                            <Avatar className="w-8 h-8 flex-shrink-0 max-md:w-6 max-md:h-6">
+                              {currentUser?.image && (
+                                <AvatarImage
+                                  src={getAuthorAvatar(currentUser)}
+                                  alt={currentUser?.name || "User"}
+                                  className="w-full h-full object-cover"
+                                />
+                              )}
+                              <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold text-sm">
                                 {currentUser?.name?.charAt(0).toUpperCase() ||
                                   "?"}
-                              </span>
-                            </div>
+                              </AvatarFallback>
+                            </Avatar>
                             <div className="flex-1 min-w-0">
                               {!currentUser && (
                                 <div className="mb-2 p-2 bg-gray-50 border border-gray-200 rounded text-sm text-center">
@@ -548,19 +554,18 @@ export default function CommentSection({ blogId }) {
                                 key={reply.id}
                                 className="flex gap-3 bg-white !mt-8 rounded-lg max-md:!mt-4"
                               >
-                                <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center max-md:w-6 max-md:h-6">
-                                  {reply.author?.image ? (
-                                    <img
+                                <Avatar className="w-8 h-8 flex-shrink-0 max-md:w-6 max-md:h-6">
+                                  {reply.author?.image && (
+                                    <AvatarImage
                                       src={getAuthorAvatar(reply.author)}
                                       alt={getDisplayName(reply)}
                                       className="w-full h-full object-cover"
                                     />
-                                  ) : (
-                                    <span className="text-purple-600 font-semibold text-xs">
-                                      {getInitial(reply)}
-                                    </span>
                                   )}
-                                </div>
+                                  <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold text-xs">
+                                    {getInitial(reply)}
+                                  </AvatarFallback>
+                                </Avatar>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 my-1.5 flex-wrap max-md:my-0">
                                     <span className="font-semibold text-[#14142D] text-sm max-md:text-xs">

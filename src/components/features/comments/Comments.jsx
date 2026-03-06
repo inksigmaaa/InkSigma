@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function Comments() {
     const [selectAll, setSelectAll] = useState(false)
@@ -67,7 +68,16 @@ export default function Comments() {
       {/* Top Row */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <img src="/images/comment/commentuser1.svg" alt="commentuser" className="w-6 h-6 rounded-full" />
+          <Avatar className="w-6 h-6">
+            <AvatarImage
+              src="/images/comment/commentuser1.svg"
+              alt="commentuser"
+              className="w-full h-full object-cover"
+            />
+            <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 text-xs font-semibold">
+              S
+            </AvatarFallback>
+          </Avatar>
           <p className="text-sm font-semibold text-[#14142D]">Sammy</p>
         </div>
         <p className="text-sm text-gray-400">2 days ago</p>
@@ -91,7 +101,7 @@ export default function Comments() {
 
         <button className="flex items-center gap-1 text-sm font-medium text-violet-500 hover:underline">
           See Full Conversation
-          <img src="/images/comment/chevronright.svg" className="w-4 h-4" />
+          <img src="/images/comment/chevronright.svg" alt="arrow right" className="w-4 h-4" />
         </button>
 
       </div>

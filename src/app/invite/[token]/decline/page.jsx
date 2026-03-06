@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { memberService } from "@/services/memberService";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function DeclineInvitation() {
   const { token } = useParams();
@@ -162,19 +163,18 @@ export default function DeclineInvitation() {
           <div className="mb-6 p-6 bg-gray-50 border border-gray-200 rounded-lg">
             {/* Publication Info */}
             <div className="flex items-start space-x-4 mb-4">
-              {invitationDetails.publication.logoUrl ? (
-                <img
-                  src={invitationDetails.publication.logoUrl}
-                  alt={invitationDetails.publication.name}
-                  className="w-16 h-16 rounded-lg object-cover"
-                />
-              ) : (
-                <div className="w-16 h-16 bg-violet-100 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl font-bold text-violet-600">
-                    {invitationDetails.publication.name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
+              <Avatar className="w-16 h-16 rounded-lg bg-violet-100">
+                {invitationDetails.publication.logoUrl && (
+                  <AvatarImage
+                    src={invitationDetails.publication.logoUrl}
+                    alt={invitationDetails.publication.name}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                )}
+                <AvatarFallback className="w-full h-full rounded-lg bg-violet-100 text-2xl font-bold text-violet-600">
+                  {invitationDetails.publication.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1">
                 <h2 className="text-xl font-bold text-gray-900">
                   {invitationDetails.publication.name}

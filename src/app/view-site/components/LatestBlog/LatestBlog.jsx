@@ -9,6 +9,7 @@ import { formatTimeAgo } from '@/utils/timeFormatter';
 import { getImageUrl } from '@/utils/imageUrl';
 import { getThumbnailWithFallback } from '@/utils/fallbackThumbnail';
 import { getApiBase } from '@/utils/apiBase';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const API_URL = getApiBase();
 
@@ -96,25 +97,18 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
       <div className="flex items-center justify-between mt-9 mb-4 max-md:hidden">
         {/* Desktop View Author Info */}
         <div className="hidden md:flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
-            {latestBlog.author?.image ? (
-              <img
-                src={latestBlog.author.image.startsWith('http') ? latestBlog.author.image : `${API_URL}${latestBlog.author.image}`} 
-                alt={latestBlog.author.name} 
+          <Avatar className="w-10 h-10 bg-gray-300 flex-shrink-0">
+            {latestBlog.author?.image && (
+              <AvatarImage
+                src={latestBlog.author.image.startsWith('http') ? latestBlog.author.image : `${API_URL}${latestBlog.author.image}`}
+                alt={latestBlog.author.name}
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${latestBlog.author?.name?.charAt(0).toUpperCase() || 'A'}</span></div>`;
-                }}
               />
-            ) : (
-              <div className="w-full h-full bg-purple-100 flex items-center justify-center">
-                <span className="text-purple-600 font-semibold text-sm">
-                  {latestBlog.author?.name?.charAt(0).toUpperCase() || 'A'}
-                </span>
-              </div>
             )}
-          </div>
+            <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold text-sm">
+              {latestBlog.author?.name?.charAt(0).toUpperCase() || 'A'}
+            </AvatarFallback>
+          </Avatar>
           <span className="text-[#000000] font-normal text-[16px] leading-[136%]">{latestBlog.author?.name || 'Anonymous'}</span>
         </div>
 
@@ -187,25 +181,18 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
         {/* Author and Date Row */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="w-[29px] h-[29px] rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
-              {latestBlog.author?.image ? (
-                <img
-                  src={latestBlog.author.image.startsWith('http') ? latestBlog.author.image : `${API_URL}${latestBlog.author.image}`} 
-                  alt={latestBlog.author.name} 
+            <Avatar className="w-[29px] h-[29px] bg-gray-300 flex-shrink-0">
+              {latestBlog.author?.image && (
+                <AvatarImage
+                  src={latestBlog.author.image.startsWith('http') ? latestBlog.author.image : `${API_URL}${latestBlog.author.image}`}
+                  alt={latestBlog.author.name}
                   className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${latestBlog.author?.name?.charAt(0).toUpperCase() || 'A'}</span></div>`;
-                  }}
                 />
-              ) : (
-                <div className="w-full h-full bg-purple-100 flex items-center justify-center">
-                  <span className="text-purple-600 font-semibold text-sm">
-                    {latestBlog.author?.name?.charAt(0).toUpperCase() || 'A'}
-                  </span>
-                </div>
               )}
-            </div>
+              <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold text-sm">
+                {latestBlog.author?.name?.charAt(0).toUpperCase() || 'A'}
+              </AvatarFallback>
+            </Avatar>
             <span className="text-[#000000] font-medium text-[12px]">{latestBlog.author?.name || 'Anonymous'}</span>
           </div>
           <div className="text-right">

@@ -12,6 +12,7 @@ import { useSession } from "@/lib/auth-client";
 import CategoryBadgeList from "@/components/CategoryBadgeList";
 import { getImageUrl } from "@/utils/imageUrl";
 import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -158,22 +159,18 @@ export default function HomePage() {
             {/* Publication Header */}
             <div className=" px-6 py-12 flex items-center justify-between max-md:border-b max-md:border-[#EDEDED] max-md:mx-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
               <div className="flex items-center gap-6 max-md:gap-3">
-                <div className="w-[66px] h-[68px] rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 max-md:w-14 max-md:h-14 overflow-hidden">
-                  {currentPublication?.logoUrl ? (
-                    <img
+                <Avatar className="w-[66px] h-[68px] bg-gray-100 flex-shrink-0 max-md:w-14 max-md:h-14">
+                  {currentPublication?.logoUrl && (
+                    <AvatarImage
                       src={`http://localhost:5000${currentPublication.logoUrl}`}
                       alt={currentPublication.name}
                       className="w-full h-full object-cover"
                     />
-                  ) : (
-                    <div className="w-full h-full bg-violet-100 rounded-full flex items-center justify-center">
-                      <span className="text-violet-600 font-bold text-xl">
-                        {currentPublication?.name?.charAt(0).toUpperCase() ||
-                          "P"}
-                      </span>
-                    </div>
                   )}
-                </div>
+                  <AvatarFallback className="w-full h-full bg-violet-100 text-violet-600 font-bold text-xl">
+                    {currentPublication?.name?.charAt(0).toUpperCase() || "P"}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
                   <h2 className="font-semibold text-xl leading-normal tracking-normal text-[#2E2E2E] max-md:text-lg">
                     {currentPublication?.name || "My Publication"}

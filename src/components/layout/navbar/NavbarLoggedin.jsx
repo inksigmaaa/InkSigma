@@ -278,17 +278,13 @@ export default function NavbarLoggedin() {
                                             </div>
                                         ) : (
                                             notifications.map((notification) => {
-                                                // For publication-related notifications, create an avatar object with publication logo
-                                                let avatarUser = notification.avatarUser || { image: notification.avatar };
-
-                                                // If this is a publication notification and we have a publication logo, use it
-                                                if (notification.relatedPublicationId && notification.avatar && notification.avatar.includes('localhost:5000')) {
-                                                    avatarUser = {
-                                                        name: notification.title,
-                                                        image: notification.avatar,
-                                                        email: notification.title
-                                                    };
-                                                }
+                                                // Normalize avatar payload so publication and user notifications render consistently.
+                                                const avatarUser = {
+                                                    ...(notification.avatarUser || {}),
+                                                    name: notification.avatarUser?.name || notification.title || "Notification",
+                                                    email: notification.avatarUser?.email || notification.avatarUser?.name || notification.title || "Notification",
+                                                    image: notification.avatar || notification.avatarUser?.image || null,
+                                                };
 
                                                 return (
                                                     <div

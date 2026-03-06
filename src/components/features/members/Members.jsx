@@ -9,6 +9,7 @@ import { hasPermission } from "@/utils/permissions";
 import { toast } from "sonner";
 import ConfirmModal from "../confirmModal/ConfirmModal";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function Members() {
   const router = useRouter();
@@ -657,11 +658,16 @@ export default function Members() {
                   <div key={`invitation-${invitation.id}`}>
                     <div className="flex items-center justify-between py-6 max-[767px]:py-4">
                       <div className="flex items-center gap-4 w-1/3 max-[767px]:gap-2 max-[639px]:flex-1">
-                        <img
-                          src="/icons/nib.svg"
-                          alt="Invited"
-                          className="w-12 h-12 rounded-full max-[767px]:w-10 max-[767px]:h-10"
-                        />
+                        <Avatar className="w-12 h-12 max-[767px]:w-10 max-[767px]:h-10">
+                          <AvatarImage
+                            src="/icons/nib.svg"
+                            alt="Invited"
+                            className="w-full h-full object-cover"
+                          />
+                          <AvatarFallback className="w-full h-full bg-violet-100 text-violet-600 font-semibold">
+                            I
+                          </AvatarFallback>
+                        </Avatar>
                         <p className="text-sm font-semibold text-gray-900">
                           {invitation.email}
                         </p>

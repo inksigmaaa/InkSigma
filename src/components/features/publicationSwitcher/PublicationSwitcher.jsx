@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function PublicationSwitcher() {
   const router = useRouter();
@@ -127,19 +128,18 @@ export default function PublicationSwitcher() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
       >
-        {currentPublication.logoUrl ? (
-          <img
-            src={currentPublication.logoUrl}
-            alt={currentPublication.name}
-            className="w-6 h-6 rounded-full object-cover"
-          />
-        ) : (
-          <div className="w-6 h-6 bg-violet-100 rounded-full flex items-center justify-center">
-            <span className="text-violet-600 font-semibold text-xs">
-              {currentPublication.name.charAt(0).toUpperCase()}
-            </span>
-          </div>
-        )}
+        <Avatar className="w-6 h-6 bg-violet-100">
+          {currentPublication.logoUrl && (
+            <AvatarImage
+              src={currentPublication.logoUrl}
+              alt={currentPublication.name}
+              className="w-full h-full object-cover"
+            />
+          )}
+          <AvatarFallback className="w-full h-full bg-violet-100 text-violet-600 font-semibold text-xs">
+            {currentPublication.name.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
         <span className="text-sm font-medium text-gray-900 max-w-[150px] truncate">
           {currentPublication.name}
         </span>
@@ -176,19 +176,18 @@ export default function PublicationSwitcher() {
                       : ""
                   }`}
                 >
-                  {pub.logoUrl ? (
-                    <img
-                      src={pub.logoUrl}
-                      alt={pub.name}
-                      className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-gray-600 font-semibold text-sm">
-                        {pub.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
+                  <Avatar className="w-8 h-8 bg-gray-100 flex-shrink-0">
+                    {pub.logoUrl && (
+                      <AvatarImage
+                        src={pub.logoUrl}
+                        alt={pub.name}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    <AvatarFallback className="w-full h-full bg-gray-100 text-gray-600 font-semibold text-sm">
+                      {pub.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-gray-900 truncate">
                       {pub.name}

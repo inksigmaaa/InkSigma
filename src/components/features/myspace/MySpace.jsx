@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
 import { ChevronRight } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function MySpace() {
   const router = useRouter();
@@ -50,7 +51,7 @@ export default function MySpace() {
           </h1>
           <p className="text-xs text-gray-500 leading-relaxed mb-4 px-4">
             Manage all your publications in one place. Switch between your owned
-            publications and those you've joined as a member.
+            publications and those you&apos;ve joined as a member.
           </p>
         </div>
 
@@ -68,24 +69,18 @@ export default function MySpace() {
                 >
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex gap-4 items-center flex-1 w-full">
-                      <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {publication.logoUrl ? (
-                          <img
+                      <Avatar className="w-14 h-14 bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        {publication.logoUrl && (
+                          <AvatarImage
                             src={`http://localhost:5000${publication.logoUrl}`}
                             alt={`${publication.name} logo`}
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.style.display = "none";
-                              e.target.parentElement.innerHTML = `<span class="text-violet-600 font-bold text-lg">${publication.name.charAt(0).toUpperCase()}</span>`;
-                            }}
                           />
-                        ) : (
-                          <span className="text-violet-600 font-bold text-lg">
-                            {publication.name.charAt(0).toUpperCase()}
-                          </span>
                         )}
-                      </div>
+                        <AvatarFallback className="w-full h-full bg-violet-100 text-violet-600 font-bold text-lg">
+                          {publication.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-semibold text-gray-900 mb-1">
                           {publication.name}
@@ -125,24 +120,18 @@ export default function MySpace() {
                 >
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex gap-4 items-center flex-1 w-full">
-                      <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {publication.logoUrl ? (
-                          <img
+                      <Avatar className="w-14 h-14 bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        {publication.logoUrl && (
+                          <AvatarImage
                             src={`http://localhost:5000${publication.logoUrl}`}
                             alt={`${publication.name} logo`}
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.style.display = "none";
-                              e.target.parentElement.innerHTML = `<span class="text-blue-600 font-bold text-lg">${publication.name.charAt(0).toUpperCase()}</span>`;
-                            }}
                           />
-                        ) : (
-                          <span className="text-blue-600 font-bold text-lg">
-                            {publication.name.charAt(0).toUpperCase()}
-                          </span>
                         )}
-                      </div>
+                        <AvatarFallback className="w-full h-full bg-blue-100 text-blue-600 font-bold text-lg">
+                          {publication.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-semibold text-gray-900 mb-1">
                           {publication.name}
@@ -209,11 +198,18 @@ export default function MySpace() {
         {currentPublication && (
           <section className="bg-violet-50 rounded-lg p-4 border border-violet-200">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-violet-100 rounded-full flex items-center justify-center">
-                <span className="text-violet-600 font-bold text-sm">
+              <Avatar className="w-8 h-8 bg-violet-100 flex items-center justify-center">
+                {currentPublication.logoUrl && (
+                  <AvatarImage
+                    src={`http://localhost:5000${currentPublication.logoUrl}`}
+                    alt={currentPublication.name}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                <AvatarFallback className="w-full h-full bg-violet-100 text-violet-600 font-bold text-sm">
                   {currentPublication.name?.charAt(0).toUpperCase()}
-                </span>
-              </div>
+                </AvatarFallback>
+              </Avatar>
               <div>
                 <p className="text-xs font-medium text-violet-900">
                   Currently Active
