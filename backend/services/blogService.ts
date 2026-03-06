@@ -611,9 +611,25 @@ class BlogService {
       publicationId,
     } = data;
 
+    let parsedScheduledAt: Date | null = null;
+    if (scheduledAt) {
+      parsedScheduledAt = new Date(scheduledAt);
+      if (Number.isNaN(parsedScheduledAt.getTime())) {
+        throw new Error("Invalid scheduled time|400");
+      }
+      if (parsedScheduledAt <= new Date()) {
+        throw new Error("Scheduled time must be in the future|400");
+      }
+    }
+
     let targetStatus: typeof BLOG_STATUS[keyof typeof BLOG_STATUS] = BLOG_STATUS.DRAFT;
     if (status) targetStatus = status;
     else if (published) targetStatus = BLOG_STATUS.PUBLISHED;
+    if (parsedScheduledAt) targetStatus = BLOG_STATUS.SCHEDULED;
+
+    if (targetStatus === BLOG_STATUS.SCHEDULED && !parsedScheduledAt) {
+      throw new Error("Scheduled time is required for scheduled status|400");
+    }
 
     const isDraft = targetStatus === BLOG_STATUS.DRAFT;
     const normalizedTitle = typeof title === "string" ? title.trim() : "";
@@ -673,7 +689,7 @@ class BlogService {
     };
 
     if (publicationId) blogData.publicationId = parseInt(publicationId);
-    if (scheduledAt) blogData.scheduledAt = new Date(scheduledAt);
+    if (parsedScheduledAt) blogData.scheduledAt = parsedScheduledAt;
 
     const result = await db.insert(blog).values(blogData).returning();
     const newBlog = result[0];
@@ -802,6 +818,17 @@ class BlogService {
       publicationId,
     } = data;
 
+    let parsedScheduledAt: Date | null = null;
+    if (scheduledAt !== undefined) {
+      parsedScheduledAt = new Date(scheduledAt);
+      if (Number.isNaN(parsedScheduledAt.getTime())) {
+        throw new Error("Invalid scheduled time|400");
+      }
+      if (parsedScheduledAt <= new Date()) {
+        throw new Error("Scheduled time must be in the future|400");
+      }
+    }
+
     const [existingBlog] = await db
       .select()
       .from(blog)
@@ -821,6 +848,24 @@ class BlogService {
       targetStatusForUpdate = published
         ? BLOG_STATUS.PUBLISHED
         : BLOG_STATUS.DRAFT;
+    if (parsedScheduledAt) targetStatusForUpdate = BLOG_STATUS.SCHEDULED;
+
+    if (targetStatusForUpdate === BLOG_STATUS.SCHEDULED) {
+      const effectiveScheduledAt = parsedScheduledAt
+        ? parsedScheduledAt
+        : existingBlog.scheduledAt
+          ? new Date(existingBlog.scheduledAt)
+          : null;
+      if (
+        !effectiveScheduledAt ||
+        Number.isNaN(effectiveScheduledAt.getTime())
+      ) {
+        throw new Error("Scheduled time is required for scheduled status|400");
+      }
+      if (effectiveScheduledAt <= new Date()) {
+        throw new Error("Scheduled time must be in the future|400");
+      }
+    }
 
     const updateData: BlogUpdateData = { updatedAt: new Date() };
     let slug = existingBlog.slug;
@@ -847,8 +892,15 @@ class BlogService {
       updateData.content = sanitizeHtml(content.trim());
     }
     if (categories !== undefined) updateData.categories = categories;
-    if (scheduledAt !== undefined)
-      updateData.scheduledAt = new Date(scheduledAt);
+    if (parsedScheduledAt) updateData.scheduledAt = parsedScheduledAt;
+    // Prevent stale scheduled timestamps from affecting future status transitions.
+    if (
+      (status !== undefined || published !== undefined) &&
+      targetStatusForUpdate !== BLOG_STATUS.SCHEDULED &&
+      scheduledAt === undefined
+    ) {
+      updateData.scheduledAt = null;
+    }
     if (image !== undefined) {
       updateData.image = image || null;
       if (!image && existingBlog.image?.includes("/uploads/blog-images/")) {

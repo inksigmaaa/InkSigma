@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Calendar as ShadcnCalendar } from "@/components/ui/calendar";
+import Calendar10 from "@/components/calendar10";
 import EditorCategoryDropdown from "./EditorCategoryDropdown";
 import { ThumbnailModal } from "./ThumbnailModal";
 import PublishSuccessModal from "./PublishSuccessModal";
@@ -141,11 +140,11 @@ export default function EditorPageClient() {
   const [thumbnailRemoved, setThumbnailRemoved] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedHour, setSelectedHour] = useState(10);
-  const [selectedMinute, setSelectedMinute] = useState(30);
-  const [calendarMonth, setCalendarMonth] = useState(new Date());
-  const [manualDate, setManualDate] = useState("");
-  const [manualTime, setManualTime] = useState("");
+  const [selectedTime, setSelectedTime] = useState(null);
+  const [dateInput, setDateInput] = useState("");
+  const [timeInput, setTimeInput] = useState("");
+  const [dateError, setDateError] = useState("");
+  const [timeError, setTimeError] = useState("");
   const [editorContent, setEditorContent] = useState({
     charCount: 0,
     wordCount: 0,
@@ -167,6 +166,10 @@ export default function EditorPageClient() {
   const [showDraftConfirmModal, setShowDraftConfirmModal] = useState(false);
   const [exitDestination, setExitDestination] = useState(null); // 'published', 'drafts', 'home'
   const [recoveryDraft, setRecoveryDraft] = useState(null); // Dexie draft for recovery banner
+  const scheduleMinDate = new Date();
+  scheduleMinDate.setHours(0, 0, 0, 0);
+  const scheduleCurrentYear = scheduleMinDate.getFullYear();
+  const scheduleYearInputUpperBound = scheduleCurrentYear + 2;
   const calendarRef = useRef(null);
   const handlingPopStateRef = useRef(false);
   const saveInFlightRef = useRef(false);
@@ -405,10 +408,27 @@ export default function EditorPageClient() {
 
       if (blog.scheduledAt) {
         const scheduledDate = new Date(blog.scheduledAt);
-        setSelectedDate(scheduledDate);
-        setCalendarMonth(scheduledDate);
-        setSelectedHour(scheduledDate.getHours());
-        setSelectedMinute(scheduledDate.getMinutes());
+        const normalizedDate = new Date(scheduledDate);
+        normalizedDate.setHours(0, 0, 0, 0);
+        const formattedDate = `${String(normalizedDate.getDate()).padStart(2, "0")}-${String(
+          normalizedDate.getMonth() + 1,
+        ).padStart(2, "0")}-${normalizedDate.getFullYear()}`;
+        const formattedTime = `${String(scheduledDate.getHours()).padStart(2, "0")}:${String(
+          scheduledDate.getMinutes(),
+        ).padStart(2, "0")}`;
+        setSelectedDate(normalizedDate);
+        setSelectedTime(formattedTime);
+        setDateInput(formattedDate);
+        setTimeInput(formattedTime);
+        setDateError("");
+        setTimeError("");
+      } else {
+        setSelectedDate(null);
+        setSelectedTime(null);
+        setDateInput("");
+        setTimeInput("");
+        setDateError("");
+        setTimeError("");
       }
     } catch (error) {
       console.error("Error loading blog:", error);
@@ -863,15 +883,25 @@ export default function EditorPageClient() {
   };
 
   // Handle Schedule
-  const handleSchedule = async () => {
-    if (!selectedDate) {
+  const handleSchedule = async (
+    dateOverride = selectedDate,
+    timeOverride = selectedTime,
+  ) => {
+    if (!dateOverride) {
       toast.error("Please select a date");
       return;
     }
 
-    // Create scheduled datetime from selected date and time
-    const scheduledDateTime = new Date(selectedDate);
-    scheduledDateTime.setHours(selectedHour, selectedMinute, 0, 0);
+    if (!timeOverride) {
+      toast.error("Please select a time slot");
+      return;
+    }
+
+    const [hour, minute] = timeOverride.split(":").map(Number);
+
+    // Create scheduled datetime from selected date and selected slot
+    const scheduledDateTime = new Date(dateOverride);
+    scheduledDateTime.setHours(hour, minute, 0, 0);
 
     // Check if scheduled time is in the future
     if (scheduledDateTime <= new Date()) {
@@ -914,163 +944,6 @@ export default function EditorPageClient() {
     };
   }, [showCalendar]);
 
-  // Calendar helper functions
-  const handleDateSelect = (date) => {
-    if (!date) return;
-
-    const normalizedDate = new Date(date);
-    normalizedDate.setHours(0, 0, 0, 0);
-    setSelectedDate(normalizedDate);
-    setCalendarMonth(normalizedDate);
-
-    const dayStr = String(normalizedDate.getDate()).padStart(2, "0");
-    const monthStr = String(normalizedDate.getMonth() + 1).padStart(2, "0");
-    setManualDate(`${dayStr}-${monthStr}-${normalizedDate.getFullYear()}`);
-
-    const hourStr = String(selectedHour).padStart(2, "0");
-    const minuteStr = String(selectedMinute).padStart(2, "0");
-    setManualTime(`${hourStr}:${minuteStr}`);
-  };
-
-  const isPastDate = (date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const compareDate = new Date(date);
-    compareDate.setHours(0, 0, 0, 0);
-    return compareDate < today;
-  };
-
-  const handleClearDate = () => {
-    setSelectedDate(null);
-    setSelectedHour(10);
-    setSelectedMinute(30);
-    setManualDate("");
-    setManualTime("");
-  };
-
-  const handleToday = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    setSelectedDate(today);
-    setCalendarMonth(today);
-    const dayStr = String(today.getDate()).padStart(2, "0");
-    const monthStr = String(today.getMonth() + 1).padStart(2, "0");
-    setManualDate(`${dayStr}-${monthStr}-${today.getFullYear()}`);
-    const hourStr = String(selectedHour).padStart(2, "0");
-    const minuteStr = String(selectedMinute).padStart(2, "0");
-    setManualTime(`${hourStr}:${minuteStr}`);
-  };
-
-  const formatSelectedDateTime = () => {
-    if (!selectedDate) return "";
-    const day = String(selectedDate.getDate()).padStart(2, "0");
-    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
-    const year = selectedDate.getFullYear();
-    const hour = String(selectedHour).padStart(2, "0");
-    const minute = String(selectedMinute).padStart(2, "0");
-    return `${day}-${month}-${year}   ${hour}:${minute}`;
-  };
-
-  const handleManualInput = (e) => {
-    let value = e.target.value;
-
-    // Only allow numbers and dashes
-    value = value.replace(/[^0-9\-]/g, "");
-
-    // Remove all formatting to get just numbers
-    const numbersOnly = value.replace(/[^0-9]/g, "");
-
-    // If input is empty, clear the selected date
-    if (numbersOnly === "") {
-      setManualDate("");
-      setSelectedDate(null);
-      return;
-    }
-
-    // Auto-format as user types: dd-mm-yyyy
-    let formatted = "";
-    for (let i = 0; i < numbersOnly.length && i < 8; i++) {
-      if (i === 2 || i === 4) {
-        formatted += "-";
-      }
-      formatted += numbersOnly[i];
-    }
-
-    setManualDate(formatted);
-
-    // Validate and set date when complete (8 digits: ddmmyyyy)
-    if (numbersOnly.length === 8) {
-      const day = parseInt(numbersOnly.substring(0, 2));
-      const month = parseInt(numbersOnly.substring(2, 4));
-      const year = parseInt(numbersOnly.substring(4, 8));
-
-      // Validate ranges
-      if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 2024) {
-        const parsedDate = new Date(year, month - 1, day);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (parsedDate >= today) {
-          setSelectedDate(parsedDate);
-          setCalendarMonth(parsedDate);
-        }
-      }
-    }
-  };
-
-  const handleTimeInput = (e) => {
-    let value = e.target.value;
-
-    // Only allow numbers and colons
-    value = value.replace(/[^0-9:]/g, "");
-
-    // Remove all formatting to get just numbers
-    const numbersOnly = value.replace(/[^0-9]/g, "");
-
-    // If input is empty, reset time
-    if (numbersOnly === "") {
-      setManualTime("");
-      return;
-    }
-
-    // Auto-format as user types: hh:mm
-    let formatted = "";
-    for (let i = 0; i < numbersOnly.length && i < 4; i++) {
-      if (i === 2) {
-        formatted += ":";
-      }
-      formatted += numbersOnly[i];
-    }
-
-    setManualTime(formatted);
-
-    // Validate and set time when complete (4 digits: hhmm)
-    if (numbersOnly.length === 4) {
-      const hour = parseInt(numbersOnly.substring(0, 2));
-      const minute = parseInt(numbersOnly.substring(2, 4));
-
-      // Validate ranges
-      if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-        setSelectedHour(hour);
-        setSelectedMinute(minute);
-      }
-    }
-  };
-
-  const getDisplayDate = () => {
-    if (manualDate) return manualDate;
-    if (!selectedDate) return "";
-    const day = String(selectedDate.getDate()).padStart(2, "0");
-    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
-    const year = selectedDate.getFullYear();
-    return `${day}-${month}-${year}`;
-  };
-
-  const getDisplayTime = () => {
-    if (manualTime) return manualTime;
-    return "";
-  };
-
   const handleThumbnailAdd = (data) => {
     setThumbnailData(data);
     setThumbnailRemoved(false);
@@ -1079,6 +952,229 @@ export default function EditorPageClient() {
   const handleThumbnailRemove = () => {
     setThumbnailData(null);
     setThumbnailRemoved(true);
+  };
+
+  const formatDateValue = (date) =>
+    `${String(date.getDate()).padStart(2, "0")}-${String(
+      date.getMonth() + 1,
+    ).padStart(2, "0")}-${date.getFullYear()}`;
+
+  const isSameLocalDate = (a, b) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  const maskDateInput = (value) => {
+    const digits = value.replace(/\D/g, "").slice(0, 8);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+    return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4)}`;
+  };
+
+  const applyDatePartBounds = (digits) => {
+    let dayPart = digits.slice(0, 2);
+    let monthPart = digits.slice(2, 4);
+    let yearPart = digits.slice(4, 8);
+
+    if (dayPart.length === 2) {
+      let day = Number(dayPart);
+      day = Math.min(Math.max(day || 1, 1), 31);
+      dayPart = String(day).padStart(2, "0");
+    }
+
+    if (monthPart.length === 2) {
+      let month = Number(monthPart);
+      month = Math.min(Math.max(month || 1, 1), 12);
+      monthPart = String(month).padStart(2, "0");
+    }
+
+    if (yearPart.length === 4) {
+      const minYear = scheduleCurrentYear;
+      let year = Number(yearPart);
+      if (year < minYear) year = minYear;
+      if (year > scheduleYearInputUpperBound) year = scheduleCurrentYear;
+      yearPart = String(year).padStart(4, "0");
+
+      if (dayPart.length === 2 && monthPart.length === 2) {
+        const month = Number(monthPart);
+        const maxDay = new Date(year, month, 0).getDate();
+        let day = Number(dayPart);
+        day = Math.min(Math.max(day || 1, 1), maxDay);
+        dayPart = String(day).padStart(2, "0");
+      }
+    }
+
+    return `${dayPart}${monthPart}${yearPart}`;
+  };
+
+  const maskTimeInput = (value) => {
+    const digits = value.replace(/\D/g, "").slice(0, 4);
+    if (digits.length <= 2) return digits;
+    return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+  };
+
+  const normalizeDateInputValue = (raw) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    if (digits.length !== 8) {
+      return { complete: false, formatted: maskDateInput(raw), date: null };
+    }
+
+    let day = Number(digits.slice(0, 2));
+    let month = Number(digits.slice(2, 4));
+    let year = Number(digits.slice(4, 8));
+
+    if (year < scheduleCurrentYear) year = scheduleCurrentYear;
+    if (year > scheduleYearInputUpperBound) year = scheduleCurrentYear;
+    month = Math.min(Math.max(month || 1, 1), 12);
+    const maxDay = new Date(year, month, 0).getDate();
+    day = Math.min(Math.max(day || 1, 1), maxDay);
+
+    let normalized = new Date(year, month - 1, day);
+    normalized.setHours(0, 0, 0, 0);
+
+    if (normalized < scheduleMinDate) {
+      normalized = new Date(scheduleMinDate);
+    }
+
+    return {
+      complete: true,
+      formatted: formatDateValue(normalized),
+      date: normalized,
+    };
+  };
+
+  const normalizeTimeInputValue = (raw, referenceDate) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 4);
+    if (digits.length !== 4) {
+      return { complete: false, formatted: maskTimeInput(raw), time: null };
+    }
+
+    let hour = Number(digits.slice(0, 2));
+    let minute = Number(digits.slice(2, 4));
+    hour = Math.min(Math.max(hour, 0), 23);
+    minute = Math.min(Math.max(minute, 0), 59);
+
+    const now = new Date();
+    if (referenceDate && isSameLocalDate(referenceDate, now)) {
+      const candidate = new Date(referenceDate);
+      candidate.setHours(hour, minute, 0, 0);
+      if (candidate <= now) {
+        const next = new Date(now.getTime() + 60_000);
+        next.setSeconds(0, 0);
+        hour = next.getHours();
+        minute = next.getMinutes();
+      }
+    }
+
+    return {
+      complete: true,
+      formatted: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
+      time: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
+    };
+  };
+
+  const handleDateInputChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+    const bounded = applyDatePartBounds(digits);
+    const masked = maskDateInput(bounded);
+    setDateInput(masked);
+    setDateError("");
+    setSelectedDate(null);
+
+    if (bounded.length === 8) {
+      const normalized = normalizeDateInputValue(masked);
+      if (normalized.complete && normalized.date) {
+        setSelectedDate(normalized.date);
+      }
+    }
+  };
+
+  const handleDateInputBlur = () => {
+    if (!dateInput) {
+      setDateError("");
+      setSelectedDate(null);
+      return;
+    }
+
+    const normalized = normalizeDateInputValue(dateInput);
+    if (!normalized.complete || !normalized.date) {
+      setDateError("Enter date as dd-mm-yyyy");
+      setSelectedDate(null);
+      return;
+    }
+
+    setDateInput(normalized.formatted);
+    setSelectedDate(normalized.date);
+    setDateError("");
+
+    if (timeInput) {
+      const normalizedTime = normalizeTimeInputValue(timeInput, normalized.date);
+      if (normalizedTime.complete && normalizedTime.time) {
+        setTimeInput(normalizedTime.formatted);
+        setSelectedTime(normalizedTime.time);
+        setTimeError("");
+      }
+    }
+  };
+
+  const handleTimeInputChange = (e) => {
+    const masked = maskTimeInput(e.target.value);
+    setTimeInput(masked);
+    setTimeError("");
+    setSelectedTime(null);
+  };
+
+  const handleTimeInputBlur = () => {
+    if (!timeInput) {
+      setTimeError("");
+      setSelectedTime(null);
+      return;
+    }
+
+    const normalized = normalizeTimeInputValue(timeInput, selectedDate);
+    if (!normalized.complete || !normalized.time) {
+      setTimeError("Enter time as HH:mm");
+      setSelectedTime(null);
+      return;
+    }
+
+    setTimeInput(normalized.formatted);
+    setSelectedTime(normalized.time);
+    setTimeError("");
+  };
+
+  const toggleSchedulePicker = () => {
+    if (isSaving) return;
+    setShowCalendar(!showCalendar);
+  };
+
+  const handleScheduleAction = () => {
+    if (isSaving) return;
+
+    const normalizedDate = normalizeDateInputValue(dateInput);
+    if (!normalizedDate.complete || !normalizedDate.date) {
+      setDateError("Enter date as dd-mm-yyyy");
+      toast.error("Enter a valid future date in dd-mm-yyyy format");
+      return;
+    }
+    setDateInput(normalizedDate.formatted);
+    setSelectedDate(normalizedDate.date);
+    setDateError("");
+
+    const normalizedTime = normalizeTimeInputValue(
+      timeInput,
+      normalizedDate.date,
+    );
+    if (!normalizedTime.complete || !normalizedTime.time) {
+      setTimeError("Enter time as HH:mm");
+      toast.error("Enter a valid 24-hour time in HH:mm format");
+      return;
+    }
+    setTimeInput(normalizedTime.formatted);
+    setSelectedTime(normalizedTime.time);
+    setTimeError("");
+
+    handleSchedule(normalizedDate.date, normalizedTime.time);
   };
 
   return (
@@ -1091,7 +1187,7 @@ export default function EditorPageClient() {
         }
 
         input.date-time-input::placeholder {
-          color: #2e2e2e;
+          color: #b8b8b8;
         }
 
         .saving-spinner {
@@ -1146,20 +1242,6 @@ export default function EditorPageClient() {
             min-width: 212px;
             max-width: 212px;
             flex-shrink: 0;
-          }
-
-          .mobile-date-input {
-            font-size: 12px;
-            line-height: 150%;
-          }
-
-          .mobile-date-input:first-of-type {
-            width: 80px;
-          }
-
-          .mobile-date-input:nth-of-type(2) {
-            width: 35px;
-            margin-left: 4px;
           }
 
           .mobile-schedule-container svg {
@@ -1599,64 +1681,70 @@ export default function EditorPageClient() {
               </button>
 
               <div
-                className="flex items-center h-8 border border-gray-200 rounded overflow-hidden"
+                className="flex items-center h-8"
                 style={{
-                  minWidth: "180px",
                   width: "auto",
                   maxWidth: "100%",
                 }}
               >
-                <input
-                  type="text"
-                  placeholder="dd-mm-yyyy"
-                  value={getDisplayDate()}
-                  onChange={handleManualInput}
-                  maxLength={10}
-                  className="date-time-input h-[21px] w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
-                  style={{ color: "#2e2e2e", opacity: 1, fontWeight: 500 }}
-                />
-                <input
-                  type="text"
-                  placeholder="--:--"
-                  value={getDisplayTime()}
-                  onChange={handleTimeInput}
-                  maxLength={5}
-                  className="date-time-input h-[21px] w-[40px] flex-shrink-0 text-sm bg-transparent outline-none ml-2"
-                  style={{ color: "#2e2e2e", opacity: 1, fontWeight: 500 }}
-                />
-                <svg
-                  className="w-4 h-4 flex-shrink-0 cursor-pointer mx-2"
-                  fill="none"
-                  stroke="#2e2e2e"
-                  viewBox="0 0 24 24"
-                  onClick={() => setShowCalendar(!showCalendar)}
+                <div
+                  className={`flex items-center h-8 border rounded overflow-hidden ${
+                    dateError || timeError ? "border-red-300" : "border-gray-200"
+                  }`}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <span
-                  className="text-sm flex-shrink-0 h-full flex items-center justify-center border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
-                  style={{
-                    backgroundColor: "#F8F8F8",
-                    color: selectedDate ? "#2E2E2E" : "#C8C8C8",
-                    opacity: isSaving ? 0.5 : 1,
-                    pointerEvents: isSaving ? "none" : "auto",
-                  }}
-                  onClick={() => {
-                    if (isSaving) return;
-                    if (selectedDate && (manualDate || manualTime)) {
-                      handleSchedule();
-                    } else {
-                      setShowCalendar(!showCalendar);
-                    }
-                  }}
-                >
-                  {isSaving ? "..." : selectedDate ? "Schedule" : "Reschedule"}
-                </span>
+                  <div className="flex items-center h-full pl-2 pr-2">
+                    <input
+                      type="text"
+                      placeholder="dd-mm-yyyy"
+                      value={dateInput}
+                      onChange={handleDateInputChange}
+                      onBlur={handleDateInputBlur}
+                      maxLength={10}
+                      className="date-time-input h-[21px] w-[98px] text-sm bg-transparent outline-none"
+                      aria-invalid={Boolean(dateError)}
+                      title={dateError || "Date format: dd-mm-yyyy"}
+                      style={{ color: "#2e2e2e", fontWeight: 500 }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="--:--"
+                      value={timeInput}
+                      onChange={handleTimeInputChange}
+                      onBlur={handleTimeInputBlur}
+                      maxLength={5}
+                      className="date-time-input h-[21px] w-[50px] text-sm bg-transparent outline-none ml-2"
+                      aria-invalid={Boolean(timeError)}
+                      title={timeError || "24-hour format: HH:mm"}
+                      style={{ color: "#2e2e2e", fontWeight: 500 }}
+                    />
+                    <svg
+                      className="w-4 h-4 flex-shrink-0 cursor-pointer ml-2"
+                      fill="none"
+                      stroke="#2e2e2e"
+                      viewBox="0 0 24 24"
+                      onClick={toggleSchedulePicker}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                  <span
+                    className="text-sm flex-shrink-0 h-full flex items-center justify-center border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
+                    style={{
+                      backgroundColor: "#F8F8F8",
+                      color: selectedDate && selectedTime ? "#2E2E2E" : "#C8C8C8",
+                      opacity: isSaving ? 0.5 : 1,
+                      pointerEvents: isSaving ? "none" : "auto",
+                    }}
+                    onClick={handleScheduleAction}
+                  >
+                    Reschedule
+                  </span>
+                </div>
               </div>
             </>
           ) : (
@@ -1694,58 +1782,62 @@ export default function EditorPageClient() {
                     />
                   </button>
 
-                  <div className="flex items-center h-8 border border-gray-200 rounded overflow-hidden mobile-schedule-container">
-                    <input
-                      type="text"
-                      placeholder="dd-mm-yyyy"
-                      value={getDisplayDate()}
-                      onChange={handleManualInput}
-                      maxLength={10}
-                      className="mobile-date-input date-time-input h-[21px] md:w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
-                      style={{ color: "#2e2e2e", opacity: 1, fontWeight: 500 }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="--:--"
-                      value={getDisplayTime()}
-                      onChange={handleTimeInput}
-                      maxLength={5}
-                      className="mobile-date-input date-time-input h-[21px] md:w-[40px] flex-shrink-0 text-sm bg-transparent outline-none md:ml-2"
-                      style={{ color: "#2e2e2e", opacity: 1, fontWeight: 500 }}
-                    />
-                    <svg
-                      className="w-4 h-4 flex-shrink-0 cursor-pointer md:mx-2"
-                      fill="none"
-                      stroke="#2e2e2e"
-                      viewBox="0 0 24 24"
-                      onClick={() => setShowCalendar(!showCalendar)}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  <div
+                    className={`flex items-center h-8 border rounded overflow-hidden mobile-schedule-container ${
+                      dateError || timeError ? "border-red-300" : "border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center h-full px-2">
+                      <input
+                        type="text"
+                        placeholder="dd-mm-yyyy"
+                        value={dateInput}
+                        onChange={handleDateInputChange}
+                        onBlur={handleDateInputBlur}
+                        maxLength={10}
+                        className="date-time-input h-[21px] w-[86px] text-xs md:text-sm bg-transparent outline-none"
+                        aria-invalid={Boolean(dateError)}
+                        title={dateError || "Date format: dd-mm-yyyy"}
+                        style={{ color: "#2e2e2e", fontWeight: 500 }}
                       />
-                    </svg>
+                      <input
+                        type="text"
+                        placeholder="--:--"
+                        value={timeInput}
+                        onChange={handleTimeInputChange}
+                        onBlur={handleTimeInputBlur}
+                        maxLength={5}
+                        className="date-time-input h-[21px] w-[42px] text-xs md:text-sm bg-transparent outline-none ml-2"
+                        aria-invalid={Boolean(timeError)}
+                        title={timeError || "24-hour format: HH:mm"}
+                        style={{ color: "#2e2e2e", fontWeight: 500 }}
+                      />
+                      <svg
+                        className="w-4 h-4 flex-shrink-0 cursor-pointer ml-2 md:mx-2"
+                        fill="none"
+                        stroke="#2e2e2e"
+                        viewBox="0 0 24 24"
+                        onClick={toggleSchedulePicker}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
                     <span
                       className="mobile-schedule-btn md:text-sm text-xs flex-shrink-0 h-full flex items-center justify-center border-l border-gray-200 cursor-pointer md:px-3 hover:bg-gray-200 transition-colors"
                       style={{
                         backgroundColor: "#F8F8F8",
-                        color: selectedDate ? "#2E2E2E" : "#C8C8C8",
+                        color: selectedDate && selectedTime ? "#2E2E2E" : "#C8C8C8",
                         opacity: isSaving ? 0.5 : 1,
                         pointerEvents: isSaving ? "none" : "auto",
                       }}
-                      onClick={() => {
-                        if (isSaving) return;
-                        // If date and time are already set, schedule directly
-                        if (selectedDate && (manualDate || manualTime)) {
-                          handleSchedule();
-                        } else {
-                          setShowCalendar(!showCalendar);
-                        }
-                      }}
+                      onClick={handleScheduleAction}
                     >
-                      {isSaving ? "..." : "Schedule"}
+                      Schedule
                     </span>
                   </div>
                 </>
@@ -1759,9 +1851,8 @@ export default function EditorPageClient() {
       {showCalendar && (
         <div
           ref={calendarRef}
-          className="fixed z-[1001] bg-white rounded flex"
+          className="fixed z-[1001] bg-white rounded"
           style={{
-            gap: "15px",
             bottom: "88px",
             left: "50%",
             transform: "translateX(-50%)",
@@ -1770,129 +1861,48 @@ export default function EditorPageClient() {
             padding: "16px",
           }}
         >
-          {/* Calendar Section */}
-          <div className="flex flex-col" style={{ width: "250px", gap: "8px" }}>
-            <ShadcnCalendar
-              mode="single"
-              month={calendarMonth}
-              onMonthChange={setCalendarMonth}
-              selected={selectedDate || undefined}
-              onSelect={handleDateSelect}
-              disabled={isPastDate}
-              className="rounded-md border border-gray-100 bg-white p-2"
+          <div className="w-[20rem] sm:w-[24rem]">
+            <Calendar10
+              date={selectedDate}
+              time={selectedTime}
+              minDate={scheduleMinDate}
+              onDateChange={(date) => {
+                const normalizedDate = new Date(date);
+                normalizedDate.setHours(0, 0, 0, 0);
+                setSelectedDate(normalizedDate);
+                setDateError("");
+                setDateInput(
+                  `${String(normalizedDate.getDate()).padStart(2, "0")}-${String(
+                    normalizedDate.getMonth() + 1,
+                  ).padStart(2, "0")}-${normalizedDate.getFullYear()}`,
+                );
+              }}
+              onTimeChange={(time) => {
+                setSelectedTime(time);
+                setTimeInput(time || "");
+                setTimeError("");
+              }}
             />
 
-            {/* Clear and Today buttons */}
-            <div className="flex justify-between">
-              <button
-                onClick={handleClearDate}
-                className="text-sm text-blue-500 hover:text-blue-600"
+            <div className="mt-3 flex items-center justify-end gap-2">
+              <Button
+                onClick={() => {
+                  setSelectedDate(null);
+                  setSelectedTime(null);
+                  setDateInput("");
+                  setTimeInput("");
+                  setDateError("");
+                  setTimeError("");
+                }}
+                size="sm"
+                variant="outline"
               >
                 Clear
-              </button>
-              <button
-                onClick={handleToday}
-                className="text-sm text-blue-500 hover:text-blue-600"
-              >
-                Today
-              </button>
+              </Button>
+              <Button onClick={() => setShowCalendar(false)} size="sm" disabled={isSaving}>
+                Done
+              </Button>
             </div>
-          </div>
-
-          {/* Divider */}
-          <div className="w-px bg-gray-200" />
-
-          {/* Time Picker Section */}
-          <div
-            className="flex flex-col"
-            style={{
-              width: "90px",
-              gap: "8px",
-              paddingRight: "8px",
-              paddingLeft: "8px",
-            }}
-          >
-            {/* Headers */}
-            <div
-              className="flex justify-between h-6 items-center"
-              style={{ marginTop: "34px" }}
-            >
-              <span className="text-xs text-gray-500 w-7 text-center">
-                Hour
-              </span>
-              <span className="text-xs text-gray-500 w-7 text-center">Min</span>
-            </div>
-
-            {/* Time columns */}
-            <div
-              className="flex justify-between"
-              style={{ height: "104px", gap: "16px" }}
-            >
-              {/* Hours */}
-              <div
-                className="flex flex-col items-center overflow-y-auto"
-                style={{ scrollbarWidth: "none" }}
-              >
-                {[...Array(24)].map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setSelectedHour(i);
-                      const minuteStr = String(selectedMinute).padStart(2, "0");
-                      setManualTime(
-                        `${String(i).padStart(2, "0")}:${minuteStr}`,
-                      );
-                    }}
-                    className={`w-7 h-6 text-xs rounded-md ${selectedHour === i ? "text-white" : "text-gray-700 hover:bg-gray-100"}`}
-                    style={{
-                      marginBottom: "2px",
-                      flexShrink: 0,
-                      ...(selectedHour === i
-                        ? { backgroundColor: "#4B6CFB" }
-                        : {}),
-                    }}
-                  >
-                    {String(i).padStart(2, "0")}
-                  </button>
-                ))}
-              </div>
-
-              {/* Minutes */}
-              <div
-                className="flex flex-col items-center overflow-y-auto"
-                style={{ scrollbarWidth: "none" }}
-              >
-                {[...Array(60)].map((_, m) => (
-                  <button
-                    key={m}
-                    onClick={() => {
-                      setSelectedMinute(m);
-                      const hourStr = String(selectedHour).padStart(2, "0");
-                      setManualTime(`${hourStr}:${String(m).padStart(2, "0")}`);
-                    }}
-                    className={`w-7 h-6 text-xs rounded-md ${selectedMinute === m ? "text-white" : "text-gray-700 hover:bg-gray-100"}`}
-                    style={{
-                      marginBottom: "2px",
-                      flexShrink: 0,
-                      ...(selectedMinute === m
-                        ? { backgroundColor: "#4B6CFB" }
-                        : {}),
-                    }}
-                  >
-                    {String(m).padStart(2, "0")}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Done Button */}
-            <button
-              onClick={() => setShowCalendar(false)}
-              className="w-full py-1.5 text-sm text-white bg-black rounded-md hover:bg-gray-800"
-              style={{ marginTop: "20px" }}
-            >
-              Done
-            </button>
           </div>
         </div>
       )}
