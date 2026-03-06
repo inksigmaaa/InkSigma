@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useArticles } from '@/contexts/ArticlesContext'
 import { usePublication } from '@/contexts/PublicationContext'
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { Calendar } from "@/components/ui/calendar"
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
@@ -17,13 +18,12 @@ const BlogStatsComponent = () => {
   const [showCalendar, setShowCalendar] = useState(null)
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [calendarMonth, setCalendarMonth] = useState(new Date())
   const [commentCounts, setCommentCounts] = useState({})
   const [viewStats, setViewStats] = useState({})
 
   const periodMenuRef = useRef(null)
 
-  const today = new Date()
   const periods = ['Today', 'Weekly', 'Monthly', 'Yearly', 'Custom Date']
 
   // Filter articles by current publication first
@@ -148,54 +148,18 @@ const BlogStatsComponent = () => {
 
   const stats = calculateStats()
 
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December']
-  const daysOfWeek = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
-
-  const getDaysInMonth = (date) => {
-    const year = date.getFullYear()
-    const month = date.getMonth()
-    const firstDay = new Date(year, month, 1).getDay()
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
-    const daysInPrevMonth = new Date(year, month, 0).getDate()
-    const days = []
-
-    // Previous month days
-    for (let i = firstDay - 1; i >= 0; i--) {
-      days.push({
-        day: daysInPrevMonth - i,
-        isCurrentMonth: false,
-        date: new Date(year, month - 1, daysInPrevMonth - i)
-      })
-    }
-
-    // Current month days
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push({
-        day: i,
-        isCurrentMonth: true,
-        date: new Date(year, month, i)
-      })
-    }
-
-    // Next month days to fill the grid
-    const remainingDays = 42 - days.length
-    for (let i = 1; i <= remainingDays; i++) {
-      days.push({
-        day: i,
-        isCurrentMonth: false,
-        date: new Date(year, month + 1, i)
-      })
-    }
-
-    return days
-  }
-
   const formatDate = (date) => {
     const day = String(date.getDate()).padStart(2, '0')
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const year = date.getFullYear()
     return `${day}/${month}/${year}`
+  }
+
+  const parseDate = (value) => {
+    if (!value) return undefined
+    const [day, month, year] = value.split('/').map(Number)
+    if (!day || !month || !year) return undefined
+    return new Date(year, month - 1, day)
   }
 
   const handleDateSelect = (date) => {
@@ -226,11 +190,19 @@ const BlogStatsComponent = () => {
     setShowCalendar(null)
   }
 
-  const changeMonth = (increment) => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + increment, 1))
-  }
+  const selectedCalendarDate = showCalendar === 'from'
+    ? parseDate(fromDate)
+    : showCalendar === 'to'
+      ? parseDate(toDate)
+      : undefined
 
-  const days = getDaysInMonth(currentDate)
+  const openCalendar = (type) => {
+    const existingDate = parseDate(type === 'from' ? fromDate : toDate)
+    if (existingDate) {
+      setCalendarMonth(existingDate)
+    }
+    setShowCalendar(type)
+  }
 
   // Close period menu when clicking outside
   useEffect(() => {
@@ -269,6 +241,7 @@ const BlogStatsComponent = () => {
                 onClick={() => {
                   if (period === 'Custom Date') {
                     setShowDatePicker(true)
+                    setShowCalendar('from')
                   } else {
                     setSelectedPeriod(period)
                   }
@@ -285,7 +258,7 @@ const BlogStatsComponent = () => {
 
         {/* Date Picker Modal */}
         <Dialog
-          open={showDatePicker && !showCalendar}
+          open={showDatePicker}
           onOpenChange={(open) => {
             if (!open) {
               setShowDatePicker(false)
@@ -294,16 +267,16 @@ const BlogStatsComponent = () => {
           }}
         >
           <DialogContent
-            className="max-w-none border-none p-0 shadow-none bg-transparent"
+            className="w-auto max-w-none border-none p-0 shadow-none bg-transparent"
             showClose={false}
           >
             <DialogTitle className="sr-only">Select Custom Date Range</DialogTitle>
             <div
               className="bg-white rounded-lg shadow-xl relative z-[10000]"
-              style={{ width: '276px', padding: '32px' }}
+              style={{ width: '320px', padding: '24px' }}
             >
-              <div className="flex flex-col" style={{ gap: '29px' }}>
-                <div className="flex" style={{ gap: '32px' }}>
+              <div className="flex flex-col" style={{ gap: '20px' }}>
+                <div className="flex" style={{ gap: '20px' }}>
                   <div className="flex-1">
                     <label
                       className="block text-[#2E2E2E] font-semibold mb-2 cursor-pointer"
@@ -313,7 +286,7 @@ const BlogStatsComponent = () => {
                         fontWeight: 600,
                         lineHeight: '100%'
                       }}
-                      onClick={() => setShowCalendar('from')}
+                      onClick={() => openCalendar('from')}
                     >
                       From
                     </label>
@@ -330,7 +303,7 @@ const BlogStatsComponent = () => {
                         lineHeight: '150%',
                         paddingBottom: '4px'
                       }}
-                      onClick={() => setShowCalendar('from')}
+                      onClick={() => openCalendar('from')}
                     />
                   </div>
                   <div className="flex-1">
@@ -342,7 +315,7 @@ const BlogStatsComponent = () => {
                         fontWeight: 600,
                         lineHeight: '100%'
                       }}
-                      onClick={() => setShowCalendar('to')}
+                      onClick={() => openCalendar('to')}
                     >
                       To
                     </label>
@@ -359,7 +332,7 @@ const BlogStatsComponent = () => {
                         lineHeight: '150%',
                         paddingBottom: '4px'
                       }}
-                      onClick={() => setShowCalendar('to')}
+                      onClick={() => openCalendar('to')}
                     />
                   </div>
                 </div>
@@ -394,89 +367,19 @@ const BlogStatsComponent = () => {
                     Apply
                   </span>
                 </button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
 
-        {/* Calendar Popup */}
-        <Dialog
-          open={Boolean(showCalendar)}
-          onOpenChange={(open) => {
-            if (!open) setShowCalendar(null)
-          }}
-        >
-          <DialogContent
-            className="max-w-none border-none p-0 shadow-none bg-transparent"
-            showClose={false}
-          >
-            <DialogTitle className="sr-only">Choose Calendar Date</DialogTitle>
-            <div
-              className="bg-gray-100 rounded-2xl shadow-2xl relative z-[10000] font-['Public_Sans'] font-normal text-sm leading-normal tracking-normal text-[#696969]"
-              style={{ width: '260px', padding: '20px' }}
-            >
-              {/* Calendar Header */}
-              <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
-                <button
-                  onClick={() => changeMonth(-1)}
-                  className="text-gray-400 hover:text-gray-600 w-6 h-6 flex items-center justify-center"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                  </svg>
-                </button>
-                <div className="font-['Public_Sans'] font-semibold text-sm leading-normal tracking-normal text-[#696969]">
-                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                </div>
-                <button
-                  onClick={() => changeMonth(1)}
-                  className="text-gray-400 hover:text-gray-600 w-6 h-6 flex items-center justify-center"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
-                </button>
-              </div>
-
-              {/* Weekday Headers */}
-              <div className="grid grid-cols-7" style={{ gap: '10px', marginBottom: '10px' }}>
-                {daysOfWeek.map(day => (
-                  <div
-                    key={day}
-                    className="font-['Public_Sans'] font-normal text-sm leading-normal tracking-normal text-[#696969] flex items-center justify-center"
-                    style={{ width: '26px', height: '20px', fontSize: '12px' }}
-                  >
-                    {day}
+                {showCalendar && (
+                  <div className="rounded-xl border border-gray-200 p-2">
+                    <Calendar
+                      mode="single"
+                      month={calendarMonth}
+                      onMonthChange={setCalendarMonth}
+                      selected={selectedCalendarDate}
+                      onSelect={(date) => date && handleDateSelect(date)}
+                      className="rounded-xl bg-white"
+                    />
                   </div>
-                ))}
-              </div>
-
-              {/* Calendar Days */}
-              <div className="grid grid-cols-7" style={{ gap: '10px' }}>
-                {days.map((dayObj, index) => {
-                  const isToday = dayObj.isCurrentMonth &&
-                    dayObj.day === today.getDate() &&
-                    currentDate.getMonth() === today.getMonth() &&
-                    currentDate.getFullYear() === today.getFullYear()
-
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => dayObj.isCurrentMonth && handleDateSelect(dayObj.date)}
-                      disabled={!dayObj.isCurrentMonth}
-                      className={`text-center rounded-lg flex items-center justify-center font-medium transition-colors
-                        ${dayObj.isCurrentMonth
-                          ? isToday
-                            ? 'bg-gray-600 text-white'
-                            : 'bg-white text-gray-600 hover:bg-gray-200'
-                          : 'bg-white text-gray-300'
-                        }`}
-                      style={{ width: '26px', height: '26px', fontSize: '14px' }}
-                    >
-                      {dayObj.day}
-                    </button>
-                  )
-                })}
+                )}
               </div>
             </div>
           </DialogContent>

@@ -4,9 +4,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Calendar as ShadcnCalendar } from "@/components/ui/calendar";
 import EditorCategoryDropdown from "./EditorCategoryDropdown";
 import { ThumbnailModal } from "./ThumbnailModal";
-import { DateTimePicker } from "./DateTimePicker";
 import PublishSuccessModal from "./PublishSuccessModal";
 import ExitConfirmModal from "./ExitConfirmModal";
 import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
@@ -17,7 +17,6 @@ import { toast } from "sonner";
 
 import {
   Image as ImageIcon,
-  Calendar,
   ChevronLeft,
   FileText,
 } from "lucide-react";
@@ -144,8 +143,7 @@ export default function EditorPageClient() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedHour, setSelectedHour] = useState(10);
   const [selectedMinute, setSelectedMinute] = useState(30);
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [manualDate, setManualDate] = useState("");
   const [manualTime, setManualTime] = useState("");
   const [editorContent, setEditorContent] = useState({
@@ -408,6 +406,7 @@ export default function EditorPageClient() {
       if (blog.scheduledAt) {
         const scheduledDate = new Date(blog.scheduledAt);
         setSelectedDate(scheduledDate);
+        setCalendarMonth(scheduledDate);
         setSelectedHour(scheduledDate.getHours());
         setSelectedMinute(scheduledDate.getMinutes());
       }
@@ -916,56 +915,29 @@ export default function EditorPageClient() {
   }, [showCalendar]);
 
   // Calendar helper functions
-  const getDaysInMonth = (month, year) => {
-    return new Date(year, month + 1, 0).getDate();
-  };
+  const handleDateSelect = (date) => {
+    if (!date) return;
 
-  const getFirstDayOfMonth = (month, year) => {
-    return new Date(year, month, 1).getDay();
-  };
+    const normalizedDate = new Date(date);
+    normalizedDate.setHours(0, 0, 0, 0);
+    setSelectedDate(normalizedDate);
+    setCalendarMonth(normalizedDate);
 
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
+    const dayStr = String(normalizedDate.getDate()).padStart(2, "0");
+    const monthStr = String(normalizedDate.getMonth() + 1).padStart(2, "0");
+    setManualDate(`${dayStr}-${monthStr}-${normalizedDate.getFullYear()}`);
 
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear(currentYear - 1);
-    } else {
-      setCurrentMonth(currentMonth - 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear(currentYear + 1);
-    } else {
-      setCurrentMonth(currentMonth + 1);
-    }
-  };
-
-  const handleDateSelect = (day) => {
-    const newDate = new Date(currentYear, currentMonth, day);
-    setSelectedDate(newDate);
-    const dayStr = String(day).padStart(2, "0");
-    const monthStr = String(currentMonth + 1).padStart(2, "0");
-    setManualDate(`${dayStr}-${monthStr}-${currentYear}`);
     const hourStr = String(selectedHour).padStart(2, "0");
     const minuteStr = String(selectedMinute).padStart(2, "0");
     setManualTime(`${hourStr}:${minuteStr}`);
+  };
+
+  const isPastDate = (date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const compareDate = new Date(date);
+    compareDate.setHours(0, 0, 0, 0);
+    return compareDate < today;
   };
 
   const handleClearDate = () => {
@@ -978,9 +950,9 @@ export default function EditorPageClient() {
 
   const handleToday = () => {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     setSelectedDate(today);
-    setCurrentMonth(today.getMonth());
-    setCurrentYear(today.getFullYear());
+    setCalendarMonth(today);
     const dayStr = String(today.getDate()).padStart(2, "0");
     const monthStr = String(today.getMonth() + 1).padStart(2, "0");
     setManualDate(`${dayStr}-${monthStr}-${today.getFullYear()}`);
@@ -1040,8 +1012,7 @@ export default function EditorPageClient() {
 
         if (parsedDate >= today) {
           setSelectedDate(parsedDate);
-          setCurrentMonth(parsedDate.getMonth());
-          setCurrentYear(parsedDate.getFullYear());
+          setCalendarMonth(parsedDate);
         }
       }
     }
@@ -1098,62 +1069,6 @@ export default function EditorPageClient() {
   const getDisplayTime = () => {
     if (manualTime) return manualTime;
     return "";
-  };
-
-  const renderCalendarDays = () => {
-    const daysInMonth = getDaysInMonth(currentMonth, currentYear);
-    const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
-    const days = [];
-    const dayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Day labels
-    dayLabels.forEach((label, i) => {
-      days.push(
-        <div
-          key={`label-${i}`}
-          className="w-6 h-6 flex items-center justify-center text-xs text-gray-500 font-medium"
-        >
-          {label}
-        </div>,
-      );
-    });
-
-    // Empty cells for days before first day of month
-    for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="w-6 h-6" />);
-    }
-
-    // Days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateToCheck = new Date(currentYear, currentMonth, day);
-      dateToCheck.setHours(0, 0, 0, 0);
-      const isPast = dateToCheck < today;
-
-      const isSelected =
-        selectedDate &&
-        selectedDate.getDate() === day &&
-        selectedDate.getMonth() === currentMonth &&
-        selectedDate.getFullYear() === currentYear;
-
-      days.push(
-        <button
-          key={day}
-          onClick={() => !isPast && handleDateSelect(day)}
-          disabled={isPast}
-          className={`w-6 h-6 flex items-center justify-center text-xs rounded-full transition-colors
-            ${isPast ? "text-gray-300 cursor-not-allowed" : "text-gray-700 hover:bg-purple-100"}`}
-          style={
-            isSelected ? { backgroundColor: "#4B6CFB", color: "white" } : {}
-          }
-        >
-          {day}
-        </button>,
-      );
-    }
-
-    return days;
   };
 
   const handleThumbnailAdd = (data) => {
@@ -1856,56 +1771,16 @@ export default function EditorPageClient() {
           }}
         >
           {/* Calendar Section */}
-          <div className="flex flex-col" style={{ width: "220px", gap: "8px" }}>
-            {/* Month Navigation */}
-            <div className="flex items-center justify-between">
-              <span className="text-base font-medium text-gray-800">
-                {monthNames[currentMonth]}, {currentYear}
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={handlePrevMonth}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <svg
-                    className="w-5 h-5 text-gray-800"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 15l7-7 7 7"
-                    />
-                  </svg>
-                </button>
-                <button
-                  onClick={handleNextMonth}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <svg
-                    className="w-5 h-5 text-gray-800"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Calendar Grid */}
-            <div className="grid grid-cols-7 gap-1 flex-1">
-              {renderCalendarDays()}
-            </div>
+          <div className="flex flex-col" style={{ width: "250px", gap: "8px" }}>
+            <ShadcnCalendar
+              mode="single"
+              month={calendarMonth}
+              onMonthChange={setCalendarMonth}
+              selected={selectedDate || undefined}
+              onSelect={handleDateSelect}
+              disabled={isPastDate}
+              className="rounded-md border border-gray-100 bg-white p-2"
+            />
 
             {/* Clear and Today buttons */}
             <div className="flex justify-between">

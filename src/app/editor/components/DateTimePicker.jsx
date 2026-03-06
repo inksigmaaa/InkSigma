@@ -1,60 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react"
+import { Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
-const months = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-]
-
-const daysOfWeek = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
-
 export function DateTimePicker({ isOpen, onClose, onDateTimeSelect, selectedDate, selectedTime }) {
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [calendarMonth, setCalendarMonth] = useState(new Date())
   const [selectedDay, setSelectedDay] = useState(selectedDate ? new Date(selectedDate.split('-').reverse().join('-')) : null)
   const [time, setTime] = useState(selectedTime || "09:00")
-
-  // Get current month and year
-  const currentMonth = currentDate.getMonth()
-  const currentYear = currentDate.getFullYear()
-
-  const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay()
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
-  const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate()
-
-  // Get today's date for highlighting
-  const today = new Date()
-  const isToday = (day) => {
-    return today.getDate() === day && 
-           today.getMonth() === currentMonth && 
-           today.getFullYear() === currentYear
-  }
-
-  // Check if a day is selected
-  const isSelected = (day) => {
-    if (!selectedDay) return false
-    return selectedDay.getDate() === day && 
-           selectedDay.getMonth() === currentMonth && 
-           selectedDay.getFullYear() === currentYear
-  }
-
-  // Navigate months
-  const goToPreviousMonth = () => {
-    setCurrentDate(new Date(currentYear, currentMonth - 1, 1))
-  }
-
-  const goToNextMonth = () => {
-    setCurrentDate(new Date(currentYear, currentMonth + 1, 1))
-  }
-
-  // Handle date selection
-  const handleDateClick = (day) => {
-    const newDate = new Date(currentYear, currentMonth, day)
-    setSelectedDay(newDate)
-  }
 
   // Handle time change
   const handleTimeChange = (newTime) => {
@@ -82,84 +37,11 @@ export function DateTimePicker({ isOpen, onClose, onDateTimeSelect, selectedDate
   const handleToday = () => {
     const today = new Date()
     setSelectedDay(today)
-    setCurrentDate(today)
+    setCalendarMonth(today)
     
     const formattedDate = `${today.getDate().toString().padStart(2, '0')}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getFullYear()}`
     onDateTimeSelect(formattedDate, time)
     onClose()
-  }
-
-
-
-  // Generate calendar days
-  const generateCalendarDays = () => {
-    const days = []
-
-    // Previous month's trailing days
-    for (let i = firstDayOfMonth - 1; i >= 0; i--) {
-      const day = daysInPrevMonth - i
-      days.push(
-        <button
-          key={`prev-${day}`}
-          className="w-9 h-9 text-gray-300 text-sm hover:bg-gray-100 rounded-md transition-colors"
-          onClick={() => {
-            const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1
-            const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear
-            const newDate = new Date(prevYear, prevMonth, day)
-            setSelectedDay(newDate)
-            setCurrentDate(new Date(prevYear, prevMonth, 1))
-          }}
-        >
-          {day}
-        </button>
-      )
-    }
-
-    // Current month days
-    for (let day = 1; day <= daysInMonth; day++) {
-      const isTodayDate = isToday(day)
-      const isSelectedDate = isSelected(day)
-      
-      days.push(
-        <button
-          key={day}
-          className={`w-9 h-9 text-sm rounded-md transition-colors ${
-            isSelectedDate 
-              ? 'bg-black text-white' 
-              : isTodayDate 
-                ? 'bg-gray-100 text-black font-medium' 
-                : 'text-gray-900 hover:bg-gray-100'
-          }`}
-          onClick={() => handleDateClick(day)}
-        >
-          {day}
-        </button>
-      )
-    }
-
-    // Next month's leading days
-    const totalCells = Math.ceil((firstDayOfMonth + daysInMonth) / 7) * 7
-    const remainingCells = totalCells - (firstDayOfMonth + daysInMonth)
-    
-    for (let day = 1; day <= remainingCells; day++) {
-      days.push(
-        <button
-          key={`next-${day}`}
-          className="w-9 h-9 text-gray-300 text-sm hover:bg-gray-100 rounded-md transition-colors"
-          onClick={() => {
-            const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1
-            const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear
-            const newDate = new Date(nextYear, nextMonth, day)
-            setSelectedDay(newDate)
-            setCurrentDate(new Date(nextYear, nextMonth, 1))
-          }}
-        >
-          {day}
-        </button>
-      )
-    }
-
-    return days
   }
 
   return (
@@ -179,39 +61,15 @@ export function DateTimePicker({ isOpen, onClose, onDateTimeSelect, selectedDate
           </button>
         </div>
 
-        {/* Calendar Navigation */}
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={goToPreviousMonth}
-            className="p-2 hover:bg-gray-100 rounded-md"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          
-          <h4 className="text-base font-medium">
-            {months[currentMonth]} {currentYear}
-          </h4>
-          
-          <button
-            onClick={goToNextMonth}
-            className="p-2 hover:bg-gray-100 rounded-md"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Days of week header */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {daysOfWeek.map((day) => (
-            <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Calendar grid */}
-        <div className="grid grid-cols-7 gap-1 mb-6">
-          {generateCalendarDays()}
+        <div className="mb-6">
+          <Calendar
+            mode="single"
+            month={calendarMonth}
+            onMonthChange={setCalendarMonth}
+            selected={selectedDay || undefined}
+            onSelect={(date) => date && setSelectedDay(date)}
+            className="rounded-md border border-gray-200 p-3"
+          />
         </div>
 
         {/* Time Selection */}
