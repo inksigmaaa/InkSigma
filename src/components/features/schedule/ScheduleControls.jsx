@@ -1,5 +1,6 @@
 import CategoryFilter from "../categoryFilter/CategoryFilter"
 import { Trash2 } from "lucide-react"
+import NightTooltip from "@/components/ui/night-tooltip";
 
 export default function ScheduleControls({
   selectedPosts,
@@ -28,28 +29,32 @@ export default function ScheduleControls({
             Select all
           </label>
         </div>
-        <button
-          title="Move to Draft"
-          disabled={selectedPosts.length === 0}
-          onClick={onBulkDraft}
-          className={`w-8 h-8 border rounded flex items-center justify-center transition ${selectedPosts.length > 0
-              ? "bg-white border-gray-300 cursor-pointer hover:bg-gray-50"
-              : "bg-gray-50 border-gray-200 cursor-not-allowed opacity-50"
-            }`}
-        >
-          <img src="/images/icons/draft1.svg" alt="Move to Draft" className={`w-4 h-4 ${selectedPosts.length === 0 ? "opacity-50" : ""}`} />
-        </button>
-        <button
-          title="Delete selected"
-          disabled={selectedPosts.length === 0}
-          onClick={onBulkDelete}
-          className={`w-8 h-8 border rounded flex items-center justify-center transition ${selectedPosts.length > 0
-              ? "bg-white border-gray-300 cursor-pointer hover:bg-gray-50"
-              : "bg-gray-50 border-gray-200 cursor-not-allowed opacity-50"
-            }`}
-        >
-          <Trash2 className={`h-4 w-4 ${selectedPosts.length === 0 ? "text-gray-300" : "text-gray-600"}`} />
-        </button>
+        <NightTooltip content="Move to Draft">
+          <button
+            disabled={selectedPosts.length === 0}
+            onClick={onBulkDraft}
+            className={`w-8 h-8 border rounded flex items-center justify-center transition ${selectedPosts.length > 0
+                ? "bg-white border-gray-300 cursor-pointer hover:bg-gray-50"
+                : "bg-gray-50 border-gray-200 cursor-not-allowed opacity-50"
+              }`}
+            aria-label="Move to Draft"
+          >
+            <img src="/images/icons/draft1.svg" alt="Move to Draft" className={`w-4 h-4 ${selectedPosts.length === 0 ? "opacity-50" : ""}`} />
+          </button>
+        </NightTooltip>
+        <NightTooltip content="Delete selected">
+          <button
+            disabled={selectedPosts.length === 0}
+            onClick={onBulkDelete}
+            className={`w-8 h-8 border rounded flex items-center justify-center transition ${selectedPosts.length > 0
+                ? "bg-white border-gray-300 cursor-pointer hover:bg-gray-50"
+                : "bg-gray-50 border-gray-200 cursor-not-allowed opacity-50"
+              }`}
+            aria-label="Delete selected"
+          >
+            <Trash2 className={`h-4 w-4 ${selectedPosts.length === 0 ? "text-gray-300" : "text-gray-600"}`} />
+          </button>
+        </NightTooltip>
       </div>
 
       <CategoryFilter

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import NightTooltip from "@/components/ui/night-tooltip";
 
 export default function Comments() {
     const [selectAll, setSelectAll] = useState(false)
@@ -47,12 +48,14 @@ export default function Comments() {
                                 <span className="font-bold text-sm text-gray-500">Select all</span>
                             </label>
 
-                            <button
-                                title="Delete"
-                                className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
-                            >
-                                <img src="/icons/trash.svg" alt="delete" className="w-5 h-5" />
-                            </button>
+                            <NightTooltip content="Delete">
+                                <button
+                                    className="w-8 h-8 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center cursor-pointer transition hover:bg-gray-50 hover:border-gray-300"
+                                    aria-label="Delete"
+                                >
+                                    <img src="/icons/trash.svg" alt="delete" className="w-5 h-5" />
+                                </button>
+                            </NightTooltip>
 
                         </div>
                     </div>

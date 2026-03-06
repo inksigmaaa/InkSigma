@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import PersonalArticleContainer from "../personalArticleContainer/PersonalArticleContainer";
 import CategoryFilter from "../categoryFilter/CategoryFilter";
 import { Button } from "@/components/ui/button";
+import NightTooltip from "@/components/ui/night-tooltip";
 import styles from "../articles/Articles.module.css";
 
 // Ensure CategoryFilter is imported
@@ -109,26 +110,27 @@ export default function PersonalArticles({
                   const isDisabled =
                     selectedArticles.length === 0 || button.disabled;
                   return (
-                  <button
-                    key={index}
-                    title={button.title}
-                    onClick={button.onClick}
-                    className={`flex items-center justify-center transition-all bg-white active:bg-gray-50 ${isDisabled ? "opacity-40 pointer-events-none" : "cursor-pointer"}`}
-                    style={{
-                      width: "26px",
-                      height: "26px",
-                      border: "1px solid #EDEDED",
-                      borderRadius: "4px",
-                      marginLeft: index === 0 ? "4px" : "0",
-                    }}
-                    disabled={isDisabled}
-                  >
-                    <img
-                      src={button.icon}
-                      alt={button.title}
-                      className="w-4 h-4"
-                    />
-                  </button>
+                    <NightTooltip key={index} content={button.title}>
+                      <button
+                        onClick={button.onClick}
+                        className={`flex items-center justify-center transition-all bg-white active:bg-gray-50 ${isDisabled ? "opacity-40 pointer-events-none" : "cursor-pointer"}`}
+                        style={{
+                          width: "26px",
+                          height: "26px",
+                          border: "1px solid #EDEDED",
+                          borderRadius: "4px",
+                          marginLeft: index === 0 ? "4px" : "0",
+                        }}
+                        disabled={isDisabled}
+                        aria-label={button.title}
+                      >
+                        <img
+                          src={button.icon}
+                          alt={button.title}
+                          className="w-4 h-4"
+                        />
+                      </button>
+                    </NightTooltip>
                   );
                 })}
             </div>
@@ -182,26 +184,27 @@ export default function PersonalArticles({
                     const isDisabled =
                       selectedArticles.length === 0 || button.disabled;
                     return (
-                    <button
-                      key={index}
-                      title={button.title}
-                      onClick={button.onClick}
-                      className={`flex items-center justify-center transition-all hover:bg-gray-50 ${isDisabled ? "opacity-40 pointer-events-none" : "cursor-pointer"}`}
-                      style={{
-                        width: "32px",
-                        height: "32px",
-                        border: "1px solid #EDEDED",
-                        borderRadius: "4px",
-                        background: "#FFFFFF",
-                      }}
-                      disabled={isDisabled}
-                    >
-                      <img
-                        src={button.icon}
-                        alt={button.title}
-                        className="w-4 h-4"
-                      />
-                    </button>
+                      <NightTooltip key={index} content={button.title}>
+                        <button
+                          onClick={button.onClick}
+                          className={`flex items-center justify-center transition-all hover:bg-gray-50 ${isDisabled ? "opacity-40 pointer-events-none" : "cursor-pointer"}`}
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            border: "1px solid #EDEDED",
+                            borderRadius: "4px",
+                            background: "#FFFFFF",
+                          }}
+                          disabled={isDisabled}
+                          aria-label={button.title}
+                        >
+                          <img
+                            src={button.icon}
+                            alt={button.title}
+                            className="w-4 h-4"
+                          />
+                        </button>
+                      </NightTooltip>
                     );
                   })}
               </div>

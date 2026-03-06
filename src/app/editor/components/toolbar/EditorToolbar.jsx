@@ -13,52 +13,25 @@ import {
   AlignJustify,
 } from "lucide-react";
 import { FONT_MAP, FONT_OPTIONS } from "./utils/EditorUtils.js";
+import {
+  Tooltip as ShadTooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const Tooltip = ({ text, children, className = "" }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
-  const triggerRef = useCallback((el) => {
-    triggerRef.current = el;
-  }, []);
-  const tooltipRef = useCallback((el) => {
-    tooltipRef.current = el;
-  }, []);
-
-  const handleMouseEnter = () => {
-    const element = triggerRef.current;
-    if (element) {
-      const rect = element.getBoundingClientRect();
-      setPosition({
-        top: rect.bottom + 8,
-        left: rect.left + rect.width / 2,
-      });
-      setIsVisible(true);
-    }
-  };
-
   return (
-    <>
-      <div
-        ref={triggerRef}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={() => setIsVisible(false)}
-        className={`inline-flex ${className}`}
-      >
-        {children}
-      </div>
-      {isVisible &&
-        createPortal(
-          <div
-            ref={tooltipRef}
-            className="fixed z-[10000] px-2 py-1 text-xs font-medium text-white bg-gray-900 rounded shadow-sm transform -translate-x-1/2 pointer-events-none whitespace-nowrap"
-            style={{ top: position.top, left: position.left }}
-          >
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900"></div>
-            {text}
-          </div>,
-          document.body,
-        )}
-    </>
+    <TooltipProvider delayDuration={200}>
+      <ShadTooltip>
+        <TooltipTrigger asChild>
+          <span className={`inline-flex ${className}`}>{children}</span>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="z-[10000]">
+          {text}
+        </TooltipContent>
+      </ShadTooltip>
+    </TooltipProvider>
   );
 };
 
@@ -68,11 +41,7 @@ const DropdownMenu = memo(({
   children,
   className = "",
 }) => {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = typeof window !== "undefined";
 
   if (!isOpen || !mounted || position.top === undefined || position.top === null) {
     return null;
@@ -333,7 +302,7 @@ const AlignSelector = memo(({
 
 AlignSelector.displayName = "AlignSelector";
 
-export { Tooltip, DropdownMenu, EditorToolbar, FontSelector, HeadingSelector, ListSelector, AlignSelector };
+export { Tooltip, DropdownMenu, FontSelector, HeadingSelector, ListSelector, AlignSelector };
 export default {
   Tooltip,
   DropdownMenu,

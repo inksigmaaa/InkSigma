@@ -15,6 +15,7 @@ import { useSession } from "@/lib/auth-client";
 import { usePathname, useRouter } from "next/navigation";
 import PublishOptionsModal from "@/components/features/review/PublishOptionsModal";
 import styles from "@/components/features/articles/Articles.module.css";
+import NightTooltip from "@/components/ui/night-tooltip";
 import Image from "next/image";
 import { toast } from "sonner";
 
@@ -357,23 +358,25 @@ export default function AuthorReviewPage() {
               </label>
 
               {selectedPosts.length > 0 && (
-                <button
-                  className="flex items-center justify-center transition-all cursor-pointer hover:bg-gray-50 bg-white"
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    border: "1px solid #EDEDED",
-                    borderRadius: "4px",
-                  }}
-                  onClick={handleBulkAction}
-                  title="Revert to Draft"
-                >
-                  <img
-                    src="/images/icons/trash2.svg"
-                    alt="Revert"
-                    className="w-4 h-4"
-                  />
-                </button>
+                <NightTooltip content="Revert to Draft">
+                  <button
+                    className="flex items-center justify-center transition-all cursor-pointer hover:bg-gray-50 bg-white"
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      border: "1px solid #EDEDED",
+                      borderRadius: "4px",
+                    }}
+                    onClick={handleBulkAction}
+                    aria-label="Revert to Draft"
+                  >
+                    <img
+                      src="/images/icons/trash2.svg"
+                      alt="Revert"
+                      className="w-4 h-4"
+                    />
+                  </button>
+                </NightTooltip>
               )}
             </div>
 

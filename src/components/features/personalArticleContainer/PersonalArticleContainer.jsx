@@ -2,6 +2,7 @@ import ArticleDropdown from "../articleDropdown/ArticleDropdown.jsx";
 import { useRouter, usePathname } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
 import React from "react";
+import NightTooltip from "@/components/ui/night-tooltip";
 
 // Helper function to format relative time
 const getRelativeTime = (dateString, status) => {
@@ -54,6 +55,16 @@ const getRelativeTime = (dateString, status) => {
     return dateString; // Return original string if error occurs
   }
 };
+
+function ActionTooltipButton({ label, children, ...props }) {
+  return (
+    <NightTooltip content={label}>
+      <button aria-label={label} {...props}>
+        {children}
+      </button>
+    </NightTooltip>
+  );
+}
 
 export default function PersonalArticleContainer({
   id,
@@ -457,7 +468,8 @@ export default function PersonalArticleContainer({
               <div className="flex gap-[10px] flex-shrink-0">
                 {status === "trash" ? (
                   <>
-                    <button
+                    <ActionTooltipButton
+                      label="Restore"
                       className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
                       style={{
                         width: "32px",
@@ -466,12 +478,12 @@ export default function PersonalArticleContainer({
                         padding: "8px",
                         borderWidth: "1px",
                       }}
-                      title="Restore"
                       onClick={onRestore}
                     >
                       <img src="/images/icons/restore.svg" alt="restore" />
-                    </button>
-                    <button
+                    </ActionTooltipButton>
+                    <ActionTooltipButton
+                      label="Delete Permanently"
                       className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
@@ -480,17 +492,17 @@ export default function PersonalArticleContainer({
                         padding: "8px",
                         borderWidth: "1px",
                       }}
-                      title="Delete Permanently"
                       onClick={canDelete ? onDelete : undefined}
                       disabled={!canDelete}
                     >
                       <img src="/images/icons/trash2.svg" alt="delete" />
-                    </button>
+                    </ActionTooltipButton>
                   </>
                 ) : status === "draft" ? (
                   <>
                     {canPublish && (
-                      <button
+                      <ActionTooltipButton
+                        label="Publish"
                         className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canPublishDraft && canPublishAction ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                         style={{
                           width: "32px",
@@ -499,14 +511,14 @@ export default function PersonalArticleContainer({
                           padding: "8px",
                           borderWidth: "1px",
                         }}
-                        title="Publish"
                         onClick={canPublishDraft && canPublishAction ? onPublish : undefined}
                         disabled={!(canPublishDraft && canPublishAction)}
                       >
                         <img src="/images/icons/share.svg" alt="publish" />
-                      </button>
+                      </ActionTooltipButton>
                     )}
-                    <button
+                    <ActionTooltipButton
+                      label="Edit"
                       className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
                       style={{
                         width: "32px",
@@ -515,12 +527,12 @@ export default function PersonalArticleContainer({
                         padding: "8px",
                         borderWidth: "1px",
                       }}
-                      title="Edit"
                       onClick={handleEdit}
                     >
                       <img src="/images/icons/edit.svg" alt="edit" />
-                    </button>
-                    <button
+                    </ActionTooltipButton>
+                    <ActionTooltipButton
+                      label="Delete"
                       className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
@@ -529,16 +541,16 @@ export default function PersonalArticleContainer({
                         padding: "8px",
                         borderWidth: "1px",
                       }}
-                      title="Delete"
                       onClick={canDelete ? onDelete : undefined}
                       disabled={!canDelete}
                     >
                       <img src="/images/icons/trash2.svg" alt="delete" />
-                    </button>
+                    </ActionTooltipButton>
                   </>
                 ) : status === "review" ? (
                   <>
-                    <button
+                    <ActionTooltipButton
+                      label="Revert to Draft"
                       className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
                       style={{
                         width: "32px",
@@ -547,16 +559,16 @@ export default function PersonalArticleContainer({
                         padding: "8px",
                         borderWidth: "1px",
                       }}
-                      title="Revert to Draft"
                       onClick={onDraft}
                     >
                       <img src="/images/icons/copy.svg" alt="draft" />
-                    </button>
+                    </ActionTooltipButton>
                   </>
                 ) : status === "unpublished" ? (
                   <>
                     {canPublish && (
-                      <button
+                      <ActionTooltipButton
+                        label="Republish"
                         className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
                         style={{
                           width: "32px",
@@ -565,16 +577,16 @@ export default function PersonalArticleContainer({
                           padding: "8px",
                           borderWidth: "1px",
                         }}
-                        title="Republish"
                         onClick={onRepublish}
                       >
                         <img
                           src="/images/icons/publish-ideal.svg"
                           alt="republish"
                         />
-                      </button>
+                      </ActionTooltipButton>
                     )}
-                    <button
+                    <ActionTooltipButton
+                      label="Edit"
                       className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
                       style={{
                         width: "32px",
@@ -583,12 +595,12 @@ export default function PersonalArticleContainer({
                         padding: "8px",
                         borderWidth: "1px",
                       }}
-                      title="Edit"
                       onClick={handleEdit}
                     >
                       <img src="/images/icons/edit-ideal.svg" alt="edit" />
-                    </button>
-                    <button
+                    </ActionTooltipButton>
+                    <ActionTooltipButton
+                      label="Move to Draft"
                       className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
                       style={{
                         width: "32px",
@@ -597,12 +609,12 @@ export default function PersonalArticleContainer({
                         padding: "8px",
                         borderWidth: "1px",
                       }}
-                      title="Move to Draft"
                       onClick={onDraft}
                     >
                       <img src="/images/icons/copy.svg" alt="draft" />
-                    </button>
-                    <button
+                    </ActionTooltipButton>
+                    <ActionTooltipButton
+                      label="Delete"
                       className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
@@ -611,17 +623,17 @@ export default function PersonalArticleContainer({
                         padding: "8px",
                         borderWidth: "1px",
                       }}
-                      title="Delete"
                       onClick={canDelete ? onDelete : undefined}
                       disabled={!canDelete}
                     >
                       <img src="/images/icons/trash2.svg" alt="delete" />
-                    </button>
+                    </ActionTooltipButton>
                   </>
                 ) : (
                   <>
                     {status === "published" && canPublish && (
-                      <button
+                      <ActionTooltipButton
+                        label="Unpublish"
                         className="bg-[#FEFEFE] border border-[#EAEAEA] cursor-pointer flex items-center justify-center transition-all hover:bg-gray-50 hover:border-gray-300"
                         style={{
                           width: "32px",
@@ -630,16 +642,16 @@ export default function PersonalArticleContainer({
                           padding: "8px",
                           borderWidth: "1px",
                         }}
-                        title="Unpublish"
                         onClick={onUnpublish}
                       >
                         <img
                           src="/images/icons/unpublished-hover.svg"
                           alt="unpublish"
                         />
-                      </button>
+                      </ActionTooltipButton>
                     )}
-                    <button
+                    <ActionTooltipButton
+                      label="Edit"
                       className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canEdit ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
@@ -648,13 +660,13 @@ export default function PersonalArticleContainer({
                         padding: "8px",
                         borderWidth: "1px",
                       }}
-                      title="Edit"
                       onClick={canEdit ? handleEdit : undefined}
                       disabled={!canEdit}
                     >
                       <img src="/images/icons/edit-ideal.svg" alt="edit" />
-                    </button>
-                    <button
+                    </ActionTooltipButton>
+                    <ActionTooltipButton
+                      label="Draft"
                       className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canEdit ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
@@ -663,13 +675,13 @@ export default function PersonalArticleContainer({
                         padding: "8px",
                         borderWidth: "1px",
                       }}
-                      title="Draft"
                       onClick={canEdit ? onDraft : undefined}
                       disabled={!canEdit}
                     >
                       <img src="/images/icons/copy.svg" alt="draft" />
-                    </button>
-                    <button
+                    </ActionTooltipButton>
+                    <ActionTooltipButton
+                      label="Delete"
                       className={`bg-[#FEFEFE] border border-[#EAEAEA] flex items-center justify-center transition-all ${canDelete ? "cursor-pointer hover:bg-gray-50 hover:border-gray-300" : "cursor-not-allowed opacity-40"}`}
                       style={{
                         width: "32px",
@@ -678,12 +690,11 @@ export default function PersonalArticleContainer({
                         padding: "8px",
                         borderWidth: "1px",
                       }}
-                      title="Delete"
                       onClick={canDelete ? onDelete : undefined}
                       disabled={!canDelete}
                     >
                       <img src="/images/icons/delete.svg" alt="delete" />
-                    </button>
+                    </ActionTooltipButton>
                   </>
                 )}
               </div>

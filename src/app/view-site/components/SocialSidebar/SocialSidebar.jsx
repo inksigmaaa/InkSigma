@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { getApiBase } from '@/utils/apiBase';
+import NightTooltip from "@/components/ui/night-tooltip";
 
 const API_URL = getApiBase();
 
@@ -68,45 +69,57 @@ export default function SocialSidebar({ title, url, slug, blogId, onSnapshot }) 
   return (
     <div className="flex flex-col gap-3 items-center sticky top-28">
       {/* Copy Link */}
-      <button onClick={copyLink} className={buttonClass} aria-label="Copy Link" title="Copy Link">
-        {showCopied ? (
-          <span className="text-xs font-bold text-green-600">✓</span>
-        ) : (
-          <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-          </svg>
-        )}
-      </button>
+      <NightTooltip content="Copy Link">
+        <button onClick={copyLink} className={buttonClass} aria-label="Copy Link">
+          {showCopied ? (
+            <span className="text-xs font-bold text-green-600">✓</span>
+          ) : (
+            <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+          )}
+        </button>
+      </NightTooltip>
 
       {/* WhatsApp */}
-      <button onClick={shareOnWhatsApp} className={buttonClass} aria-label="Share on WhatsApp">
-        <Image src="/svg/whatsapp.svg" alt="WhatsApp" width={16} height={16} />
-      </button>
+      <NightTooltip content="Share on WhatsApp">
+        <button onClick={shareOnWhatsApp} className={buttonClass} aria-label="Share on WhatsApp">
+          <Image src="/svg/whatsapp.svg" alt="WhatsApp" width={16} height={16} />
+        </button>
+      </NightTooltip>
 
       {/* Facebook */}
-      <button onClick={shareOnFacebook} className={buttonClass} aria-label="Share on Facebook">
-        <Image src="/svg/facebook.svg" alt="Facebook" width={16} height={16} />
-      </button>
+      <NightTooltip content="Share on Facebook">
+        <button onClick={shareOnFacebook} className={buttonClass} aria-label="Share on Facebook">
+          <Image src="/svg/facebook.svg" alt="Facebook" width={16} height={16} />
+        </button>
+      </NightTooltip>
 
       {/* Twitter */}
-      <button onClick={shareOnTwitter} className={buttonClass} aria-label="Share on Twitter">
-        <Image src="/svg/x-twitter.svg" alt="X (Twitter)" width={16} height={16} />
-      </button>
+      <NightTooltip content="Share on Twitter">
+        <button onClick={shareOnTwitter} className={buttonClass} aria-label="Share on Twitter">
+          <Image src="/svg/x-twitter.svg" alt="X (Twitter)" width={16} height={16} />
+        </button>
+      </NightTooltip>
 
       {/* LinkedIn */}
-      <button onClick={shareOnLinkedIn} className={buttonClass} aria-label="Share on LinkedIn">
-        <Image src="/svg/linkedin.svg" alt="LinkedIn" width={16} height={16} />
-      </button>
+      <NightTooltip content="Share on LinkedIn">
+        <button onClick={shareOnLinkedIn} className={buttonClass} aria-label="Share on LinkedIn">
+          <Image src="/svg/linkedin.svg" alt="LinkedIn" width={16} height={16} />
+        </button>
+      </NightTooltip>
 
       {/* Snapshot / Capture */}
-      <button 
-        onClick={() => onSnapshot && onSnapshot()} 
-        className={buttonClass} 
-        aria-label="Save Snapshot"
-      >
-         <Image src="/svg/save_snapshot.svg" alt="Save Snapshot" width={16} height={16} />
-      </button>
+      <NightTooltip content="Save Snapshot">
+        <button 
+          onClick={() => onSnapshot && onSnapshot()} 
+          className={buttonClass} 
+          aria-label="Save Snapshot"
+        >
+           <Image src="/svg/save_snapshot.svg" alt="Save Snapshot" width={16} height={16} />
+        </button>
+      </NightTooltip>
     </div>
   );
 }

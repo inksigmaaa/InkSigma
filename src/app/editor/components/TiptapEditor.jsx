@@ -33,6 +33,12 @@ import {
   AlignJustify,
 } from "lucide-react";
 import { ImageModal } from "./ImageModal";
+import {
+  Tooltip as ShadTooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const FONT_OPTIONS = [
   "Arial",
@@ -113,45 +119,17 @@ const processEditorContent = (content, normalizeFn) => {
 };
 
 const Tooltip = ({ text, children, className = "" }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
-  const triggerRef = useRef(null);
-  const tooltipRef = useRef(null);
-
-  const handleMouseEnter = () => {
-    if (triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      setPosition({
-        top: rect.bottom + 8, // Position below the element
-        left: rect.left + rect.width / 2,
-      });
-      setIsVisible(true);
-    }
-  };
-
   return (
-    <>
-      <div
-        ref={triggerRef}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={() => setIsVisible(false)}
-        className={`inline-flex ${className}`}
-      >
-        {children}
-      </div>
-      {isVisible &&
-        createPortal(
-          <div
-            ref={tooltipRef}
-            className="fixed z-[10000] px-2 py-1 text-xs font-medium text-white bg-gray-900 rounded shadow-sm transform -translate-x-1/2 pointer-events-none whitespace-nowrap"
-            style={{ top: position.top, left: position.left }}
-          >
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900"></div>
-            {text}
-          </div>,
-          document.body,
-        )}
-    </>
+    <TooltipProvider delayDuration={200}>
+      <ShadTooltip>
+        <TooltipTrigger asChild>
+          <span className={`inline-flex ${className}`}>{children}</span>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="z-[10000]">
+          {text}
+        </TooltipContent>
+      </ShadTooltip>
+    </TooltipProvider>
   );
 };
 
@@ -162,18 +140,9 @@ const DropdownMenu = ({
   children,
   className = "",
 }) => {
-  const [mounted, setMounted] = useState(false);
+  const mounted = typeof window !== "undefined";
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (
-    !isOpen ||
-    !mounted ||
-    position.top === undefined ||
-    position.top === null
-  )
+  if (!isOpen || !mounted || position.top === undefined || position.top === null)
     return null;
 
   return createPortal(
@@ -482,14 +451,15 @@ const HeadingSelector = ({
       className="flex items-center gap-1 dropdown-container shrink-0 px-1 border-r border-gray-200"
       data-key={dropdownKey}
     >
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().setParagraph().run()}
-        className={`p-1.5 hover:bg-gray-100 rounded ${editor.isActive("paragraph") ? "bg-gray-200" : ""}`}
-        title="Paragraph"
-      >
-        <img src="/editor-icons/P.svg" alt="P" className="w-4 h-4" />
-      </button>
+      <Tooltip text="Paragraph">
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().setParagraph().run()}
+          className={`p-1.5 hover:bg-gray-100 rounded ${editor.isActive("paragraph") ? "bg-gray-200" : ""}`}
+        >
+          <img src="/editor-icons/P.svg" alt="P" className="w-4 h-4" />
+        </button>
+      </Tooltip>
       <div className="relative">
         <button
           type="button"
@@ -604,19 +574,20 @@ const ListSelector = ({
     className="relative dropdown-container shrink-0 px-1 border-r border-gray-200"
     data-key={dropdownKey}
   >
-    <button
-      type="button"
-      className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        isOpen ? onClose() : onToggle(e);
-      }}
-      title="Lists"
-    >
-      <img src="/editor-icons/list.svg" alt="Lists" className="w-4 h-4" />
-      <ChevronDown className="h-3 w-3 text-gray-700" />
-    </button>
+    <Tooltip text="Lists">
+      <button
+        type="button"
+        className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          isOpen ? onClose() : onToggle(e);
+        }}
+      >
+        <img src="/editor-icons/list.svg" alt="Lists" className="w-4 h-4" />
+        <ChevronDown className="h-3 w-3 text-gray-700" />
+      </button>
+    </Tooltip>
     <DropdownMenu
       isOpen={isOpen}
       position={position}
@@ -669,23 +640,24 @@ const AlignSelector = ({
       className="relative dropdown-container shrink-0 px-1 border-r border-gray-200"
       data-key={dropdownKey}
     >
-      <button
-        type="button"
-        className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          isOpen ? onClose() : onToggle(e);
-        }}
-        title="Alignment"
-      >
-        <img
-          src="/editor-icons/Paragraph.svg"
-          alt="Alignment"
-          className="w-4 h-4"
-        />
-        <ChevronDown className="h-3 w-3 text-gray-700" />
-      </button>
+      <Tooltip text="Alignment">
+        <button
+          type="button"
+          className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            isOpen ? onClose() : onToggle(e);
+          }}
+        >
+          <img
+            src="/editor-icons/Paragraph.svg"
+            alt="Alignment"
+            className="w-4 h-4"
+          />
+          <ChevronDown className="h-3 w-3 text-gray-700" />
+        </button>
+      </Tooltip>
       <DropdownMenu
         isOpen={isOpen}
         position={position}
@@ -723,20 +695,21 @@ const LinkButton = ({
   dropdownKey,
 }) => (
   <div className="relative dropdown-container shrink-0" data-key={dropdownKey}>
-    <button
-      type="button"
-      className="p-1.5 hover:bg-gray-100 rounded"
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const { from, to } = editor.state.selection;
-        const text = editor.state.doc.textBetween(from, to, "");
-        onToggle(null, text);
-      }}
-      title="Insert Link"
-    >
-      <img src="/editor-icons/link.svg" alt="Link" className="w-4 h-4" />
-    </button>
+    <Tooltip text="Insert Link">
+      <button
+        type="button"
+        className="p-1.5 hover:bg-gray-100 rounded"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const { from, to } = editor.state.selection;
+          const text = editor.state.doc.textBetween(from, to, "");
+          onToggle(null, text);
+        }}
+      >
+        <img src="/editor-icons/link.svg" alt="Link" className="w-4 h-4" />
+      </button>
+    </Tooltip>
     <DropdownMenu
       isOpen={isOpen}
       position={position}
@@ -932,13 +905,14 @@ const MobileToolbar = ({
       </div>
 
       <div className="flex items-center gap-1 dropdown-container shrink-0 px-1 border-r border-gray-200">
-        <button
-          onClick={() => editor.chain().focus().setParagraph().run()}
-          className={`p-1.5 hover:bg-gray-100 rounded ${editor.isActive("paragraph") ? "bg-gray-200" : ""}`}
-          title="Paragraph"
-        >
-          <img src="/editor-icons/P.svg" alt="P" className="w-4 h-4" />
-        </button>
+        <Tooltip text="Paragraph">
+          <button
+            onClick={() => editor.chain().focus().setParagraph().run()}
+            className={`p-1.5 hover:bg-gray-100 rounded ${editor.isActive("paragraph") ? "bg-gray-200" : ""}`}
+          >
+            <img src="/editor-icons/P.svg" alt="P" className="w-4 h-4" />
+          </button>
+        </Tooltip>
         <div className="relative">
           <button
             type="button"
@@ -1011,17 +985,18 @@ const MobileToolbar = ({
       />
 
       <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
-        <button
-          className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            onDropdownToggle("list", e);
-          }}
-          title="Lists"
-        >
-          <img src="/editor-icons/list.svg" alt="Lists" className="w-4 h-4" />
-          <ChevronDown className="h-3 w-3 text-gray-700" />
-        </button>
+        <Tooltip text="Lists">
+          <button
+            className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onDropdownToggle("list", e);
+            }}
+          >
+            <img src="/editor-icons/list.svg" alt="Lists" className="w-4 h-4" />
+            <ChevronDown className="h-3 w-3 text-gray-700" />
+          </button>
+        </Tooltip>
         <DropdownMenu
           isOpen={dropdownState.list.isOpen}
           position={dropdownState.list.position}
@@ -1051,21 +1026,22 @@ const MobileToolbar = ({
       </div>
 
       <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
-        <button
-          className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            onDropdownToggle("align", e);
-          }}
-          title="Alignment"
-        >
-          <img
-            src="/editor-icons/Paragraph.svg"
-            alt="Alignment"
-            className="w-4 h-4"
-          />
-          <ChevronDown className="h-3 w-3 text-gray-700" />
-        </button>
+        <Tooltip text="Alignment">
+          <button
+            className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onDropdownToggle("align", e);
+            }}
+          >
+            <img
+              src="/editor-icons/Paragraph.svg"
+              alt="Alignment"
+              className="w-4 h-4"
+            />
+            <ChevronDown className="h-3 w-3 text-gray-700" />
+          </button>
+        </Tooltip>
         <DropdownMenu
           isOpen={dropdownState.align.isOpen}
           position={dropdownState.align.position}
@@ -1290,46 +1266,48 @@ const TabletToolbar = ({
       }}
     >
       <div className="flex items-center gap-0.5 shrink-0 pr-2 border-r border-gray-200">
-        <button
-          onClick={() => editor.chain().focus().undo().run()}
-          disabled={!editor.can().chain().focus().undo().run()}
-          className="p-1.5 hover:bg-gray-100 rounded shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
-          title="Undo"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        <Tooltip text="Undo">
+          <button
+            onClick={() => editor.chain().focus().undo().run()}
+            disabled={!editor.can().chain().focus().undo().run()}
+            className="p-1.5 hover:bg-gray-100 rounded shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-            />
-          </svg>
-        </button>
-        <button
-          onClick={() => editor.chain().focus().redo().run()}
-          disabled={!editor.can().chain().focus().redo().run()}
-          className="p-1.5 hover:bg-gray-100 rounded shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
-          title="Redo"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+              />
+            </svg>
+          </button>
+        </Tooltip>
+        <Tooltip text="Redo">
+          <button
+            onClick={() => editor.chain().focus().redo().run()}
+            disabled={!editor.can().chain().focus().redo().run()}
+            className="p-1.5 hover:bg-gray-100 rounded shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 10h-10a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6"
-            />
-          </svg>
-        </button>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 10h-10a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6"
+              />
+            </svg>
+          </button>
+        </Tooltip>
       </div>
 
       <div className="relative dropdown-container shrink-0 pr-2 border-r border-gray-200">
@@ -1401,17 +1379,18 @@ const TabletToolbar = ({
       />
 
       <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
-        <button
-          className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            onDropdownToggle("list", e);
-          }}
-          title="Lists"
-        >
-          <img src="/editor-icons/list.svg" alt="Lists" className="w-4 h-4" />
-          <ChevronDown className="h-3 w-3 text-gray-700" />
-        </button>
+        <Tooltip text="Lists">
+          <button
+            className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onDropdownToggle("list", e);
+            }}
+          >
+            <img src="/editor-icons/list.svg" alt="Lists" className="w-4 h-4" />
+            <ChevronDown className="h-3 w-3 text-gray-700" />
+          </button>
+        </Tooltip>
         <DropdownMenu
           isOpen={dropdownState.list.isOpen}
           position={dropdownState.list.position}
@@ -1441,21 +1420,22 @@ const TabletToolbar = ({
       </div>
 
       <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
-        <button
-          className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            onDropdownToggle("align", e);
-          }}
-          title="Alignment"
-        >
-          <img
-            src="/editor-icons/Paragraph.svg"
-            alt="Alignment"
-            className="w-4 h-4"
-          />
-          <ChevronDown className="h-3 w-3 text-gray-700" />
-        </button>
+        <Tooltip text="Alignment">
+          <button
+            className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onDropdownToggle("align", e);
+            }}
+          >
+            <img
+              src="/editor-icons/Paragraph.svg"
+              alt="Alignment"
+              className="w-4 h-4"
+            />
+            <ChevronDown className="h-3 w-3 text-gray-700" />
+          </button>
+        </Tooltip>
         <DropdownMenu
           isOpen={dropdownState.align.isOpen}
           position={dropdownState.align.position}
@@ -1842,6 +1822,7 @@ export const TiptapEditor = memo(function TiptapEditor({
     if (editor) {
       editorRef.current = editor;
       const { view } = editor;
+      // eslint-disable-next-line react-hooks/immutability
       view.dom.style.fontFamily = `${currentFont}, sans-serif`;
     }
   }, [editor, currentFont]);

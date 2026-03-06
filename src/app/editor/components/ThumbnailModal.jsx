@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import NightTooltip from "@/components/ui/night-tooltip"
 
 export function ThumbnailModal({
   isOpen,
@@ -96,17 +97,18 @@ export function ThumbnailModal({
                   alt="Preview" 
                   className="w-full h-full object-cover"
                 />
-                <button
-                  type="button"
-                  onClick={handleClearImage}
-                  className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/75"
-                  aria-label="Remove thumbnail"
-                  title="Remove thumbnail"
-                >
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                <NightTooltip content="Remove thumbnail">
+                  <button
+                    type="button"
+                    onClick={handleClearImage}
+                    className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/75"
+                    aria-label="Remove thumbnail"
+                  >
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </NightTooltip>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full">
