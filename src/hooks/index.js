@@ -4,6 +4,7 @@
 export { useScrollToSection } from './useScrollToSection'
 export { useForm } from './useForm'
 export { useLocalStorage } from './useLocalStorage'
+export { useExclusivePopup } from './useExclusivePopup'
 
 export {
   usePublications,

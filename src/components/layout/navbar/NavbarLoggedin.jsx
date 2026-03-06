@@ -4,12 +4,37 @@ import { useRouter } from "next/navigation";
 import { useSession, signOut, authClient } from "@/lib/auth-client";
 import Link from "next/link";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Button } from "@/components/ui/button";
 import { formatTimeAgo } from "@/utils/timeFormatter";
 import { getApiBase } from "@/utils/apiBase";
+import { useExclusivePopup } from "@/hooks/useExclusivePopup";
+import { CalendarDays } from "lucide-react";
+
+const formatJoinedDate = (dateValue) => {
+    if (!dateValue) return null;
+    const parsedDate = new Date(dateValue);
+    if (Number.isNaN(parsedDate.getTime())) return null;
+
+    return new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        year: "numeric",
+    }).format(parsedDate);
+};
+
+const getInitials = (name = "User") => {
+    const initials = name
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((word) => word[0].toUpperCase())
+        .join("");
+
+    return initials || "U";
+};
 
 export default function NavbarLoggedin() {
-    const [open, setOpen] = useState(false);
-    const [notificationOpen, setNotificationOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
@@ -19,6 +44,13 @@ export default function NavbarLoggedin() {
     const notificationIntervalRef = useRef(null);
     const router = useRouter();
     const API_URL = getApiBase();
+    const {
+        isOpen,
+        openPopup,
+        closePopup,
+        togglePopup,
+        closeAllPopups,
+    } = useExclusivePopup();
 
     // Get current user session
     const { data: session, isPending, refetch } = useSession();
@@ -102,17 +134,17 @@ export default function NavbarLoggedin() {
     // Close dropdowns when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-                setOpen(false);
-            }
-            if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-                setNotificationOpen(false);
+            const clickedInsideProfile = wrapperRef.current?.contains(event.target);
+            const clickedInsideNotification = notificationRef.current?.contains(event.target);
+
+            if (!clickedInsideProfile && !clickedInsideNotification) {
+                closeAllPopups();
             }
         };
 
         document.addEventListener("click", handleClickOutside);
         return () => document.removeEventListener("click", handleClickOutside);
-    }, []);
+    }, [closeAllPopups]);
 
     // Listen for profile updates from other tabs/windows
     useEffect(() => {
@@ -177,7 +209,7 @@ export default function NavbarLoggedin() {
         }
 
         // Close notification dropdown
-        setNotificationOpen(false);
+        closePopup("notification");
 
         // Navigate to the appropriate page
         if (notification.navigationUrl) {
@@ -205,6 +237,23 @@ export default function NavbarLoggedin() {
 
     const userName = mergedUser?.name || user?.name || "User";
     const unreadCount = notifications.filter(n => !n.isRead).length;
+    const isNotificationOpen = isOpen("notification");
+    const isProfileDropdownOpen = isOpen("profileDropdown");
+    const isProfileHoverOpen = isOpen("profileHover");
+    const userEmail = mergedUser?.email || user?.email || "";
+    const userDescription = localUserData?.bio?.trim()
+        || (localUserData?.username ? `@${localUserData.username}` : "")
+        || (userEmail ? `Signed in as ${userEmail}` : "InkSigma member");
+    const userAvatar =
+        mergedUser?.image
+        || user?.image
+        || mergedUser?.avatar
+        || user?.avatar
+        || mergedUser?.picture
+        || user?.picture
+        || null;
+    const joinedDateText = `Joined ${formatJoinedDate(mergedUser?.createdAt || user?.createdAt || localUserData?.createdAt) || "recently"}`;
+    const avatarFallback = getInitials(userName);
 
     return (
         <div className={`fixed left-0 right-0 top-0 z-50 transition-transform duration-300 sm:bg-white sm:border-b sm:border-gray-200 md:bg-white md:border-0 ${!isVisible ? 'sm:-translate-y-full' : 'sm:translate-y-0'}`}>
@@ -223,10 +272,10 @@ export default function NavbarLoggedin() {
                         <div ref={notificationRef} className="relative">
                             <div
                                 className="flex items-center cursor-pointer relative"
-                                onClick={() => setNotificationOpen((prev) => !prev)}
+                                onClick={() => togglePopup("notification")}
                             >
                                 <img
-                                    src={notificationOpen ? "/svg/color-bell.svg" : "/images/icons/Notification.svg"}
+                                    src={isNotificationOpen ? "/svg/color-bell.svg" : "/images/icons/Notification.svg"}
                                     alt="notification"
                                     className="w-6 h-6 md:w-6 md:h-6 sm:w-6 sm:h-6"
                                 />
@@ -238,7 +287,7 @@ export default function NavbarLoggedin() {
                             </div>
 
                             {/* Notification Dropdown */}
-                            {notificationOpen && (
+                            {isNotificationOpen && (
                                 <div
                                     onClick={(e) => e.stopPropagation()}
                                     className="absolute top-[35px] right-0 w-[392px] max-h-[511px] bg-white overflow-hidden z-[99999] rounded-[10px] border border-[#e5e5e5] shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex flex-col max-[414px]:fixed max-[414px]:top-[80px] max-[414px]:left-4 max-[414px]:right-4 max-[414px]:w-auto max-[414px]:shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
@@ -253,7 +302,7 @@ export default function NavbarLoggedin() {
                                             Notification
                                         </h3>
                                         <button
-                                            onClick={() => setNotificationOpen(false)}
+                                            onClick={() => closePopup("notification")}
                                             className="flex items-center justify-center w-7 h-7 rounded hover:bg-[#f5f5f5] transition-colors bg-white border-none cursor-pointer max-[414px]:w-6 max-[414px]:h-6"
                                         >
                                             <img
@@ -380,13 +429,50 @@ export default function NavbarLoggedin() {
                         <div ref={wrapperRef} className="relative">
                             <div
                                 className="flex items-center gap-[12px] cursor-pointer px-[12px] py-[8px] rounded-[4px] opacity-100"
-                                onClick={() => setOpen((prev) => !prev)}
+                                onClick={() => togglePopup("profileDropdown")}
                             >
-                                <UserAvatar
-                                    user={mergedUser}
-                                    size="md"
-                                    className="w-[34px] h-[34px] opacity-100 md:w-[34px] md:h-[34px] sm:w-[40px] sm:h-[40px]"
-                                />
+                                <HoverCard
+                                    open={isProfileHoverOpen}
+                                    onOpenChange={(nextOpen) => {
+                                        if (nextOpen) {
+                                            openPopup("profileHover");
+                                            return;
+                                        }
+                                        closePopup("profileHover");
+                                    }}
+                                    openDelay={120}
+                                    closeDelay={80}
+                                >
+                                    <HoverCardTrigger asChild>
+                                        <Button
+                                            variant="link"
+                                            className="h-auto border-0 p-0 no-underline hover:border-0 hover:no-underline"
+                                        >
+                                            <Avatar className="w-[34px] h-[34px] opacity-100 md:w-[34px] md:h-[34px] sm:w-[40px] sm:h-[40px]">
+                                                {userAvatar ? <AvatarImage src={userAvatar} alt={userName} /> : null}
+                                                <AvatarFallback>{avatarFallback}</AvatarFallback>
+                                            </Avatar>
+                                        </Button>
+                                    </HoverCardTrigger>
+                                    <HoverCardContent align="center" sideOffset={24} className="w-80">
+                                        <div className="flex justify-between space-x-2.5">
+                                            <Avatar className="size-10">
+                                                {userAvatar ? <AvatarImage src={userAvatar} alt={userName} /> : null}
+                                                <AvatarFallback>{avatarFallback}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="space-y-1 min-w-0">
+                                                <h4 className="text-sm font-semibold leading-none">{isPending ? "Loading..." : userName}</h4>
+                                                <p className="text-muted-foreground text-sm break-words">
+                                                    {userDescription}
+                                                </p>
+                                                <div className="mt-2 flex items-center gap-1.5">
+                                                    <CalendarDays className="text-muted-foreground size-3" />
+                                                    <span className="text-muted-foreground text-xs">{joinedDateText}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </HoverCardContent>
+                                </HoverCard>
 
                                 {/* User name with dropdown arrow - Only show on desktop (1024px+) */}
                                 <div className="hidden xl:flex items-center gap-[8px]">
@@ -403,7 +489,7 @@ export default function NavbarLoggedin() {
                             </div>
 
                             {/* Dropdown */}
-                            {open && (
+                            {isProfileDropdownOpen && (
                                 <div
                                     onClick={(e) => e.stopPropagation()}
                                     className="absolute top-full -right-6 mt-4 w-[201px] h-auto bg-[#FEFEFE] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.07)] border border-[#EDEDED] rounded-[8px] flex flex-col gap-[4px] p-[8px] z-50"
