@@ -1,6 +1,6 @@
 import CategoryFilter from "../categoryFilter/CategoryFilter"
 import { Trash2 } from "lucide-react"
-import NightTooltip from "@/components/ui/night-tooltip";
+import { NightTooltip } from "@/components/ui/tooltip";
 
 export default function ScheduleControls({
   selectedPosts,

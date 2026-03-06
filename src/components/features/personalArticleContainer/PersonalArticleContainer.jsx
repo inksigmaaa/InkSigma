@@ -2,7 +2,7 @@ import ArticleDropdown from "../articleDropdown/ArticleDropdown.jsx";
 import { useRouter, usePathname } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
 import React from "react";
-import NightTooltip from "@/components/ui/night-tooltip";
+import { NightTooltip } from "@/components/ui/tooltip";
 
 // Helper function to format relative time
 const getRelativeTime = (dateString, status) => {

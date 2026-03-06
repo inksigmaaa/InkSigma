@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import PersonalArticleContainer from "../personalArticleContainer/PersonalArticleContainer";
 import CategoryFilter from "../categoryFilter/CategoryFilter";
 import { Button } from "@/components/ui/button";
-import NightTooltip from "@/components/ui/night-tooltip";
+import { NightTooltip } from "@/components/ui/tooltip";
 import styles from "../articles/Articles.module.css";
 
 // Ensure CategoryFilter is imported

@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import NightTooltip from "@/components/ui/night-tooltip"
+import { NightTooltip } from "@/components/ui/tooltip";
 
 export function ThumbnailModal({
   isOpen,

@@ -15,7 +15,7 @@ import { useSession } from "@/lib/auth-client";
 import { usePathname, useRouter } from "next/navigation";
 import PublishOptionsModal from "@/components/features/review/PublishOptionsModal";
 import styles from "@/components/features/articles/Articles.module.css";
-import NightTooltip from "@/components/ui/night-tooltip";
+import { NightTooltip } from "@/components/ui/tooltip";
 import Image from "next/image";
 import { toast } from "sonner";
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { getApiBase } from '@/utils/apiBase';
-import NightTooltip from "@/components/ui/night-tooltip";
+import { NightTooltip } from "@/components/ui/tooltip";
 
 const API_URL = getApiBase();
 

@@ -1,5 +1,5 @@
 import { FeedbackIcon } from './icons/SvgIcons'
-import NightTooltip from "@/components/ui/night-tooltip";
+import { NightTooltip } from "@/components/ui/tooltip";
 
 export default function FeedbackButton() {
   return (

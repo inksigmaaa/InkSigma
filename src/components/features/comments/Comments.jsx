@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import NightTooltip from "@/components/ui/night-tooltip";
+import { NightTooltip } from "@/components/ui/tooltip";
 
 export default function Comments() {
     const [selectAll, setSelectAll] = useState(false)
