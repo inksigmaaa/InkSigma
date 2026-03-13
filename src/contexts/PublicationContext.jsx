@@ -32,7 +32,7 @@ const PUBLIC_PATH_PREFIXES = [
 
 const DASHBOARD_ENDPOINT_PREFIXES = [
   "/home",
-  "/posts",
+  "/allArticle",
   "/review",
   "/author-review",
   "/editor",
@@ -102,7 +102,7 @@ function PublicationProviderInner({ children }) {
     })();
 
     return (
-      effectivePathname?.startsWith("/posts/") ||
+      effectivePathname?.startsWith("/allArticle/") ||
       effectivePathname?.startsWith("/review") ||
       effectivePathname?.startsWith("/author-review") ||
       effectivePathname?.startsWith("/editorpage") ||
@@ -117,8 +117,27 @@ function PublicationProviderInner({ children }) {
     publicationsForLookup = userPublications,
   ) => {
     // Try searchParams first (client-side, when available)
+    // Check for 'pub' parameter
     if (searchParams?.get("pub")) {
       return parseInt(searchParams.get("pub"));
+    }
+
+    // Check for 'publicationId' parameter (used in view-site and blog pages)
+    if (searchParams?.get("publicationId")) {
+      return parseInt(searchParams.get("publicationId"));
+    }
+
+    // Check for 'subdomain' parameter and lookup publication by subdomain
+    if (
+      searchParams?.get("subdomain") &&
+      Array.isArray(publicationsForLookup) &&
+      publicationsForLookup.length > 0
+    ) {
+      const subdomain = searchParams.get("subdomain");
+      const match = publicationsForLookup.find(
+        (pub) => pub?.subdomain === subdomain,
+      );
+      if (match) return match.id;
     }
 
     // Fallback to window.location.search if searchParams isn't ready yet
@@ -127,6 +146,21 @@ function PublicationProviderInner({ children }) {
       const params = new URLSearchParams(window.location.search);
       const pub = params.get("pub");
       if (pub) return parseInt(pub);
+
+      const publicationId = params.get("publicationId");
+      if (publicationId) return parseInt(publicationId);
+
+      const subdomain = params.get("subdomain");
+      if (
+        subdomain &&
+        Array.isArray(publicationsForLookup) &&
+        publicationsForLookup.length > 0
+      ) {
+        const match = publicationsForLookup.find(
+          (pub) => pub?.subdomain === subdomain,
+        );
+        if (match) return match.id;
+      }
 
       // New dashboard URL shape: /{pubSubdomain}/{endpoint}
       if (
@@ -160,12 +194,12 @@ function PublicationProviderInner({ children }) {
         if (!isPending) {
           setLoading(false);
         }
-        return;
+        return [];
       }
 
       // Only fetch on client side
       if (typeof window === "undefined") {
-        return;
+        return [];
       }
 
       try {
@@ -178,10 +212,13 @@ function PublicationProviderInner({ children }) {
         if (!data) {
           setUserPublications([]);
           setLoading(false);
-          return;
+          return [];
         }
 
-        if (data.message?.includes("Unauthorized") || data.message?.includes("401")) {
+        if (
+          data.message?.includes("Unauthorized") ||
+          data.message?.includes("401")
+        ) {
           setUserPublications([]);
           setCurrentPublication(null);
           setPublicationDetails(null);
@@ -189,7 +226,7 @@ function PublicationProviderInner({ children }) {
           if (!silent) {
             setLoading(false);
           }
-          return;
+          return [];
         }
 
         // Backend returns either array (legacy) or object with publications array (new)
@@ -204,14 +241,14 @@ function PublicationProviderInner({ children }) {
             (pub) => pub.id === currentPub.id,
           );
           if (!stillHasAccess) {
-            // User was removed from this publication, redirect to dashboard
+            // User was removed from this publication, redirect to home
             setCurrentPublication(null);
             setPublicationDetails(null);
             setUserPublications(publications);
             setLoading(false);
-            // Use window.location for a full page redirect to ensure clean state
-            window.location.href = "/";
-            return;
+            // Use router for client-side navigation
+            router.push("/");
+            return publications;
           }
         }
 
@@ -297,6 +334,8 @@ function PublicationProviderInner({ children }) {
             }
           }
         }
+
+        return publications;
       } catch (error) {
         console.error("Error loading user publications:", error);
         if (!silent) {
@@ -306,6 +345,7 @@ function PublicationProviderInner({ children }) {
         setUserPublications([]);
         setCurrentPublication(null);
         setPublicationDetails(null);
+        return [];
       } finally {
         if (!silent) {
           setLoading(false);
@@ -420,8 +460,16 @@ function PublicationProviderInner({ children }) {
 
     try {
       // Reload the publication data
-      await loadUserPublications();
-      await loadPublicationDetails(currentPublication.id);
+      const latestPublications = await loadUserPublications();
+
+      // Check if user still has access to this publication before loading details
+      const stillHasAccess =
+        Array.isArray(latestPublications) &&
+        latestPublications.some((pub) => pub.id === currentPublication.id);
+
+      if (stillHasAccess) {
+        await loadPublicationDetails(currentPublication.id);
+      }
     } catch (error) {
       console.error("Error refreshing publication:", error);
     }
@@ -485,7 +533,8 @@ function PublicationProviderInner({ children }) {
     const urlPubId = getPublicationIdFromUrl(userPublications);
 
     // If URL has a publication ID and it's different from current, switch to it
-    if (urlPubId && currentPublication && urlPubId !== currentPublication.id) {
+    // Use loose equality to handle string/number ID mismatches
+    if (urlPubId && currentPublication && urlPubId != currentPublication.id) {
       const urlPub = userPublications.find((pub) => pub.id == urlPubId); // Loose equality match
       if (urlPub) {
         setCurrentPublication(urlPub);

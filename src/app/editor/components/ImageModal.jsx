@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { X, Upload } from "lucide-react"
 import { getApiBase } from "@/utils/apiBase"
 
@@ -101,35 +102,20 @@ export function ImageModal({ isOpen, onClose, onImageAdd }) {
     onClose()
   }
 
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-
-    // Cleanup function to restore scroll when component unmounts
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen])
-
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] p-4">
-      <div className="bg-white rounded-lg w-full max-w-md mx-auto">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="w-full max-w-md p-0 gap-0" showClose={false}>
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Insert Image</h2>
+        <DialogHeader className="flex-row items-center justify-between space-y-0 p-6 border-b border-gray-200">
+          <DialogTitle className="text-xl font-semibold text-gray-900">Insert Image</DialogTitle>
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close image dialog"
           >
             <X className="h-5 w-5" />
           </button>
-        </div>
+        </DialogHeader>
 
         {/* Content */}
         <div className="p-6 space-y-6">
@@ -220,7 +206,7 @@ export function ImageModal({ isOpen, onClose, onImageAdd }) {
             Add image
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

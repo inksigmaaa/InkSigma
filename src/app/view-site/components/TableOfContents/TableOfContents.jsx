@@ -1,14 +1,13 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from "react";
 
-// Constants for layout and scroll behavior
+// Constants for scroll behavior
 const HEADER_OFFSET = 0; // Matches fixed header height
 const SCROLL_OFFSET = 180; // Offset for active section detection (must be > HEADER_OFFSET + padding)
-const STICKY_TOP_OFFSET = 100; // Sticky position from top
 
 export default function TableOfContents({ sections = [] }) {
-  const [activeSection, setActiveSection] = useState('');
+  const [activeSection, setActiveSection] = useState("");
 
   // Removed internal extraction logic as it's now handled by the parent
 
@@ -23,7 +22,7 @@ export default function TableOfContents({ sections = [] }) {
 
           // Find the current section based on scroll position
           // We iterate backwards to find the last section that we've scrolled past
-          let currentSection = '';
+          let currentSection = "";
           for (let i = sections.length - 1; i >= 0; i--) {
             const section = document.getElementById(sections[i].id);
             if (section && section.offsetTop <= scrollPosition) {
@@ -31,11 +30,11 @@ export default function TableOfContents({ sections = [] }) {
               break;
             }
           }
-          
+
           if (currentSection !== activeSection) {
             setActiveSection(currentSection);
           }
-          
+
           ticking = false;
         });
 
@@ -44,10 +43,10 @@ export default function TableOfContents({ sections = [] }) {
     };
 
     if (sections.length > 0) {
-      window.addEventListener('scroll', handleScroll, { passive: true });
+      window.addEventListener("scroll", handleScroll, { passive: true });
       handleScroll(); // Initial check
 
-      return () => window.removeEventListener('scroll', handleScroll);
+      return () => window.removeEventListener("scroll", handleScroll);
     }
   }, [sections, activeSection]);
 
@@ -56,12 +55,12 @@ export default function TableOfContents({ sections = [] }) {
     if (element) {
       const offset = HEADER_OFFSET + 40; // Header + extra breathing room
       const elementPosition = element.offsetTop - offset;
-      
+
       window.scrollTo({
         top: elementPosition,
-        behavior: 'smooth',
+        behavior: "smooth",
       });
-      
+
       // Manually set active section immediately for better UX
       setActiveSection(id);
     }
@@ -72,24 +71,21 @@ export default function TableOfContents({ sections = [] }) {
   }
 
   return (
-    <div className={`w-full sticky top-[${STICKY_TOP_OFFSET}px] h-fit max-h-[80vh] overflow-y-auto pr-4`}>
-       {/* Added max-h and overflow for long TOCs */}
-      <div>
-        <h3 className="text-[#14142D] text-xl font-bold leading-[19.2px] tracking-normal mb-6">
-          Table of Contents
-        </h3>
-        <nav>
+    <div className="w-full flex-1 min-h-0 flex flex-col">
+      <h3 className="text-[#14142D] text-xl font-bold leading-[19.2px] tracking-normal mb-6">
+        Table of Contents
+      </h3>
+      <div className="relative flex-1 min-h-0 flex flex-col">
+        <nav className="toc-scroll flex-1 min-h-0 overflow-y-auto pr-4 pb-12">
           <ul className="space-y-4 relative pl-0 ml-0">
             {sections.map((section) => (
               <li key={section.id} className="relative pl-4">
-                 
-                
                 <button
                   onClick={() => scrollToSection(section.id)}
                   className={`text-left text-sm transition-all duration-200 font-normal leading-5 tracking-normal hover:text-[#202020] block w-full outline-none focus:outline-none ${
                     activeSection === section.id
-                      ? 'text-[#202020] font-bold'
-                      : 'text-[#696969] hover:translate-x-1'
+                      ? "text-[#202020] font-bold"
+                      : "text-[#696969]"
                   }`}
                 >
                   {section.title}
@@ -98,6 +94,10 @@ export default function TableOfContents({ sections = [] }) {
             ))}
           </ul>
         </nav>
+        <div
+          aria-hidden="true"
+          className="toc-fade-overlay pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14"
+        />
       </div>
     </div>
   );

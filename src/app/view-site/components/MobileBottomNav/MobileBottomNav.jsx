@@ -6,6 +6,9 @@ import Image from 'next/image';
 import ShareIcon from '../icons/ShareIcon';
 import ArrowUpIcon from '../icons/ArrowUpIcon';
 import CloseIcon from '../icons/CloseIcon';
+import { getApiBase } from '@/utils/apiBase';
+
+const API_URL = getApiBase();
 
 export default function MobileBottomNav({ title, url, slug, description, sections = [], blogId, onSnapshot }) {
   const [showTOC, setShowTOC] = useState(false);
@@ -22,7 +25,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
     if (!blogId) return;
     
     try {
-      await fetch('http://localhost:5000/api/views/share', {
+      await fetch(`${API_URL}/api/views/share`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

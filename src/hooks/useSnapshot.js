@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { toPng, toBlob } from 'html-to-image';
-import { useToast } from '@/contexts/ToastContext';
+import { toast } from "sonner";
 
 // 1x1 transparent pixel to replace failing images
 const TRANSPARENT_PIXEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
@@ -82,8 +82,6 @@ const preprocessDom = async (element) => {
 
 export const useSnapshot = () => {
   const [isSnapshotting, setIsSnapshotting] = useState(false);
-  const { showToast } = useToast();
-
   const captureSnapshot = useCallback(async (elementRef, title = 'blog-snapshot', options = {}) => {
     if (!elementRef.current) return;
 
@@ -167,7 +165,7 @@ export const useSnapshot = () => {
               link.click();
               URL.revokeObjectURL(url);
               
-              showToast('Snapshot saved successfully', 'success-dark');
+              toast.success('Snapshot saved successfully');
               resolve();
             } catch (err) {
               reject(err);
@@ -193,12 +191,12 @@ export const useSnapshot = () => {
         link.click();
         URL.revokeObjectURL(url);
         
-        showToast('Snapshot saved successfully', 'success-dark');
+        toast.success('Snapshot saved successfully');
       }
 
     } catch (error) {
       console.error('Snapshot failed:', error);
-      showToast('Failed to save snapshot', 'error');
+      toast.error('Failed to save snapshot');
       return null;
     } finally {
       // Always restore the DOM and cleanup
@@ -206,8 +204,7 @@ export const useSnapshot = () => {
       elementRef.current?.classList.remove('snapshot-mode');
       setIsSnapshotting(false);
     }
-  }, [showToast]);
+  }, []);
 
   return { captureSnapshot, isSnapshotting };
 };
-

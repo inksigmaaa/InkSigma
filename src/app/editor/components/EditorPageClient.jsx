@@ -3,28 +3,35 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import Calendar10 from "@/components/calendar10";
 import EditorCategoryDropdown from "./EditorCategoryDropdown";
 import { ThumbnailModal } from "./ThumbnailModal";
-import { DateTimePicker } from "./DateTimePicker";
 import PublishSuccessModal from "./PublishSuccessModal";
 import ExitConfirmModal from "./ExitConfirmModal";
+import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { useSession } from "@/lib/auth-client";
 import { usePublication } from "@/contexts/PublicationContext";
-import { useToast } from "@/contexts/ToastContext";
+import { toast } from "sonner";
 
 import {
   Image as ImageIcon,
-  Calendar,
   ChevronLeft,
   FileText,
 } from "lucide-react";
 
 import { TiptapEditor } from "./TiptapEditor";
+import { useAutoSave } from "./hooks/useAutoSave";
 import { getApiBase } from "@/utils/apiBase";
+import {
+  getDraft as dexieGetDraft,
+  deleteDraft as dexieDeleteDraft,
+} from "./services/DexieService";
+import SaveStatusIndicator from "./SaveStatusIndicator";
 
 const API_URL = getApiBase();
+const DEFAULT_DRAFT_TITLE = "[Untitled]";
+const LEGACY_DRAFT_TITLE = "untitle";
 
 export default function EditorPageClient() {
   const router = useRouter();
@@ -36,9 +43,10 @@ export default function EditorPageClient() {
     uploadArticleImage,
     getArticleById,
     loadUserArticles,
+    createDraftFromPublished,
+    refreshArticle,
   } = useArticles();
   const { currentPublication } = usePublication();
-  const { showToast } = useToast();
   const pubPrefix = currentPublication?.subdomain
     ? `/${currentPublication.subdomain}`
     : "";
@@ -132,70 +140,62 @@ export default function EditorPageClient() {
   const [thumbnailRemoved, setThumbnailRemoved] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedHour, setSelectedHour] = useState(10);
-  const [selectedMinute, setSelectedMinute] = useState(30);
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [manualDate, setManualDate] = useState("");
-  const [manualTime, setManualTime] = useState("");
+  const [selectedTime, setSelectedTime] = useState(null);
+  const [dateInput, setDateInput] = useState("");
+  const [timeInput, setTimeInput] = useState("");
+  const [dateError, setDateError] = useState("");
+  const [timeError, setTimeError] = useState("");
   const [editorContent, setEditorContent] = useState({
     charCount: 0,
     wordCount: 0,
     html: "",
     text: "",
   });
+  const handleEditorUpdate = useCallback((data) => {
+    setEditorContent(data);
+  }, []);
   const [blogTitle, setBlogTitle] = useState("");
   const [blogDescription, setBlogDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState("idle"); // 'idle' | 'saving' | 'saved'
   const [showPublishSuccess, setShowPublishSuccess] = useState(false);
-  const [hasContent, setHasContent] = useState(false);
-  const autoSaveTimeoutRef = useRef(null);
   const [publishedBlogSlug, setPublishedBlogSlug] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [initialContent, setInitialContent] = useState("");
-  const [initialTitle, setInitialTitle] = useState("");
-  const [initialDescription, setInitialDescription] = useState("");
-  const [initialCategories, setInitialCategories] = useState([]);
   const [existingBlogStatus, setExistingBlogStatus] = useState(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [showDraftConfirmModal, setShowDraftConfirmModal] = useState(false);
+  const [exitDestination, setExitDestination] = useState(null); // 'published', 'drafts', 'home'
+  const [recoveryDraft, setRecoveryDraft] = useState(null); // Dexie draft for recovery banner
+  const scheduleMinDate = new Date();
+  scheduleMinDate.setHours(0, 0, 0, 0);
+  const scheduleCurrentYear = scheduleMinDate.getFullYear();
+  const scheduleYearInputUpperBound = scheduleCurrentYear + 2;
   const calendarRef = useRef(null);
-  const savedSuccessfullyRef = useRef(false);
   const handlingPopStateRef = useRef(false);
-  const isNavigatingAwayRef = useRef(false); // New ref to indicate explicit navigation
-  const isPublishingRef = useRef(false); // Track if publish is in progress
   const saveInFlightRef = useRef(false);
+  const editorInstanceRef = useRef(null); // Ref to TipTap editor for uncontrolled reads
+  const shadowIdRef = useRef(null); // Server-created ID stored silently during auto-save (no re-render)
+  const initialBlogIdRef = useRef(blogId); // The blogId from the URL at mount time
 
-  const cancelPendingAutoSave = useCallback(() => {
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-      autoSaveTimeoutRef.current = null;
+  // Handle See Later - dismiss popup and check for unsaved changes first
+  const handleSeeLater = async () => {
+    // Check for unsaved changes before redirecting
+    if (hasUnsavedChanges && currentBlogId) {
+      setShowPublishSuccess(false);
+      setExitDestination("published");
+      setShowExitModal(true);
+      return;
     }
-    setIsAutoSaving(false);
-  }, []);
 
-  const waitForSaveSlot = useCallback(async () => {
-    while (saveInFlightRef.current) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-  }, []);
-
-  // Handle See Later - dismiss popup and go to published page
-  const handleSeeLater = () => {
-    // Prevent any auto-save or beforeunload handlers from interfering
-    savedSuccessfullyRef.current = true;
-    isNavigatingAwayRef.current = true;
-    isPublishingRef.current = true;
-
+    markNavigating();
     setShowPublishSuccess(false);
 
     const targetPath = currentPublication?.subdomain
       ? `/${currentPublication.subdomain}/published`
       : "/published";
 
-    const targetUrl = `http://dashboard.inksigma.local:3000${targetPath}`;
+    const baseUrl = window.location.origin;
+    const targetUrl = `${baseUrl}${targetPath}`;
     window.location.replace(targetUrl);
   };
 
@@ -207,9 +207,10 @@ export default function EditorPageClient() {
       : "";
 
     // Construct the blog URL for new tab
+    const baseUrl = window.location.origin;
     const blogUrl = publishedBlogSlug
-      ? `http://dashboard.inksigma.local:3000/view-site/blog/${publishedBlogSlug}`
-      : `http://dashboard.inksigma.local:3000`;
+      ? `${baseUrl}/view-site/blog/${publishedBlogSlug}`
+      : `${baseUrl}`;
 
     // Open blog in new tab
     window.open(blogUrl, "_blank");
@@ -217,10 +218,7 @@ export default function EditorPageClient() {
 
   // Handle Close Modal - redirect to home
   const handleClosePublishModal = () => {
-    // Prevent any auto-save or beforeunload handlers from interfering
-    savedSuccessfullyRef.current = true;
-    isNavigatingAwayRef.current = true;
-    isPublishingRef.current = true;
+    markNavigating();
 
     setShowPublishSuccess(false);
 
@@ -230,247 +228,112 @@ export default function EditorPageClient() {
       : "";
 
     // Construct the home URL
-    const homeUrl = `http://dashboard.inksigma.local:3000${pubPrefix}/home`;
+    const baseUrl = window.location.origin;
+    const homeUrl = `${baseUrl}${pubPrefix}/home`;
 
     // Navigate to home
     window.location.href = homeUrl;
   };
 
-  // Auto-save functionality with debouncing
-  useEffect(() => {
-    // Don't auto-save if publishing is in progress
-    if (isPublishingRef.current || isSaving) {
-      return;
+  // ── Auto-save via custom hook ───────────────────────────────────────────
+  const saveFnForHook = useCallback(
+    async (isAutoSave) => {
+      return saveBlog("draft", null, true, isAutoSave);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      currentBlogId,
+      blogTitle,
+      blogDescription,
+      editorContent.html,
+      selectedCategories,
+      existingBlogStatus,
+      publicationId,
+      currentPublication,
+      thumbnailRemoved,
+      thumbnailData,
+    ],
+  );
+
+  // Callback for when the first server save creates a new blog ID
+  // Only stores the ID in a ref — no state change, no URL update, no re-render.
+  // The ID is "flushed" to state + URL only on explicit user action (save/publish/exit).
+  const handleBlogIdCreated = useCallback((result) => {
+    if (result?.id != null) {
+      shadowIdRef.current = String(result.id);
     }
+  }, []);
 
-    // Check if there's any content
-    const contentExists =
-      blogTitle.trim() ||
-      blogDescription.trim() ||
-      (editorContent.html && editorContent.html !== "<p></p>");
-    setHasContent(contentExists);
-
-    // Don't auto-save if no title (minimum requirement for draft)
-    if (!blogTitle.trim()) {
-      setSaveStatus("idle");
-      return;
+  // Promote shadowIdRef to state + URL (called on manual save / publish / exit)
+  const flushShadowId = useCallback(() => {
+    if (shadowIdRef.current && !currentBlogId) {
+      const newId = shadowIdRef.current;
+      setCurrentBlogId(newId);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("id", newId);
+      if (!params.get("status")) params.set("status", "draft");
+      if (publicationId) params.set("publicationId", publicationId);
+      router.replace(withPub(`/editor?${params.toString()}`), {
+        scroll: false,
+      });
+      shadowIdRef.current = null;
     }
+  }, [currentBlogId, searchParams, publicationId, router, withPub]);
 
-    // Don't auto-save if there are no unsaved changes
-    if (!hasUnsavedChanges) {
-      return;
-    }
-
-    // IMPORTANT: Only auto-save for drafts or new articles
-    // Don't auto-save published, scheduled, or review articles
-    const isPublishedOrScheduled =
-      existingBlogStatus &&
-      ["published", "scheduled", "review", "unpublished"].includes(
-        existingBlogStatus,
-      );
-
-    if (isPublishedOrScheduled) {
-      // For published/scheduled articles, don't auto-save
-      setSaveStatus("idle");
-      return;
-    }
-
-    // Clear existing timeout
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-      autoSaveTimeoutRef.current = null;
-    }
-
-    // Debounce auto-save by 1.5 seconds - only show status when actually saving
-    autoSaveTimeoutRef.current = setTimeout(async () => {
-      // Only auto-save drafts or new blogs (not published/scheduled/review)
-      const canAutoSave = !existingBlogStatus || existingBlogStatus === "draft";
-
-      if (canAutoSave && blogTitle.trim()) {
-        // Set saving status right before actual save starts
-        setIsAutoSaving(true);
-        setSaveStatus("saving");
-
-        const result = await saveBlog("draft", null, true, true);
-        if (result) {
-          setSaveStatus("saved");
-        } else {
-          setSaveStatus("idle");
-        }
-        setIsAutoSaving(false);
-      }
-      autoSaveTimeoutRef.current = null;
-    }, 1500);
-
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-        autoSaveTimeoutRef.current = null;
-      }
-    };
-  }, [
-    blogTitle,
-    blogDescription,
-    editorContent.html,
-    selectedCategories,
+  const {
     hasUnsavedChanges,
-    existingBlogStatus,
-    isSaving,
-  ]);
-
-  // Track unsaved changes
-  // Track unsaved changes by comparing with initial values
-  useEffect(() => {
-    // Helper to compare arrays (categories)
-    const arraysEqual = (a, b) => {
-      if (a === b) return true;
-      if (a == null || b == null) return false;
-      if (a.length !== b.length) return false;
-      const sortedA = [...a].sort();
-      const sortedB = [...b].sort();
-      for (let i = 0; i < sortedA.length; ++i) {
-        if (sortedA[i] !== sortedB[i]) return false;
-      }
-      return true;
-    };
-
-    // Helper to normalize HTML content
-    const normalizeContent = (content) => {
-      if (!content) return "";
-      if (content === "<p></p>") return ""; // Treat empty paragraph as empty
-      return content;
-    };
-
-    const hasChanges =
-      blogTitle !== initialTitle ||
-      blogDescription !== initialDescription ||
-      normalizeContent(editorContent.html) !==
-        normalizeContent(initialContent) ||
-      !arraysEqual(selectedCategories, initialCategories);
-
-    setHasUnsavedChanges(hasChanges);
-  }, [
-    blogTitle,
-    blogDescription,
-    editorContent.html,
-    selectedCategories,
-    initialTitle,
-    initialDescription,
-    initialContent,
-    initialCategories,
-  ]);
-
-  // Auto-save when leaving the page with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = async (e) => {
-      // Auto-save if there are unsaved changes and title exists (minimum requirement)
-      const hasTitle = blogTitle.trim();
-
-      if (hasUnsavedChanges && hasTitle && !savedSuccessfullyRef.current) {
-        // IMPORTANT: Only auto-save as draft for new articles or existing drafts
-        // Don't create drafts for published/scheduled/review articles
-        const isPublishedOrScheduled =
-          existingBlogStatus &&
-          ["published", "scheduled", "review", "unpublished"].includes(
-            existingBlogStatus,
-          );
-
-        if (isPublishedOrScheduled) {
-          // For published/scheduled articles, show warning but don't auto-save
-          e.preventDefault();
-          e.returnValue =
-            "You have unsaved changes. Are you sure you want to leave?";
-          return e.returnValue;
-        }
-
-        // For new articles or drafts, auto-save silently
-        // Use sendBeacon for reliable save on page unload
-        const blogData = {
-          title: blogTitle,
-          description: blogDescription,
-          content: editorContent.html,
-          categories: selectedCategories,
-          status: "draft",
-          published: false,
-        };
-
-        const pubId = publicationId || currentPublication?.id;
-        if (pubId) {
-          blogData.publicationId = parseInt(pubId);
-        }
-
-        const createUrl = `${API_URL}/api/blogs/auto-save`;
-        const updateUrl = `${API_URL}/api/blogs/${currentBlogId}`;
-
-        // sendBeacon only supports POST. Use it only for new drafts.
-        const blob = new Blob([JSON.stringify(blogData)], {
-          type: "application/json",
-        });
-        if (!currentBlogId) {
-          navigator.sendBeacon(createUrl, blob);
-        }
-
-        // Also try fetch with keepalive as backup.
-        fetch(currentBlogId ? updateUrl : createUrl, {
-          method: currentBlogId ? "PUT" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(blogData),
-          keepalive: true, // Ensures request completes even if page is closed
-        }).catch(() => {
-          // Silently fail - sendBeacon should handle it
-        });
-      }
-    };
-
-    // Handle visibility change (tab switch, minimize, etc.)
-    const handleVisibilityChange = async () => {
-      if (document.hidden) {
-        const hasTitle = blogTitle.trim();
-
-        if (hasUnsavedChanges && hasTitle && !savedSuccessfullyRef.current) {
-          // Only auto-save as draft for new articles or existing drafts
-          const isPublishedOrScheduled =
-            existingBlogStatus &&
-            ["published", "scheduled", "review", "unpublished"].includes(
-              existingBlogStatus,
-            );
-
-          if (!isPublishedOrScheduled) {
-            // Save as draft when user switches tabs or minimizes
-            await saveBlog("draft", null, true, true);
-          }
-        }
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [
-    hasUnsavedChanges,
+    saveStatus,
+    setSaveStatus,
+    isAutoSaving,
+    markSaved,
+    markPublishing,
+    markNavigating,
+    cancelPendingAutoSave,
+    resetSnapshot,
+    clearDraft,
+    getDexieId,
+  } = useAutoSave({
     currentBlogId,
-    blogTitle,
-    blogDescription,
-    editorContent.html,
-    selectedCategories,
+    shadowId: shadowIdRef.current,
+    title: blogTitle,
+    description: blogDescription,
+    contentHtml: editorContent.html,
+    categories: selectedCategories,
     existingBlogStatus,
     publicationId,
     currentPublication,
-  ]);
+    isSaving,
+    saveFn: saveFnForHook,
+    onBlogIdCreated: handleBlogIdCreated,
+  });
 
-  // Load existing blog if editing
+  // Derived: does the editor have any content at all?
+  const hasContent =
+    blogTitle.trim() ||
+    blogDescription.trim() ||
+    (editorContent.html && editorContent.html !== "<p></p>");
+
+  // Load existing blog if editing.
+  // Guard: only load when the blogId comes from the initial URL, not when
+  // shadowIdRef gets promoted to state/URL after a manual save.
   useEffect(() => {
-    if (blogId) {
+    if (blogId && blogId === initialBlogIdRef.current) {
       loadExistingBlog(blogId);
+    } else if (blogId && blogId !== initialBlogIdRef.current) {
+      // Shadow ID was just promoted — update the ref but don't reload
+      initialBlogIdRef.current = blogId;
+    } else if (isMounted) {
+      // New post: check Dexie for a recovered draft
+      const checkNewDraft = async () => {
+        const dexieId = getDexieId();
+        const localDraft = await dexieGetDraft(dexieId);
+        if (localDraft && (localDraft.title || localDraft.content)) {
+          setRecoveryDraft(localDraft);
+        }
+      };
+      checkNewDraft();
     }
-  }, [blogId]);
+  }, [blogId, isMounted, getDexieId]);
 
   const loadExistingBlog = async (id) => {
     setIsLoading(true);
@@ -488,26 +351,55 @@ export default function EditorPageClient() {
 
       const blog = await response.json();
 
-      setBlogTitle(blog.title || "");
-      setInitialTitle(blog.title || "");
+      const normalizedTitle = (blog.title || "").trim().toLowerCase();
+      const displayTitle =
+        normalizedTitle === DEFAULT_DRAFT_TITLE.toLowerCase() ||
+        normalizedTitle === LEGACY_DRAFT_TITLE
+          ? ""
+          : blog.title || "";
 
+      setBlogTitle(displayTitle);
       setBlogDescription(blog.description || "");
-      setInitialDescription(blog.description || "");
-
       setSelectedCategories(blog.categories || []);
-      setInitialCategories(blog.categories || []);
 
       setInitialContent(blog.content || "");
 
       // Initialize editorContent state to prevent data loss if saving without editing body
       setEditorContent({
         html: blog.content || "",
-        text: "", // Initial text representation (will be updated by editor on load)
+        text: "",
         charCount: (blog.content || "").length,
         wordCount: 0,
       });
 
       setExistingBlogStatus(blog.status);
+
+      // Set the auto-save snapshot so change detection starts from the loaded state
+      resetSnapshot({
+        title: displayTitle,
+        description: blog.description || "",
+        contentHtml: blog.content || "",
+        categories: blog.categories || [],
+      });
+
+      // Check Dexie for a local draft that's newer than the server version
+      try {
+        const localDraft = await dexieGetDraft(String(id));
+        if (localDraft && localDraft.lastModified) {
+          const serverTime = new Date(
+            blog.updatedAt || blog.createdAt,
+          ).getTime();
+          if (localDraft.lastModified > serverTime) {
+            // Local draft is newer — show recovery banner
+            setRecoveryDraft(localDraft);
+          } else {
+            // Stale local draft — clean it up
+            dexieDeleteDraft(String(id));
+          }
+        }
+      } catch (err) {
+        console.warn("[Editor] Dexie draft check failed:", err);
+      }
 
       if (blog.image) {
         setThumbnailData({ url: blog.image });
@@ -516,9 +408,27 @@ export default function EditorPageClient() {
 
       if (blog.scheduledAt) {
         const scheduledDate = new Date(blog.scheduledAt);
-        setSelectedDate(scheduledDate);
-        setSelectedHour(scheduledDate.getHours());
-        setSelectedMinute(scheduledDate.getMinutes());
+        const normalizedDate = new Date(scheduledDate);
+        normalizedDate.setHours(0, 0, 0, 0);
+        const formattedDate = `${String(normalizedDate.getDate()).padStart(2, "0")}-${String(
+          normalizedDate.getMonth() + 1,
+        ).padStart(2, "0")}-${normalizedDate.getFullYear()}`;
+        const formattedTime = `${String(scheduledDate.getHours()).padStart(2, "0")}:${String(
+          scheduledDate.getMinutes(),
+        ).padStart(2, "0")}`;
+        setSelectedDate(normalizedDate);
+        setSelectedTime(formattedTime);
+        setDateInput(formattedDate);
+        setTimeInput(formattedTime);
+        setDateError("");
+        setTimeError("");
+      } else {
+        setSelectedDate(null);
+        setSelectedTime(null);
+        setDateInput("");
+        setTimeInput("");
+        setDateError("");
+        setTimeError("");
       }
     } catch (error) {
       console.error("Error loading blog:", error);
@@ -535,37 +445,68 @@ export default function EditorPageClient() {
     skipValidation = false,
     isAutoSave = false,
   ) => {
-    if (
-      isAutoSave &&
-      (isSaving || isPublishingRef.current || isNavigatingAwayRef.current)
-    ) {
+    const hasBodyContent = (() => {
+      const html = editorContent.html || "";
+      if (!html) return false;
+      if (/<img\b[^>]*>/i.test(html)) return true;
+      const plainText = html
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&nbsp;/gi, " ")
+        .trim();
+      return plainText.length > 0;
+    })();
+
+    const requiresSubmissionFields = [
+      "published",
+      "scheduled",
+      "review",
+    ].includes(status);
+    const submissionActionLabel =
+      status === "published"
+        ? "publishing"
+        : status === "scheduled"
+          ? "scheduling"
+          : "sending for review";
+
+    // For auto-saves, skip if a manual save is already in flight
+    if (isAutoSave && (isSaving || saveInFlightRef.current)) {
       return false;
     }
 
-    // Skip validation when reverting to draft or updating existing published articles
-    // Also skip validation if blog already exists (updating)
-    if (!skipValidation && !currentBlogId) {
+    // Always validate required fields for submission statuses.
+    if (requiresSubmissionFields) {
       if (!blogTitle.trim()) {
-        console.warn("Validation failed: Missing title");
+        toast.error(`Title is required before ${submissionActionLabel}`);
         return false;
       }
       if (!blogDescription.trim()) {
-        console.warn("Validation failed: Missing description");
+        toast.error(`Description is required before ${submissionActionLabel}`);
+        return false;
+      }
+      if (!hasBodyContent) {
+        toast.error(`Content is required before ${submissionActionLabel}`);
         return false;
       }
     }
 
-    // Only set isSaving for manual saves, not auto-saves (to avoid disabling publish button)
+    // Existing draft-only validation behavior.
+    if (!skipValidation && !currentBlogId) {
+      if (!blogTitle.trim()) {
+        toast.error("Please enter a title for your blog");
+        return false;
+      }
+      if (!blogDescription.trim()) {
+        toast.error("Please enter a description for your blog");
+        return false;
+      }
+    }
+
+    // Only set isSaving for manual saves (to avoid disabling publish button)
     if (!isAutoSave) {
       cancelPendingAutoSave();
       if (isSaving) return false;
       setIsSaving(true);
       setSaveStatus("saving");
-      await waitForSaveSlot();
-    }
-
-    if (isAutoSave && saveInFlightRef.current) {
-      return false;
     }
 
     saveInFlightRef.current = true;
@@ -582,8 +523,9 @@ export default function EditorPageClient() {
 
       // Add publicationId if available
       const pubId = publicationId || currentPublication?.id;
-      if (pubId) {
-        blogData.publicationId = parseInt(pubId);
+      const parsedPublicationId = Number(pubId);
+      if (Number.isInteger(parsedPublicationId) && parsedPublicationId > 0) {
+        blogData.publicationId = parsedPublicationId;
       }
 
       // Add scheduledAt if scheduling
@@ -595,11 +537,14 @@ export default function EditorPageClient() {
         blogData.image = null;
       }
 
-      // Use PUT for updates, POST for new blogs
-      const url = currentBlogId
-        ? `${API_URL}/api/blogs/${currentBlogId}`
+      // Use PUT for updates, POST for new blogs.
+      // Check shadowIdRef first — it holds the server ID from a previous auto-save
+      // that hasn't been promoted to state yet.
+      const effectiveId = currentBlogId || shadowIdRef.current;
+      const url = effectiveId
+        ? `${API_URL}/api/blogs/${effectiveId}`
         : `${API_URL}/api/blogs`;
-      const method = currentBlogId ? "PUT" : "POST";
+      const method = effectiveId ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method: method,
@@ -621,27 +566,48 @@ export default function EditorPageClient() {
       }
 
       if (!response.ok) {
-        throw new Error(
+        const errMsg =
           responseData?.error ||
-            responseData?.message ||
-            `Failed to save blog (${response.status})`,
-        );
+          responseData?.message ||
+          responseData?.details ||
+          `Failed to save blog (${response.status})`;
+        console.error("[saveBlog] request failed:", {
+          url,
+          method,
+          status: response.status,
+          effectiveId,
+          isAutoSave,
+          responseData,
+        });
+        throw new Error(errMsg);
       }
 
-      if (!currentBlogId && responseData?.id != null) {
-        const newId = String(responseData.id);
-        setCurrentBlogId(newId);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("id", newId);
-        if (!params.get("status")) {
-          params.set("status", status);
+      // When a new blog is created for the first time:
+      if (!effectiveId && responseData?.id != null) {
+        if (isAutoSave) {
+          // Auto-save: silently store in shadowIdRef — no state change, no URL change, no re-render
+          shadowIdRef.current = String(responseData.id);
+        } else {
+          // Manual save: promote to state + URL immediately
+          const newId = String(responseData.id);
+          setCurrentBlogId(newId);
+          const params = new URLSearchParams(searchParams.toString());
+          params.set("id", newId);
+          if (!params.get("status")) {
+            params.set("status", status);
+          }
+          if (publicationId) {
+            params.set("publicationId", publicationId);
+          }
+          router.replace(withPub(`/editor?${params.toString()}`), {
+            scroll: false,
+          });
         }
-        if (publicationId) {
-          params.set("publicationId", publicationId);
-        }
-        router.replace(withPub(`/editor?${params.toString()}`), {
-          scroll: false,
-        });
+      }
+
+      // On manual save, flush any previously shadow-stored ID
+      if (!isAutoSave && shadowIdRef.current && !currentBlogId) {
+        flushShadowId();
       }
 
       // Upload thumbnail if one was selected
@@ -650,15 +616,20 @@ export default function EditorPageClient() {
           await uploadArticleImage(responseData.id, thumbnailData.file);
         } catch (error) {
           console.error("Error uploading thumbnail:", error);
-          // Don't fail the whole save if thumbnail upload fails
         }
       }
 
-      // Mark as saved to prevent auto-save on exit
-      setHasUnsavedChanges(false);
-      savedSuccessfullyRef.current = true;
+      // Tell the hook the save succeeded
+      markSaved();
       if (!isAutoSave) {
         setSaveStatus("saved");
+      }
+
+      // Refresh the article in context to update lists
+      if (responseData?.id) {
+        refreshArticle(responseData.id).catch((err) =>
+          console.error("Failed to refresh article context:", err),
+        );
       }
 
       return responseData;
@@ -666,12 +637,11 @@ export default function EditorPageClient() {
       console.error("Error saving blog:", error);
       if (!isAutoSave) {
         setSaveStatus("idle");
+        toast.error(error.message || "Failed to save blog");
       }
-      // alert(error.message || 'Failed to save blog')
       return false;
     } finally {
       saveInFlightRef.current = false;
-      // Only reset isSaving for manual saves, not auto-saves
       if (!isAutoSave) {
         setIsSaving(false);
       }
@@ -681,23 +651,58 @@ export default function EditorPageClient() {
   // Handle Save to Draft (without redirect - just save and stay on page)
   const handleSave = async () => {
     const result = await saveBlog(existingBlogStatus || "draft", null, true);
-    if (result && existingBlogStatus === "published") {
-      // For published articles, redirect to published page
-      window.location.href = withPub("/published?refresh=true");
+    if (result) {
+      toast.success("Article updated successfully");
+      if (existingBlogStatus === "published") {
+        router.replace(withPub("/published"));
+      }
     }
   };
 
   // Handle Save to Draft (with redirect)
   const handleSaveDraft = async () => {
-    await performSaveAndExit("/draft?refresh=true", false);
+    await performSaveAndExit("/draft", false);
   };
 
-  // Handle Revert to Draft (for published articles)
-  const handleDraft = async () => {
-    const result = await saveBlog("draft", null, true);
-    if (result) {
-      window.location.href = withPub("/draft?refresh=true");
+  // Execute Revert to Draft (actual logic)
+  const executeDraft = async () => {
+    try {
+      setIsSaving(true);
+
+      // Gather current editor state
+      const draftData = {
+        title: `${blogTitle} [Update draft]`,
+        description: blogDescription,
+        content: editorContent.html,
+        categories: selectedCategories,
+        // image is handled separately via thumbnailData/thumbnailRemoved if needed,
+        // but for now we'll stick to text content to be safe.
+        // If thumbnail was changed but not saved to the original, we might need to handle it,
+        // but image upload usually happens immediately on selection or save.
+      };
+
+      // Create a draft copy of the current published article with CURRENT edits
+      const newDraft = await createDraftFromPublished(currentBlogId, draftData);
+
+      if (newDraft && newDraft.id) {
+        toast.success("Saved current changes as a new draft");
+        markNavigating();
+        setShowDraftConfirmModal(false); // Close modal
+
+        // Exit the editor -> Go to drafts list
+        router.replace(withPub("/draft"));
+      }
+    } catch (error) {
+      console.error("Error creating draft copy:", error);
+      toast.error(error.message || "Failed to save draft version");
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  // Trigger Revert to Draft (show confirmation)
+  const handleDraft = async () => {
+    setShowDraftConfirmModal(true);
   };
 
   // Handle Revert from Trash to Draft
@@ -705,7 +710,7 @@ export default function EditorPageClient() {
     try {
       const result = await saveBlog("draft", null, true);
       if (result) {
-        window.location.href = withPub("/draft?refresh=true");
+        router.replace(withPub("/draft"));
       }
     } catch (error) {
       console.error("Error reverting from trash:", error);
@@ -714,22 +719,18 @@ export default function EditorPageClient() {
 
   // Handle Publish
   const handlePublish = async () => {
-    isPublishingRef.current = true;
-    savedSuccessfullyRef.current = true;
-    isNavigatingAwayRef.current = true;
+    markPublishing();
 
     try {
       const result = await saveBlog("published");
       if (result) {
+        // Clean up Dexie draft after successful publish
+        clearDraft();
         setPublishedBlogSlug(result.slug || "");
         setShowPublishSuccess(true);
       }
     } catch (error) {
       console.error("Publish failed:", error);
-      // Reset refs on error so user can try again
-      isPublishingRef.current = false;
-      savedSuccessfullyRef.current = false;
-      isNavigatingAwayRef.current = false;
     }
   };
 
@@ -737,20 +738,32 @@ export default function EditorPageClient() {
   const handleSendForReview = async () => {
     const result = await saveBlog("review", null, true);
     if (result) {
+      toast.success("Article submitted for review");
+      markNavigating();
+
       // Determine redirection path based on role
       const role = currentPublication?.role;
       const isOwner = currentPublication?.isOwner;
       const isReviewer = isOwner || role === "editor" || role === "admin";
       const targetPath = isReviewer ? "/review" : "/author-review";
 
-      window.location.href = withPub(`${targetPath}?refresh=true`);
+      setTimeout(() => {
+        router.replace(withPub(targetPath));
+      }, 1000);
     }
   };
 
+  const source = searchParams.get("source");
+
   const handleExitNavigation = () => {
-    savedSuccessfullyRef.current = true; // Prevent beforeunload check
+    markNavigating();
+    if (source) {
+      router.replace(withPub(source));
+      return;
+    }
+
     if (articleStatus === "published") {
-      router.push(withPub("/published?refresh=true"));
+      router.replace(withPub("/published"));
     } else if (articleStatus === "review") {
       const targetPath =
         currentPublication?.isOwner ||
@@ -758,11 +771,11 @@ export default function EditorPageClient() {
         currentPublication?.role === "admin"
           ? "/review"
           : "/author-review";
-      router.push(withPub(`${targetPath}?refresh=true`));
+      router.replace(withPub(targetPath));
     } else if (articleStatus === "trash") {
-      router.push(withPub("/trash?refresh=true"));
+      router.replace(withPub("/trash"));
     } else {
-      router.push(withPub("/draft?refresh=true"));
+      router.replace(withPub("/draft"));
     }
   };
 
@@ -770,18 +783,16 @@ export default function EditorPageClient() {
   const performSaveAndExit = async (targetPath, forceExit = false) => {
     const result = await saveBlog("draft", null, true);
 
-    // Show toast if save succeeded OR if we are forced to exit (user expectation)
     if (result || forceExit) {
-      showToast("Post has been saved as Draft", "success");
-      savedSuccessfullyRef.current = true;
+      toast.success("Post has been saved as Draft");
+      markNavigating();
       setTimeout(() => {
-        router.push(withPub(targetPath));
+        router.replace(withPub(targetPath));
       }, 1000);
     }
   };
 
-  // Handle Back - Check for unsaved changes
-  // Handle Back - Save as draft and redirect to home
+  // Handle Back - Check for unsaved changes and show exit modal if needed
   const handleBack = async () => {
     const isEmptyDraft =
       !currentBlogId &&
@@ -791,107 +802,128 @@ export default function EditorPageClient() {
       (!selectedCategories || selectedCategories.length === 0);
 
     if (isEmptyDraft) {
-      savedSuccessfullyRef.current = true;
-      isNavigatingAwayRef.current = true;
-      router.push(withPub("/?refresh=true"));
+      markNavigating();
+      router.replace(withPub(source || "/"));
       return;
     }
 
-    // For published articles, go to published page
-    if (existingBlogStatus === "published") {
-      savedSuccessfullyRef.current = true;
-      isNavigatingAwayRef.current = true;
-      router.push(withPub("/published?refresh=true"));
-      return;
-    }
-
-    // For scheduled articles, go to schedule page
-    if (existingBlogStatus === "scheduled") {
-      savedSuccessfullyRef.current = true;
-      isNavigatingAwayRef.current = true;
-      router.push(withPub("/schedule?refresh=true"));
-      return;
-    }
-
-    // For any content: save as draft and go to Drafts
-    if (hasUnsavedChanges) {
-      await performSaveAndExit("/draft?refresh=true", true);
-      return;
-    }
-
-    // No unsaved changes but has content: go to drafts directly
-    savedSuccessfullyRef.current = true;
-    isNavigatingAwayRef.current = true;
-    router.push(withPub("/draft?refresh=true"));
-  };
-
-  // Intercept browser back/gesture to auto-save draft and navigate home
-  useEffect(() => {
-    if (!isMounted) return;
-
-    const pushCurrentState = () => {
-      try {
-        window.history.pushState({ editor: true }, "", window.location.href);
-      } catch {
-        // Ignore history errors
-      }
-    };
-
-    const handlePopState = (event) => {
-      // If we are explicitly navigating away (e.g., after publishing),
-      // prevent the popstate listener from interfering.
-      if (isNavigatingAwayRef.current || savedSuccessfullyRef.current) {
+    // Direct navigation if no unsaved changes
+    if (!hasUnsavedChanges || !currentBlogId) {
+      markNavigating();
+      if (source) {
+        router.replace(withPub(source));
         return;
       }
-      if (handlingPopStateRef.current) return;
-      handlingPopStateRef.current = true;
-      pushCurrentState();
-      handleBack().finally(() => {
-        handlingPopStateRef.current = false;
-      });
-    };
 
-    pushCurrentState();
-    window.addEventListener("popstate", handlePopState);
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [isMounted, handleBack]);
+      // Fallback based on status
+      if (existingBlogStatus === "published") {
+        router.replace(withPub("/published"));
+      } else if (existingBlogStatus === "scheduled") {
+        router.replace(withPub("/schedule"));
+      } else {
+        router.replace(withPub("/draft"));
+      }
+      return;
+    }
+
+    // If there are unsaved changes, show exit confirmation modal
+    setExitDestination(
+      source || (existingBlogStatus === "published" ? "published" : "drafts"),
+    );
+    setShowExitModal(true);
+  };
 
   const handleDiscard = () => {
-    setHasUnsavedChanges(false);
+    markNavigating();
     setShowExitModal(false);
-    savedSuccessfullyRef.current = true;
-    router.push(withPub("/?refresh=true"));
+
+    // Navigate based on destination
+    if (exitDestination && exitDestination.startsWith("/")) {
+      router.replace(withPub(exitDestination));
+    } else if (exitDestination === "published") {
+      router.replace(withPub("/published"));
+    } else if (exitDestination === "drafts") {
+      router.replace(withPub("/draft"));
+    } else {
+      router.replace(withPub("/"));
+    }
+
+    setExitDestination(null);
   };
 
   const handleUpdateAndExit = async () => {
-    // Save as draft and redirect to home page
     setShowExitModal(false);
-    await performSaveAndExit("/?refresh=true", false);
+
+    // Save first
+    // If article is already published, keep it published. Otherwise default to draft.
+    const statusToSave =
+      existingBlogStatus === "published" ? "published" : "draft";
+    const result = await saveBlog(statusToSave, null, true);
+    if (!result) {
+      // saveBlog already shows an error toast; keep user on editor so they can retry
+      return;
+    }
+    toast.success("Article updated successfully");
+
+    // Navigate based on destination
+    if (exitDestination && exitDestination.startsWith("/")) {
+      router.replace(withPub(exitDestination));
+    } else if (
+      exitDestination === "published" ||
+      existingBlogStatus === "published"
+    ) {
+      router.replace(withPub("/published"));
+    } else if (exitDestination === "drafts") {
+      router.replace(withPub("/draft"));
+    } else {
+      router.replace(withPub("/"));
+    }
+
+    setExitDestination(null);
   };
 
   // Handle Schedule
-  const handleSchedule = async () => {
-    if (!selectedDate) {
-      console.warn("Validation failed: Missing scheduled date");
+  const handleSchedule = async (
+    dateOverride = selectedDate,
+    timeOverride = selectedTime,
+  ) => {
+    if (!dateOverride) {
+      toast.error("Please select a date");
       return;
     }
 
-    // Create scheduled datetime from selected date and time
-    const scheduledDateTime = new Date(selectedDate);
-    scheduledDateTime.setHours(selectedHour, selectedMinute, 0, 0);
+    if (!timeOverride) {
+      toast.error("Please select a time slot");
+      return;
+    }
+
+    const [hour, minute] = timeOverride.split(":").map(Number);
+
+    // Create scheduled datetime from selected date and selected slot
+    const scheduledDateTime = new Date(dateOverride);
+    scheduledDateTime.setHours(hour, minute, 0, 0);
 
     // Check if scheduled time is in the future
     if (scheduledDateTime <= new Date()) {
-      console.warn("Validation failed: Scheduled time must be in future");
+      toast.error("Scheduled time must be in the future");
       return;
     }
 
-    const result = await saveBlog("scheduled", scheduledDateTime);
-    if (result) {
-      setShowCalendar(false);
-      window.location.href = withPub("/schedule?refresh=true");
+    try {
+      const result = await saveBlog("scheduled", scheduledDateTime, true);
+      if (result) {
+        setShowCalendar(false);
+        toast.success("Article scheduled successfully");
+        markNavigating();
+        setTimeout(() => {
+          router.replace(withPub("/schedule"));
+        }, 1000);
+      } else {
+        toast.error("Failed to schedule article. Please try again.");
+      }
+    } catch (error) {
+      console.error("Schedule error:", error);
+      toast.error("Failed to schedule article. Please try again.");
     }
   };
 
@@ -912,247 +944,6 @@ export default function EditorPageClient() {
     };
   }, [showCalendar]);
 
-  // Calendar helper functions
-  const getDaysInMonth = (month, year) => {
-    return new Date(year, month + 1, 0).getDate();
-  };
-
-  const getFirstDayOfMonth = (month, year) => {
-    return new Date(year, month, 1).getDay();
-  };
-
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear(currentYear - 1);
-    } else {
-      setCurrentMonth(currentMonth - 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear(currentYear + 1);
-    } else {
-      setCurrentMonth(currentMonth + 1);
-    }
-  };
-
-  const handleDateSelect = (day) => {
-    const newDate = new Date(currentYear, currentMonth, day);
-    setSelectedDate(newDate);
-    const dayStr = String(day).padStart(2, "0");
-    const monthStr = String(currentMonth + 1).padStart(2, "0");
-    setManualDate(`${dayStr}-${monthStr}-${currentYear}`);
-    const hourStr = String(selectedHour).padStart(2, "0");
-    const minuteStr = String(selectedMinute).padStart(2, "0");
-    setManualTime(`${hourStr}:${minuteStr}`);
-  };
-
-  const handleClearDate = () => {
-    setSelectedDate(null);
-    setSelectedHour(10);
-    setSelectedMinute(30);
-    setManualDate("");
-    setManualTime("");
-  };
-
-  const handleToday = () => {
-    const today = new Date();
-    setSelectedDate(today);
-    setCurrentMonth(today.getMonth());
-    setCurrentYear(today.getFullYear());
-    const dayStr = String(today.getDate()).padStart(2, "0");
-    const monthStr = String(today.getMonth() + 1).padStart(2, "0");
-    setManualDate(`${dayStr}-${monthStr}-${today.getFullYear()}`);
-    const hourStr = String(selectedHour).padStart(2, "0");
-    const minuteStr = String(selectedMinute).padStart(2, "0");
-    setManualTime(`${hourStr}:${minuteStr}`);
-  };
-
-  const formatSelectedDateTime = () => {
-    if (!selectedDate) return "";
-    const day = String(selectedDate.getDate()).padStart(2, "0");
-    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
-    const year = selectedDate.getFullYear();
-    const hour = String(selectedHour).padStart(2, "0");
-    const minute = String(selectedMinute).padStart(2, "0");
-    return `${day}-${month}-${year}   ${hour}:${minute}`;
-  };
-
-  const handleManualInput = (e) => {
-    let value = e.target.value;
-
-    // Only allow numbers and dashes
-    value = value.replace(/[^0-9\-]/g, "");
-
-    // Remove all formatting to get just numbers
-    const numbersOnly = value.replace(/[^0-9]/g, "");
-
-    // If input is empty, clear the selected date
-    if (numbersOnly === "") {
-      setManualDate("");
-      setSelectedDate(null);
-      return;
-    }
-
-    // Auto-format as user types: dd-mm-yyyy
-    let formatted = "";
-    for (let i = 0; i < numbersOnly.length && i < 8; i++) {
-      if (i === 2 || i === 4) {
-        formatted += "-";
-      }
-      formatted += numbersOnly[i];
-    }
-
-    setManualDate(formatted);
-
-    // Validate and set date when complete (8 digits: ddmmyyyy)
-    if (numbersOnly.length === 8) {
-      const day = parseInt(numbersOnly.substring(0, 2));
-      const month = parseInt(numbersOnly.substring(2, 4));
-      const year = parseInt(numbersOnly.substring(4, 8));
-
-      // Validate ranges
-      if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 2024) {
-        const parsedDate = new Date(year, month - 1, day);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (parsedDate >= today) {
-          setSelectedDate(parsedDate);
-          setCurrentMonth(parsedDate.getMonth());
-          setCurrentYear(parsedDate.getFullYear());
-        }
-      }
-    }
-  };
-
-  const handleTimeInput = (e) => {
-    let value = e.target.value;
-
-    // Only allow numbers and colons
-    value = value.replace(/[^0-9:]/g, "");
-
-    // Remove all formatting to get just numbers
-    const numbersOnly = value.replace(/[^0-9]/g, "");
-
-    // If input is empty, reset time
-    if (numbersOnly === "") {
-      setManualTime("");
-      return;
-    }
-
-    // Auto-format as user types: hh:mm
-    let formatted = "";
-    for (let i = 0; i < numbersOnly.length && i < 4; i++) {
-      if (i === 2) {
-        formatted += ":";
-      }
-      formatted += numbersOnly[i];
-    }
-
-    setManualTime(formatted);
-
-    // Validate and set time when complete (4 digits: hhmm)
-    if (numbersOnly.length === 4) {
-      const hour = parseInt(numbersOnly.substring(0, 2));
-      const minute = parseInt(numbersOnly.substring(2, 4));
-
-      // Validate ranges
-      if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-        setSelectedHour(hour);
-        setSelectedMinute(minute);
-      }
-    }
-  };
-
-  const getDisplayDate = () => {
-    if (manualDate) return manualDate;
-    if (!selectedDate) return "";
-    const day = String(selectedDate.getDate()).padStart(2, "0");
-    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
-    const year = selectedDate.getFullYear();
-    return `${day}-${month}-${year}`;
-  };
-
-  const getDisplayTime = () => {
-    if (manualTime) return manualTime;
-    return "";
-  };
-
-  const renderCalendarDays = () => {
-    const daysInMonth = getDaysInMonth(currentMonth, currentYear);
-    const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
-    const days = [];
-    const dayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Day labels
-    dayLabels.forEach((label, i) => {
-      days.push(
-        <div
-          key={`label-${i}`}
-          className="w-6 h-6 flex items-center justify-center text-xs text-gray-500 font-medium"
-        >
-          {label}
-        </div>,
-      );
-    });
-
-    // Empty cells for days before first day of month
-    for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="w-6 h-6" />);
-    }
-
-    // Days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateToCheck = new Date(currentYear, currentMonth, day);
-      dateToCheck.setHours(0, 0, 0, 0);
-      const isPast = dateToCheck < today;
-
-      const isSelected =
-        selectedDate &&
-        selectedDate.getDate() === day &&
-        selectedDate.getMonth() === currentMonth &&
-        selectedDate.getFullYear() === currentYear;
-
-      days.push(
-        <button
-          key={day}
-          onClick={() => !isPast && handleDateSelect(day)}
-          disabled={isPast}
-          className={`w-6 h-6 flex items-center justify-center text-xs rounded-full transition-colors
-            ${isPast ? "text-gray-300 cursor-not-allowed" : "text-gray-700 hover:bg-purple-100"}`}
-          style={
-            isSelected ? { backgroundColor: "#4B6CFB", color: "white" } : {}
-          }
-        >
-          {day}
-        </button>,
-      );
-    }
-
-    return days;
-  };
-
   const handleThumbnailAdd = (data) => {
     setThumbnailData(data);
     setThumbnailRemoved(false);
@@ -1161,6 +952,229 @@ export default function EditorPageClient() {
   const handleThumbnailRemove = () => {
     setThumbnailData(null);
     setThumbnailRemoved(true);
+  };
+
+  const formatDateValue = (date) =>
+    `${String(date.getDate()).padStart(2, "0")}-${String(
+      date.getMonth() + 1,
+    ).padStart(2, "0")}-${date.getFullYear()}`;
+
+  const isSameLocalDate = (a, b) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  const maskDateInput = (value) => {
+    const digits = value.replace(/\D/g, "").slice(0, 8);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+    return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4)}`;
+  };
+
+  const applyDatePartBounds = (digits) => {
+    let dayPart = digits.slice(0, 2);
+    let monthPart = digits.slice(2, 4);
+    let yearPart = digits.slice(4, 8);
+
+    if (dayPart.length === 2) {
+      let day = Number(dayPart);
+      day = Math.min(Math.max(day || 1, 1), 31);
+      dayPart = String(day).padStart(2, "0");
+    }
+
+    if (monthPart.length === 2) {
+      let month = Number(monthPart);
+      month = Math.min(Math.max(month || 1, 1), 12);
+      monthPart = String(month).padStart(2, "0");
+    }
+
+    if (yearPart.length === 4) {
+      const minYear = scheduleCurrentYear;
+      let year = Number(yearPart);
+      if (year < minYear) year = minYear;
+      if (year > scheduleYearInputUpperBound) year = scheduleCurrentYear;
+      yearPart = String(year).padStart(4, "0");
+
+      if (dayPart.length === 2 && monthPart.length === 2) {
+        const month = Number(monthPart);
+        const maxDay = new Date(year, month, 0).getDate();
+        let day = Number(dayPart);
+        day = Math.min(Math.max(day || 1, 1), maxDay);
+        dayPart = String(day).padStart(2, "0");
+      }
+    }
+
+    return `${dayPart}${monthPart}${yearPart}`;
+  };
+
+  const maskTimeInput = (value) => {
+    const digits = value.replace(/\D/g, "").slice(0, 4);
+    if (digits.length <= 2) return digits;
+    return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+  };
+
+  const normalizeDateInputValue = (raw) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    if (digits.length !== 8) {
+      return { complete: false, formatted: maskDateInput(raw), date: null };
+    }
+
+    let day = Number(digits.slice(0, 2));
+    let month = Number(digits.slice(2, 4));
+    let year = Number(digits.slice(4, 8));
+
+    if (year < scheduleCurrentYear) year = scheduleCurrentYear;
+    if (year > scheduleYearInputUpperBound) year = scheduleCurrentYear;
+    month = Math.min(Math.max(month || 1, 1), 12);
+    const maxDay = new Date(year, month, 0).getDate();
+    day = Math.min(Math.max(day || 1, 1), maxDay);
+
+    let normalized = new Date(year, month - 1, day);
+    normalized.setHours(0, 0, 0, 0);
+
+    if (normalized < scheduleMinDate) {
+      normalized = new Date(scheduleMinDate);
+    }
+
+    return {
+      complete: true,
+      formatted: formatDateValue(normalized),
+      date: normalized,
+    };
+  };
+
+  const normalizeTimeInputValue = (raw, referenceDate) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 4);
+    if (digits.length !== 4) {
+      return { complete: false, formatted: maskTimeInput(raw), time: null };
+    }
+
+    let hour = Number(digits.slice(0, 2));
+    let minute = Number(digits.slice(2, 4));
+    hour = Math.min(Math.max(hour, 0), 23);
+    minute = Math.min(Math.max(minute, 0), 59);
+
+    const now = new Date();
+    if (referenceDate && isSameLocalDate(referenceDate, now)) {
+      const candidate = new Date(referenceDate);
+      candidate.setHours(hour, minute, 0, 0);
+      if (candidate <= now) {
+        const next = new Date(now.getTime() + 60_000);
+        next.setSeconds(0, 0);
+        hour = next.getHours();
+        minute = next.getMinutes();
+      }
+    }
+
+    return {
+      complete: true,
+      formatted: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
+      time: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
+    };
+  };
+
+  const handleDateInputChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+    const bounded = applyDatePartBounds(digits);
+    const masked = maskDateInput(bounded);
+    setDateInput(masked);
+    setDateError("");
+    setSelectedDate(null);
+
+    if (bounded.length === 8) {
+      const normalized = normalizeDateInputValue(masked);
+      if (normalized.complete && normalized.date) {
+        setSelectedDate(normalized.date);
+      }
+    }
+  };
+
+  const handleDateInputBlur = () => {
+    if (!dateInput) {
+      setDateError("");
+      setSelectedDate(null);
+      return;
+    }
+
+    const normalized = normalizeDateInputValue(dateInput);
+    if (!normalized.complete || !normalized.date) {
+      setDateError("Enter date as dd-mm-yyyy");
+      setSelectedDate(null);
+      return;
+    }
+
+    setDateInput(normalized.formatted);
+    setSelectedDate(normalized.date);
+    setDateError("");
+
+    if (timeInput) {
+      const normalizedTime = normalizeTimeInputValue(timeInput, normalized.date);
+      if (normalizedTime.complete && normalizedTime.time) {
+        setTimeInput(normalizedTime.formatted);
+        setSelectedTime(normalizedTime.time);
+        setTimeError("");
+      }
+    }
+  };
+
+  const handleTimeInputChange = (e) => {
+    const masked = maskTimeInput(e.target.value);
+    setTimeInput(masked);
+    setTimeError("");
+    setSelectedTime(null);
+  };
+
+  const handleTimeInputBlur = () => {
+    if (!timeInput) {
+      setTimeError("");
+      setSelectedTime(null);
+      return;
+    }
+
+    const normalized = normalizeTimeInputValue(timeInput, selectedDate);
+    if (!normalized.complete || !normalized.time) {
+      setTimeError("Enter time as HH:mm");
+      setSelectedTime(null);
+      return;
+    }
+
+    setTimeInput(normalized.formatted);
+    setSelectedTime(normalized.time);
+    setTimeError("");
+  };
+
+  const toggleSchedulePicker = () => {
+    if (isSaving) return;
+    setShowCalendar(!showCalendar);
+  };
+
+  const handleScheduleAction = () => {
+    if (isSaving) return;
+
+    const normalizedDate = normalizeDateInputValue(dateInput);
+    if (!normalizedDate.complete || !normalizedDate.date) {
+      setDateError("Enter date as dd-mm-yyyy");
+      toast.error("Enter a valid future date in dd-mm-yyyy format");
+      return;
+    }
+    setDateInput(normalizedDate.formatted);
+    setSelectedDate(normalizedDate.date);
+    setDateError("");
+
+    const normalizedTime = normalizeTimeInputValue(
+      timeInput,
+      normalizedDate.date,
+    );
+    if (!normalizedTime.complete || !normalizedTime.time) {
+      setTimeError("Enter time as HH:mm");
+      toast.error("Enter a valid 24-hour time in HH:mm format");
+      return;
+    }
+    setTimeInput(normalizedTime.formatted);
+    setSelectedTime(normalizedTime.time);
+    setTimeError("");
+
+    handleSchedule(normalizedDate.date, normalizedTime.time);
   };
 
   return (
@@ -1173,7 +1187,7 @@ export default function EditorPageClient() {
         }
 
         input.date-time-input::placeholder {
-          color: #2e2e2e;
+          color: #b8b8b8;
         }
 
         .saving-spinner {
@@ -1228,20 +1242,6 @@ export default function EditorPageClient() {
             min-width: 212px;
             max-width: 212px;
             flex-shrink: 0;
-          }
-
-          .mobile-date-input {
-            font-size: 12px;
-            line-height: 150%;
-          }
-
-          .mobile-date-input:first-of-type {
-            width: 80px;
-          }
-
-          .mobile-date-input:nth-of-type(2) {
-            width: 35px;
-            margin-left: 4px;
           }
 
           .mobile-schedule-container svg {
@@ -1480,61 +1480,11 @@ export default function EditorPageClient() {
               <div className="flex-1 min-w-0"></div>
 
               {/* Save Status - Desktop and Tablet Only */}
-              {hasContent && (isAutoSaving || saveStatus !== "idle") && (
-                <div
-                  className="hidden md:flex items-center flex-shrink-0"
-                  style={{
-                    width:
-                      isAutoSaving || saveStatus === "saving" ? "98px" : "78px",
-                    height: "33px",
-                    borderRadius: "4px",
-                    border: "1px solid #EAEAEA",
-                    padding: "6px 8px",
-                    gap: "8px",
-                    transition: "width 0.2s ease",
-                  }}
-                >
-                  {isAutoSaving || saveStatus === "saving" ? (
-                    <>
-                      <div className="saving-spinner" />
-                      <span
-                        style={{
-                          width: "56px",
-                          height: "21px",
-                          fontFamily: "Public Sans",
-                          fontWeight: 400,
-                          fontSize: "14px",
-                          lineHeight: "150%",
-                          letterSpacing: "0%",
-                          color: "#696969",
-                        }}
-                      >
-                        Saving...
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <img
-                        src="/images/icons/tick4.svg"
-                        alt="saved"
-                        style={{ width: "13px", height: "13px" }}
-                      />
-                      <span
-                        style={{
-                          fontFamily: "Public Sans",
-                          fontWeight: 400,
-                          fontSize: "14px",
-                          lineHeight: "150%",
-                          letterSpacing: "0%",
-                          color: "#696969",
-                        }}
-                      >
-                        Saved
-                      </span>
-                    </>
-                  )}
-                </div>
-              )}
+              <SaveStatusIndicator
+                saveStatus={saveStatus}
+                isAutoSaving={isAutoSaving}
+                hasContent={hasContent}
+              />
             </div>
           </div>
 
@@ -1550,8 +1500,9 @@ export default function EditorPageClient() {
             ) : (
               <TiptapEditor
                 key={currentBlogId || "new"}
-                onUpdate={(data) => setEditorContent(data)}
+                onUpdate={handleEditorUpdate}
                 initialContent={initialContent}
+                editorRef={editorInstanceRef}
               />
             )}
           </div>
@@ -1730,58 +1681,70 @@ export default function EditorPageClient() {
               </button>
 
               <div
-                className="flex items-center h-8 border border-gray-200 rounded overflow-hidden"
+                className="flex items-center h-8"
                 style={{
-                  minWidth: "180px",
                   width: "auto",
                   maxWidth: "100%",
                 }}
               >
-                <input
-                  type="text"
-                  placeholder="dd-mm-yyyy"
-                  value={getDisplayDate()}
-                  onChange={handleManualInput}
-                  maxLength={10}
-                  className="date-time-input h-[21px] w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
-                  style={{ color: "#2e2e2e" }}
-                />
-                <input
-                  type="text"
-                  placeholder="--:--"
-                  value={getDisplayTime()}
-                  onChange={handleTimeInput}
-                  maxLength={5}
-                  className="date-time-input h-[21px] w-[40px] flex-shrink-0 text-sm bg-transparent outline-none ml-2"
-                  style={{ color: "#2e2e2e" }}
-                />
-                <svg
-                  className="w-4 h-4 flex-shrink-0 cursor-pointer mx-2"
-                  fill="none"
-                  stroke="#2e2e2e"
-                  viewBox="0 0 24 24"
-                  onClick={() => setShowCalendar(!showCalendar)}
+                <div
+                  className={`flex items-center h-8 border rounded overflow-hidden ${
+                    dateError || timeError ? "border-red-300" : "border-gray-200"
+                  }`}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <span
-                  className="text-sm flex-shrink-0 h-full flex items-center justify-center border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
-                  style={{ backgroundColor: "#F8F8F8", color: "#C8C8C8" }}
-                  onClick={() => {
-                    if (selectedDate && (manualDate || manualTime)) {
-                      handleSchedule();
-                    } else {
-                      setShowCalendar(!showCalendar);
-                    }
-                  }}
-                >
-                  Reschedule
-                </span>
+                  <div className="flex items-center h-full pl-2 pr-2">
+                    <input
+                      type="text"
+                      placeholder="dd-mm-yyyy"
+                      value={dateInput}
+                      onChange={handleDateInputChange}
+                      onBlur={handleDateInputBlur}
+                      maxLength={10}
+                      className="date-time-input h-[21px] w-[98px] text-sm bg-transparent outline-none"
+                      aria-invalid={Boolean(dateError)}
+                      title={dateError || "Date format: dd-mm-yyyy"}
+                      style={{ color: "#2e2e2e", fontWeight: 500 }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="--:--"
+                      value={timeInput}
+                      onChange={handleTimeInputChange}
+                      onBlur={handleTimeInputBlur}
+                      maxLength={5}
+                      className="date-time-input h-[21px] w-[50px] text-sm bg-transparent outline-none ml-2"
+                      aria-invalid={Boolean(timeError)}
+                      title={timeError || "24-hour format: HH:mm"}
+                      style={{ color: "#2e2e2e", fontWeight: 500 }}
+                    />
+                    <svg
+                      className="w-4 h-4 flex-shrink-0 cursor-pointer ml-2"
+                      fill="none"
+                      stroke="#2e2e2e"
+                      viewBox="0 0 24 24"
+                      onClick={toggleSchedulePicker}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                  <span
+                    className="text-sm flex-shrink-0 h-full flex items-center justify-center border-l border-gray-200 cursor-pointer px-3 hover:bg-gray-200 transition-colors"
+                    style={{
+                      backgroundColor: "#F8F8F8",
+                      color: selectedDate && selectedTime ? "#2E2E2E" : "#C8C8C8",
+                      opacity: isSaving ? 0.5 : 1,
+                      pointerEvents: isSaving ? "none" : "auto",
+                    }}
+                    onClick={handleScheduleAction}
+                  >
+                    Reschedule
+                  </span>
+                </div>
               </div>
             </>
           ) : (
@@ -1819,50 +1782,60 @@ export default function EditorPageClient() {
                     />
                   </button>
 
-                  <div className="flex items-center h-8 border border-gray-200 rounded overflow-hidden mobile-schedule-container">
-                    <input
-                      type="text"
-                      placeholder="dd-mm-yyyy"
-                      value={getDisplayDate()}
-                      onChange={handleManualInput}
-                      maxLength={10}
-                      className="mobile-date-input date-time-input h-[21px] md:w-[95px] flex-shrink-0 text-sm bg-transparent outline-none pl-2"
-                      style={{ color: "#2e2e2e" }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="--:--"
-                      value={getDisplayTime()}
-                      onChange={handleTimeInput}
-                      maxLength={5}
-                      className="mobile-date-input date-time-input h-[21px] md:w-[40px] flex-shrink-0 text-sm bg-transparent outline-none md:ml-2"
-                      style={{ color: "#2e2e2e" }}
-                    />
-                    <svg
-                      className="w-4 h-4 flex-shrink-0 cursor-pointer md:mx-2"
-                      fill="none"
-                      stroke="#2e2e2e"
-                      viewBox="0 0 24 24"
-                      onClick={() => setShowCalendar(!showCalendar)}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  <div
+                    className={`flex items-center h-8 border rounded overflow-hidden mobile-schedule-container ${
+                      dateError || timeError ? "border-red-300" : "border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center h-full px-2">
+                      <input
+                        type="text"
+                        placeholder="dd-mm-yyyy"
+                        value={dateInput}
+                        onChange={handleDateInputChange}
+                        onBlur={handleDateInputBlur}
+                        maxLength={10}
+                        className="date-time-input h-[21px] w-[86px] text-xs md:text-sm bg-transparent outline-none"
+                        aria-invalid={Boolean(dateError)}
+                        title={dateError || "Date format: dd-mm-yyyy"}
+                        style={{ color: "#2e2e2e", fontWeight: 500 }}
                       />
-                    </svg>
+                      <input
+                        type="text"
+                        placeholder="--:--"
+                        value={timeInput}
+                        onChange={handleTimeInputChange}
+                        onBlur={handleTimeInputBlur}
+                        maxLength={5}
+                        className="date-time-input h-[21px] w-[42px] text-xs md:text-sm bg-transparent outline-none ml-2"
+                        aria-invalid={Boolean(timeError)}
+                        title={timeError || "24-hour format: HH:mm"}
+                        style={{ color: "#2e2e2e", fontWeight: 500 }}
+                      />
+                      <svg
+                        className="w-4 h-4 flex-shrink-0 cursor-pointer ml-2 md:mx-2"
+                        fill="none"
+                        stroke="#2e2e2e"
+                        viewBox="0 0 24 24"
+                        onClick={toggleSchedulePicker}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
                     <span
                       className="mobile-schedule-btn md:text-sm text-xs flex-shrink-0 h-full flex items-center justify-center border-l border-gray-200 cursor-pointer md:px-3 hover:bg-gray-200 transition-colors"
-                      style={{ backgroundColor: "#F8F8F8", color: "#C8C8C8" }}
-                      onClick={() => {
-                        // If date and time are already set, schedule directly
-                        if (selectedDate && (manualDate || manualTime)) {
-                          handleSchedule();
-                        } else {
-                          setShowCalendar(!showCalendar);
-                        }
+                      style={{
+                        backgroundColor: "#F8F8F8",
+                        color: selectedDate && selectedTime ? "#2E2E2E" : "#C8C8C8",
+                        opacity: isSaving ? 0.5 : 1,
+                        pointerEvents: isSaving ? "none" : "auto",
                       }}
+                      onClick={handleScheduleAction}
                     >
                       Schedule
                     </span>
@@ -1878,9 +1851,8 @@ export default function EditorPageClient() {
       {showCalendar && (
         <div
           ref={calendarRef}
-          className="fixed z-[1001] bg-white rounded flex"
+          className="fixed z-[1001] bg-white rounded"
           style={{
-            gap: "15px",
             bottom: "88px",
             left: "50%",
             transform: "translateX(-50%)",
@@ -1889,170 +1861,48 @@ export default function EditorPageClient() {
             padding: "16px",
           }}
         >
-          {/* Calendar Section */}
-          <div className="flex flex-col" style={{ width: "220px", gap: "8px" }}>
-            {/* Month Navigation */}
-            <div className="flex items-center justify-between">
-              <span className="text-base font-medium text-gray-800">
-                {monthNames[currentMonth]}, {currentYear}
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={handlePrevMonth}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <svg
-                    className="w-5 h-5 text-gray-800"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 15l7-7 7 7"
-                    />
-                  </svg>
-                </button>
-                <button
-                  onClick={handleNextMonth}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <svg
-                    className="w-5 h-5 text-gray-800"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
+          <div className="w-[20rem] sm:w-[24rem]">
+            <Calendar10
+              date={selectedDate}
+              time={selectedTime}
+              minDate={scheduleMinDate}
+              onDateChange={(date) => {
+                const normalizedDate = new Date(date);
+                normalizedDate.setHours(0, 0, 0, 0);
+                setSelectedDate(normalizedDate);
+                setDateError("");
+                setDateInput(
+                  `${String(normalizedDate.getDate()).padStart(2, "0")}-${String(
+                    normalizedDate.getMonth() + 1,
+                  ).padStart(2, "0")}-${normalizedDate.getFullYear()}`,
+                );
+              }}
+              onTimeChange={(time) => {
+                setSelectedTime(time);
+                setTimeInput(time || "");
+                setTimeError("");
+              }}
+            />
 
-            {/* Calendar Grid */}
-            <div className="grid grid-cols-7 gap-1 flex-1">
-              {renderCalendarDays()}
-            </div>
-
-            {/* Clear and Today buttons */}
-            <div className="flex justify-between">
-              <button
-                onClick={handleClearDate}
-                className="text-sm text-blue-500 hover:text-blue-600"
+            <div className="mt-3 flex items-center justify-end gap-2">
+              <Button
+                onClick={() => {
+                  setSelectedDate(null);
+                  setSelectedTime(null);
+                  setDateInput("");
+                  setTimeInput("");
+                  setDateError("");
+                  setTimeError("");
+                }}
+                size="sm"
+                variant="outline"
               >
                 Clear
-              </button>
-              <button
-                onClick={handleToday}
-                className="text-sm text-blue-500 hover:text-blue-600"
-              >
-                Today
-              </button>
+              </Button>
+              <Button onClick={() => setShowCalendar(false)} size="sm" disabled={isSaving}>
+                Done
+              </Button>
             </div>
-          </div>
-
-          {/* Divider */}
-          <div className="w-px bg-gray-200" />
-
-          {/* Time Picker Section */}
-          <div
-            className="flex flex-col"
-            style={{
-              width: "90px",
-              gap: "8px",
-              paddingRight: "8px",
-              paddingLeft: "8px",
-            }}
-          >
-            {/* Headers */}
-            <div
-              className="flex justify-between h-6 items-center"
-              style={{ marginTop: "34px" }}
-            >
-              <span className="text-xs text-gray-500 w-7 text-center">
-                Hour
-              </span>
-              <span className="text-xs text-gray-500 w-7 text-center">Min</span>
-            </div>
-
-            {/* Time columns */}
-            <div
-              className="flex justify-between"
-              style={{ height: "104px", gap: "16px" }}
-            >
-              {/* Hours */}
-              <div
-                className="flex flex-col items-center overflow-y-auto"
-                style={{ scrollbarWidth: "none" }}
-              >
-                {[...Array(24)].map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setSelectedHour(i);
-                      const minuteStr = String(selectedMinute).padStart(2, "0");
-                      setManualTime(
-                        `${String(i).padStart(2, "0")}:${minuteStr}`,
-                      );
-                    }}
-                    className={`w-7 h-6 text-xs rounded-md ${selectedHour === i ? "text-white" : "text-gray-700 hover:bg-gray-100"}`}
-                    style={{
-                      marginBottom: "2px",
-                      flexShrink: 0,
-                      ...(selectedHour === i
-                        ? { backgroundColor: "#4B6CFB" }
-                        : {}),
-                    }}
-                  >
-                    {String(i).padStart(2, "0")}
-                  </button>
-                ))}
-              </div>
-
-              {/* Minutes */}
-              <div
-                className="flex flex-col items-center overflow-y-auto"
-                style={{ scrollbarWidth: "none" }}
-              >
-                {[...Array(60)].map((_, m) => (
-                  <button
-                    key={m}
-                    onClick={() => {
-                      setSelectedMinute(m);
-                      const hourStr = String(selectedHour).padStart(2, "0");
-                      setManualTime(`${hourStr}:${String(m).padStart(2, "0")}`);
-                    }}
-                    className={`w-7 h-6 text-xs rounded-md ${selectedMinute === m ? "text-white" : "text-gray-700 hover:bg-gray-100"}`}
-                    style={{
-                      marginBottom: "2px",
-                      flexShrink: 0,
-                      ...(selectedMinute === m
-                        ? { backgroundColor: "#4B6CFB" }
-                        : {}),
-                    }}
-                  >
-                    {String(m).padStart(2, "0")}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Apply Button */}
-            <button
-              onClick={handleSchedule}
-              disabled={isSaving || !selectedDate}
-              className="w-full py-1.5 text-sm text-white bg-black rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ marginTop: "20px" }}
-            >
-              {isSaving ? "Scheduling..." : "Schedule"}
-            </button>
           </div>
         </div>
       )}
@@ -2079,9 +1929,22 @@ export default function EditorPageClient() {
       )}
       <ExitConfirmModal
         isOpen={showExitModal}
-        onClose={() => setShowExitModal(false)}
+        onClose={() => {
+          setShowExitModal(false);
+          setExitDestination(null);
+        }}
         onDiscard={handleDiscard}
         onUpdate={handleUpdateAndExit}
+      />
+
+      <ConfirmModal
+        isOpen={showDraftConfirmModal}
+        onClose={() => setShowDraftConfirmModal(false)}
+        onConfirm={executeDraft}
+        title="Create a Draft?"
+        message="A draft copy will be created with your current changes. The original article will remain published."
+        confirmText="Create Draft"
+        confirmStyle="normal"
       />
     </div>
   );

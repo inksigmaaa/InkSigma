@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "@/lib/auth-client";
+import { getApiBase } from "@/utils/apiBase";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const API_URL = getApiBase();
 
-import ConfirmModal from "../../../components/confirmModal/ConfirmModal";
-import { useToast } from "@/contexts/ToastContext";
+import { formatTimeAgo } from "../../../../utils/timeFormatter";
+import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
+import { toast } from "sonner";
+import { flushSync } from "react-dom";
 
 export default function CommentSection({ blogId }) {
   const [comments, setComments] = useState([]);
@@ -15,36 +20,16 @@ export default function CommentSection({ blogId }) {
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyContent, setReplyContent] = useState("");
   const [expandedReplies, setExpandedReplies] = useState({});
-  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [currentTime, setCurrentTime] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
+  const { data: session, isPending: sessionPending } = useSession();
+  const currentUser = session?.user || null;
 
   // Delete confirmation state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
-
-  const { showToast } = useToast();
-
-  // Fetch current user session
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/auth/get-session`, {
-          credentials: "include",
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setCurrentUser(data?.user || null);
-        }
-      } catch (err) {
-        console.log("Not authenticated");
-      }
-    };
-    fetchUser();
-  }, []);
-
   // Fetch comments
   const fetchComments = useCallback(async () => {
     if (!blogId) return;
@@ -71,38 +56,34 @@ export default function CommentSection({ blogId }) {
     fetchComments();
   }, [fetchComments]);
 
-  // Update current time every minute
+  // Update exactly on minute boundaries so "x min ago" changes on time.
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 60000);
-    return () => clearInterval(interval);
+    let intervalId;
+    const updateNow = () => setCurrentTime(Date.now());
+
+    updateNow();
+
+    const now = Date.now();
+    const msUntilNextMinute = 60000 - (now % 60000);
+
+    const timeoutId = setTimeout(() => {
+      updateNow();
+      intervalId = setInterval(updateNow, 60000);
+    }, msUntilNextMinute);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
-
-  const getRelativeTime = (timestamp) => {
-    const seconds = Math.floor(
-      (currentTime - new Date(timestamp).getTime()) / 1000,
-    );
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (seconds < 60) return "Just now";
-    if (minutes === 1) return "1 min ago";
-    if (minutes < 60) return `${minutes} mins ago`;
-    if (hours === 1) return "1 hour ago";
-    if (hours < 24) return `${hours} hours ago`;
-    if (days === 1) return "1 day ago";
-    return `${days} days ago`;
-  };
 
   const handleSubmitComment = async () => {
     if (!newComment.trim()) {
       setError("Please enter a comment");
       return;
     }
-    if (!currentUser) {
-      setError("Please sign in to comment");
+    if (sessionPending) {
+      setError("Checking sign-in status. Please try again.");
       return;
     }
 
@@ -141,11 +122,19 @@ export default function CommentSection({ blogId }) {
       if (response.ok) {
         const comment = await response.json();
         console.log("[CommentSection] New comment created:", comment);
-        setComments((prev) => [comment, ...prev]);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("blog:comment-will-add"));
+        }
+        flushSync(() => {
+          setComments((prev) => [comment, ...prev]);
+        });
 
         setNewComment("");
         setError(null);
-        showToast("Comment added successfully", "success");
+        toast.success("Comment added successfully");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("blog:comment-did-add"));
+        }
       } else {
         let errorMessage = "Failed to post comment";
         let responseData = null;
@@ -155,6 +144,9 @@ export default function CommentSection({ blogId }) {
           console.error("[CommentSection] Error response data:", responseData);
           errorMessage =
             responseData.error || responseData.message || errorMessage;
+          if (errorMessage === "Name is required for guest comments") {
+            errorMessage = "Please sign in to comment";
+          }
         } catch (parseErr) {
           console.error(
             "[CommentSection] Failed to parse error response:",
@@ -167,14 +159,14 @@ export default function CommentSection({ blogId }) {
 
         console.error("[CommentSection] Failed to post comment:", errorMessage);
         setError(errorMessage);
-        showToast(errorMessage, "error");
+        toast.error(errorMessage);
       }
     } catch (err) {
       console.error("[CommentSection] Fetch error:", err);
       console.error("[CommentSection] Error type:", err?.constructor?.name);
       console.error("[CommentSection] Error message:", err?.message);
       setError("Failed to post comment. Please try again.");
-      showToast("Failed to post comment. Please try again.", "error");
+      toast.error("Failed to post comment. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -185,8 +177,8 @@ export default function CommentSection({ blogId }) {
       setError("Please enter a reply");
       return;
     }
-    if (!currentUser) {
-      setError("Please sign in to reply");
+    if (sessionPending) {
+      setError("Checking sign-in status. Please try again.");
       return;
     }
 
@@ -226,13 +218,16 @@ export default function CommentSection({ blogId }) {
         setReplyingTo(null);
         setExpandedReplies((prev) => ({ ...prev, [commentId]: true }));
         setError(null);
-        showToast("Reply added successfully", "success");
+        toast.success("Reply added successfully");
       } else {
         let errorMessage = "Failed to post reply";
         try {
           const data = await response.json();
           console.error("[CommentSection] Failed to post reply:", data);
           errorMessage = data.error || data.message || errorMessage;
+          if (errorMessage === "Name is required for guest comments") {
+            errorMessage = "Please sign in to reply";
+          }
         } catch (parseErr) {
           console.error(
             "[CommentSection] Failed to parse error response:",
@@ -241,12 +236,12 @@ export default function CommentSection({ blogId }) {
           errorMessage = `Error: ${response.status} ${response.statusText}`;
         }
         setError(errorMessage);
-        showToast(errorMessage, "error");
+        toast.error(errorMessage);
       }
     } catch (err) {
       console.error("Error posting reply:", err);
       setError("Failed to post reply. Please try again.");
-      showToast("Failed to post reply. Please try again.", "error");
+      toast.error("Failed to post reply. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -284,16 +279,16 @@ export default function CommentSection({ blogId }) {
             return c;
           });
         });
-        showToast("Comment deleted successfully", "success");
+        toast.success("Comment deleted successfully");
       } else {
         const data = await response.json();
         setError(data.error || "Failed to delete comment");
-        showToast(data.error || "Failed to delete comment", "error");
+        toast.error(data.error || "Failed to delete comment");
       }
     } catch (err) {
       console.error("Error deleting comment:", err);
       setError("Failed to delete comment");
-      showToast("Failed to delete comment", "error");
+      toast.error("Failed to delete comment");
     } finally {
       setShowDeleteModal(false);
       setCommentToDelete(null);
@@ -345,19 +340,18 @@ export default function CommentSection({ blogId }) {
         )}
 
         <div className="flex gap-3 md:gap-4 mb-6">
-          <div className="w-8 h-8 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center max-md:w-6 max-md:h-6">
-            {currentUser?.image ? (
-              <img
+          <Avatar className="w-8 h-8 bg-purple-100 flex-shrink-0 max-md:w-6 max-md:h-6">
+            {currentUser?.image && (
+              <AvatarImage
                 src={getAuthorAvatar(currentUser)}
                 alt={currentUser.name}
                 className="w-full h-full object-cover"
               />
-            ) : (
-              <span className="text-purple-600 font-semibold">
-                {currentUser?.name?.charAt(0).toUpperCase() || "?"}
-              </span>
             )}
-          </div>
+            <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold">
+              {currentUser?.name?.charAt(0).toUpperCase() || "?"}
+            </AvatarFallback>
+          </Avatar>
           <div className="flex-1 min-w-0">
             <textarea
               placeholder="Share your thoughts..."
@@ -399,26 +393,25 @@ export default function CommentSection({ blogId }) {
                   className="border border-[#EDEDED] rounded-lg px-10 py-4 max-md:px-4"
                 >
                   <div className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-purple-100 flex-shrink-0 overflow-hidden flex items-center justify-center max-md:w-6 max-md:h-6">
-                      {comment.author?.image ? (
-                        <img
+                    <Avatar className="w-8 h-8 bg-purple-100 flex-shrink-0 max-md:w-6 max-md:h-6">
+                      {comment.author?.image && (
+                        <AvatarImage
                           src={getAuthorAvatar(comment.author)}
                           alt={getDisplayName(comment)}
                           className="w-full h-full object-cover"
                         />
-                      ) : (
-                        <span className="text-purple-600 font-semibold">
-                          {getInitial(comment)}
-                        </span>
                       )}
-                    </div>
+                      <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold">
+                        {getInitial(comment)}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 my-1.5 flex-wrap max-md:my-0">
                         <span className="text-[#404040] text-sm font-semibold leading-5 tracking-normal max-md:text-xs">
                           {getDisplayName(comment)}
                         </span>
                         <span className="text-[#A4A4A4] text-xs font-normal leading-5 tracking-normal max-md:text-[10px]">
-                          {getRelativeTime(comment.createdAt)}
+                          {currentTime ? formatTimeAgo(comment.createdAt, currentTime) : "Just now"}
                         </span>
                       </div>
 
@@ -485,12 +478,19 @@ export default function CommentSection({ blogId }) {
                       {replyingTo === comment.id && (
                         <div className="mt-4 bg-white rounded-lg p-3 ">
                           <div className="flex gap-3">
-                            <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center max-md:w-6 max-md:h-6">
-                              <span className="text-purple-600 font-semibold text-sm">
+                            <Avatar className="w-8 h-8 flex-shrink-0 max-md:w-6 max-md:h-6">
+                              {currentUser?.image && (
+                                <AvatarImage
+                                  src={getAuthorAvatar(currentUser)}
+                                  alt={currentUser?.name || "User"}
+                                  className="w-full h-full object-cover"
+                                />
+                              )}
+                              <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold text-sm">
                                 {currentUser?.name?.charAt(0).toUpperCase() ||
                                   "?"}
-                              </span>
-                            </div>
+                              </AvatarFallback>
+                            </Avatar>
                             <div className="flex-1 min-w-0">
                               {!currentUser && (
                                 <div className="mb-2 p-2 bg-gray-50 border border-gray-200 rounded text-sm text-center">
@@ -554,26 +554,25 @@ export default function CommentSection({ blogId }) {
                                 key={reply.id}
                                 className="flex gap-3 bg-white !mt-8 rounded-lg max-md:!mt-4"
                               >
-                                <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center max-md:w-6 max-md:h-6">
-                                  {reply.author?.image ? (
-                                    <img
+                                <Avatar className="w-8 h-8 flex-shrink-0 max-md:w-6 max-md:h-6">
+                                  {reply.author?.image && (
+                                    <AvatarImage
                                       src={getAuthorAvatar(reply.author)}
                                       alt={getDisplayName(reply)}
                                       className="w-full h-full object-cover"
                                     />
-                                  ) : (
-                                    <span className="text-purple-600 font-semibold text-xs">
-                                      {getInitial(reply)}
-                                    </span>
                                   )}
-                                </div>
+                                  <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold text-xs">
+                                    {getInitial(reply)}
+                                  </AvatarFallback>
+                                </Avatar>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 my-1.5 flex-wrap max-md:my-0">
                                     <span className="font-semibold text-[#14142D] text-sm max-md:text-xs">
                                       {getDisplayName(reply)}
                                     </span>
                                     <span className="text-xs text-[#A4A4A4] max-md:text-[10px]">
-                                      {getRelativeTime(reply.createdAt)}
+                                      {currentTime ? formatTimeAgo(reply.createdAt, currentTime) : "Just now"}
                                     </span>
                                   </div>
                                   <p className="text-[#696969] text-sm break-words whitespace-pre-wrap max-md:text-xs">

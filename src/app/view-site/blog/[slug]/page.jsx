@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { use, useEffect, useState, useRef } from "react";
 import ViewSiteHeader from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 import TableOfContents from "../../components/TableOfContents/TableOfContents";
@@ -12,10 +11,14 @@ import ShareMenu from "../../components/ShareMenu/ShareMenu";
 import ScrollToTop from "../../components/ScrollToTop/ScrollToTop";
 import MobileBottomNav from "../../components/MobileBottomNav/MobileBottomNav";
 import CommentSection from "../../components/CommentSection/CommentSection";
+import { use, useEffect, useState, useRef } from "react";
 import ClockIcon from "../../components/icons/ClockIcon";
-import { getImageUrl } from "@/utils/imageUrl";
 import { useSnapshot } from "@/hooks/useSnapshot";
-import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
+import { getApiBase } from "@/utils/apiBase";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+const API_URL = getApiBase();
 
 export default function BlogDetailPage({ params }) {
   const { slug } = use(params);
@@ -24,8 +27,11 @@ export default function BlogDetailPage({ params }) {
   const [error, setError] = useState(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { captureSnapshot, isSnapshotting } = useSnapshot();
+  const { captureSnapshot } = useSnapshot();
   const contentRef = useRef(null);
+  const tocStickyRef = useRef(null);
+  const footerRef = useRef(null);
+  const footerPreviousTopRef = useRef(null);
 
   const handleSnapshot = () => {
     if (contentRef.current) {
@@ -74,19 +80,29 @@ export default function BlogDetailPage({ params }) {
     e.preventDefault();
     const fromPub = searchParams.get("from");
 
-    // Try browser history first
-    if (window.history.length > 1) {
-      router.back();
-    }
-    // Fallback to explicit navigation
-    else if (fromPub) {
-      router.push(`/view-site?publicationId=${fromPub}`);
-    }
-    // Default fallback
-    else {
+    // Check if we are on a custom domain / subdomain by looking at the URL
+    // If we're on a clean domain without /view-site in the URL path, we should go to /
+    const isSubdomain =
+      typeof window !== "undefined" &&
+      !window.location.pathname.startsWith("/view-site");
+
+    // Navigate directly to the publication view site
+    // Don't use router.back() as it may go back to the editor
+    if (fromPub) {
+      router.push(
+        isSubdomain
+          ? `/?from=${fromPub}`
+          : `/view-site?publicationId=${fromPub}`,
+      );
+    } else {
       const pubId =
         blog?.publication?.id || blog?.publicationId || blog?.publication_id;
-      router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");
+
+      if (isSubdomain) {
+        router.push("/");
+      } else {
+        router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");
+      }
     }
   };
 
@@ -95,9 +111,7 @@ export default function BlogDetailPage({ params }) {
       try {
         setLoading(true);
         // Fetch blog by slug (without incrementing view here)
-        const response = await fetch(
-          `http://localhost:5000/api/blogs/slug/${slug}`,
-        );
+        const response = await fetch(`${API_URL}/api/blogs/slug/${slug}`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch blog");
@@ -115,8 +129,7 @@ export default function BlogDetailPage({ params }) {
 
             // Fix Images
             const images = doc.querySelectorAll("img");
-            const backendUrl =
-              process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+            const backendUrl = API_URL;
 
             images.forEach((img, index) => {
               const src = img.getAttribute("src");
@@ -153,7 +166,7 @@ export default function BlogDetailPage({ params }) {
           // Fetch publication details if publicationId exists
           if (foundBlog.publicationId) {
             const pubResponse = await fetch(
-              `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/publications/${foundBlog.publicationId}`,
+              `${API_URL}/api/publications/${foundBlog.publicationId}`,
               {
                 credentials: "include",
               },
@@ -185,17 +198,14 @@ export default function BlogDetailPage({ params }) {
               }
 
               if (shouldTrack) {
-                await fetch(
-                  `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/views/track`,
-                  {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({ blogId: foundBlog.id }),
+                await fetch(`${API_URL}/api/views/track`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
                   },
-                );
+                  credentials: "include",
+                  body: JSON.stringify({ blogId: foundBlog.id }),
+                });
               }
             } catch (viewError) {
               console.error("Error tracking view:", viewError);
@@ -212,6 +222,98 @@ export default function BlogDetailPage({ params }) {
 
     fetchBlog();
   }, [slug]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const topOffset = 96; // matches top-28
+    let rafId = null;
+    let lastHeight = null;
+
+    const updateTocHeight = () => {
+      rafId = null;
+      if (!tocStickyRef.current) return;
+
+      const defaultHeight = window.innerHeight - topOffset;
+      let nextHeight = defaultHeight;
+
+      if (footerRef.current) {
+        const footerTop = footerRef.current.getBoundingClientRect().top;
+        nextHeight = Math.min(defaultHeight, footerTop - topOffset);
+      }
+
+      const clampedHeight = Math.max(0, Math.round(nextHeight));
+      if (clampedHeight === lastHeight) return;
+
+      lastHeight = clampedHeight;
+      tocStickyRef.current.style.height = `${clampedHeight}px`;
+    };
+
+    const scheduleUpdate = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(updateTocHeight);
+    };
+
+    scheduleUpdate();
+    window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+
+    return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", scheduleUpdate);
+      window.removeEventListener("scroll", scheduleUpdate);
+    };
+  }, [loading]);
+
+  useEffect(() => {
+    const handleCommentWillAdd = () => {
+      if (!footerRef.current) return;
+      footerPreviousTopRef.current =
+        footerRef.current.getBoundingClientRect().top;
+    };
+
+    const handleCommentDidAdd = () => {
+      if (!footerRef.current || footerPreviousTopRef.current === null) return;
+
+      const footerEl = footerRef.current;
+      const nextTop = footerEl.getBoundingClientRect().top;
+      const deltaY = footerPreviousTopRef.current - nextTop;
+      footerPreviousTopRef.current = null;
+
+      if (Math.abs(deltaY) < 1) return;
+
+      footerEl.style.transition = "none";
+      footerEl.style.transform = `translateY(${deltaY}px)`;
+      footerEl.style.willChange = "transform";
+      footerEl.getBoundingClientRect();
+
+      requestAnimationFrame(() => {
+        footerEl.style.transition =
+          "transform 1550ms cubic-bezier(0.16, 1, 0.3, 1)";
+        footerEl.style.transform = "translateY(0)";
+      });
+
+      const cleanup = (event) => {
+        if (event.target !== footerEl || event.propertyName !== "transform") {
+          return;
+        }
+        footerEl.style.transition = "";
+        footerEl.style.transform = "";
+        footerEl.style.willChange = "";
+        footerEl.removeEventListener("transitionend", cleanup);
+      };
+
+      footerEl.addEventListener("transitionend", cleanup);
+    };
+
+    window.addEventListener("blog:comment-will-add", handleCommentWillAdd);
+    window.addEventListener("blog:comment-did-add", handleCommentDidAdd);
+
+    return () => {
+      window.removeEventListener("blog:comment-will-add", handleCommentWillAdd);
+      window.removeEventListener("blog:comment-did-add", handleCommentDidAdd);
+    };
+  }, []);
 
   // Content processing moved to fetchBlog
   const [sections, setSections] = useState([]);
@@ -291,10 +393,6 @@ export default function BlogDetailPage({ params }) {
   }
 
   const dateFormatted = formatDate(blog.createdAt);
-  const thumbnailUrl = getThumbnailWithFallback(
-    getImageUrl(blog.image),
-    blog.id,
-  );
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -306,11 +404,11 @@ export default function BlogDetailPage({ params }) {
         }
         userAvatar={
           blog.publication?.logoUrl
-            ? `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${blog.publication.logoUrl}`
+            ? `${API_URL}${blog.publication.logoUrl}`
             : blog.author?.image
               ? blog.author.image.startsWith("http")
                 ? blog.author.image
-                : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${blog.author.image}`
+                : `${API_URL}${blog.author.image}`
               : null
         }
         shareButton={
@@ -327,22 +425,27 @@ export default function BlogDetailPage({ params }) {
       <section className="flex-grow flex justify-center w-full pt-20 ">
         <div className="flex w-[90%] lg:w-[78%] max-w-[1600px] gap-6 relative">
           {/* Left Sidebar - Navigation & TOC */}
-          <aside className="hidden lg:block w-[240px] flex-shrink-0 pt-5 sticky top-28 h-[calc(100vh-6rem)] overflow-y-auto z-30">
-            <div className="flex flex-col gap-8">
-              <button
-                onClick={handleBack}
-                className="inline-flex items-center gap-1 px-4 py-3 bg-[#F4F4F4] hover:bg-[#EAEAEA] text-[#696969] text-sm font-semibold leading-none tracking-normal rounded-3xl w-fit transition-colors"
-                type="button"
-              >
-                <Image
-                  src="/svg/arrow_back.svg"
-                  alt="Arrow Left"
-                  width={12}
-                  height={5}
-                />
-                Go to homepage
-              </button>
-              <TableOfContents sections={sections} />
+          <aside className="hidden lg:block w-[240px] flex-shrink-0 pt-8">
+            <div
+              ref={tocStickyRef}
+              className="sticky top-28 z-30 h-[calc(100vh-6rem)]"
+            >
+              <div className="flex flex-col gap-8 h-full min-h-0 pt-4">
+                <button
+                  onClick={handleBack}
+                  className="inline-flex items-center gap-1 px-4 py-3 bg-[#F4F4F4] hover:bg-[#EAEAEA] text-[#696969] text-sm font-semibold leading-none tracking-normal rounded-3xl w-fit transition-colors"
+                  type="button"
+                >
+                  <Image
+                    src="/svg/arrow_back.svg"
+                    alt="Arrow Left"
+                    width={12}
+                    height={5}
+                  />
+                  Go to homepage
+                </button>
+                <TableOfContents sections={sections} />
+              </div>
             </div>
           </aside>
 
@@ -384,32 +487,25 @@ export default function BlogDetailPage({ params }) {
             <div className="flex items-center justify-between py-3 border-t border-b border-[#EAEAEA] mb-10 max-md:mb-6">
               {/* Author */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 max-md:w-7 max-md:h-7 ">
-                  {blog.author?.image ? (
-                    <img
+                <Avatar className="w-10 h-10 bg-gray-200 flex-shrink-0 max-md:w-7 max-md:h-7">
+                  {blog.author?.image && (
+                    <AvatarImage
                       src={
                         blog.author.image.startsWith("http") ||
                         blog.author.image.startsWith("https")
                           ? blog.author.image
                           : blog.author.image.startsWith("/")
-                            ? `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${blog.author.image}`
-                            : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${blog.author.image}`
+                            ? `${API_URL}${blog.author.image}`
+                            : `${API_URL}/${blog.author.image}`
                       }
                       alt={blog.author?.name || "Author"}
                       className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                        e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${blog.author?.name?.charAt(0).toUpperCase() || "A"}</span></div>`;
-                      }}
                     />
-                  ) : (
-                    <div className="w-full h-full bg-purple-100 flex items-center justify-center">
-                      <span className="text-purple-600 font-semibold text-sm">
-                        {blog.author?.name?.charAt(0).toUpperCase() || "A"}
-                      </span>
-                    </div>
                   )}
-                </div>
+                  <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold text-sm">
+                    {blog.author?.name?.charAt(0).toUpperCase() || "A"}
+                  </AvatarFallback>
+                </Avatar>
                 <span className="text-[#404040] text-base font-normal italic leading-[1.88] tracking-normal max-md:text-[12px] max-md:leading-[1.5]">
                   {blog.author?.name || "Anonymous"}
                 </span>
@@ -430,7 +526,7 @@ export default function BlogDetailPage({ params }) {
             <article
               className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px] break-words overflow-wrap-anywhere"
               dangerouslySetInnerHTML={{
-                __html: blog.content,
+                __html: sanitizeHtml(blog.content),
               }}
             />
 
@@ -452,7 +548,13 @@ export default function BlogDetailPage({ params }) {
         </div>
       </section>
 
-      <Footer publicationName={blog.publication?.name} />
+      <div ref={footerRef} className="relative z-40 bg-white">
+        <div
+          aria-hidden="true"
+          className="footer-top-fade pointer-events-none absolute -top-14 inset-x-0 z-10 h-14"
+        />
+        <Footer publicationName={blog.publication?.name} />
+      </div>
       <ScrollToTop />
 
       {/* Mobile Bottom Navigation */}

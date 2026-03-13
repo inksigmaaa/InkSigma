@@ -1,8 +1,15 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { X } from "lucide-react"
+import { useState, useEffect } from "react"
 import { Button } from "./button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./dialog"
 
 export function ConfirmationModal({ 
   isOpen, 
@@ -11,7 +18,8 @@ export function ConfirmationModal({
   title, 
   description,
   confirmText = "Confirm",
-  cancelText = "Close"
+  cancelText = "Close",
+  confirmVariant = "default",
 }) {
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -36,58 +44,36 @@ export function ConfirmationModal({
     }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={handleClose}
-      />
-      
-      {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-2xl max-w-md w-full mx-4 p-6 z-10">
-        {/* Close button */}
-        <button
-          onClick={handleClose}
-          disabled={isProcessing}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-        >
-          <X className="h-6 w-6" />
-        </button>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="sm:max-w-[425px]" showClose={true}>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {description && (
+            <DialogDescription>{description}</DialogDescription>
+          )}
+        </DialogHeader>
         
-        {/* Content */}
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4 pr-8">
-            {title}
-          </h2>
+        <DialogFooter className="sm:justify-center gap-2 mt-4">
+          <Button
+            variant="outline"
+            onClick={handleClose}
+            disabled={isProcessing}
+            className="w-full sm:w-auto"
+          >
+            {cancelText}
+          </Button>
           
-          <p className="text-gray-600 mb-8 leading-relaxed">
-            {description}
-          </p>
-          
-          {/* Buttons */}
-          <div className="flex gap-4 justify-center">
-            <Button
-              variant="outline"
-              onClick={handleClose}
-              disabled={isProcessing}
-              className="px-8 py-2 text-gray-700 border-gray-300 hover:bg-gray-50"
-            >
-              {cancelText}
-            </Button>
-            
-            <Button
-              onClick={handleConfirm}
-              disabled={isProcessing}
-              className="px-8 py-2 bg-black text-white hover:bg-gray-800"
-            >
-              {isProcessing ? "Processing..." : confirmText}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
+          <Button
+            variant={confirmVariant}
+            onClick={handleConfirm}
+            disabled={isProcessing}
+            className="w-full sm:w-auto"
+          >
+            {isProcessing ? "Processing..." : confirmText}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

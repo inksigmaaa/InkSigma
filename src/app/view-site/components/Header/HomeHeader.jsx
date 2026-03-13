@@ -1,5 +1,7 @@
 'use client';
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 export default function HomeHeader({ userName = 'The Nature Blog', userAvatar = null, searchQuery = '', onSearchChange }) {
   return (
     <header className="fixed top-0 left-0 right-0 z-[100] bg-white border-b border-gray-200 py-6   max-md:py-4">
@@ -9,25 +11,16 @@ export default function HomeHeader({ userName = 'The Nature Blog', userAvatar = 
           {/* Left Section - Logo and Blog Name */}
           <div className="flex items-center gap-3 md:gap-4">
             {/* Logo/Avatar */}
-            <div className="w-[33px] h-[33px] rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-              {userAvatar ? (
-                <img 
-                  src={userAvatar} 
-                  alt={userName}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${userName?.charAt(0).toUpperCase() || 'P'}</span></div>`;
-                  }}
-                />
-              ) : (
-                <img 
-                  src="/svg/logo.svg" 
-                  alt="Logo"
-                  className="w-full h-full object-cover"
-                />
-              )}
-            </div>
+            <Avatar className="w-[33px] h-[33px] bg-gray-200 flex-shrink-0">
+              <AvatarImage
+                src={userAvatar || "/svg/logo.svg"}
+                alt={userName}
+                className="w-full h-full object-cover"
+              />
+              <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold text-sm">
+                {userName?.charAt(0).toUpperCase() || "P"}
+              </AvatarFallback>
+            </Avatar>
             
             {/* Blog Name */}
             <h1 className="font-semibold text-base leading-[100%] text-[#000000] whitespace-nowrap max-md:text-[12px] max-md:leading-[150%]">{userName}</h1>

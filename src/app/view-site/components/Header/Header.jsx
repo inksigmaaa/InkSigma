@@ -3,33 +3,22 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function ViewSiteHeader({ userName, userAvatar = null, shareButton = null }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const handleBack = () => {
-    // Check if we have history to go back to
-    if (window.history.length > 2) {
-       router.back();
-    } else {
-       // Fallback to publication home or root if no history
-       // If we have a publication ID in params (though header might not have it directly),
-       // we might want to go to that.
-       // For now, let's try to go back, else root.
-       // Actually, the user said "return the that publication".
-       // If we are on a blog post, we likely have the publication context or params.
-       
-       // Simple back behavior often works best for "like back button"
-       router.back(); 
-       // If back doesn't work (new tab), we might ultimately want to redirect to home.
-       // But router.back() is what was requested ("like the go back button")
-    }
+    // Navigate directly to view-site instead of using router.back()
+    // which may go back to the editor
+    const pubId = searchParams.get("publicationId") || searchParams.get("pub");
+    router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");
   };
 
   // Improved handleBack to be more robust
   const onLogoClick = () => {
-     router.back();
+    handleBack();
   };
 
   return (
@@ -38,25 +27,18 @@ export default function ViewSiteHeader({ userName, userAvatar = null, shareButto
         {/* Left Side: Logo, Name, Share */}
         <div className="flex items-center gap-4">
           <div onClick={onLogoClick} className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 relative max-md:w-7 max-md:h-7">
-              {userAvatar ? (
-                <img
-                  src={userAvatar} 
-                  alt={userName || 'Blog'}
+            <Avatar className="w-10 h-10 bg-gray-100 flex-shrink-0 relative max-md:w-7 max-md:h-7">
+              {userAvatar && (
+                <AvatarImage
+                  src={userAvatar}
+                  alt={userName || "Blog"}
                   className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.parentElement.innerHTML = `<div class="w-full h-full bg-[#FFE8C5] flex items-center justify-center"><span class="text-[#845F2E] font-bold text-lg">${(userName || 'B')?.charAt(0).toUpperCase()}</span></div>`;
-                  }}
                 />
-              ) : (
-                 <div className="w-full h-full bg-[#FFE8C5] flex items-center justify-center">
-                    <span className="text-[#845F2E] font-bold text-lg">
-                      {(userName || 'B')?.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
               )}
-            </div>
+              <AvatarFallback className="w-full h-full bg-[#FFE8C5] text-[#845F2E] font-bold text-lg">
+                {(userName || "B")?.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
             
             <h1 className="text-base font-semibold leading-none tracking-normal text-[#000000] max-md:text-sm">
               {userName || 'InkSigma'}

@@ -8,8 +8,10 @@ import ShareMenu from "../ShareMenu/ShareMenu";
 import { getImageUrl } from "@/utils/imageUrl";
 import CategoryBadgeList from "@/components/CategoryBadgeList";
 import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
+import { getApiBase } from "@/utils/apiBase";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const API_URL = getApiBase();
 
 export default function AllArticles({
   searchQuery = "",
@@ -118,30 +120,22 @@ export default function AllArticles({
                 {/* Author and Date */}
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                   <div className="flex items-center gap-2 md:gap-3">
-                    <div className="w-[29px] h-[29px] rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
-                      {article.author?.image ? (
-                        <img
+                    <Avatar className="w-[29px] h-[29px] bg-gray-300 flex-shrink-0">
+                      {article.author?.image && (
+                        <AvatarImage
                           src={
                             article.author.image.startsWith("http")
                               ? article.author.image
-                              : `http://localhost:5000${article.author.image}`
+                              : `${API_URL}${article.author.image}`
                           }
                           alt={article.author.name}
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.style.display = "none";
-                            e.target.parentElement.innerHTML = `<div class="w-full h-full bg-purple-100 flex items-center justify-center"><span class="text-purple-600 font-semibold text-sm">${article.author?.name?.charAt(0).toUpperCase() || "A"}</span></div>`;
-                          }}
                         />
-                      ) : (
-                        <div className="w-full h-full bg-purple-100 flex items-center justify-center">
-                          <span className="text-purple-600 font-semibold text-sm">
-                            {article.author?.name?.charAt(0).toUpperCase() ||
-                              "A"}
-                          </span>
-                        </div>
                       )}
-                    </div>
+                      <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold text-sm">
+                        {article.author?.name?.charAt(0).toUpperCase() || "A"}
+                      </AvatarFallback>
+                    </Avatar>
                     <span className=" text-[#7E7B7B] text-[16px] font-normal leading-[136%] max-md:text-[#000000] max-md:font-medium max-md:text-[12px]">
                       {article.author?.name || "Anonymous"}
                     </span>
@@ -165,7 +159,7 @@ export default function AllArticles({
                   </div>
 
                   <Link
-                    href={`${basePath}/blog/${article.slug}${publicationId ? `?from=${publicationId}&view=site` : ""}`}
+                    href={`${basePath}/blog/${article.slug}${publicationId ? `?publicationId=${publicationId}&from=${publicationId}&view=site` : ""}`}
                     className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block"
                   >
                     {/* Background Image */}

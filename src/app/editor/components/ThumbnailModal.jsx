@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { NightTooltip } from "@/components/ui/tooltip";
 
 export function ThumbnailModal({
   isOpen,
@@ -13,7 +15,9 @@ export function ThumbnailModal({
   const [altText, setAltText] = useState("")
   const [selectedFile, setSelectedFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
+  const [didTouchPreview, setDidTouchPreview] = useState(false)
   const fileInputRef = useRef(null)
+  const activePreviewUrl = didTouchPreview ? previewUrl : (previewUrl || initialPreviewUrl)
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0]
@@ -21,6 +25,7 @@ export function ThumbnailModal({
       setSelectedFile(file)
       const url = URL.createObjectURL(file)
       setPreviewUrl(url)
+      setDidTouchPreview(true)
     }
   }
 
@@ -32,6 +37,7 @@ export function ThumbnailModal({
     event.stopPropagation()
     setSelectedFile(null)
     setPreviewUrl(null)
+    setDidTouchPreview(true)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -55,34 +61,18 @@ export function ThumbnailModal({
     setAltText("")
     setSelectedFile(null)
     setPreviewUrl(null)
+    setDidTouchPreview(false)
     onClose()
   }
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-      if (initialPreviewUrl) {
-        setPreviewUrl(initialPreviewUrl)
-      }
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen, initialPreviewUrl])
-
-  if (!isOpen) return null
-
   return (
-    <div 
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
-      onClick={handleClose}
-    >
-      <div 
-        className="w-[355px] h-[618px] rounded bg-white flex flex-col pt-6 pr-12 pb-12 pl-12"
-        onClick={(e) => e.stopPropagation()}
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent
+        className="w-[355px] max-w-[355px] h-[618px] rounded border-none p-0 gap-0"
+        showClose={false}
       >
+        <DialogTitle className="sr-only">Add Thumbnail Image</DialogTitle>
+        <div className="w-[355px] h-[618px] rounded bg-white flex flex-col pt-6 pr-12 pb-12 pl-12">
         {/* Inner Content Area */}
         <div className="w-[258.5px] flex flex-col">
           {/* Title */}
@@ -100,24 +90,25 @@ export function ThumbnailModal({
             onClick={handleUploadClick}
             className="w-[254px] h-[152px] border border-gray-200 rounded-lg bg-gray-50 cursor-pointer mb-2 hover:border-gray-300 transition-colors overflow-hidden"
           >
-            {previewUrl ? (
+            {activePreviewUrl ? (
               <div className="relative w-full h-full">
                 <img 
-                  src={previewUrl} 
+                  src={activePreviewUrl} 
                   alt="Preview" 
                   className="w-full h-full object-cover"
                 />
-                <button
-                  type="button"
-                  onClick={handleClearImage}
-                  className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/75"
-                  aria-label="Remove thumbnail"
-                  title="Remove thumbnail"
-                >
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                <NightTooltip content="Remove thumbnail">
+                  <button
+                    type="button"
+                    onClick={handleClearImage}
+                    className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/75"
+                    aria-label="Remove thumbnail"
+                  >
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </NightTooltip>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full">
@@ -195,7 +186,8 @@ export function ThumbnailModal({
             Add image
           </button>
         </div>
-      </div>
-    </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

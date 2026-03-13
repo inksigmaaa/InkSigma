@@ -1,116 +1,128 @@
-"use client"
+"use client";
 
-import { useState, Suspense } from "react"
-import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import AuthLayout from "@/components/auth/AuthLayout"
-import PasswordField from "@/components/auth/PasswordField"
-import GoogleAuthButton from "@/components/auth/GoogleAuthButton"
-import { APP_CONFIG } from "@/constants/app"
-import { signIn } from "@/lib/auth-client"
-import { getApiBase } from "@/utils/apiBase"
+import { useState, Suspense } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import AuthLayout from "@/components/auth/AuthLayout";
+import PasswordField from "@/components/auth/PasswordField";
+import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
+import { APP_CONFIG } from "@/constants/app";
+import { signIn } from "@/lib/auth-client";
+import { getApiBase } from "@/utils/apiBase";
 
 function LoginForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const redirectTo = searchParams.get("redirect") || "/"
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/";
 
   const [formData, setFormData] = useState({
     email: "",
-    password: ""
-  })
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [showResendVerification, setShowResendVerification] = useState(false)
-  const [resendSuccess, setResendSuccess] = useState(false)
-  const [resendLoading, setResendLoading] = useState(false)
-  const [showUnregistered, setShowUnregistered] = useState(false)
+    password: "",
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [showUnregistered, setShowUnregistered] = useState(false);
 
   const getOrigin = () => {
     if (typeof window !== "undefined") {
-      return window.location.origin
+      return window.location.origin;
     }
-    return "http://localhost:3000"
-  }
+    return "http://localhost:3000";
+  };
 
-  const apiBase = getApiBase()
+  const apiBase = getApiBase();
 
   const handleInputChange = (field) => (e) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: e.target.value
-    }))
-    setError("")
-    setShowUnregistered(false)
-  }
+      [field]: e.target.value,
+    }));
+    setError("");
+    setShowUnregistered(false);
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-    setShowUnregistered(false)
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setShowUnregistered(false);
 
     try {
-      const origin = getOrigin()
-      const callbackURL = redirectTo !== "/"
-        ? `${origin}/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
-        : `${origin}/auth-callback`
+      const origin = getOrigin();
+      const callbackURL =
+        redirectTo !== "/"
+          ? `${origin}/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+          : `${origin}/auth-callback`;
 
       const result = await signIn.email({
         email: formData.email,
         password: formData.password,
         callbackURL,
-      })
+      });
 
       if (result.error) {
-        const errorMessage = result.error.message || "Oops! Credentials do not match"
+        const errorMessage =
+          result.error.message || "Oops! Credentials do not match";
 
         // Check if it's a "no password account" error
-        if (errorMessage.toLowerCase().includes("failed to fetch") || errorMessage.toLowerCase().includes("networkerror")) {
-          setError("Network error. Please try again.")
-          setShowUnregistered(false)
+        if (
+          errorMessage.toLowerCase().includes("failed to fetch") ||
+          errorMessage.toLowerCase().includes("networkerror")
+        ) {
+          setError("Network error. Please try again.");
+          setShowUnregistered(false);
         } else if (errorMessage.toLowerCase().includes("no password account")) {
-          setError("This account was created with Google. Please use 'Login With Google' button below.")
+          setError(
+            "This account was created with Google. Please use 'Login With Google' button below.",
+          );
         } else if (errorMessage.toLowerCase().includes("email not verified")) {
-          setError("Please verify your email before logging in. Check your inbox for the verification link.")
-          setShowResendVerification(true)
-        } else if (errorMessage.toLowerCase().includes("invalid email or password") || errorMessage.toLowerCase().includes("invalid credentials")) {
+          setError(
+            "Please verify your email before logging in. Check your inbox for the verification link.",
+          );
+          setShowResendVerification(true);
+        } else if (
+          errorMessage.toLowerCase().includes("invalid email or password") ||
+          errorMessage.toLowerCase().includes("invalid credentials")
+        ) {
           // Check if user exists to decide whether to show unregistered alert
           try {
             const checkRes = await fetch(`${apiBase}/api/custom/check-email`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email: formData.email })
-            })
+              body: JSON.stringify({ email: formData.email }),
+            });
 
             if (checkRes.ok) {
-              const checkData = await checkRes.json()
+              const checkData = await checkRes.json();
               if (!checkData.exists) {
-                setShowUnregistered(true)
-                setError("") // Don't show generic error for unregistered users
+                setShowUnregistered(true);
+                setError(""); // Don't show generic error for unregistered users
               } else {
-                setShowUnregistered(false)
-                setError("Oops! Credentials do not match")
+                setShowUnregistered(false);
+                setError("Oops! Credentials do not match");
               }
             } else {
               // Fallback if check fails
-              setError("Oops! Credentials do not match")
+              setError("Oops! Credentials do not match");
             }
           } catch (err) {
-            console.error("Error checking user existence:", err)
+            console.error("Error checking user existence:", err);
             // Fallback
-            setError("Oops! Credentials do not match")
+            setError("Oops! Credentials do not match");
           }
         } else {
-          setError(errorMessage)
+          setError(errorMessage);
           if (errorMessage.toLowerCase().includes("user not found")) {
-            setShowUnregistered(true)
+            setShowUnregistered(true);
           }
         }
-        return
+        return;
       }
 
       // If there's a specific redirect (like invitation), go there directly
@@ -120,102 +132,116 @@ function LoginForm() {
           try {
             const ownedRes = await fetch(`${apiBase}/api/publications/check`, {
               credentials: "include",
-            })
+            });
 
             if (ownedRes.ok) {
-              const data = await ownedRes.json().catch(() => null)
-              const hasOwned = Boolean(data?.hasPublication)
+              const data = await ownedRes.json().catch(() => null);
+              const hasOwned = Boolean(data?.hasPublication);
               if (!hasOwned) {
                 router.push(
                   `/create-publication?redirect=${encodeURIComponent(redirectTo)}`,
-                )
-                return
+                );
+                return;
               }
             }
           } catch (err) {
-            console.error("Error checking owned publication:", err)
+            console.error("Error checking owned publication:", err);
           }
         }
 
-        router.push(redirectTo)
-        return
+        router.push(redirectTo);
+        return;
       }
 
       // Check if user has any publications (owned or joined) (only for default redirect)
       // Make this non-blocking to improve login speed
       const checkPublications = async () => {
         try {
-          const pubsRes = await fetch(`${apiBase}/api/members/user/publications`, {
-            credentials: "include",
-          })
+          const pubsRes = await fetch(
+            `${apiBase}/api/members/user/publications`,
+            {
+              credentials: "include",
+            },
+          );
 
           if (pubsRes.ok) {
-            const data = await pubsRes.json().catch(() => null)
-            const publications = Array.isArray(data) ? data : (data?.publications || [])
-            const hasAny = Array.isArray(publications) && publications.length > 0
+            const data = await pubsRes.json().catch(() => null);
+            const publications = Array.isArray(data)
+              ? data
+              : data?.publications || [];
+            const hasAny =
+              Array.isArray(publications) && publications.length > 0;
             if (!hasAny) {
-              router.replace('/create-publication')
-              return
+              router.replace("/create-publication");
+              return;
             }
           }
         } catch (err) {
-          console.error("Error checking publication:", err)
+          console.error("Error checking publication:", err);
         }
         // User has publication or check failed, go to dashboard
-        router.replace(redirectTo)
-      }
-      
+        router.replace(redirectTo);
+      };
+
       // Don't await - let it run in background while user sees next screen
-      checkPublications()
+      checkPublications();
     } catch (err) {
-      const errorMessage = err.message || "An unexpected error occurred"
-      const lowerError = errorMessage.toLowerCase()
+      const errorMessage = err.message || "An unexpected error occurred";
+      const lowerError = errorMessage.toLowerCase();
 
       // Provide user-friendly error messages
-      if (lowerError.includes("failed to fetch") || lowerError.includes("networkerror")) {
-        setError("Network error. Please try again.")
-        setShowUnregistered(false)
+      if (
+        lowerError.includes("failed to fetch") ||
+        lowerError.includes("networkerror")
+      ) {
+        setError("Network error. Please try again.");
+        setShowUnregistered(false);
       } else if (lowerError.includes("no password account")) {
-        setError("This account was created with Google. Please use 'Login With Google' button below.")
+        setError(
+          "This account was created with Google. Please use 'Login With Google' button below.",
+        );
       } else if (lowerError.includes("email not verified")) {
-        setError("Please verify your email before logging in. Check your inbox for the verification link.")
-        setShowResendVerification(true)
+        setError(
+          "Please verify your email before logging in. Check your inbox for the verification link.",
+        );
+        setShowResendVerification(true);
       } else {
-        setError(errorMessage)
-        setShowUnregistered(lowerError.includes("user not found"))
+        setError(errorMessage);
+        setShowUnregistered(lowerError.includes("user not found"));
       }
-      console.error(err)
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleGoogleLogin = async () => {
     try {
       // Preserve redirect parameter in callback URL
-      const origin = getOrigin()
-      const callbackURL = redirectTo !== "/"
-        ? `${origin}/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
-        : `${origin}/auth-callback`
+      const origin = getOrigin();
+      const callbackURL =
+        redirectTo !== "/"
+          ? `${origin}/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+          : `${origin}/auth-callback`;
 
       await signIn.social({
         provider: "google",
         callbackURL,
         prompt: "select_account",
-      })
+      });
     } catch (err) {
-      setError("Failed to login with Google")
-      console.error(err)
+      setError("Failed to login with Google");
+      console.error(err);
     }
-  }
+  };
 
   const handleMagicLink = () => {
-    router.push('/magic-link')
-  }
+    router.push("/magic-link");
+  };
 
   const handleResendVerification = async () => {
-    setResendLoading(true)
-    setResendSuccess(false)
+    setResendLoading(true);
+    setResendSuccess(false);
 
     try {
       const response = await fetch(`${apiBase}/api/resend-verification`, {
@@ -225,22 +251,22 @@ function LoginForm() {
         },
         credentials: "include",
         body: JSON.stringify({ email: formData.email }),
-      })
+      });
 
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || "Failed to resend verification email")
+        const data = await response.json();
+        throw new Error(data.error || "Failed to resend verification email");
       }
 
-      setResendSuccess(true)
-      setError("")
-      setShowResendVerification(false)
+      setResendSuccess(true);
+      setError("");
+      setShowResendVerification(false);
     } catch (err) {
-      setError(err.message || "Failed to resend verification email")
+      setError(err.message || "Failed to resend verification email");
     } finally {
-      setResendLoading(false)
+      setResendLoading(false);
     }
-  }
+  };
 
   return (
     <div className="relative min-h-screen flex flex-col">
@@ -253,17 +279,22 @@ function LoginForm() {
 
         <form onSubmit={handleSubmit} className="mb-[6px] md:mb-[8px]">
           <div className="w-full md:w-[258.5px] h-auto md:h-[55px] gap-[12px] opacity-100 rotate-0 mb-4 md:mb-6">
-            <Label htmlFor="email" className="w-auto md:w-[37px] h-auto md:h-[16px] font-semibold text-[12px] md:text-[14px] leading-[100%] tracking-[0%] text-[#2E2E2E] opacity-100 rotate-0">Email</Label>
+            <Label
+              htmlFor="email"
+              className="w-auto md:w-[37px] h-auto md:h-[16px] font-semibold text-[12px] md:text-[14px] leading-[100%] tracking-[0%] text-[#2E2E2E] opacity-100 rotate-0"
+            >
+              Email
+            </Label>
             <Input
               id="email"
               type="email"
               placeholder="Enter your Email"
               value={formData.email}
-              onChange={handleInputChange('email')}
+              onChange={handleInputChange("email")}
               className="border-0 border-b border-gray-300 rounded-none bg-transparent px-2 py-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300 focus:ring-offset-0 w-full text-sm placeholder:text-[#C8C8C8]"
               style={{
-                boxShadow: '0 0 0 30px white inset',
-                WebkitBoxShadow: '0 0 0 30px white inset',
+                boxShadow: "0 0 0 30px white inset",
+                WebkitBoxShadow: "0 0 0 30px white inset",
               }}
               required
             />
@@ -275,8 +306,7 @@ function LoginForm() {
               label="Password"
               placeholder="Enter your password"
               value={formData.password}
-              onChange={handleInputChange('password')}
-
+              onChange={handleInputChange("password")}
             />
           </div>
 
@@ -294,7 +324,7 @@ function LoginForm() {
             disabled={loading}
             className="w-full md:w-[259px] h-[32px] opacity-100 rotate-0 gap-[10px] rounded-[4px] px-4 md:px-6 bg-[#080808] text-white hover:bg-gray-800 disabled:opacity-50 mb-2 md:mb-2 border-0 flex items-center justify-center mx-auto"
           >
-            <span className="w-full text-center h-[18px] opacity-100 rotate-0 font-semibold text-[14px] max-md:text-[12px] leading-[150%] tracking-[0%] text-[#EDEDED]">
+            <span className="w-full text-center h-[18px] opacity-100 rotate-0 font-semibold text-[14px] max-md:text-[12px] leading-[120%] tracking-[0%] text-[#EDEDED]">
               {loading ? "Logging in..." : "Login"}
             </span>
           </Button>
@@ -308,7 +338,13 @@ function LoginForm() {
           {showUnregistered ? (
             <div className="w-full md:w-[259px] h-[60px] bg-[#F3EEFF] rounded-[4px] px-[16px] py-[12px] flex items-center justify-center mt-6 mx-auto text-center">
               <p className="font-normal text-[12px] leading-[150%] tracking-[0%] text-[#7A37AE]">
-                Looks like you haven't registered with us yet. <Link href="/signup" className="font-semibold underline decoration-solid decoration-[#7A37AE] hover:text-[#5e2a86]">Sign Up Now.</Link>
+                Looks like you haven't registered with us yet.{" "}
+                <Link
+                  href="/signup"
+                  className="font-semibold underline decoration-solid decoration-[#7A37AE] hover:text-[#5e2a86]"
+                >
+                  Sign Up Now.
+                </Link>
               </p>
             </div>
           ) : !showResendVerification ? (
@@ -328,14 +364,20 @@ function LoginForm() {
             New to InkSigma?
           </span>
           <Link
-            href={redirectTo !== "/" ? `/signup?redirect=${encodeURIComponent(redirectTo)}` : "/signup"}
+            href={
+              redirectTo !== "/"
+                ? `/signup?redirect=${encodeURIComponent(redirectTo)}`
+                : "/signup"
+            }
             className="w-[122px] h-[16px] opacity-100 rotate-0 font-medium text-[14px] leading-[100%] tracking-[0%] underline decoration-solid decoration-0 text-[#4B4B4B] hover:text-gray-600 transition-colors whitespace-nowrap"
           >
             Create an Account
           </Link>
         </div>
 
-        <div className="text-center text-gray-400 mt-3 mb-[6px] md:mb-[8px] text-xs md:text-sm">or</div>
+        <div className="text-center text-gray-400 mt-3 mb-[6px] md:mb-[8px] text-xs md:text-sm">
+          or
+        </div>
 
         <div className="mt-6 md:mt-5">
           <GoogleAuthButton
@@ -350,32 +392,51 @@ function LoginForm() {
             href="/"
             className="flex items-center gap-2 hover:text-gray-500 transition-colors mt-6"
           >
-            <svg width="7" height="11" viewBox="0 0 7 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M5.48975 0.700195L0.989746 5.2002L5.48975 9.7002" stroke="#696969" strokeWidth="1.4" strokeLinecap="round" />
+            <svg
+              width="7"
+              height="11"
+              viewBox="0 0 7 11"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M5.48975 0.700195L0.989746 5.2002L5.48975 9.7002"
+                stroke="#696969"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+              />
             </svg>
-            <span className="font-semibold text-[12px] md:text-[14px] leading-[100%] tracking-[0%] text-[#696969]">Go Back to website</span>
+            <span className="font-semibold text-[12px] md:text-[14px] leading-[100%] tracking-[0%] text-[#696969]">
+              Go Back to website
+            </span>
           </Link>
         </div>
       </AuthLayout>
 
       {/* Copyright - positioned at bottom with 32px spacing */}
       <div className="mt-auto pb-4 w-full h-[15px] opacity-100 rotate-0 flex items-center justify-center">
-        <p className="font-normal text-[10px] md:text-[12px] leading-[100%] tracking-[0%] text-[#A4A4A4] text-center whitespace-nowrap" style={{ fontFamily: 'Inter' }}>
-          Copyright © 2023 designed & developed by Inksigma, a Zemuria Inc. brand
+        <p
+          className="font-normal text-[10px] md:text-[12px] leading-[100%] tracking-[0%] text-[#A4A4A4] text-center whitespace-nowrap"
+          style={{ fontFamily: "Inter" }}
+        >
+          Copyright © 2023 designed & developed by Inksigma, a Zemuria Inc.
+          brand
         </p>
       </div>
     </div>
-  )
+  );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-lg">Loading...</div>
+        </div>
+      }
+    >
       <LoginForm />
     </Suspense>
-  )
+  );
 }

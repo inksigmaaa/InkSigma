@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Bell, ChevronDown } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -15,8 +16,47 @@ import { useSession, signOut } from "@/lib/auth-client"
 
 export default function DashboardNavbar() {
   const router = useRouter()
-  const { data: session, isPending } = useSession()
+  const { data: session, isPending, refetch } = useSession()
   const user = session?.user
+  const [localUserData, setLocalUserData] = useState(null)
+
+  // Listen for profile updates from other tabs/windows
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'profileUpdated') {
+        refetch()
+        router.refresh()
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [refetch, router])
+
+  // Check for locally stored fresh user data
+  useEffect(() => {
+    const checkLocalUserData = () => {
+      const stored = localStorage.getItem('freshUserData')
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored)
+          setLocalUserData(parsed)
+        } catch (e) {
+          console.error("Error parsing freshUserData:", e)
+        }
+      }
+    }
+    checkLocalUserData()
+  }, [session])
+
+  // Merge session user with locally stored fresh user data
+  const mergedUser = user ? {
+    ...user,
+    ...(localUserData && {
+      name: localUserData.profileName || user.name,
+      image: localUserData.image || user.image,
+    })
+  } : null
 
   const handleSignOut = async () => {
     try {
@@ -42,9 +82,9 @@ export default function DashboardNavbar() {
       .slice(0, 2)
   }
 
-  const userName = user?.name || "User"
+  const userName = mergedUser?.name || user?.name || "User"
   const userEmail = user?.email || "user@example.com"
-  const userAvatar = user?.image || user?.avatar || user?.picture
+  const userAvatar = mergedUser?.image || user?.image || user?.avatar || user?.picture
   return (
     <nav className="border-b bg-white sticky top-0 z-50 mt-6">
       <div className="flex h-14 md:h-16 items-center justify-between px-4 md:px-6">
