@@ -25,6 +25,22 @@ export function getOptionalServerEnv(name) {
   return process.env[name] ?? null;
 }
 
+export function getDatabaseUrl() {
+  const configuredUrl =
+    process.env.DATABASE_URL ??
+    process.env.POSTGRES_URL_NON_POOLING ??
+    process.env.POSTGRES_URL ??
+    process.env.POSTGRES_PRISMA_URL;
+
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+
+  throw new Error(
+    "Missing required server environment variable: DATABASE_URL or POSTGRES_URL"
+  );
+}
+
 export function getAuthBaseUrl() {
   const configuredUrl = normalizeBaseUrl(
     process.env.BETTER_AUTH_URL ??

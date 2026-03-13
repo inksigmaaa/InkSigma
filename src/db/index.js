@@ -1,9 +1,9 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { getRequiredServerEnv } from "@/config/server-env";
+import { getDatabaseUrl } from "@/config/server-env";
 import * as schema from "./schema";
 
-const connectionString = getRequiredServerEnv("DATABASE_URL");
+const connectionString = getDatabaseUrl();
 const globalForDb = globalThis;
 
 const client =
