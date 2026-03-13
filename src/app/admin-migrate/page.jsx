@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import AdminMigrateClient from "./AdminMigrateClient";
 import { getSessionOrNull, isAdminSession } from "@/server/auth/session";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminMigratePage() {
     const session = await getSessionOrNull();
 

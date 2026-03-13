@@ -3,7 +3,7 @@ import "server-only";
 import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
 
-import { auth } from "@/app/lib/auth";
+import { getAuth } from "@/app/lib/auth";
 import { getOptionalServerEnv } from "@/config/server-env";
 import { db } from "@/db";
 import { publication } from "@/db/schema";
@@ -32,7 +32,7 @@ function parseCsvEnv(name) {
 }
 
 export async function getSessionOrNull() {
-    return auth.api.getSession({
+    return getAuth().api.getSession({
         headers: await headers(),
     });
 }
