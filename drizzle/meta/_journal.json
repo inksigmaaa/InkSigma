@@ -15,6 +15,20 @@
       "when": 1763124345165,
       "tag": "0001_rich_squadron_sinister",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773376588135,
+      "tag": "0002_cynical_cannonball",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773378092444,
+      "tag": "0003_cool_iron_man",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function MemberSidebar() {
   const getRoute = (label) => {
     const routes = {
@@ -63,19 +65,18 @@ export default function MemberSidebar() {
               "
             />
 
-            <a href="/">
-              <button
-                className="
-                  bg-violet-500 text-white
-                  px-[10px] py-[6px]
-                  rounded-md text-[12px] font-normal leading-[150%]
-                  whitespace-nowrap
-                  hover:bg-violet-600
-                "
-              >
-                View Site
-              </button>
-            </a>
+            <Link
+              href="/"
+              className="
+                bg-violet-500 text-white
+                px-[10px] py-[6px]
+                rounded-md text-[12px] font-normal leading-[150%]
+                whitespace-nowrap
+                hover:bg-violet-600
+              "
+            >
+              View Site
+            </Link>
           </div>
 
           {/* MY SPACE */}
@@ -89,12 +90,12 @@ export default function MemberSidebar() {
                 max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1
               "
             >
-              <img src="/images/icons/myspace.svg" className="w-6 h-6 max-md:w-6 max-md:h-6" />
-              <a href="/dashboard">
+              <img src="/images/icons/myspace.svg" alt="" className="w-6 h-6 max-md:w-6 max-md:h-6" />
+              <Link href="/dashboard">
                 <p className="text-[14px] font-normal leading-[150%] text-gray-400 max-md:text-[11px] max-md:text-center">
                   My Space
                 </p>
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -105,28 +106,28 @@ export default function MemberSidebar() {
             </h1>
 
             {/* Home */}
-            <a href={getRoute("Home")}>
+            <Link href={getRoute("Home")}>
               <div className="flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0">
                 <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/home.svg" className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6" />
+                  <img src="/images/icons/home.svg" alt="" className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6" />
                   <p className="text-[13px] font-normal leading-[150%] text-gray-400 m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap">
                     Home
                   </p>
                 </div>
               </div>
-            </a>
+            </Link>
 
             {/* Members - Active/Highlighted */}
-            <a href={getRoute("Members")}>
+            <Link href={getRoute("Members")}>
               <div className="flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0">
                 <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/Member.svg" className="w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6" />
+                  <img src="/images/icons/Member.svg" alt="" className="w-5 h-5 flex-shrink-0 max-md:w-6 max-md:h-6" />
                   <p className="text-[13px] font-semibold leading-[150%] text-gray-900 m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap">
                     Members
                   </p>
                 </div>
               </div>
-            </a>
+            </Link>
           </div>
 
           {/* ARTICLES SECTION */}
@@ -136,28 +137,28 @@ export default function MemberSidebar() {
             </h1>
 
             {/* Published */}
-            <a href={getRoute("Published")}>
+            <Link href={getRoute("Published")}>
               <div className="flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0">
                 <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/Publish.svg" className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6" />
+                  <img src="/images/icons/Publish.svg" alt="" className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6" />
                   <p className="text-[13px] font-normal leading-[150%] text-gray-400 m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap">
                     Published
                   </p>
                 </div>
               </div>
-            </a>
+            </Link>
 
             {/* Review */}
-            <a href={getRoute("Review")}>
+            <Link href={getRoute("Review")}>
               <div className="flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0">
                 <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/Review.svg" className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6" />
+                  <img src="/images/icons/Review.svg" alt="" className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6" />
                   <p className="text-[13px] font-normal leading-[150%] text-gray-400 m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap">
                     Review
                   </p>
                 </div>
               </div>
-            </a>
+            </Link>
           </div>
 
           {/* PERSONAL SECTION */}
@@ -167,16 +168,16 @@ export default function MemberSidebar() {
             </h1>
 
             {/* My Blogs */}
-            <a href={getRoute("My Blogs")}>
+            <Link href={getRoute("My Blogs")}>
               <div className="flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0">
                 <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                  <img src="/images/icons/all_articles.svg" className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6" />
+                  <img src="/images/icons/all_articles.svg" alt="" className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6" />
                   <p className="text-[13px] font-normal leading-[150%] text-gray-400 m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap">
                     My Blogs
                   </p>
                 </div>
               </div>
-            </a>
+            </Link>
           </div>
         </div>
       </div>

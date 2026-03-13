@@ -3,7 +3,11 @@
 import Image from 'next/image';
 
 export default function ShareButtons({ title, url, slug, description }) {
-  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/blog/${slug}` : '');
+  const blogUrl = typeof window !== 'undefined'
+    ? (url
+        ? (url.startsWith('/') ? `${window.location.origin}${url}` : url)
+        : `${window.location.origin}/view-site/blog/${slug}`)
+    : (url || '');
   const shareText = description ? `${title} - ${description}` : title;
 
   const shareOnWhatsApp = () => {

@@ -43,7 +43,7 @@ export default function ForgotPasswordPage() {
           </div>
           <div className="space-y-2">
             <p className="text-gray-700">
-              We've sent a password reset link to <strong>{email}</strong>
+              We have sent a password reset link to <strong>{email}</strong>
             </p>
             <p className="text-sm text-gray-500">
               Please check your inbox and click the link to reset your password.

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
@@ -49,7 +50,9 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "resend": "^6.4.2",
-    "tailwind-merge": "^3.3.1"
+    "sanitize-html": "^2.17.1",
+    "tailwind-merge": "^3.3.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
@@ -58,6 +61,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
     "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.17"
+    "tailwindcss": "^3.4.17",
+    "vitest": "^4.1.0"
   }
 }

@@ -84,15 +84,15 @@ export default function DomainPage() {
                 </p>
 
                 <p>
-                  <span className="font-semibold">2.</span> Copy the IP Address that's given there by clicking the copy button
+                  <span className="font-semibold">2.</span> Copy the IP Address that is given there by clicking the copy button
                 </p>
 
                 <p>
-                  <span className="font-semibold">3.</span> Open your domain's <span className="font-semibold">DNS</span> (Domain Name System) Management in your domain provider -like GoDaddy, Cloudflare, Bluehost, Hostgator, etc.
+                  <span className="font-semibold">3.</span> Open your domain <span className="font-semibold">DNS</span> (Domain Name System) Management in your domain provider -like GoDaddy, Cloudflare, Bluehost, Hostgator, etc.
                 </p>
 
                 <p>
-                  <span className="font-semibold">4.</span> If there's an existing A record in your domain- please click edit and remove the existing IP Address and paste the NEW copied IP Address in the respective IP/IPv4 address field
+                  <span className="font-semibold">4.</span> If there is an existing A record in your domain- please click edit and remove the existing IP Address and paste the NEW copied IP Address in the respective IP/IPv4 address field
                 </p>
 
                 <p className="text-gray-600 pl-4 md:pl-4">(or)</p>
@@ -134,7 +134,7 @@ export default function DomainPage() {
                 </p>
 
                 <p>
-                  <span className="font-semibold">8.</span> You will be redirected to a 404 Error Page. Please don't worry. We are just now transferring your blog site to your new domain.
+                  <span className="font-semibold">8.</span> You will be redirected to a 404 Error Page. Please do not worry. We are just now transferring your blog site to your new domain.
                 </p>
 
                 <p>

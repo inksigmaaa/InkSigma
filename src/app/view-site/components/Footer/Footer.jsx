@@ -1,4 +1,4 @@
-export default function Footer() {
+export default function Footer({ publicationName = "InkSigma" }) {
   const currentYear = new Date().getFullYear();
   
   return (
@@ -7,7 +7,7 @@ export default function Footer() {
         {/* Copyright at top */}
         <div className="text-center mb-8 md:mb-10">
           <p className="text-base md:text-lg text-gray-300">
-            © {currentYear} Joshhh blogs
+            © {currentYear} {publicationName}
           </p>
         </div>
         

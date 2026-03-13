@@ -2,11 +2,12 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { user, publication } from "../db/schema.js";
 import { eq, notExists } from "drizzle-orm";
+import { getRequiredServerEnv } from "../config/server-env.js";
 import * as dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
 
-const connectionString = process.env.DATABASE_URL || "";
+const connectionString = getRequiredServerEnv("DATABASE_URL");
 const client = postgres(connectionString);
 const db = drizzle(client);
 

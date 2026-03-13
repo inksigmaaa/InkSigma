@@ -3,27 +3,28 @@
 import { useEffect, useState } from 'react';
 
 export default function TableOfContents() {
-  const [sections, setSections] = useState([]);
   const [activeSection, setActiveSection] = useState('');
 
-  useEffect(() => {
-    // Extract all h2 headings from the article content
-    const article = document.querySelector('article');
-    if (article) {
-      const headings = article.querySelectorAll('h2');
-      const extractedSections = Array.from(headings).map((heading, index) => {
-        // Create an ID if it doesn't exist
-        if (!heading.id) {
-          heading.id = `section-${index + 1}`;
+  const sections = typeof document === 'undefined'
+    ? []
+    : (() => {
+        const article = document.querySelector('article');
+        if (!article) {
+          return [];
         }
-        return {
-          id: heading.id,
-          title: heading.textContent,
-        };
-      });
-      setSections(extractedSections);
-    }
-  }, []);
+
+        const headings = article.querySelectorAll('h2');
+        return Array.from(headings).map((heading, index) => {
+          if (!heading.id) {
+            heading.id = `section-${index + 1}`;
+          }
+
+          return {
+            id: heading.id,
+            title: heading.textContent,
+          };
+        });
+      })();
 
   useEffect(() => {
     const handleScroll = () => {

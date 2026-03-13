@@ -1,29 +1,19 @@
-'use client';
+import { notFound } from "next/navigation";
 
-import { useState } from 'react';
-import ViewSiteHeader from './components/Header/Header';
-import LatestBlog from './components/LatestBlog/LatestBlog';
-import AllArticles from './components/AllArticles/AllArticles';
-import Footer from './components/Footer/Footer';
-import ScrollToTop from './components/ScrollToTop/ScrollToTop';
+import ViewSiteClient from "./ViewSiteClient";
 
-export default function ViewSitePage() {
-  const [searchQuery, setSearchQuery] = useState('');
+import { listPublishedBlogsForPublication } from "@/server/blogs/public";
+import { resolvePublicationPreview } from "@/server/publications/service";
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <ViewSiteHeader 
-        userName="Guest" 
-        userAvatar={null}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
-      <div className="flex-grow">
-        <LatestBlog searchQuery={searchQuery} />
-        <AllArticles searchQuery={searchQuery} />
-      </div>
-      <Footer />
-      <ScrollToTop />
-    </div>
-  );
+export default async function ViewSitePage({ searchParams }) {
+    const resolvedSearchParams = await searchParams;
+    const publication = await resolvePublicationPreview(resolvedSearchParams?.publication ?? null);
+
+    if (!publication) {
+        notFound();
+    }
+
+    const blogs = await listPublishedBlogsForPublication(publication.id);
+
+    return <ViewSiteClient blogs={blogs} publication={publication} />;
 }

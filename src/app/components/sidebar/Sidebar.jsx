@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { FileClock } from 'lucide-react';
 
 export default function Sidebar() {
@@ -42,13 +43,12 @@ export default function Sidebar() {
               className="w-[34px] h-[34px] rounded-full object-cover border-2 border-violet-500 flex-shrink-0"
             />
 
-            <a href="/">
-              <button
-                className="bg-violet-500 text-white px-[10px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:bg-violet-600"
-              >
-                view site
-              </button>
-            </a>
+            <Link
+              href="/"
+              className="bg-violet-500 text-white px-[10px] py-[6px] rounded-md text-[12px] font-normal leading-[150%] whitespace-nowrap hover:bg-violet-600"
+            >
+              view site
+            </Link>
           </div>
 
           {/* MY SPACE */}
@@ -56,12 +56,12 @@ export default function Sidebar() {
             <div
               className="flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1"
             >
-              <img src="/images/icons/myspace.svg" className="w-6 h-6 max-md:w-6 max-md:h-6" />
-              <a href="/dashboard">
+              <img src="/images/icons/myspace.svg" alt="" className="w-6 h-6 max-md:w-6 max-md:h-6" />
+              <Link href="/dashboard">
                 <p className="text-[14px] font-normal leading-[150%] text-gray-700 max-md:text-[11px] max-md:text-center">
                   My Space
                 </p>
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -108,7 +108,7 @@ export default function Sidebar() {
 
               {/* SECTION ITEMS */}
               {section.items.map(([icon, label]) => (
-                <a key={label} href={getRoute(label)}>
+                <Link key={label} href={getRoute(label)}>
                   <div
                     className="flex items-center px-2 py-[5px] rounded-md cursor-pointer hover:bg-gray-100 max-md:px-3 max-md:py-1 max-md:flex-shrink-0"
                   >
@@ -120,6 +120,7 @@ export default function Sidebar() {
                       ) : (
                         <img
                           src={`/images/icons/${icon}`}
+                          alt=""
                           className="w-5 h-5 opacity-60 flex-shrink-0 max-md:w-6 max-md:h-6"
                         />
                       )}
@@ -130,7 +131,7 @@ export default function Sidebar() {
                       </p>
                     </div>
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
           ))}

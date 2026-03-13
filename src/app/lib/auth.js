@@ -1,16 +1,19 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { getAuthBaseUrl, getRequiredServerEnv } from "@/config/server-env";
 import { db } from "@/db";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResendClient() {
+    return new Resend(getRequiredServerEnv("RESEND_API_KEY"));
+}
 
 export const auth = betterAuth({
-    database: db ? drizzleAdapter(db, {
+    database: drizzleAdapter(db, {
         provider: "pg",
-    }) : undefined,
-    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
-    secret: process.env.BETTER_AUTH_SECRET || "default-secret-for-build-only",
+    }),
+    baseURL: getAuthBaseUrl(),
+    secret: getRequiredServerEnv("BETTER_AUTH_SECRET"),
     emailAndPassword: {
         enabled: true,
     },
@@ -20,8 +23,7 @@ export const auth = betterAuth({
         autoSignInAfterVerification: true,
         sendEmail: async (user, url) => {
             try {
-                console.log('📧 Sending verification email to:', user.email);
-                const result = await resend.emails.send({
+                const result = await getResendClient().emails.send({
                     from: "InkSigma <onboarding@resend.dev>",
                     to: user.email,
                     subject: "Verify your email - InkSigma",
@@ -40,9 +42,9 @@ export const auth = betterAuth({
                         </div>
                     `
                 });
-                console.log('✅ Email sent successfully:', result);
+                return result;
             } catch (error) {
-                console.error('❌ Failed to send verification email:', error);
+                console.error("Failed to send verification email", error);
                 throw error;
             }
         },
@@ -51,9 +53,8 @@ export const auth = betterAuth({
         enabled: true,
         sendMagicLink: async ({ email, url }) => {
             try {
-                console.log('🔗 Sending magic link to:', email);
-                const result = await resend.emails.send({
-                    from: "InkSigma <onboarding@resend.dev>", // Use Resend's test domain
+                const result = await getResendClient().emails.send({
+                    from: "InkSigma <onboarding@resend.dev>",
                     to: email,
                     subject: "Your Magic Link - InkSigma",
                     html: `
@@ -71,9 +72,9 @@ export const auth = betterAuth({
                         </div>
                     `
                 });
-                console.log('✅ Magic link sent successfully:', result);
+                return result;
             } catch (error) {
-                console.error('❌ Failed to send magic link:', error);
+                console.error("Failed to send magic link", error);
                 throw error;
             }
         },
@@ -82,8 +83,7 @@ export const auth = betterAuth({
         enabled: true,
         sendResetPassword: async ({ user, url }) => {
             try {
-                console.log('🔑 Sending password reset email to:', user.email);
-                const result = await resend.emails.send({
+                const result = await getResendClient().emails.send({
                     from: "InkSigma <onboarding@resend.dev>",
                     to: user.email,
                     subject: "Reset Your Password - InkSigma",
@@ -103,9 +103,9 @@ export const auth = betterAuth({
                         </div>
                     `
                 });
-                console.log('✅ Password reset email sent successfully:', result);
+                return result;
             } catch (error) {
-                console.error('❌ Failed to send password reset email:', error);
+                console.error("Failed to send password reset email", error);
                 throw error;
             }
         },

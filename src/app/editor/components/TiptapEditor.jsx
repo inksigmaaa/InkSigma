@@ -15,7 +15,7 @@ import { Color } from '@tiptap/extension-color'
 
 import { LineHeight } from './extensions/LineHeight'
 import { Indent } from './extensions/Indent'
-import { useState, useEffect } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, ChevronUp } from "lucide-react"
 import { 
@@ -37,7 +37,6 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [showLineSpacing, setShowLineSpacing] = useState(false)
   const [currentFont, setCurrentFont] = useState('Roboto')
-  const [isMounted, setIsMounted] = useState(false)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
   const [listButtonRef, setListButtonRef] = useState(null)
   const [alignButtonRef, setAlignButtonRef] = useState(null)
@@ -50,9 +49,11 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
     advanced: { top: 0, left: 0 }
   })
 
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
+  const isMounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
 
   const fonts = [
     "Arial", "Arial Black", "Brush Script MT", "Comic Sans MS", 
@@ -113,7 +114,6 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
     editorProps: {
       attributes: {
         class: 'prose max-w-none focus:outline-none min-h-[300px] md:min-h-[400px] text-base md:text-lg text-gray-700 p-4',
-        style: `font-family: ${currentFont}, sans-serif;`,
       },
     },
   })
@@ -123,12 +123,6 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
     const nextIndex = currentIndex > 0 ? currentIndex - 1 : fonts.length - 1
     const newFont = fonts[nextIndex]
     setCurrentFont(newFont)
-    
-    // Apply font to editor
-    if (editor) {
-      const { view } = editor
-      view.dom.style.fontFamily = `${newFont}, sans-serif`
-    }
   }
 
   const cycleFontDown = () => {
@@ -136,12 +130,6 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
     const nextIndex = currentIndex < fonts.length - 1 ? currentIndex + 1 : 0
     const newFont = fonts[nextIndex]
     setCurrentFont(newFont)
-    
-    // Apply font to editor
-    if (editor) {
-      const { view } = editor
-      view.dom.style.fontFamily = `${newFont}, sans-serif`
-    }
   }
 
   const setHeading = (level) => {
@@ -268,37 +256,88 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
   }
 
   const updateDropdownPositions = () => {
-    const newPositions = { ...dropdownPositions }
-    
-    if (headingButtonRef) {
-      const rect = headingButtonRef.getBoundingClientRect()
-      newPositions.heading = { top: rect.bottom + 4, left: rect.left }
-    }
-    
-    if (listButtonRef) {
-      const rect = listButtonRef.getBoundingClientRect()
-      newPositions.list = { top: rect.bottom + 4, left: rect.left }
-    }
-    
-    if (alignButtonRef) {
-      const rect = alignButtonRef.getBoundingClientRect()
-      newPositions.align = { top: rect.bottom + 4, left: rect.left }
-    }
-    
-    if (advancedButtonRef) {
-      const rect = advancedButtonRef.getBoundingClientRect()
-      newPositions.advanced = { top: rect.bottom + 4, left: rect.right - 300 }
-    }
-    
-    setDropdownPositions(newPositions)
+    setDropdownPositions((currentPositions) => {
+      const newPositions = { ...currentPositions }
+      
+      if (headingButtonRef) {
+        const rect = headingButtonRef.getBoundingClientRect()
+        newPositions.heading = { top: rect.bottom + 4, left: rect.left }
+      }
+      
+      if (listButtonRef) {
+        const rect = listButtonRef.getBoundingClientRect()
+        newPositions.list = { top: rect.bottom + 4, left: rect.left }
+      }
+      
+      if (alignButtonRef) {
+        const rect = alignButtonRef.getBoundingClientRect()
+        newPositions.align = { top: rect.bottom + 4, left: rect.left }
+      }
+      
+      if (advancedButtonRef) {
+        const rect = advancedButtonRef.getBoundingClientRect()
+        newPositions.advanced = { top: rect.bottom + 4, left: rect.right - 300 }
+      }
+      
+      return newPositions
+    })
   }
 
-  // Update positions when dropdowns are shown
-  useEffect(() => {
-    if (showHeadingMenu || showListMenu || showAlignMenu || showAdvancedOptions) {
-      updateDropdownPositions()
+  const queueDropdownPositionUpdate = () => {
+    if (typeof window !== 'undefined') {
+      window.requestAnimationFrame(() => {
+        updateDropdownPositions()
+      })
     }
-  }, [showHeadingMenu, showListMenu, showAlignMenu, showAdvancedOptions, headingButtonRef, listButtonRef, alignButtonRef, advancedButtonRef])
+  }
+
+  const toggleHeadingMenu = () => {
+    const nextValue = !showHeadingMenu
+    if (nextValue) {
+      closeAllDropdowns()
+      setShowHeadingMenu(true)
+      queueDropdownPositionUpdate()
+      return
+    }
+
+    setShowHeadingMenu(false)
+  }
+
+  const toggleListMenu = () => {
+    const nextValue = !showListMenu
+    if (nextValue) {
+      closeAllDropdowns()
+      setShowListMenu(true)
+      queueDropdownPositionUpdate()
+      return
+    }
+
+    setShowListMenu(false)
+  }
+
+  const toggleAlignMenu = () => {
+    const nextValue = !showAlignMenu
+    if (nextValue) {
+      closeAllDropdowns()
+      setShowAlignMenu(true)
+      queueDropdownPositionUpdate()
+      return
+    }
+
+    setShowAlignMenu(false)
+  }
+
+  const toggleAdvancedOptions = () => {
+    const nextValue = !showAdvancedOptions
+    if (nextValue) {
+      closeAllDropdowns()
+      setShowAdvancedOptions(true)
+      queueDropdownPositionUpdate()
+      return
+    }
+
+    setShowAdvancedOptions(false)
+  }
 
   // Close dropdowns when clicking outside or scrolling
   useEffect(() => {
@@ -422,8 +461,7 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
               className="flex items-center hover:bg-gray-100 rounded px-1"
               onMouseDown={(e) => {
                 e.preventDefault()
-                if (!showHeadingMenu) closeAllDropdowns()
-                setShowHeadingMenu(!showHeadingMenu)
+                toggleHeadingMenu()
               }}
             >
               <img src="/editor-icons/H.svg" alt="H" className="w-5 h-5" />
@@ -497,8 +535,7 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
             className="p-1.5 md:p-2 hover:bg-gray-100 rounded flex items-center gap-0.5"
             onMouseDown={(e) => {
               e.preventDefault()
-              if (!showListMenu) closeAllDropdowns()
-              setShowListMenu(!showListMenu)
+              toggleListMenu()
             }}
             title="Lists"
           >
@@ -548,8 +585,7 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
             className="p-1.5 md:p-2 hover:bg-gray-100 rounded flex items-center gap-0.5"
             onMouseDown={(e) => {
               e.preventDefault()
-              if (!showAlignMenu) closeAllDropdowns()
-              setShowAlignMenu(!showAlignMenu)
+              toggleAlignMenu()
             }}
             title="Alignment"
           >
@@ -662,8 +698,7 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
             ref={setAdvancedButtonRef}
             className="text-xs md:text-sm text-gray-600 px-2 hover:text-gray-800 whitespace-nowrap"
             onClick={() => {
-              if (!showAdvancedOptions) closeAllDropdowns()
-              setShowAdvancedOptions(!showAdvancedOptions)
+              toggleAdvancedOptions()
             }}
           >
             Advanced Options
@@ -828,7 +863,7 @@ export function TiptapEditor({ onUpdate, initialContent = '' }) {
       </div>
 
       {/* Editor Content - Text Typing Area */}
-      <div className="mt-4 border border-gray-200 rounded-lg bg-white" style={{ position: 'relative', zIndex: 1 }}>
+      <div className="mt-4 border border-gray-200 rounded-lg bg-white" style={{ position: 'relative', zIndex: 1, fontFamily: `${currentFont}, sans-serif` }}>
         <EditorContent 
           editor={editor} 
           className="prose max-w-none focus:outline-none"

@@ -27,7 +27,11 @@ export default function ShareMenu({ title, url, slug }) {
     };
   }, [isOpen]);
 
-  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/blog/${slug}` : '');
+  const blogUrl = typeof window !== 'undefined'
+    ? (url
+        ? (url.startsWith('/') ? `${window.location.origin}${url}` : url)
+        : `${window.location.origin}/view-site/blog/${slug}`)
+    : (url || '');
 
   const copyLink = async () => {
     try {

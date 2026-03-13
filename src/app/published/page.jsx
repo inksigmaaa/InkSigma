@@ -1,19 +1,26 @@
 import NavbarLoggedin from "../components/navbar/NavbarLoggedin";
 import Sidebar from "../components/sidebar/Sidebar";
 import Verify from "../components/verify/Verify";
-import Articles from "../components/articles/Articles";
+import BlogStatusPage from "../components/blogs/BlogStatusPage";
 
-export default function Published() {
+export default function PublishedPage() {
     return (
         <>
             <NavbarLoggedin />
             <Sidebar />
             <Verify />
-            <Articles
+            <BlogStatusPage
+                bulkActions={[
+                    { action: "unpublish", icon: "/images/icons/copy.svg", title: "Unpublish" },
+                    { action: "trash", icon: "/images/icons/trash1.svg", title: "Move to trash" },
+                ]}
+                emptyMessage="No published articles yet"
+                showActions
+                showSelectAll
+                status="published"
                 title="Published"
-                filterStatus="published"
-                showCreateButton={false}
+                titleColor="#16A34A"
             />
         </>
-    )
+    );
 }

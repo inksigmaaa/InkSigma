@@ -1,27 +1,18 @@
-import { auth } from "@/app/lib/auth";
-import { db } from "@/db";
-import { publication } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
+import { getPublicationForUser, getSessionOrNull } from "@/server/auth/session";
 
 export async function GET() {
     try {
-        const session = await auth.api.getSession({
-            headers: await headers(),
-        });
+        const session = await getSessionOrNull();
 
         if (!session) {
             return Response.json({ hasPublication: false, authenticated: false }, { status: 401 });
         }
 
-        const userPublications = await db
-            .select()
-            .from(publication)
-            .where(eq(publication.userId, session.user.id))
-            .limit(1);
+        const userPublication = await getPublicationForUser(session.user.id);
+        const hasPublication = userPublication !== null;
 
         return Response.json({ 
-            hasPublication: userPublications.length > 0,
+            hasPublication,
             authenticated: true 
         });
     } catch (error) {
