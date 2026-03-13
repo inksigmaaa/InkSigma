@@ -1,5 +1,17 @@
 const isProduction = process.env.NODE_ENV === "production";
 
+function normalizeBaseUrl(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  return `https://${value}`;
+}
+
 export function getRequiredServerEnv(name) {
   const value = process.env[name];
   if (value) {
@@ -14,13 +26,21 @@ export function getOptionalServerEnv(name) {
 }
 
 export function getAuthBaseUrl() {
-  const configuredUrl =
+  const configuredUrl = normalizeBaseUrl(
     process.env.BETTER_AUTH_URL ??
     process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.NEXT_PUBLIC_BETTER_AUTH_URL;
+    process.env.NEXT_PUBLIC_BETTER_AUTH_URL
+  );
+  const vercelUrl = normalizeBaseUrl(
+    process.env.VERCEL_URL ?? process.env.VERCEL_PROJECT_PRODUCTION_URL
+  );
 
   if (configuredUrl) {
     return configuredUrl;
+  }
+
+  if (vercelUrl) {
+    return vercelUrl;
   }
 
   if (!isProduction) {
@@ -28,6 +48,6 @@ export function getAuthBaseUrl() {
   }
 
   throw new Error(
-    "Missing required server environment variable: BETTER_AUTH_URL"
+    "Missing required server environment variable: BETTER_AUTH_URL or VERCEL_URL"
   );
 }
