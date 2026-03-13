@@ -524,7 +524,7 @@ export default function BlogDetailPage({ params }) {
 
             {/* Blog Content */}
             <article
-              className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px]"
+              className="prose prose-lg max-w-none prose-headings:font-bold prose-heading:text-xl prose-heading:leading-none prose-heading:tracking-normal prose-headings:text-[#000000] prose-p:text-[#404040] prose-p:text-base prose-p:font-normal prose-p:leading-7 prose-p:tracking-[0.01em] prose-a:text-blue-600 hover:prose-a:text-blue-800 prose-img:rounded-xl max-md:[&_p]:text-[14px] max-md:[&_p]:leading-6 prose max-md:[&_h1]:text-[14px] break-words overflow-wrap-anywhere"
               dangerouslySetInnerHTML={{
                 __html: sanitizeHtml(blog.content),
               }}

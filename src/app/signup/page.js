@@ -184,7 +184,7 @@ function SignupForm() {
             disabled={loading}
             className="w-full md:w-[259px] h-[32px] opacity-100 rotate-0 gap-[10px] rounded-[4px] pt-[8px] md:pt-[8px] pr-[20px] md:pr-[109px] pb-[8px] md:pb-[8px] pl-[20px] md:pl-[109px] bg-[#080808] hover:bg-gray-800 disabled:opacity-50 !mt-10 mx-auto border-0 flex items-center justify-center"
           >
-            <span className="w-auto md:w-[52px] h-[18px] md:h-[21px] opacity-100 rotate-0 font-medium text-[14px] leading-[150%] tracking-[0%] text-[#EDEDED]">
+            <span className="w-auto h-[18px] md:h-[21px] opacity-100 rotate-0 font-medium text-[14px] leading-[150%] tracking-[0%] text-[#EDEDED] whitespace-nowrap">
               {loading ? "Signing up..." : "Sign Up"}
             </span>
           </Button>
