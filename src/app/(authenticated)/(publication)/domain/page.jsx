@@ -21,9 +21,6 @@ export default function DomainPage() {
 
   const [showRevertConfirmation, setShowRevertConfirmation] = useState(false);
 
-  const [verifying, setVerifying] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState(null);
-
   useEffect(() => {
     loadPublicationData();
   }, []);
@@ -168,34 +165,6 @@ export default function DomainPage() {
     setShowRevertConfirmation(false);
   };
 
-  const handleVerifyDomain = async () => {
-    if (!savedCustomDomain) return;
-
-    setVerifying(true);
-    setVerificationStatus(null);
-
-    try {
-      const apiBase = getApiBase();
-      const response = await fetch(
-        `${apiBase}/api/publications/verify-domain/${savedCustomDomain}`,
-        { credentials: "include" }
-      );
-
-      const data = await response.json();
-
-      if (data.verified) {
-        setVerificationStatus("verified");
-      } else {
-        setVerificationStatus("failed");
-      }
-    } catch (err) {
-      console.error("Error verifying domain:", err);
-      setVerificationStatus("failed");
-    } finally {
-      setVerifying(false);
-    }
-  };
-
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
   };
@@ -304,9 +273,9 @@ export default function DomainPage() {
               </div>
             ) : (
               // After custom domain is saved - exact CSS styling
-              <div className="mx-auto mb-12 md:mb-20 w-[301px] md:w-[447px] h-auto md:h-[503px] p-5 md:p-[24px_32px] rounded-lg border border-[#EDEDED] bg-white flex flex-col gap-6">
+              <div className="mx-auto mb-12 md:mb-20 flex w-full max-w-[447px] flex-col gap-6 rounded-lg border border-[#EDEDED] bg-white p-5 md:p-[24px_32px]">
                 {/* Subdomain Domain Section */}
-                <div className="w-full md:w-[383px] rounded bg-[#FAFAFA] border border-[#EAEAEA] flex flex-col p-4 md:px-6 md:py-4 gap-1">
+                <div className="flex w-full flex-col gap-1 rounded border border-[#EAEAEA] bg-[#FAFAFA] p-4 md:px-6 md:py-4">
                   <div
                     className="font-semibold text-[#A4A4A4] text-[12px] max-md:text-[8px] max-md:font-normal leading-[150%]"
                     style={{ fontFamily: "Public Sans" }}
@@ -366,11 +335,7 @@ export default function DomainPage() {
                     YOUR CURRENT DOMAIN
                   </div>
                   <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                    }}
+                    className="flex flex-wrap items-center gap-3"
                   >
                     <span
                       className="font-semibold text-[#7C3AED] text-[16px] max-md:text-[12px] max-md:font-normal leading-[28px] break-all"
@@ -387,77 +352,9 @@ export default function DomainPage() {
                   </div>
                 </div>
 
-                {/* Domain Verification Status */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "12px",
-                  }}
-                >
-                  <div
-                    className="font-semibold text-[#A4A4A4] text-[12px] max-md:text-[8px] max-md:font-normal leading-[150%]"
-                    style={{ fontFamily: "Public Sans" }}
-                  >
-                    DOMAIN STATUS
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                    }}
-                  >
-                    {verificationStatus === "verified" && (
-                      <span
-                        className="bg-green-100 text-green-700 rounded-[71px] flex items-center justify-center h-[26px] px-3 text-[12px] max-md:text-[8px] leading-[150%]"
-                        style={{ fontFamily: "Public Sans" }}
-                      >
-                        Verified
-                      </span>
-                    )}
-                    {verificationStatus === "failed" && (
-                      <span
-                        className="bg-red-100 text-red-700 rounded-[71px] flex items-center justify-center h-[26px] px-3 text-[12px] max-md:text-[8px] leading-[150%]"
-                        style={{ fontFamily: "Public Sans" }}
-                      >
-                        Not Verified
-                      </span>
-                    )}
-                    {!verificationStatus && (
-                      <span
-                        className="bg-gray-100 text-gray-600 rounded-[71px] flex items-center justify-center h-[26px] px-3 text-[12px] max-md:text-[8px] leading-[150%]"
-                        style={{ fontFamily: "Public Sans" }}
-                      >
-                        Not Checked
-                      </span>
-                    )}
-                    <button
-                      onClick={handleVerifyDomain}
-                      disabled={verifying}
-                      style={{
-                        height: "26px",
-                        borderRadius: "4px",
-                        padding: "4px 12px",
-                        background: "#080808",
-                        border: "none",
-                        fontFamily: "Public Sans",
-                        fontWeight: 500,
-                        fontSize: "12px",
-                        lineHeight: "150%",
-                        color: "#EDEDED",
-                        cursor: verifying ? "not-allowed" : "pointer",
-                        opacity: verifying ? 0.6 : 1,
-                      }}
-                    >
-                      {verifying ? "Checking..." : "Check Status"}
-                    </button>
-                  </div>
-                </div>
-
                 {/* Info Box */}
                 <div
-                  className="w-full md:w-[382px] min-h-[88px] h-auto rounded bg-[#ECF0FE] p-4 md:px-6 md:py-4 text-[#0048B5] text-[12px] max-md:text-[10px] max-md:font-normal leading-[18.5px]"
+                  className="min-h-[88px] h-auto w-full rounded bg-[#ECF0FE] p-4 text-[#0048B5] text-[12px] leading-[18.5px] md:px-6 md:py-4 max-md:text-[10px] max-md:font-normal"
                   style={{ fontFamily: "Public Sans" }}
                 >
                   <span className="font-bold max-md:font-bold">Info:</span> If
@@ -470,11 +367,7 @@ export default function DomainPage() {
 
                 {/* Edit Domain Section */}
                 <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "12px",
-                  }}
+                  className="flex w-full flex-col gap-3"
                 >
                   <div
                     style={{
@@ -683,32 +576,15 @@ export default function DomainPage() {
         onOpenChange={(open) => !open && !saving && handleCancelSave()}
       >
         <DialogContent
-          className="max-w-none w-auto border-none bg-transparent p-0 shadow-none"
+          className="w-[calc(100vw-2rem)] max-w-[350px] rounded-[4px] border-none bg-[#FEFEFE] p-6 shadow-2xl sm:p-8"
           showClose={false}
         >
           <DialogTitle className="sr-only">Confirm Domain Change</DialogTitle>
-          <div
-            style={{
-              width: "350px",
-              height: "auto",
-              borderRadius: "4px",
-              padding: "40px 24px",
-              gap: "12px",
-              background: "#FEFEFE",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
+          <div className="flex flex-col items-center gap-4">
             <h3
-              className="max-md:text-[12px] max-md:font-normal"
+              className="text-center text-[16px] font-bold leading-7 text-black max-md:text-[12px] max-md:font-normal"
               style={{
                 fontFamily: "Public Sans",
-                fontWeight: 700,
-                fontSize: "16px",
-                lineHeight: "28px",
-                textAlign: "center",
-                color: "#000000",
                 margin: 0,
               }}
             >
@@ -716,17 +592,9 @@ export default function DomainPage() {
             </h3>
 
             <div
-              className="w-full md:w-[401px] max-md:p-4"
+              className="flex w-full flex-col justify-center gap-2 rounded-[8px] border border-[#EAEAEA] p-4 sm:p-6"
               style={{
-                height: "auto",
                 minHeight: "102px",
-                borderRadius: "8px",
-                border: "1px solid #EAEAEA",
-                padding: "24px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                gap: "8px",
               }}
             >
               <div
@@ -761,7 +629,7 @@ export default function DomainPage() {
               </div>
             </div>
 
-            <div className="flex gap-4 ml-auto" style={{ marginTop: "20px" }}>
+            <div className="mt-2 flex w-full justify-end gap-4">
               <button
                 onClick={handleCancelSave}
                 disabled={saving}
@@ -823,33 +691,15 @@ export default function DomainPage() {
         onOpenChange={(open) => !open && !saving && handleCancelRevert()}
       >
         <DialogContent
-          className="max-w-none w-auto border-none bg-transparent p-0 shadow-none"
+          className="w-[calc(100vw-2rem)] max-w-[350px] rounded-[4px] border-none bg-[#FEFEFE] p-6 shadow-2xl sm:p-8"
           showClose={false}
         >
           <DialogTitle className="sr-only">Confirm Revert To Subdomain</DialogTitle>
-          <div
-            style={{
-              width: "350px",
-              height: "auto",
-              borderRadius: "4px",
-              padding: "32px 24px",
-              gap: "24px",
-              background: "#FEFEFE",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
+          <div className="flex flex-col items-center justify-center gap-6">
             <h3
-              className="max-md:text-[12px] max-md:font-normal"
+              className="text-center text-[16px] font-bold leading-7 text-black max-md:text-[12px] max-md:font-normal"
               style={{
                 fontFamily: "Public Sans",
-                fontWeight: 700,
-                fontSize: "16px",
-                lineHeight: "28px",
-                textAlign: "center",
-                color: "#000000",
                 margin: 0,
               }}
             >
