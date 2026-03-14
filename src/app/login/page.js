@@ -272,7 +272,7 @@ function LoginForm() {
     <div className="relative min-h-screen flex flex-col">
       <AuthLayout title="Login here!">
         {resendSuccess && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4">
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4 text-center">
             Verification email sent! Please check your inbox (and spam folder).
           </div>
         )}
@@ -330,8 +330,8 @@ function LoginForm() {
           </Button>
 
           {error && (
-            <div className="bg-[#F3EEFF] text-[#7A37AE] font-normal text-[12px] leading-[150%] tracking-[0%] px-4 py-3 rounded mb-4 text-left flex flex-col items-start gap-1">
-              <span>{error}</span>
+            <div className="bg-[#F3EEFF] text-[#7A37AE] font-normal text-[12px] leading-[150%] tracking-[0%] px-4 py-3 rounded mb-4 flex items-center justify-center text-center">
+              <span className="block w-full text-center">{error}</span>
             </div>
           )}
 

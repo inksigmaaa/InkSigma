@@ -125,8 +125,8 @@ function SignupForm() {
     <div className="relative min-h-screen">
       <AuthLayout title="Welcome, Sign up here!">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 flex items-center justify-center text-center">
+            <span className="block w-full text-center">{error}</span>
           </div>
         )}
 
