@@ -79,11 +79,10 @@ export default function PublishSuccessModal({ isOpen, onClose, onSeeLater, onVie
               {/* See Later button */}
               <button
                 onClick={onSeeLater}
-                className="bg-[#F8F8F8] border border-[#ECECEC] text-gray-700 hover:bg-gray-200 transition-colors rounded text-sm font-medium"
+                className="flex items-center justify-center bg-[#F8F8F8] border border-[#ECECEC] text-gray-700 hover:bg-gray-200 transition-colors rounded text-sm font-medium text-center leading-none"
                 style={{
                   width: '111px',
-                  height: '32px',
-                  padding: '8px 16px'
+                  height: '32px'
                 }}
               >
                 See Later
@@ -92,11 +91,10 @@ export default function PublishSuccessModal({ isOpen, onClose, onSeeLater, onVie
               {/* View in Site button */}
               <button
                 onClick={onViewInSite}
-                className="text-white hover:opacity-90 transition-opacity rounded text-sm font-medium"
+                className="flex items-center justify-center text-white hover:opacity-90 transition-opacity rounded text-sm font-medium text-center leading-none"
                 style={{
                   width: '110px',
                   height: '32px',
-                  padding: '8px 12px',
                   background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
                   boxShadow: '0px 4px 8px 0px #EADBF9'
                 }}
