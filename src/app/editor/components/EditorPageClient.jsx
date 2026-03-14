@@ -28,10 +28,13 @@ import {
   deleteDraft as dexieDeleteDraft,
 } from "./services/DexieService";
 import SaveStatusIndicator from "./SaveStatusIndicator";
+import {
+  DEFAULT_DRAFT_TITLE,
+  LEGACY_DRAFT_TITLE,
+  isArticlePublishable,
+} from "@/utils/articlePublishability";
 
 const API_URL = getApiBase();
-const DEFAULT_DRAFT_TITLE = "[Untitled]";
-const LEGACY_DRAFT_TITLE = "untitle";
 
 export default function EditorPageClient() {
   const router = useRouter();
@@ -719,6 +722,19 @@ export default function EditorPageClient() {
 
   // Handle Publish
   const handlePublish = async () => {
+    if (
+      !isArticlePublishable({
+        title: blogTitle,
+        description: blogDescription,
+        content: editorContent.html,
+      })
+    ) {
+      toast.error(
+        "Add title, description, and content before publishing this article.",
+      );
+      return;
+    }
+
     markPublishing();
 
     try {
@@ -754,6 +770,11 @@ export default function EditorPageClient() {
   };
 
   const source = searchParams.get("source");
+  const canPublishCurrentArticle = isArticlePublishable({
+    title: blogTitle,
+    description: blogDescription,
+    content: editorContent.html,
+  });
 
   const handleExitNavigation = () => {
     markNavigating();
@@ -1670,7 +1691,7 @@ export default function EditorPageClient() {
                   padding: "0 1rem",
                 }}
                 onClick={handlePublish}
-                disabled={isSaving}
+                disabled={isSaving || !canPublishCurrentArticle}
               >
                 {isSaving ? "Publishing..." : "Publish Now"}
                 <img
@@ -1772,7 +1793,7 @@ export default function EditorPageClient() {
                   <button
                     className="md:w-40 flex items-center justify-center gap-2 h-8 rounded bg-gray-900 md:px-6 md:py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50 whitespace-nowrap mobile-publish-btn"
                     onClick={handlePublish}
-                    disabled={isSaving}
+                    disabled={isSaving || !canPublishCurrentArticle}
                   >
                     {isSaving ? "Publishing..." : "Publish"}
                     <img

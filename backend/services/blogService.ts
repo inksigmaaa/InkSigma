@@ -16,6 +16,7 @@ import {
   ilike,
   count,
   isNull,
+  isNotNull,
   inArray,
   sql,
 } from "drizzle-orm";
@@ -63,6 +64,34 @@ interface BlogUpdateData {
 }
 
 const DEFAULT_DRAFT_TITLE = "[Untitled]";
+const LEGACY_DRAFT_TITLE = "untitle";
+const PUBLISHABLE_CONTENT_SQL = sql<boolean>`
+  length(
+    trim(
+      regexp_replace(
+        regexp_replace(coalesce(${blog.content}, ''), '<[^>]+>', ' ', 'g'),
+        '&nbsp;',
+        ' ',
+        'g'
+      )
+    )
+  ) > 0
+`;
+const PUBLISHABLE_DESCRIPTION_SQL = sql<boolean>`
+  length(trim(coalesce(${blog.description}, ''))) > 0
+`;
+const PUBLISHABLE_TITLE_SQL = sql<boolean>`
+  length(trim(coalesce(${blog.title}, ''))) > 0
+  and lower(trim(coalesce(${blog.title}, ''))) not in (
+    lower(${DEFAULT_DRAFT_TITLE}),
+    ${LEGACY_DRAFT_TITLE}
+  )
+`;
+const IS_PUBLISHABLE_SQL = sql<boolean>`
+  ${PUBLISHABLE_TITLE_SQL}
+  and ${PUBLISHABLE_DESCRIPTION_SQL}
+  and ${PUBLISHABLE_CONTENT_SQL}
+`;
 
 const LIGHT_BLOG_SELECT = {
   id: blog.id,
@@ -79,6 +108,7 @@ const LIGHT_BLOG_SELECT = {
   updatedAt: blog.updatedAt,
   authorId: blog.authorId,
   masterId: blog.masterId,
+  isPublishable: IS_PUBLISHABLE_SQL.as("isPublishable"),
   author: {
     id: user.id,
     name: user.name,
@@ -103,6 +133,7 @@ const FULL_BLOG_SELECT = {
   updatedAt: blog.updatedAt,
   authorId: blog.authorId,
   masterId: blog.masterId,
+  isPublishable: IS_PUBLISHABLE_SQL.as("isPublishable"),
   author: {
     id: user.id,
     name: user.name,
@@ -122,6 +153,74 @@ const runInBackground = (label, task) => {
 };
 
 class BlogService {
+  isMissingRealTitle(title) {
+    const normalized =
+      typeof title === "string" ? title.trim().toLowerCase() : "";
+
+    return (
+      !normalized ||
+      normalized === DEFAULT_DRAFT_TITLE.toLowerCase() ||
+      normalized === LEGACY_DRAFT_TITLE
+    );
+  }
+
+  hasMeaningfulDescription(description) {
+    return typeof description === "string" && description.trim().length > 0;
+  }
+
+  hasMeaningfulContent(content) {
+    if (typeof content !== "string") {
+      return false;
+    }
+
+    const normalized = content
+      .replace(/&nbsp;/gi, " ")
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return normalized.length > 0;
+  }
+
+  validatePublishableFields({ title, description, content }, action = "publish") {
+    if (
+      this.isMissingRealTitle(title) ||
+      !this.hasMeaningfulDescription(description) ||
+      !this.hasMeaningfulContent(content)
+    ) {
+      throw new Error(
+        `Title, description, and content are required to ${action}|400`,
+      );
+    }
+  }
+
+  buildDraftScopeCondition(
+    draftScope?: "all" | "publishedCopies",
+    status?: string,
+  ) {
+    if (!draftScope || draftScope === "all") {
+      return null;
+    }
+
+    if (draftScope === "publishedCopies") {
+      if (status === BLOG_STATUS.DRAFT) {
+        return isNotNull(blog.masterId);
+      }
+
+      if (status) {
+        return null;
+      }
+
+      return or(
+        ne(blog.status, BLOG_STATUS.DRAFT),
+        and(eq(blog.status, BLOG_STATUS.DRAFT), isNotNull(blog.masterId)),
+      );
+    }
+
+    return null;
+  }
+
   // Helper function to check if user can modify a blog
   async canUserModifyBlog(userId, blogAuthorId, blogPublicationId) {
     if (!userId || !blogAuthorId) return false;
@@ -286,6 +385,7 @@ class BlogService {
   async getAllBlogs(query, currentUserId, tenant) {
     const {
       published,
+      draftScope,
       status,
       authorId,
       categories,
@@ -311,8 +411,6 @@ class BlogService {
 
     const conditions = [];
 
-    const statusExplicitlyPublished = status === BLOG_STATUS.PUBLISHED;
-
     if (status !== undefined) {
       conditions.push(eq(blog.status, status));
     } else if (published !== undefined) {
@@ -328,6 +426,14 @@ class BlogService {
       } else {
         conditions.push(eq(blog.status, BLOG_STATUS.PUBLISHED));
       }
+    }
+
+    const draftScopeCondition = this.buildDraftScopeCondition(
+      draftScope,
+      status,
+    );
+    if (draftScopeCondition) {
+      conditions.push(draftScopeCondition);
     }
 
     if (authorId) conditions.push(eq(blog.authorId, authorId));
@@ -420,7 +526,13 @@ class BlogService {
   }
 
   async getPublicationBlogs(publicationId, query, currentUser) {
-    const { status, limit = 50, offset = 0, includeStats } = query;
+    const {
+      status,
+      draftScope,
+      limit = 50,
+      offset = 0,
+      includeStats,
+    } = query;
 
     const [[pub], memberCheck] = await Promise.all([
       db.select().from(publication).where(eq(publication.id, parseInt(publicationId))),
@@ -446,6 +558,14 @@ class BlogService {
 
     const conditions = [eq(blog.publicationId, parseInt(publicationId))];
     if (status) conditions.push(eq(blog.status, status));
+
+    const draftScopeCondition = this.buildDraftScopeCondition(
+      draftScope,
+      status,
+    );
+    if (draftScopeCondition) {
+      conditions.push(draftScopeCondition);
+    }
 
     const blogs = await db
       .select(LIGHT_BLOG_SELECT)
@@ -514,6 +634,7 @@ class BlogService {
         updatedAt: blog.updatedAt,
         authorId: blog.authorId,
         masterId: blog.masterId,
+        isPublishable: IS_PUBLISHABLE_SQL.as("isPublishable"),
         author: {
           id: user.id,
           name: user.name,
@@ -566,6 +687,7 @@ class BlogService {
         updatedAt: blog.updatedAt,
         authorId: blog.authorId,
         masterId: blog.masterId,
+        isPublishable: IS_PUBLISHABLE_SQL.as("isPublishable"),
         author: {
           id: user.id,
           name: user.name,
@@ -637,10 +759,17 @@ class BlogService {
       ? normalizedTitle || DEFAULT_DRAFT_TITLE
       : normalizedTitle;
 
+    const sanitizedContent = content ? sanitizeHtml(content) : content;
+
     if (!isDraft) {
-      if (!finalTitle || !description || !content) {
-        throw new Error("Title, description, and content are required|400");
-      }
+      this.validatePublishableFields(
+        {
+          title: finalTitle,
+          description,
+          content: sanitizedContent,
+        },
+        "save this article",
+      );
     }
 
     if (publicationId) {
@@ -674,7 +803,6 @@ class BlogService {
 
     const slug = await this.ensureUniqueSlug(this.generateSlug(finalTitle));
     const syncedFields = this.syncStatusAndPublished(targetStatus);
-    const sanitizedContent = content ? sanitizeHtml(content) : content;
 
     const blogData: BlogInsertData = {
       slug,
@@ -919,6 +1047,19 @@ class BlogService {
     }
     if (slug !== existingBlog.slug) updateData.slug = slug;
 
+    if (targetStatusForUpdate !== BLOG_STATUS.DRAFT) {
+      this.validatePublishableFields(
+        {
+          title: updateData.title ?? existingBlog.title,
+          description: updateData.description ?? existingBlog.description,
+          content: updateData.content ?? existingBlog.content,
+        },
+        targetStatusForUpdate === BLOG_STATUS.PUBLISHED
+          ? "publish this article"
+          : "save this article",
+      );
+    }
+
     if (
       existingBlog.masterId &&
       targetStatusForUpdate === BLOG_STATUS.PUBLISHED
@@ -1147,6 +1288,17 @@ class BlogService {
 
     const syncedFields = this.syncStatusAndPublished(targetStatus);
     const updateData = { ...syncedFields, updatedAt: new Date() };
+
+    if (targetStatus === BLOG_STATUS.PUBLISHED) {
+      this.validatePublishableFields(
+        {
+          title: existingBlog.title,
+          description: existingBlog.description,
+          content: existingBlog.content,
+        },
+        "publish this article",
+      );
+    }
 
     if (existingBlog.masterId && targetStatus === BLOG_STATUS.PUBLISHED) {
       const [masterBlog] = await db
