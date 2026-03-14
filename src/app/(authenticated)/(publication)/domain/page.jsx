@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getApiBase } from "@/utils/apiBase";
+import { toast } from "sonner";
 
 export default function DomainPage() {
   const [customDomain, setCustomDomain] = useState("");
@@ -165,8 +166,33 @@ export default function DomainPage() {
     setShowRevertConfirmation(false);
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async (text) => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        toast.success("Domain copied");
+        return;
+      }
+
+      if (typeof document !== "undefined") {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        toast.success("Domain copied");
+        return;
+      }
+
+      throw new Error("Clipboard is not available");
+    } catch (err) {
+      console.error("Error copying domain:", err);
+      toast.error("Failed to copy domain. Please copy it manually.");
+    }
   };
 
   if (loading) {
