@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useMemo, memo } from "react";
 import { usePublication } from "@/contexts/PublicationContext";
 import { hasPermission } from "@/utils/permissions";
+import { getPublicationUrl } from "@/utils/publicationDomain";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const MENU_SECTIONS = [
@@ -332,8 +333,8 @@ function Sidebar() {
             <div className="flex-1 min-w-0">
               <a
                 href={
-                  currentPublication?.subdomain
-                    ? `http://${currentPublication.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"}:3000`
+                  currentPublication
+                    ? getPublicationUrl(currentPublication)
                     : currentPublication?.id
                       ? `/view-site?publicationId=${currentPublication.id}`
                       : "/view-site"

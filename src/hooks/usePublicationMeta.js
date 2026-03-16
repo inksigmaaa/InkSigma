@@ -2,15 +2,25 @@ import { useEffect, useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
-export function usePublicationMeta(subdomain = null) {
+export function usePublicationMeta(identifier = null) {
   const [publication, setPublication] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchPublication = async () => {
-      console.log('[usePublicationMeta] Fetching publication for subdomain:', subdomain);
-      if (!subdomain) {
-        console.log('[usePublicationMeta] No subdomain provided');
+      const subdomain =
+        typeof identifier === 'string' ? identifier : identifier?.subdomain;
+      const customDomain =
+        typeof identifier === 'object' ? identifier?.customDomain : null;
+
+      console.log('[usePublicationMeta] Fetching publication for:', {
+        subdomain,
+        customDomain,
+      });
+
+      if (!subdomain && !customDomain) {
+        console.log('[usePublicationMeta] No publication identifier provided');
+        setPublication(null);
         setLoading(false);
         return;
       }
@@ -18,8 +28,12 @@ export function usePublicationMeta(subdomain = null) {
       setLoading(true);
 
       try {
-        console.log('[usePublicationMeta] Making API call to:', `${API_URL}/api/publications/by-subdomain/${subdomain}`);
-        const response = await fetch(`${API_URL}/api/publications/by-subdomain/${subdomain}`, {
+        const endpoint = customDomain
+          ? `${API_URL}/api/publications/by-custom-domain/${encodeURIComponent(customDomain)}`
+          : `${API_URL}/api/publications/by-subdomain/${encodeURIComponent(subdomain)}`;
+
+        console.log('[usePublicationMeta] Making API call to:', endpoint);
+        const response = await fetch(endpoint, {
           credentials: 'include'
         });
 
@@ -29,18 +43,20 @@ export function usePublicationMeta(subdomain = null) {
           console.log('[usePublicationMeta] Publication data received:', data);
           setPublication(data);
         } else {
+          setPublication(null);
           const errorText = await response.text();
-          console.error('[usePublicationMeta] Failed to fetch publication by subdomain:', response.status, errorText);
+          console.error('[usePublicationMeta] Failed to fetch publication:', response.status, errorText);
         }
       } catch (error) {
-        console.error('[usePublicationMeta] Error fetching publication by subdomain:', error);
+        setPublication(null);
+        console.error('[usePublicationMeta] Error fetching publication:', error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchPublication();
-  }, [subdomain]);
+  }, [identifier]);
 
   return { publication, loading };
 }

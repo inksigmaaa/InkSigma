@@ -1,6 +1,6 @@
 import { db } from "../config/database.js";
 import { publication } from "../models/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getRedisClient, isRedisAvailable } from "../config/redis.js";
 import logger from "../utils/logger.js";
 
@@ -12,6 +12,17 @@ const cacheKeyForSubdomain = (subdomain) =>
   `publication:subdomain:${subdomain}`;
 const cacheKeyForCustomDomain = (domain) =>
   `publication:custom-domain:${domain}`;
+
+const isLocalCustomDomainAlias = (domain) =>
+  typeof domain === "string" &&
+  (domain.endsWith(".local") || domain.endsWith(".localhost"));
+
+const toLocalAlias = (domain) => {
+  if (!domain) return null;
+  const normalized = String(domain).trim().toLowerCase();
+  const label = normalized.split(".")[0];
+  return label ? `${label}.local` : null;
+};
 
 const getCachedPublication = async (key) => {
   if (!isRedisAvailable()) return null;
@@ -75,6 +86,10 @@ export const resolvePublicationBySubdomain = async (subdomain) => {
       cacheKeyForCustomDomain(record.customDomain.toLowerCase()),
       record,
     );
+    const localAlias = toLocalAlias(record.customDomain);
+    if (localAlias) {
+      await setCachedPublication(cacheKeyForCustomDomain(localAlias), record);
+    }
   }
 
   return record;
@@ -94,12 +109,36 @@ export const resolvePublicationByCustomDomain = async (customDomain) => {
     .where(eq(publication.customDomain, normalized))
     .limit(1);
 
-  if (!record) return null;
+  let resolvedRecord = record;
 
-  await setCachedPublication(cacheKey, record);
-  await setCachedPublication(cacheKeyForSubdomain(record.subdomain), record);
+  if (!resolvedRecord && isLocalCustomDomainAlias(normalized)) {
+    const label = normalized.split(".")[0];
+    const matches = await db
+      .select()
+      .from(publication)
+      .where(sql`split_part(${publication.customDomain}, '.', 1) = ${label}`)
+      .limit(2);
 
-  return record;
+    if (matches.length === 1) {
+      resolvedRecord = matches[0];
+    }
+  }
+
+  if (!resolvedRecord) return null;
+
+  await setCachedPublication(cacheKey, resolvedRecord);
+  await setCachedPublication(
+    cacheKeyForSubdomain(resolvedRecord.subdomain),
+    resolvedRecord,
+  );
+  if (resolvedRecord.customDomain) {
+    await setCachedPublication(
+      cacheKeyForCustomDomain(resolvedRecord.customDomain.toLowerCase()),
+      resolvedRecord,
+    );
+  }
+
+  return resolvedRecord;
 };
 
 export const invalidatePublicationCache = async ({
@@ -112,6 +151,10 @@ export const invalidatePublicationCache = async ({
   }
   if (customDomain) {
     tasks.push(deleteCachedPublication(cacheKeyForCustomDomain(customDomain)));
+    const localAlias = toLocalAlias(customDomain);
+    if (localAlias) {
+      tasks.push(deleteCachedPublication(cacheKeyForCustomDomain(localAlias)));
+    }
   }
   if (tasks.length === 0) return false;
   await Promise.all(tasks);

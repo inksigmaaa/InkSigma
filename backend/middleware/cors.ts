@@ -60,6 +60,15 @@ const isOriginAllowed = (origin) => {
     const url = new URL(origin);
     const hostname = url.hostname.toLowerCase();
 
+    if (
+      process.env.NODE_ENV === "development" &&
+      (hostname === "localhost" ||
+        hostname.endsWith(".localhost") ||
+        hostname.endsWith(".local"))
+    ) {
+      return true;
+    }
+
     // Allow any subdomain of base domains
     for (const baseDomain of baseDomains) {
       if (hostname === baseDomain || hostname.endsWith(`.${baseDomain}`)) {

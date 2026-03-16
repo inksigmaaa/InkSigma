@@ -54,6 +54,13 @@ const buildTrustedOrigins = () => {
     origins.add(`https://*.${baseDomain}`);
   }
 
+  if (process.env.NODE_ENV === "development") {
+    origins.add("http://*.local:3000");
+    origins.add("http://*.localhost:3000");
+    origins.add("https://*.local");
+    origins.add("https://*.localhost");
+  }
+
   return Array.from(origins);
 };
 

@@ -10,6 +10,7 @@ import AllArticles from './components/AllArticles/AllArticles';
 import Footer from './components/Footer/Footer';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 import { getApiBase } from '@/utils/apiBase';
+import { parseHost } from '@/utils/hostParser';
 
 const API_URL = getApiBase();
 
@@ -23,39 +24,41 @@ function ViewSiteContent() {
   const searchParams = useSearchParams();
   const { currentPublication } = usePublication();
 
-  // Get subdomain from URL params (set by middleware) or hostname
-  const [subdomain, setSubdomain] = useState(searchParams.get('subdomain'));
+  const [hostContext, setHostContext] = useState({
+    subdomain: searchParams.get('subdomain'),
+    customDomain: searchParams.get('customDomain'),
+  });
   const pubIdFromUrl = searchParams.get('publicationId');
 
   useEffect(() => {
     const paramSub = searchParams.get('subdomain');
-    if (paramSub) {
-      setSubdomain(paramSub);
-    } else if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost';
-      const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'inksigma.com';
+    const paramCustomDomain = searchParams.get('customDomain');
 
-      let detectedSubdomain = null;
+    if (paramSub || paramCustomDomain) {
+      setHostContext({
+        subdomain: paramSub,
+        customDomain: paramCustomDomain,
+      });
+      return;
+    }
 
-      // Check for subdomain in local development or production
-      if (hostname.endsWith(`.${rootDomain}`) && hostname !== rootDomain && !hostname.startsWith('dashboard.') && !hostname.startsWith('www.')) {
-        const parts = hostname.split('.');
-        if (parts.length > 0) detectedSubdomain = parts[0];
-      } else if (hostname.endsWith(`.${mainDomain}`) && hostname !== mainDomain && !hostname.startsWith('www.')) {
-        const parts = hostname.replace(`.${mainDomain}`, '').split('.');
-        if (parts.length > 0) detectedSubdomain = parts[0];
-      }
+    if (typeof window !== 'undefined') {
+      const parsedHost = parseHost(window.location.host);
+      const nextHostContext = {
+        subdomain:
+          parsedHost.isCustomDomain || parsedHost.isDashboard
+            ? null
+            : parsedHost.subdomain,
+        customDomain: parsedHost.isCustomDomain ? parsedHost.hostname : null,
+      };
 
-      if (detectedSubdomain) {
-        console.log('[ViewSite] Detected subdomain from hostname:', detectedSubdomain);
-        setSubdomain(detectedSubdomain);
-      }
+      console.log('[ViewSite] Detected host context:', nextHostContext);
+      setHostContext(nextHostContext);
     }
   }, [searchParams]);
 
   // Fetch publication data and update meta tags
-  const { publication } = usePublicationMeta(subdomain);
+  const { publication } = usePublicationMeta(hostContext);
 
   // Set publication data from subdomain lookup or publicationId lookup
   useEffect(() => {

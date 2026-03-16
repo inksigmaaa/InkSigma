@@ -331,6 +331,10 @@ function PublicationProviderInner({ children }) {
                   );
                 }
               }
+            } else {
+              setCurrentPublication((prev) =>
+                prev?.id === stillExists.id ? { ...prev, ...stillExists } : prev,
+              );
             }
           }
         }
@@ -379,6 +383,9 @@ function PublicationProviderInner({ children }) {
       const details =
         await publicationService.getPublicationDetails(publicationId);
       setPublicationDetails(details);
+      setCurrentPublication((prev) =>
+        prev?.id === publicationId ? { ...prev, ...details } : prev,
+      );
       return details;
     } catch (error) {
       console.error("Error loading publication details:", error);

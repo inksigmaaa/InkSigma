@@ -51,21 +51,16 @@ const isKnownBaseDomain = (
   rootDomain: string,
   mainDomain: string,
 ): boolean => {
-  const hostWithoutPort = host.split(":")[0];
-  const knownDomains = [
+  const normalizedHost = host.split(":")[0].replace(/^www\./, "").toLowerCase();
+
+  return [
     rootDomain,
     mainDomain,
-    `www.${rootDomain}`,
-    `www.${mainDomain}`,
     `dashboard.${rootDomain}`,
     `dashboard.${mainDomain}`,
     "localhost",
-    "localhost:3000",
-    // Also check without port
-    hostWithoutPort,
-    `${hostWithoutPort}:3000`,
-  ];
-  return knownDomains.includes(host) || knownDomains.includes(hostWithoutPort);
+    "dashboard.localhost",
+  ].includes(normalizedHost);
 };
 
 const toInternalDashboardPath = (endpointPath: string) => {

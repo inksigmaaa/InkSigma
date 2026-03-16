@@ -1,15 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getApiBase } from "@/utils/apiBase";
 import { usePublication } from "@/contexts/PublicationContext";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { getRootDomain } from "@/utils/publicationDomain";
+import { validateSubdomain, normalizeSubdomain } from "@/utils/subdomainRules";
 
 export default function SettingsPage() {
   const router = useRouter();
   const apiBase = getApiBase();
-  const { refreshCurrentPublication } = usePublication();
+  const { currentPublication, refreshCurrentPublication } = usePublication();
   const [showResetModal, setShowResetModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -35,60 +37,20 @@ export default function SettingsPage() {
     "/icons/inksigma-logo.svg",
   );
 
-  useEffect(() => {
-    loadPublicationData();
-  }, []);
-
-  const loadPublicationData = async () => {
+  const loadPublicationData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Get user ID from session
-      const sessionRes = await fetch(`${apiBase}/api/auth/get-session`, {
-        credentials: "include",
-      });
-
-      if (!sessionRes.ok) {
-        console.log("Not authenticated");
+      const targetPublicationId = currentPublication?.id;
+      if (!targetPublicationId) {
         setLoading(false);
         return;
       }
 
-      const sessionData = await sessionRes.json();
-      const userId = sessionData.user.id;
-      const userName = sessionData.user.name || "My Publication";
-      const userUsername =
-        sessionData.user.username || `user${userId.substring(0, 8)}`;
-
-      // Fetch publication data
-      let pubRes = await fetch(`${apiBase}/api/publications/user/${userId}`, {
+      const pubRes = await fetch(`${apiBase}/api/publications/${targetPublicationId}`, {
         credentials: "include",
       });
-
-      // If no publication exists, create one
-      if (pubRes.status === 404) {
-        console.log("No publication found, creating one...");
-        const createRes = await fetch(`${apiBase}/api/publications`, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: userName,
-            subdomain: userUsername.toLowerCase().replace(/[^a-z0-9]/g, ""),
-            description: "Welcome to my publication",
-            userId: userId,
-          }),
-        });
-
-        if (createRes.ok) {
-          pubRes = await fetch(`${apiBase}/api/publications/user/${userId}`, {
-            credentials: "include",
-          });
-        }
-      }
 
       if (pubRes.ok) {
         const pubData = await pubRes.json();
@@ -121,7 +83,11 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiBase, currentPublication?.id]);
+
+  useEffect(() => {
+    loadPublicationData();
+  }, [loadPublicationData]);
 
   const handleImageUpload = async (file, type) => {
     if (!publicationId) {
@@ -298,8 +264,10 @@ export default function SettingsPage() {
         throw new Error("Publication name must be between 2 and 50 characters");
       }
 
-      if (!subdomain || subdomain.length < 3 || subdomain.length > 63) {
-        throw new Error("Subdomain must be between 3 and 63 characters");
+      const normalizedSubdomain = normalizeSubdomain(subdomain);
+      const subdomainValidation = validateSubdomain(normalizedSubdomain);
+      if (!subdomainValidation.valid) {
+        throw new Error(subdomainValidation.error);
       }
 
       if (description && description.length > 100) {
@@ -315,7 +283,7 @@ export default function SettingsPage() {
         body: JSON.stringify({
           name,
           description,
-          subdomain: subdomain.toLowerCase(),
+          subdomain: normalizedSubdomain,
         }),
       });
 
@@ -518,12 +486,12 @@ export default function SettingsPage() {
                 type="text"
                 placeholder="Graceblog"
                 value={subdomain}
-                onChange={(e) => setSubdomain(e.target.value.toLowerCase())}
+                onChange={(e) => setSubdomain(normalizeSubdomain(e.target.value))}
                 minLength={3}
                 maxLength={63}
                 className="flex-1 text-sm focus:outline-none"
               />
-              <span className="text-sm text-gray-600">.inksigma.com</span>
+              <span className="text-sm text-gray-600">.{getRootDomain()}</span>
             </div>
           </div>
 

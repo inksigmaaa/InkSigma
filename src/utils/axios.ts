@@ -1,34 +1,26 @@
 import axios from 'axios';
+import { parseHost } from './hostParser';
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/api';
 
-/**
- * Get subdomain from current browser location
- */
-const getSubdomainFromBrowser = (): string | null => {
-  if (typeof window === 'undefined') return null;
+const getTenantHeadersFromBrowser = (): Record<string, string> => {
+  if (typeof window === 'undefined') return {};
 
-  const hostname = window.location.hostname;
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost';
-  const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'inksigma.com';
+  const parsed = parseHost(window.location.host);
 
-  // Check for subdomain in local development
-  if (hostname.endsWith(`.${rootDomain}`) && hostname !== rootDomain) {
-    const parts = hostname.split('.');
-    if (parts.length > 0 && parts[0] !== 'dashboard' && parts[0] !== 'www' && parts[0] !== 'api') {
-      return parts[0];
-    }
+  if (parsed.isDashboard || parsed.isRootDomain) {
+    return {};
   }
 
-  // Check for subdomain in production
-  if (hostname.endsWith(`.${mainDomain}`) && hostname !== mainDomain) {
-    const subdomain = hostname.replace(`.${mainDomain}`, '').split('.')[0];
-    if (subdomain !== 'www') {
-      return subdomain;
-    }
+  if (parsed.isCustomDomain && parsed.hostname) {
+    return { 'X-Custom-Domain': parsed.hostname };
   }
 
-  return null;
+  if (parsed.subdomain && !['dashboard', 'www', 'api'].includes(parsed.subdomain)) {
+    return { 'X-Subdomain': parsed.subdomain };
+  }
+
+  return {};
 };
 
 // Create axios instance
@@ -43,11 +35,10 @@ const axiosInstance = axios.create({
 // Request interceptor - adds subdomain header
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Add subdomain header if available
-    const subdomain = getSubdomainFromBrowser();
-    if (subdomain) {
-      config.headers['X-Subdomain'] = subdomain;
-    }
+    const tenantHeaders = getTenantHeadersFromBrowser();
+    Object.entries(tenantHeaders || {}).forEach(([key, value]) => {
+      config.headers[key] = value;
+    });
     return config;
   },
   (error) => {

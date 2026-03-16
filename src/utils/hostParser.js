@@ -121,10 +121,11 @@ export const buildPublicationUrl = (subdomain) => {
     if (!subdomain) return "";
 
     const isDev = process.env.NODE_ENV === "development";
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
     const mainDomain = getMainDomain();
 
     if (isDev) {
-        return `http://${subdomain}.localhost:3000`;
+        return `http://${subdomain}.${rootDomain}:3000`;
     }
 
     return `https://${subdomain}.${mainDomain}`;

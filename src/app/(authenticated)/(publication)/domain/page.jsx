@@ -1,13 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getApiBase } from "@/utils/apiBase";
+import {
+  getSubdomainDomainLabel,
+  getPublicationDomainLabel,
+} from "@/utils/publicationDomain";
+import { validateCustomDomain, normalizeCustomDomain } from "@/utils/domainValidation";
+import { usePublication } from "@/contexts/PublicationContext";
 import { toast } from "sonner";
 
 export default function DomainPage() {
+  const { currentPublication, refreshCurrentPublication } = usePublication();
   const [customDomain, setCustomDomain] = useState("");
   const [subdomain, setSubdomain] = useState("Subdomain");
   const [publicationId, setPublicationId] = useState(null);
@@ -22,27 +29,23 @@ export default function DomainPage() {
 
   const [showRevertConfirmation, setShowRevertConfirmation] = useState(false);
 
-  useEffect(() => {
-    loadPublicationData();
-  }, []);
-
-  const loadPublicationData = async () => {
+  const loadPublicationData = useCallback(async () => {
     try {
       setError("");
       const apiBase = getApiBase();
 
-      const sessionRes = await fetch(`${apiBase}/api/auth/get-session`, {
-        credentials: "include",
-      });
+      const targetPublicationId = currentPublication?.id;
+      if (!targetPublicationId) {
+        setLoading(false);
+        return;
+      }
 
-      if (!sessionRes.ok) return;
-
-      const sessionData = await sessionRes.json();
-      const userId = sessionData.user.id;
-
-      const pubRes = await fetch(`${apiBase}/api/publications/user/${userId}`, {
-        credentials: "include",
-      });
+      const pubRes = await fetch(
+        `${apiBase}/api/publications/${targetPublicationId}`,
+        {
+          credentials: "include",
+        },
+      );
 
       if (pubRes.ok) {
         const pubData = await pubRes.json();
@@ -58,32 +61,46 @@ export default function DomainPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPublication?.id]);
 
-  const currentDomain = `${subdomain}.inksigma.com`;
+  useEffect(() => {
+    loadPublicationData();
+  }, [loadPublicationData]);
+
+  const currentDomain = getSubdomainDomainLabel(subdomain);
 
   const handleSaveChanges = () => {
-    let domain = customDomain.trim();
-    if (domain) {
-      if (!domain.includes(".")) {
-        domain += ".com";
-      }
-      setPendingDomain(domain);
-      setShowConfirmation(true);
+    const normalizedDomain = normalizeCustomDomain(customDomain);
+    const validation = validateCustomDomain(normalizedDomain);
+
+    if (!normalizedDomain) return;
+    if (!validation.valid) {
+      setError(validation.error || "Invalid custom domain");
+      return;
     }
+
+    setError("");
+    setPendingDomain(normalizedDomain);
+    setShowConfirmation(true);
   };
 
   const handleEditSave = () => {
-    let domain = editDomain.trim();
-    if (domain === "") {
+    const normalizedDomain = normalizeCustomDomain(editDomain);
+
+    if (!normalizedDomain) {
       setShowRevertConfirmation(true);
-    } else {
-      if (!domain.includes(".")) {
-        domain += ".com";
-      }
-      setPendingDomain(domain);
-      setShowConfirmation(true);
+      return;
     }
+
+    const validation = validateCustomDomain(normalizedDomain);
+    if (!validation.valid) {
+      setError(validation.error || "Invalid custom domain");
+      return;
+    }
+
+    setError("");
+    setPendingDomain(normalizedDomain);
+    setShowConfirmation(true);
   };
 
   const handleConfirmSave = async () => {
@@ -110,7 +127,9 @@ export default function DomainPage() {
       }
 
       const updated = await response.json();
-      const normalizedDomain = updated.customDomain || pendingDomain;
+      const normalizedDomain =
+        getPublicationDomainLabel(updated) || pendingDomain;
+      await refreshCurrentPublication();
       setSavedCustomDomain(normalizedDomain);
       setEditDomain(normalizedDomain);
       setCustomDomain("");
@@ -151,6 +170,7 @@ export default function DomainPage() {
         throw new Error(data.error || "Failed to revert to subdomain");
       }
 
+      await refreshCurrentPublication();
       setSavedCustomDomain("");
       setEditDomain("");
       setCustomDomain("");

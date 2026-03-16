@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { parseHost } from '@/utils/hostParser';
 
 const getApiBase = () => {
   const envBase = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
@@ -6,24 +7,24 @@ const getApiBase = () => {
   return process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:5000';
 };
 
-const getSubdomain = (): string | null => {
-  if (typeof window === 'undefined') return null;
-  const hostname = window.location.hostname;
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost';
-  const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'inksigma.com';
+const getTenantHeaders = (): Record<string, string> => {
+  if (typeof window === 'undefined') return {};
 
-  if (hostname.endsWith(`.${rootDomain}`) && hostname !== rootDomain) {
-    const parts = hostname.split('.');
-    if (parts[0] && !['dashboard', 'www', 'api'].includes(parts[0])) {
-      return parts[0];
-    }
+  const parsed = parseHost(window.location.host);
+
+  if (parsed.isDashboard || parsed.isRootDomain) {
+    return {};
   }
 
-  if (hostname.endsWith(`.${mainDomain}`) && hostname !== mainDomain) {
-    const subdomain = hostname.replace(`.${mainDomain}`, '').split('.')[0];
-    if (subdomain !== 'www') return subdomain;
+  if (parsed.isCustomDomain && parsed.hostname) {
+    return { 'X-Custom-Domain': parsed.hostname };
   }
-  return null;
+
+  if (parsed.subdomain && !['dashboard', 'www', 'api'].includes(parsed.subdomain)) {
+    return { 'X-Subdomain': parsed.subdomain };
+  }
+
+  return {};
 };
 
 export const api = axios.create({
@@ -33,8 +34,9 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const subdomain = getSubdomain();
-  if (subdomain) config.headers['X-Subdomain'] = subdomain;
+  Object.entries(getTenantHeaders()).forEach(([key, value]) => {
+    config.headers[key] = value;
+  });
   return config;
 });
 
