@@ -22,6 +22,12 @@ import {
   resolvePublicationBySubdomain,
   resolvePublicationByCustomDomain,
 } from "../services/publicationResolver.js";
+import {
+  assertPublicationHostnamesAvailable,
+  isPublicationHostnameAvailable,
+  syncPublicationHostnames,
+  PUBLICATION_HOSTNAME_KIND,
+} from "../services/publicationHostnameService.js";
 import { validate } from "../middleware/validate.js";
 import * as publicationValidator from "../validators/publicationValidator.js";
 import logger from "../utils/logger.js";
@@ -199,7 +205,12 @@ router.get(
         .where(eq(publication.subdomain, subdomain.toLowerCase()))
         .limit(1);
 
-      res.json({ available: existing.length === 0 });
+      const availableInHistory = await isPublicationHostnameAvailable(db, {
+        kind: PUBLICATION_HOSTNAME_KIND.SUBDOMAIN,
+        value: subdomain,
+      });
+
+      res.json({ available: existing.length === 0 && availableInHistory });
     } catch (error) {
       logger.error(error, "Error checking subdomain:");
       res.status(500).json({ error: "Failed to check subdomain" });
@@ -292,6 +303,27 @@ router.get(
     }
   },
 );
+
+router.get("/resolve-host", async (req, res) => {
+  try {
+    const rawHost =
+      typeof req.query.host === "string" ? req.query.host : String(req.query.host || "");
+
+    if (!rawHost) {
+      return res.status(400).json({ error: "Host is required" });
+    }
+
+    const { resolvePublicationRoutingByHost } = await import(
+      "../services/publicationResolver.js"
+    );
+    const routing = await resolvePublicationRoutingByHost(rawHost);
+
+    return res.json(routing);
+  } catch (error) {
+    logger.error(error, "Error resolving host routing:");
+    return res.status(500).json({ error: "Failed to resolve host routing" });
+  }
+});
 
 // Resolve publication by current host
 router.get("/resolve", async (req, res) => {
@@ -548,6 +580,11 @@ router.post(
         }
       }
 
+      await assertPublicationHostnamesAvailable(db, {
+        subdomain,
+        customDomain: normalizedCustomDomain,
+      });
+
       logger.info("Creating publication in transaction...");
       // Create publication and add creator as admin member in a transaction
       const result = await db.transaction(async (tx) => {
@@ -575,6 +612,10 @@ router.post(
             .returning();
 
           logger.info("Publication created:");
+
+          await syncPublicationHostnames(tx, {
+            nextPublication: newPublication,
+          });
 
           // Add creator as admin member
           logger.info(
@@ -634,6 +675,12 @@ router.post(
         // Foreign key constraint violation
         errorMessage = "Invalid user ID or publication reference";
         statusCode = 400;
+      } else if (
+        error.message === "Subdomain is already reserved" ||
+        error.message === "Custom domain is already reserved"
+      ) {
+        errorMessage = error.message;
+        statusCode = 400;
       }
 
       // Ensure we always return a JSON response
@@ -651,6 +698,7 @@ router.post(
 // Update publication
 router.put(
   "/:id",
+  getCurrentUser,
   validate(publicationValidator.updatePublicationSchema),
   async (req, res) => {
     try {
@@ -662,6 +710,38 @@ router.put(
         return res
           .status(400)
           .json({ error: "Description must not exceed 100 characters" });
+      }
+
+      const [currentPublication] = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.id, parseInt(id)))
+        .limit(1);
+
+      if (!currentPublication) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+
+      const isOwner = currentPublication.userId === req.user.id;
+      let isAdminMember = false;
+
+      if (!isOwner) {
+        const [membership] = await db
+          .select({ role: publicationMember.role })
+          .from(publicationMember)
+          .where(
+            and(
+              eq(publicationMember.publicationId, currentPublication.id),
+              eq(publicationMember.userId, req.user.id),
+            ),
+          )
+          .limit(1);
+
+        isAdminMember = membership?.role === "admin";
+      }
+
+      if (!isOwner && !isAdminMember) {
+        return res.status(403).json({ error: "Access denied" });
       }
 
       const updateData: any = {};
@@ -707,17 +787,36 @@ router.put(
         }
       }
 
-      const [currentPublication] = await db
-        .select()
-        .from(publication)
-        .where(eq(publication.id, parseInt(id)))
-        .limit(1);
+      const nextSubdomain = updateData.subdomain ?? currentPublication.subdomain;
+      const nextCustomDomain =
+        updateData.customDomain !== undefined
+          ? updateData.customDomain
+          : currentPublication.customDomain;
 
-      const updated = await db
-        .update(publication)
-        .set(updateData)
-        .where(eq(publication.id, parseInt(id)))
-        .returning();
+      await assertPublicationHostnamesAvailable(db, {
+        publicationId: currentPublication.id,
+        subdomain: nextSubdomain,
+        customDomain: nextCustomDomain,
+      });
+
+      const updated = await db.transaction(async (tx) => {
+        const result = await tx
+          .update(publication)
+          .set(updateData)
+          .where(eq(publication.id, parseInt(id)))
+          .returning();
+
+        if (result.length === 0) {
+          return result;
+        }
+
+        await syncPublicationHostnames(tx, {
+          previousPublication: currentPublication,
+          nextPublication: result[0],
+        });
+
+        return result;
+      });
 
       if (updated.length === 0) {
         return res.status(404).json({ error: "Publication not found" });
@@ -734,7 +833,15 @@ router.put(
 
       res.json(updated[0]);
     } catch (error) {
-      logger.error("Error updating publication:");
+      logger.error(error, "Error updating publication:");
+
+      if (
+        error.message === "Subdomain is already reserved" ||
+        error.message === "Custom domain is already reserved"
+      ) {
+        return res.status(400).json({ error: error.message });
+      }
+
       res.status(500).json({ error: "Failed to update publication" });
     }
   },

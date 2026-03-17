@@ -82,6 +82,61 @@ const urlWithPathname = (request: NextRequest, pathname: string) => {
   return url;
 };
 
+const getBackendBaseUrl = () => {
+  return (
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.BACKEND_URL ||
+    "http://localhost:5000"
+  ).replace(/\/$/, "");
+};
+
+const isLocalLikeHost = (host: string) => {
+  const normalized = host.split(":")[0].toLowerCase();
+  return (
+    normalized === "localhost" ||
+    normalized.endsWith(".localhost") ||
+    normalized.endsWith(".local")
+  );
+};
+
+const buildRedirectUrlForHost = (
+  request: NextRequest,
+  canonicalHost: string,
+) => {
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.hostname = canonicalHost;
+
+  if (process.env.NODE_ENV === "development" || isLocalLikeHost(canonicalHost)) {
+    redirectUrl.port = request.nextUrl.port || "3000";
+  } else {
+    redirectUrl.port = "";
+  }
+
+  return redirectUrl;
+};
+
+const fetchHostRouting = async (host: string) => {
+  try {
+    const response = await fetch(
+      `${getBackendBaseUrl()}/api/publications/resolve-host?host=${encodeURIComponent(host)}`,
+      {
+        headers: {
+          "x-middleware-host-lookup": "1",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return response.json();
+  } catch {
+    return null;
+  }
+};
+
 const rewriteToViewSite = (
   request: NextRequest,
   requestHeaders: Headers,
@@ -223,6 +278,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({
       request: { headers: requestHeaders },
     });
+  }
+
+  const hostRouting = await fetchHostRouting(cleanHost);
+
+  if (hostRouting?.shouldRedirect && hostRouting?.canonicalHost) {
+    return NextResponse.redirect(
+      buildRedirectUrlForHost(request, hostRouting.canonicalHost),
+      308,
+    );
   }
 
   // Handle publication subdomains (both rootDomain and mainDomain)

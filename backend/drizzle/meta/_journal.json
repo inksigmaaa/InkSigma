@@ -78,6 +78,20 @@
       "when": 1770121000000,
       "tag": "0010_add_performance_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1771000000000,
+      "tag": "0011_publication_hostname_history",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1773720159519,
+      "tag": "0012_nice_bucky",
+      "breakpoints": true
     }
   ]
 }

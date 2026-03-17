@@ -9,6 +9,7 @@ import {
   serial,
   integer,
   pgEnum,
+  unique,
 } from "drizzle-orm/pg-core";
 
 // Define blog status enum
@@ -49,6 +50,16 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "member_joined",
   "member_removed",
 ]);
+
+export const publicationHostnameKindEnum = pgEnum("publication_hostname_kind", [
+  "subdomain",
+  "custom_domain",
+]);
+
+export const publicationHostnameStatusEnum = pgEnum(
+  "publication_hostname_status",
+  ["active", "redirect"],
+);
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -160,6 +171,29 @@ export const publication = pgTable("publication", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
+
+export const publicationHostname = pgTable(
+  "publication_hostname",
+  {
+    id: serial("id").primaryKey(),
+    publicationId: integer("publicationId")
+      .notNull()
+      .references(() => publication.id, { onDelete: "cascade" }),
+    kind: publicationHostnameKindEnum("kind").notNull(),
+    value: text("value").notNull(),
+    status: publicationHostnameStatusEnum("status")
+      .notNull()
+      .default("active"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    kindValueUnique: unique("publication_hostname_kind_value_unique").on(
+      table.kind,
+      table.value,
+    ),
+  }),
+);
 
 export const publicationMember = pgTable("publication_member", {
   id: serial("id").primaryKey(),

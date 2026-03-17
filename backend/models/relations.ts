@@ -4,6 +4,7 @@ import {
     blog, 
     comment, 
     publication, 
+    publicationHostname,
     session, 
     account, 
     publicationMember, 
@@ -69,10 +70,21 @@ export const publicationRelations = relations(publication, ({ one, many }) => ({
         fields: [publication.userId],
         references: [user.id],
     }),
+    hostnames: many(publicationHostname),
     members: many(publicationMember),
     blogs: many(blog),
     invitations: many(invitation),
 }));
+
+export const publicationHostnameRelations = relations(
+    publicationHostname,
+    ({ one }) => ({
+        publication: one(publication, {
+            fields: [publicationHostname.publicationId],
+            references: [publication.id],
+        }),
+    }),
+);
 
 export const sessionRelations = relations(session, ({ one }) => ({
     user: one(user, {
