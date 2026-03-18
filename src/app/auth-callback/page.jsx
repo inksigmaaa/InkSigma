@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getApiBase } from "@/utils/apiBase"
+import { buildLoginRedirectPath, waitForServerSession } from "@/utils/auth"
 
 function AuthCallbackContent() {
   const router = useRouter()
@@ -10,6 +11,8 @@ function AuthCallbackContent() {
   const redirectTo = searchParams.get("redirect")
 
   useEffect(() => {
+    const controller = new AbortController()
+
     const checkPublicationAndRedirect = async () => {
       try {
         const apiBase = getApiBase()
@@ -17,6 +20,10 @@ function AuthCallbackContent() {
 
         const fetchWithRetry = async (url, options = {}, maxAttempts = 3) => {
           for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            if (controller.signal.aborted) {
+              return null
+            }
+
             try {
               const response = await fetch(url, options)
               if (response.ok) return response
@@ -24,12 +31,31 @@ function AuthCallbackContent() {
                 return response
               }
             } catch (error) {
+              if (error?.name === "AbortError") {
+                throw error
+              }
+
               if (attempt === maxAttempts) throw error
+            }
+
+            if (controller.signal.aborted) {
+              return null
             }
 
             await delay(250 * attempt)
           }
           return null
+        }
+
+        const activeSession = await waitForServerSession({
+          attempts: 5,
+          delayMs: 250,
+          signal: controller.signal,
+        })
+
+        if (!activeSession?.user?.id) {
+          router.replace(buildLoginRedirectPath(redirectTo || "/"))
+          return
         }
 
         // If there's a specific redirect (like invitation), handle it first.
@@ -41,12 +67,13 @@ function AuthCallbackContent() {
             try {
               const ownedRes = await fetch(`${apiBase}/api/publications/check`, {
                 credentials: "include",
+                signal: controller.signal,
               })
               if (ownedRes.ok) {
                 const data = await ownedRes.json().catch(() => null)
                 const hasOwned = Boolean(data?.hasPublication)
                 if (!hasOwned) {
-                  router.push(
+                  router.replace(
                     `/create-publication?redirect=${encodeURIComponent(redirectTo)}`,
                   )
                   return
@@ -57,30 +84,17 @@ function AuthCallbackContent() {
             }
           }
 
-          router.push(redirectTo)
+          router.replace(redirectTo)
           return
         }
 
         const pubsRes = await fetchWithRetry(`${apiBase}/api/members/user/publications`, {
           credentials: "include",
+          signal: controller.signal,
         })
 
         if (!pubsRes?.ok) {
-          // Avoid redirect-looping to /login on transient auth propagation delays.
-          // If session exists, continue to dashboard and let app context settle.
-          const sessionRes = await fetchWithRetry(`${apiBase}/api/auth/get-session`, {
-            credentials: "include",
-          })
-
-          if (sessionRes?.ok) {
-            const sessionData = await sessionRes.json().catch(() => null)
-            if (sessionData?.user?.id) {
-              router.push("/")
-              return
-            }
-          }
-
-          router.push("/login")
+          router.replace("/")
           return
         }
 
@@ -88,14 +102,22 @@ function AuthCallbackContent() {
         const publications = Array.isArray(data) ? data : (data?.publications || [])
         const hasAny = Array.isArray(publications) && publications.length > 0
 
-        router.push(hasAny ? '/' : '/create-publication')
+        router.replace(hasAny ? '/' : '/create-publication')
       } catch (err) {
+        if (err?.name === "AbortError") {
+          return
+        }
+
         console.error("Error checking publication:", err)
-        router.push('/')
+        router.replace('/')
       }
     }
 
     checkPublicationAndRedirect()
+
+    return () => {
+      controller.abort()
+    }
   }, [router, redirectTo])
 
   return (

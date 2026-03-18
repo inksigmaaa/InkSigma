@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { parseHost } from '@/utils/hostParser';
+import { buildLoginRedirectPath, isAuthFlowPath } from '@/utils/auth';
 
 const getApiBase = () => {
   const envBase = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
@@ -50,7 +51,12 @@ api.interceptors.response.use(
         await api.post('/auth/refresh');
         return api(originalRequest);
       } catch {
-        if (typeof window !== 'undefined') window.location.href = '/login';
+        if (
+          typeof window !== 'undefined' &&
+          !isAuthFlowPath(window.location.pathname)
+        ) {
+          window.location.href = buildLoginRedirectPath();
+        }
         return Promise.reject(error);
       }
     }

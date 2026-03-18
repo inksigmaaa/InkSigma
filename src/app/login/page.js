@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -10,13 +10,15 @@ import AuthLayout from "@/components/auth/AuthLayout";
 import PasswordField from "@/components/auth/PasswordField";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 import { APP_CONFIG } from "@/constants/app";
-import { signIn } from "@/lib/auth-client";
+import { signIn, useSession } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
+import { waitForServerSession } from "@/utils/auth";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
+  const { data: session, isPending } = useSession();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -37,6 +39,46 @@ function LoginForm() {
   };
 
   const apiBase = getApiBase();
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const redirectAuthenticatedUser = async () => {
+      if (isPending) return;
+
+      try {
+        const activeSession = session?.user?.id
+          ? session
+          : await waitForServerSession({
+              attempts: 2,
+              signal: controller.signal,
+            });
+
+        if (!activeSession?.user?.id || cancelled) {
+          return;
+        }
+
+        const callbackPath =
+          redirectTo !== "/"
+            ? `/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+            : "/auth-callback";
+
+        router.replace(callbackPath);
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          console.error("Error redirecting authenticated user:", error);
+        }
+      }
+    };
+
+    redirectAuthenticatedUser();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [isPending, redirectTo, router, session]);
 
   const handleInputChange = (field) => (e) => {
     setFormData((prev) => ({
@@ -138,7 +180,7 @@ function LoginForm() {
               const data = await ownedRes.json().catch(() => null);
               const hasOwned = Boolean(data?.hasPublication);
               if (!hasOwned) {
-                router.push(
+                router.replace(
                   `/create-publication?redirect=${encodeURIComponent(redirectTo)}`,
                 );
                 return;
@@ -149,7 +191,7 @@ function LoginForm() {
           }
         }
 
-        router.push(redirectTo);
+        router.replace(redirectTo);
         return;
       }
 
@@ -338,7 +380,7 @@ function LoginForm() {
           {showUnregistered ? (
             <div className="w-full md:w-[259px] h-[60px] bg-[#F3EEFF] rounded-[4px] px-[16px] py-[12px] flex items-center justify-center mt-6 mx-auto text-center">
               <p className="font-normal text-[12px] leading-[150%] tracking-[0%] text-[#7A37AE]">
-                Looks like you haven't registered with us yet.{" "}
+                Looks like you haven&apos;t registered with us yet.{" "}
                 <Link
                   href="/signup"
                   className="font-semibold underline decoration-solid decoration-[#7A37AE] hover:text-[#5e2a86]"
