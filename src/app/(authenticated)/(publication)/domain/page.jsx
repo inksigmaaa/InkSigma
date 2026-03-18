@@ -22,7 +22,7 @@ const DOMAIN_STATUS_LABELS = {
   pending_verification: "Pending verification",
   verified: "DNS pending",
   ssl_pending: "SSL pending",
-  active: "Active",
+  active: "Custom Domain",
   failed: "Verification failed",
 };
 
@@ -30,7 +30,7 @@ const DOMAIN_STATUS_STYLES = {
   pending_verification: "bg-amber-50 text-amber-700 border border-amber-200",
   verified: "bg-blue-50 text-blue-700 border border-blue-200",
   ssl_pending: "bg-blue-50 text-blue-700 border border-blue-200",
-  active: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  active: "bg-[#F4F4F4] text-[#808080] border border-[#F4F4F4]",
   failed: "bg-red-50 text-red-700 border border-red-200",
 };
 
