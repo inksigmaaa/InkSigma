@@ -1,6 +1,7 @@
 import { db } from "../config/database.js";
 import {
   blog,
+  blogSlugHistory,
   user,
   publication,
   publicationMember,
@@ -280,22 +281,99 @@ class BlogService {
     let counter = 1;
 
     while (true) {
-      const conditions = [eq(blog.slug, slug)];
+      const currentSlugConditions = [eq(blog.slug, slug)];
       if (excludeId != null) {
-        conditions.push(ne(blog.id, excludeId));
+        currentSlugConditions.push(ne(blog.id, excludeId));
       }
 
       const [existing] = await db
         .select({ id: blog.id })
         .from(blog)
-        .where(and(...conditions));
-      if (!existing) break;
+        .where(and(...currentSlugConditions))
+        .limit(1);
+
+      const historyConditions = [eq(blogSlugHistory.slug, slug)];
+      if (excludeId != null) {
+        historyConditions.push(ne(blogSlugHistory.blogId, excludeId));
+      }
+
+      const [existingHistory] = await db
+        .select({ id: blogSlugHistory.id })
+        .from(blogSlugHistory)
+        .where(and(...historyConditions))
+        .limit(1);
+
+      if (!existing && !existingHistory) break;
 
       slug = `${normalizedBaseSlug}-${counter}`;
       counter++;
     }
 
     return slug;
+  }
+
+  async syncBlogSlugHistory({
+    tx,
+    blogId,
+    previousSlug,
+    nextSlug,
+  }: {
+    tx: any;
+    blogId: number;
+    previousSlug?: string | null;
+    nextSlug?: string | null;
+  }) {
+    if (!blogId || !nextSlug) {
+      return;
+    }
+
+    await tx
+      .delete(blogSlugHistory)
+      .where(
+        and(
+          eq(blogSlugHistory.blogId, blogId),
+          eq(blogSlugHistory.slug, nextSlug),
+        ),
+      );
+
+    if (!previousSlug || previousSlug === nextSlug) {
+      return;
+    }
+
+    const [existingHistory] = await tx
+      .select({ id: blogSlugHistory.id })
+      .from(blogSlugHistory)
+      .where(
+        and(
+          eq(blogSlugHistory.blogId, blogId),
+          eq(blogSlugHistory.slug, previousSlug),
+        ),
+      )
+      .limit(1);
+
+    if (!existingHistory) {
+      await tx.insert(blogSlugHistory).values({
+        blogId,
+        slug: previousSlug,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+  }
+
+  async getFullBlogById(blogId: number | null | undefined) {
+    if (!blogId) {
+      return null;
+    }
+
+    const [blogData] = await db
+      .select(FULL_BLOG_SELECT)
+      .from(blog)
+      .leftJoin(user, eq(blog.authorId, user.id))
+      .where(eq(blog.id, blogId))
+      .limit(1);
+
+    return blogData ?? null;
   }
 
   // Helper function to sync status and published fields according to strict rules
@@ -670,34 +748,27 @@ class BlogService {
   }
 
   async getBlogBySlug(slug, currentUserId, tenant) {
-    const [blogData] = await db
-      .select({
-        id: blog.id,
-        slug: blog.slug,
-        title: blog.title,
-        description: blog.description,
-        content: blog.content,
-        image: blog.image,
-        categories: blog.categories,
-        status: blog.status,
-        published: blog.published,
-        publicationId: blog.publicationId,
-        scheduledAt: blog.scheduledAt,
-        createdAt: blog.createdAt,
-        updatedAt: blog.updatedAt,
-        authorId: blog.authorId,
-        masterId: blog.masterId,
-        isPublishable: IS_PUBLISHABLE_SQL.as("isPublishable"),
-        author: {
-          id: user.id,
-          name: user.name,
-          image: user.image,
-          username: user.username,
-        },
-      })
+    const [currentSlugMatch] = await db
+      .select({ id: blog.id })
       .from(blog)
-      .leftJoin(user, eq(blog.authorId, user.id))
-      .where(eq(blog.slug, slug));
+      .where(eq(blog.slug, slug))
+      .limit(1);
+
+    let blogData = await this.getFullBlogById(currentSlugMatch?.id);
+    let shouldRedirect = false;
+
+    if (!blogData) {
+      const [historyMatch] = await db
+        .select({ blogId: blogSlugHistory.blogId })
+        .from(blogSlugHistory)
+        .where(eq(blogSlugHistory.slug, slug))
+        .limit(1);
+
+      if (historyMatch?.blogId) {
+        blogData = await this.getFullBlogById(historyMatch.blogId);
+        shouldRedirect = Boolean(blogData && blogData.slug !== slug);
+      }
+    }
 
     if (!blogData) throw new Error("Blog not found|404");
 
@@ -719,7 +790,13 @@ class BlogService {
       if (!canView) throw new Error("Blog not found|404");
     }
 
-    return blogData;
+    return {
+      ...blogData,
+      requestedSlug: slug,
+      canonicalSlug: blogData.slug,
+      shouldRedirect,
+      redirectStatusCode: shouldRedirect ? 301 : null,
+    };
   }
   async createBlog(data, currentUser) {
     const {
@@ -1069,21 +1146,40 @@ class BlogService {
         .from(blog)
         .where(eq(blog.id, existingBlog.masterId));
       if (masterBlog) {
+        const mergedTitle = (updateData.title || existingBlog.title).replace(
+          /\s*\[Update draft\]$/i,
+          "",
+        );
+        let mergedSlug = masterBlog.slug;
+        if (mergedTitle !== masterBlog.title) {
+          mergedSlug = await this.ensureUniqueSlug(
+            this.generateSlug(mergedTitle),
+            masterBlog.id,
+          );
+        }
+
         const mergeData = {
-          title: (updateData.title || existingBlog.title).replace(
-            /\s*\[Update draft\]$/i,
-            "",
-          ),
+          title: mergedTitle,
           description: updateData.description || existingBlog.description,
           content: updateData.content || existingBlog.content,
           image: updateData.hasOwnProperty("image")
             ? updateData.image
             : existingBlog.image,
           categories: updateData.categories || existingBlog.categories,
+          ...(mergedSlug !== masterBlog.slug ? { slug: mergedSlug } : {}),
           updatedAt: new Date(),
         };
 
         const [updatedMaster] = await db.transaction(async (tx) => {
+          if (mergedSlug !== masterBlog.slug) {
+            await this.syncBlogSlugHistory({
+              tx,
+              blogId: masterBlog.id,
+              previousSlug: masterBlog.slug,
+              nextSlug: mergedSlug,
+            });
+          }
+
           const [updated] = await tx
             .update(blog)
             .set(mergeData)
@@ -1100,11 +1196,22 @@ class BlogService {
       }
     }
 
-    const [updatedBlog] = await db
-      .update(blog)
-      .set(updateData)
-      .where(eq(blog.id, parseInt(id)))
-      .returning();
+    const [updatedBlog] = await db.transaction(async (tx) => {
+      if (slug !== existingBlog.slug) {
+        await this.syncBlogSlugHistory({
+          tx,
+          blogId: parseInt(id),
+          previousSlug: existingBlog.slug,
+          nextSlug: slug,
+        });
+      }
+
+      return tx
+        .update(blog)
+        .set(updateData)
+        .where(eq(blog.id, parseInt(id)))
+        .returning();
+    });
 
     if (updatedBlog.status === BLOG_STATUS.SCHEDULED && updatedBlog.scheduledAt)
       schedulerService.onBlogScheduled(updatedBlog.id);

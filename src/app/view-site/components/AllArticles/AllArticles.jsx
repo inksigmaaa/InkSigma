@@ -9,6 +9,7 @@ import { getImageUrl } from "@/utils/imageUrl";
 import CategoryBadgeList from "@/components/CategoryBadgeList";
 import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 import { getApiBase } from "@/utils/apiBase";
+import { getBlogPath } from "@/utils/blogUrl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const API_URL = getApiBase();
@@ -17,11 +18,9 @@ export default function AllArticles({
   searchQuery = "",
   selectedCategory = "",
   blogs = [],
-  publicationId,
 }) {
   const [commentCounts, setCommentCounts] = useState({});
   const pathname = usePathname();
-  const basePath = pathname.startsWith('/view-site') ? '/view-site' : '';
 
   // Fetch comment counts for all blogs
   useEffect(() => {
@@ -159,7 +158,7 @@ export default function AllArticles({
                   </div>
 
                   <Link
-                    href={`${basePath}/blog/${article.slug}${publicationId ? `?publicationId=${publicationId}&from=${publicationId}&view=site` : ""}`}
+                    href={getBlogPath(article.slug, pathname)}
                     className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block"
                   >
                     {/* Background Image */}

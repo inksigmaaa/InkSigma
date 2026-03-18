@@ -1,22 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ShareMenu from '../ShareMenu/ShareMenu';
-import { formatTimeAgo } from '@/utils/timeFormatter';
 import { getImageUrl } from '@/utils/imageUrl';
 import { getThumbnailWithFallback } from '@/utils/fallbackThumbnail';
 import { getApiBase } from '@/utils/apiBase';
+import { getBlogPath } from '@/utils/blogUrl';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const API_URL = getApiBase();
 
-export default function LatestBlog({ searchQuery = '', blogs = [], publicationId }) {
-  const [commentCount, setCommentCount] = useState(0);
+export default function LatestBlog({ searchQuery = '', blogs = [] }) {
   const pathname = usePathname();
-  const basePath = pathname.startsWith('/view-site') ? '/view-site' : '';
   
   // Get the latest blog (first one in the array, sorted by date)
   const latestBlog = blogs.length > 0
@@ -31,8 +29,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
       try {
         const response = await fetch(`${API_URL}/api/comments/count/${latestBlog.id}`);
         if (response.ok) {
-          const data = await response.json();
-          setCommentCount(data.count);
+          await response.json();
         }
       } catch (err) {
         console.error('Error fetching comment count:', err);
@@ -131,7 +128,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
           />
         </div>
 
-                  <Link href={`${basePath}/blog/${latestBlog.slug}${publicationId ? `?publicationId=${publicationId}&from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block">          {/* Background Image */}
+                  <Link href={getBlogPath(latestBlog.slug, pathname)} className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block">          {/* Background Image */}
           <div className="absolute inset-0">
             <Image
               src={thumbnailUrl}
@@ -213,7 +210,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [], publicationId
             />
           </div>
 
-          <Link href={`${basePath}/blog/${latestBlog.slug}${publicationId ? `?publicationId=${publicationId}&from=${publicationId}&view=site` : ''}`} className="absolute inset-0 rounded-md overflow-hidden cursor-pointer block">
+          <Link href={getBlogPath(latestBlog.slug, pathname)} className="absolute inset-0 rounded-md overflow-hidden cursor-pointer block">
             <Image
               src={thumbnailUrl}
               alt={latestBlog.title}

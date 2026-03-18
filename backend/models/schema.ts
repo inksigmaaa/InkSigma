@@ -148,6 +148,25 @@ export const blog = pgTable("blog", {
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
 
+export const blogSlugHistory = pgTable(
+  "blog_slug_history",
+  {
+    id: serial("id").primaryKey(),
+    blogId: integer("blogId")
+      .notNull()
+      .references(() => blog.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull().unique(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    blogIdSlugUnique: unique("blog_slug_history_blog_id_slug_unique").on(
+      table.blogId,
+      table.slug,
+    ),
+  }),
+);
+
 export const comment = pgTable("comment", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
