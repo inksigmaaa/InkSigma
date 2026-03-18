@@ -10,7 +10,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "migrate:data": "node migrate-existing-data.js",
-    "test:redis": "node test-redis.js"
+    "test:redis": "node test-redis.js",
+    "test:domains": "node --test --import tsx tests/*.test.ts"
   },
   "dependencies": {
     "@upstash/redis": "^1.36.1",

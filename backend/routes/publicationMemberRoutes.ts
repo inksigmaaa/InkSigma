@@ -40,6 +40,7 @@ router.get("/my-publications", getCurrentUser, async (req, res) => {
                     name: publication.name,
                     subdomain: publication.subdomain,
                     customDomain: publication.customDomain,
+                    customDomainStatus: publication.customDomainStatus,
                     description: publication.description,
                     logoUrl: publication.logoUrl,
                     userId: publication.userId
@@ -55,6 +56,7 @@ router.get("/my-publications", getCurrentUser, async (req, res) => {
             name: membership.publication.name,
             subdomain: membership.publication.subdomain,
             customDomain: membership.publication.customDomain,
+            customDomainStatus: membership.publication.customDomainStatus,
             description: membership.publication.description,
             logoUrl: membership.publication.logoUrl,
             role: membership.role,

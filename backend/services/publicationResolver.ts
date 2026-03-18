@@ -10,31 +10,14 @@ import {
   PUBLICATION_HOSTNAME_STATUS,
   normalizePublicationHostnameValue,
 } from "./publicationHostnameService.js";
-
-const DASHBOARD_SUBDOMAIN = process.env.DASHBOARD_SUBDOMAIN || "dashboard";
-const MAIN_DOMAIN = (process.env.MAIN_DOMAIN || "inksigma.com").toLowerCase();
-const BASE_DOMAINS = (
-  process.env.BASE_DOMAINS ||
-  process.env.BASE_DOMAIN ||
-  "localhost,inksigma.local"
-)
-  .split(",")
-  .map((domain) => domain.trim().toLowerCase())
-  .filter(Boolean);
-
-const RESERVED_SUBDOMAINS = new Set([
-  "dashboard",
-  "www",
-  "api",
-  "admin",
-  "static",
-  "assets",
-  "cdn",
-  "mail",
-  "support",
-  "help",
-  "status",
-]);
+import {
+  CUSTOM_DOMAIN_STATUS,
+  isCustomDomainActive,
+} from "./customDomainService.js";
+import {
+  classifyHostForRouting,
+  normalizeHost,
+} from "../utils/hostnameRouting.js";
 
 const CACHE_TTL_SECONDS = Number(
   process.env.PUBLICATION_CACHE_TTL_SECONDS || 3600,
@@ -44,20 +27,6 @@ const cacheKeyForSubdomain = (subdomain) =>
   `publication:subdomain:${subdomain}`;
 const cacheKeyForCustomDomain = (domain) =>
   `publication:custom-domain:${domain}`;
-
-const normalizeHost = (rawHost) => {
-  if (!rawHost) return "";
-
-  const trimmed = String(rawHost).trim().toLowerCase();
-  const withoutProtocol = trimmed.replace(/^[a-z]+:\/\//, "");
-  const withoutPath = withoutProtocol.split("/")[0];
-
-  if (withoutPath.startsWith("[")) {
-    return withoutPath.slice(1).split("]")[0].toLowerCase();
-  }
-
-  return withoutPath.split(":")[0];
-};
 
 const isLocalCustomDomainAlias = (domain) =>
   typeof domain === "string" &&
@@ -167,65 +136,6 @@ const resolveLocalAliasHostnameRecord = async (host) => {
   );
 };
 
-const parseHostLookup = (host) => {
-  const normalizedHost = normalizeHost(host);
-  if (!normalizedHost) {
-    return {
-      host: "",
-      kind: null,
-      value: "",
-      isRootDomain: false,
-      isDashboard: false,
-      isReservedSubdomain: false,
-      isCustomDomain: false,
-    };
-  }
-
-  const candidateBaseDomains = [...BASE_DOMAINS, MAIN_DOMAIN]
-    .filter(Boolean)
-    .sort((a, b) => b.length - a.length);
-
-  for (const baseDomain of candidateBaseDomains) {
-    if (normalizedHost === baseDomain) {
-      return {
-        host: normalizedHost,
-        kind: null,
-        value: "",
-        isRootDomain: true,
-        isDashboard: false,
-        isReservedSubdomain: false,
-        isCustomDomain: false,
-      };
-    }
-
-    const suffix = `.${baseDomain}`;
-    if (!normalizedHost.endsWith(suffix)) {
-      continue;
-    }
-
-    const subdomain = normalizedHost.slice(0, -suffix.length);
-    return {
-      host: normalizedHost,
-      kind: PUBLICATION_HOSTNAME_KIND.SUBDOMAIN,
-      value: subdomain,
-      isRootDomain: false,
-      isDashboard: subdomain === DASHBOARD_SUBDOMAIN,
-      isReservedSubdomain: RESERVED_SUBDOMAINS.has(subdomain),
-      isCustomDomain: false,
-    };
-  }
-
-  return {
-    host: normalizedHost,
-    kind: PUBLICATION_HOSTNAME_KIND.CUSTOM_DOMAIN,
-    value: normalizedHost,
-    isRootDomain: false,
-    isDashboard: false,
-    isReservedSubdomain: false,
-    isCustomDomain: true,
-  };
-};
-
 const getCachedPublication = async (key) => {
   if (!isRedisAvailable()) return null;
   try {
@@ -293,7 +203,7 @@ export const resolvePublicationBySubdomain = async (subdomain) => {
   if (!resolvedRecord) return null;
 
   await setCachedPublication(cacheKey, resolvedRecord);
-  if (resolvedRecord.customDomain) {
+  if (isCustomDomainActive(resolvedRecord)) {
     await setCachedPublication(
       cacheKeyForCustomDomain(resolvedRecord.customDomain.toLowerCase()),
       resolvedRecord,
@@ -324,7 +234,12 @@ export const resolvePublicationByCustomDomain = async (customDomain) => {
   const [record] = await db
     .select()
     .from(publication)
-    .where(eq(publication.customDomain, normalized))
+    .where(
+      and(
+        eq(publication.customDomain, normalized),
+        eq(publication.customDomainStatus, CUSTOM_DOMAIN_STATUS.ACTIVE),
+      ),
+    )
     .limit(1);
 
   let resolvedRecord =
@@ -339,7 +254,12 @@ export const resolvePublicationByCustomDomain = async (customDomain) => {
     const directMatches = await db
       .select()
       .from(publication)
-      .where(sql`split_part(${publication.customDomain}, '.', 1) = ${label}`)
+      .where(
+        and(
+          sql`split_part(${publication.customDomain}, '.', 1) = ${label}`,
+          eq(publication.customDomainStatus, CUSTOM_DOMAIN_STATUS.ACTIVE),
+        ),
+      )
       .limit(2);
 
     if (directMatches.length === 1) {
@@ -376,7 +296,7 @@ export const resolvePublicationByCustomDomain = async (customDomain) => {
     cacheKeyForSubdomain(resolvedRecord.subdomain),
     resolvedRecord,
   );
-  if (resolvedRecord.customDomain) {
+  if (isCustomDomainActive(resolvedRecord)) {
     await setCachedPublication(
       cacheKeyForCustomDomain(resolvedRecord.customDomain.toLowerCase()),
       resolvedRecord,
@@ -407,7 +327,7 @@ export const invalidatePublicationCache = async ({
 };
 
 export const resolvePublicationRoutingByHost = async (host) => {
-  const parsed = parseHostLookup(host);
+  const parsed = classifyHostForRouting(host);
 
   if (
     !parsed.host ||

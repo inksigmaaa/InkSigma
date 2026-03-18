@@ -28,6 +28,11 @@ import {
   syncPublicationHostnames,
   PUBLICATION_HOSTNAME_KIND,
 } from "../services/publicationHostnameService.js";
+import {
+  buildCustomDomainLifecycleFields,
+  verifyCustomDomainLifecycle,
+  CUSTOM_DOMAIN_STATUS,
+} from "../services/customDomainService.js";
 import { validate } from "../middleware/validate.js";
 import * as publicationValidator from "../validators/publicationValidator.js";
 import logger from "../utils/logger.js";
@@ -584,6 +589,9 @@ router.post(
         subdomain,
         customDomain: normalizedCustomDomain,
       });
+      const customDomainLifecycle = buildCustomDomainLifecycleFields({
+        nextCustomDomain: normalizedCustomDomain,
+      });
 
       logger.info("Creating publication in transaction...");
       // Create publication and add creator as admin member in a transaction
@@ -602,7 +610,16 @@ router.post(
             .values({
               name,
               subdomain: subdomain.toLowerCase(),
-              customDomain: normalizedCustomDomain,
+              customDomain: customDomainLifecycle.customDomain,
+              customDomainStatus: customDomainLifecycle.customDomainStatus,
+              customDomainVerificationToken:
+                customDomainLifecycle.customDomainVerificationToken,
+              customDomainVerificationError:
+                customDomainLifecycle.customDomainVerificationError,
+              customDomainVerifiedAt:
+                customDomainLifecycle.customDomainVerifiedAt,
+              customDomainLastCheckedAt:
+                customDomainLifecycle.customDomainLastCheckedAt,
               description: description || null,
               userId,
               logoUrl: null,
@@ -749,10 +766,25 @@ router.put(
       if (subdomain !== undefined)
         updateData.subdomain = subdomain.toLowerCase();
       if (customDomain !== undefined) {
-        updateData.customDomain =
+        const nextCustomDomain =
           customDomain === null || customDomain === ""
             ? null
             : String(customDomain).trim().toLowerCase();
+        const lifecycleFields = buildCustomDomainLifecycleFields({
+          currentPublication,
+          nextCustomDomain,
+        });
+
+        updateData.customDomain = lifecycleFields.customDomain;
+        updateData.customDomainStatus = lifecycleFields.customDomainStatus;
+        updateData.customDomainVerificationToken =
+          lifecycleFields.customDomainVerificationToken;
+        updateData.customDomainVerificationError =
+          lifecycleFields.customDomainVerificationError;
+        updateData.customDomainVerifiedAt =
+          lifecycleFields.customDomainVerifiedAt;
+        updateData.customDomainLastCheckedAt =
+          lifecycleFields.customDomainLastCheckedAt;
       }
       if (description !== undefined) updateData.description = description;
       updateData.updatedAt = new Date();
@@ -846,6 +878,99 @@ router.put(
     }
   },
 );
+
+router.post("/:id/custom-domain/verify", getCurrentUser, async (req, res) => {
+  try {
+    const publicationId = parseInt(req.params.id, 10);
+
+    const [currentPublication] = await db
+      .select()
+      .from(publication)
+      .where(eq(publication.id, publicationId))
+      .limit(1);
+
+    if (!currentPublication) {
+      return res.status(404).json({ error: "Publication not found" });
+    }
+
+    const isOwner = currentPublication.userId === req.user.id;
+    let isAdminMember = false;
+
+    if (!isOwner) {
+      const [membership] = await db
+        .select({ role: publicationMember.role })
+        .from(publicationMember)
+        .where(
+          and(
+            eq(publicationMember.publicationId, currentPublication.id),
+            eq(publicationMember.userId, req.user.id),
+          ),
+        )
+        .limit(1);
+
+      isAdminMember = membership?.role === "admin";
+    }
+
+    if (!isOwner && !isAdminMember) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    if (!currentPublication.customDomain) {
+      return res.status(400).json({ error: "Custom domain is not configured" });
+    }
+
+    const verificationFields =
+      await verifyCustomDomainLifecycle(currentPublication);
+
+    const updated = await db.transaction(async (tx) => {
+      const result = await tx
+        .update(publication)
+        .set({
+          ...verificationFields,
+          updatedAt: new Date(),
+        })
+        .where(eq(publication.id, currentPublication.id))
+        .returning();
+
+      if (result.length === 0) {
+        return result;
+      }
+
+      await syncPublicationHostnames(tx, {
+        previousPublication: currentPublication,
+        nextPublication: result[0],
+      });
+
+      return result;
+    });
+
+    if (updated.length === 0) {
+      return res.status(404).json({ error: "Publication not found" });
+    }
+
+    await invalidatePublicationCache({
+      subdomain: currentPublication.subdomain,
+      customDomain: currentPublication.customDomain,
+    });
+    await invalidatePublicationCache({
+      subdomain: updated[0].subdomain,
+      customDomain: updated[0].customDomain,
+    });
+
+    return res.json({
+      ...updated[0],
+      verificationState: {
+        isActive:
+          updated[0].customDomainStatus === CUSTOM_DOMAIN_STATUS.ACTIVE,
+        requiresDnsUpdate:
+          updated[0].customDomainStatus !== CUSTOM_DOMAIN_STATUS.ACTIVE,
+      },
+    });
+  } catch (error) {
+    logger.error(error, "Error verifying custom domain:");
+    return res.status(500).json({ error: "Failed to verify custom domain" });
+  }
+});
 
 // Upload logo
 router.post(

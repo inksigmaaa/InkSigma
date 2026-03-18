@@ -61,6 +61,15 @@ export const publicationHostnameStatusEnum = pgEnum(
   ["active", "redirect"],
 );
 
+export const customDomainStatusEnum = pgEnum("custom_domain_status", [
+  "pending_verification",
+  "verified",
+  "ssl_pending",
+  "active",
+  "failed",
+  "detached",
+]);
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name"),
@@ -160,6 +169,11 @@ export const publication = pgTable("publication", {
   name: text("name").notNull(),
   subdomain: text("subdomain").notNull().unique(),
   customDomain: text("customDomain").unique(),
+  customDomainStatus: customDomainStatusEnum("customDomainStatus"),
+  customDomainVerificationToken: text("customDomainVerificationToken"),
+  customDomainVerificationError: text("customDomainVerificationError"),
+  customDomainVerifiedAt: timestamp("customDomainVerifiedAt"),
+  customDomainLastCheckedAt: timestamp("customDomainLastCheckedAt"),
   description: text("description"),
   image: text("image"),
   logoUrl: text("logoUrl"),

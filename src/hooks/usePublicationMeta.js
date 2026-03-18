@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { hasActiveCustomDomain } from "@/utils/publicationDomain";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
@@ -11,7 +12,9 @@ export function usePublicationMeta(identifier = null) {
       const subdomain =
         typeof identifier === 'string' ? identifier : identifier?.subdomain;
       const customDomain =
-        typeof identifier === 'object' ? identifier?.customDomain : null;
+        typeof identifier === 'object' && hasActiveCustomDomain(identifier)
+          ? identifier?.customDomain
+          : null;
 
       console.log('[usePublicationMeta] Fetching publication for:', {
         subdomain,

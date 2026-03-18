@@ -1,5 +1,6 @@
 import { and, eq, ne } from "drizzle-orm";
 import { publicationHostname } from "../models/schema.js";
+import { isCustomDomainActive } from "./customDomainService.js";
 
 export const PUBLICATION_HOSTNAME_KIND = {
   SUBDOMAIN: "subdomain",
@@ -18,6 +19,7 @@ type PublicationLike = {
   id: number;
   subdomain?: string | null;
   customDomain?: string | null;
+  customDomainStatus?: string | null;
 };
 
 type HostnameEntry = {
@@ -85,10 +87,12 @@ export const getPublicationCanonicalHost = (
 ) => {
   if (!publicationRecord) return "";
 
-  const customDomain = normalizePublicationHostnameValue(
-    PUBLICATION_HOSTNAME_KIND.CUSTOM_DOMAIN,
-    publicationRecord.customDomain,
-  );
+  const customDomain = isCustomDomainActive(publicationRecord)
+    ? normalizePublicationHostnameValue(
+        PUBLICATION_HOSTNAME_KIND.CUSTOM_DOMAIN,
+        publicationRecord.customDomain,
+      )
+    : "";
 
   if (customDomain) {
     if (process.env.NODE_ENV === "development") {
@@ -117,6 +121,9 @@ const buildDesiredHostnames = (publicationRecord: PublicationLike) => {
     PUBLICATION_HOSTNAME_KIND.CUSTOM_DOMAIN,
     publicationRecord.customDomain,
   );
+  const activeCustomDomain = isCustomDomainActive(publicationRecord)
+    ? customDomain
+    : "";
 
   const desired = [];
 
@@ -124,16 +131,16 @@ const buildDesiredHostnames = (publicationRecord: PublicationLike) => {
     desired.push({
       kind: PUBLICATION_HOSTNAME_KIND.SUBDOMAIN,
       value: subdomain,
-      status: customDomain
+      status: activeCustomDomain
         ? PUBLICATION_HOSTNAME_STATUS.REDIRECT
         : PUBLICATION_HOSTNAME_STATUS.ACTIVE,
     });
   }
 
-  if (customDomain) {
+  if (activeCustomDomain) {
     desired.push({
       kind: PUBLICATION_HOSTNAME_KIND.CUSTOM_DOMAIN,
-      value: customDomain,
+      value: activeCustomDomain,
       status: PUBLICATION_HOSTNAME_STATUS.ACTIVE,
     });
   }
@@ -152,6 +159,9 @@ const buildHistoricalHostnames = (publicationRecord?: PublicationLike | null) =>
     PUBLICATION_HOSTNAME_KIND.CUSTOM_DOMAIN,
     publicationRecord.customDomain,
   );
+  const activeCustomDomain = isCustomDomainActive(publicationRecord)
+    ? customDomain
+    : "";
 
   return [
     subdomain
@@ -161,14 +171,33 @@ const buildHistoricalHostnames = (publicationRecord?: PublicationLike | null) =>
           status: PUBLICATION_HOSTNAME_STATUS.REDIRECT,
         }
       : null,
-    customDomain
+    activeCustomDomain
       ? {
           kind: PUBLICATION_HOSTNAME_KIND.CUSTOM_DOMAIN,
-          value: customDomain,
+          value: activeCustomDomain,
           status: PUBLICATION_HOSTNAME_STATUS.REDIRECT,
         }
       : null,
   ].filter(Boolean);
+};
+
+export const buildPublicationHostnamePlan = (
+  previousPublication: PublicationLike | null | undefined,
+  nextPublication: PublicationLike,
+) => {
+  const desiredEntries = buildDesiredHostnames(nextPublication);
+  const historicalEntries = buildHistoricalHostnames(previousPublication);
+  const entriesByKey = new Map<string, HostnameEntry>();
+
+  for (const entry of [...historicalEntries, ...desiredEntries]) {
+    if (!entry) continue;
+    entriesByKey.set(`${entry.kind}:${entry.value}`, {
+      ...entry,
+      publicationId: nextPublication.id,
+    });
+  }
+
+  return Array.from(entriesByKey.values());
 };
 
 export const isPublicationHostnameAvailable = async (
@@ -257,18 +286,11 @@ export const syncPublicationHostnames = async (
     nextPublication: PublicationLike;
   },
 ) => {
-  const desiredEntries = buildDesiredHostnames(nextPublication);
-  const historicalEntries = buildHistoricalHostnames(previousPublication);
-
-  const entriesByKey = new Map<string, HostnameEntry>();
-
-  for (const entry of [...historicalEntries, ...desiredEntries]) {
-    if (!entry) continue;
-    entriesByKey.set(`${entry.kind}:${entry.value}`, {
-      ...entry,
-      publicationId: nextPublication.id,
-    });
-  }
+  const entriesByKey = new Map(
+    buildPublicationHostnamePlan(previousPublication, nextPublication).map(
+      (entry) => [`${entry.kind}:${entry.value}`, entry],
+    ),
+  );
 
   const existingRows = await executor
     .select()

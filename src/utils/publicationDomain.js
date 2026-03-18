@@ -7,6 +7,10 @@ const normalizeValue = (value) => {
   return String(value).trim().toLowerCase();
 };
 
+export const hasActiveCustomDomain = (publication) =>
+  Boolean(normalizeValue(publication?.customDomain)) &&
+  normalizeValue(publication?.customDomainStatus) === "active";
+
 export const getLocalCustomDomainAlias = (customDomain) => {
   const normalized = normalizeValue(customDomain);
   if (!normalized) return "";
@@ -42,7 +46,9 @@ export const getSubdomainHost = (subdomain) => {
 };
 
 export const getPublicationHost = (publication) => {
-  const customDomain = normalizeValue(publication?.customDomain);
+  const customDomain = hasActiveCustomDomain(publication)
+    ? normalizeValue(publication?.customDomain)
+    : "";
   if (customDomain) {
     if (process.env.NODE_ENV === "development") {
       return getLocalCustomDomainAlias(customDomain) || customDomain;
@@ -74,6 +80,18 @@ export const getPublicationUrl = (publication) => {
   }
 
   return `https://${host}`;
+};
+
+export const getPublicationPageUrl = (publication, pathname = "/") => {
+  const baseUrl = getPublicationUrl(publication);
+  if (!baseUrl) return "";
+
+  try {
+    const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
+    return new URL(normalizedPath, `${baseUrl}/`).toString();
+  } catch {
+    return baseUrl;
+  }
 };
 
 export const getPublicationDomainLabel = (publication) =>

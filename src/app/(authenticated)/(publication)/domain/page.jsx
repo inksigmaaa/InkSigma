@@ -7,11 +7,28 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getApiBase } from "@/utils/apiBase";
 import {
   getSubdomainDomainLabel,
-  getPublicationDomainLabel,
+  getPublicationUrl,
+  hasActiveCustomDomain,
 } from "@/utils/publicationDomain";
 import { validateCustomDomain, normalizeCustomDomain } from "@/utils/domainValidation";
 import { usePublication } from "@/contexts/PublicationContext";
 import { toast } from "sonner";
+
+const DOMAIN_STATUS_LABELS = {
+  pending_verification: "Pending verification",
+  verified: "DNS pending",
+  ssl_pending: "SSL pending",
+  active: "Active",
+  failed: "Verification failed",
+};
+
+const DOMAIN_STATUS_STYLES = {
+  pending_verification: "bg-amber-50 text-amber-700 border border-amber-200",
+  verified: "bg-blue-50 text-blue-700 border border-blue-200",
+  ssl_pending: "bg-blue-50 text-blue-700 border border-blue-200",
+  active: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  failed: "bg-red-50 text-red-700 border border-red-200",
+};
 
 export default function DomainPage() {
   const { currentPublication, refreshCurrentPublication } = usePublication();
@@ -23,11 +40,33 @@ export default function DomainPage() {
   const [error, setError] = useState("");
   const [savedCustomDomain, setSavedCustomDomain] = useState("");
   const [editDomain, setEditDomain] = useState("");
+  const [customDomainStatus, setCustomDomainStatus] = useState(null);
+  const [customDomainVerificationToken, setCustomDomainVerificationToken] =
+    useState("");
+  const [customDomainVerificationError, setCustomDomainVerificationError] =
+    useState("");
+  const [customDomainVerifiedAt, setCustomDomainVerifiedAt] = useState(null);
+  const [customDomainLastCheckedAt, setCustomDomainLastCheckedAt] =
+    useState(null);
+  const [verifying, setVerifying] = useState(false);
 
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingDomain, setPendingDomain] = useState("");
 
   const [showRevertConfirmation, setShowRevertConfirmation] = useState(false);
+
+  const applyPublicationDomainState = useCallback((pubData) => {
+    const existingCustomDomain = pubData?.customDomain || "";
+    setPublicationId(pubData?.id || null);
+    setSubdomain(pubData?.subdomain || "Subdomain");
+    setSavedCustomDomain(existingCustomDomain);
+    setEditDomain(existingCustomDomain);
+    setCustomDomainStatus(pubData?.customDomainStatus || null);
+    setCustomDomainVerificationToken(pubData?.customDomainVerificationToken || "");
+    setCustomDomainVerificationError(pubData?.customDomainVerificationError || "");
+    setCustomDomainVerifiedAt(pubData?.customDomainVerifiedAt || null);
+    setCustomDomainLastCheckedAt(pubData?.customDomainLastCheckedAt || null);
+  }, []);
 
   const loadPublicationData = useCallback(async () => {
     try {
@@ -49,11 +88,7 @@ export default function DomainPage() {
 
       if (pubRes.ok) {
         const pubData = await pubRes.json();
-        setPublicationId(pubData.id);
-        setSubdomain(pubData.subdomain || "Subdomain");
-        const existingCustomDomain = pubData.customDomain || "";
-        setSavedCustomDomain(existingCustomDomain);
-        setEditDomain(existingCustomDomain);
+        applyPublicationDomainState(pubData);
       }
     } catch (err) {
       console.error("Error loading publication:", err);
@@ -61,13 +96,34 @@ export default function DomainPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPublication?.id]);
+  }, [applyPublicationDomainState, currentPublication?.id]);
 
   useEffect(() => {
     loadPublicationData();
   }, [loadPublicationData]);
 
   const currentDomain = getSubdomainDomainLabel(subdomain);
+  const previewUrl = getPublicationUrl({
+    subdomain,
+    customDomain: savedCustomDomain,
+    customDomainStatus,
+  });
+  const isCustomDomainLive = hasActiveCustomDomain({
+    customDomain: savedCustomDomain,
+    customDomainStatus,
+  });
+  const statusLabel =
+    DOMAIN_STATUS_LABELS[customDomainStatus] ||
+    (savedCustomDomain ? "Pending verification" : "Subdomain");
+  const statusStyle =
+    DOMAIN_STATUS_STYLES[customDomainStatus] ||
+    "bg-gray-100 text-gray-600 border border-gray-200";
+  const verificationRecordName = savedCustomDomain
+    ? `_inksigma.${savedCustomDomain}`
+    : "";
+  const verificationRecordValue = customDomainVerificationToken
+    ? `inksigma-verification=${customDomainVerificationToken}`
+    : "";
 
   const handleSaveChanges = () => {
     const normalizedDomain = normalizeCustomDomain(customDomain);
@@ -127,11 +183,8 @@ export default function DomainPage() {
       }
 
       const updated = await response.json();
-      const normalizedDomain =
-        getPublicationDomainLabel(updated) || pendingDomain;
       await refreshCurrentPublication();
-      setSavedCustomDomain(normalizedDomain);
-      setEditDomain(normalizedDomain);
+      applyPublicationDomainState(updated);
       setCustomDomain("");
       setShowConfirmation(false);
       setPendingDomain("");
@@ -170,9 +223,9 @@ export default function DomainPage() {
         throw new Error(data.error || "Failed to revert to subdomain");
       }
 
+      const updated = await response.json();
       await refreshCurrentPublication();
-      setSavedCustomDomain("");
-      setEditDomain("");
+      applyPublicationDomainState(updated);
       setCustomDomain("");
       setShowRevertConfirmation(false);
     } catch (err) {
@@ -184,6 +237,41 @@ export default function DomainPage() {
 
   const handleCancelRevert = () => {
     setShowRevertConfirmation(false);
+  };
+
+  const handleVerifyDomain = async () => {
+    if (!publicationId || !savedCustomDomain) return;
+
+    try {
+      setVerifying(true);
+      setError("");
+      const apiBase = getApiBase();
+      const response = await fetch(
+        `${apiBase}/api/publications/${publicationId}/custom-domain/verify`,
+        {
+          method: "POST",
+          credentials: "include",
+        },
+      );
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to verify domain");
+      }
+
+      const updated = await response.json();
+      await refreshCurrentPublication();
+      applyPublicationDomainState(updated);
+      toast.success(
+        updated.customDomainStatus === "active"
+          ? "Custom domain is now active"
+          : "Verification checked. DNS still needs attention.",
+      );
+    } catch (err) {
+      setError(err.message || "Failed to verify domain");
+    } finally {
+      setVerifying(false);
+    }
   };
 
   const copyToClipboard = async (text) => {
@@ -390,10 +478,10 @@ export default function DomainPage() {
                       {savedCustomDomain}
                     </span>
                     <span
-                      className="bg-[#F4F4F4] text-[#808080] rounded-[71px] flex items-center justify-center h-[26px] w-[108px] max-md:w-[70px] text-[12px] max-md:text-[8px] leading-[150%] whitespace-nowrap"
+                      className={`rounded-[71px] flex items-center justify-center h-[26px] px-3 text-[12px] max-md:text-[8px] leading-[150%] whitespace-nowrap ${statusStyle}`}
                       style={{ fontFamily: "Public Sans" }}
                     >
-                      Custom Domain
+                      {statusLabel}
                     </span>
                   </div>
                 </div>
