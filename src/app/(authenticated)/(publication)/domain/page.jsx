@@ -10,7 +10,11 @@ import {
   getPublicationUrl,
   hasActiveCustomDomain,
 } from "@/utils/publicationDomain";
-import { validateCustomDomain, normalizeCustomDomain } from "@/utils/domainValidation";
+import {
+  validateCustomDomain,
+  normalizeCustomDomain,
+  normalizeSubdomain,
+} from "@/utils/domainValidation";
 import { usePublication } from "@/contexts/PublicationContext";
 import { toast } from "sonner";
 
@@ -103,6 +107,8 @@ export default function DomainPage() {
   }, [loadPublicationData]);
 
   const currentDomain = getSubdomainDomainLabel(subdomain);
+  const normalizedCurrentDomain = normalizeCustomDomain(currentDomain);
+  const normalizedPublicationSubdomain = normalizeSubdomain(subdomain);
   const previewUrl = getPublicationUrl({
     subdomain,
     customDomain: savedCustomDomain,
@@ -142,8 +148,11 @@ export default function DomainPage() {
 
   const handleEditSave = () => {
     const normalizedDomain = normalizeCustomDomain(editDomain);
+    const isSwitchingBackToSubdomain =
+      normalizedDomain === normalizedCurrentDomain ||
+      normalizedDomain === normalizedPublicationSubdomain;
 
-    if (!normalizedDomain) {
+    if (!normalizedDomain || isSwitchingBackToSubdomain) {
       setShowRevertConfirmation(true);
       return;
     }
