@@ -11,12 +11,20 @@ export const getApiBase = () => {
         const envUrl = new URL(normalizedEnvBase);
         const { protocol, hostname } = window.location;
         const isLocalDevHost =
-          hostname.endsWith(".local") || hostname.endsWith(".localhost");
+          hostname === "localhost" ||
+          hostname === "127.0.0.1" ||
+          hostname === "::1" ||
+          hostname.endsWith(".local") ||
+          hostname.endsWith(".localhost");
         const usesApiSubdomain = envUrl.hostname.startsWith("api.");
 
         if (isLocalDevHost && usesApiSubdomain) {
           const backendPort = envUrl.port || "5000";
-          return `${protocol}//${hostname}:${backendPort}`;
+          const backendHost =
+            hostname === "::1"
+              ? "[::1]"
+              : hostname;
+          return `${protocol}//${backendHost}:${backendPort}`;
         }
       } catch {
         // Ignore malformed env URL and continue using fallback behavior.

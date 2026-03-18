@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { hasActiveCustomDomain } from "@/utils/publicationDomain";
+import { getApiBase } from "@/utils/apiBase";
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+const API_URL = getApiBase();
 
 export function usePublicationMeta(identifier = null) {
   const [publication, setPublication] = useState(null);
