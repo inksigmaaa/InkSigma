@@ -28,6 +28,8 @@ export default function BlogDetailPageClient({ slug }) {
   const [sections, setSections] = useState([]);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const tenantSubdomain = searchParams.get("subdomain");
+  const tenantCustomDomain = searchParams.get("customDomain");
   const { captureSnapshot } = useSnapshot();
   const contentRef = useRef(null);
   const tocStickyRef = useRef(null);
@@ -97,7 +99,17 @@ export default function BlogDetailPageClient({ slug }) {
     const fetchBlog = async () => {
       try {
         setLoading(true);
-        const tenantHeaders = getCurrentTenantHeaders();
+        const tenantHeaders = {
+          ...getCurrentTenantHeaders(),
+        };
+
+        if (tenantCustomDomain) {
+          tenantHeaders["X-Custom-Domain"] = tenantCustomDomain;
+          delete tenantHeaders["X-Subdomain"];
+        } else if (tenantSubdomain) {
+          tenantHeaders["X-Subdomain"] = tenantSubdomain;
+        }
+
         const response = await fetch(`${API_URL}/api/blogs/slug/${slug}`, {
           headers: tenantHeaders,
         });
@@ -201,7 +213,7 @@ export default function BlogDetailPageClient({ slug }) {
     };
 
     fetchBlog();
-  }, [slug]);
+  }, [slug, tenantSubdomain, tenantCustomDomain]);
 
   useEffect(() => {
     if (loading) return;

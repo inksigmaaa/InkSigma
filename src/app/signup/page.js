@@ -15,6 +15,7 @@ import { CheckCircle2, ArrowLeft } from "lucide-react";
 function SignupForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
+  const returnTo = searchParams.get("returnTo") || "";
 
   const getOrigin = () => {
     if (typeof window !== "undefined") {
@@ -46,14 +47,17 @@ function SignupForm() {
     setError("");
 
     try {
+      const callbackPath = returnTo
+        ? `/auth-callback?returnTo=${encodeURIComponent(returnTo)}`
+        : redirectTo !== "/"
+          ? `/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+          : "/auth-callback";
+
       const result = await signUp.email({
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        callbackURL:
-          redirectTo !== "/"
-            ? `${getOrigin()}/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
-            : `${getOrigin()}/auth-callback`,
+        callbackURL: `${getOrigin()}${callbackPath}`,
       });
 
       if (result.error) {
@@ -74,12 +78,15 @@ function SignupForm() {
   const handleGoogleSignup = async () => {
     try {
       const origin = getOrigin();
+      const callbackPath = returnTo
+        ? `/auth-callback?returnTo=${encodeURIComponent(returnTo)}`
+        : redirectTo !== "/"
+          ? `/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+          : "/auth-callback";
+
       await signIn.social({
         provider: "google",
-        callbackURL:
-          redirectTo !== "/"
-            ? `${origin}/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
-            : `${origin}/auth-callback`,
+        callbackURL: `${origin}${callbackPath}`,
         prompt: "select_account",
       });
     } catch (err) {
@@ -98,7 +105,7 @@ function SignupForm() {
             </div>
             <div className="space-y-2">
               <p className="text-gray-700">
-                We've sent a verification link to{" "}
+                We&apos;ve sent a verification link to{" "}
                 <strong>{formData.email}</strong>
               </p>
               <p className="text-sm text-gray-500">
@@ -108,7 +115,13 @@ function SignupForm() {
             </div>
             <div className="text-center pt-4">
               <Link
-                href="/login"
+                href={
+                  returnTo
+                    ? `/login?returnTo=${encodeURIComponent(returnTo)}`
+                    : redirectTo !== "/"
+                      ? `/login?redirect=${encodeURIComponent(redirectTo)}`
+                      : "/login"
+                }
                 className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
@@ -198,7 +211,13 @@ function SignupForm() {
             Already a user?
           </span>
           <Link
-            href="/login"
+            href={
+              returnTo
+                ? `/login?returnTo=${encodeURIComponent(returnTo)}`
+                : redirectTo !== "/"
+                  ? `/login?redirect=${encodeURIComponent(redirectTo)}`
+                  : "/login"
+            }
             className="w-auto md:w-[37px] h-auto md:h-[16px] opacity-100 rotate-0 font-medium text-[12px] md:text-[14px] leading-[100%] tracking-[0%] underline decoration-solid decoration-0 text-[#4B4B4B] hover:text-gray-600 transition-colors"
           >
             Login

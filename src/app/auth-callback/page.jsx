@@ -5,10 +5,60 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { getApiBase } from "@/utils/apiBase"
 import { buildLoginRedirectPath, waitForServerSession } from "@/utils/auth"
 
+const isAllowedExternalReturnTo = async (targetUrl, signal) => {
+  if (!targetUrl) return false
+
+  try {
+    const parsedUrl = new URL(targetUrl)
+    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+      return false
+    }
+
+    const hostname = parsedUrl.hostname.toLowerCase()
+    const rootDomain = (
+      process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"
+    ).toLowerCase()
+    const mainDomain = (
+      process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.com"
+    ).toLowerCase()
+
+    const isKnownPlatformHost =
+      hostname === rootDomain ||
+      hostname.endsWith(`.${rootDomain}`) ||
+      hostname === mainDomain ||
+      hostname.endsWith(`.${mainDomain}`) ||
+      hostname === "localhost" ||
+      hostname.endsWith(".localhost") ||
+      hostname.endsWith(".local")
+
+    if (isKnownPlatformHost) {
+      return true
+    }
+
+    const apiBase = getApiBase()
+    const response = await fetch(
+      `${apiBase}/api/publications/resolve-host?host=${encodeURIComponent(parsedUrl.host)}`,
+      {
+        signal,
+      },
+    )
+
+    if (!response.ok) {
+      return false
+    }
+
+    const data = await response.json().catch(() => null)
+    return Boolean(data?.publication)
+  } catch {
+    return false
+  }
+}
+
 function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect")
+  const returnTo = searchParams.get("returnTo")
 
   useEffect(() => {
     const controller = new AbortController()
@@ -54,7 +104,27 @@ function AuthCallbackContent() {
         })
 
         if (!activeSession?.user?.id) {
+          if (returnTo) {
+            router.replace(`/login?returnTo=${encodeURIComponent(returnTo)}`)
+            return
+          }
+
           router.replace(buildLoginRedirectPath(redirectTo || "/"))
+          return
+        }
+
+        if (returnTo) {
+          const canReturnExternally = await isAllowedExternalReturnTo(
+            returnTo,
+            controller.signal,
+          )
+
+          if (canReturnExternally) {
+            window.location.replace(returnTo)
+            return
+          }
+
+          router.replace("/")
           return
         }
 
@@ -118,7 +188,7 @@ function AuthCallbackContent() {
     return () => {
       controller.abort()
     }
-  }, [router, redirectTo])
+  }, [router, redirectTo, returnTo])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
