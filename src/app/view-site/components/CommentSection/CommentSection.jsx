@@ -485,19 +485,23 @@ export default function CommentSection({ blogId }) {
           </div>
         )}
 
-        <div className="flex gap-3 md:gap-4 mb-6">
-          <Avatar className="w-8 h-8 bg-purple-100 flex-shrink-0 max-md:w-6 max-md:h-6">
-            {currentUser?.image && (
-              <AvatarImage
-                src={getAuthorAvatar(currentUser)}
-                alt={currentUser.name}
-                className="w-full h-full object-cover"
-              />
-            )}
-            <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold">
-              {currentUser?.name?.charAt(0).toUpperCase() || "?"}
-            </AvatarFallback>
-          </Avatar>
+        <div
+          className={`flex mb-6 ${currentUser ? "gap-3 md:gap-4" : "gap-0"}`}
+        >
+          {currentUser && (
+            <Avatar className="w-8 h-8 bg-purple-100 flex-shrink-0 max-md:w-6 max-md:h-6">
+              {currentUser.image && (
+                <AvatarImage
+                  src={getAuthorAvatar(currentUser)}
+                  alt={currentUser.name}
+                  className="w-full h-full object-cover"
+                />
+              )}
+              <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold">
+                {currentUser.name?.charAt(0).toUpperCase() || "?"}
+              </AvatarFallback>
+            </Avatar>
+          )}
           <div className="flex-1 min-w-0">
             <textarea
               placeholder={
