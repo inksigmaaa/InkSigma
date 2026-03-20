@@ -5,45 +5,37 @@ import {
   buildPublicationMetadata,
   fetchBlogForMetadata,
 } from "@/utils/publicationSeo";
+import { resolvePublicSiteContext } from "@/utils/publicSiteContext";
 
 const getCanonicalBlogPath = (invokePath, slug) => {
   const basePath = invokePath?.startsWith("/view-site") ? "/view-site" : "";
   return `${basePath}/blog/${encodeURIComponent(slug)}`;
 };
 
-const API_URL = (
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.BACKEND_URL ||
-  "http://localhost:5000"
-).replace(/\/$/, "");
-
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, searchParams }) {
   const resolvedParams = await Promise.resolve(params);
   const slug = resolvedParams?.slug;
+  const resolvedSearchParams = await Promise.resolve(searchParams);
   const headerList = await headers();
   const host =
     headerList.get("x-forwarded-host") ||
     headerList.get("host") ||
     "";
 
-  const blog = await fetchBlogForMetadata({ host, slug });
+  const blog = await fetchBlogForMetadata({
+    host,
+    slug,
+    searchParams: resolvedSearchParams,
+  });
 
   if (!blog?.publicationId) {
     return {};
   }
 
-  let publication = null;
-  try {
-    const publicationResponse = await fetch(
-      `${API_URL}/api/publications/${blog.publicationId}`,
-      { cache: "no-store" },
-    );
-
-    if (publicationResponse.ok) {
-      publication = await publicationResponse.json();
-    }
-  } catch {}
+  const { publication } = await resolvePublicSiteContext({
+    host,
+    searchParams: resolvedSearchParams,
+  });
 
   return buildPublicationMetadata({
     publication,
@@ -55,16 +47,25 @@ export async function generateMetadata({ params }) {
   });
 }
 
-export default async function BlogDetailPage({ params }) {
+export default async function BlogDetailPage({ params, searchParams }) {
   const resolvedParams = await Promise.resolve(params);
   const requestedSlug = resolvedParams?.slug;
+  const resolvedSearchParams = await Promise.resolve(searchParams);
   const headerList = await headers();
   const host =
     headerList.get("x-forwarded-host") ||
     headerList.get("host") ||
     "";
   const invokePath = headerList.get("x-invoke-path") || "";
-  const blog = await fetchBlogForMetadata({ host, slug: requestedSlug });
+  const blog = await fetchBlogForMetadata({
+    host,
+    slug: requestedSlug,
+    searchParams: resolvedSearchParams,
+  });
+  const { hostContext, publication } = await resolvePublicSiteContext({
+    host,
+    searchParams: resolvedSearchParams,
+  });
 
   if (
     blog?.shouldRedirect &&
@@ -74,5 +75,11 @@ export default async function BlogDetailPage({ params }) {
     permanentRedirect(getCanonicalBlogPath(invokePath, blog.canonicalSlug));
   }
 
-  return <BlogDetailPageClient slug={requestedSlug} />;
+  return (
+    <BlogDetailPageClient
+      slug={requestedSlug}
+      initialHostContext={hostContext}
+      initialPublication={publication}
+    />
+  );
 }

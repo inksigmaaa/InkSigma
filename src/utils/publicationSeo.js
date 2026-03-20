@@ -1,5 +1,8 @@
-import { parseHost } from "@/utils/hostParser";
 import { getPublicationPageUrl } from "@/utils/publicationDomain";
+import {
+  getTenantHeadersForResolvedContext,
+  resolvePublicSiteContext,
+} from "@/utils/publicSiteContext";
 
 const API_URL = (
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -7,9 +10,6 @@ const API_URL = (
   process.env.BACKEND_URL ||
   "http://localhost:5000"
 ).replace(/\/$/, "");
-
-const normalizeSearchParams = async (searchParams) =>
-  searchParams ? await Promise.resolve(searchParams) : {};
 
 export const getAbsoluteAssetUrl = (assetPath) => {
   if (!assetPath) return "";
@@ -46,70 +46,8 @@ export const fetchPublicationForMetadata = async ({
   host,
   searchParams,
 }) => {
-  const resolvedSearchParams = await normalizeSearchParams(searchParams);
-  const subdomain = resolvedSearchParams?.subdomain || null;
-  const customDomain = resolvedSearchParams?.customDomain || null;
-  const publicationId = resolvedSearchParams?.publicationId || null;
-
-  try {
-    if (customDomain) {
-      const response = await fetch(
-        `${API_URL}/api/publications/by-custom-domain/${encodeURIComponent(customDomain)}`,
-        { cache: "no-store" },
-      );
-      if (response.ok) return response.json();
-    }
-
-    if (subdomain) {
-      const response = await fetch(
-        `${API_URL}/api/publications/by-subdomain/${encodeURIComponent(subdomain)}`,
-        { cache: "no-store" },
-      );
-      if (response.ok) return response.json();
-    }
-
-    if (publicationId) {
-      const response = await fetch(`${API_URL}/api/publications/${publicationId}`, {
-        cache: "no-store",
-      });
-      if (response.ok) return response.json();
-    }
-
-    if (host) {
-      const routingResponse = await fetch(
-        `${API_URL}/api/publications/resolve-host?host=${encodeURIComponent(host)}`,
-        { cache: "no-store" },
-      );
-
-      if (routingResponse.ok) {
-        const routing = await routingResponse.json();
-        if (routing?.publication) {
-          return routing.publication;
-        }
-      }
-
-      const parsed = parseHost(host);
-      if (parsed.isCustomDomain && parsed.hostname) {
-        const response = await fetch(
-          `${API_URL}/api/publications/by-custom-domain/${encodeURIComponent(parsed.hostname)}`,
-          { cache: "no-store" },
-        );
-        if (response.ok) return response.json();
-      }
-
-      if (parsed.subdomain && !parsed.isDashboard) {
-        const response = await fetch(
-          `${API_URL}/api/publications/by-subdomain/${encodeURIComponent(parsed.subdomain)}`,
-          { cache: "no-store" },
-        );
-        if (response.ok) return response.json();
-      }
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
+  const context = await resolvePublicSiteContext({ host, searchParams });
+  return context.publication || null;
 };
 
 export const fetchPublishedBlogsForSitemap = async ({ publicationId }) => {
@@ -134,13 +72,17 @@ export const fetchPublishedBlogsForSitemap = async ({ publicationId }) => {
   }
 };
 
-export const fetchBlogForMetadata = async ({ host, slug }) => {
+export const fetchBlogForMetadata = async ({ host, slug, searchParams }) => {
   if (!slug) return null;
 
   try {
+    const { hostContext } = await resolvePublicSiteContext({
+      host,
+      searchParams,
+    });
     const response = await fetch(`${API_URL}/api/blogs/slug/${encodeURIComponent(slug)}`, {
       cache: "no-store",
-      headers: getTenantHeadersForHost(host),
+      headers: getTenantHeadersForResolvedContext({ hostContext, host }),
     });
 
     if (!response.ok) {

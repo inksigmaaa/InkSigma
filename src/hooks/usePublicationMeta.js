@@ -1,22 +1,25 @@
 import { useEffect, useState } from 'react';
 import { hasActiveCustomDomain } from "@/utils/publicationDomain";
 import { getApiBase } from "@/utils/apiBase";
+import { fetchJsonWithRetry } from "@/utils/fetchWithRetry";
 
 const API_URL = getApiBase();
 
 export function usePublicationMeta(identifier = null) {
   const [publication, setPublication] = useState(null);
   const [loading, setLoading] = useState(true);
+  const subdomain =
+    typeof identifier === 'string' ? identifier : identifier?.subdomain;
+  const customDomain =
+    typeof identifier === 'object'
+      ? identifier?.customDomain ||
+        (hasActiveCustomDomain(identifier) ? identifier?.customDomain : null)
+      : null;
 
   useEffect(() => {
-    const fetchPublication = async () => {
-      const subdomain =
-        typeof identifier === 'string' ? identifier : identifier?.subdomain;
-      const customDomain =
-        typeof identifier === 'object' && hasActiveCustomDomain(identifier)
-          ? identifier?.customDomain
-          : null;
+    const controller = new AbortController();
 
+    const fetchPublication = async () => {
       console.log('[usePublicationMeta] Fetching publication for:', {
         subdomain,
         customDomain,
@@ -37,30 +40,40 @@ export function usePublicationMeta(identifier = null) {
           : `${API_URL}/api/publications/by-subdomain/${encodeURIComponent(subdomain)}`;
 
         console.log('[usePublicationMeta] Making API call to:', endpoint);
-        const response = await fetch(endpoint, {
-          credentials: 'include'
-        });
+        const data = await fetchJsonWithRetry(
+          endpoint,
+          {
+            credentials: 'include',
+            signal: controller.signal,
+          },
+          {
+            attempts: 4,
+            delayMs: 300,
+          },
+        );
 
-        console.log('[usePublicationMeta] API response status:', response.status);
-        if (response.ok) {
-          const data = await response.json();
-          console.log('[usePublicationMeta] Publication data received:', data);
-          setPublication(data);
-        } else {
-          setPublication(null);
-          const errorText = await response.text();
-          console.error('[usePublicationMeta] Failed to fetch publication:', response.status, errorText);
-        }
+        console.log('[usePublicationMeta] Publication data received:', data);
+        setPublication(data);
       } catch (error) {
+        if (error?.name === 'AbortError') {
+          return;
+        }
+
         setPublication(null);
         console.error('[usePublicationMeta] Error fetching publication:', error);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchPublication();
-  }, [identifier]);
+
+    return () => {
+      controller.abort();
+    };
+  }, [subdomain, customDomain]);
 
   return { publication, loading };
 }

@@ -1,9 +1,7 @@
 import { headers } from "next/headers";
 import ViewSitePageClient from "./ViewSitePageClient";
-import {
-  buildPublicationMetadata,
-  fetchPublicationForMetadata,
-} from "@/utils/publicationSeo";
+import { buildPublicationMetadata } from "@/utils/publicationSeo";
+import { resolvePublicSiteContext } from "@/utils/publicSiteContext";
 
 export async function generateMetadata({ searchParams }) {
   const resolvedSearchParams = await Promise.resolve(searchParams);
@@ -13,7 +11,7 @@ export async function generateMetadata({ searchParams }) {
     headerList.get("host") ||
     "";
 
-  const publication = await fetchPublicationForMetadata({
+  const { publication } = await resolvePublicSiteContext({
     host,
     searchParams: resolvedSearchParams,
   });
@@ -28,6 +26,22 @@ export async function generateMetadata({ searchParams }) {
   });
 }
 
-export default function ViewSitePage() {
-  return <ViewSitePageClient />;
+export default async function ViewSitePage({ searchParams }) {
+  const resolvedSearchParams = await Promise.resolve(searchParams);
+  const headerList = await headers();
+  const host =
+    headerList.get("x-forwarded-host") ||
+    headerList.get("host") ||
+    "";
+  const { publication, publicationId } = await resolvePublicSiteContext({
+    host,
+    searchParams: resolvedSearchParams,
+  });
+
+  return (
+    <ViewSitePageClient
+      initialPublication={publication}
+      initialPublicationId={publicationId}
+    />
+  );
 }

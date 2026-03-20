@@ -13,23 +13,30 @@ import ScrollToTop from "../../components/ScrollToTop/ScrollToTop";
 import MobileBottomNav from "../../components/MobileBottomNav/MobileBottomNav";
 import CommentSection from "../../components/CommentSection/CommentSection";
 import ClockIcon from "../../components/icons/ClockIcon";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { useSnapshot } from "@/hooks/useSnapshot";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
-import { getCurrentTenantHeaders } from "@/utils/apiHeaders";
 import { getApiBase } from "@/utils/apiBase";
+import { fetchJsonWithRetry } from "@/utils/fetchWithRetry";
 
 const API_URL = getApiBase();
 
-export default function BlogDetailPageClient({ slug }) {
+export default function BlogDetailPageClient({
+  slug,
+  initialHostContext,
+  initialPublication = null,
+}) {
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sections, setSections] = useState([]);
+  const [retryNonce, setRetryNonce] = useState(0);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tenantSubdomain = searchParams.get("subdomain");
-  const tenantCustomDomain = searchParams.get("customDomain");
+  const tenantSubdomain = initialHostContext?.subdomain || null;
+  const tenantCustomDomain = initialHostContext?.customDomain || null;
   const { captureSnapshot } = useSnapshot();
   const contentRef = useRef(null);
   const tocStickyRef = useRef(null);
@@ -96,12 +103,13 @@ export default function BlogDetailPageClient({ slug }) {
   };
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchBlog = async () => {
       try {
         setLoading(true);
-        const tenantHeaders = {
-          ...getCurrentTenantHeaders(),
-        };
+        setError(null);
+        const tenantHeaders = {};
 
         if (tenantCustomDomain) {
           tenantHeaders["X-Custom-Domain"] = tenantCustomDomain;
@@ -110,15 +118,17 @@ export default function BlogDetailPageClient({ slug }) {
           tenantHeaders["X-Subdomain"] = tenantSubdomain;
         }
 
-        const response = await fetch(`${API_URL}/api/blogs/slug/${slug}`, {
-          headers: tenantHeaders,
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch blog");
-        }
-
-        const foundBlog = await response.json();
+        const foundBlog = await fetchJsonWithRetry(
+          `${API_URL}/api/blogs/slug/${slug}`,
+          {
+            headers: tenantHeaders,
+            signal: controller.signal,
+          },
+          {
+            attempts: 4,
+            delayMs: 350,
+          },
+        );
 
         if (!foundBlog || foundBlog.error) {
           setError("Blog not found");
@@ -159,16 +169,18 @@ export default function BlogDetailPageClient({ slug }) {
         }
 
         if (foundBlog.publicationId) {
-          const pubResponse = await fetch(
-            `${API_URL}/api/publications/${foundBlog.publicationId}`,
-            {
-              credentials: "include",
-              headers: tenantHeaders,
-            },
-          );
-
-          if (pubResponse.ok) {
-            foundBlog.publication = await pubResponse.json();
+          try {
+            const publicationData = await fetchJsonWithRetry(
+              `${API_URL}/api/publications/${foundBlog.publicationId}`,
+              {
+                credentials: "include",
+                headers: tenantHeaders,
+                signal: controller.signal,
+              },
+            );
+            foundBlog.publication = publicationData;
+          } catch {
+            foundBlog.publication = initialPublication;
           }
         }
 
@@ -205,15 +217,31 @@ export default function BlogDetailPageClient({ slug }) {
           }
         }
       } catch (err) {
+        if (err?.name === "AbortError") {
+          return;
+        }
+
         console.error("Error fetching blog:", err);
-        setError(err.message);
+        setError("This blog is still syncing after the domain change. Please try again.");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchBlog();
-  }, [slug, tenantSubdomain, tenantCustomDomain]);
+
+    return () => {
+      controller.abort();
+    };
+  }, [
+    slug,
+    tenantSubdomain,
+    tenantCustomDomain,
+    retryNonce,
+    initialPublication,
+  ]);
 
   useEffect(() => {
     if (loading) return;
@@ -365,14 +393,23 @@ export default function BlogDetailPageClient({ slug }) {
     return (
       <div className="min-h-screen bg-white flex flex-col">
         <ViewSiteHeader userName="Publication" userAvatar={null} />
-        <div className="flex-grow max-w-[800px] mx-auto px-6 py-12">
-          <h1 className="text-4xl font-bold text-black mb-4">Blog not found</h1>
-          <Link
-            href="/view-site"
-            className="text-purple-600 hover:text-purple-700"
-          >
-            Back to home
-          </Link>
+        <div className="flex flex-grow items-center justify-center px-6 py-12">
+          <div className="w-full max-w-2xl">
+            <Alert variant="destructive">
+              <AlertTitle>Blog unavailable right now</AlertTitle>
+              <AlertDescription className="space-y-4">
+                <p>{error || "We could not load this blog."}</p>
+                <div className="flex gap-3">
+                  <Button type="button" onClick={() => setRetryNonce((prev) => prev + 1)}>
+                    Try again
+                  </Button>
+                  <Button type="button" variant="outline" asChild>
+                    <Link href="/view-site">Back to home</Link>
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
         </div>
         <Footer />
       </div>
