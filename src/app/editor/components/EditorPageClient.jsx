@@ -33,6 +33,7 @@ import {
   LEGACY_DRAFT_TITLE,
   isArticlePublishable,
 } from "@/utils/articlePublishability";
+import { getPublicationPageUrl } from "@/utils/publicationDomain";
 
 const API_URL = getApiBase();
 
@@ -204,16 +205,16 @@ export default function EditorPageClient() {
 
   // Handle View in Site - open blog in new tab ONLY
   const handleViewInSite = () => {
-    // Get the publication prefix (e.g., "/tennyson")
-    const pubPrefix = currentPublication?.subdomain
-      ? `/${currentPublication.subdomain}`
-      : "";
-
-    // Construct the blog URL for new tab
-    const baseUrl = window.location.origin;
-    const blogUrl = publishedBlogSlug
-      ? `${baseUrl}/view-site/blog/${publishedBlogSlug}`
-      : `${baseUrl}`;
+    const blogUrl = currentPublication
+      ? getPublicationPageUrl(
+          currentPublication,
+          publishedBlogSlug ? `/blog/${publishedBlogSlug}` : "/",
+        )
+      : publishedBlogSlug
+        ? `/view-site/blog/${publishedBlogSlug}`
+        : publicationId
+          ? `/view-site?publicationId=${publicationId}`
+          : "/view-site";
 
     // Open blog in new tab
     window.open(blogUrl, "_blank");
@@ -473,7 +474,7 @@ export default function EditorPageClient() {
 
     // For auto-saves, skip if a manual save is already in flight
     if (isAutoSave && (isSaving || saveInFlightRef.current)) {
-      return false;
+      return { skipped: true };
     }
 
     // Always validate required fields for submission statuses.
@@ -638,10 +639,11 @@ export default function EditorPageClient() {
       return responseData;
     } catch (error) {
       console.error("Error saving blog:", error);
-      if (!isAutoSave) {
-        setSaveStatus("idle");
-        toast.error(error.message || "Failed to save blog");
+      if (isAutoSave) {
+        throw error;
       }
+      setSaveStatus("idle");
+      toast.error(error.message || "Failed to save blog");
       return false;
     } finally {
       saveInFlightRef.current = false;
