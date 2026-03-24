@@ -9,7 +9,7 @@ import AllArticles from './components/AllArticles/AllArticles';
 import Footer from './components/Footer/Footer';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 import { getApiBase } from '@/utils/apiBase';
-import { fetchJsonWithRetry } from '@/utils/fetchWithRetry';
+import { fetchJsonWithRetry } from '@/lib/api/client';
 
 const API_URL = getApiBase();
 

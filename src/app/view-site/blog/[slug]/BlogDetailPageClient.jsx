@@ -17,9 +17,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useSnapshot } from "@/hooks/useSnapshot";
+import { fetchJsonWithRetry } from "@/lib/api/client";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { getApiBase } from "@/utils/apiBase";
-import { fetchJsonWithRetry } from "@/utils/fetchWithRetry";
 
 const API_URL = getApiBase();
 

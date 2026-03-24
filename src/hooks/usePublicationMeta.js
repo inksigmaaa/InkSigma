@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { hasActiveCustomDomain } from "@/utils/publicationDomain";
 import { getApiBase } from "@/utils/apiBase";
-import { fetchJsonWithRetry } from "@/utils/fetchWithRetry";
+import { fetchJsonWithRetry } from "@/lib/api/client";
 
 const API_URL = getApiBase();
 
