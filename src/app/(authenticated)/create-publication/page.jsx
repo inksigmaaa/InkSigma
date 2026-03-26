@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import AuthGuard from "@/components/auth/AuthGuard";
@@ -600,11 +601,11 @@ const SUBDOMAIN_SUFFIX = `.${getRootDomain() || "inksigma.local"}`;
       <div className="fixed bottom-0 left-0 w-full bg-white py-3 md:py-4 text-center border-t border-[#F3F4F6] px-4">
         <p className="text-[10px] md:text-[12px] text-[#CCCCCC]">
           Copyright © 2023 designed & developed by{" "}
-          <a href="#" className="text-[#CCCCCC] underline">
+          <Link href="/" className="text-[#CCCCCC] underline">
             Inksigma
-          </a>
+          </Link>
           , a{" "}
-          <a href="#" className="text-[#CCCCCC] underline">
+          <a href="https://zemuria.com" target="_blank" rel="noopener noreferrer" className="text-[#CCCCCC] underline">
             Zemuria Inc.
           </a>{" "}
           brand
