@@ -7,6 +7,56 @@ const API_URL = (
   "http://localhost:5000"
 ).replace(/\/$/, "");
 const PUBLIC_SITE_REVALIDATE_SECONDS = 30;
+const PUBLIC_SITE_FETCH_TIMEOUT_MS = Number(
+  process.env.PUBLIC_SITE_FETCH_TIMEOUT_MS || 3500,
+);
+const PUBLIC_SITE_FETCH_MAX_CONCURRENCY = Number(
+  process.env.PUBLIC_SITE_FETCH_MAX_CONCURRENCY || 10,
+);
+
+const createConcurrencyLimiter = (maxConcurrent) => {
+  let active = 0;
+  const queue = [];
+
+  const drain = () => {
+    if (active >= maxConcurrent) return;
+    const next = queue.shift();
+    if (!next) return;
+    active += 1;
+    next();
+  };
+
+  return async (task) => {
+    if (active < maxConcurrent) {
+      active += 1;
+      try {
+        return await task();
+      } finally {
+        active -= 1;
+        drain();
+      }
+    }
+
+    return new Promise((resolve, reject) => {
+      queue.push(() => {
+        task()
+          .then(resolve)
+          .catch(reject)
+          .finally(() => {
+            active -= 1;
+            drain();
+          });
+      });
+    });
+  };
+};
+
+const runPublicSiteFetch = createConcurrencyLimiter(
+  Number.isFinite(PUBLIC_SITE_FETCH_MAX_CONCURRENCY) &&
+    PUBLIC_SITE_FETCH_MAX_CONCURRENCY > 0
+    ? PUBLIC_SITE_FETCH_MAX_CONCURRENCY
+    : 10,
+);
 
 export const normalizeSearchParamsRecord = (searchParams) => {
   if (!searchParams) return {};
@@ -46,10 +96,27 @@ const getParamValue = (params, key) => {
 
 const fetchJson = async (url, options = {}) => {
   try {
-    const response = await fetch(url, {
-      next: { revalidate: PUBLIC_SITE_REVALIDATE_SECONDS },
-      ...options,
-    });
+    const timeoutMs =
+      Number.isFinite(PUBLIC_SITE_FETCH_TIMEOUT_MS) &&
+      PUBLIC_SITE_FETCH_TIMEOUT_MS > 0
+        ? PUBLIC_SITE_FETCH_TIMEOUT_MS
+        : 3500;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    let response;
+    try {
+      response = await runPublicSiteFetch(() =>
+        fetch(url, {
+          next: { revalidate: PUBLIC_SITE_REVALIDATE_SECONDS },
+          signal: controller.signal,
+          ...options,
+        }),
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!response.ok) {
       return null;

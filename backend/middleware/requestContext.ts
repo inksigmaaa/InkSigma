@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { runWithRequestContext } from "../utils/logger.js";
 import logger from "../utils/logger.js";
+import sliService from "../services/sliService.js";
 
 const getRequestId = (req) => {
   const incomingRequestId = req.headers["x-request-id"];
@@ -42,10 +43,12 @@ export const requestContextMiddleware = (req, res, next) => {
       );
 
       res.on("finish", () => {
+        const durationMs = Date.now() - start;
+        sliService.recordRequest(durationMs, res.statusCode);
         logger.info(
           {
             statusCode: res.statusCode,
-            durationMs: Date.now() - start,
+            durationMs,
           },
           "Request completed",
         );

@@ -317,19 +317,47 @@ export const invalidatePublicationCache = async ({
   subdomain,
   customDomain,
 }) => {
-  const tasks = [];
+  return invalidatePublicationCacheWithDelete({ subdomain, customDomain });
+};
+
+export const getPublicationCacheInvalidationKeys = ({
+  subdomain,
+  customDomain,
+}: {
+  subdomain?: string | null;
+  customDomain?: string | null;
+}) => {
+  const keySet = new Set<string>();
+
   if (subdomain) {
-    tasks.push(deleteCachedPublication(cacheKeyForSubdomain(subdomain)));
+    keySet.add(cacheKeyForSubdomain(subdomain));
   }
+
   if (customDomain) {
-    tasks.push(deleteCachedPublication(cacheKeyForCustomDomain(customDomain)));
+    keySet.add(cacheKeyForCustomDomain(customDomain));
     const localAlias = toLocalAlias(customDomain);
     if (localAlias) {
-      tasks.push(deleteCachedPublication(cacheKeyForCustomDomain(localAlias)));
+      keySet.add(cacheKeyForCustomDomain(localAlias));
     }
   }
-  if (tasks.length === 0) return false;
-  await Promise.all(tasks);
+
+  return Array.from(keySet);
+};
+
+export const invalidatePublicationCacheWithDelete = async (
+  {
+    subdomain,
+    customDomain,
+  }: {
+    subdomain?: string | null;
+    customDomain?: string | null;
+  },
+  deleteFn: (key: string) => Promise<boolean> = deleteCachedPublication,
+) => {
+  const keys = getPublicationCacheInvalidationKeys({ subdomain, customDomain });
+  if (keys.length === 0) return false;
+
+  await Promise.all(keys.map((key) => deleteFn(key)));
   return true;
 };
 

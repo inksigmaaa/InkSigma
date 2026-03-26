@@ -20,13 +20,13 @@ router.get(
     requirePublicationRole(["admin", "editor", "author"], { publicationIdParam: "publicationId" }),
     async (req, res) => {
     try {
-        const { publicationId } = req.params;
+        const publicationId = parseInt(req.params.publicationId, 10);
 
         // Get total articles count (all statuses)
         const [totalResult] = await db
             .select({ count: count() })
             .from(blog)
-            .where(eq(blog.publicationId, parseInt(publicationId)));
+            .where(eq(blog.publicationId, publicationId));
 
         // Get published articles count
         const [publishedResult] = await db
@@ -34,72 +34,51 @@ router.get(
             .from(blog)
             .where(
                 and(
-                    eq(blog.publicationId, parseInt(publicationId)),
+                    eq(blog.publicationId, publicationId),
                     eq(blog.status, BLOG_STATUS.PUBLISHED)
                 )
             );
 
-        // Get only PUBLISHED blog IDs for this publication (for stats calculation)
-        const publicationBlogs = await db
-            .select({ id: blog.id })
-            .from(blog)
+        // Aggregate engagement metrics in set-based queries for published blogs
+        const [viewsResult] = await db
+            .select({ count: count() })
+            .from(blogView)
+            .innerJoin(blog, eq(blogView.blogId, blog.id))
             .where(
                 and(
-                    eq(blog.publicationId, parseInt(publicationId)),
+                    eq(blog.publicationId, publicationId),
                     eq(blog.status, BLOG_STATUS.PUBLISHED)
                 )
             );
-        
-        const blogIds = publicationBlogs.map(b => b.id);
-        
-        let totalViews = 0;
-        let totalComments = 0;
-        let totalShares = 0;
-        
-        if (blogIds.length > 0) {
-            // Get total views from blog_view table for published blogs only
-            const viewCounts = await Promise.all(
-                blogIds.map(async (blogId) => {
-                    const [result] = await db
-                        .select({ count: count() })
-                        .from(blogView)
-                        .where(eq(blogView.blogId, blogId));
-                    return result.count || 0;
-                })
-            );
-            totalViews = viewCounts.reduce((sum, count) => sum + count, 0);
 
-            // Get total comments from comment table for published blogs only
-            const commentCounts = await Promise.all(
-                blogIds.map(async (blogId) => {
-                    const [result] = await db
-                        .select({ count: count() })
-                        .from(comment)
-                        .where(eq(comment.blogId, blogId));
-                    return result.count || 0;
-                })
+        const [commentsResult] = await db
+            .select({ count: count() })
+            .from(comment)
+            .innerJoin(blog, eq(comment.blogId, blog.id))
+            .where(
+                and(
+                    eq(blog.publicationId, publicationId),
+                    eq(blog.status, BLOG_STATUS.PUBLISHED)
+                )
             );
-            totalComments = commentCounts.reduce((sum, count) => sum + count, 0);
 
-            // Get total shares from blog_share table for published blogs only
-            const shareCounts = await Promise.all(
-                blogIds.map(async (blogId) => {
-                    const [result] = await db
-                        .select({ count: count() })
-                        .from(blogShare)
-                        .where(eq(blogShare.blogId, blogId));
-                    return result.count || 0;
-                })
+        const [sharesResult] = await db
+            .select({ count: count() })
+            .from(blogShare)
+            .innerJoin(blog, eq(blogShare.blogId, blog.id))
+            .where(
+                and(
+                    eq(blog.publicationId, publicationId),
+                    eq(blog.status, BLOG_STATUS.PUBLISHED)
+                )
             );
-            totalShares = shareCounts.reduce((sum, count) => sum + count, 0);
-        }
 
         res.json({
             totalArticles: totalResult.count || 0,
             publishedArticles: publishedResult.count || 0,
-            totalViews: totalViews,
-            totalLikes: totalComments,
-            totalShares: totalShares
+            totalViews: viewsResult.count || 0,
+            totalLikes: commentsResult.count || 0,
+            totalShares: sharesResult.count || 0
         });
     } catch (error) {
         logger.error(error, "Error fetching publication stats:");

@@ -21,6 +21,7 @@ import { requestContextMiddleware } from "./middleware/requestContext.js";
 import { emailService } from "./services/emailService.js";
 import schedulerService from "./services/schedulerService.js";
 import invitationService from "./services/invitationService.js";
+import sliService from "./services/sliService.js";
 import logger from "./utils/logger.js";
 import {
   errorMiddleware,
@@ -70,6 +71,14 @@ app.use("/api", resendVerificationRoutes);
 // Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.get("/health/slis", (req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    slis: sliService.getSnapshot(),
+  });
 });
 
 // Global error handler - must be after all routes

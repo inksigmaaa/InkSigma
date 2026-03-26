@@ -1,5 +1,11 @@
 import crypto from "node:crypto";
 import dns from "node:dns/promises";
+import {
+  createConcurrencyLimiter,
+  getEnvNumber,
+  withTimeout,
+} from "../utils/externalOps.js";
+import sliService from "./sliService.js";
 
 export const CUSTOM_DOMAIN_STATUS = {
   PENDING_VERIFICATION: "pending_verification",
@@ -78,9 +84,31 @@ const parseConfiguredTargets = (...values: Array<string | undefined>) =>
     )
     .filter(Boolean);
 
+const DNS_LOOKUP_TIMEOUT_MS = getEnvNumber(
+  process.env.DNS_LOOKUP_TIMEOUT_MS,
+  2500,
+  100,
+);
+const DNS_LOOKUP_MAX_CONCURRENCY = getEnvNumber(
+  process.env.DNS_LOOKUP_MAX_CONCURRENCY,
+  8,
+  1,
+);
+const runDnsLookupLimited = createConcurrencyLimiter(DNS_LOOKUP_MAX_CONCURRENCY);
+
+const runDnsLookup = <T>(operationName: string, operation: () => Promise<T>) =>
+  runDnsLookupLimited(() =>
+    withTimeout(operation, {
+      timeoutMs: DNS_LOOKUP_TIMEOUT_MS,
+      operationName: `dns.${operationName}`,
+    }),
+  );
+
 const resolveTxtValues = async (hostname: string) => {
   try {
-    const records = await dns.resolveTxt(hostname);
+    const records = await runDnsLookup(`resolveTxt:${hostname}`, () =>
+      dns.resolveTxt(hostname),
+    );
     return records.flat().map((value) => value.trim());
   } catch {
     return [];
@@ -89,7 +117,11 @@ const resolveTxtValues = async (hostname: string) => {
 
 const resolveCnameValues = async (hostname: string) => {
   try {
-    return (await dns.resolveCname(hostname)).map((value) =>
+    return (
+      await runDnsLookup(`resolveCname:${hostname}`, () =>
+        dns.resolveCname(hostname),
+      )
+    ).map((value) =>
       value.replace(/\.$/, "").trim().toLowerCase(),
     );
   } catch {
@@ -99,7 +131,9 @@ const resolveCnameValues = async (hostname: string) => {
 
 const resolveAValues = async (hostname: string) => {
   try {
-    return (await dns.resolve4(hostname)).map((value) => value.trim().toLowerCase());
+    return (
+      await runDnsLookup(`resolve4:${hostname}`, () => dns.resolve4(hostname))
+    ).map((value) => value.trim().toLowerCase());
   } catch {
     return [];
   }
@@ -107,7 +141,9 @@ const resolveAValues = async (hostname: string) => {
 
 const resolveAaaaValues = async (hostname: string) => {
   try {
-    return (await dns.resolve6(hostname)).map((value) => value.trim().toLowerCase());
+    return (
+      await runDnsLookup(`resolve6:${hostname}`, () => dns.resolve6(hostname))
+    ).map((value) => value.trim().toLowerCase());
   } catch {
     return [];
   }
@@ -207,22 +243,42 @@ export const verifyCustomDomainLifecycle = async (
   const customDomain = normalizeCustomDomainValue(publicationRecord?.customDomain);
   const now = new Date();
 
-  if (!customDomain) {
+  const verificationFailure = (
+    status: CustomDomainStatus | null,
+    message: string,
+    verifiedAt: Date | null,
+  ): CustomDomainVerificationFields => {
+    sliService.recordDomainVerification(false);
     return {
-      customDomainStatus: null,
-      customDomainVerificationError: "Custom domain is not configured.",
-      customDomainVerifiedAt: null,
+      customDomainStatus: status,
+      customDomainVerificationError: message,
+      customDomainVerifiedAt: verifiedAt,
       customDomainLastCheckedAt: now,
     };
+  };
+
+  const verificationSuccess = (
+    status: CustomDomainStatus,
+    verifiedAt: Date,
+  ): CustomDomainVerificationFields => {
+    sliService.recordDomainVerification(true);
+    return {
+      customDomainStatus: status,
+      customDomainVerificationError: null,
+      customDomainVerifiedAt: verifiedAt,
+      customDomainLastCheckedAt: now,
+    };
+  };
+
+  if (!customDomain) {
+    return verificationFailure(null, "Custom domain is not configured.", null);
   }
 
   if (shouldAutoActivateCustomDomain(customDomain)) {
-    return {
-      customDomainStatus: CUSTOM_DOMAIN_STATUS.ACTIVE as CustomDomainStatus,
-      customDomainVerificationError: null,
-      customDomainVerifiedAt: now,
-      customDomainLastCheckedAt: now,
-    };
+    return verificationSuccess(
+      CUSTOM_DOMAIN_STATUS.ACTIVE as CustomDomainStatus,
+      now,
+    );
   }
 
   const verificationToken = String(
@@ -230,13 +286,11 @@ export const verifyCustomDomainLifecycle = async (
   ).trim();
 
   if (!verificationToken) {
-    return {
-      customDomainStatus: CUSTOM_DOMAIN_STATUS.FAILED as CustomDomainStatus,
-      customDomainVerificationError:
-        "Verification token is missing. Save the custom domain again to regenerate it.",
-      customDomainVerifiedAt: null,
-      customDomainLastCheckedAt: now,
-    };
+    return verificationFailure(
+      CUSTOM_DOMAIN_STATUS.FAILED as CustomDomainStatus,
+      "Verification token is missing. Save the custom domain again to regenerate it.",
+      null,
+    );
   }
 
   const verificationHost = getCustomDomainVerificationHostname(customDomain);
@@ -257,13 +311,11 @@ export const verifyCustomDomainLifecycle = async (
   });
 
   if (!ownershipVerified) {
-    return {
-      customDomainStatus: CUSTOM_DOMAIN_STATUS.FAILED as CustomDomainStatus,
-      customDomainVerificationError:
-        "Ownership check failed. Add the verification TXT record and try again.",
-      customDomainVerifiedAt: null,
-      customDomainLastCheckedAt: now,
-    };
+    return verificationFailure(
+      CUSTOM_DOMAIN_STATUS.FAILED as CustomDomainStatus,
+      "Ownership check failed. Add the verification TXT record and try again.",
+      null,
+    );
   }
 
   const expectedCnameTargets = parseConfiguredTargets(
@@ -289,19 +341,15 @@ export const verifyCustomDomainLifecycle = async (
     ipValues.some((value) => expectedIpTargets.includes(value));
 
   if (!routingVerified) {
-    return {
-      customDomainStatus: CUSTOM_DOMAIN_STATUS.VERIFIED as CustomDomainStatus,
-      customDomainVerificationError:
-        "Ownership verified, but the domain is not pointing to InkSigma yet.",
-      customDomainVerifiedAt: now,
-      customDomainLastCheckedAt: now,
-    };
+    return verificationFailure(
+      CUSTOM_DOMAIN_STATUS.VERIFIED as CustomDomainStatus,
+      "Ownership verified, but the domain is not pointing to InkSigma yet.",
+      now,
+    );
   }
 
-  return {
-    customDomainStatus: CUSTOM_DOMAIN_STATUS.ACTIVE as CustomDomainStatus,
-    customDomainVerificationError: null,
-    customDomainVerifiedAt: now,
-    customDomainLastCheckedAt: now,
-  };
+  return verificationSuccess(
+    CUSTOM_DOMAIN_STATUS.ACTIVE as CustomDomainStatus,
+    now,
+  );
 };

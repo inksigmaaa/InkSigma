@@ -1,6 +1,11 @@
 // services/emailService.js
 import nodemailer, { Transporter, SentMessageInfo } from "nodemailer";
 import logger from "../utils/logger.js";
+import {
+    createConcurrencyLimiter,
+    getEnvNumber,
+    withTimeout,
+} from "../utils/externalOps.js";
 
 interface SendEmailParams {
     to: string;
@@ -23,12 +28,25 @@ interface VerificationParams {
 class EmailService {
     private transporter: Transporter | null = null;
 
+    private readonly smtpTimeoutMs = getEnvNumber(
+        process.env.SMTP_OPERATION_TIMEOUT_MS,
+        8000,
+        500,
+    );
+
+    private readonly runSmtpOperation = createConcurrencyLimiter(
+        getEnvNumber(process.env.SMTP_MAX_CONCURRENCY, 5, 1),
+    );
+
     private getTransporter(): Transporter {
         if (!this.transporter) {
             this.transporter = nodemailer.createTransport({
                 host: process.env.SMTP_HOST || "smtp.gmail.com",
                 port: 587,
                 secure: false,
+                connectionTimeout: this.smtpTimeoutMs,
+                greetingTimeout: this.smtpTimeoutMs,
+                socketTimeout: this.smtpTimeoutMs,
                 auth: {
                     user: process.env.SMTP_USER,
                     pass: process.env.SMTP_PASS,
@@ -40,7 +58,12 @@ class EmailService {
 
     async verify(): Promise<boolean> {
         try {
-            await this.getTransporter().verify();
+            await this.runSmtpOperation(() =>
+                withTimeout(() => this.getTransporter().verify(), {
+                    timeoutMs: this.smtpTimeoutMs,
+                    operationName: "smtp.verify",
+                }),
+            );
             logger.info("[EMAIL] SMTP connection verified");
             return true;
         } catch (error) {
@@ -52,12 +75,21 @@ class EmailService {
     async send(params: SendEmailParams): Promise<SentMessageInfo> {
         logger.info(`[EMAIL] Sending "${params.subject}" to ${params.to}`);
         try {
-            const result = await this.getTransporter().sendMail({
-                from: process.env.SMTP_USER,
-                to: params.to,
-                subject: params.subject,
-                html: params.html,
-            });
+            const result = (await this.runSmtpOperation(() =>
+                withTimeout(
+                    () =>
+                        this.getTransporter().sendMail({
+                            from: process.env.SMTP_USER,
+                            to: params.to,
+                            subject: params.subject,
+                            html: params.html,
+                        }),
+                    {
+                        timeoutMs: this.smtpTimeoutMs,
+                        operationName: "smtp.sendMail",
+                    },
+                ),
+            )) as SentMessageInfo;
             logger.info(`[EMAIL] Sent successfully: ${result.messageId}`);
             return result;
         } catch (error) {
