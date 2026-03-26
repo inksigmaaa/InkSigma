@@ -17,6 +17,7 @@ import viewRoutes from "./routes/viewRoutes.js";
 import { corsMiddleware } from "./middleware/cors.js";
 import { subdomainMiddleware } from "./middleware/subdomainMiddleware.js";
 import { rateLimitMiddleware } from "./middleware/rateLimitMiddleware.js";
+import { requestContextMiddleware } from "./middleware/requestContext.js";
 import { emailService } from "./services/emailService.js";
 import schedulerService from "./services/schedulerService.js";
 import invitationService from "./services/invitationService.js";
@@ -30,6 +31,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+app.use(requestContextMiddleware);
 app.use(corsMiddleware);
 app.use(subdomainMiddleware);
 app.use(rateLimitMiddleware);

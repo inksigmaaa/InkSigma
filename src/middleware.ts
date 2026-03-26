@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const DASHBOARD_PUB_COOKIE = "inksigma_dashboard_pub";
+const RESERVED_SUBDOMAINS = new Set(["dashboard", "www", "api"]);
 
 // Routes that must remain un-prefixed even on the dashboard host.
 const PUBLIC_PATH_PREFIXES = [
@@ -13,6 +14,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/create-publication",
   "/invite",
   "/view-site",
+  "/blog",
 ];
 
 // "Old" (non-prefixed) dashboard endpoints. If users navigate to these directly on the
@@ -48,19 +50,43 @@ const isOldDashboardEndpointPath = (pathname: string) =>
 
 const isKnownBaseDomain = (
   host: string,
-  rootDomain: string,
-  mainDomain: string,
+  baseDomains: string[],
 ): boolean => {
   const normalizedHost = host.split(":")[0].replace(/^www\./, "").toLowerCase();
 
-  return [
-    rootDomain,
-    mainDomain,
-    `dashboard.${rootDomain}`,
-    `dashboard.${mainDomain}`,
-    "localhost",
-    "dashboard.localhost",
-  ].includes(normalizedHost);
+  return baseDomains.some(
+    (domain) =>
+      normalizedHost === domain || normalizedHost === `dashboard.${domain}`,
+  );
+};
+
+const getBaseDomains = () => {
+  const configured =
+    process.env.NEXT_PUBLIC_BASE_DOMAINS ||
+    process.env.BASE_DOMAINS ||
+    process.env.BASE_DOMAIN ||
+    "localhost,inksigma.local";
+
+  return configured
+    .split(",")
+    .map((domain) => domain.trim().toLowerCase())
+    .filter(Boolean);
+};
+
+const getSubdomainFromHost = (host: string, baseDomains: string[]) => {
+  for (const baseDomain of [...baseDomains].sort((a, b) => b.length - a.length)) {
+    const suffix = `.${baseDomain}`;
+    if (!host.endsWith(suffix) || host === baseDomain) continue;
+
+    const subdomain = host.slice(0, -suffix.length);
+    if (!subdomain || RESERVED_SUBDOMAINS.has(subdomain)) {
+      return null;
+    }
+
+    return subdomain;
+  }
+
+  return null;
 };
 
 const toInternalDashboardPath = (endpointPath: string) => {
@@ -114,6 +140,18 @@ const buildRedirectUrlForHost = (
   }
 
   return redirectUrl;
+};
+
+const shouldApplyCanonicalRedirect = (currentHost: string, canonicalHost: string) => {
+  const normalizedCurrentHost = currentHost.split(":")[0].toLowerCase();
+  const normalizedCanonicalHost = canonicalHost.split(":")[0].toLowerCase();
+
+  // In local development, do not redirect from local hosts to public domains.
+  if (isLocalLikeHost(normalizedCurrentHost) && !isLocalLikeHost(normalizedCanonicalHost)) {
+    return false;
+  }
+
+  return normalizedCurrentHost !== normalizedCanonicalHost;
 };
 
 const fetchHostRouting = async (host: string) => {
@@ -171,22 +209,19 @@ export async function middleware(request: NextRequest) {
   const cleanHost = hostname.replace(/^www\./, "").toLowerCase();
 
   const isDev = process.env.NODE_ENV === "development";
-  const rootDomain = (
-    process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"
-  ).toLowerCase();
   const mainDomain = (
     process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.com"
   ).toLowerCase();
+  const baseDomains = Array.from(new Set([...getBaseDomains(), mainDomain]));
   const pathname = request.nextUrl.pathname;
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-invoke-path", pathname);
   requestHeaders.set("x-url", request.url);
 
-  const isDashboardHost =
-    cleanHost === `dashboard.${rootDomain}` ||
-    cleanHost === "dashboard.localhost" ||
-    cleanHost === `dashboard.${mainDomain}`;
+  const isDashboardHost = baseDomains.some(
+    (domain) => cleanHost === `dashboard.${domain}`,
+  );
 
   if (isDashboardHost) {
     const lastPubSub = request.cookies.get(DASHBOARD_PUB_COOKIE)?.value;
@@ -269,12 +304,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle root domain - show landing page
-  if (
-    cleanHost === rootDomain ||
-    cleanHost === mainDomain ||
-    cleanHost === `www.${rootDomain}` ||
-    cleanHost === `www.${mainDomain}`
-  ) {
+  if (baseDomains.some((domain) => cleanHost === domain || cleanHost === `www.${domain}`)) {
     return NextResponse.next({
       request: { headers: requestHeaders },
     });
@@ -283,6 +313,12 @@ export async function middleware(request: NextRequest) {
   const hostRouting = await fetchHostRouting(cleanHost);
 
   if (hostRouting?.shouldRedirect && hostRouting?.canonicalHost) {
+    if (!shouldApplyCanonicalRedirect(cleanHost, hostRouting.canonicalHost)) {
+      return NextResponse.next({
+        request: { headers: requestHeaders },
+      });
+    }
+
     return NextResponse.redirect(
       buildRedirectUrlForHost(request, hostRouting.canonicalHost),
       308,
@@ -290,45 +326,17 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle publication subdomains (both rootDomain and mainDomain)
-  const isSubdomainForRoot =
-    cleanHost.endsWith(`.${rootDomain}`) &&
-    cleanHost !== `www.${rootDomain}` &&
-    !isDashboardHost;
-
-  const isSubdomainForMain =
-    cleanHost.endsWith(`.${mainDomain}`) &&
-    cleanHost !== `www.${mainDomain}` &&
-    !cleanHost.startsWith(`dashboard.`) &&
-    !isDashboardHost;
-
-  if (isSubdomainForRoot) {
-    const subdomain = cleanHost.replace(`.${rootDomain}`, "");
-
-    if (
-      subdomain !== "dashboard" &&
-      subdomain !== "www" &&
-      subdomain !== "api"
-    ) {
-      return rewriteToViewSite(request, requestHeaders, { subdomain });
-    }
-  }
-
-  if (isSubdomainForMain) {
-    const subdomain = cleanHost.replace(`.${mainDomain}`, "");
-
-    if (
-      subdomain !== "dashboard" &&
-      subdomain !== "www" &&
-      subdomain !== "api"
-    ) {
-      return rewriteToViewSite(request, requestHeaders, { subdomain });
-    }
+  const detectedSubdomain = getSubdomainFromHost(cleanHost, baseDomains);
+  if (detectedSubdomain && !isDashboardHost) {
+    return rewriteToViewSite(request, requestHeaders, {
+      subdomain: detectedSubdomain,
+    });
   }
 
   // Handle custom domains
   // If we reach here, the host doesn't match any known base domains
   // This is a custom domain - route to view-site with customDomain parameter
-  if (!isKnownBaseDomain(cleanHost, rootDomain, mainDomain)) {
+  if (!isKnownBaseDomain(cleanHost, baseDomains)) {
     return rewriteToViewSite(request, requestHeaders, {
       customDomain: cleanHost,
     });

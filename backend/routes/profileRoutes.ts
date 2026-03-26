@@ -6,8 +6,7 @@ import fs from "fs";
 import { db } from "../config/database.js";
 import { user, account } from "../models/schema.js";
 import { eq, and, ne } from "drizzle-orm";
-import { auth } from "../config/betterAuth.js";
-import { fromNodeHeaders } from "better-auth/node";
+import { requireAuth } from "../middleware/auth.js";
 import logger from "../utils/logger.js";
 import { config } from "../config/appConfig.js";
 
@@ -46,27 +45,8 @@ const upload = multer({
   },
 });
 
-// Middleware to get current user from session
-const getCurrentUser = async (req, res, next) => {
-  try {
-    const session = await auth.api.getSession({
-      headers: fromNodeHeaders(req.headers),
-    });
-
-    if (!session?.user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    req.user = session.user;
-    next();
-  } catch (error) {
-    logger.error(error, "Auth error:");
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-};
-
 // GET /api/profile - Get current user's profile
-router.get("/", getCurrentUser, async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -102,7 +82,7 @@ router.get("/", getCurrentUser, async (req, res) => {
 });
 
 // PUT /api/profile - Update current user's profile
-router.put("/", getCurrentUser, async (req, res) => {
+router.put("/", requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     const { profileName, username, bio } = req.body;
@@ -177,7 +157,7 @@ router.put("/", getCurrentUser, async (req, res) => {
 // POST /api/profile/image - Upload profile image
 router.post(
   "/image",
-  getCurrentUser,
+  requireAuth,
   upload.single("image"),
   async (req, res) => {
     try {
@@ -223,7 +203,7 @@ router.post(
 );
 
 // DELETE /api/profile/image - Remove profile image
-router.delete("/image", getCurrentUser, async (req, res) => {
+router.delete("/image", requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
 

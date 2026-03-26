@@ -26,7 +26,7 @@ export const getBaseDomains = () => {
     const envValue =
         process.env.NEXT_PUBLIC_BASE_DOMAINS ||
         process.env.NEXT_PUBLIC_ROOT_DOMAIN ||
-        "localhost";
+        "localhost,inksigma.local";
 
     return envValue
         .split(",")

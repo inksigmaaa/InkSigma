@@ -105,7 +105,7 @@ function PublicationProviderInner({ children }) {
       effectivePathname?.startsWith("/allArticle/") ||
       effectivePathname?.startsWith("/review") ||
       effectivePathname?.startsWith("/author-review") ||
-      effectivePathname?.startsWith("/editorpage") ||
+      effectivePathname?.startsWith("/editor") ||
       effectivePathname?.startsWith("/published") ||
       effectivePathname?.startsWith("/unpublished") ||
       effectivePathname?.startsWith("/members")

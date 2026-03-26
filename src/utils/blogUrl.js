@@ -1,3 +1,5 @@
+import { parseHost } from "@/utils/hostParser";
+
 export const getBlogPath = (slug, pathname = "") => {
   if (!slug) {
     return "";
@@ -6,7 +8,15 @@ export const getBlogPath = (slug, pathname = "") => {
   const currentPath =
     pathname ||
     (typeof window !== "undefined" ? window.location.pathname : "/view-site");
-  const basePath = currentPath.startsWith("/view-site") ? "/view-site" : "";
+
+  let basePath = currentPath.startsWith("/view-site") ? "/view-site" : "";
+
+  if (typeof window !== "undefined") {
+    const parsedHost = parseHost(window.location.host);
+    if (parsedHost.isDashboard) {
+      basePath = "/view-site";
+    }
+  }
 
   return `${basePath}/blog/${encodeURIComponent(slug)}`;
 };

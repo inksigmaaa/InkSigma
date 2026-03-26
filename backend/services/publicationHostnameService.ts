@@ -57,10 +57,12 @@ const getBaseDomains = () =>
     .map((domain) => domain.trim().toLowerCase())
     .filter(Boolean);
 
+const isDevelopmentLikeEnv = () => process.env.NODE_ENV !== "production";
+
 const getPreferredBaseDomain = () => {
   const baseDomains = getBaseDomains();
 
-  if (process.env.NODE_ENV === "development") {
+  if (isDevelopmentLikeEnv()) {
     return (
       baseDomains.find((domain) => domain.includes(".") && domain !== "localhost") ||
       baseDomains[0] ||
@@ -95,7 +97,7 @@ export const getPublicationCanonicalHost = (
     : "";
 
   if (customDomain) {
-    if (process.env.NODE_ENV === "development") {
+    if (isDevelopmentLikeEnv()) {
       return getLocalCustomDomainAlias(customDomain) || customDomain;
     }
 

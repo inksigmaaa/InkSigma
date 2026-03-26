@@ -12,6 +12,45 @@ import { getApiBase } from '@/utils/apiBase';
 import { fetchJsonWithRetry } from '@/lib/api/client';
 
 const API_URL = getApiBase();
+const BLOG_CACHE_TTL_MS = 60 * 1000;
+
+const getBlogCacheKey = (publicationId) => `view-site:blogs:${publicationId}`;
+
+const readCachedBlogs = (publicationId) => {
+  if (typeof window === 'undefined' || !publicationId) return null;
+
+  try {
+    const raw = sessionStorage.getItem(getBlogCacheKey(publicationId));
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    if (!parsed?.savedAt || !Array.isArray(parsed?.blogs)) {
+      return null;
+    }
+
+    if (Date.now() - parsed.savedAt > BLOG_CACHE_TTL_MS) {
+      sessionStorage.removeItem(getBlogCacheKey(publicationId));
+      return null;
+    }
+
+    return parsed.blogs;
+  } catch {
+    return null;
+  }
+};
+
+const writeCachedBlogs = (publicationId, blogs) => {
+  if (typeof window === 'undefined' || !publicationId) return;
+
+  try {
+    sessionStorage.setItem(
+      getBlogCacheKey(publicationId),
+      JSON.stringify({ savedAt: Date.now(), blogs }),
+    );
+  } catch {
+    // Ignore storage failures.
+  }
+};
 
 function ViewSiteContent({
   initialPublication = null,
@@ -43,6 +82,12 @@ function ViewSiteContent({
           return;
         }
 
+        const cachedBlogs = readCachedBlogs(publicationId);
+        if (cachedBlogs) {
+          setBlogs(cachedBlogs);
+          setLoading(false);
+        }
+
         const data = await fetchJsonWithRetry(
           `${API_URL}/api/blogs?publicationId=${publicationId}&status=published`,
           {
@@ -51,7 +96,9 @@ function ViewSiteContent({
           },
         );
 
-        setBlogs(Array.isArray(data) ? data : []);
+        const nextBlogs = Array.isArray(data) ? data : [];
+        setBlogs(nextBlogs);
+        writeCachedBlogs(publicationId, nextBlogs);
       } catch (error) {
         if (error?.name === 'AbortError') {
           return;

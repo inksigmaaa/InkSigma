@@ -56,7 +56,7 @@ export default function ViewSiteHeader({ userName, userAvatar = null, shareButto
         {/* Right Side: Start Writing CTA */}
         <div>
           <Link 
-            href="/editorpage" 
+            href="/editor" 
             className="bg-[#080808] text-[#EDEDED] text-sm font-medium leading-normal tracking-normal px-6 py-2 rounded-sm max-md:text-[10px] max-md:px-4 max-md:py-1.5"
           >
             Start Writing

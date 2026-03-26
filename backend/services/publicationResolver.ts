@@ -1,7 +1,11 @@
 import { db } from "../config/database.js";
 import { publication, publicationHostname } from "../models/schema.js";
 import { and, eq, sql } from "drizzle-orm";
-import { getRedisClient, isRedisAvailable } from "../config/redis.js";
+import {
+  getRedisClient,
+  isRedisAvailable,
+  reportRedisFailure,
+} from "../config/redis.js";
 import logger from "../utils/logger.js";
 import {
   getLocalCustomDomainAlias,
@@ -145,7 +149,8 @@ const getCachedPublication = async (key) => {
     if (!data) return null;
     return typeof data === "string" ? JSON.parse(data) : data;
   } catch (error) {
-    logger.error(error.message, "[PublicationResolver] Cache get failed:");
+    reportRedisFailure(error, "publicationResolver.cache.get");
+    logger.debug(error, "[PublicationResolver] Cache get failed");
     return null;
   }
 };
@@ -158,7 +163,8 @@ const setCachedPublication = async (key, value) => {
     await client.setex(key, CACHE_TTL_SECONDS, JSON.stringify(value));
     return true;
   } catch (error) {
-    logger.error(error.message, "[PublicationResolver] Cache set failed:");
+    reportRedisFailure(error, "publicationResolver.cache.set");
+    logger.debug(error, "[PublicationResolver] Cache set failed");
     return false;
   }
 };
@@ -171,7 +177,8 @@ const deleteCachedPublication = async (key) => {
     await client.del(key);
     return true;
   } catch (error) {
-    logger.error(error.message, "[PublicationResolver] Cache delete failed:");
+    reportRedisFailure(error, "publicationResolver.cache.delete");
+    logger.debug(error, "[PublicationResolver] Cache delete failed");
     return false;
   }
 };

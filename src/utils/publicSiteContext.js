@@ -7,9 +7,32 @@ const API_URL = (
   "http://localhost:5000"
 ).replace(/\/$/, "");
 
+export const normalizeSearchParamsRecord = (searchParams) => {
+  if (!searchParams) return {};
+
+  if (
+    typeof searchParams?.entries === "function" &&
+    typeof searchParams?.get === "function"
+  ) {
+    const record = {};
+    for (const [key, value] of searchParams.entries()) {
+      if (record[key] === undefined) {
+        record[key] = value;
+      } else if (Array.isArray(record[key])) {
+        record[key].push(value);
+      } else {
+        record[key] = [record[key], value];
+      }
+    }
+    return record;
+  }
+
+  return searchParams;
+};
+
 const toSearchParamRecord = async (searchParams) => {
   const resolved = searchParams ? await Promise.resolve(searchParams) : {};
-  return resolved || {};
+  return normalizeSearchParamsRecord(resolved || {});
 };
 
 const getParamValue = (params, key) => {

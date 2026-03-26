@@ -2,7 +2,11 @@
 import { db } from "../config/database.js";
 import { blogView, blogShare } from "../models/schema.js";
 import { eq, and, count, inArray } from "drizzle-orm";
-import { getRedisClient, isRedisAvailable } from "../config/redis.js";
+import {
+  getRedisClient,
+  isRedisAvailable,
+  reportRedisFailure,
+} from "../config/redis.js";
 import crypto from "crypto";
 import logger from "../utils/logger.js";
 
@@ -29,12 +33,21 @@ export const trackBlogView = async (blogId: number, ip: string, userAgent: strin
 
     if (isRedisAvailable()) {
       const redis = getRedisClient();
-
-      const setResult = await redis.set(redisKey, Date.now().toString(), "NX");
-      if (!setResult) {
-        return { viewed: true, isNewView: false };
+      if (redis) {
+        try {
+          const setResult = await redis.set(redisKey, Date.now().toString(), "NX");
+          if (!setResult) {
+            return { viewed: true, isNewView: false };
+          }
+        } catch (redisError) {
+          reportRedisFailure(redisError, "viewTracking.redis.set");
+        }
       }
-    } else {
+
+      // Fall through to database check when Redis is unavailable.
+    }
+
+    {
       const [existingView] = await db
         .select()
         .from(blogView)

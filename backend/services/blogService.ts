@@ -24,6 +24,10 @@ import {
 import fs from "fs";
 import notificationService from "./notificationService.js";
 import schedulerService from "./schedulerService.js";
+import {
+  getPublicationAccess,
+  hasPublicationRole,
+} from "./authorizationService.js";
 import { getBlogStats } from "./viewTrackingService.js";
 import logger from "../utils/logger.js";
 import { BLOG_STATUS } from "../config/constants.js";
@@ -234,31 +238,10 @@ class BlogService {
       return false;
     }
 
-    const [[pub], [membership]] = await Promise.all([
-      db.select({ id: publication.id, ownerId: publication.userId })
-        .from(publication)
-        .where(eq(publication.id, blogPublicationId))
-        .limit(1),
-      db.select({ role: publicationMember.role })
-        .from(publicationMember)
-        .where(
-          and(
-            eq(publicationMember.publicationId, blogPublicationId),
-            eq(publicationMember.userId, userId),
-          ),
-        )
-        .limit(1),
-    ]);
-
-    if (!pub) {
-      return false;
-    }
-
-    if (pub.ownerId === userId) {
-      return true;
-    }
-
-    return membership?.role === "admin" || membership?.role === "editor";
+    const access = await getPublicationAccess(userId, blogPublicationId);
+    return hasPublicationRole(access, ["admin", "editor"], {
+      allowOwner: true,
+    });
   }
 
   // Helper function to generate slug from title

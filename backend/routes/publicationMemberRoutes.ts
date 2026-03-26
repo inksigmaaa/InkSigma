@@ -3,33 +3,16 @@ import express from "express";
 import { db } from "../config/database.js";
 import { publicationMember, publication, user } from "../models/schema.js";
 import { eq, and } from "drizzle-orm";
-import { auth } from "../config/betterAuth.js";
-import { fromNodeHeaders } from "better-auth/node";
+import { requireAuth } from "../middleware/auth.js";
+import { requirePublicationRole } from "../middleware/authorization.js";
+import { validate } from "../middleware/validate.js";
+import * as generalValidator from "../validators/generalValidator.js";
 import logger from "../utils/logger.js";
 
 const router = express.Router();
 
-// Middleware to get current user from session
-const getCurrentUser = async (req, res, next) => {
-    try {
-        const session = await auth.api.getSession({
-            headers: fromNodeHeaders(req.headers),
-        });
-
-        if (!session?.user) {
-            return res.status(401).json({ error: "Unauthorized" });
-        }
-
-        req.user = session.user;
-        next();
-    } catch (error) {
-        logger.error(error, "Auth error:");
-        return res.status(401).json({ error: "Unauthorized" });
-    }
-};
-
 // GET /api/publication-members/my-publications - Get publications where user is a member
-router.get("/my-publications", getCurrentUser, async (req, res) => {
+router.get("/my-publications", requireAuth, async (req, res) => {
     try {
         const memberships = await db
             .select({
@@ -72,7 +55,12 @@ router.get("/my-publications", getCurrentUser, async (req, res) => {
 });
 
 // GET /api/publication-members/:publicationId/members - Get all members of a publication
-router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
+router.get(
+    "/:publicationId/members",
+    requireAuth,
+    validate(generalValidator.byPublicationIdParam),
+    requirePublicationRole(["admin", "editor", "author"], { publicationIdParam: "publicationId" }),
+    async (req, res) => {
     try {
         const { publicationId } = req.params;
 
@@ -101,7 +89,7 @@ router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
 });
 
 // POST /api/publication-members - Add member to publication (owner only)
-router.post("/", getCurrentUser, async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
     try {
         const { publicationId, userId, role = "author" } = req.body;
 
@@ -157,7 +145,7 @@ router.post("/", getCurrentUser, async (req, res) => {
 });
 
 // DELETE /api/publication-members/:id - Remove member from publication (owner only)
-router.delete("/:id", getCurrentUser, async (req, res) => {
+router.delete("/:id", requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
 

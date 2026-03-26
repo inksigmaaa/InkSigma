@@ -3,34 +3,22 @@ import express from "express";
 import { db } from "../config/database.js";
 import { blog, blogView, blogShare, comment } from "../models/schema.js";
 import { eq, and, count } from "drizzle-orm";
-import { auth } from "../config/betterAuth.js";
-import { fromNodeHeaders } from "better-auth/node";
+import { requireAuth } from "../middleware/auth.js";
+import { requirePublicationRole } from "../middleware/authorization.js";
+import { validate } from "../middleware/validate.js";
+import * as generalValidator from "../validators/generalValidator.js";
 import logger from "../utils/logger.js";
 import { BLOG_STATUS } from "../config/constants.js";
 
 const router = express.Router();
 
-// Middleware to get current user from session
-const getCurrentUser = async (req, res, next) => {
-    try {
-        const session = await auth.api.getSession({
-            headers: fromNodeHeaders(req.headers),
-        });
-
-        if (!session?.user) {
-            return res.status(401).json({ error: "Unauthorized" });
-        }
-
-        req.user = session.user;
-        next();
-    } catch (error) {
-        logger.error(error, "Auth error:");
-        return res.status(401).json({ error: "Unauthorized" });
-    }
-};
-
 // GET /api/publication-stats/:publicationId - Get stats for a publication
-router.get("/:publicationId", getCurrentUser, async (req, res) => {
+router.get(
+    "/:publicationId",
+    requireAuth,
+    validate(generalValidator.byPublicationIdParam),
+    requirePublicationRole(["admin", "editor", "author"], { publicationIdParam: "publicationId" }),
+    async (req, res) => {
     try {
         const { publicationId } = req.params;
 

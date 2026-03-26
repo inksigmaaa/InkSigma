@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -17,27 +17,13 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
   const pathname = usePathname();
   
   // Get the latest blog (first one in the array, sorted by date)
-  const latestBlog = blogs.length > 0
-    ? blogs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
-    : null;
+  const latestBlog = useMemo(() => {
+    if (!blogs.length) return null;
 
-  // Fetch comment count for latest blog
-  useEffect(() => {
-    const fetchCommentCount = async () => {
-      if (!latestBlog) return;
-      
-      try {
-        const response = await fetch(`${API_URL}/api/comments/count/${latestBlog.id}`);
-        if (response.ok) {
-          await response.json();
-        }
-      } catch (err) {
-        console.error('Error fetching comment count:', err);
-      }
-    };
-
-    fetchCommentCount();
-  }, [latestBlog]);
+    return [...blogs].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+    )[0];
+  }, [blogs]);
 
   // Hide latest blog section if there's a search query
   if (searchQuery) {

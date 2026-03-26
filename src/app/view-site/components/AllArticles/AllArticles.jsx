@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from 'next/navigation';
@@ -19,33 +18,7 @@ export default function AllArticles({
   selectedCategory = "",
   blogs = [],
 }) {
-  const [commentCounts, setCommentCounts] = useState({});
   const pathname = usePathname();
-
-  // Fetch comment counts for all blogs
-  useEffect(() => {
-    const fetchCommentCounts = async () => {
-      if (blogs.length === 0) return;
-
-      try {
-        const blogIds = blogs.map((b) => b.id);
-        const response = await fetch(`${API_URL}/api/comments/counts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ blogIds }),
-        });
-
-        if (response.ok) {
-          const counts = await response.json();
-          setCommentCounts(counts);
-        }
-      } catch (err) {
-        console.error("Error fetching comment counts:", err);
-      }
-    };
-
-    fetchCommentCounts();
-  }, [blogs]);
 
   // Filter articles based on search query and selected category
   const filteredArticles = blogs.filter((article) => {

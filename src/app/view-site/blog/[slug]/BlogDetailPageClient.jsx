@@ -22,6 +22,52 @@ import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { getApiBase } from "@/utils/apiBase";
 
 const API_URL = getApiBase();
+const BLOG_DETAIL_CACHE_TTL_MS = 60 * 1000;
+
+const getBlogCacheKey = (slug, tenantSubdomain, tenantCustomDomain) => {
+  return `view-site:blog:${tenantCustomDomain || tenantSubdomain || "root"}:${slug}`;
+};
+
+const readCachedBlog = (slug, tenantSubdomain, tenantCustomDomain) => {
+  if (typeof window === "undefined" || !slug) return null;
+
+  try {
+    const raw = sessionStorage.getItem(
+      getBlogCacheKey(slug, tenantSubdomain, tenantCustomDomain),
+    );
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    if (!parsed?.savedAt || !parsed?.blog) return null;
+
+    if (Date.now() - parsed.savedAt > BLOG_DETAIL_CACHE_TTL_MS) {
+      sessionStorage.removeItem(
+        getBlogCacheKey(slug, tenantSubdomain, tenantCustomDomain),
+      );
+      return null;
+    }
+
+    return parsed.blog;
+  } catch {
+    return null;
+  }
+};
+
+const writeCachedBlog = (slug, tenantSubdomain, tenantCustomDomain, blog) => {
+  if (typeof window === "undefined" || !slug || !blog) return;
+
+  try {
+    sessionStorage.setItem(
+      getBlogCacheKey(slug, tenantSubdomain, tenantCustomDomain),
+      JSON.stringify({
+        savedAt: Date.now(),
+        blog,
+      }),
+    );
+  } catch {
+    // Ignore storage failures.
+  }
+};
 
 export default function BlogDetailPageClient({
   slug,
@@ -111,6 +157,12 @@ export default function BlogDetailPageClient({
         setError(null);
         const tenantHeaders = {};
 
+        const cachedBlog = readCachedBlog(slug, tenantSubdomain, tenantCustomDomain);
+        if (cachedBlog) {
+          setBlog(cachedBlog);
+          setLoading(false);
+        }
+
         if (tenantCustomDomain) {
           tenantHeaders["X-Custom-Domain"] = tenantCustomDomain;
           delete tenantHeaders["X-Subdomain"];
@@ -168,7 +220,11 @@ export default function BlogDetailPageClient({
           foundBlog.content = doc.body.innerHTML;
         }
 
-        if (foundBlog.publicationId) {
+        if (!foundBlog.publication && initialPublication) {
+          foundBlog.publication = initialPublication;
+        }
+
+        if (!foundBlog.publication && foundBlog.publicationId) {
           try {
             const publicationData = await fetchJsonWithRetry(
               `${API_URL}/api/publications/${foundBlog.publicationId}`,
@@ -185,6 +241,7 @@ export default function BlogDetailPageClient({
         }
 
         setBlog(foundBlog);
+        writeCachedBlog(slug, tenantSubdomain, tenantCustomDomain, foundBlog);
 
         if (foundBlog.status === "published") {
           try {
@@ -376,6 +433,11 @@ export default function BlogDetailPageClient({
     typeof window !== "undefined"
       ? window.location.href
       : `http://localhost:3000/view-site/blog/${slug}`;
+  const fallbackHomePath =
+    typeof window !== "undefined" &&
+    !window.location.pathname.startsWith("/view-site")
+      ? "/"
+      : "/view-site";
 
   if (loading) {
     return (
@@ -404,7 +466,7 @@ export default function BlogDetailPageClient({
                     Try again
                   </Button>
                   <Button type="button" variant="outline" asChild>
-                    <Link href="/view-site">Back to home</Link>
+                    <Link href={fallbackHomePath}>Back to home</Link>
                   </Button>
                 </div>
               </AlertDescription>
