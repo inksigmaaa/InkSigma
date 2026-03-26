@@ -6,6 +6,7 @@ const API_URL = (
   process.env.BACKEND_URL ||
   "http://localhost:5000"
 ).replace(/\/$/, "");
+const PUBLIC_SITE_REVALIDATE_SECONDS = 30;
 
 export const normalizeSearchParamsRecord = (searchParams) => {
   if (!searchParams) return {};
@@ -46,7 +47,7 @@ const getParamValue = (params, key) => {
 const fetchJson = async (url, options = {}) => {
   try {
     const response = await fetch(url, {
-      cache: "no-store",
+      next: { revalidate: PUBLIC_SITE_REVALIDATE_SECONDS },
       ...options,
     });
 

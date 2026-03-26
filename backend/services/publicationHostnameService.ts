@@ -33,6 +33,10 @@ type HostnameEntry = {
 const normalizeValue = (value: string | null | undefined) =>
   typeof value === "string" ? value.trim().toLowerCase() : "";
 
+const isLocalLikeDomain = (domain: string) =>
+  Boolean(domain) &&
+  (domain === "localhost" || domain.endsWith(".local") || domain.endsWith(".localhost"));
+
 export const normalizePublicationHostnameValue = (
   kind: HostnameKind,
   value: string | null | undefined,
@@ -57,12 +61,17 @@ const getBaseDomains = () =>
     .map((domain) => domain.trim().toLowerCase())
     .filter(Boolean);
 
-const isDevelopmentLikeEnv = () => process.env.NODE_ENV !== "production";
+const shouldPreferBaseDomain = () => {
+  if (process.env.NODE_ENV !== "production") return true;
+
+  const baseDomains = getBaseDomains();
+  return baseDomains.some((domain) => isLocalLikeDomain(domain));
+};
 
 const getPreferredBaseDomain = () => {
   const baseDomains = getBaseDomains();
 
-  if (isDevelopmentLikeEnv()) {
+  if (shouldPreferBaseDomain()) {
     return (
       baseDomains.find((domain) => domain.includes(".") && domain !== "localhost") ||
       baseDomains[0] ||
@@ -70,7 +79,16 @@ const getPreferredBaseDomain = () => {
     );
   }
 
-  return (process.env.MAIN_DOMAIN || "inksigma.com").toLowerCase();
+  return (
+    process.env.MAIN_DOMAIN ||
+    getBaseDomains().find(
+      (domain) =>
+        domain === "localhost" ||
+        domain.endsWith(".local") ||
+        domain.endsWith(".localhost"),
+    ) ||
+    "inksigma.com"
+  ).toLowerCase();
 };
 
 export const getLocalCustomDomainAlias = (customDomain: string | null | undefined) => {
@@ -97,7 +115,7 @@ export const getPublicationCanonicalHost = (
     : "";
 
   if (customDomain) {
-    if (isDevelopmentLikeEnv()) {
+    if (shouldPreferBaseDomain()) {
       return getLocalCustomDomainAlias(customDomain) || customDomain;
     }
 

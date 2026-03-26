@@ -12,7 +12,20 @@ import {
 } from "../services/publicationResolver.js";
 
 const DASHBOARD_SUBDOMAIN = process.env.DASHBOARD_SUBDOMAIN || "dashboard";
-const MAIN_DOMAIN = (process.env.MAIN_DOMAIN || "inksigma.com").toLowerCase();
+const getLocalLikeBaseDomain = () =>
+  (process.env.BASE_DOMAINS || process.env.BASE_DOMAIN || "")
+    .split(",")
+    .map((domain) => domain.trim().toLowerCase())
+    .find(
+      (domain) =>
+        domain === "localhost" ||
+        domain.endsWith(".local") ||
+        domain.endsWith(".localhost"),
+    );
+
+const MAIN_DOMAIN = (
+  process.env.MAIN_DOMAIN || getLocalLikeBaseDomain() || "inksigma.com"
+).toLowerCase();
 const BASE_DOMAINS = (
   process.env.BASE_DOMAINS ||
   process.env.BASE_DOMAIN ||

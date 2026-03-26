@@ -56,16 +56,42 @@ const handleError = (res, error, defaultMsg) => {
   return res.status(500).json({ error: defaultMsg, details: error.message });
 };
 
+const hasSessionHint = (req) =>
+  Boolean(req.headers.cookie || req.headers.authorization);
+
+const getSessionUserId = async (req) => {
+  const session = await auth.api.getSession({
+    headers: fromNodeHeaders(req.headers),
+  });
+
+  return session?.user?.id || null;
+};
+
+const shouldResolveUserForBlogList = (query) => {
+  const status = String(query?.status || "").toLowerCase();
+  const includeUnpublished = query?.includeUnpublished === "true";
+  const draftScope = query?.draftScope;
+  const includeReview = query?.includeReview === "true";
+  const includeTrash = query?.includeTrash === "true";
+
+  if (includeUnpublished || includeReview || includeTrash || draftScope) {
+    return true;
+  }
+
+  return status !== BLOG_STATUS.PUBLISHED;
+};
+
 // GET /api/blogs
 router.get("/", validate(blogValidator.getBlogsSchema), async (req, res) => {
   try {
     let currentUserId = null;
-    try {
-      const session = await auth.api.getSession({
-        headers: fromNodeHeaders(req.headers),
-      });
-      currentUserId = session?.user?.id;
-    } catch (e) {}
+    if (shouldResolveUserForBlogList(req.query) && hasSessionHint(req)) {
+      try {
+        currentUserId = await getSessionUserId(req);
+      } catch {
+        currentUserId = null;
+      }
+    }
 
     const blogs = await blogService.getAllBlogs(
       req.query,
@@ -110,19 +136,12 @@ router.get(
 // GET /api/blogs/:id
 router.get("/:id", validate(blogValidator.byIdSchema), async (req, res) => {
   try {
-    let currentUserId = null;
-    try {
-      const session = await auth.api.getSession({
-        headers: fromNodeHeaders(req.headers),
-      });
-      currentUserId = session?.user?.id;
-    } catch (e) {}
+    let blog = await blogService.getBlogById(req.params.id, null, req.tenant);
 
-    const blog = await blogService.getBlogById(
-      req.params.id,
-      currentUserId,
-      req.tenant,
-    );
+    if (blog.status !== BLOG_STATUS.PUBLISHED && hasSessionHint(req)) {
+      const currentUserId = await getSessionUserId(req);
+      blog = await blogService.getBlogById(req.params.id, currentUserId, req.tenant);
+    }
 
     if (
       req.query.incrementView === "true" &&
@@ -154,19 +173,22 @@ router.get(
   validate(blogValidator.bySlugSchema),
   async (req, res) => {
     try {
-      let currentUserId = null;
-      try {
-        const session = await auth.api.getSession({
-          headers: fromNodeHeaders(req.headers),
-        });
-        currentUserId = session?.user?.id;
-      } catch (e) {}
+      let blog;
 
-      const blog = await blogService.getBlogBySlug(
-        req.params.slug,
-        currentUserId,
-        req.tenant,
-      );
+      try {
+        blog = await blogService.getBlogBySlug(req.params.slug, null, req.tenant);
+      } catch (error) {
+        if (!hasSessionHint(req)) {
+          throw error;
+        }
+
+        const currentUserId = await getSessionUserId(req);
+        blog = await blogService.getBlogBySlug(
+          req.params.slug,
+          currentUserId,
+          req.tenant,
+        );
+      }
 
       if (
         req.query.incrementView === "true" &&

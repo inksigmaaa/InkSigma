@@ -23,7 +23,51 @@ export const getRootDomain = () =>
   normalizeValue(process.env.NEXT_PUBLIC_ROOT_DOMAIN) || DEFAULT_ROOT_DOMAIN;
 
 export const getMainDomain = () =>
-  normalizeValue(process.env.NEXT_PUBLIC_MAIN_DOMAIN) || DEFAULT_MAIN_DOMAIN;
+  normalizeValue(process.env.NEXT_PUBLIC_MAIN_DOMAIN) ||
+  (isLocalLikeHost(getRootDomain()) ? getRootDomain() : DEFAULT_MAIN_DOMAIN);
+
+const deriveRootDomainFromWindowHost = () => {
+  if (typeof window === "undefined") return "";
+
+  const hostname = normalizeValue(window.location.hostname);
+  if (!hostname) return "";
+
+  if (hostname === "localhost" || hostname.endsWith(".localhost")) {
+    return "localhost";
+  }
+
+  const parts = hostname.split(".");
+  if (parts.length < 2) return "";
+
+  if (parts[0] === "dashboard" && parts.length >= 3) {
+    return parts.slice(1).join(".");
+  }
+
+  return parts.slice(1).join(".");
+};
+
+const getEffectiveRootDomain = () => {
+  const envRoot = getRootDomain();
+  const derivedRoot = deriveRootDomainFromWindowHost();
+
+  if (derivedRoot && isLocalLikeHost(derivedRoot)) {
+    return derivedRoot;
+  }
+
+  return envRoot;
+};
+
+const isRootDomainLocalLike = () => isLocalLikeHost(getRootDomain());
+
+const shouldPreferRootDomain = () => {
+  if (isRootDomainLocalLike()) return true;
+
+  if (typeof window !== "undefined") {
+    return isLocalLikeHost(window.location.hostname);
+  }
+
+  return process.env.NODE_ENV !== "production";
+};
 
 export const isLocalLikeHost = (host) => {
   const normalized = normalizeValue(host);
@@ -38,27 +82,52 @@ export const getSubdomainHost = (subdomain) => {
   const normalizedSubdomain = normalizeValue(subdomain);
   if (!normalizedSubdomain) return "";
 
-  if (process.env.NODE_ENV === "development") {
-    return `${normalizedSubdomain}.${getRootDomain()}`;
+  const effectiveRootDomain = getEffectiveRootDomain();
+
+  if (shouldPreferRootDomain()) {
+    return `${normalizedSubdomain}.${effectiveRootDomain}`;
   }
 
   return `${normalizedSubdomain}.${getMainDomain()}`;
 };
 
 export const getPublicationHost = (publication) => {
+  const subdomainHost = getSubdomainHost(publication?.subdomain);
+
+  if (shouldPreferRootDomain() && subdomainHost) {
+    return subdomainHost;
+  }
+
   const customDomain = hasActiveCustomDomain(publication)
     ? normalizeValue(publication?.customDomain)
     : "";
   if (customDomain) {
-    if (process.env.NODE_ENV === "development") {
+    if (shouldPreferRootDomain()) {
       return getLocalCustomDomainAlias(customDomain) || customDomain;
     }
     return customDomain;
   }
-  return getSubdomainHost(publication?.subdomain);
+  return subdomainHost;
 };
 
 export const getPublicationUrl = (publication) => {
+  if (typeof window !== "undefined") {
+    const currentHostname = normalizeValue(window.location.hostname);
+    const localRuntime = isLocalLikeHost(currentHostname);
+    const publicationSubdomain = normalizeValue(publication?.subdomain);
+    const customDomainLabel = normalizeValue(publication?.customDomain)
+      .split(".")
+      .filter(Boolean)[0];
+    const resolvedSubdomain = publicationSubdomain || customDomainLabel;
+
+    if (localRuntime && resolvedSubdomain) {
+      const protocol = window.location.protocol || "http:";
+      const port = window.location.port || DEV_APP_PORT;
+      const rootDomain = getEffectiveRootDomain() || getRootDomain() || "localhost";
+      return `${protocol}//${resolvedSubdomain}.${rootDomain}:${port}`;
+    }
+  }
+
   const host = getPublicationHost(publication);
   if (!host) return "";
 
@@ -68,14 +137,14 @@ export const getPublicationUrl = (publication) => {
       window.location.port ||
       (process.env.NODE_ENV === "development" ? DEV_APP_PORT : "");
     const portSuffix =
-      process.env.NODE_ENV === "development" || isLocalLikeHost(host)
+      shouldPreferRootDomain() || isLocalLikeHost(host)
         ? `:${port || DEV_APP_PORT}`
         : "";
 
     return `${protocol}//${host}${portSuffix}`;
   }
 
-  if (process.env.NODE_ENV === "development" || isLocalLikeHost(host)) {
+  if (shouldPreferRootDomain() || isLocalLikeHost(host)) {
     return `http://${host}:${DEV_APP_PORT}`;
   }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import HomeHeader from './components/Header/HomeHeader';
@@ -10,6 +11,7 @@ import Footer from './components/Footer/Footer';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 import { getApiBase } from '@/utils/apiBase';
 import { fetchJsonWithRetry } from '@/lib/api/client';
+import { getBlogPath } from '@/utils/blogUrl';
 
 const API_URL = getApiBase();
 const BLOG_CACHE_TTL_MS = 60 * 1000;
@@ -56,6 +58,8 @@ function ViewSiteContent({
   initialPublication = null,
   initialPublicationId = null,
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [blogs, setBlogs] = useState([]);
@@ -86,6 +90,9 @@ function ViewSiteContent({
         if (cachedBlogs) {
           setBlogs(cachedBlogs);
           setLoading(false);
+          if (retryNonce === 0) {
+            return;
+          }
         }
 
         const data = await fetchJsonWithRetry(
@@ -93,6 +100,10 @@ function ViewSiteContent({
           {
             credentials: 'include',
             signal: controller.signal,
+          },
+          {
+            attempts: 2,
+            delayMs: 160,
           },
         );
 
@@ -120,6 +131,16 @@ function ViewSiteContent({
       controller.abort();
     };
   }, [publicationId, retryNonce]);
+
+  useEffect(() => {
+    if (!blogs.length) return;
+
+    const toPrefetch = blogs.slice(0, 6);
+    toPrefetch.forEach((blog) => {
+      if (!blog?.slug) return;
+      router.prefetch(getBlogPath(blog.slug, pathname || '/view-site'));
+    });
+  }, [blogs, pathname, router]);
 
   useEffect(() => {
     const savedPosition = sessionStorage.getItem('viewSiteScrollPosition');

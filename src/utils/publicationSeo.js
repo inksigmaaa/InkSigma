@@ -10,6 +10,7 @@ const API_URL = (
   process.env.BACKEND_URL ||
   "http://localhost:5000"
 ).replace(/\/$/, "");
+const PUBLIC_METADATA_REVALIDATE_SECONDS = 30;
 
 export const getAbsoluteAssetUrl = (assetPath) => {
   if (!assetPath) return "";
@@ -57,7 +58,7 @@ export const fetchPublishedBlogsForSitemap = async ({ publicationId }) => {
     const response = await fetch(
       `${API_URL}/api/blogs?publicationId=${publicationId}&status=published`,
       {
-        cache: "no-store",
+        next: { revalidate: PUBLIC_METADATA_REVALIDATE_SECONDS },
       },
     );
 
@@ -81,7 +82,7 @@ export const fetchBlogForMetadata = async ({ host, slug, searchParams }) => {
       searchParams,
     });
     const response = await fetch(`${API_URL}/api/blogs/slug/${encodeURIComponent(slug)}`, {
-      cache: "no-store",
+      next: { revalidate: PUBLIC_METADATA_REVALIDATE_SECONDS },
       headers: getTenantHeadersForResolvedContext({ hostContext, host }),
     });
 

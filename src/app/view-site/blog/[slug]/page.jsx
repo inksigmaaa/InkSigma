@@ -101,6 +101,7 @@ export default async function BlogDetailPage({ params, searchParams }) {
       slug={requestedSlug}
       initialHostContext={hostContext}
       initialPublication={publication}
+      initialBlog={blog}
     />
   );
 }

@@ -209,8 +209,12 @@ export async function middleware(request: NextRequest) {
   const cleanHost = hostname.replace(/^www\./, "").toLowerCase();
 
   const isDev = process.env.NODE_ENV === "development";
+  const rootDomain = (
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"
+  ).toLowerCase();
   const mainDomain = (
-    process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.com"
+    process.env.NEXT_PUBLIC_MAIN_DOMAIN ||
+    (isLocalLikeHost(rootDomain) ? rootDomain : "inksigma.com")
   ).toLowerCase();
   const baseDomains = Array.from(new Set([...getBaseDomains(), mainDomain]));
   const pathname = request.nextUrl.pathname;

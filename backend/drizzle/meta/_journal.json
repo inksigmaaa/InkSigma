@@ -113,6 +113,20 @@
       "when": 1773821400000,
       "tag": "0015_blog_slug_history",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1773900000000,
+      "tag": "0016_authz_query_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1774508341337,
+      "tag": "0017_remarkable_night_nurse",
+      "breakpoints": true
     }
   ]
 }

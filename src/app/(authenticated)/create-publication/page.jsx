@@ -11,6 +11,7 @@ import cameraIcon from "@/icons/camera.svg";
 import { publicationService } from "@/services/publicationService";
 import { usePublication } from "@/contexts/PublicationContext";
 import { getApiBase } from "@/utils/apiBase";
+import { getRootDomain } from "@/utils/publicationDomain";
 import { validateSubdomain, isReservedSubdomain } from "@/utils/subdomainRules";
 import { validatePublicationName } from "@/utils/domainValidation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -74,7 +75,8 @@ export default function CreatePublication() {
     // Only check backend for database availability (not reserved, not format)
     subdomainCheckTimeout.current = setTimeout(async () => {
       try {
-        const API_URL = getApiBase();
+const API_URL = getApiBase();
+const SUBDOMAIN_SUFFIX = `.${getRootDomain() || "inksigma.local"}`;
         const response = await fetch(
           `${API_URL}/api/publications/check-subdomain/${subdomain.toLowerCase()}`,
           {
@@ -511,7 +513,7 @@ export default function CreatePublication() {
                   }}
                 />
                 <span className="absolute right-0 bottom-2 text-[12px] md:text-[14px] text-black">
-                  .inksigma.com
+                  {SUBDOMAIN_SUFFIX}
                 </span>
               </div>
               {subdomain.length >= 3 && (

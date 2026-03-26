@@ -39,7 +39,20 @@ export const getBaseDomains = () => {
  * @returns {string} - Main domain
  */
 export const getMainDomain = () => {
-    return process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.com";
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
+    const configuredMain = process.env.NEXT_PUBLIC_MAIN_DOMAIN;
+
+    if (configuredMain) return configuredMain;
+
+    if (
+        rootDomain === "localhost" ||
+        rootDomain.endsWith(".local") ||
+        rootDomain.endsWith(".localhost")
+    ) {
+        return rootDomain;
+    }
+
+    return "inksigma.com";
 };
 
 /**
@@ -120,11 +133,16 @@ export const parseHost = (rawHost) => {
 export const buildPublicationUrl = (subdomain) => {
     if (!subdomain) return "";
 
-    const isDev = process.env.NODE_ENV === "development";
     const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
     const mainDomain = getMainDomain();
 
-    if (isDev) {
+    const shouldUseRootDomain =
+        process.env.NODE_ENV !== "production" ||
+        rootDomain === "localhost" ||
+        rootDomain.endsWith(".local") ||
+        rootDomain.endsWith(".localhost");
+
+    if (shouldUseRootDomain) {
         return `http://${subdomain}.${rootDomain}:3000`;
     }
 

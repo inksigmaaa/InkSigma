@@ -69,15 +69,58 @@ const writeCachedBlog = (slug, tenantSubdomain, tenantCustomDomain, blog) => {
   }
 };
 
+const enrichBlogContent = (blogData) => {
+  if (!blogData) {
+    return { blog: null, sections: [] };
+  }
+
+  const nextBlog = { ...blogData };
+  if (!nextBlog.content || typeof window === "undefined") {
+    return { blog: nextBlog, sections: [] };
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(nextBlog.content, "text/html");
+  const images = doc.querySelectorAll("img");
+
+  images.forEach((img, index) => {
+    const src = img.getAttribute("src");
+    if (src && src.startsWith("/")) {
+      img.setAttribute("src", `${API_URL}${src}`);
+    }
+
+    if (index === 0) {
+      img.setAttribute("loading", "eager");
+      img.setAttribute("fetchpriority", "high");
+    } else {
+      img.setAttribute("loading", "lazy");
+    }
+  });
+
+  const headings = doc.querySelectorAll("h2");
+  const sections = Array.from(headings).map((heading, index) => {
+    const id = heading.id || `section-${index + 1}`;
+    heading.id = id;
+    return {
+      id,
+      title: heading.textContent,
+    };
+  });
+
+  nextBlog.content = doc.body.innerHTML;
+  return { blog: nextBlog, sections };
+};
+
 export default function BlogDetailPageClient({
   slug,
   initialHostContext,
   initialPublication = null,
+  initialBlog = null,
 }) {
-  const [blog, setBlog] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [blog, setBlog] = useState(() => enrichBlogContent(initialBlog).blog);
+  const [loading, setLoading] = useState(() => !initialBlog);
   const [error, setError] = useState(null);
-  const [sections, setSections] = useState([]);
+  const [sections, setSections] = useState(() => enrichBlogContent(initialBlog).sections);
   const [retryNonce, setRetryNonce] = useState(0);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -157,10 +200,34 @@ export default function BlogDetailPageClient({
         setError(null);
         const tenantHeaders = {};
 
+        if (initialBlog && retryNonce === 0) {
+          const enriched = enrichBlogContent(initialBlog);
+          const initialResolvedBlog = {
+            ...enriched.blog,
+            publication:
+              enriched.blog?.publication || initialPublication || enriched.blog?.publication,
+          };
+          setBlog(initialResolvedBlog);
+          setSections(enriched.sections);
+          writeCachedBlog(
+            slug,
+            tenantSubdomain,
+            tenantCustomDomain,
+            initialResolvedBlog,
+          );
+          setLoading(false);
+          return;
+        }
+
         const cachedBlog = readCachedBlog(slug, tenantSubdomain, tenantCustomDomain);
         if (cachedBlog) {
-          setBlog(cachedBlog);
+          const enriched = enrichBlogContent(cachedBlog);
+          setBlog(enriched.blog);
+          setSections(enriched.sections);
           setLoading(false);
+          if (retryNonce === 0) {
+            return;
+          }
         }
 
         if (tenantCustomDomain) {
@@ -177,8 +244,8 @@ export default function BlogDetailPageClient({
             signal: controller.signal,
           },
           {
-            attempts: 4,
-            delayMs: 350,
+            attempts: 2,
+            delayMs: 180,
           },
         );
 
@@ -187,68 +254,43 @@ export default function BlogDetailPageClient({
           return;
         }
 
-        if (foundBlog.content) {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(foundBlog.content, "text/html");
-          const images = doc.querySelectorAll("img");
+        const enriched = enrichBlogContent(foundBlog);
+        const processedBlog = enriched.blog;
+        setSections(enriched.sections);
 
-          images.forEach((img, index) => {
-            const src = img.getAttribute("src");
-            if (src && src.startsWith("/")) {
-              img.setAttribute("src", `${API_URL}${src}`);
-            }
-
-            if (index === 0) {
-              img.setAttribute("loading", "eager");
-              img.setAttribute("fetchpriority", "high");
-            } else {
-              img.setAttribute("loading", "lazy");
-            }
-          });
-
-          const headings = doc.querySelectorAll("h2");
-          const extractedSections = Array.from(headings).map((heading, index) => {
-            const id = heading.id || `section-${index + 1}`;
-            heading.id = id;
-            return {
-              id,
-              title: heading.textContent,
-            };
-          });
-
-          setSections(extractedSections);
-          foundBlog.content = doc.body.innerHTML;
+        if (!processedBlog.publication && initialPublication) {
+          processedBlog.publication = initialPublication;
         }
 
-        if (!foundBlog.publication && initialPublication) {
-          foundBlog.publication = initialPublication;
-        }
-
-        if (!foundBlog.publication && foundBlog.publicationId) {
+        if (!processedBlog.publication && processedBlog.publicationId) {
           try {
             const publicationData = await fetchJsonWithRetry(
-              `${API_URL}/api/publications/${foundBlog.publicationId}`,
+              `${API_URL}/api/publications/${processedBlog.publicationId}`,
               {
                 credentials: "include",
                 headers: tenantHeaders,
                 signal: controller.signal,
               },
+              {
+                attempts: 2,
+                delayMs: 150,
+              },
             );
-            foundBlog.publication = publicationData;
+            processedBlog.publication = publicationData;
           } catch {
-            foundBlog.publication = initialPublication;
+            processedBlog.publication = initialPublication;
           }
         }
 
-        setBlog(foundBlog);
-        writeCachedBlog(slug, tenantSubdomain, tenantCustomDomain, foundBlog);
+        setBlog(processedBlog);
+        writeCachedBlog(slug, tenantSubdomain, tenantCustomDomain, processedBlog);
 
-        if (foundBlog.status === "published") {
+        if (processedBlog.status === "published") {
           try {
             let shouldTrack = true;
             if (typeof window !== "undefined") {
               try {
-                const viewKey = `viewed:${foundBlog.id}`;
+                const viewKey = `viewed:${processedBlog.id}`;
                 if (localStorage.getItem(viewKey)) {
                   shouldTrack = false;
                 } else {
@@ -266,7 +308,7 @@ export default function BlogDetailPageClient({
                   "Content-Type": "application/json",
                 },
                 credentials: "include",
-                body: JSON.stringify({ blogId: foundBlog.id }),
+                body: JSON.stringify({ blogId: processedBlog.id }),
               });
             }
           } catch (viewError) {
@@ -298,6 +340,7 @@ export default function BlogDetailPageClient({
     tenantCustomDomain,
     retryNonce,
     initialPublication,
+    initialBlog,
   ]);
 
   useEffect(() => {
@@ -438,6 +481,12 @@ export default function BlogDetailPageClient({
     !window.location.pathname.startsWith("/view-site")
       ? "/"
       : "/view-site";
+
+  useEffect(() => {
+    const pubId = blog?.publication?.id || blog?.publicationId || blog?.publication_id;
+    const homePath = fallbackHomePath === "/" ? "/" : pubId ? `/view-site?publicationId=${pubId}` : "/view-site";
+    router.prefetch(homePath);
+  }, [blog, fallbackHomePath, router]);
 
   if (loading) {
     return (
