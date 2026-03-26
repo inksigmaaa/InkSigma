@@ -101,11 +101,3 @@ export const validateSubdomain = (value) => {
 
     return { valid: true };
 };
-
-/**
- * Get list of reserved subdomains
- * @returns {string[]} - Array of reserved subdomains
- */
-export const getReservedSubdomains = () => {
-    return Array.from(RESERVED_SUBDOMAINS);
-};

@@ -29,17 +29,3 @@ export const requireAuth = async (req, res, next) => {
     return res.status(401).json({ error: "Unauthorized" });
   }
 };
-
-export const attachOptionalAuth = async (req, _res, next) => {
-  try {
-    const sessionUser = await getSessionUser(req);
-    if (sessionUser) {
-      req.user = sessionUser;
-      setRequestContext({ userId: sessionUser.id });
-    }
-  } catch {
-    // Optional auth should never block request flow.
-  }
-
-  return next();
-};

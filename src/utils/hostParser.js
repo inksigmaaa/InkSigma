@@ -124,38 +124,3 @@ export const parseHost = (rawHost) => {
         isDashboard: subdomain === "dashboard",
     };
 };
-
-/**
- * Build a publication URL from subdomain
- * @param {string} subdomain - The publication subdomain
- * @returns {string} - Full URL to the publication
- */
-export const buildPublicationUrl = (subdomain) => {
-    if (!subdomain) return "";
-
-    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
-    const mainDomain = getMainDomain();
-
-    const shouldUseRootDomain =
-        process.env.NODE_ENV !== "production" ||
-        rootDomain === "localhost" ||
-        rootDomain.endsWith(".local") ||
-        rootDomain.endsWith(".localhost");
-
-    if (shouldUseRootDomain) {
-        return `http://${subdomain}.${rootDomain}:3000`;
-    }
-
-    return `https://${subdomain}.${mainDomain}`;
-};
-
-/**
- * Extract subdomain from current window location
- * @returns {string | null} - Subdomain or null
- */
-export const getSubdomainFromLocation = () => {
-    if (typeof window === "undefined") return null;
-
-    const parsed = parseHost(window.location.host);
-    return parsed.subdomain;
-};

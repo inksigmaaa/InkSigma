@@ -18,26 +18,6 @@ export const getAbsoluteAssetUrl = (assetPath) => {
   return `${API_URL}${assetPath.startsWith("/") ? assetPath : `/${assetPath}`}`;
 };
 
-export const getTenantHeadersForHost = (host) => {
-  if (!host) return {};
-
-  const parsed = parseHost(host);
-
-  if (parsed.isDashboard || parsed.isRootDomain) {
-    return {};
-  }
-
-  if (parsed.isCustomDomain && parsed.hostname) {
-    return { "X-Custom-Domain": parsed.hostname };
-  }
-
-  if (parsed.subdomain && !["dashboard", "www", "api"].includes(parsed.subdomain)) {
-    return { "X-Subdomain": parsed.subdomain };
-  }
-
-  return {};
-};
-
 export const getRequestHost = (headerList) =>
   headerList?.get?.("x-forwarded-host") ||
   headerList?.get?.("host") ||

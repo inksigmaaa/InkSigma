@@ -1,9 +1,5 @@
 import logger from "../utils/logger.js";
 
-export const asyncHandler = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
-
 const parsePipeError = (err: Error): { message: string; statusCode: number } => {
   const message = err.message;
   const pipeIndex = message.lastIndexOf("|");

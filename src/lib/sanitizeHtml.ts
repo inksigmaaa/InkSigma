@@ -95,13 +95,3 @@ const getSanitizeFn = (): SanitizeFn | null => {
 
   return null;
 };
-
-export const sanitizeForStorage = (html: string): string => {
-  return sanitizeHtml(html);
-};
-
-export const sanitizeForDisplay = (html: string): string => {
-  return sanitizeHtml(html);
-};
-
-export default sanitizeHtml;

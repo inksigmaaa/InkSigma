@@ -164,9 +164,5 @@ export const getPublicationPageUrl = (publication, pathname = "/") => {
   }
 };
 
-export const getPublicationDomainLabel = (publication) =>
-  normalizeValue(publication?.customDomain) ||
-  getSubdomainHost(publication?.subdomain);
-
 export const getSubdomainDomainLabel = (subdomain) =>
   getSubdomainHost(subdomain);
