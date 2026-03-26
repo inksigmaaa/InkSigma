@@ -212,10 +212,12 @@ export async function middleware(request: NextRequest) {
   const rootDomain = (
     process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"
   ).toLowerCase();
-  const mainDomain = (
-    process.env.NEXT_PUBLIC_MAIN_DOMAIN ||
-    (isLocalLikeHost(rootDomain) ? rootDomain : "inksigma.com")
+  const configuredMainDomain = (
+    process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.com"
   ).toLowerCase();
+  const mainDomain = isLocalLikeHost(rootDomain)
+    ? rootDomain
+    : configuredMainDomain;
   const baseDomains = Array.from(new Set([...getBaseDomains(), mainDomain]));
   const pathname = request.nextUrl.pathname;
 

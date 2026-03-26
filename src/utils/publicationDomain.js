@@ -23,8 +23,9 @@ export const getRootDomain = () =>
   normalizeValue(process.env.NEXT_PUBLIC_ROOT_DOMAIN) || DEFAULT_ROOT_DOMAIN;
 
 export const getMainDomain = () =>
-  normalizeValue(process.env.NEXT_PUBLIC_MAIN_DOMAIN) ||
-  (isLocalLikeHost(getRootDomain()) ? getRootDomain() : DEFAULT_MAIN_DOMAIN);
+  isLocalLikeHost(getRootDomain())
+    ? getRootDomain()
+    : normalizeValue(process.env.NEXT_PUBLIC_MAIN_DOMAIN) || DEFAULT_MAIN_DOMAIN;
 
 const deriveRootDomainFromWindowHost = () => {
   if (typeof window === "undefined") return "";

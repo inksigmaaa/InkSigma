@@ -42,8 +42,6 @@ export const getMainDomain = () => {
     const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
     const configuredMain = process.env.NEXT_PUBLIC_MAIN_DOMAIN;
 
-    if (configuredMain) return configuredMain;
-
     if (
         rootDomain === "localhost" ||
         rootDomain.endsWith(".local") ||
@@ -51,6 +49,8 @@ export const getMainDomain = () => {
     ) {
         return rootDomain;
     }
+
+    if (configuredMain) return configuredMain;
 
     return "inksigma.com";
 };

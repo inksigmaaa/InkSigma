@@ -13,7 +13,7 @@ const getLocalLikeBaseDomain = () =>
     );
 
 export const MAIN_DOMAIN = (
-  process.env.MAIN_DOMAIN || getLocalLikeBaseDomain() || "inksigma.com"
+  getLocalLikeBaseDomain() || process.env.MAIN_DOMAIN || "inksigma.com"
 ).toLowerCase();
 
 export const BASE_DOMAINS = (
