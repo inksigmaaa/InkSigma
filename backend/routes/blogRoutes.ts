@@ -136,12 +136,20 @@ router.get(
 // GET /api/blogs/:id
 router.get("/:id", validate(blogValidator.byIdSchema), async (req, res) => {
   try {
-    let blog = await blogService.getBlogById(req.params.id, null, req.tenant);
-
-    if (blog.status !== BLOG_STATUS.PUBLISHED && hasSessionHint(req)) {
-      const currentUserId = await getSessionUserId(req);
-      blog = await blogService.getBlogById(req.params.id, currentUserId, req.tenant);
+    let currentUserId = null;
+    if (hasSessionHint(req)) {
+      try {
+        currentUserId = await getSessionUserId(req);
+      } catch {
+        currentUserId = null;
+      }
     }
+
+    const blog = await blogService.getBlogById(
+      req.params.id,
+      currentUserId,
+      req.tenant,
+    );
 
     if (
       req.query.incrementView === "true" &&

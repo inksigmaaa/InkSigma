@@ -629,8 +629,9 @@ export default function EditorPageClient() {
         setSaveStatus("saved");
       }
 
-      // Refresh the article in context to update lists
-      if (responseData?.id) {
+      // Auto-save should stay best-effort and quiet. The list pages already refresh
+      // themselves, so avoid a second read that can surface transient 404s.
+      if (responseData?.id && !isAutoSave) {
         refreshArticle(responseData.id).catch((err) =>
           console.error("Failed to refresh article context:", err),
         );
