@@ -14,7 +14,7 @@ import { fetchJsonWithRetry } from '@/lib/api/client';
 import { getBlogPath } from '@/utils/blogUrl';
 
 const API_URL = getApiBase();
-const BLOG_CACHE_TTL_MS = 60 * 1000;
+const BLOG_CACHE_TTL_MS = 5 * 60 * 1000;
 
 const getBlogCacheKey = (publicationId) => `view-site:blogs:${publicationId}`;
 
@@ -103,7 +103,7 @@ function ViewSiteContent({
           },
           {
             attempts: 2,
-            delayMs: 160,
+            delayMs: 50,
           },
         );
 

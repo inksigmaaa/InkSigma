@@ -22,7 +22,7 @@ import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { getApiBase } from "@/utils/apiBase";
 
 const API_URL = getApiBase();
-const BLOG_DETAIL_CACHE_TTL_MS = 60 * 1000;
+const BLOG_DETAIL_CACHE_TTL_MS = 5 * 60 * 1000;
 
 const getBlogCacheKey = (slug, tenantSubdomain, tenantCustomDomain) => {
   return `view-site:blog:${tenantCustomDomain || tenantSubdomain || "root"}:${slug}`;
@@ -245,7 +245,7 @@ export default function BlogDetailPageClient({
           },
           {
             attempts: 2,
-            delayMs: 180,
+            delayMs: 50,
           },
         );
 
@@ -273,7 +273,7 @@ export default function BlogDetailPageClient({
               },
               {
                 attempts: 2,
-                delayMs: 150,
+                delayMs: 50,
               },
             );
             processedBlog.publication = publicationData;
