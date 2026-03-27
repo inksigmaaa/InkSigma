@@ -10,17 +10,17 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
+import {
+  DEFAULT_DRAFT_TITLE,
+  isArticlePublishable,
+  isMissingRealTitle,
+} from "@/utils/articlePublishability";
 
-const DEFAULT_DRAFT_TITLE = "[Untitled]";
-const LEGACY_DRAFT_TITLE = "untitle";
-
-const isMissingRealTitle = (title) => {
-  const normalized =
-    typeof title === "string" ? title.trim().toLowerCase() : "";
+const shouldDisplayInAllArticles = (article) => {
   return (
-    !normalized ||
-    normalized === DEFAULT_DRAFT_TITLE.toLowerCase() ||
-    normalized === LEGACY_DRAFT_TITLE
+    article.status !== "draft" ||
+    article.isPublishedCopyDraft ||
+    article.masterId !== null
   );
 };
 
@@ -73,9 +73,13 @@ export default function AllArticlePage() {
       loadedContextRef.current = targetContext;
 
       if (targetContext === "publication") {
-        loadPublicationArticles(currentPublication.id); // No status filter for "All Articles"
+        loadPublicationArticles(currentPublication.id, null, {
+          draftScope: "publishedCopies",
+        });
       } else {
-        loadUserArticles();
+        loadUserArticles(null, false, null, {
+          draftScope: "publishedCopies",
+        });
       }
     }
   }, [
@@ -89,32 +93,35 @@ export default function AllArticlePage() {
   const { data: session } = useSession();
 
   // Calculate permissions for each article
-  const articlesWithPermissions = displayArticles.map((article) => {
-    const isDraft = article.status === "draft";
-    const canPublishArticle = !isMissingRealTitle(article.title);
+  const articlesWithPermissions = displayArticles
+    .filter(shouldDisplayInAllArticles)
+    .map((article) => {
+      const isDraft = article.status === "draft";
+      const hasRealTitle = !isMissingRealTitle(article.title);
+      const canPublishArticle = isArticlePublishable(article);
 
-    // Only restrict deletion for published articles
-    let canDelete = true;
-    if (article.status === "published") {
-      const isOwnArticle =
-        session?.user?.id &&
-        article.author &&
-        String(article.author.id) === String(session.user.id);
+      // Only restrict deletion for published articles
+      let canDelete = true;
+      if (article.status === "published") {
+        const isOwnArticle =
+          session?.user?.id &&
+          article.author &&
+          String(article.author.id) === String(session.user.id);
 
-      canDelete =
-        currentPublication?.isOwner || userRole === "admin" || isOwnArticle;
-    }
+        canDelete =
+          currentPublication?.isOwner || userRole === "admin" || isOwnArticle;
+      }
 
-    const displayTitle =
-      isDraft && !canPublishArticle ? DEFAULT_DRAFT_TITLE : article.title;
+      const displayTitle =
+        isDraft && !hasRealTitle ? DEFAULT_DRAFT_TITLE : article.title;
 
-    return {
-      ...article,
-      title: displayTitle,
-      canDelete,
-      canPublishDraft: isDraft ? canPublishArticle : true,
-    };
-  });
+      return {
+        ...article,
+        title: displayTitle,
+        canDelete,
+        canPublishDraft: isDraft ? canPublishArticle : true,
+      };
+    });
 
   return (
     <AuthGuard>

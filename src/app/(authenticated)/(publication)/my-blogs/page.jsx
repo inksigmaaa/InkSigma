@@ -9,19 +9,11 @@ import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { toast } from "sonner";
-
-const DEFAULT_DRAFT_TITLE = "[Untitled]";
-const LEGACY_DRAFT_TITLE = "untitle";
-
-const isMissingRealTitle = (title) => {
-  const normalized =
-    typeof title === "string" ? title.trim().toLowerCase() : "";
-  return (
-    !normalized ||
-    normalized === DEFAULT_DRAFT_TITLE.toLowerCase() ||
-    normalized === LEGACY_DRAFT_TITLE
-  );
-};
+import {
+  DEFAULT_DRAFT_TITLE,
+  isArticlePublishable,
+  isMissingRealTitle,
+} from "@/utils/articlePublishability";
 
 export default function MyBlogsPage() {
   const {
@@ -63,9 +55,10 @@ export default function MyBlogsPage() {
     }
 
     return filtered.map((article) => {
-      const canPublishArticle = !isMissingRealTitle(article.title);
+      const hasRealTitle = !isMissingRealTitle(article.title);
+      const canPublishArticle = isArticlePublishable(article);
       const displayTitle =
-        article.status === "draft" && !canPublishArticle
+        article.status === "draft" && !hasRealTitle
           ? DEFAULT_DRAFT_TITLE
           : article.title;
 

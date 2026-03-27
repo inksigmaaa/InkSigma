@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { parseHost } from '@/utils/hostParser';
+import { buildLoginRedirectPath, isAuthFlowPath } from '@/utils/auth';
 
 const getApiBase = () => {
   const envBase = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
@@ -6,24 +8,24 @@ const getApiBase = () => {
   return process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:5000';
 };
 
-const getSubdomain = (): string | null => {
-  if (typeof window === 'undefined') return null;
-  const hostname = window.location.hostname;
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost';
-  const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'inksigma.com';
+const getTenantHeaders = (): Record<string, string> => {
+  if (typeof window === 'undefined') return {};
 
-  if (hostname.endsWith(`.${rootDomain}`) && hostname !== rootDomain) {
-    const parts = hostname.split('.');
-    if (parts[0] && !['dashboard', 'www', 'api'].includes(parts[0])) {
-      return parts[0];
-    }
+  const parsed = parseHost(window.location.host);
+
+  if (parsed.isDashboard || parsed.isRootDomain) {
+    return {};
   }
 
-  if (hostname.endsWith(`.${mainDomain}`) && hostname !== mainDomain) {
-    const subdomain = hostname.replace(`.${mainDomain}`, '').split('.')[0];
-    if (subdomain !== 'www') return subdomain;
+  if (parsed.isCustomDomain && parsed.hostname) {
+    return { 'X-Custom-Domain': parsed.hostname };
   }
-  return null;
+
+  if (parsed.subdomain && !['dashboard', 'www', 'api'].includes(parsed.subdomain)) {
+    return { 'X-Subdomain': parsed.subdomain };
+  }
+
+  return {};
 };
 
 export const api = axios.create({
@@ -33,8 +35,9 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const subdomain = getSubdomain();
-  if (subdomain) config.headers['X-Subdomain'] = subdomain;
+  Object.entries(getTenantHeaders()).forEach(([key, value]) => {
+    config.headers[key] = value;
+  });
   return config;
 });
 
@@ -48,7 +51,12 @@ api.interceptors.response.use(
         await api.post('/auth/refresh');
         return api(originalRequest);
       } catch {
-        if (typeof window !== 'undefined') window.location.href = '/login';
+        if (
+          typeof window !== 'undefined' &&
+          !isAuthFlowPath(window.location.pathname)
+        ) {
+          window.location.href = buildLoginRedirectPath();
+        }
         return Promise.reject(error);
       }
     }
@@ -65,6 +73,105 @@ export const handleApiError = (error: unknown): never => {
   }
   throw error;
 };
+
+const createAbortError = () => {
+  const error = new Error('Aborted');
+  error.name = 'AbortError';
+  return error;
+};
+
+const delay = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(createAbortError());
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      if (signal) {
+        signal.removeEventListener('abort', handleAbort);
+      }
+      resolve();
+    }, ms);
+
+    const handleAbort = () => {
+      clearTimeout(timeoutId);
+      if (signal) {
+        signal.removeEventListener('abort', handleAbort);
+      }
+      reject(createAbortError());
+    };
+
+    if (signal) {
+      signal.addEventListener('abort', handleAbort, { once: true });
+    }
+  });
+
+const readErrorMessage = async (response: Response) => {
+  try {
+    const data = await response.json();
+    return data?.error || data?.message || response.statusText;
+  } catch {
+    try {
+      const text = await response.text();
+      return text || response.statusText;
+    } catch {
+      return response.statusText;
+    }
+  }
+};
+
+export async function fetchJsonWithRetry(
+  url: string,
+  fetchOptions: RequestInit = {},
+  {
+    attempts = 4,
+    delayMs = 300,
+    retryOnStatuses = [404, 408, 425, 429, 500, 502, 503, 504],
+  }: {
+    attempts?: number;
+    delayMs?: number;
+    retryOnStatuses?: number[];
+  } = {},
+) {
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    if (fetchOptions.signal?.aborted) {
+      throw createAbortError();
+    }
+
+    try {
+      const response = await fetch(url, fetchOptions);
+
+      if (response.ok) {
+        return await response.json();
+      }
+
+      const message = await readErrorMessage(response);
+      const error = new Error(message || 'Request failed') as Error & { status?: number };
+      error.status = response.status;
+      lastError = error;
+
+      if (attempt === attempts || !retryOnStatuses.includes(response.status)) {
+        throw error;
+      }
+    } catch (error) {
+      if ((error as Error | undefined)?.name === 'AbortError') {
+        throw error;
+      }
+
+      lastError = error;
+      if (attempt === attempts) {
+        throw error;
+      }
+    }
+
+    await delay(delayMs * attempt, fetchOptions.signal);
+  }
+
+  throw lastError || new Error('Request failed');
+}
 
 export const buildQueryString = (params: Record<string, any> = {}): string => {
   const searchParams = new URLSearchParams();

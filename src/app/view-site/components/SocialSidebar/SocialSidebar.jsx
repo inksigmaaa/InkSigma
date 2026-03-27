@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { getApiBase } from '@/utils/apiBase';
+import { getBlogUrl } from '@/utils/blogUrl';
 import { NightTooltip } from "@/components/ui/tooltip";
 
 const API_URL = getApiBase();
@@ -10,7 +11,7 @@ const API_URL = getApiBase();
 export default function SocialSidebar({ title, url, slug, blogId, onSnapshot }) {
   const [showCopied, setShowCopied] = useState(false);
 
-  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/view-site/blog/${slug}` : '');
+  const blogUrl = url || getBlogUrl(slug);
 
   // Track share action
   const trackShare = async (platform) => {

@@ -26,7 +26,7 @@ export const getBaseDomains = () => {
     const envValue =
         process.env.NEXT_PUBLIC_BASE_DOMAINS ||
         process.env.NEXT_PUBLIC_ROOT_DOMAIN ||
-        "localhost";
+        "localhost,inksigma.local";
 
     return envValue
         .split(",")
@@ -39,7 +39,20 @@ export const getBaseDomains = () => {
  * @returns {string} - Main domain
  */
 export const getMainDomain = () => {
-    return process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.com";
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
+    const configuredMain = process.env.NEXT_PUBLIC_MAIN_DOMAIN;
+
+    if (
+        rootDomain === "localhost" ||
+        rootDomain.endsWith(".local") ||
+        rootDomain.endsWith(".localhost")
+    ) {
+        return rootDomain;
+    }
+
+    if (configuredMain) return configuredMain;
+
+    return "inksigma.com";
 };
 
 /**
@@ -110,33 +123,4 @@ export const parseHost = (rawHost) => {
         isCustomDomain: false,
         isDashboard: subdomain === "dashboard",
     };
-};
-
-/**
- * Build a publication URL from subdomain
- * @param {string} subdomain - The publication subdomain
- * @returns {string} - Full URL to the publication
- */
-export const buildPublicationUrl = (subdomain) => {
-    if (!subdomain) return "";
-
-    const isDev = process.env.NODE_ENV === "development";
-    const mainDomain = getMainDomain();
-
-    if (isDev) {
-        return `http://${subdomain}.localhost:3000`;
-    }
-
-    return `https://${subdomain}.${mainDomain}`;
-};
-
-/**
- * Extract subdomain from current window location
- * @returns {string | null} - Subdomain or null
- */
-export const getSubdomainFromLocation = () => {
-    if (typeof window === "undefined") return null;
-
-    const parsed = parseHost(window.location.host);
-    return parsed.subdomain;
 };

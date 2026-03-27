@@ -2,8 +2,7 @@ import express from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { auth } from "../config/betterAuth.js";
-import { fromNodeHeaders } from "better-auth/node";
+import { requireAuth } from "../middleware/auth.js";
 import logger from "../utils/logger.js";
 
 const router = express.Router();
@@ -38,27 +37,8 @@ const upload = multer({
     },
 });
 
-// Middleware to get current user from session
-const getCurrentUser = async (req, res, next) => {
-    try {
-        const session = await auth.api.getSession({
-            headers: fromNodeHeaders(req.headers),
-        });
-
-        if (!session?.user) {
-            return res.status(401).json({ error: "Unauthorized" });
-        }
-
-        req.user = session.user;
-        next();
-    } catch (error) {
-        logger.error(error, "Auth error:");
-        return res.status(401).json({ error: "Unauthorized" });
-    }
-};
-
 // POST /api/upload-image - Upload inline image for editor
-router.post("/", getCurrentUser, upload.single("image"), async (req, res) => {
+router.post("/", requireAuth, upload.single("image"), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: "No image file provided" });

@@ -12,6 +12,7 @@ import {
 import { blogService } from "@/services/blog.service";
 import { useSession } from "@/lib/auth-client";
 import { usePublication } from "@/contexts/PublicationContext";
+import { isArticlePublishable } from "@/utils/articlePublishability";
 
 const ArticlesContext = createContext();
 
@@ -38,18 +39,39 @@ const formatDate = (date) => {
   return `${day}${suffix(day)} ${month}, ${year}`;
 };
 
+const resolveBlogStatus = (blog) => {
+  if (blog.status) {
+    return blog.status;
+  }
+
+  return blog.published ? "published" : "draft";
+};
+
+const getDraftMetadata = (blog, status) => {
+  const masterId = blog.masterId ?? null;
+  const isPublishedCopyDraft = status === "draft" && masterId !== null;
+
+  return {
+    masterId,
+    draftType: status === "draft"
+      ? isPublishedCopyDraft
+        ? "published-copy"
+        : "standard"
+      : null,
+    isPublishedCopyDraft,
+  };
+};
+
 // Helper function to convert database blog to article format
 const convertBlogToArticle = (blog, includeContent = false) => {
-  // Use the status field if available, otherwise derive from published field
-  let status = blog.status || (blog.published ? "published" : "draft");
-
-  // Ensure consistency with the publishing logic rules
-  if (blog.status) {
-    status = blog.status;
-  } else {
-    // Fallback for backward compatibility
-    status = blog.published ? "published" : "draft";
-  }
+  const status = resolveBlogStatus(blog);
+  const draftMetadata = getDraftMetadata(blog, status);
+  const isPublishable = isArticlePublishable({
+    title: blog.title,
+    description: blog.description,
+    content: blog.content,
+    isPublishable: blog.isPublishable,
+  });
 
   return {
     id: blog.id,
@@ -62,11 +84,14 @@ const convertBlogToArticle = (blog, includeContent = false) => {
     published: blog.published,
     postedTime: `Posted ${formatDate(new Date(blog.createdAt))}`,
     createdAt: blog.createdAt,
+    publishedAt: blog.publishedAt,
     updatedAt: blog.updatedAt,
     scheduledAt: blog.scheduledAt,
     author: blog.author,
     slug: blog.slug,
     publicationId: blog.publicationId,
+    ...draftMetadata,
+    isPublishable,
     // Use actual values from database, default to 0 if not present
     views: blog.views || 0,
     revisits: blog.revisits || 0,
@@ -121,6 +146,7 @@ export function ArticlesProvider({ children }) {
       publicationId = null,
       includeAllPublications = false,
       status = null,
+      extraFilters = {},
     ) => {
       // Use current session and publication context
       const currentSession = sessionRef.current || session;
@@ -150,6 +176,8 @@ export function ArticlesProvider({ children }) {
         if (status) {
           filters.status = status;
         }
+
+        Object.assign(filters, extraFilters);
 
         const blogs = await blogService.getUserBlogs(
           currentSession.user.id,
@@ -827,7 +855,7 @@ export function ArticlesProvider({ children }) {
   }, []);
 
   const loadPublicationArticles = useCallback(
-    async (publicationId, status = null) => {
+    async (publicationId, status = null, extraFilters = {}) => {
       // Abort previous request if exists
       if (pubAbortControllerRef.current) {
         pubAbortControllerRef.current.abort();
@@ -837,6 +865,7 @@ export function ArticlesProvider({ children }) {
       try {
         setPubArticlesLoading(true);
         const filters = status ? { status } : {};
+        Object.assign(filters, extraFilters);
         const blogs = await blogService.getPublicationBlogs(
           publicationId,
           filters,

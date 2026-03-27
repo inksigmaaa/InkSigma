@@ -1,4 +1,4 @@
-import { BLOG_STATUS } from "../config/constants.js";
+import { BLOG_STATUS } from "../config/constants.ts";
 
 // models/schema.js
 import {
@@ -9,6 +9,7 @@ import {
   serial,
   integer,
   pgEnum,
+  unique,
 } from "drizzle-orm/pg-core";
 
 // Define blog status enum
@@ -48,6 +49,25 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "blog_published",
   "member_joined",
   "member_removed",
+]);
+
+export const publicationHostnameKindEnum = pgEnum("publication_hostname_kind", [
+  "subdomain",
+  "custom_domain",
+]);
+
+export const publicationHostnameStatusEnum = pgEnum(
+  "publication_hostname_status",
+  ["active", "redirect"],
+);
+
+export const customDomainStatusEnum = pgEnum("custom_domain_status", [
+  "pending_verification",
+  "verified",
+  "ssl_pending",
+  "active",
+  "failed",
+  "detached",
 ]);
 
 export const user = pgTable("user", {
@@ -128,6 +148,25 @@ export const blog = pgTable("blog", {
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
 
+export const blogSlugHistory = pgTable(
+  "blog_slug_history",
+  {
+    id: serial("id").primaryKey(),
+    blogId: integer("blogId")
+      .notNull()
+      .references(() => blog.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull().unique(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    blogIdSlugUnique: unique("blog_slug_history_blog_id_slug_unique").on(
+      table.blogId,
+      table.slug,
+    ),
+  }),
+);
+
 export const comment = pgTable("comment", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
@@ -149,6 +188,11 @@ export const publication = pgTable("publication", {
   name: text("name").notNull(),
   subdomain: text("subdomain").notNull().unique(),
   customDomain: text("customDomain").unique(),
+  customDomainStatus: customDomainStatusEnum("customDomainStatus"),
+  customDomainVerificationToken: text("customDomainVerificationToken"),
+  customDomainVerificationError: text("customDomainVerificationError"),
+  customDomainVerifiedAt: timestamp("customDomainVerifiedAt"),
+  customDomainLastCheckedAt: timestamp("customDomainLastCheckedAt"),
   description: text("description"),
   image: text("image"),
   logoUrl: text("logoUrl"),
@@ -160,6 +204,29 @@ export const publication = pgTable("publication", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
+
+export const publicationHostname = pgTable(
+  "publication_hostname",
+  {
+    id: serial("id").primaryKey(),
+    publicationId: integer("publicationId")
+      .notNull()
+      .references(() => publication.id, { onDelete: "cascade" }),
+    kind: publicationHostnameKindEnum("kind").notNull(),
+    value: text("value").notNull(),
+    status: publicationHostnameStatusEnum("status")
+      .notNull()
+      .default("active"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    kindValueUnique: unique("publication_hostname_kind_value_unique").on(
+      table.kind,
+      table.value,
+    ),
+  }),
+);
 
 export const publicationMember = pgTable("publication_member", {
   id: serial("id").primaryKey(),

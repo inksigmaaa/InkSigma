@@ -1,199 +1,68 @@
-'use client';
+import { headers } from "next/headers";
+import { cache } from "react";
+import ViewSitePageClient from "./ViewSitePageClient";
+import { buildPublicationMetadata } from "@/utils/publicationSeo";
+import {
+  normalizeSearchParamsRecord,
+  resolvePublicSiteContext,
+} from "@/utils/publicSiteContext";
 
-import { useState, useEffect, useRef, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { usePublicationMeta } from '@/hooks/usePublicationMeta';
-import { usePublication } from '@/contexts/PublicationContext';
-import HomeHeader from './components/Header/HomeHeader';
-import LatestBlog from './components/LatestBlog/LatestBlog';
-import AllArticles from './components/AllArticles/AllArticles';
-import Footer from './components/Footer/Footer';
-import ScrollToTop from './components/ScrollToTop/ScrollToTop';
-import { getApiBase } from '@/utils/apiBase';
+const stringifySearchParams = (searchParams = {}) => {
+  try {
+    return JSON.stringify(searchParams || {});
+  } catch {
+    return "{}";
+  }
+};
 
-const API_URL = getApiBase();
+const resolveViewSiteContextCached = cache(async (host, searchParamsKey) => {
+  const parsedSearchParams = searchParamsKey ? JSON.parse(searchParamsKey) : {};
+  return resolvePublicSiteContext({
+    host,
+    searchParams: parsedSearchParams,
+  });
+});
 
-function ViewSiteContent() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [blogs, setBlogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [publicationData, setPublicationData] = useState(null);
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { currentPublication } = usePublication();
+export async function generateMetadata({ searchParams }) {
+  const resolvedSearchParams = await Promise.resolve(searchParams);
+  const normalizedSearchParams = normalizeSearchParamsRecord(resolvedSearchParams);
+  const searchParamsKey = stringifySearchParams(normalizedSearchParams);
+  const headerList = await headers();
+  const host =
+    headerList.get("x-forwarded-host") ||
+    headerList.get("host") ||
+    "";
 
-  // Get subdomain from URL params (set by middleware) or hostname
-  const [subdomain, setSubdomain] = useState(searchParams.get('subdomain'));
-  const pubIdFromUrl = searchParams.get('publicationId');
+  const { publication } = await resolveViewSiteContextCached(host, searchParamsKey);
 
-  useEffect(() => {
-    const paramSub = searchParams.get('subdomain');
-    if (paramSub) {
-      setSubdomain(paramSub);
-    } else if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost';
-      const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'inksigma.com';
-
-      let detectedSubdomain = null;
-
-      // Check for subdomain in local development or production
-      if (hostname.endsWith(`.${rootDomain}`) && hostname !== rootDomain && !hostname.startsWith('dashboard.') && !hostname.startsWith('www.')) {
-        const parts = hostname.split('.');
-        if (parts.length > 0) detectedSubdomain = parts[0];
-      } else if (hostname.endsWith(`.${mainDomain}`) && hostname !== mainDomain && !hostname.startsWith('www.')) {
-        const parts = hostname.replace(`.${mainDomain}`, '').split('.');
-        if (parts.length > 0) detectedSubdomain = parts[0];
-      }
-
-      if (detectedSubdomain) {
-        console.log('[ViewSite] Detected subdomain from hostname:', detectedSubdomain);
-        setSubdomain(detectedSubdomain);
-      }
-    }
-  }, [searchParams]);
-
-  // Fetch publication data and update meta tags
-  const { publication } = usePublicationMeta(subdomain);
-
-  // Set publication data from subdomain lookup or publicationId lookup
-  useEffect(() => {
-    if (publication) {
-      // Use publication from subdomain lookup
-      console.log('[ViewSite] Using publication from subdomain:', publication);
-      setPublicationData(publication);
-    } else if (pubIdFromUrl || currentPublication?.id) {
-      // Fallback to fetching by ID
-      const fetchPublicationDetails = async () => {
-        const publicationId = pubIdFromUrl || currentPublication?.id;
-
-        try {
-          console.log('[ViewSite] Fetching publication by ID:', publicationId);
-          const response = await fetch(`${API_URL}/api/publications/${publicationId}`, {
-            credentials: 'include'
-          });
-          if (response.ok) {
-            const data = await response.json();
-            console.log('[ViewSite] Publication data:', data);
-            setPublicationData(data);
-          } else {
-            console.error('[ViewSite] Failed to fetch publication:', response.status);
-          }
-        } catch (error) {
-          console.error('[ViewSite] Error fetching publication:', error);
-        }
-      };
-
-      fetchPublicationDetails();
-    }
-  }, [publication, pubIdFromUrl, currentPublication?.id]);
-
-  // Fetch published blogs
-  useEffect(() => {
-    const fetchBlogs = async () => {
-      try {
-        setLoading(true);
-        // Use publicationId from URL query parameter, fetched publication data, or currentPublication
-        // Remove parseInt to support UUIDs and avoid NaN issues
-        const publicationId = pubIdFromUrl || publicationData?.id || currentPublication?.id;
-
-        console.log('[ViewSite] Fetching blogs for publication:', publicationId);
-
-        if (!publicationId) {
-          console.log('[ViewSite] No publicationId, skipping blog fetch');
-          setBlogs([]);
-          return;
-        }
-
-        const response = await fetch(
-          `${API_URL}/api/blogs?publicationId=${publicationId}&status=published`,
-          { credentials: 'include' }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log('[ViewSite] Blogs fetched:', data.length);
-          setBlogs(data);
-        } else {
-          console.error('[ViewSite] Failed to fetch blogs:', response.status);
-          setBlogs([]);
-        }
-      } catch (error) {
-        console.error('[ViewSite] Error fetching blogs:', error);
-        setBlogs([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBlogs();
-  }, [publicationData?.id, currentPublication?.id, pubIdFromUrl]);
-
-  // Get unique categories from blogs, limit to 3
-  const categories = [...new Set(blogs.map(blog => blog.categories?.[0]).filter(Boolean))].slice(0, 3);
-
-  // Restore scroll position when returning from blog
-  useEffect(() => {
-    const savedPosition = sessionStorage.getItem('viewSiteScrollPosition');
-    if (savedPosition) {
-      // Restore to saved position instantly
-      window.scrollTo({ top: parseInt(savedPosition, 10), behavior: 'instant' });
-    }
-
-    // Save scroll position when navigating away
-    const handleBeforeUnload = () => {
-      sessionStorage.setItem('viewSiteScrollPosition', window.scrollY.toString());
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      // Save position when component unmounts (navigating to blog)
-      sessionStorage.setItem('viewSiteScrollPosition', window.scrollY.toString());
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, []);
-
-  const publicationLogoUrl = publicationData?.logoUrl || publication?.logoUrl || currentPublication?.logoUrl;
-  const avatarUrl = publicationLogoUrl ? `${API_URL}${publicationLogoUrl}` : null;
-  const publicationName = publicationData?.name || publication?.name || currentPublication?.name || "Your Publication Name";
-
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <HomeHeader
-        userName={publicationName}
-        userAvatar={avatarUrl}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
-      <div className="flex-grow pt-20 md:pt-24">
-        {loading ? (
-          <div className="flex justify-center items-center min-h-[400px]">
-            <p className="text-gray-500">Loading blogs...</p>
-          </div>
-        ) : (
-          <>
-            <LatestBlog searchQuery={searchQuery} blogs={blogs} publicationId={pubIdFromUrl || publicationData?.id || currentPublication?.id} />
-            <AllArticles
-              searchQuery={searchQuery}
-              selectedCategory={selectedCategory}
-              blogs={searchQuery ? blogs : blogs.slice(1)}
-              publicationId={pubIdFromUrl || publicationData?.id || currentPublication?.id}
-            />
-          </>
-        )}
-      </div>
-      <Footer publicationName={publicationName} />
-      <ScrollToTop />
-    </div>
-  );
+  return buildPublicationMetadata({
+    publication,
+    pathname: "/",
+    title: publication?.name,
+    description: publication?.description,
+    image: publication?.metaOgImageUrl || publication?.logoUrl,
+    type: "website",
+  });
 }
 
-export default function ViewSitePage() {
+export default async function ViewSitePage({ searchParams }) {
+  const resolvedSearchParams = await Promise.resolve(searchParams);
+  const normalizedSearchParams = normalizeSearchParamsRecord(resolvedSearchParams);
+  const searchParamsKey = stringifySearchParams(normalizedSearchParams);
+  const headerList = await headers();
+  const host =
+    headerList.get("x-forwarded-host") ||
+    headerList.get("host") ||
+    "";
+  const { publication, publicationId } = await resolveViewSiteContextCached(
+    host,
+    searchParamsKey,
+  );
+
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>}>
-      <ViewSiteContent />
-    </Suspense>
+    <ViewSitePageClient
+      initialPublication={publication}
+      initialPublicationId={publicationId}
+    />
   );
 }

@@ -32,27 +32,16 @@ export default function PublishSuccessModal({ isOpen, onClose, onSeeLater, onVie
               gap: '16px'
             }}
           >
-            {/* Icon - Paper plane with checkmark */}
-            <div className="relative mb-4">
-              {/* Paper plane icon */}
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="text-gray-400">
-                <path 
-                  d="M46 2L20 28L14 22" 
-                  stroke="currentColor" 
-                  strokeWidth="3" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                  transform="translate(8, 8) scale(0.8)"
-                />
-                <path 
-                  d="M2 2L22 12L12 32L2 2Z" 
-                  fill="currentColor"
-                  transform="translate(8, 8) scale(0.8)"
-                />
-              </svg>
-              {/* Green checkmark */}
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            {/* Icon */}
+            <div className="relative mb-4 h-[68px] w-[64px]">
+              <img
+                src="/images/icons/paper-plane-svgrepo-com 1.svg"
+                alt=""
+                aria-hidden="true"
+                className="h-[60px] w-[60px] object-contain"
+              />
+              <div className="absolute bottom-[2px] right-[4px] flex h-[28px] w-[28px] items-center justify-center rounded-full bg-[#6ED564] shadow-[0px_4px_10px_rgba(110,213,100,0.22)]">
+                <svg width="16" height="16" viewBox="0 0 12 12" fill="none">
                   <path 
                     d="M2 6L5 9L10 3" 
                     stroke="white" 
@@ -79,11 +68,10 @@ export default function PublishSuccessModal({ isOpen, onClose, onSeeLater, onVie
               {/* See Later button */}
               <button
                 onClick={onSeeLater}
-                className="bg-[#F8F8F8] border border-[#ECECEC] text-gray-700 hover:bg-gray-200 transition-colors rounded text-sm font-medium"
+                className="flex items-center justify-center bg-[#F8F8F8] border border-[#ECECEC] text-gray-700 hover:bg-gray-200 transition-colors rounded text-sm font-medium text-center leading-none"
                 style={{
                   width: '111px',
-                  height: '32px',
-                  padding: '8px 16px'
+                  height: '32px'
                 }}
               >
                 See Later
@@ -92,11 +80,10 @@ export default function PublishSuccessModal({ isOpen, onClose, onSeeLater, onVie
               {/* View in Site button */}
               <button
                 onClick={onViewInSite}
-                className="text-white hover:opacity-90 transition-opacity rounded text-sm font-medium"
+                className="flex items-center justify-center text-white hover:opacity-90 transition-opacity rounded text-sm font-medium text-center leading-none"
                 style={{
                   width: '110px',
                   height: '32px',
-                  padding: '8px 12px',
                   background: 'linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)',
                   boxShadow: '0px 4px 8px 0px #EADBF9'
                 }}

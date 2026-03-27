@@ -3,7 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
+import { parseHost } from "@/utils/hostParser";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const API_URL = getApiBase();
 
@@ -24,6 +33,7 @@ export default function CommentSection({ blogId }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const { data: session, isPending: sessionPending } = useSession();
   const currentUser = session?.user || null;
 
@@ -56,6 +66,92 @@ export default function CommentSection({ blogId }) {
     fetchComments();
   }, [fetchComments]);
 
+  useEffect(() => {
+    if (!currentUser) return;
+
+    setShowAuthModal(false);
+  }, [currentUser]);
+
+  const getDashboardReturnToUrl = () => {
+    if (typeof window === "undefined") {
+      return "http://dashboard.localhost:3000/view-site";
+    }
+
+    const dashboardUrl = new URL(
+      window.location.pathname.startsWith("/view-site")
+        ? window.location.pathname
+        : `/view-site${window.location.pathname}`,
+      getDashboardOrigin(),
+    );
+    const currentParams = new URLSearchParams(window.location.search);
+    const parsedHost = parseHost(window.location.host);
+
+    currentParams.forEach((value, key) => {
+      dashboardUrl.searchParams.set(key, value);
+    });
+
+    if (parsedHost.isCustomDomain && parsedHost.hostname) {
+      dashboardUrl.searchParams.set("customDomain", parsedHost.hostname);
+      dashboardUrl.searchParams.delete("subdomain");
+    } else if (
+      parsedHost.subdomain &&
+      !["dashboard", "www", "api"].includes(parsedHost.subdomain)
+    ) {
+      dashboardUrl.searchParams.set("subdomain", parsedHost.subdomain);
+      dashboardUrl.searchParams.delete("customDomain");
+    }
+
+    return dashboardUrl.toString();
+  };
+
+  const getDashboardOrigin = () => {
+    if (typeof window === "undefined") {
+      return "http://dashboard.localhost:3000";
+    }
+
+    const rootDomain =
+      (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost").toLowerCase();
+    const desiredHost =
+      rootDomain === "localhost"
+        ? "dashboard.localhost"
+        : `dashboard.${rootDomain}`;
+    const port = window.location.port ? `:${window.location.port}` : "";
+
+    return `${window.location.protocol}//${desiredHost}${port}`;
+  };
+
+  const openAuthModal = () => {
+    setShowAuthModal(true);
+  };
+
+  const closeAuthModal = () => {
+    setShowAuthModal(false);
+  };
+
+  const handleAuthModalOpenChange = (open) => {
+    if (open) {
+      openAuthModal();
+      return;
+    }
+
+    closeAuthModal();
+  };
+
+  const handleGuestCommentIntent = (event) => {
+    if (currentUser || sessionPending) return;
+
+    event.target.blur();
+    openAuthModal();
+  };
+
+  const redirectToDashboardLogin = () => {
+    if (typeof window === "undefined") return;
+
+    const loginUrl = new URL("/login", getDashboardOrigin());
+    loginUrl.searchParams.set("returnTo", getDashboardReturnToUrl());
+    window.location.assign(loginUrl.toString());
+  };
+
   // Update exactly on minute boundaries so "x min ago" changes on time.
   useEffect(() => {
     let intervalId;
@@ -78,6 +174,11 @@ export default function CommentSection({ blogId }) {
   }, []);
 
   const handleSubmitComment = async () => {
+    if (!currentUser) {
+      openAuthModal();
+      return;
+    }
+
     if (!newComment.trim()) {
       setError("Please enter a comment");
       return;
@@ -173,6 +274,11 @@ export default function CommentSection({ blogId }) {
   };
 
   const handleSubmitReply = async (commentId) => {
+    if (!currentUser) {
+      openAuthModal();
+      return;
+    }
+
     if (!replyContent.trim()) {
       setError("Please enter a reply");
       return;
@@ -299,6 +405,15 @@ export default function CommentSection({ blogId }) {
     setExpandedReplies((prev) => ({ ...prev, [commentId]: !prev[commentId] }));
   };
 
+  const handleReplyClick = (commentId) => {
+    if (!currentUser) {
+      openAuthModal();
+      return;
+    }
+
+    setReplyingTo(replyingTo === commentId ? null : commentId);
+  };
+
   const getAuthorAvatar = (author) => {
     if (!author?.image) return null;
     if (author.image.startsWith("http")) return author.image;
@@ -322,6 +437,37 @@ export default function CommentSection({ blogId }) {
 
   return (
     <div className="mt-12">
+      <Dialog open={showAuthModal} onOpenChange={handleAuthModalOpenChange}>
+        <DialogContent className="max-w-[420px] rounded-2xl border-0 p-6">
+          <DialogHeader className="space-y-2 text-left">
+            <DialogTitle className="text-[22px] font-semibold leading-tight text-[#14142D]">
+              Login to comment
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-6 text-[#696969]">
+              Authentication is handled on the InkSigma dashboard so your
+              session cookie is created on the correct domain. Continue to log
+              in there, then you&apos;ll be sent back to this blog page.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Button
+              type="button"
+              onClick={redirectToDashboardLogin}
+              className="h-11 w-full border-0 bg-[#080808] text-white hover:bg-[#1C1C1C]"
+            >
+              Continue to login
+            </Button>
+
+            <div className="rounded-lg border border-[#EAEAEA] bg-[#F8F8F8] px-4 py-3 text-sm text-[#696969]">
+              Use your existing InkSigma login page for email/password or Google
+              sign-in. That flow already handles session creation, verification,
+              and redirects correctly.
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="my-6 ">
         <h2 className="text-base font-semibold leading-6 tracking-normal text-[#14142D] mb-6 max-md:text-sm max-md:pt-5 max-md:border-t max-md:border-[#EDEDED] ">
           How useful was this blog?
@@ -339,27 +485,37 @@ export default function CommentSection({ blogId }) {
           </div>
         )}
 
-        <div className="flex gap-3 md:gap-4 mb-6">
-          <Avatar className="w-8 h-8 bg-purple-100 flex-shrink-0 max-md:w-6 max-md:h-6">
-            {currentUser?.image && (
-              <AvatarImage
-                src={getAuthorAvatar(currentUser)}
-                alt={currentUser.name}
-                className="w-full h-full object-cover"
-              />
-            )}
-            <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold">
-              {currentUser?.name?.charAt(0).toUpperCase() || "?"}
-            </AvatarFallback>
-          </Avatar>
+        <div
+          className={`flex mb-6 ${currentUser ? "gap-3 md:gap-4" : "gap-0"}`}
+        >
+          {currentUser && (
+            <Avatar className="w-8 h-8 bg-purple-100 flex-shrink-0 max-md:w-6 max-md:h-6">
+              {currentUser.image && (
+                <AvatarImage
+                  src={getAuthorAvatar(currentUser)}
+                  alt={currentUser.name}
+                  className="w-full h-full object-cover"
+                />
+              )}
+              <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold">
+                {currentUser.name?.charAt(0).toUpperCase() || "?"}
+              </AvatarFallback>
+            </Avatar>
+          )}
           <div className="flex-1 min-w-0">
             <textarea
-              placeholder="Share your thoughts..."
+              placeholder={
+                currentUser
+                  ? "Share your thoughts..."
+                  : "Click here to login and share your thoughts..."
+              }
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
+              onFocus={handleGuestCommentIntent}
               className="w-full min-h-[94px] p-4 border-[1px] border-[#EAEAEA] rounded-sm focus:outline-none focus:border-[#EAEAEA] resize-none text-black text-sm md:text-base placeholder:text-[#A4A4A4] placeholder:text-base placeholder:font-normal placeholder:leading-6 placeholder:tracking-normal placeholder:align-middle max-md:text-xs max-md:py-2 placeholder:max-md:text-xs"
               maxLength={2000}
               disabled={submitting}
+              readOnly={!currentUser}
             />
             <div className="flex justify-end items-center mt-1">
               {/* <span className="text-xs text-gray-400">{newComment.length}/2000</span> */}
@@ -421,11 +577,7 @@ export default function CommentSection({ blogId }) {
 
                       <div className="flex gap-4 text-sm items-center my-3">
                         <button
-                          onClick={() =>
-                            setReplyingTo(
-                              replyingTo === comment.id ? null : comment.id,
-                            )
-                          }
+                          onClick={() => handleReplyClick(comment.id)}
                           className="text-[#A4A4A4] text-sm font-normal tracking-normal gap-1 flex items-center max-md:text-xs max-md:leading-normal"
                         >
                           <img
@@ -492,17 +644,6 @@ export default function CommentSection({ blogId }) {
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              {!currentUser && (
-                                <div className="mb-2 p-2 bg-gray-50 border border-gray-200 rounded text-sm text-center">
-                                  <a
-                                    href="/login"
-                                    className="text-purple-600 font-semibold hover:underline"
-                                  >
-                                    Sign in
-                                  </a>{" "}
-                                  to reply
-                                </div>
-                              )}
                               {currentUser && (
                                 <>
                                   <textarea

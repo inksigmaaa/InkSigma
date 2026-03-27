@@ -22,5 +22,3 @@ export const config = {
     fromName: process.env.SMTP_FROM_NAME,
   },
 };
-
-export default config;

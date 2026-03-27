@@ -2,7 +2,12 @@ import express from "express";
 import { db } from "../config/database.js";
 import { notification, user, publication } from "../models/schema.js";
 import { eq, desc, and, count } from "drizzle-orm";
+import { requireAuth } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
+import {
+  requireNotificationOwnership,
+  requireUserParamAccess,
+} from "../middleware/authorization.js";
 import * as generalValidator from "../validators/generalValidator.js";
 import logger from "../utils/logger.js";
 import { config } from "../config/appConfig.js";
@@ -12,7 +17,9 @@ const router = express.Router();
 // Get all notifications for a user
 router.get(
   "/:userId",
+  requireAuth,
   validate(generalValidator.byUserIdParam),
+  requireUserParamAccess("userId"),
   async (req, res) => {
     try {
       const { userId } = req.params;
@@ -124,15 +131,15 @@ router.get(
 // Mark notification as read
 router.patch(
   "/:notificationId/read",
+  requireAuth,
   validate(generalValidator.byNotificationIdParam),
+  requireNotificationOwnership("notificationId"),
   async (req, res) => {
     try {
-      const { notificationId } = req.params;
-
       await db
         .update(notification)
         .set({ isRead: true, updatedAt: new Date() })
-        .where(eq(notification.id, parseInt(notificationId)));
+        .where(eq(notification.id, req.notificationId));
 
       res.json({ success: true });
     } catch (error) {
@@ -145,7 +152,9 @@ router.patch(
 // Mark all notifications as read for a user
 router.patch(
   "/user/:userId/read-all",
+  requireAuth,
   validate(generalValidator.byUserIdParam),
+  requireUserParamAccess("userId"),
   async (req, res) => {
     try {
       const { userId } = req.params;
@@ -170,14 +179,14 @@ router.patch(
 // Delete a notification
 router.delete(
   "/:notificationId",
+  requireAuth,
   validate(generalValidator.byNotificationIdParam),
+  requireNotificationOwnership("notificationId"),
   async (req, res) => {
     try {
-      const { notificationId } = req.params;
-
       await db
         .delete(notification)
-        .where(eq(notification.id, parseInt(notificationId)));
+        .where(eq(notification.id, req.notificationId));
 
       res.json({ success: true });
     } catch (error) {
@@ -190,7 +199,9 @@ router.delete(
 // Get unread count
 router.get(
   "/user/:userId/unread-count",
+  requireAuth,
   validate(generalValidator.byUserIdParam),
+  requireUserParamAccess("userId"),
   async (req, res) => {
     try {
       const { userId } = req.params;

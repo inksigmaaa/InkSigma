@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -9,14 +9,16 @@ import { Label } from "@/components/ui/label";
 import AuthLayout from "@/components/auth/AuthLayout";
 import PasswordField from "@/components/auth/PasswordField";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
-import { APP_CONFIG } from "@/constants/app";
-import { signIn } from "@/lib/auth-client";
+import { signIn, useSession } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
+import { waitForServerSession } from "@/utils/auth";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
+  const returnTo = searchParams.get("returnTo") || "";
+  const { data: session, isPending } = useSession();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -27,7 +29,6 @@ function LoginForm() {
   const [showResendVerification, setShowResendVerification] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
-  const [showUnregistered, setShowUnregistered] = useState(false);
 
   const getOrigin = () => {
     if (typeof window !== "undefined") {
@@ -38,27 +39,75 @@ function LoginForm() {
 
   const apiBase = getApiBase();
 
+  const getSignupPath = () =>
+    returnTo
+      ? `/signup?returnTo=${encodeURIComponent(returnTo)}`
+      : redirectTo !== "/"
+        ? `/signup?redirect=${encodeURIComponent(redirectTo)}`
+        : "/signup";
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const redirectAuthenticatedUser = async () => {
+      if (isPending) return;
+
+      try {
+        const activeSession = session?.user?.id
+          ? session
+          : await waitForServerSession({
+              attempts: 2,
+              signal: controller.signal,
+            });
+
+        if (!activeSession?.user?.id || cancelled) {
+          return;
+        }
+
+        const callbackPath = returnTo
+          ? `/auth-callback?returnTo=${encodeURIComponent(returnTo)}`
+          : redirectTo !== "/"
+            ? `/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+            : "/auth-callback";
+
+        router.replace(callbackPath);
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          console.error("Error redirecting authenticated user:", error);
+        }
+      }
+    };
+
+    redirectAuthenticatedUser();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [isPending, redirectTo, returnTo, router, session]);
+
   const handleInputChange = (field) => (e) => {
     setFormData((prev) => ({
       ...prev,
       [field]: e.target.value,
     }));
     setError("");
-    setShowUnregistered(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    setShowUnregistered(false);
 
     try {
       const origin = getOrigin();
-      const callbackURL =
-        redirectTo !== "/"
-          ? `${origin}/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
-          : `${origin}/auth-callback`;
+      const callbackPath = returnTo
+        ? `/auth-callback?returnTo=${encodeURIComponent(returnTo)}`
+        : redirectTo !== "/"
+          ? `/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+          : "/auth-callback";
+      const callbackURL = `${origin}${callbackPath}`;
 
       const result = await signIn.email({
         email: formData.email,
@@ -76,7 +125,6 @@ function LoginForm() {
           errorMessage.toLowerCase().includes("networkerror")
         ) {
           setError("Network error. Please try again.");
-          setShowUnregistered(false);
         } else if (errorMessage.toLowerCase().includes("no password account")) {
           setError(
             "This account was created with Google. Please use 'Login With Google' button below.",
@@ -101,10 +149,9 @@ function LoginForm() {
             if (checkRes.ok) {
               const checkData = await checkRes.json();
               if (!checkData.exists) {
-                setShowUnregistered(true);
-                setError(""); // Don't show generic error for unregistered users
+                router.replace(getSignupPath());
+                return;
               } else {
-                setShowUnregistered(false);
                 setError("Oops! Credentials do not match");
               }
             } else {
@@ -119,9 +166,15 @@ function LoginForm() {
         } else {
           setError(errorMessage);
           if (errorMessage.toLowerCase().includes("user not found")) {
-            setShowUnregistered(true);
+            router.replace(getSignupPath());
+            return;
           }
         }
+        return;
+      }
+
+      if (returnTo) {
+        router.replace(callbackPath);
         return;
       }
 
@@ -138,7 +191,7 @@ function LoginForm() {
               const data = await ownedRes.json().catch(() => null);
               const hasOwned = Boolean(data?.hasPublication);
               if (!hasOwned) {
-                router.push(
+                router.replace(
                   `/create-publication?redirect=${encodeURIComponent(redirectTo)}`,
                 );
                 return;
@@ -149,7 +202,7 @@ function LoginForm() {
           }
         }
 
-        router.push(redirectTo);
+        router.replace(redirectTo);
         return;
       }
 
@@ -195,7 +248,6 @@ function LoginForm() {
         lowerError.includes("networkerror")
       ) {
         setError("Network error. Please try again.");
-        setShowUnregistered(false);
       } else if (lowerError.includes("no password account")) {
         setError(
           "This account was created with Google. Please use 'Login With Google' button below.",
@@ -206,8 +258,12 @@ function LoginForm() {
         );
         setShowResendVerification(true);
       } else {
+        if (lowerError.includes("user not found")) {
+          router.replace(getSignupPath());
+          return;
+        }
+
         setError(errorMessage);
-        setShowUnregistered(lowerError.includes("user not found"));
       }
       console.error(err);
     } finally {
@@ -217,12 +273,13 @@ function LoginForm() {
 
   const handleGoogleLogin = async () => {
     try {
-      // Preserve redirect parameter in callback URL
       const origin = getOrigin();
-      const callbackURL =
-        redirectTo !== "/"
-          ? `${origin}/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
-          : `${origin}/auth-callback`;
+      const callbackPath = returnTo
+        ? `/auth-callback?returnTo=${encodeURIComponent(returnTo)}`
+        : redirectTo !== "/"
+          ? `/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+          : "/auth-callback";
+      const callbackURL = `${origin}${callbackPath}`;
 
       await signIn.social({
         provider: "google",
@@ -272,7 +329,7 @@ function LoginForm() {
     <div className="relative min-h-screen flex flex-col">
       <AuthLayout title="Login here!">
         {resendSuccess && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4">
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4 text-center">
             Verification email sent! Please check your inbox (and spam folder).
           </div>
         )}
@@ -330,24 +387,12 @@ function LoginForm() {
           </Button>
 
           {error && (
-            <div className="bg-[#F3EEFF] text-[#7A37AE] font-normal text-[12px] leading-[150%] tracking-[0%] px-4 py-3 rounded mb-4 text-left flex flex-col items-start gap-1">
-              <span>{error}</span>
+            <div className="bg-[#F3EEFF] text-[#7A37AE] font-normal text-[12px] leading-[150%] tracking-[0%] px-4 py-3 rounded mb-4 flex items-center justify-center text-center">
+              <span className="block w-full text-center">{error}</span>
             </div>
           )}
 
-          {showUnregistered ? (
-            <div className="w-full md:w-[259px] h-[60px] bg-[#F3EEFF] rounded-[4px] px-[16px] py-[12px] flex items-center justify-center mt-6 mx-auto text-center">
-              <p className="font-normal text-[12px] leading-[150%] tracking-[0%] text-[#7A37AE]">
-                Looks like you haven't registered with us yet.{" "}
-                <Link
-                  href="/signup"
-                  className="font-semibold underline decoration-solid decoration-[#7A37AE] hover:text-[#5e2a86]"
-                >
-                  Sign Up Now.
-                </Link>
-              </p>
-            </div>
-          ) : !showResendVerification ? (
+          {!showResendVerification ? (
             <Button
               type="button"
               variant="outline"
@@ -364,11 +409,7 @@ function LoginForm() {
             New to InkSigma?
           </span>
           <Link
-            href={
-              redirectTo !== "/"
-                ? `/signup?redirect=${encodeURIComponent(redirectTo)}`
-                : "/signup"
-            }
+            href={getSignupPath()}
             className="w-[122px] h-[16px] opacity-100 rotate-0 font-medium text-[14px] leading-[100%] tracking-[0%] underline decoration-solid decoration-0 text-[#4B4B4B] hover:text-gray-600 transition-colors whitespace-nowrap"
           >
             Create an Account

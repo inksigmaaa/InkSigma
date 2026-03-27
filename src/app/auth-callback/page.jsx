@@ -3,13 +3,66 @@
 import { useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getApiBase } from "@/utils/apiBase"
+import { buildLoginRedirectPath, waitForServerSession } from "@/utils/auth"
+
+const isAllowedExternalReturnTo = async (targetUrl, signal) => {
+  if (!targetUrl) return false
+
+  try {
+    const parsedUrl = new URL(targetUrl)
+    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+      return false
+    }
+
+    const hostname = parsedUrl.hostname.toLowerCase()
+    const rootDomain = (
+      process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"
+    ).toLowerCase()
+    const mainDomain = (
+      process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.com"
+    ).toLowerCase()
+
+    const isKnownPlatformHost =
+      hostname === rootDomain ||
+      hostname.endsWith(`.${rootDomain}`) ||
+      hostname === mainDomain ||
+      hostname.endsWith(`.${mainDomain}`) ||
+      hostname === "localhost" ||
+      hostname.endsWith(".localhost") ||
+      hostname.endsWith(".local")
+
+    if (isKnownPlatformHost) {
+      return true
+    }
+
+    const apiBase = getApiBase()
+    const response = await fetch(
+      `${apiBase}/api/publications/resolve-host?host=${encodeURIComponent(parsedUrl.host)}`,
+      {
+        signal,
+      },
+    )
+
+    if (!response.ok) {
+      return false
+    }
+
+    const data = await response.json().catch(() => null)
+    return Boolean(data?.publication)
+  } catch {
+    return false
+  }
+}
 
 function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect")
+  const returnTo = searchParams.get("returnTo")
 
   useEffect(() => {
+    const controller = new AbortController()
+
     const checkPublicationAndRedirect = async () => {
       try {
         const apiBase = getApiBase()
@@ -17,6 +70,10 @@ function AuthCallbackContent() {
 
         const fetchWithRetry = async (url, options = {}, maxAttempts = 3) => {
           for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            if (controller.signal.aborted) {
+              return null
+            }
+
             try {
               const response = await fetch(url, options)
               if (response.ok) return response
@@ -24,12 +81,51 @@ function AuthCallbackContent() {
                 return response
               }
             } catch (error) {
+              if (error?.name === "AbortError") {
+                throw error
+              }
+
               if (attempt === maxAttempts) throw error
+            }
+
+            if (controller.signal.aborted) {
+              return null
             }
 
             await delay(250 * attempt)
           }
           return null
+        }
+
+        const activeSession = await waitForServerSession({
+          attempts: 5,
+          delayMs: 250,
+          signal: controller.signal,
+        })
+
+        if (!activeSession?.user?.id) {
+          if (returnTo) {
+            router.replace(`/login?returnTo=${encodeURIComponent(returnTo)}`)
+            return
+          }
+
+          router.replace(buildLoginRedirectPath(redirectTo || "/"))
+          return
+        }
+
+        if (returnTo) {
+          const canReturnExternally = await isAllowedExternalReturnTo(
+            returnTo,
+            controller.signal,
+          )
+
+          if (canReturnExternally) {
+            window.location.replace(returnTo)
+            return
+          }
+
+          router.replace("/")
+          return
         }
 
         // If there's a specific redirect (like invitation), handle it first.
@@ -41,12 +137,13 @@ function AuthCallbackContent() {
             try {
               const ownedRes = await fetch(`${apiBase}/api/publications/check`, {
                 credentials: "include",
+                signal: controller.signal,
               })
               if (ownedRes.ok) {
                 const data = await ownedRes.json().catch(() => null)
                 const hasOwned = Boolean(data?.hasPublication)
                 if (!hasOwned) {
-                  router.push(
+                  router.replace(
                     `/create-publication?redirect=${encodeURIComponent(redirectTo)}`,
                   )
                   return
@@ -57,30 +154,17 @@ function AuthCallbackContent() {
             }
           }
 
-          router.push(redirectTo)
+          router.replace(redirectTo)
           return
         }
 
         const pubsRes = await fetchWithRetry(`${apiBase}/api/members/user/publications`, {
           credentials: "include",
+          signal: controller.signal,
         })
 
         if (!pubsRes?.ok) {
-          // Avoid redirect-looping to /login on transient auth propagation delays.
-          // If session exists, continue to dashboard and let app context settle.
-          const sessionRes = await fetchWithRetry(`${apiBase}/api/auth/get-session`, {
-            credentials: "include",
-          })
-
-          if (sessionRes?.ok) {
-            const sessionData = await sessionRes.json().catch(() => null)
-            if (sessionData?.user?.id) {
-              router.push("/")
-              return
-            }
-          }
-
-          router.push("/login")
+          router.replace("/")
           return
         }
 
@@ -88,15 +172,23 @@ function AuthCallbackContent() {
         const publications = Array.isArray(data) ? data : (data?.publications || [])
         const hasAny = Array.isArray(publications) && publications.length > 0
 
-        router.push(hasAny ? '/' : '/create-publication')
+        router.replace(hasAny ? '/' : '/create-publication')
       } catch (err) {
+        if (err?.name === "AbortError") {
+          return
+        }
+
         console.error("Error checking publication:", err)
-        router.push('/')
+        router.replace('/')
       }
     }
 
     checkPublicationAndRedirect()
-  }, [router, redirectTo])
+
+    return () => {
+      controller.abort()
+    }
+  }, [router, redirectTo, returnTo])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">

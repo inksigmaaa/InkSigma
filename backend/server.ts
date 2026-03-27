@@ -17,9 +17,11 @@ import viewRoutes from "./routes/viewRoutes.js";
 import { corsMiddleware } from "./middleware/cors.js";
 import { subdomainMiddleware } from "./middleware/subdomainMiddleware.js";
 import { rateLimitMiddleware } from "./middleware/rateLimitMiddleware.js";
+import { requestContextMiddleware } from "./middleware/requestContext.js";
 import { emailService } from "./services/emailService.js";
 import schedulerService from "./services/schedulerService.js";
 import invitationService from "./services/invitationService.js";
+import sliService from "./services/sliService.js";
 import logger from "./utils/logger.js";
 import {
   errorMiddleware,
@@ -30,6 +32,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+app.use(requestContextMiddleware);
 app.use(corsMiddleware);
 app.use(subdomainMiddleware);
 app.use(rateLimitMiddleware);
@@ -68,6 +71,14 @@ app.use("/api", resendVerificationRoutes);
 // Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.get("/health/slis", (req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    slis: sliService.getSnapshot(),
+  });
 });
 
 // Global error handler - must be after all routes

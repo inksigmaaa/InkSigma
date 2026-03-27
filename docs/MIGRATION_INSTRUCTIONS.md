@@ -1,5 +1,10 @@
 # Migration Instructions - Remove Views Column
 
+> Note (2026-03): Migration hygiene has been standardized.
+> See `backend/drizzle/MIGRATION_HYGIENE.md` and
+> `docs/schema-changelog/2026-03-migration-hygiene.md` for current replay and
+> CI verification workflow.
+
 ## What Changed?
 
 ✅ Removed `views` and `likes` columns from `blog` table

@@ -13,6 +13,7 @@ import CategoryBadgeList from "@/components/CategoryBadgeList";
 import { getImageUrl } from "@/utils/imageUrl";
 import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getPublicationUrl } from "@/utils/publicationDomain";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -119,20 +120,10 @@ export default function HomePage() {
   };
 
   const handleVisitSite = () => {
-    if (currentPublication?.subdomain) {
-      const protocol = window.location.protocol;
-      const host = window.location.host;
-      const parts = host.split(".");
+    const publicationUrl = getPublicationUrl(currentPublication);
 
-      let newHost = host;
-      // Replace the first part (current subdomain) with the publication subdomain
-      // This handles dashboard.inksigma.local -> tennyson.inksigma.local
-      if (parts.length >= 2) {
-        parts[0] = currentPublication.subdomain;
-        newHost = parts.join(".");
-      }
-
-      window.open(`${protocol}//${newHost}`, "_blank");
+    if (publicationUrl) {
+      window.open(publicationUrl, "_blank");
     } else if (currentPublication?.id) {
       window.open(
         `/view-site?publicationId=${currentPublication.id}`,

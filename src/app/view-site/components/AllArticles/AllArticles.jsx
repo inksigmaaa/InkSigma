@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from 'next/navigation';
@@ -9,6 +8,7 @@ import { getImageUrl } from "@/utils/imageUrl";
 import CategoryBadgeList from "@/components/CategoryBadgeList";
 import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 import { getApiBase } from "@/utils/apiBase";
+import { getBlogPath } from "@/utils/blogUrl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const API_URL = getApiBase();
@@ -17,36 +17,8 @@ export default function AllArticles({
   searchQuery = "",
   selectedCategory = "",
   blogs = [],
-  publicationId,
 }) {
-  const [commentCounts, setCommentCounts] = useState({});
   const pathname = usePathname();
-  const basePath = pathname.startsWith('/view-site') ? '/view-site' : '';
-
-  // Fetch comment counts for all blogs
-  useEffect(() => {
-    const fetchCommentCounts = async () => {
-      if (blogs.length === 0) return;
-
-      try {
-        const blogIds = blogs.map((b) => b.id);
-        const response = await fetch(`${API_URL}/api/comments/counts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ blogIds }),
-        });
-
-        if (response.ok) {
-          const counts = await response.json();
-          setCommentCounts(counts);
-        }
-      } catch (err) {
-        console.error("Error fetching comment counts:", err);
-      }
-    };
-
-    fetchCommentCounts();
-  }, [blogs]);
 
   // Filter articles based on search query and selected category
   const filteredArticles = blogs.filter((article) => {
@@ -109,7 +81,9 @@ export default function AllArticles({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-20 md:mb-40 pb-10">
           {filteredArticles.map((article) => {
-            const dateFormatted = formatDate(article.createdAt);
+            const dateFormatted = formatDate(
+              article.publishedAt || article.createdAt,
+            );
             const thumbnailUrl = getThumbnailWithFallback(getImageUrl(article.image), article.id);
 
             return (
@@ -159,7 +133,7 @@ export default function AllArticles({
                   </div>
 
                   <Link
-                    href={`${basePath}/blog/${article.slug}${publicationId ? `?publicationId=${publicationId}&from=${publicationId}&view=site` : ""}`}
+                    href={getBlogPath(article.slug, pathname)}
                     className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block"
                   >
                     {/* Background Image */}

@@ -23,6 +23,7 @@ const buildAllowList = () => {
   // Add common development origins
   if (process.env.NODE_ENV === "development") {
     origins.add("http://localhost:3000");
+    origins.add("http://127.0.0.1:3000");
     origins.add("http://dashboard.localhost:3000");
     origins.add("http://inksigma.local:3000");
     origins.add("http://dashboard.inksigma.local:3000");
@@ -59,6 +60,17 @@ const isOriginAllowed = (origin) => {
   try {
     const url = new URL(origin);
     const hostname = url.hostname.toLowerCase();
+
+    if (
+      process.env.NODE_ENV === "development" &&
+      (hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname === "::1" ||
+        hostname.endsWith(".localhost") ||
+        hostname.endsWith(".local"))
+    ) {
+      return true;
+    }
 
     // Allow any subdomain of base domains
     for (const baseDomain of baseDomains) {

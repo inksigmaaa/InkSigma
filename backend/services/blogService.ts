@@ -1,6 +1,7 @@
 import { db } from "../config/database.js";
 import {
   blog,
+  blogSlugHistory,
   user,
   publication,
   publicationMember,
@@ -16,12 +17,17 @@ import {
   ilike,
   count,
   isNull,
+  isNotNull,
   inArray,
   sql,
 } from "drizzle-orm";
 import fs from "fs";
 import notificationService from "./notificationService.js";
 import schedulerService from "./schedulerService.js";
+import {
+  getPublicationAccess,
+  hasPublicationRole,
+} from "./authorizationService.js";
 import { getBlogStats } from "./viewTrackingService.js";
 import logger from "../utils/logger.js";
 import { BLOG_STATUS } from "../config/constants.js";
@@ -39,6 +45,7 @@ interface BlogInsertData {
   publicationId?: number | null;
   masterId?: number | null;
   scheduledAt?: Date | null;
+  publishedAt?: Date | null;
   image?: string | null;
   readTime?: number | null;
   createdAt?: Date;
@@ -63,6 +70,34 @@ interface BlogUpdateData {
 }
 
 const DEFAULT_DRAFT_TITLE = "[Untitled]";
+const LEGACY_DRAFT_TITLE = "untitle";
+const PUBLISHABLE_CONTENT_SQL = sql<boolean>`
+  length(
+    trim(
+      regexp_replace(
+        regexp_replace(coalesce(${blog.content}, ''), '<[^>]+>', ' ', 'g'),
+        '&nbsp;',
+        ' ',
+        'g'
+      )
+    )
+  ) > 0
+`;
+const PUBLISHABLE_DESCRIPTION_SQL = sql<boolean>`
+  length(trim(coalesce(${blog.description}, ''))) > 0
+`;
+const PUBLISHABLE_TITLE_SQL = sql<boolean>`
+  length(trim(coalesce(${blog.title}, ''))) > 0
+  and lower(trim(coalesce(${blog.title}, ''))) not in (
+    lower(${DEFAULT_DRAFT_TITLE}),
+    ${LEGACY_DRAFT_TITLE}
+  )
+`;
+const IS_PUBLISHABLE_SQL = sql<boolean>`
+  ${PUBLISHABLE_TITLE_SQL}
+  and ${PUBLISHABLE_DESCRIPTION_SQL}
+  and ${PUBLISHABLE_CONTENT_SQL}
+`;
 
 const LIGHT_BLOG_SELECT = {
   id: blog.id,
@@ -74,11 +109,13 @@ const LIGHT_BLOG_SELECT = {
   categories: blog.categories,
   status: blog.status,
   published: blog.published,
+  publishedAt: blog.publishedAt,
   scheduledAt: blog.scheduledAt,
   createdAt: blog.createdAt,
   updatedAt: blog.updatedAt,
   authorId: blog.authorId,
   masterId: blog.masterId,
+  isPublishable: IS_PUBLISHABLE_SQL.as("isPublishable"),
   author: {
     id: user.id,
     name: user.name,
@@ -97,12 +134,14 @@ const FULL_BLOG_SELECT = {
   categories: blog.categories,
   status: blog.status,
   published: blog.published,
+  publishedAt: blog.publishedAt,
   publicationId: blog.publicationId,
   scheduledAt: blog.scheduledAt,
   createdAt: blog.createdAt,
   updatedAt: blog.updatedAt,
   authorId: blog.authorId,
   masterId: blog.masterId,
+  isPublishable: IS_PUBLISHABLE_SQL.as("isPublishable"),
   author: {
     id: user.id,
     name: user.name,
@@ -122,6 +161,74 @@ const runInBackground = (label, task) => {
 };
 
 class BlogService {
+  isMissingRealTitle(title) {
+    const normalized =
+      typeof title === "string" ? title.trim().toLowerCase() : "";
+
+    return (
+      !normalized ||
+      normalized === DEFAULT_DRAFT_TITLE.toLowerCase() ||
+      normalized === LEGACY_DRAFT_TITLE
+    );
+  }
+
+  hasMeaningfulDescription(description) {
+    return typeof description === "string" && description.trim().length > 0;
+  }
+
+  hasMeaningfulContent(content) {
+    if (typeof content !== "string") {
+      return false;
+    }
+
+    const normalized = content
+      .replace(/&nbsp;/gi, " ")
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return normalized.length > 0;
+  }
+
+  validatePublishableFields({ title, description, content }, action = "publish") {
+    if (
+      this.isMissingRealTitle(title) ||
+      !this.hasMeaningfulDescription(description) ||
+      !this.hasMeaningfulContent(content)
+    ) {
+      throw new Error(
+        `Title, description, and content are required to ${action}|400`,
+      );
+    }
+  }
+
+  buildDraftScopeCondition(
+    draftScope?: "all" | "publishedCopies",
+    status?: string,
+  ) {
+    if (!draftScope || draftScope === "all") {
+      return null;
+    }
+
+    if (draftScope === "publishedCopies") {
+      if (status === BLOG_STATUS.DRAFT) {
+        return isNotNull(blog.masterId);
+      }
+
+      if (status) {
+        return null;
+      }
+
+      return or(
+        ne(blog.status, BLOG_STATUS.DRAFT),
+        and(eq(blog.status, BLOG_STATUS.DRAFT), isNotNull(blog.masterId)),
+      );
+    }
+
+    return null;
+  }
+
   // Helper function to check if user can modify a blog
   async canUserModifyBlog(userId, blogAuthorId, blogPublicationId) {
     if (!userId || !blogAuthorId) return false;
@@ -134,31 +241,10 @@ class BlogService {
       return false;
     }
 
-    const [[pub], [membership]] = await Promise.all([
-      db.select({ id: publication.id, ownerId: publication.userId })
-        .from(publication)
-        .where(eq(publication.id, blogPublicationId))
-        .limit(1),
-      db.select({ role: publicationMember.role })
-        .from(publicationMember)
-        .where(
-          and(
-            eq(publicationMember.publicationId, blogPublicationId),
-            eq(publicationMember.userId, userId),
-          ),
-        )
-        .limit(1),
-    ]);
-
-    if (!pub) {
-      return false;
-    }
-
-    if (pub.ownerId === userId) {
-      return true;
-    }
-
-    return membership?.role === "admin" || membership?.role === "editor";
+    const access = await getPublicationAccess(userId, blogPublicationId);
+    return hasPublicationRole(access, ["admin", "editor"], {
+      allowOwner: true,
+    });
   }
 
   // Helper function to generate slug from title
@@ -181,22 +267,99 @@ class BlogService {
     let counter = 1;
 
     while (true) {
-      const conditions = [eq(blog.slug, slug)];
+      const currentSlugConditions = [eq(blog.slug, slug)];
       if (excludeId != null) {
-        conditions.push(ne(blog.id, excludeId));
+        currentSlugConditions.push(ne(blog.id, excludeId));
       }
 
       const [existing] = await db
         .select({ id: blog.id })
         .from(blog)
-        .where(and(...conditions));
-      if (!existing) break;
+        .where(and(...currentSlugConditions))
+        .limit(1);
+
+      const historyConditions = [eq(blogSlugHistory.slug, slug)];
+      if (excludeId != null) {
+        historyConditions.push(ne(blogSlugHistory.blogId, excludeId));
+      }
+
+      const [existingHistory] = await db
+        .select({ id: blogSlugHistory.id })
+        .from(blogSlugHistory)
+        .where(and(...historyConditions))
+        .limit(1);
+
+      if (!existing && !existingHistory) break;
 
       slug = `${normalizedBaseSlug}-${counter}`;
       counter++;
     }
 
     return slug;
+  }
+
+  async syncBlogSlugHistory({
+    tx,
+    blogId,
+    previousSlug,
+    nextSlug,
+  }: {
+    tx: any;
+    blogId: number;
+    previousSlug?: string | null;
+    nextSlug?: string | null;
+  }) {
+    if (!blogId || !nextSlug) {
+      return;
+    }
+
+    await tx
+      .delete(blogSlugHistory)
+      .where(
+        and(
+          eq(blogSlugHistory.blogId, blogId),
+          eq(blogSlugHistory.slug, nextSlug),
+        ),
+      );
+
+    if (!previousSlug || previousSlug === nextSlug) {
+      return;
+    }
+
+    const [existingHistory] = await tx
+      .select({ id: blogSlugHistory.id })
+      .from(blogSlugHistory)
+      .where(
+        and(
+          eq(blogSlugHistory.blogId, blogId),
+          eq(blogSlugHistory.slug, previousSlug),
+        ),
+      )
+      .limit(1);
+
+    if (!existingHistory) {
+      await tx.insert(blogSlugHistory).values({
+        blogId,
+        slug: previousSlug,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+  }
+
+  async getFullBlogById(blogId: number | null | undefined) {
+    if (!blogId) {
+      return null;
+    }
+
+    const [blogData] = await db
+      .select(FULL_BLOG_SELECT)
+      .from(blog)
+      .leftJoin(user, eq(blog.authorId, user.id))
+      .where(eq(blog.id, blogId))
+      .limit(1);
+
+    return blogData ?? null;
   }
 
   // Helper function to sync status and published fields according to strict rules
@@ -286,6 +449,7 @@ class BlogService {
   async getAllBlogs(query, currentUserId, tenant) {
     const {
       published,
+      draftScope,
       status,
       authorId,
       categories,
@@ -311,8 +475,6 @@ class BlogService {
 
     const conditions = [];
 
-    const statusExplicitlyPublished = status === BLOG_STATUS.PUBLISHED;
-
     if (status !== undefined) {
       conditions.push(eq(blog.status, status));
     } else if (published !== undefined) {
@@ -328,6 +490,14 @@ class BlogService {
       } else {
         conditions.push(eq(blog.status, BLOG_STATUS.PUBLISHED));
       }
+    }
+
+    const draftScopeCondition = this.buildDraftScopeCondition(
+      draftScope,
+      status,
+    );
+    if (draftScopeCondition) {
+      conditions.push(draftScopeCondition);
     }
 
     if (authorId) conditions.push(eq(blog.authorId, authorId));
@@ -360,7 +530,22 @@ class BlogService {
       dbQuery = dbQuery.where(and(...conditions)) as typeof dbQuery;
     }
 
-    dbQuery = dbQuery.orderBy(desc(blog.createdAt)) as typeof dbQuery;
+    const shouldOrderByPublishedAt =
+      status === BLOG_STATUS.PUBLISHED ||
+      published === "true" ||
+      (!currentUserId &&
+        status === undefined &&
+        published === undefined &&
+        (!includeUnpublished || includeUnpublished !== "true"));
+
+    if (shouldOrderByPublishedAt) {
+      dbQuery = dbQuery.orderBy(
+        desc(sql`coalesce(${blog.publishedAt}, ${blog.createdAt})`),
+        desc(blog.createdAt),
+      ) as typeof dbQuery;
+    } else {
+      dbQuery = dbQuery.orderBy(desc(blog.createdAt)) as typeof dbQuery;
+    }
 
     let blogs = await dbQuery.limit(parseInt(limit)).offset(parseInt(offset));
 
@@ -420,7 +605,13 @@ class BlogService {
   }
 
   async getPublicationBlogs(publicationId, query, currentUser) {
-    const { status, limit = 50, offset = 0, includeStats } = query;
+    const {
+      status,
+      draftScope,
+      limit = 50,
+      offset = 0,
+      includeStats,
+    } = query;
 
     const [[pub], memberCheck] = await Promise.all([
       db.select().from(publication).where(eq(publication.id, parseInt(publicationId))),
@@ -447,12 +638,32 @@ class BlogService {
     const conditions = [eq(blog.publicationId, parseInt(publicationId))];
     if (status) conditions.push(eq(blog.status, status));
 
-    const blogs = await db
+    const draftScopeCondition = this.buildDraftScopeCondition(
+      draftScope,
+      status,
+    );
+    if (draftScopeCondition) {
+      conditions.push(draftScopeCondition);
+    }
+
+    let publicationBlogsQuery = db
       .select(LIGHT_BLOG_SELECT)
       .from(blog)
       .leftJoin(user, eq(blog.authorId, user.id))
-      .where(and(...conditions))
-      .orderBy(desc(blog.createdAt))
+      .where(and(...conditions));
+
+    if (status === BLOG_STATUS.PUBLISHED) {
+      publicationBlogsQuery = publicationBlogsQuery.orderBy(
+        desc(sql`coalesce(${blog.publishedAt}, ${blog.createdAt})`),
+        desc(blog.createdAt),
+      ) as typeof publicationBlogsQuery;
+    } else {
+      publicationBlogsQuery = publicationBlogsQuery.orderBy(
+        desc(blog.createdAt),
+      ) as typeof publicationBlogsQuery;
+    }
+
+    const blogs = await publicationBlogsQuery
       .limit(parseInt(limit))
       .offset(parseInt(offset));
 
@@ -508,12 +719,14 @@ class BlogService {
         categories: blog.categories,
         status: blog.status,
         published: blog.published,
+        publishedAt: blog.publishedAt,
         publicationId: blog.publicationId,
         scheduledAt: blog.scheduledAt,
         createdAt: blog.createdAt,
         updatedAt: blog.updatedAt,
         authorId: blog.authorId,
         masterId: blog.masterId,
+        isPublishable: IS_PUBLISHABLE_SQL.as("isPublishable"),
         author: {
           id: user.id,
           name: user.name,
@@ -549,33 +762,27 @@ class BlogService {
   }
 
   async getBlogBySlug(slug, currentUserId, tenant) {
-    const [blogData] = await db
-      .select({
-        id: blog.id,
-        slug: blog.slug,
-        title: blog.title,
-        description: blog.description,
-        content: blog.content,
-        image: blog.image,
-        categories: blog.categories,
-        status: blog.status,
-        published: blog.published,
-        publicationId: blog.publicationId,
-        scheduledAt: blog.scheduledAt,
-        createdAt: blog.createdAt,
-        updatedAt: blog.updatedAt,
-        authorId: blog.authorId,
-        masterId: blog.masterId,
-        author: {
-          id: user.id,
-          name: user.name,
-          image: user.image,
-          username: user.username,
-        },
-      })
+    const [currentSlugMatch] = await db
+      .select({ id: blog.id })
       .from(blog)
-      .leftJoin(user, eq(blog.authorId, user.id))
-      .where(eq(blog.slug, slug));
+      .where(eq(blog.slug, slug))
+      .limit(1);
+
+    let blogData = await this.getFullBlogById(currentSlugMatch?.id);
+    let shouldRedirect = false;
+
+    if (!blogData) {
+      const [historyMatch] = await db
+        .select({ blogId: blogSlugHistory.blogId })
+        .from(blogSlugHistory)
+        .where(eq(blogSlugHistory.slug, slug))
+        .limit(1);
+
+      if (historyMatch?.blogId) {
+        blogData = await this.getFullBlogById(historyMatch.blogId);
+        shouldRedirect = Boolean(blogData && blogData.slug !== slug);
+      }
+    }
 
     if (!blogData) throw new Error("Blog not found|404");
 
@@ -597,7 +804,13 @@ class BlogService {
       if (!canView) throw new Error("Blog not found|404");
     }
 
-    return blogData;
+    return {
+      ...blogData,
+      requestedSlug: slug,
+      canonicalSlug: blogData.slug,
+      shouldRedirect,
+      redirectStatusCode: shouldRedirect ? 301 : null,
+    };
   }
   async createBlog(data, currentUser) {
     const {
@@ -637,10 +850,17 @@ class BlogService {
       ? normalizedTitle || DEFAULT_DRAFT_TITLE
       : normalizedTitle;
 
+    const sanitizedContent = content ? sanitizeHtml(content) : content;
+
     if (!isDraft) {
-      if (!finalTitle || !description || !content) {
-        throw new Error("Title, description, and content are required|400");
-      }
+      this.validatePublishableFields(
+        {
+          title: finalTitle,
+          description,
+          content: sanitizedContent,
+        },
+        "save this article",
+      );
     }
 
     if (publicationId) {
@@ -674,7 +894,7 @@ class BlogService {
 
     const slug = await this.ensureUniqueSlug(this.generateSlug(finalTitle));
     const syncedFields = this.syncStatusAndPublished(targetStatus);
-    const sanitizedContent = content ? sanitizeHtml(content) : content;
+    const now = new Date();
 
     const blogData: BlogInsertData = {
       slug,
@@ -684,12 +904,13 @@ class BlogService {
       categories: categories || [],
       ...syncedFields,
       authorId: currentUser.id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     };
 
     if (publicationId) blogData.publicationId = parseInt(publicationId);
     if (parsedScheduledAt) blogData.scheduledAt = parsedScheduledAt;
+    if (targetStatus === BLOG_STATUS.PUBLISHED) blogData.publishedAt = now;
 
     const result = await db.insert(blog).values(blogData).returning();
     const newBlog = result[0];
@@ -916,8 +1137,27 @@ class BlogService {
         updateData,
         this.syncStatusAndPublished(targetStatusForUpdate),
       );
+      if (
+        targetStatusForUpdate === BLOG_STATUS.PUBLISHED &&
+        existingBlog.status !== BLOG_STATUS.PUBLISHED
+      ) {
+        updateData.publishedAt = new Date();
+      }
     }
     if (slug !== existingBlog.slug) updateData.slug = slug;
+
+    if (targetStatusForUpdate !== BLOG_STATUS.DRAFT) {
+      this.validatePublishableFields(
+        {
+          title: updateData.title ?? existingBlog.title,
+          description: updateData.description ?? existingBlog.description,
+          content: updateData.content ?? existingBlog.content,
+        },
+        targetStatusForUpdate === BLOG_STATUS.PUBLISHED
+          ? "publish this article"
+          : "save this article",
+      );
+    }
 
     if (
       existingBlog.masterId &&
@@ -928,21 +1168,40 @@ class BlogService {
         .from(blog)
         .where(eq(blog.id, existingBlog.masterId));
       if (masterBlog) {
+        const mergedTitle = (updateData.title || existingBlog.title).replace(
+          /\s*\[Update draft\]$/i,
+          "",
+        );
+        let mergedSlug = masterBlog.slug;
+        if (mergedTitle !== masterBlog.title) {
+          mergedSlug = await this.ensureUniqueSlug(
+            this.generateSlug(mergedTitle),
+            masterBlog.id,
+          );
+        }
+
         const mergeData = {
-          title: (updateData.title || existingBlog.title).replace(
-            /\s*\[Update draft\]$/i,
-            "",
-          ),
+          title: mergedTitle,
           description: updateData.description || existingBlog.description,
           content: updateData.content || existingBlog.content,
           image: updateData.hasOwnProperty("image")
             ? updateData.image
             : existingBlog.image,
           categories: updateData.categories || existingBlog.categories,
+          ...(mergedSlug !== masterBlog.slug ? { slug: mergedSlug } : {}),
           updatedAt: new Date(),
         };
 
         const [updatedMaster] = await db.transaction(async (tx) => {
+          if (mergedSlug !== masterBlog.slug) {
+            await this.syncBlogSlugHistory({
+              tx,
+              blogId: masterBlog.id,
+              previousSlug: masterBlog.slug,
+              nextSlug: mergedSlug,
+            });
+          }
+
           const [updated] = await tx
             .update(blog)
             .set(mergeData)
@@ -959,11 +1218,22 @@ class BlogService {
       }
     }
 
-    const [updatedBlog] = await db
-      .update(blog)
-      .set(updateData)
-      .where(eq(blog.id, parseInt(id)))
-      .returning();
+    const [updatedBlog] = await db.transaction(async (tx) => {
+      if (slug !== existingBlog.slug) {
+        await this.syncBlogSlugHistory({
+          tx,
+          blogId: parseInt(id),
+          previousSlug: existingBlog.slug,
+          nextSlug: slug,
+        });
+      }
+
+      return tx
+        .update(blog)
+        .set(updateData)
+        .where(eq(blog.id, parseInt(id)))
+        .returning();
+    });
 
     if (updatedBlog.status === BLOG_STATUS.SCHEDULED && updatedBlog.scheduledAt)
       schedulerService.onBlogScheduled(updatedBlog.id);
@@ -1080,7 +1350,14 @@ class BlogService {
 
     const [updatedBlog] = await db
       .update(blog)
-      .set({ ...syncedFields, updatedAt: new Date() })
+      .set({
+        ...syncedFields,
+        updatedAt: new Date(),
+        ...(targetStatus === BLOG_STATUS.PUBLISHED &&
+        existingBlog.status !== BLOG_STATUS.PUBLISHED
+          ? { publishedAt: new Date() }
+          : {}),
+      })
       .where(eq(blog.id, parseInt(id)))
       .returning();
 
@@ -1147,6 +1424,23 @@ class BlogService {
 
     const syncedFields = this.syncStatusAndPublished(targetStatus);
     const updateData = { ...syncedFields, updatedAt: new Date() };
+    if (
+      targetStatus === BLOG_STATUS.PUBLISHED &&
+      existingBlog.status !== BLOG_STATUS.PUBLISHED
+    ) {
+      updateData.publishedAt = new Date();
+    }
+
+    if (targetStatus === BLOG_STATUS.PUBLISHED) {
+      this.validatePublishableFields(
+        {
+          title: existingBlog.title,
+          description: existingBlog.description,
+          content: existingBlog.content,
+        },
+        "publish this article",
+      );
+    }
 
     if (existingBlog.masterId && targetStatus === BLOG_STATUS.PUBLISHED) {
       const [masterBlog] = await db

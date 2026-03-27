@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import AuthGuard from "@/components/auth/AuthGuard";
@@ -11,6 +12,7 @@ import cameraIcon from "@/icons/camera.svg";
 import { publicationService } from "@/services/publicationService";
 import { usePublication } from "@/contexts/PublicationContext";
 import { getApiBase } from "@/utils/apiBase";
+import { getRootDomain } from "@/utils/publicationDomain";
 import { validateSubdomain, isReservedSubdomain } from "@/utils/subdomainRules";
 import { validatePublicationName } from "@/utils/domainValidation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -74,7 +76,8 @@ export default function CreatePublication() {
     // Only check backend for database availability (not reserved, not format)
     subdomainCheckTimeout.current = setTimeout(async () => {
       try {
-        const API_URL = getApiBase();
+const API_URL = getApiBase();
+const SUBDOMAIN_SUFFIX = `.${getRootDomain() || "inksigma.local"}`;
         const response = await fetch(
           `${API_URL}/api/publications/check-subdomain/${subdomain.toLowerCase()}`,
           {
@@ -511,7 +514,7 @@ export default function CreatePublication() {
                   }}
                 />
                 <span className="absolute right-0 bottom-2 text-[12px] md:text-[14px] text-black">
-                  .inksigma.com
+                  {SUBDOMAIN_SUFFIX}
                 </span>
               </div>
               {subdomain.length >= 3 && (
@@ -598,11 +601,11 @@ export default function CreatePublication() {
       <div className="fixed bottom-0 left-0 w-full bg-white py-3 md:py-4 text-center border-t border-[#F3F4F6] px-4">
         <p className="text-[10px] md:text-[12px] text-[#CCCCCC]">
           Copyright © 2023 designed & developed by{" "}
-          <a href="#" className="text-[#CCCCCC] underline">
+          <Link href="/" className="text-[#CCCCCC] underline">
             Inksigma
-          </a>
+          </Link>
           , a{" "}
-          <a href="#" className="text-[#CCCCCC] underline">
+          <a href="https://zemuria.com" target="_blank" rel="noopener noreferrer" className="text-[#CCCCCC] underline">
             Zemuria Inc.
           </a>{" "}
           brand

@@ -286,7 +286,7 @@ const EditorToolbar = ({
       action: () => editor.chain().focus().toggleBlockquote().run(),
       isActive: activeState.blockquote,
       title: "Quote",
-      src: "/editor-icons/''.svg",
+      src: "/editor-icons/quote.svg",
     },
   ];
 
@@ -1120,7 +1120,7 @@ const MobileToolbar = ({
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             className={`${buttonBaseClass} ${buttonActiveClass(activeState.blockquote)}`}
           >
-            <img src="/editor-icons/''.svg" alt="Quote" className="w-4 h-4" />
+            <img src="/editor-icons/quote.svg" alt="Quote" className="w-4 h-4" />
           </button>
         </Tooltip>
         <LinkButton
@@ -1501,7 +1501,7 @@ const TabletToolbar = ({
             action: () => editor.chain().focus().toggleBlockquote().run(),
             isActive: activeState.blockquote,
             title: "Quote",
-            src: "/editor-icons/''.svg",
+            src: "/editor-icons/quote.svg",
           },
         ]}
         buttonBaseClass="p-1.5 hover:bg-gray-100 rounded shrink-0"

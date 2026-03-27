@@ -10,19 +10,11 @@ import { usePublication } from "@/contexts/PublicationContext";
 
 import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
-
-const DEFAULT_DRAFT_TITLE = "[Untitled]";
-const LEGACY_DRAFT_TITLE = "untitle";
-
-const isMissingRealTitle = (title) => {
-  const normalized =
-    typeof title === "string" ? title.trim().toLowerCase() : "";
-  return (
-    !normalized ||
-    normalized === DEFAULT_DRAFT_TITLE.toLowerCase() ||
-    normalized === LEGACY_DRAFT_TITLE
-  );
-};
+import {
+  DEFAULT_DRAFT_TITLE,
+  isArticlePublishable,
+  isMissingRealTitle,
+} from "@/utils/articlePublishability";
 
 export default function Unpublished() {
   const {
@@ -78,8 +70,9 @@ export default function Unpublished() {
   const unpublishedArticles = displayArticles
     .filter((article) => article.status === "unpublished")
     .map((article) => {
-      const canPublishArticle = !isMissingRealTitle(article.title);
-      const displayTitle = !canPublishArticle
+      const hasRealTitle = !isMissingRealTitle(article.title);
+      const canPublishArticle = isArticlePublishable(article);
+      const displayTitle = !hasRealTitle
         ? DEFAULT_DRAFT_TITLE
         : article.title;
 

@@ -16,6 +16,9 @@ export const validateCustomDomain = (domain) => {
     }
 
     const trimmed = String(domain).trim().toLowerCase();
+    const isDevelopment = process.env.NODE_ENV === "development";
+    const isLocalDevelopmentDomain =
+        isDevelopment && (trimmed.endsWith(".local") || trimmed.endsWith(".localhost"));
 
     // Check for protocol prefix
     if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
@@ -31,18 +34,21 @@ export const validateCustomDomain = (domain) => {
     // Must have at least one dot, valid characters, valid TLD
     const fqdnRegex = /^(?=.{1,253}$)(?!-)[a-zA-Z0-9-]{1,63}(?<!-)(\.[a-zA-Z0-9-]{1,63})*\.[a-zA-Z]{2,63}$/;
 
-    if (!fqdnRegex.test(trimmed)) {
+    if (!fqdnRegex.test(trimmed) && !isLocalDevelopmentDomain) {
         return { valid: false, error: "Custom domain must be a valid domain name (e.g., example.com)" };
     }
 
     // Check for reserved/blocked TLDs or patterns
     const blockedPatterns = [
-        /\.local$/, // .local is for mDNS
-        /\.localhost$/, // localhost TLD
         /\.test$/, // test TLD
         /\.invalid$/, // invalid TLD
         /\.example$/, // example TLD
     ];
+
+    if (!isDevelopment) {
+        blockedPatterns.unshift(/\.localhost$/);
+        blockedPatterns.unshift(/\.local$/);
+    }
 
     for (const pattern of blockedPatterns) {
         if (pattern.test(trimmed)) {

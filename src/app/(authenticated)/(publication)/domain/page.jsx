@@ -1,12 +1,41 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getApiBase } from "@/utils/apiBase";
+import {
+  getSubdomainDomainLabel,
+  getPublicationUrl,
+  hasActiveCustomDomain,
+} from "@/utils/publicationDomain";
+import {
+  validateCustomDomain,
+  normalizeCustomDomain,
+  normalizeSubdomain,
+} from "@/utils/domainValidation";
+import { usePublication } from "@/contexts/PublicationContext";
+import { toast } from "sonner";
+
+const DOMAIN_STATUS_LABELS = {
+  pending_verification: "Pending verification",
+  verified: "DNS pending",
+  ssl_pending: "SSL pending",
+  active: "Custom Domain",
+  failed: "Verification failed",
+};
+
+const DOMAIN_STATUS_STYLES = {
+  pending_verification: "bg-amber-50 text-amber-700 border border-amber-200",
+  verified: "bg-blue-50 text-blue-700 border border-blue-200",
+  ssl_pending: "bg-blue-50 text-blue-700 border border-blue-200",
+  active: "bg-[#F4F4F4] text-[#808080] border border-[#F4F4F4]",
+  failed: "bg-red-50 text-red-700 border border-red-200",
+};
 
 export default function DomainPage() {
+  const { currentPublication, refreshCurrentPublication } = usePublication();
   const [customDomain, setCustomDomain] = useState("");
   const [subdomain, setSubdomain] = useState("Subdomain");
   const [publicationId, setPublicationId] = useState(null);
@@ -15,44 +44,55 @@ export default function DomainPage() {
   const [error, setError] = useState("");
   const [savedCustomDomain, setSavedCustomDomain] = useState("");
   const [editDomain, setEditDomain] = useState("");
+  const [customDomainStatus, setCustomDomainStatus] = useState(null);
+  const [customDomainVerificationToken, setCustomDomainVerificationToken] =
+    useState("");
+  const [customDomainVerificationError, setCustomDomainVerificationError] =
+    useState("");
+  const [customDomainVerifiedAt, setCustomDomainVerifiedAt] = useState(null);
+  const [customDomainLastCheckedAt, setCustomDomainLastCheckedAt] =
+    useState(null);
+  const [verifying, setVerifying] = useState(false);
 
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingDomain, setPendingDomain] = useState("");
 
   const [showRevertConfirmation, setShowRevertConfirmation] = useState(false);
 
-  const [verifying, setVerifying] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState(null);
-
-  useEffect(() => {
-    loadPublicationData();
+  const applyPublicationDomainState = useCallback((pubData) => {
+    const existingCustomDomain = pubData?.customDomain || "";
+    setPublicationId(pubData?.id || null);
+    setSubdomain(pubData?.subdomain || "Subdomain");
+    setSavedCustomDomain(existingCustomDomain);
+    setEditDomain(existingCustomDomain);
+    setCustomDomainStatus(pubData?.customDomainStatus || null);
+    setCustomDomainVerificationToken(pubData?.customDomainVerificationToken || "");
+    setCustomDomainVerificationError(pubData?.customDomainVerificationError || "");
+    setCustomDomainVerifiedAt(pubData?.customDomainVerifiedAt || null);
+    setCustomDomainLastCheckedAt(pubData?.customDomainLastCheckedAt || null);
   }, []);
 
-  const loadPublicationData = async () => {
+  const loadPublicationData = useCallback(async () => {
     try {
       setError("");
       const apiBase = getApiBase();
 
-      const sessionRes = await fetch(`${apiBase}/api/auth/get-session`, {
-        credentials: "include",
-      });
+      const targetPublicationId = currentPublication?.id;
+      if (!targetPublicationId) {
+        setLoading(false);
+        return;
+      }
 
-      if (!sessionRes.ok) return;
-
-      const sessionData = await sessionRes.json();
-      const userId = sessionData.user.id;
-
-      const pubRes = await fetch(`${apiBase}/api/publications/user/${userId}`, {
-        credentials: "include",
-      });
+      const pubRes = await fetch(
+        `${apiBase}/api/publications/${targetPublicationId}`,
+        {
+          credentials: "include",
+        },
+      );
 
       if (pubRes.ok) {
         const pubData = await pubRes.json();
-        setPublicationId(pubData.id);
-        setSubdomain(pubData.subdomain || "Subdomain");
-        const existingCustomDomain = pubData.customDomain || "";
-        setSavedCustomDomain(existingCustomDomain);
-        setEditDomain(existingCustomDomain);
+        applyPublicationDomainState(pubData);
       }
     } catch (err) {
       console.error("Error loading publication:", err);
@@ -60,32 +100,72 @@ export default function DomainPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [applyPublicationDomainState, currentPublication?.id]);
 
-  const currentDomain = `${subdomain}.inksigma.com`;
+  useEffect(() => {
+    loadPublicationData();
+  }, [loadPublicationData]);
+
+  const currentDomain = getSubdomainDomainLabel(subdomain);
+  const normalizedCurrentDomain = normalizeCustomDomain(currentDomain);
+  const normalizedPublicationSubdomain = normalizeSubdomain(subdomain);
+  const previewUrl = getPublicationUrl({
+    subdomain,
+    customDomain: savedCustomDomain,
+    customDomainStatus,
+  });
+  const isCustomDomainLive = hasActiveCustomDomain({
+    customDomain: savedCustomDomain,
+    customDomainStatus,
+  });
+  const statusLabel =
+    DOMAIN_STATUS_LABELS[customDomainStatus] ||
+    (savedCustomDomain ? "Pending verification" : "Subdomain");
+  const statusStyle =
+    DOMAIN_STATUS_STYLES[customDomainStatus] ||
+    "bg-gray-100 text-gray-600 border border-gray-200";
+  const verificationRecordName = savedCustomDomain
+    ? `_inksigma.${savedCustomDomain}`
+    : "";
+  const verificationRecordValue = customDomainVerificationToken
+    ? `inksigma-verification=${customDomainVerificationToken}`
+    : "";
 
   const handleSaveChanges = () => {
-    let domain = customDomain.trim();
-    if (domain) {
-      if (!domain.includes(".")) {
-        domain += ".com";
-      }
-      setPendingDomain(domain);
-      setShowConfirmation(true);
+    const normalizedDomain = normalizeCustomDomain(customDomain);
+    const validation = validateCustomDomain(normalizedDomain);
+
+    if (!normalizedDomain) return;
+    if (!validation.valid) {
+      setError(validation.error || "Invalid custom domain");
+      return;
     }
+
+    setError("");
+    setPendingDomain(normalizedDomain);
+    setShowConfirmation(true);
   };
 
   const handleEditSave = () => {
-    let domain = editDomain.trim();
-    if (domain === "") {
+    const normalizedDomain = normalizeCustomDomain(editDomain);
+    const isSwitchingBackToSubdomain =
+      normalizedDomain === normalizedCurrentDomain ||
+      normalizedDomain === normalizedPublicationSubdomain;
+
+    if (!normalizedDomain || isSwitchingBackToSubdomain) {
       setShowRevertConfirmation(true);
-    } else {
-      if (!domain.includes(".")) {
-        domain += ".com";
-      }
-      setPendingDomain(domain);
-      setShowConfirmation(true);
+      return;
     }
+
+    const validation = validateCustomDomain(normalizedDomain);
+    if (!validation.valid) {
+      setError(validation.error || "Invalid custom domain");
+      return;
+    }
+
+    setError("");
+    setPendingDomain(normalizedDomain);
+    setShowConfirmation(true);
   };
 
   const handleConfirmSave = async () => {
@@ -112,9 +192,8 @@ export default function DomainPage() {
       }
 
       const updated = await response.json();
-      const normalizedDomain = updated.customDomain || pendingDomain;
-      setSavedCustomDomain(normalizedDomain);
-      setEditDomain(normalizedDomain);
+      await refreshCurrentPublication();
+      applyPublicationDomainState(updated);
       setCustomDomain("");
       setShowConfirmation(false);
       setPendingDomain("");
@@ -153,8 +232,9 @@ export default function DomainPage() {
         throw new Error(data.error || "Failed to revert to subdomain");
       }
 
-      setSavedCustomDomain("");
-      setEditDomain("");
+      const updated = await response.json();
+      await refreshCurrentPublication();
+      applyPublicationDomainState(updated);
       setCustomDomain("");
       setShowRevertConfirmation(false);
     } catch (err) {
@@ -169,35 +249,67 @@ export default function DomainPage() {
   };
 
   const handleVerifyDomain = async () => {
-    if (!savedCustomDomain) return;
-
-    setVerifying(true);
-    setVerificationStatus(null);
+    if (!publicationId || !savedCustomDomain) return;
 
     try {
+      setVerifying(true);
+      setError("");
       const apiBase = getApiBase();
       const response = await fetch(
-        `${apiBase}/api/publications/verify-domain/${savedCustomDomain}`,
-        { credentials: "include" }
+        `${apiBase}/api/publications/${publicationId}/custom-domain/verify`,
+        {
+          method: "POST",
+          credentials: "include",
+        },
       );
 
-      const data = await response.json();
-
-      if (data.verified) {
-        setVerificationStatus("verified");
-      } else {
-        setVerificationStatus("failed");
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to verify domain");
       }
+
+      const updated = await response.json();
+      await refreshCurrentPublication();
+      applyPublicationDomainState(updated);
+      toast.success(
+        updated.customDomainStatus === "active"
+          ? "Custom domain is now active"
+          : "Verification checked. DNS still needs attention.",
+      );
     } catch (err) {
-      console.error("Error verifying domain:", err);
-      setVerificationStatus("failed");
+      setError(err.message || "Failed to verify domain");
     } finally {
       setVerifying(false);
     }
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async (text) => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        toast.success("Domain copied");
+        return;
+      }
+
+      if (typeof document !== "undefined") {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        toast.success("Domain copied");
+        return;
+      }
+
+      throw new Error("Clipboard is not available");
+    } catch (err) {
+      console.error("Error copying domain:", err);
+      toast.error("Failed to copy domain. Please copy it manually.");
+    }
   };
 
   if (loading) {
@@ -304,9 +416,9 @@ export default function DomainPage() {
               </div>
             ) : (
               // After custom domain is saved - exact CSS styling
-              <div className="mx-auto mb-12 md:mb-20 w-[301px] md:w-[447px] h-auto md:h-[503px] p-5 md:p-[24px_32px] rounded-lg border border-[#EDEDED] bg-white flex flex-col gap-6">
+              <div className="mx-auto mb-12 md:mb-20 flex w-full max-w-[447px] flex-col gap-6 rounded-lg border border-[#EDEDED] bg-white p-5 md:p-[24px_32px]">
                 {/* Subdomain Domain Section */}
-                <div className="w-full md:w-[383px] rounded bg-[#FAFAFA] border border-[#EAEAEA] flex flex-col p-4 md:px-6 md:py-4 gap-1">
+                <div className="flex w-full flex-col gap-1 rounded border border-[#EAEAEA] bg-[#FAFAFA] p-4 md:px-6 md:py-4">
                   <div
                     className="font-semibold text-[#A4A4A4] text-[12px] max-md:text-[8px] max-md:font-normal leading-[150%]"
                     style={{ fontFamily: "Public Sans" }}
@@ -366,11 +478,7 @@ export default function DomainPage() {
                     YOUR CURRENT DOMAIN
                   </div>
                   <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                    }}
+                    className="flex flex-wrap items-center gap-3"
                   >
                     <span
                       className="font-semibold text-[#7C3AED] text-[16px] max-md:text-[12px] max-md:font-normal leading-[28px] break-all"
@@ -379,85 +487,17 @@ export default function DomainPage() {
                       {savedCustomDomain}
                     </span>
                     <span
-                      className="bg-[#F4F4F4] text-[#808080] rounded-[71px] flex items-center justify-center h-[26px] w-[108px] max-md:w-[70px] text-[12px] max-md:text-[8px] leading-[150%] whitespace-nowrap"
+                      className={`rounded-[71px] flex items-center justify-center h-[26px] px-3 text-[12px] max-md:text-[8px] leading-[150%] whitespace-nowrap ${statusStyle}`}
                       style={{ fontFamily: "Public Sans" }}
                     >
-                      Custom Domain
+                      {statusLabel}
                     </span>
-                  </div>
-                </div>
-
-                {/* Domain Verification Status */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "12px",
-                  }}
-                >
-                  <div
-                    className="font-semibold text-[#A4A4A4] text-[12px] max-md:text-[8px] max-md:font-normal leading-[150%]"
-                    style={{ fontFamily: "Public Sans" }}
-                  >
-                    DOMAIN STATUS
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                    }}
-                  >
-                    {verificationStatus === "verified" && (
-                      <span
-                        className="bg-green-100 text-green-700 rounded-[71px] flex items-center justify-center h-[26px] px-3 text-[12px] max-md:text-[8px] leading-[150%]"
-                        style={{ fontFamily: "Public Sans" }}
-                      >
-                        Verified
-                      </span>
-                    )}
-                    {verificationStatus === "failed" && (
-                      <span
-                        className="bg-red-100 text-red-700 rounded-[71px] flex items-center justify-center h-[26px] px-3 text-[12px] max-md:text-[8px] leading-[150%]"
-                        style={{ fontFamily: "Public Sans" }}
-                      >
-                        Not Verified
-                      </span>
-                    )}
-                    {!verificationStatus && (
-                      <span
-                        className="bg-gray-100 text-gray-600 rounded-[71px] flex items-center justify-center h-[26px] px-3 text-[12px] max-md:text-[8px] leading-[150%]"
-                        style={{ fontFamily: "Public Sans" }}
-                      >
-                        Not Checked
-                      </span>
-                    )}
-                    <button
-                      onClick={handleVerifyDomain}
-                      disabled={verifying}
-                      style={{
-                        height: "26px",
-                        borderRadius: "4px",
-                        padding: "4px 12px",
-                        background: "#080808",
-                        border: "none",
-                        fontFamily: "Public Sans",
-                        fontWeight: 500,
-                        fontSize: "12px",
-                        lineHeight: "150%",
-                        color: "#EDEDED",
-                        cursor: verifying ? "not-allowed" : "pointer",
-                        opacity: verifying ? 0.6 : 1,
-                      }}
-                    >
-                      {verifying ? "Checking..." : "Check Status"}
-                    </button>
                   </div>
                 </div>
 
                 {/* Info Box */}
                 <div
-                  className="w-full md:w-[382px] min-h-[88px] h-auto rounded bg-[#ECF0FE] p-4 md:px-6 md:py-4 text-[#0048B5] text-[12px] max-md:text-[10px] max-md:font-normal leading-[18.5px]"
+                  className="min-h-[88px] h-auto w-full rounded bg-[#ECF0FE] p-4 text-[#0048B5] text-[12px] leading-[18.5px] md:px-6 md:py-4 max-md:text-[10px] max-md:font-normal"
                   style={{ fontFamily: "Public Sans" }}
                 >
                   <span className="font-bold max-md:font-bold">Info:</span> If
@@ -470,11 +510,7 @@ export default function DomainPage() {
 
                 {/* Edit Domain Section */}
                 <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "12px",
-                  }}
+                  className="flex w-full flex-col gap-3"
                 >
                   <div
                     style={{
@@ -683,32 +719,15 @@ export default function DomainPage() {
         onOpenChange={(open) => !open && !saving && handleCancelSave()}
       >
         <DialogContent
-          className="max-w-none w-auto border-none bg-transparent p-0 shadow-none"
+          className="w-[calc(100vw-2rem)] max-w-[350px] rounded-[4px] border-none bg-[#FEFEFE] p-6 shadow-2xl sm:p-8"
           showClose={false}
         >
           <DialogTitle className="sr-only">Confirm Domain Change</DialogTitle>
-          <div
-            style={{
-              width: "350px",
-              height: "auto",
-              borderRadius: "4px",
-              padding: "40px 24px",
-              gap: "12px",
-              background: "#FEFEFE",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
+          <div className="flex flex-col items-center gap-4">
             <h3
-              className="max-md:text-[12px] max-md:font-normal"
+              className="text-center text-[16px] font-bold leading-7 text-black max-md:text-[12px] max-md:font-normal"
               style={{
                 fontFamily: "Public Sans",
-                fontWeight: 700,
-                fontSize: "16px",
-                lineHeight: "28px",
-                textAlign: "center",
-                color: "#000000",
                 margin: 0,
               }}
             >
@@ -716,17 +735,9 @@ export default function DomainPage() {
             </h3>
 
             <div
-              className="w-full md:w-[401px] max-md:p-4"
+              className="flex w-full flex-col justify-center gap-2 rounded-[8px] border border-[#EAEAEA] p-4 sm:p-6"
               style={{
-                height: "auto",
                 minHeight: "102px",
-                borderRadius: "8px",
-                border: "1px solid #EAEAEA",
-                padding: "24px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                gap: "8px",
               }}
             >
               <div
@@ -761,7 +772,7 @@ export default function DomainPage() {
               </div>
             </div>
 
-            <div className="flex gap-4 ml-auto" style={{ marginTop: "20px" }}>
+            <div className="mt-2 flex w-full justify-end gap-4">
               <button
                 onClick={handleCancelSave}
                 disabled={saving}
@@ -823,33 +834,15 @@ export default function DomainPage() {
         onOpenChange={(open) => !open && !saving && handleCancelRevert()}
       >
         <DialogContent
-          className="max-w-none w-auto border-none bg-transparent p-0 shadow-none"
+          className="w-[calc(100vw-2rem)] max-w-[350px] rounded-[4px] border-none bg-[#FEFEFE] p-6 shadow-2xl sm:p-8"
           showClose={false}
         >
           <DialogTitle className="sr-only">Confirm Revert To Subdomain</DialogTitle>
-          <div
-            style={{
-              width: "350px",
-              height: "auto",
-              borderRadius: "4px",
-              padding: "32px 24px",
-              gap: "24px",
-              background: "#FEFEFE",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
+          <div className="flex flex-col items-center justify-center gap-6">
             <h3
-              className="max-md:text-[12px] max-md:font-normal"
+              className="text-center text-[16px] font-bold leading-7 text-black max-md:text-[12px] max-md:font-normal"
               style={{
                 fontFamily: "Public Sans",
-                fontWeight: 700,
-                fontSize: "16px",
-                lineHeight: "28px",
-                textAlign: "center",
-                color: "#000000",
                 margin: 0,
               }}
             >

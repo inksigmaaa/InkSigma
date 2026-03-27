@@ -7,6 +7,7 @@ import ShareIcon from '../icons/ShareIcon';
 import ArrowUpIcon from '../icons/ArrowUpIcon';
 import CloseIcon from '../icons/CloseIcon';
 import { getApiBase } from '@/utils/apiBase';
+import { getBlogUrl } from '@/utils/blogUrl';
 
 const API_URL = getApiBase();
 
@@ -17,7 +18,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
   const [lastScrollY, setLastScrollY] = useState(0);
   const isSharing = useRef(false);
 
-  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/view-site/blog/${slug}` : '');
+  const blogUrl = url || getBlogUrl(slug);
   const shareText = description ? `${title} - ${description}` : title;
 
   // Track share action

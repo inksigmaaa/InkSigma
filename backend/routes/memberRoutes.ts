@@ -9,8 +9,8 @@ import {
 } from "../models/schema.js";
 import { eq, and, or } from "drizzle-orm";
 import crypto from "crypto";
-import { auth } from "../config/betterAuth.js";
-import { fromNodeHeaders } from "better-auth/node";
+import { requireAuth } from "../middleware/auth.js";
+import { requirePublicationRole } from "../middleware/authorization.js";
 import nodemailer from "nodemailer";
 import notificationService from "../services/notificationService.js";
 import { redactEmail } from "../utils/redactPII.js";
@@ -18,328 +18,96 @@ import logger from "../utils/logger.js";
 
 const router = express.Router();
 
-// Middleware to get current user from session
-const getCurrentUser = async (req, res, next) => {
-  try {
-    const session = await auth.api.getSession({
-      headers: fromNodeHeaders(req.headers),
-    });
+const requireAdmin = requirePublicationRole(["admin"], {
+  publicationIdParam: "publicationId",
+});
 
-    if (!session?.user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
+const requireCanInvite = requirePublicationRole(["admin", "editor"], {
+  publicationIdParam: "publicationId",
+});
 
-    req.user = session.user;
-    next();
-  } catch (error) {
-    logger.error(error, "Auth error:");
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-};
-
-// Middleware to check if user is admin of the publication
-const requireAdmin = async (req, res, next) => {
-  try {
-    const { publicationId } = req.params;
-    const userId = req.user.id;
-
-    // First check if user is the publication owner (fallback for legacy publications)
-    const [pub] = await db
-      .select()
-      .from(publication)
-      .where(eq(publication.id, parseInt(publicationId)));
-
-    if (!pub) {
-      return res.status(404).json({ error: "Publication not found" });
-    }
-
-    let isAdmin = false;
-    let isOwner = pub.userId === userId;
-
-    // Check if user is an admin member
-    const member = await db
-      .select()
-      .from(publicationMember)
-      .where(
-        and(
-          eq(publicationMember.publicationId, parseInt(publicationId)),
-          eq(publicationMember.userId, userId),
-          eq(publicationMember.role, "admin"),
-        ),
-      );
-
-    if (member.length > 0) {
-      isAdmin = true;
-    } else if (isOwner) {
-      // If user is the publication owner but not in members table, add them as admin
-      logger.info(
-        `Adding publication owner as admin member: ${userId} for publication ${publicationId}`,
-      );
-
-      await db.insert(publicationMember).values({
-        publicationId: parseInt(publicationId),
-        userId: userId,
-        role: "admin",
-        invitedBy: userId,
-      });
-
-      isAdmin = true;
-    }
-
-    if (!isAdmin) {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-
-    next();
-  } catch (error) {
-    logger.error(error, "Admin check error:");
-    res.status(500).json({ error: "Failed to verify admin access" });
-  }
-};
-
-// Middleware to check if user can invite members (Admin or Editor)
-const requireCanInvite = async (req, res, next) => {
-  try {
-    const { publicationId } = req.params;
-    const userId = req.user.id;
-
-    // First check if user is the publication owner
-    const [pub] = await db
-      .select()
-      .from(publication)
-      .where(eq(publication.id, parseInt(publicationId)));
-
-    if (!pub) {
-      return res.status(404).json({ error: "Publication not found" });
-    }
-
-    let canInvite = false;
-    let isOwner = pub.userId === userId;
-    let userRole = null;
-
-    // Check if user is an admin or editor member
-    const [member] = await db
-      .select()
-      .from(publicationMember)
-      .where(
-        and(
-          eq(publicationMember.publicationId, parseInt(publicationId)),
-          eq(publicationMember.userId, userId),
-        ),
-      );
-
-    if (member) {
-      userRole = member.role;
-      // Both admin and editor can invite members
-      if (member.role === "admin" || member.role === "editor") {
-        canInvite = true;
-      }
-    } else if (isOwner) {
-      // If user is the publication owner but not in members table, add them as admin
-      logger.info(
-        `Adding publication owner as admin member: ${userId} for publication ${publicationId}`,
-      );
-
-      await db.insert(publicationMember).values({
-        publicationId: parseInt(publicationId),
-        userId: userId,
-        role: "admin",
-        invitedBy: userId,
-      });
-
-      canInvite = true;
-      userRole = "admin";
-    }
-
-    if (!canInvite) {
-      return res
-        .status(403)
-        .json({ error: "Admin or Editor access required to invite members" });
-    }
-
-    // Store user role on request for later use (e.g., to restrict editor from inviting editor)
-    req.userRole = userRole;
-    next();
-  } catch (error) {
-    logger.error(error, "Invite permission check error:");
-    res.status(500).json({ error: "Failed to verify invite permission" });
-  }
-};
-
-// Middleware to check if user can remove members (Admin or Editor)
-const requireCanRemove = async (req, res, next) => {
-  try {
-    const { publicationId } = req.params;
-    const userId = req.user.id;
-
-    // First check if user is the publication owner
-    const [pub] = await db
-      .select()
-      .from(publication)
-      .where(eq(publication.id, parseInt(publicationId)));
-
-    if (!pub) {
-      return res.status(404).json({ error: "Publication not found" });
-    }
-
-    let canRemove = false;
-    let isOwner = pub.userId === userId;
-    let userRole = null;
-
-    // Check if user is an admin or editor member
-    const [member] = await db
-      .select()
-      .from(publicationMember)
-      .where(
-        and(
-          eq(publicationMember.publicationId, parseInt(publicationId)),
-          eq(publicationMember.userId, userId),
-        ),
-      );
-
-    if (member) {
-      userRole = member.role;
-      // Both admin and editor can remove members
-      if (member.role === "admin" || member.role === "editor") {
-        canRemove = true;
-      }
-    } else if (isOwner) {
-      // If user is the publication owner but not in members table, add them as admin
-      logger.info(
-        `Adding publication owner as admin member: ${userId} for publication ${publicationId}`,
-      );
-
-      await db.insert(publicationMember).values({
-        publicationId: parseInt(publicationId),
-        userId: userId,
-        role: "admin",
-        invitedBy: userId,
-      });
-
-      canRemove = true;
-      userRole = "admin";
-    }
-
-    if (!canRemove) {
-      return res
-        .status(403)
-        .json({ error: "Admin or Editor access required to remove members" });
-    }
-
-    // Store user role on request for later use
-    req.userRole = userRole;
-    next();
-  } catch (error) {
-    logger.error(error, "Remove permission check error:");
-    res.status(500).json({ error: "Failed to verify remove permission" });
-  }
-};
+const requireCanRemove = requirePublicationRole(["admin", "editor"], {
+  publicationIdParam: "publicationId",
+});
 
 // Get all members of a publication
-router.get("/:publicationId/members", getCurrentUser, async (req, res) => {
-  try {
-    const { publicationId } = req.params;
-    const userId = req.user.id;
-
-    // Get publication and user membership in parallel
-    const [[pub], userMember] = await Promise.all([
-      db.select().from(publication).where(eq(publication.id, parseInt(publicationId))),
-      db.select().from(publicationMember).where(
-        and(
-          eq(publicationMember.publicationId, parseInt(publicationId)),
-          eq(publicationMember.userId, userId),
-        ),
-      )
-    ]);
-
-    if (!pub) {
-      return res.status(404).json({ error: "Publication not found" });
-    }
-
-    let userRole = null;
-    const isOwner = pub.userId === userId;
-
-    if (userMember.length > 0) {
-      userRole = userMember[0].role;
-    } else if (isOwner) {
-      logger.info(
-        `Adding publication owner as admin member: ${userId} for publication ${publicationId}`,
-      );
-
-      await db.insert(publicationMember).values({
-        publicationId: parseInt(publicationId),
-        userId: userId,
-        role: "admin",
-        invitedBy: userId,
-      });
-
-      userRole = "admin";
-    } else {
-      return res.status(403).json({ error: "Access denied" });
-    }
-
-    const canManageInvites = userRole === "admin" || userRole === "editor";
+router.get(
+  "/:publicationId/members",
+  requireAuth,
+  requirePublicationRole(["admin", "editor", "author"], {
+    publicationIdParam: "publicationId",
+  }),
+  async (req, res) => {
+    try {
+      const { publicationId } = req.params;
+      const userRole = req.userRole;
+      const canManageInvites = userRole === "admin" || userRole === "editor";
 
     // Get all active members and pending invitations in parallel
-    const [members, pendingInvitations] = await Promise.all([
-      db.select({
-        id: publicationMember.id,
-        userId: publicationMember.userId,
-        role: publicationMember.role,
-        joinedAt: publicationMember.joinedAt,
-        userName: user.name,
-        userEmail: user.email,
-        userImage: user.image,
-      })
-      .from(publicationMember)
-      .innerJoin(user, eq(publicationMember.userId, user.id))
-      .where(eq(publicationMember.publicationId, parseInt(publicationId))),
-      canManageInvites ? db.select({
-        id: invitation.id,
-        email: invitation.email,
-        role: invitation.role,
-        status: invitation.status,
-        createdAt: invitation.createdAt,
-        expiresAt: invitation.expiresAt,
-      })
-      .from(invitation)
-      .where(
-        and(
-          eq(invitation.publicationId, parseInt(publicationId)),
-          or(
-            eq(invitation.status, "pending"),
-            eq(invitation.status, "expired"),
-            eq(invitation.status, "declined"),
-          ),
-        ),
-      ) : Promise.resolve([])
-    ]);
+      const [members, pendingInvitations] = await Promise.all([
+        db
+          .select({
+            id: publicationMember.id,
+            userId: publicationMember.userId,
+            role: publicationMember.role,
+            joinedAt: publicationMember.joinedAt,
+            userName: user.name,
+            userEmail: user.email,
+            userImage: user.image,
+          })
+          .from(publicationMember)
+          .innerJoin(user, eq(publicationMember.userId, user.id))
+          .where(eq(publicationMember.publicationId, parseInt(publicationId))),
+        canManageInvites
+          ? db
+              .select({
+                id: invitation.id,
+                email: invitation.email,
+                role: invitation.role,
+                status: invitation.status,
+                createdAt: invitation.createdAt,
+                expiresAt: invitation.expiresAt,
+              })
+              .from(invitation)
+              .where(
+                and(
+                  eq(invitation.publicationId, parseInt(publicationId)),
+                  or(
+                    eq(invitation.status, "pending"),
+                    eq(invitation.status, "expired"),
+                    eq(invitation.status, "declined"),
+                  ),
+                ),
+              )
+          : Promise.resolve([]),
+      ]);
 
-    // Deduplicate members by userId (in case there are duplicates in the database)
-    const uniqueMembers = [];
-    const seenUserIds = new Set();
-    for (const member of members) {
-      if (!seenUserIds.has(member.userId)) {
-        seenUserIds.add(member.userId);
-        uniqueMembers.push(member);
+      // Deduplicate members by userId (in case there are duplicates in the database)
+      const uniqueMembers = [];
+      const seenUserIds = new Set();
+      for (const member of members) {
+        if (!seenUserIds.has(member.userId)) {
+          seenUserIds.add(member.userId);
+          uniqueMembers.push(member);
+        }
       }
-    }
 
-    res.json({
-      members: uniqueMembers,
-      pendingInvitations: canManageInvites ? pendingInvitations : [],
-      userRole: userRole,
-    });
-  } catch (error) {
-    logger.error(error, "Error fetching members:");
-    res.status(500).json({ error: "Failed to fetch members" });
-  }
-});
+      res.json({
+        members: uniqueMembers,
+        pendingInvitations: canManageInvites ? pendingInvitations : [],
+        userRole,
+      });
+    } catch (error) {
+      logger.error(error, "Error fetching members:");
+      res.status(500).json({ error: "Failed to fetch members" });
+    }
+  },
+);
 
 // Send invitation (Admin or Editor with restrictions)
 router.post(
   "/:publicationId/invite",
-  getCurrentUser,
+  requireAuth,
   requireCanInvite,
   async (req, res) => {
     try {
@@ -478,7 +246,7 @@ router.post(
 // Resend invitation (Admin only)
 router.post(
   "/:publicationId/invite/:invitationId/resend",
-  getCurrentUser,
+  requireAuth,
   requireAdmin,
   async (req, res) => {
     try {
@@ -545,7 +313,7 @@ router.post(
 // Cancel invitation (Admin or Editor with restrictions)
 router.delete(
   "/:publicationId/invite/:invitationId",
-  getCurrentUser,
+  requireAuth,
   requireCanRemove,
   async (req, res) => {
     try {
@@ -594,7 +362,7 @@ router.delete(
 // Remove member (Admin or Editor with restrictions)
 router.delete(
   "/:publicationId/members/:memberId",
-  getCurrentUser,
+  requireAuth,
   requireCanRemove,
   async (req, res) => {
     try {
@@ -673,7 +441,7 @@ router.delete(
 );
 
 // Get user's publications (owned + joined)
-router.get("/user/publications", getCurrentUser, async (req, res) => {
+router.get("/user/publications", requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -683,6 +451,8 @@ router.get("/user/publications", getCurrentUser, async (req, res) => {
         id: publication.id,
         name: publication.name,
         subdomain: publication.subdomain,
+        customDomain: publication.customDomain,
+        customDomainStatus: publication.customDomainStatus,
         description: publication.description,
         logoUrl: publication.logoUrl,
         createdAt: publication.createdAt,
@@ -707,6 +477,8 @@ router.get("/user/publications", getCurrentUser, async (req, res) => {
         id: publication.id,
         name: publication.name,
         subdomain: publication.subdomain,
+        customDomain: publication.customDomain,
+        customDomainStatus: publication.customDomainStatus,
         description: publication.description,
         logoUrl: publication.logoUrl,
         createdAt: publication.createdAt,
@@ -750,7 +522,7 @@ router.get("/user/publications", getCurrentUser, async (req, res) => {
 });
 
 // Leave publication (Non-admin members only)
-router.post("/:publicationId/leave", getCurrentUser, async (req, res) => {
+router.post("/:publicationId/leave", requireAuth, async (req, res) => {
   try {
     const { publicationId } = req.params;
     const userId = req.user.id;
@@ -795,7 +567,7 @@ router.post("/:publicationId/leave", getCurrentUser, async (req, res) => {
 });
 
 // Get invitation details (requires authentication)
-router.get("/invite/:token", getCurrentUser, async (req, res) => {
+router.get("/invite/:token", requireAuth, async (req, res) => {
   try {
     const { token } = req.params;
 
@@ -868,6 +640,8 @@ router.get("/invite/:token", getCurrentUser, async (req, res) => {
         id: pub.id,
         name: pub.name,
         subdomain: pub.subdomain,
+        customDomain: pub.customDomain,
+        customDomainStatus: pub.customDomainStatus,
         description: pub.description,
         logoUrl: pub.logoUrl,
       },
@@ -880,7 +654,7 @@ router.get("/invite/:token", getCurrentUser, async (req, res) => {
 });
 
 // Accept invitation
-router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
+router.post("/invite/:token/accept", requireAuth, async (req, res) => {
   try {
     const { token } = req.params;
     const userId = req.user.id;
@@ -975,6 +749,8 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
           id: publication.id,
           name: publication.name,
           subdomain: publication.subdomain,
+          customDomain: publication.customDomain,
+          customDomainStatus: publication.customDomainStatus,
           description: publication.description,
           logoUrl: publication.logoUrl,
           createdAt: publication.createdAt,
@@ -1023,7 +799,7 @@ router.post("/invite/:token/accept", getCurrentUser, async (req, res) => {
 });
 
 // Decline invitation
-router.post("/invite/:token/decline", getCurrentUser, async (req, res) => {
+router.post("/invite/:token/decline", requireAuth, async (req, res) => {
   try {
     const { token } = req.params;
     const userId = req.user.id;

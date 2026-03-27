@@ -12,9 +12,7 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
-import { auth } from "../config/betterAuth.js";
-import { redactEmail, redactUserId } from "../utils/redactPII.js";
-import { fromNodeHeaders } from "better-auth/node";
+import { requireAuth } from "../middleware/auth.js";
 // NOTE: Domain validation logic moved to frontend (src/utils/subdomainRules.js, src/utils/domainValidation.js)
 // Backend now only checks database availability and handles data persistence
 import {
@@ -22,6 +20,18 @@ import {
   resolvePublicationBySubdomain,
   resolvePublicationByCustomDomain,
 } from "../services/publicationResolver.js";
+import {
+  assertPublicationHostnamesAvailable,
+  isPublicationHostnameAvailable,
+  syncPublicationHostnames,
+  PUBLICATION_HOSTNAME_KIND,
+} from "../services/publicationHostnameService.js";
+import {
+  buildCustomDomainLifecycleFields,
+  verifyCustomDomainLifecycle,
+  CUSTOM_DOMAIN_STATUS,
+} from "../services/customDomainService.js";
+import { requirePublicationRole } from "../middleware/authorization.js";
 import { validate } from "../middleware/validate.js";
 import * as publicationValidator from "../validators/publicationValidator.js";
 import logger from "../utils/logger.js";
@@ -78,57 +88,8 @@ const upload = multer({
   },
 });
 
-// Middleware to get current user from session
-const getCurrentUser = async (req, res, next) => {
-  try {
-    logger.info(`[getCurrentUser] Checking authentication... ${req.method}`);
-    logger.info("[getCurrentUser] Request method:");
-    logger.info(`[getCurrentUser] Request path: ${req.path}`);
-    logger.info(
-      `[getCurrentUser] Request headers: ${JSON.stringify({
-        cookie: req.headers.cookie ? "present" : "missing",
-        authorization: req.headers.authorization ? "present" : "missing",
-        origin: req.headers.origin,
-        referer: req.headers.referer,
-        "content-type": req.headers["content-type"],
-      })}`,
-    );
-
-    const session = await auth.api.getSession({
-      headers: fromNodeHeaders(req.headers),
-    });
-
-    logger.info(
-      `[getCurrentUser] Session result: ${session ? "found" : "not found"}`,
-    );
-    if (session?.user) {
-      logger.info(`[getCurrentUser] User ID: ${redactUserId(session.user.id)}`);
-      logger.info(`[getCurrentUser] User email: ${redactEmail(session.user.email)}`);
-    }
-
-    if (!session?.user) {
-      logger.info("[getCurrentUser] Unauthorized - no session or user");
-      return res.status(401).json({ error: "Unauthorized - Please log in" });
-    }
-
-    req.user = session.user;
-    logger.info(
-      `[getCurrentUser] Authentication successful for user: ${redactUserId(req.user.id)}`,
-    );
-    next();
-  } catch (error) {
-    logger.error(error, "[getCurrentUser] Auth error:");
-    logger.error(error.message, "[getCurrentUser] Error message:");
-    logger.error(error.stack, "[getCurrentUser] Error stack:");
-    return res.status(401).json({
-      error: "Unauthorized - Authentication failed",
-      details: error.message,
-    });
-  }
-};
-
 // Check if user has a publication
-router.get("/check", getCurrentUser, async (req, res) => {
+router.get("/check", requireAuth, async (req, res) => {
   try {
     const userId = req.user?.id;
 
@@ -150,7 +111,7 @@ router.get("/check", getCurrentUser, async (req, res) => {
 });
 
 // Test endpoint to verify authentication
-router.get("/test-auth", getCurrentUser, async (req, res) => {
+router.get("/test-auth", requireAuth, async (req, res) => {
   try {
     res.json({
       authenticated: true,
@@ -165,7 +126,7 @@ router.get("/test-auth", getCurrentUser, async (req, res) => {
 });
 
 // Diagnostic endpoint to check authentication
-router.get("/debug/auth-check", getCurrentUser, async (req, res) => {
+router.get("/debug/auth-check", requireAuth, async (req, res) => {
   try {
     res.json({
       authenticated: true,
@@ -199,7 +160,12 @@ router.get(
         .where(eq(publication.subdomain, subdomain.toLowerCase()))
         .limit(1);
 
-      res.json({ available: existing.length === 0 });
+      const availableInHistory = await isPublicationHostnameAvailable(db, {
+        kind: PUBLICATION_HOSTNAME_KIND.SUBDOMAIN,
+        value: subdomain,
+      });
+
+      res.json({ available: existing.length === 0 && availableInHistory });
     } catch (error) {
       logger.error(error, "Error checking subdomain:");
       res.status(500).json({ error: "Failed to check subdomain" });
@@ -293,6 +259,27 @@ router.get(
   },
 );
 
+router.get("/resolve-host", async (req, res) => {
+  try {
+    const rawHost =
+      typeof req.query.host === "string" ? req.query.host : String(req.query.host || "");
+
+    if (!rawHost) {
+      return res.status(400).json({ error: "Host is required" });
+    }
+
+    const { resolvePublicationRoutingByHost } = await import(
+      "../services/publicationResolver.js"
+    );
+    const routing = await resolvePublicationRoutingByHost(rawHost);
+
+    return res.json(routing);
+  } catch (error) {
+    logger.error(error, "Error resolving host routing:");
+    return res.status(500).json({ error: "Failed to resolve host routing" });
+  }
+});
+
 // Resolve publication by current host
 router.get("/resolve", async (req, res) => {
   try {
@@ -372,7 +359,7 @@ router.get(
 // Get publication details
 router.get(
   "/:publicationId/details",
-  getCurrentUser,
+  requireAuth,
   validate(publicationValidator.byPublicationIdSchema),
   async (req, res) => {
     try {
@@ -468,7 +455,6 @@ router.get(
         owner,
       };
 
-      logger.info(`Publication details response:`);
       res.json(response);
     } catch (error) {
       logger.error(error, "Error fetching publication details:");
@@ -481,31 +467,25 @@ router.get(
 // Create publication
 router.post(
   "/",
-  getCurrentUser,
+  requireAuth,
   validate(publicationValidator.createPublicationSchema),
   async (req, res) => {
     try {
       const { name, subdomain, description, customDomain } = req.body;
 
-      logger.info(`Create publication request received: ${subdomain}`);
-      logger.info(`Request body: ${JSON.stringify(req.body, null, 2)}`);
-      logger.info(`User: ${JSON.stringify(req.user, null, 2)}`);
-      logger.info(`Headers: ${JSON.stringify(req.headers, null, 2)}`);
+      logger.info({ subdomain }, "Create publication request received");
       const userId = req.user?.id;
 
       if (!userId) {
-        logger.info("Validation failed: no user ID");
         return res.status(401).json({ error: "User not authenticated" });
       }
 
       if (!name || !subdomain) {
-        logger.info("Validation failed: missing name or subdomain");
         return res
           .status(400)
           .json({ error: "Name and subdomain are required" });
       }
 
-      logger.info("Checking for existing user publication...");
       // Check if user already has a publication
       const existingUserPub = await db
         .select()
@@ -513,15 +493,11 @@ router.post(
         .where(eq(publication.userId, userId));
 
       if (existingUserPub.length > 0) {
-        logger.info(
-          `User already has a publication: ${JSON.stringify(existingUserPub[0])}`,
-        );
         return res
           .status(400)
           .json({ error: "User already has a publication" });
       }
 
-      logger.info("Checking if subdomain is available...");
       // Check if subdomain already exists in database
       // Frontend handles format and reserved subdomain validation
       const existing = await db
@@ -530,7 +506,6 @@ router.post(
         .where(eq(publication.subdomain, subdomain.toLowerCase()));
 
       if (existing.length > 0) {
-        logger.info("Subdomain already taken:");
         return res.status(400).json({ error: "Subdomain already taken" });
       }
 
@@ -548,24 +523,33 @@ router.post(
         }
       }
 
-      logger.info("Creating publication in transaction...");
+      await assertPublicationHostnamesAvailable(db, {
+        subdomain,
+        customDomain: normalizedCustomDomain,
+      });
+      const customDomainLifecycle = buildCustomDomainLifecycleFields({
+        nextCustomDomain: normalizedCustomDomain,
+      });
+
       // Create publication and add creator as admin member in a transaction
       const result = await db.transaction(async (tx) => {
         try {
           // Create the publication
-          logger.info(
-            `Inserting publication with data: ${JSON.stringify({
-              name,
-              subdomain: subdomain.toLowerCase(),
-              userId,
-            })}`,
-          );
           const [newPublication] = await tx
             .insert(publication)
             .values({
               name,
               subdomain: subdomain.toLowerCase(),
-              customDomain: normalizedCustomDomain,
+              customDomain: customDomainLifecycle.customDomain,
+              customDomainStatus: customDomainLifecycle.customDomainStatus,
+              customDomainVerificationToken:
+                customDomainLifecycle.customDomainVerificationToken,
+              customDomainVerificationError:
+                customDomainLifecycle.customDomainVerificationError,
+              customDomainVerifiedAt:
+                customDomainLifecycle.customDomainVerifiedAt,
+              customDomainLastCheckedAt:
+                customDomainLifecycle.customDomainLastCheckedAt,
               description: description || null,
               userId,
               logoUrl: null,
@@ -574,42 +558,32 @@ router.post(
             })
             .returning();
 
-          logger.info("Publication created:");
+          await syncPublicationHostnames(tx, {
+            nextPublication: newPublication,
+          });
 
           // Add creator as admin member
-          logger.info(
-            `Adding admin member: ${JSON.stringify({
-              publicationId: newPublication.id,
-              userId,
-            })}`,
-          );
           await tx.insert(publicationMember).values({
             publicationId: newPublication.id,
             userId: userId,
             role: "admin",
           });
 
-          logger.info(
-            `Admin member added for publication: ${newPublication.id}`,
-          );
-
           return newPublication;
         } catch (txError) {
-          logger.error(txError, "Transaction error:");
-          logger.error(txError, "Transaction error details:");
+          logger.error(txError, "Publication transaction error");
           throw txError;
         }
       });
 
-      logger.info(`Publication creation successful: ${result.id}`);
+      logger.info({ publicationId: result.id }, "Publication created successfully");
       await invalidatePublicationCache({
         subdomain: result.subdomain,
         customDomain: result.customDomain,
       });
       return res.status(201).json(result);
     } catch (error) {
-      logger.error(error, "Error creating publication:");
-      logger.error(error.stack, "Error stack:");
+      logger.error(error, "Error creating publication");
       logger.error(error, "Error details:", {
         message: error.message,
         code: error.code,
@@ -634,6 +608,12 @@ router.post(
         // Foreign key constraint violation
         errorMessage = "Invalid user ID or publication reference";
         statusCode = 400;
+      } else if (
+        error.message === "Subdomain is already reserved" ||
+        error.message === "Custom domain is already reserved"
+      ) {
+        errorMessage = error.message;
+        statusCode = 400;
       }
 
       // Ensure we always return a JSON response
@@ -651,7 +631,9 @@ router.post(
 // Update publication
 router.put(
   "/:id",
+  requireAuth,
   validate(publicationValidator.updatePublicationSchema),
+  requirePublicationRole(["admin"], { publicationIdParam: "id" }),
   async (req, res) => {
     try {
       const { id } = req.params;
@@ -664,15 +646,40 @@ router.put(
           .json({ error: "Description must not exceed 100 characters" });
       }
 
+      const [currentPublication] = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.id, parseInt(id)))
+        .limit(1);
+
+      if (!currentPublication) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+
       const updateData: any = {};
       if (name !== undefined) updateData.name = name;
       if (subdomain !== undefined)
         updateData.subdomain = subdomain.toLowerCase();
       if (customDomain !== undefined) {
-        updateData.customDomain =
+        const nextCustomDomain =
           customDomain === null || customDomain === ""
             ? null
             : String(customDomain).trim().toLowerCase();
+        const lifecycleFields = buildCustomDomainLifecycleFields({
+          currentPublication,
+          nextCustomDomain,
+        });
+
+        updateData.customDomain = lifecycleFields.customDomain;
+        updateData.customDomainStatus = lifecycleFields.customDomainStatus;
+        updateData.customDomainVerificationToken =
+          lifecycleFields.customDomainVerificationToken;
+        updateData.customDomainVerificationError =
+          lifecycleFields.customDomainVerificationError;
+        updateData.customDomainVerifiedAt =
+          lifecycleFields.customDomainVerifiedAt;
+        updateData.customDomainLastCheckedAt =
+          lifecycleFields.customDomainLastCheckedAt;
       }
       if (description !== undefined) updateData.description = description;
       updateData.updatedAt = new Date();
@@ -707,17 +714,36 @@ router.put(
         }
       }
 
-      const [currentPublication] = await db
-        .select()
-        .from(publication)
-        .where(eq(publication.id, parseInt(id)))
-        .limit(1);
+      const nextSubdomain = updateData.subdomain ?? currentPublication.subdomain;
+      const nextCustomDomain =
+        updateData.customDomain !== undefined
+          ? updateData.customDomain
+          : currentPublication.customDomain;
 
-      const updated = await db
-        .update(publication)
-        .set(updateData)
-        .where(eq(publication.id, parseInt(id)))
-        .returning();
+      await assertPublicationHostnamesAvailable(db, {
+        publicationId: currentPublication.id,
+        subdomain: nextSubdomain,
+        customDomain: nextCustomDomain,
+      });
+
+      const updated = await db.transaction(async (tx) => {
+        const result = await tx
+          .update(publication)
+          .set(updateData)
+          .where(eq(publication.id, parseInt(id)))
+          .returning();
+
+        if (result.length === 0) {
+          return result;
+        }
+
+        await syncPublicationHostnames(tx, {
+          previousPublication: currentPublication,
+          nextPublication: result[0],
+        });
+
+        return result;
+      });
 
       if (updated.length === 0) {
         return res.status(404).json({ error: "Publication not found" });
@@ -734,8 +760,93 @@ router.put(
 
       res.json(updated[0]);
     } catch (error) {
-      logger.error("Error updating publication:");
+      logger.error(error, "Error updating publication:");
+
+      if (
+        error.message === "Subdomain is already reserved" ||
+        error.message === "Custom domain is already reserved"
+      ) {
+        return res.status(400).json({ error: error.message });
+      }
+
       res.status(500).json({ error: "Failed to update publication" });
+    }
+  },
+);
+
+router.post(
+  "/:id/custom-domain/verify",
+  requireAuth,
+  validate(publicationValidator.byIdSchema),
+  requirePublicationRole(["admin"], { publicationIdParam: "id" }),
+  async (req, res) => {
+    try {
+      const publicationId = parseInt(req.params.id, 10);
+
+      const [currentPublication] = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.id, publicationId))
+        .limit(1);
+
+      if (!currentPublication) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+
+      if (!currentPublication.customDomain) {
+        return res.status(400).json({ error: "Custom domain is not configured" });
+      }
+
+      const verificationFields =
+        await verifyCustomDomainLifecycle(currentPublication);
+
+      const updated = await db.transaction(async (tx) => {
+        const result = await tx
+          .update(publication)
+          .set({
+            ...verificationFields,
+            updatedAt: new Date(),
+          })
+          .where(eq(publication.id, currentPublication.id))
+          .returning();
+
+        if (result.length === 0) {
+          return result;
+        }
+
+        await syncPublicationHostnames(tx, {
+          previousPublication: currentPublication,
+          nextPublication: result[0],
+        });
+
+        return result;
+      });
+
+      if (updated.length === 0) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+
+      await invalidatePublicationCache({
+        subdomain: currentPublication.subdomain,
+        customDomain: currentPublication.customDomain,
+      });
+      await invalidatePublicationCache({
+        subdomain: updated[0].subdomain,
+        customDomain: updated[0].customDomain,
+      });
+
+      return res.json({
+        ...updated[0],
+        verificationState: {
+          isActive:
+            updated[0].customDomainStatus === CUSTOM_DOMAIN_STATUS.ACTIVE,
+          requiresDnsUpdate:
+            updated[0].customDomainStatus !== CUSTOM_DOMAIN_STATUS.ACTIVE,
+        },
+      });
+    } catch (error) {
+      logger.error(error, "Error verifying custom domain:");
+      return res.status(500).json({ error: "Failed to verify custom domain" });
     }
   },
 );
@@ -743,21 +854,19 @@ router.put(
 // Upload logo
 router.post(
   "/:id/logo",
+  requireAuth,
   validate(publicationValidator.byIdSchema),
+  requirePublicationRole(["admin"], { publicationIdParam: "id" }),
   upload.single("logo"),
   async (req, res) => {
     try {
       const { id } = req.params;
-
-      logger.info("Logo upload request for publication:");
-      logger.info(`File received: ${req.file?.originalname}`);
 
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
 
       const logoUrl = `/uploads/publications/${req.file.filename}`;
-      logger.info(`Logo URL to save: ${logoUrl}`);
 
       const updated = await db
         .update(publication)
@@ -768,10 +877,6 @@ router.post(
       if (updated.length === 0) {
         return res.status(404).json({ error: "Publication not found" });
       }
-
-      logger.info(
-        `Publication updated with logo: ${JSON.stringify(updated[0])}`,
-      );
 
       res.json({ logoUrl, publication: updated[0] });
     } catch (error) {
@@ -784,7 +889,9 @@ router.post(
 // Upload favicon
 router.post(
   "/:id/favicon",
+  requireAuth,
   validate(publicationValidator.byIdSchema),
+  requirePublicationRole(["admin"], { publicationIdParam: "id" }),
   upload.single("favicon"),
   async (req, res) => {
     try {
@@ -817,7 +924,9 @@ router.post(
 // Upload meta OG image
 router.post(
   "/:id/meta-og",
+  requireAuth,
   validate(publicationValidator.byIdSchema),
+  requirePublicationRole(["admin"], { publicationIdParam: "id" }),
   upload.single("metaOg"),
   async (req, res) => {
     try {
@@ -850,7 +959,9 @@ router.post(
 // Remove image (logo, favicon, or meta OG)
 router.delete(
   "/:id/image/:type",
+  requireAuth,
   validate(publicationValidator.deleteImageSchema),
+  requirePublicationRole(["admin"], { publicationIdParam: "id" }),
   async (req, res) => {
     try {
       const { id, type } = req.params;

@@ -11,6 +11,7 @@ export const getBlogsSchema = z.object({
   query: z
     .object({
       published: z.string().optional(),
+      draftScope: z.enum(["all", "publishedCopies"]).optional(),
       status: z
         .enum([
           BLOG_STATUS.DRAFT,
@@ -39,6 +40,7 @@ export const getPublicationBlogsSchema = z.object({
   }),
   query: z
     .object({
+      draftScope: z.enum(["all", "publishedCopies"]).optional(),
       status: z
         .enum([
           BLOG_STATUS.DRAFT,

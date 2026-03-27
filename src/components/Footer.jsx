@@ -25,7 +25,7 @@ export default function Footer() {
             {/* Social Icons */}
             <div className="flex gap-3">
               <a
-                href="#"
+                href="https://www.linkedin.com/company/inksigma"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full  flex items-center justify-center transition-colors"
@@ -52,7 +52,7 @@ export default function Footer() {
               </a>
               {/* Telegram */}
               <a
-                href="#"
+                href="https://t.me/inksigmahq"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-8 h-8 rounded-full  flex items-center justify-center  transition-colors"

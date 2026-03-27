@@ -4,6 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
+import {
+  buildLoginRedirectPath,
+  getCurrentAppPath,
+  waitForServerSession,
+} from "@/utils/auth";
 
 export default function AuthGuard({ children }) {
   const { data: session, isPending } = useSession();
@@ -18,6 +23,7 @@ export default function AuthGuard({ children }) {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
 
     const checkAuth = async () => {
       if (isPending) {
@@ -26,26 +32,28 @@ export default function AuthGuard({ children }) {
       }
 
       if (!userId) {
-        // Confirm with server once before redirecting.
-        // This avoids false redirects right after login while client session is still hydrating.
         try {
-          const response = await fetch(`${getApiBase()}/api/auth/get-session`, {
-            credentials: "include",
+          const sessionData = await waitForServerSession({
+            attempts: 4,
+            signal: controller.signal,
           });
-          const sessionData = response.ok
-            ? await response.json().catch(() => null)
-            : null;
 
           if (sessionData?.user?.id) {
             if (!cancelled) setAuthState("authorized");
             return;
           }
-        } catch {
+        } catch (error) {
+          if (error?.name === "AbortError") {
+            return;
+          }
+
           // Continue to login redirect on network/auth errors.
         }
 
         if (!cancelled) setAuthState("unauthorized");
-        router.replace("/login");
+        router.replace(
+          buildLoginRedirectPath(getCurrentAppPath() || pathname || "/"),
+        );
         return;
       }
 
@@ -90,8 +98,9 @@ export default function AuthGuard({ children }) {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [isPending, userId, router, skipPublicationCheck]);
+  }, [isPending, pathname, router, skipPublicationCheck, userId]);
 
   // Allow content to render while session is being verified
   // This prevents UI blocking on slow auth checks

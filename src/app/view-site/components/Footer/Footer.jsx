@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useSession } from '@/lib/auth-client';
 import { getApiBase } from '@/utils/apiBase';
 
@@ -65,11 +66,11 @@ export default function Footer({ publicationName = 'Jasmin blogs' }) {
       <div className="border-t border-b border-[#EDEDED] py-3">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-center gap-20 text-xs text-[#A4A4A4] max-md:gap-10">
           <div className="flex items-center gap-2 flex-wrap justify-center">
-            <a href="#" className="hover:text-[#C0C0C0] transition-colors">Inksigma Website</a>
+            <Link href="/" className="hover:text-[#C0C0C0] transition-colors">Inksigma Website</Link>
             <span>•</span>
-            <a href="#" className="hover:text-[#C0C0C0] transition-colors">Terms and Conditions</a>
+            <Link href="/terms" className="hover:text-[#C0C0C0] transition-colors">Terms and Conditions</Link>
             <span>•</span>
-            <a href="#" className="hover:text-[#C0C0C0] transition-colors">Privacy Policy</a>
+            <Link href="/privacy" className="hover:text-[#C0C0C0] transition-colors">Privacy Policy</Link>
           </div>
           <p className="text-center">
             Copyright © {currentYear} designed & developed by Inksigma, a Zemuria Inc. brand

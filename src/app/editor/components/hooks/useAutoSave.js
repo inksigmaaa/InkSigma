@@ -75,7 +75,6 @@ export function useAutoSave({
   // ── State ──────────────────────────────────────────────────────────────────
   const [saveStatus, setSaveStatus] = useState("idle"); // 'idle' | 'saving' | 'saved' | 'failed'
   const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // ── Snapshots (baseline for change detection) ──────────────────────────────
   const [snapshot, setSnapshot] = useState({
@@ -84,6 +83,12 @@ export function useAutoSave({
     contentHtml: "",
     categories: [],
   });
+
+  const hasUnsavedChanges =
+    title !== snapshot.title ||
+    description !== snapshot.description ||
+    normalizeContent(contentHtml) !== normalizeContent(snapshot.contentHtml) ||
+    !arraysEqual(categories, snapshot.categories);
 
   // ── Refs ────────────────────────────────────────────────────────────────────
   // "phase" prevents overlapping saves during publish/navigation
@@ -109,7 +114,20 @@ export function useAutoSave({
     hasUnsavedChanges: false,
   });
 
-  latestRef.current = {
+  useEffect(() => {
+    latestRef.current = {
+      currentBlogId,
+      shadowId,
+      title,
+      description,
+      contentHtml,
+      categories,
+      existingBlogStatus,
+      publicationId,
+      currentPublication,
+      hasUnsavedChanges,
+    };
+  }, [
     currentBlogId,
     shadowId,
     title,
@@ -120,7 +138,7 @@ export function useAutoSave({
     publicationId,
     currentPublication,
     hasUnsavedChanges,
-  };
+  ]);
 
   // ── Dexie postId resolver ──────────────────────────────────────────────────
   // For new posts we need a stable ID for Dexie before the server gives us one.
@@ -148,34 +166,49 @@ export function useAutoSave({
     dexieSave(id, { title, description, content: contentHtml, categories });
   }, [title, description, contentHtml, categories, getDexieId]);
 
-  // ── 2. Change detection ────────────────────────────────────────────────────
+  // ── Server save with retry (up to 3×, exponential backoff) ─────────────────
 
-  useEffect(() => {
-    const changed =
-      title !== snapshot.title ||
-      description !== snapshot.description ||
-      normalizeContent(contentHtml) !==
-        normalizeContent(snapshot.contentHtml) ||
-      !arraysEqual(categories, snapshot.categories);
-
-    setHasUnsavedChanges(changed);
-  }, [title, description, contentHtml, categories, snapshot]);
+  const serverSaveWithRetry = useCallback(async () => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const result = await saveFn(true); // isAutoSave = true
+        if (result?.skipped) {
+          return "skipped";
+        }
+        if (result) {
+          // If this was a new post and server returned an ID, remap Dexie
+          if (!latestRef.current.currentBlogId && result.id != null) {
+            const oldDexieId = tempIdRef.current;
+            const newId = String(result.id);
+            if (oldDexieId && oldDexieId !== newId) {
+              remapDraftId(oldDexieId, newId);
+              tempIdRef.current = null;
+            }
+            onBlogIdCreated?.(result);
+          }
+          return true;
+        }
+        return false;
+      } catch (err) {
+        if (err.name === "AbortError") return false; // Intentionally cancelled
+        console.warn(`[useAutoSave] attempt ${attempt + 1} failed:`, err);
+        if (attempt < 2) {
+          await wait(Math.pow(2, attempt) * 1000); // 1s, 2s backoff
+        }
+      }
+    }
+    return false;
+  }, [saveFn, onBlogIdCreated]);
 
   // ── 3. Debounced server sync ───────────────────────────────────────────────
 
   useEffect(() => {
     if (phaseRef.current !== "idle" || isSaving) return;
-    if (!hasDraftData({ title, description, contentHtml, categories })) {
-      setSaveStatus("idle");
-      return;
-    }
+    if (!hasDraftData({ title, description, contentHtml, categories })) return;
     if (!hasUnsavedChanges) return;
 
     const isDraftOrNew = !existingBlogStatus || existingBlogStatus === "draft";
-    if (!isDraftOrNew) {
-      setSaveStatus("idle");
-      return;
-    }
+    if (!isDraftOrNew) return;
 
     // Clear previous pending timer
     if (timerRef.current) {
@@ -203,10 +236,12 @@ export function useAutoSave({
       setSaveStatus("saving");
 
       const success = await serverSaveWithRetry();
-      setSaveStatus(success ? "saved" : "failed");
+      setSaveStatus(
+        success === true ? "saved" : success === "skipped" ? "idle" : "failed",
+      );
       setIsAutoSaving(false);
 
-      if (success) {
+      if (success === true) {
         const dexieId = getDexieId();
         dexieMarkSynced(dexieId);
         retryCountRef.current = 0;
@@ -236,38 +271,8 @@ export function useAutoSave({
     existingBlogStatus,
     isSaving,
     getDexieId,
+    serverSaveWithRetry,
   ]);
-
-  // ── Server save with retry (up to 3×, exponential backoff) ─────────────────
-
-  const serverSaveWithRetry = useCallback(async () => {
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const result = await saveFn(true); // isAutoSave = true
-        if (result) {
-          // If this was a new post and server returned an ID, remap Dexie
-          if (!latestRef.current.currentBlogId && result.id != null) {
-            const oldDexieId = tempIdRef.current;
-            const newId = String(result.id);
-            if (oldDexieId && oldDexieId !== newId) {
-              remapDraftId(oldDexieId, newId);
-              tempIdRef.current = null;
-            }
-            onBlogIdCreated?.(result);
-          }
-          return true;
-        }
-        return false;
-      } catch (err) {
-        if (err.name === "AbortError") return false; // Intentionally cancelled
-        console.warn(`[useAutoSave] attempt ${attempt + 1} failed:`, err);
-        if (attempt < 2) {
-          await wait(Math.pow(2, attempt) * 1000); // 1s, 2s backoff
-        }
-      }
-    }
-    return false;
-  }, [saveFn, onBlogIdCreated]);
 
   // ── 4. Online/offline listener ─────────────────────────────────────────────
   // When coming back online, trigger a save if there are pending changes.
@@ -292,9 +297,15 @@ export function useAutoSave({
           setIsAutoSaving(true);
           setSaveStatus("saving");
           const success = await serverSaveWithRetry();
-          setSaveStatus(success ? "saved" : "failed");
+          setSaveStatus(
+            success === true
+              ? "saved"
+              : success === "skipped"
+                ? "idle"
+                : "failed",
+          );
           setIsAutoSaving(false);
-          if (success) {
+          if (success === true) {
             dexieMarkSynced(getDexieId());
             setSnapshot({
               title: latestRef.current.title,
@@ -428,7 +439,6 @@ export function useAutoSave({
 
   const markSaved = useCallback(() => {
     phaseRef.current = "idle";
-    setHasUnsavedChanges(false);
     setSnapshot({ title, description, contentHtml, categories });
 
     // Mark Dexie as synced and clear retry counter
@@ -436,16 +446,6 @@ export function useAutoSave({
     if (id) dexieMarkSynced(id);
     retryCountRef.current = 0;
   }, [title, description, contentHtml, categories, currentBlogId]);
-
-  const markPublishing = useCallback(() => {
-    phaseRef.current = "publishing";
-    cancelPendingAutoSave();
-  }, []);
-
-  const markNavigating = useCallback(() => {
-    phaseRef.current = "navigating";
-    cancelPendingAutoSave();
-  }, []);
 
   const cancelPendingAutoSave = useCallback(() => {
     if (timerRef.current) {
@@ -459,9 +459,18 @@ export function useAutoSave({
     setIsAutoSaving(false);
   }, []);
 
+  const markPublishing = useCallback(() => {
+    phaseRef.current = "publishing";
+    cancelPendingAutoSave();
+  }, [cancelPendingAutoSave]);
+
+  const markNavigating = useCallback(() => {
+    phaseRef.current = "navigating";
+    cancelPendingAutoSave();
+  }, [cancelPendingAutoSave]);
+
   const resetSnapshot = useCallback((snap) => {
     setSnapshot(snap);
-    setHasUnsavedChanges(false);
     phaseRef.current = "idle";
   }, []);
 

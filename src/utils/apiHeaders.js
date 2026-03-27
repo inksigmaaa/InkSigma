@@ -3,50 +3,57 @@
  * Provides headers with subdomain context for API calls
  */
 
-import { getSubdomainFromLocation } from './hostParser';
+import { parseHost } from './hostParser';
 
 /**
- * Get the current subdomain from browser context
- * @returns {string | null} - Current subdomain or null
+ * Get the current tenant headers from browser context
+ * @returns {Object} - Tenant headers
  */
-export const getCurrentSubdomain = () => {
-    if (typeof window === 'undefined') return null;
-    return getSubdomainFromLocation();
+export const getCurrentTenantHeaders = () => {
+    if (typeof window === 'undefined') return {};
+
+    const parsed = parseHost(window.location.host);
+    if (parsed.isDashboard || parsed.isRootDomain) {
+        return {};
+    }
+
+    if (parsed.isCustomDomain && parsed.hostname) {
+        return { 'X-Custom-Domain': parsed.hostname };
+    }
+
+    if (parsed.subdomain && !['dashboard', 'www', 'api'].includes(parsed.subdomain)) {
+        return { 'X-Subdomain': parsed.subdomain };
+    }
+
+    return {};
 };
 
 /**
- * Build headers object with subdomain context
+ * Build headers object with tenant context
  * @param {Object} additionalHeaders - Additional headers to include
- * @returns {Object} - Headers object with X-Subdomain if available
+ * @returns {Object} - Headers object with tenant headers if available
  */
 export const buildApiHeaders = (additionalHeaders = {}) => {
     const headers = {
         ...additionalHeaders,
     };
 
-    const subdomain = getCurrentSubdomain();
-    if (subdomain) {
-        headers['X-Subdomain'] = subdomain;
-    }
-
-    return headers;
+    return {
+        ...headers,
+        ...getCurrentTenantHeaders(),
+    };
 };
 
 /**
- * Build fetch options with subdomain header
+ * Build fetch options with tenant headers
  * @param {Object} options - Fetch options
- * @returns {Object} - Fetch options with subdomain header
+ * @returns {Object} - Fetch options with tenant headers
  */
 export const buildFetchOptions = (options = {}) => {
-    const subdomain = getCurrentSubdomain();
-
     const headers = {
         ...(options.headers || {}),
+        ...getCurrentTenantHeaders(),
     };
-
-    if (subdomain) {
-        headers['X-Subdomain'] = subdomain;
-    }
 
     return {
         ...options,
@@ -56,7 +63,7 @@ export const buildFetchOptions = (options = {}) => {
 };
 
 /**
- * Fetch wrapper that automatically includes subdomain header
+ * Fetch wrapper that automatically includes tenant headers
  * @param {string} url - URL to fetch
  * @param {Object} options - Fetch options
  * @returns {Promise<Response>} - Fetch response

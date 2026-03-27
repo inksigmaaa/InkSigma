@@ -12,6 +12,28 @@ import {
 } from "../services/publicationResolver.js";
 
 const DASHBOARD_SUBDOMAIN = process.env.DASHBOARD_SUBDOMAIN || "dashboard";
+const getLocalLikeBaseDomain = () =>
+  (process.env.BASE_DOMAINS || process.env.BASE_DOMAIN || "")
+    .split(",")
+    .map((domain) => domain.trim().toLowerCase())
+    .find(
+      (domain) =>
+        domain === "localhost" ||
+        domain.endsWith(".local") ||
+        domain.endsWith(".localhost"),
+    );
+
+const MAIN_DOMAIN = (
+  getLocalLikeBaseDomain() || process.env.MAIN_DOMAIN || "inksigma.com"
+).toLowerCase();
+const BASE_DOMAINS = (
+  process.env.BASE_DOMAINS ||
+  process.env.BASE_DOMAIN ||
+  "localhost,inksigma.local"
+)
+  .split(",")
+  .map((domain) => domain.trim().toLowerCase())
+  .filter(Boolean);
 
 // Reserved subdomains that don't map to publications
 const RESERVED_SUBDOMAINS = new Set([
@@ -28,41 +50,142 @@ const RESERVED_SUBDOMAINS = new Set([
   "status",
 ]);
 
+const normalizeHost = (rawHost) => {
+  if (!rawHost) return "";
+
+  const trimmed = String(rawHost).trim().toLowerCase();
+  const withoutProtocol = trimmed.replace(/^[a-z]+:\/\//, "");
+  const withoutPath = withoutProtocol.split("/")[0];
+
+  if (withoutPath.startsWith("[")) {
+    return withoutPath.slice(1).split("]")[0].toLowerCase();
+  }
+
+  return withoutPath.split(":")[0];
+};
+
+const extractHostFromUrl = (rawValue) => {
+  if (!rawValue) return "";
+
+  try {
+    return normalizeHost(new URL(String(rawValue)).host);
+  } catch {
+    return normalizeHost(rawValue);
+  }
+};
+
+const resolveTenantFromHost = async (host) => {
+  const normalizedHost = normalizeHost(host);
+  if (!normalizedHost) {
+    return {
+      host: "",
+      subdomain: null,
+      customDomain: null,
+      publication: null,
+      type: "root",
+      isDashboard: false,
+      isReservedSubdomain: false,
+      isCustomDomain: false,
+    };
+  }
+
+  const candidateBaseDomains = [...BASE_DOMAINS, MAIN_DOMAIN]
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+
+  for (const baseDomain of candidateBaseDomains) {
+    if (normalizedHost === baseDomain) {
+      return {
+        host: normalizedHost,
+        subdomain: null,
+        customDomain: null,
+        publication: null,
+        type: "root",
+        isDashboard: false,
+        isReservedSubdomain: false,
+        isCustomDomain: false,
+      };
+    }
+
+    const suffix = `.${baseDomain}`;
+    if (!normalizedHost.endsWith(suffix)) {
+      continue;
+    }
+
+    const subdomain = normalizedHost.slice(0, -suffix.length);
+    const isDashboard = subdomain === DASHBOARD_SUBDOMAIN;
+    const isReserved = RESERVED_SUBDOMAINS.has(subdomain);
+
+    return {
+      host: normalizedHost,
+      subdomain,
+      customDomain: null,
+      publication:
+        !isDashboard && !isReserved
+          ? await resolvePublicationBySubdomain(subdomain)
+          : null,
+      type: isDashboard ? "dashboard" : "subdomain",
+      isDashboard,
+      isReservedSubdomain: isReserved,
+      isCustomDomain: false,
+    };
+  }
+
+  const publication = await resolvePublicationByCustomDomain(normalizedHost);
+
+  return {
+    host: normalizedHost,
+    subdomain: publication?.subdomain || null,
+    customDomain: normalizedHost,
+    publication,
+    type: publication ? "custom-domain" : "custom-domain",
+    isDashboard: false,
+    isReservedSubdomain: false,
+    isCustomDomain: true,
+  };
+};
+
 /**
  * Middleware to handle tenant context
  * Reads subdomain from X-Subdomain header set by frontend
  */
 export const subdomainMiddleware = async (req, res, next) => {
   try {
-    // Read subdomain from header (set by frontend middleware/axios interceptor)
-    const subdomain = req.headers["x-subdomain"] || null;
-    const normalizedSubdomain = subdomain ? subdomain.toLowerCase() : null;
+    const explicitSubdomain = normalizeHost(req.headers["x-subdomain"]);
+    const explicitCustomDomain = normalizeHost(req.headers["x-custom-domain"]);
 
-    const isDashboard = normalizedSubdomain === DASHBOARD_SUBDOMAIN;
-    const isReserved = normalizedSubdomain
-      ? RESERVED_SUBDOMAINS.has(normalizedSubdomain)
-      : false;
+    let tenant;
 
-    let publication = null;
-    let tenantType = "root";
+    if (explicitSubdomain) {
+      const isDashboard = explicitSubdomain === DASHBOARD_SUBDOMAIN;
+      const isReserved = RESERVED_SUBDOMAINS.has(explicitSubdomain);
 
-    if (normalizedSubdomain) {
-      tenantType = isDashboard ? "dashboard" : "subdomain";
+      tenant = {
+        host: explicitSubdomain,
+        subdomain: explicitSubdomain,
+        customDomain: null,
+        publication:
+          !isDashboard && !isReserved
+            ? await resolvePublicationBySubdomain(explicitSubdomain)
+            : null,
+        type: isDashboard ? "dashboard" : "subdomain",
+        isDashboard,
+        isReservedSubdomain: isReserved,
+        isCustomDomain: false,
+      };
+    } else if (explicitCustomDomain) {
+      tenant = await resolveTenantFromHost(explicitCustomDomain);
+    } else {
+      const forwardedHost = extractHostFromUrl(req.headers.origin);
+      const refererHost = extractHostFromUrl(req.headers.referer);
+      const requestHost = normalizeHost(req.headers["x-forwarded-host"] || req.headers.host);
+      const detectedHost = forwardedHost || refererHost || requestHost;
 
-      // Only resolve publication for non-reserved subdomains
-      if (!isDashboard && !isReserved) {
-        publication = await resolvePublicationBySubdomain(normalizedSubdomain);
-      }
+      tenant = await resolveTenantFromHost(detectedHost);
     }
 
     // Attach tenant info to request
-    req.tenant = {
-      subdomain: normalizedSubdomain,
-      isDashboard,
-      isReservedSubdomain: isReserved,
-      type: tenantType,
-      publication,
-    };
+    req.tenant = tenant;
 
     return next();
   } catch (error) {

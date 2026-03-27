@@ -105,7 +105,7 @@ function PublicationProviderInner({ children }) {
       effectivePathname?.startsWith("/allArticle/") ||
       effectivePathname?.startsWith("/review") ||
       effectivePathname?.startsWith("/author-review") ||
-      effectivePathname?.startsWith("/editorpage") ||
+      effectivePathname?.startsWith("/editor") ||
       effectivePathname?.startsWith("/published") ||
       effectivePathname?.startsWith("/unpublished") ||
       effectivePathname?.startsWith("/members")
@@ -331,6 +331,10 @@ function PublicationProviderInner({ children }) {
                   );
                 }
               }
+            } else {
+              setCurrentPublication((prev) =>
+                prev?.id === stillExists.id ? { ...prev, ...stillExists } : prev,
+              );
             }
           }
         }
@@ -379,6 +383,9 @@ function PublicationProviderInner({ children }) {
       const details =
         await publicationService.getPublicationDetails(publicationId);
       setPublicationDetails(details);
+      setCurrentPublication((prev) =>
+        prev?.id === publicationId ? { ...prev, ...details } : prev,
+      );
       return details;
     } catch (error) {
       console.error("Error loading publication details:", error);

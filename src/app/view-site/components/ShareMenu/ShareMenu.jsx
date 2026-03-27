@@ -6,6 +6,7 @@ import LinkIcon from '../icons/LinkIcon';
 import CameraIcon from '../icons/CameraIcon';
 import { toast } from "sonner";
 import { getApiBase } from '@/utils/apiBase';
+import { getBlogUrl } from '@/utils/blogUrl';
 
 const API_URL = getApiBase();
 
@@ -30,7 +31,7 @@ export default function ShareMenu({ title, url, slug, blogId, variant = 'icon', 
     };
   }, [isOpen]);
 
-  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/view-site/blog/${slug}` : '');
+  const blogUrl = url || getBlogUrl(slug);
 
   // Track share action
   const trackShare = async (platform) => {

@@ -10,6 +10,9 @@ Add entries to `/etc/hosts`:
 127.0.0.1 dashboard.localhost
 127.0.0.1 tyson.localhost
 127.0.0.1 demo.localhost
+127.0.0.1 dashboard.inksigma.local
+127.0.0.1 tyson.inksigma.local
+127.0.0.1 tennyson.local
 ```
 
 Then run the backend on port `3000` or proxy to it.
@@ -21,13 +24,14 @@ Use the provided NGINX config and compose file:
 docker compose -f infra/compose/docker-compose.yml up -d
 ```
 
-This routes `*.localhost` to `127.0.0.1:3000` and preserves the `Host` header.
+This routes `*.localhost`, `*.inksigma.local`, and single-label `*.local`
+hosts to `127.0.0.1:3000` and preserves the `Host` header.
 
 ## Environment
 
 Add to `backend/.env`:
 ```
-BASE_DOMAINS=localhost,inksigma.com
+BASE_DOMAINS=localhost,inksigma.local
 DASHBOARD_SUBDOMAIN=dashboard
 PUBLICATION_CACHE_TTL_SECONDS=3600
 RATE_LIMIT_WINDOW_MS=60000
@@ -39,3 +43,5 @@ RATE_LIMIT_MAX=120
 1. Open `http://dashboard.localhost:3000/login`
 2. Create a publication with subdomain `tyson`
 3. Visit `http://tyson.localhost:3000/`
+4. Save a custom domain like `tennyson.local`
+5. Visit `http://tennyson.local:3000/`

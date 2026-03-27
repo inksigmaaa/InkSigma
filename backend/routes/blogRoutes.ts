@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
+import { requireAuth } from "../middleware/auth.js";
 import { trackBlogView } from "../services/viewTrackingService.js";
 import { requirePublicationContext } from "../middleware/subdomainMiddleware.js";
 import { blogService } from "../services/blogService.js";
@@ -46,25 +47,6 @@ const upload = multer({
   },
 });
 
-// Middleware to get current user from session
-const getCurrentUser = async (req, res, next) => {
-  try {
-    const session = await auth.api.getSession({
-      headers: fromNodeHeaders(req.headers),
-    });
-
-    if (!session?.user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    req.user = session.user;
-    next();
-  } catch (error) {
-    logger.error(error, "Auth error:");
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-};
-
 const handleError = (res, error, defaultMsg) => {
   logger.error(error, `[Blog Route Error] ${defaultMsg}:`);
   if (error.message.includes("|")) {
@@ -74,16 +56,42 @@ const handleError = (res, error, defaultMsg) => {
   return res.status(500).json({ error: defaultMsg, details: error.message });
 };
 
+const hasSessionHint = (req) =>
+  Boolean(req.headers.cookie || req.headers.authorization);
+
+const getSessionUserId = async (req) => {
+  const session = await auth.api.getSession({
+    headers: fromNodeHeaders(req.headers),
+  });
+
+  return session?.user?.id || null;
+};
+
+const shouldResolveUserForBlogList = (query) => {
+  const status = String(query?.status || "").toLowerCase();
+  const includeUnpublished = query?.includeUnpublished === "true";
+  const draftScope = query?.draftScope;
+  const includeReview = query?.includeReview === "true";
+  const includeTrash = query?.includeTrash === "true";
+
+  if (includeUnpublished || includeReview || includeTrash || draftScope) {
+    return true;
+  }
+
+  return status !== BLOG_STATUS.PUBLISHED;
+};
+
 // GET /api/blogs
 router.get("/", validate(blogValidator.getBlogsSchema), async (req, res) => {
   try {
     let currentUserId = null;
-    try {
-      const session = await auth.api.getSession({
-        headers: fromNodeHeaders(req.headers),
-      });
-      currentUserId = session?.user?.id;
-    } catch (e) {}
+    if (shouldResolveUserForBlogList(req.query) && hasSessionHint(req)) {
+      try {
+        currentUserId = await getSessionUserId(req);
+      } catch {
+        currentUserId = null;
+      }
+    }
 
     const blogs = await blogService.getAllBlogs(
       req.query,
@@ -109,7 +117,7 @@ router.get("/public", requirePublicationContext, async (req, res) => {
 // GET /api/blogs/publication/:publicationId
 router.get(
   "/publication/:publicationId",
-  getCurrentUser,
+  requireAuth,
   validate(blogValidator.getPublicationBlogsSchema),
   async (req, res) => {
     try {
@@ -129,12 +137,13 @@ router.get(
 router.get("/:id", validate(blogValidator.byIdSchema), async (req, res) => {
   try {
     let currentUserId = null;
-    try {
-      const session = await auth.api.getSession({
-        headers: fromNodeHeaders(req.headers),
-      });
-      currentUserId = session?.user?.id;
-    } catch (e) {}
+    if (hasSessionHint(req)) {
+      try {
+        currentUserId = await getSessionUserId(req);
+      } catch {
+        currentUserId = null;
+      }
+    }
 
     const blog = await blogService.getBlogById(
       req.params.id,
@@ -172,19 +181,22 @@ router.get(
   validate(blogValidator.bySlugSchema),
   async (req, res) => {
     try {
-      let currentUserId = null;
-      try {
-        const session = await auth.api.getSession({
-          headers: fromNodeHeaders(req.headers),
-        });
-        currentUserId = session?.user?.id;
-      } catch (e) {}
+      let blog;
 
-      const blog = await blogService.getBlogBySlug(
-        req.params.slug,
-        currentUserId,
-        req.tenant,
-      );
+      try {
+        blog = await blogService.getBlogBySlug(req.params.slug, null, req.tenant);
+      } catch (error) {
+        if (!hasSessionHint(req)) {
+          throw error;
+        }
+
+        const currentUserId = await getSessionUserId(req);
+        blog = await blogService.getBlogBySlug(
+          req.params.slug,
+          currentUserId,
+          req.tenant,
+        );
+      }
 
       if (
         req.query.incrementView === "true" &&
@@ -214,7 +226,7 @@ router.get(
 // POST /api/blogs
 router.post(
   "/",
-  getCurrentUser,
+  requireAuth,
   validate(blogValidator.createBlogSchema),
   async (req, res) => {
     try {
@@ -229,16 +241,11 @@ router.post(
 // POST /api/blogs/auto-save
 router.post(
   "/auto-save",
+  requireAuth,
   validate(blogValidator.autoSaveSchema),
   async (req, res) => {
     try {
-      const session = await auth.api.getSession({
-        headers: fromNodeHeaders(req.headers),
-      });
-      if (!session?.user)
-        return res.status(401).json({ error: "Unauthorized" });
-
-      const newBlog = await blogService.autoSaveDraft(req.body, session.user);
+      const newBlog = await blogService.autoSaveDraft(req.body, req.user);
       res.status(201).json(newBlog);
     } catch (error) {
       handleError(res, error, "Failed to auto-save blog");
@@ -249,7 +256,7 @@ router.post(
 // POST /api/blogs/:id/edit-draft
 router.post(
   "/:id/edit-draft",
-  getCurrentUser,
+  requireAuth,
   validate(blogValidator.byIdSchema),
   async (req, res) => {
     try {
@@ -268,7 +275,7 @@ router.post(
 // PUT /api/blogs/:id
 router.put(
   "/:id",
-  getCurrentUser,
+  requireAuth,
   validate(blogValidator.updateBlogSchema),
   async (req, res) => {
     try {
@@ -295,7 +302,7 @@ router.put(
 // PATCH /api/blogs/:id/review-action
 router.patch(
   "/:id/review-action",
-  getCurrentUser,
+  requireAuth,
   validate(blogValidator.reviewActionSchema),
   async (req, res) => {
     try {
@@ -314,7 +321,7 @@ router.patch(
 // PATCH /api/blogs/:id/publish
 router.patch(
   "/:id/publish",
-  getCurrentUser,
+  requireAuth,
   validate(blogValidator.publishSchema),
   async (req, res) => {
     try {
@@ -333,7 +340,7 @@ router.patch(
 // DELETE /api/blogs/:id
 router.delete(
   "/:id",
-  getCurrentUser,
+  requireAuth,
   validate(blogValidator.byIdSchema),
   async (req, res) => {
     try {
@@ -348,7 +355,7 @@ router.delete(
 // POST /api/blogs/:id/image
 router.post(
   "/:id/image",
-  getCurrentUser,
+  requireAuth,
   validate(blogValidator.byIdSchema),
   upload.single("image"),
   async (req, res) => {

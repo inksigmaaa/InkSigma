@@ -11,19 +11,11 @@ import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
-
-const DEFAULT_DRAFT_TITLE = "[Untitled]";
-const LEGACY_DRAFT_TITLE = "untitle";
-
-const isMissingRealTitle = (title) => {
-  const normalized =
-    typeof title === "string" ? title.trim().toLowerCase() : "";
-  return (
-    !normalized ||
-    normalized === DEFAULT_DRAFT_TITLE.toLowerCase() ||
-    normalized === LEGACY_DRAFT_TITLE
-  );
-};
+import {
+  DEFAULT_DRAFT_TITLE,
+  isArticlePublishable,
+  isMissingRealTitle,
+} from "@/utils/articlePublishability";
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const BULK_PUBLISH_TOAST_TYPE = "info";
 
@@ -140,8 +132,9 @@ export default function DraftPage() {
         return isDraft;
       })
       .map((article) => {
-        const canPublishArticle = !isMissingRealTitle(article.title);
-        const displayTitle = canPublishArticle
+        const hasRealTitle = !isMissingRealTitle(article.title);
+        const canPublishArticle = isArticlePublishable(article);
+        const displayTitle = hasRealTitle
           ? article.title
           : DEFAULT_DRAFT_TITLE;
 
@@ -268,7 +261,7 @@ export default function DraftPage() {
         );
 
         if (publishableSelectedIds.length === 0) {
-          toast("No selected articles have a valid title to publish.");
+          toast("No selected articles are complete enough to publish.");
           setShowPublishModal(false);
           return;
         }
@@ -286,7 +279,7 @@ export default function DraftPage() {
         );
 
         if (skippedIds.length > 0) {
-          toast(`${skippedIds.length} Untitled article(s) were skipped.`);
+          toast(`${skippedIds.length} incomplete article(s) were skipped.`);
           await delay(300);
         }
 
@@ -302,7 +295,9 @@ export default function DraftPage() {
           (a) => a.id === actionArticleId,
         );
         if (!targetArticle?.canPublishArticle) {
-          toast.error("Cannot publish an Untitled draft.");
+          toast.error(
+            "Cannot publish this draft without title, description, and content.",
+          );
           setShowPublishModal(false);
           setActionArticleId(null);
           return;
@@ -404,7 +399,7 @@ export default function DraftPage() {
         message={
           isBulkAction
             ? skippedUntitledCount > 0
-              ? `${publishableSelectedCount} article(s) will be published. ${skippedUntitledCount} Untitled draft(s) will be skipped.`
+              ? `${publishableSelectedCount} article(s) will be published. ${skippedUntitledCount} incomplete draft(s) will be skipped.`
               : `${publishableSelectedCount} article(s) will be published.`
             : "This article will be published"
         }

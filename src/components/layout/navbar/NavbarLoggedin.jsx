@@ -455,12 +455,12 @@ export default function NavbarLoggedin() {
                                         </Button>
                                     </HoverCardTrigger>
                                     <HoverCardContent align="center" sideOffset={24} className="w-80">
-                                        <div className="flex justify-between space-x-2.5">
-                                            <Avatar className="size-10">
+                                        <div className="flex items-start gap-3">
+                                            <Avatar className="size-10 shrink-0">
                                                 {userAvatar ? <AvatarImage src={userAvatar} alt={userName} /> : null}
                                                 <AvatarFallback>{avatarFallback}</AvatarFallback>
                                             </Avatar>
-                                            <div className="space-y-1 min-w-0">
+                                            <div className="min-w-0 flex-1 space-y-1">
                                                 <h4 className="text-sm font-semibold leading-none">{isPending ? "Loading..." : userName}</h4>
                                                 <p className="text-muted-foreground text-sm break-words">
                                                     {userDescription}

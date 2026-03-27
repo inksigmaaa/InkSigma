@@ -28,10 +28,14 @@ import {
   deleteDraft as dexieDeleteDraft,
 } from "./services/DexieService";
 import SaveStatusIndicator from "./SaveStatusIndicator";
+import {
+  DEFAULT_DRAFT_TITLE,
+  LEGACY_DRAFT_TITLE,
+  isArticlePublishable,
+} from "@/utils/articlePublishability";
+import { getPublicationPageUrl } from "@/utils/publicationDomain";
 
 const API_URL = getApiBase();
-const DEFAULT_DRAFT_TITLE = "[Untitled]";
-const LEGACY_DRAFT_TITLE = "untitle";
 
 export default function EditorPageClient() {
   const router = useRouter();
@@ -201,16 +205,16 @@ export default function EditorPageClient() {
 
   // Handle View in Site - open blog in new tab ONLY
   const handleViewInSite = () => {
-    // Get the publication prefix (e.g., "/tennyson")
-    const pubPrefix = currentPublication?.subdomain
-      ? `/${currentPublication.subdomain}`
-      : "";
-
-    // Construct the blog URL for new tab
-    const baseUrl = window.location.origin;
-    const blogUrl = publishedBlogSlug
-      ? `${baseUrl}/view-site/blog/${publishedBlogSlug}`
-      : `${baseUrl}`;
+    const blogUrl = currentPublication
+      ? getPublicationPageUrl(
+          currentPublication,
+          publishedBlogSlug ? `/blog/${publishedBlogSlug}` : "/",
+        )
+      : publishedBlogSlug
+        ? `/view-site/blog/${publishedBlogSlug}`
+        : publicationId
+          ? `/view-site?publicationId=${publicationId}`
+          : "/view-site";
 
     // Open blog in new tab
     window.open(blogUrl, "_blank");
@@ -470,7 +474,7 @@ export default function EditorPageClient() {
 
     // For auto-saves, skip if a manual save is already in flight
     if (isAutoSave && (isSaving || saveInFlightRef.current)) {
-      return false;
+      return { skipped: true };
     }
 
     // Always validate required fields for submission statuses.
@@ -625,8 +629,9 @@ export default function EditorPageClient() {
         setSaveStatus("saved");
       }
 
-      // Refresh the article in context to update lists
-      if (responseData?.id) {
+      // Auto-save should stay best-effort and quiet. The list pages already refresh
+      // themselves, so avoid a second read that can surface transient 404s.
+      if (responseData?.id && !isAutoSave) {
         refreshArticle(responseData.id).catch((err) =>
           console.error("Failed to refresh article context:", err),
         );
@@ -635,10 +640,11 @@ export default function EditorPageClient() {
       return responseData;
     } catch (error) {
       console.error("Error saving blog:", error);
-      if (!isAutoSave) {
-        setSaveStatus("idle");
-        toast.error(error.message || "Failed to save blog");
+      if (isAutoSave) {
+        throw error;
       }
+      setSaveStatus("idle");
+      toast.error(error.message || "Failed to save blog");
       return false;
     } finally {
       saveInFlightRef.current = false;
@@ -719,6 +725,19 @@ export default function EditorPageClient() {
 
   // Handle Publish
   const handlePublish = async () => {
+    if (
+      !isArticlePublishable({
+        title: blogTitle,
+        description: blogDescription,
+        content: editorContent.html,
+      })
+    ) {
+      toast.error(
+        "Add title, description, and content before publishing this article.",
+      );
+      return;
+    }
+
     markPublishing();
 
     try {
@@ -754,6 +773,11 @@ export default function EditorPageClient() {
   };
 
   const source = searchParams.get("source");
+  const canPublishCurrentArticle = isArticlePublishable({
+    title: blogTitle,
+    description: blogDescription,
+    content: editorContent.html,
+  });
 
   const handleExitNavigation = () => {
     markNavigating();
@@ -1670,7 +1694,7 @@ export default function EditorPageClient() {
                   padding: "0 1rem",
                 }}
                 onClick={handlePublish}
-                disabled={isSaving}
+                disabled={isSaving || !canPublishCurrentArticle}
               >
                 {isSaving ? "Publishing..." : "Publish Now"}
                 <img
@@ -1772,7 +1796,7 @@ export default function EditorPageClient() {
                   <button
                     className="md:w-40 flex items-center justify-center gap-2 h-8 rounded bg-gray-900 md:px-6 md:py-2 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50 whitespace-nowrap mobile-publish-btn"
                     onClick={handlePublish}
-                    disabled={isSaving}
+                    disabled={isSaving || !canPublishCurrentArticle}
                   >
                     {isSaving ? "Publishing..." : "Publish"}
                     <img

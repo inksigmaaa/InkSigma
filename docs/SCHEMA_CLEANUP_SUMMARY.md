@@ -160,3 +160,7 @@ curl http://localhost:5000/api/views/count/1
 3. ✅ `backend/VIEW_TRACKING_IMPLEMENTATION.md` - Updated docs
 4. ✅ Created `backend/migrate-remove-views-column.js` - Migration script
 5. ✅ Created `backend/drizzle/remove-views-likes-columns.sql` - SQL migration
+
+> Note: The legacy one-off SQL file has been archived under
+> `backend/drizzle/manual/remove-views-likes-columns.sql` and is no longer part
+> of the managed Drizzle migration chain.

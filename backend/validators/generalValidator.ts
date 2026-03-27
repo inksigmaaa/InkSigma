@@ -31,23 +31,3 @@ export const commentSchema = z.object({
     })
     .passthrough(),
 });
-export const profileSchema = z.object({
-  body: z
-    .object({
-      name: z.string().optional(),
-      bio: z.string().nullable().optional(),
-      username: z
-        .string()
-        .regex(/^[a-zA-Z0-9_]+$/)
-        .optional(),
-    })
-    .passthrough(),
-});
-export const publicationMemberSchema = z.object({
-  body: z
-    .object({
-      email: z.string().email(),
-      role: z.enum(["admin", "editor", "writer"]),
-    })
-    .passthrough(),
-});

@@ -1,4 +1,4 @@
-import DOMPurify from "dompurify";
+import createDOMPurify from "dompurify";
 
 const ALLOWED_TAGS = [
   "h1", "h2", "h3", "h4", "h5", "h6",
@@ -23,6 +23,12 @@ const ALLOWED_ATTR = [
 export const sanitizeHtml = (html: string): string => {
   if (!html) return "";
 
+  const sanitize = getSanitizeFn();
+  if (!sanitize) {
+    reportSanitizerIssue();
+    return String(html);
+  }
+
   const config = {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
@@ -31,15 +37,61 @@ export const sanitizeHtml = (html: string): string => {
     ADD_TAGS: ["iframe"],
   };
 
-  return DOMPurify.sanitize(html, config);
+  try {
+    return sanitize(html, config);
+  } catch {
+    reportSanitizerIssue();
+    return String(html);
+  }
 };
 
-export const sanitizeForStorage = (html: string): string => {
-  return sanitizeHtml(html);
+type SanitizeFn = (dirty: string, config?: Record<string, unknown>) => string;
+
+let cachedSanitizeFn: SanitizeFn | null = null;
+let sanitizerWarningShown = false;
+
+const reportSanitizerIssue = () => {
+  if (sanitizerWarningShown || process.env.NODE_ENV === "production") {
+    return;
+  }
+
+  sanitizerWarningShown = true;
+  // Keep one signal in dev while avoiding repeated log noise.
+  console.error("[sanitizeHtml] DOMPurify runtime unavailable; returning raw HTML");
 };
 
-export const sanitizeForDisplay = (html: string): string => {
-  return sanitizeHtml(html);
-};
+const getSanitizeFn = (): SanitizeFn | null => {
+  if (cachedSanitizeFn) {
+    return cachedSanitizeFn;
+  }
 
-export default sanitizeHtml;
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const moduleLike: any = createDOMPurify;
+  const candidates = [moduleLike, moduleLike?.default];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+
+    if (typeof candidate.sanitize === "function") {
+      cachedSanitizeFn = candidate.sanitize.bind(candidate);
+      return cachedSanitizeFn;
+    }
+
+    if (typeof candidate === "function") {
+      try {
+        const instance = candidate(window);
+        if (instance && typeof instance.sanitize === "function") {
+          cachedSanitizeFn = instance.sanitize.bind(instance);
+          return cachedSanitizeFn;
+        }
+      } catch {
+        // Ignore and continue fallback candidates.
+      }
+    }
+  }
+
+  return null;
+};
