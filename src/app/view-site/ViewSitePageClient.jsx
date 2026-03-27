@@ -76,6 +76,8 @@ function ViewSiteContent({
     const controller = new AbortController();
 
     const fetchBlogs = async () => {
+      let hasCachedBlogs = false;
+
       try {
         setLoading(true);
         setLoadError('');
@@ -87,17 +89,17 @@ function ViewSiteContent({
         }
 
         const cachedBlogs = readCachedBlogs(publicationId);
-        if (cachedBlogs) {
+        hasCachedBlogs = Array.isArray(cachedBlogs);
+
+        if (hasCachedBlogs) {
           setBlogs(cachedBlogs);
           setLoading(false);
-          if (retryNonce === 0) {
-            return;
-          }
         }
 
         const data = await fetchJsonWithRetry(
           `${API_URL}/api/blogs?publicationId=${publicationId}&status=published`,
           {
+            cache: 'no-store',
             credentials: 'include',
             signal: controller.signal,
           },
@@ -116,8 +118,10 @@ function ViewSiteContent({
         }
 
         console.error('[ViewSite] Error fetching blogs:', error);
-        setBlogs([]);
-        setLoadError('We could not load this publication right now. Please try again.');
+        if (!hasCachedBlogs) {
+          setBlogs([]);
+          setLoadError('We could not load this publication right now. Please try again.');
+        }
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
