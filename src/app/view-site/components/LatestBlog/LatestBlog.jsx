@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -15,15 +14,9 @@ const API_URL = getApiBase();
 
 export default function LatestBlog({ searchQuery = '', blogs = [] }) {
   const pathname = usePathname();
-  
-  // Get the latest blog (first one in the array, sorted by date)
-  const latestBlog = useMemo(() => {
-    if (!blogs.length) return null;
 
-    return [...blogs].sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-    )[0];
-  }, [blogs]);
+  // The API returns published articles in display order already.
+  const latestBlog = blogs[0] || null;
 
   // Hide latest blog section if there's a search query
   if (searchQuery) {
@@ -45,7 +38,9 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
     return `${String(date.getDate()).padStart(2, '0')} ${months[date.getMonth()]}, ${date.getFullYear()}`;
   };
 
-  const dateFormatted = formatDate(latestBlog.createdAt);
+  const dateFormatted = formatDate(
+    latestBlog.publishedAt || latestBlog.createdAt,
+  );
   const thumbnailUrl = getThumbnailWithFallback(getImageUrl(latestBlog.image), latestBlog.id);
 
   return (

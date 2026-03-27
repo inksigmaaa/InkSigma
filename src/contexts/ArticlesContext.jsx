@@ -84,6 +84,7 @@ const convertBlogToArticle = (blog, includeContent = false) => {
     published: blog.published,
     postedTime: `Posted ${formatDate(new Date(blog.createdAt))}`,
     createdAt: blog.createdAt,
+    publishedAt: blog.publishedAt,
     updatedAt: blog.updatedAt,
     scheduledAt: blog.scheduledAt,
     author: blog.author,

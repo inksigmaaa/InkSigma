@@ -45,6 +45,7 @@ interface BlogInsertData {
   publicationId?: number | null;
   masterId?: number | null;
   scheduledAt?: Date | null;
+  publishedAt?: Date | null;
   image?: string | null;
   readTime?: number | null;
   createdAt?: Date;
@@ -108,6 +109,7 @@ const LIGHT_BLOG_SELECT = {
   categories: blog.categories,
   status: blog.status,
   published: blog.published,
+  publishedAt: blog.publishedAt,
   scheduledAt: blog.scheduledAt,
   createdAt: blog.createdAt,
   updatedAt: blog.updatedAt,
@@ -132,6 +134,7 @@ const FULL_BLOG_SELECT = {
   categories: blog.categories,
   status: blog.status,
   published: blog.published,
+  publishedAt: blog.publishedAt,
   publicationId: blog.publicationId,
   scheduledAt: blog.scheduledAt,
   createdAt: blog.createdAt,
@@ -527,7 +530,22 @@ class BlogService {
       dbQuery = dbQuery.where(and(...conditions)) as typeof dbQuery;
     }
 
-    dbQuery = dbQuery.orderBy(desc(blog.createdAt)) as typeof dbQuery;
+    const shouldOrderByPublishedAt =
+      status === BLOG_STATUS.PUBLISHED ||
+      published === "true" ||
+      (!currentUserId &&
+        status === undefined &&
+        published === undefined &&
+        (!includeUnpublished || includeUnpublished !== "true"));
+
+    if (shouldOrderByPublishedAt) {
+      dbQuery = dbQuery.orderBy(
+        desc(sql`coalesce(${blog.publishedAt}, ${blog.createdAt})`),
+        desc(blog.createdAt),
+      ) as typeof dbQuery;
+    } else {
+      dbQuery = dbQuery.orderBy(desc(blog.createdAt)) as typeof dbQuery;
+    }
 
     let blogs = await dbQuery.limit(parseInt(limit)).offset(parseInt(offset));
 
@@ -628,12 +646,24 @@ class BlogService {
       conditions.push(draftScopeCondition);
     }
 
-    const blogs = await db
+    let publicationBlogsQuery = db
       .select(LIGHT_BLOG_SELECT)
       .from(blog)
       .leftJoin(user, eq(blog.authorId, user.id))
-      .where(and(...conditions))
-      .orderBy(desc(blog.createdAt))
+      .where(and(...conditions));
+
+    if (status === BLOG_STATUS.PUBLISHED) {
+      publicationBlogsQuery = publicationBlogsQuery.orderBy(
+        desc(sql`coalesce(${blog.publishedAt}, ${blog.createdAt})`),
+        desc(blog.createdAt),
+      ) as typeof publicationBlogsQuery;
+    } else {
+      publicationBlogsQuery = publicationBlogsQuery.orderBy(
+        desc(blog.createdAt),
+      ) as typeof publicationBlogsQuery;
+    }
+
+    const blogs = await publicationBlogsQuery
       .limit(parseInt(limit))
       .offset(parseInt(offset));
 
@@ -689,6 +719,7 @@ class BlogService {
         categories: blog.categories,
         status: blog.status,
         published: blog.published,
+        publishedAt: blog.publishedAt,
         publicationId: blog.publicationId,
         scheduledAt: blog.scheduledAt,
         createdAt: blog.createdAt,
@@ -863,6 +894,7 @@ class BlogService {
 
     const slug = await this.ensureUniqueSlug(this.generateSlug(finalTitle));
     const syncedFields = this.syncStatusAndPublished(targetStatus);
+    const now = new Date();
 
     const blogData: BlogInsertData = {
       slug,
@@ -872,12 +904,13 @@ class BlogService {
       categories: categories || [],
       ...syncedFields,
       authorId: currentUser.id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     };
 
     if (publicationId) blogData.publicationId = parseInt(publicationId);
     if (parsedScheduledAt) blogData.scheduledAt = parsedScheduledAt;
+    if (targetStatus === BLOG_STATUS.PUBLISHED) blogData.publishedAt = now;
 
     const result = await db.insert(blog).values(blogData).returning();
     const newBlog = result[0];
@@ -1104,6 +1137,12 @@ class BlogService {
         updateData,
         this.syncStatusAndPublished(targetStatusForUpdate),
       );
+      if (
+        targetStatusForUpdate === BLOG_STATUS.PUBLISHED &&
+        existingBlog.status !== BLOG_STATUS.PUBLISHED
+      ) {
+        updateData.publishedAt = new Date();
+      }
     }
     if (slug !== existingBlog.slug) updateData.slug = slug;
 
@@ -1311,7 +1350,14 @@ class BlogService {
 
     const [updatedBlog] = await db
       .update(blog)
-      .set({ ...syncedFields, updatedAt: new Date() })
+      .set({
+        ...syncedFields,
+        updatedAt: new Date(),
+        ...(targetStatus === BLOG_STATUS.PUBLISHED &&
+        existingBlog.status !== BLOG_STATUS.PUBLISHED
+          ? { publishedAt: new Date() }
+          : {}),
+      })
       .where(eq(blog.id, parseInt(id)))
       .returning();
 
@@ -1378,6 +1424,12 @@ class BlogService {
 
     const syncedFields = this.syncStatusAndPublished(targetStatus);
     const updateData = { ...syncedFields, updatedAt: new Date() };
+    if (
+      targetStatus === BLOG_STATUS.PUBLISHED &&
+      existingBlog.status !== BLOG_STATUS.PUBLISHED
+    ) {
+      updateData.publishedAt = new Date();
+    }
 
     if (targetStatus === BLOG_STATUS.PUBLISHED) {
       this.validatePublishableFields(

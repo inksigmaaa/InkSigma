@@ -81,7 +81,9 @@ export default function AllArticles({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-20 md:mb-40 pb-10">
           {filteredArticles.map((article) => {
-            const dateFormatted = formatDate(article.createdAt);
+            const dateFormatted = formatDate(
+              article.publishedAt || article.createdAt,
+            );
             const thumbnailUrl = getThumbnailWithFallback(getImageUrl(article.image), article.id);
 
             return (
