@@ -313,8 +313,8 @@ export default function CommentSection({ blogId }) {
       if (response.ok) {
         const reply = await response.json();
         console.log("[CommentSection] New reply created:", reply);
-        setComments(
-          comments.map((c) =>
+        setComments((prev) =>
+          prev.map((c) =>
             c.id === commentId
               ? { ...c, replies: [...(c.replies || []), reply] }
               : c,

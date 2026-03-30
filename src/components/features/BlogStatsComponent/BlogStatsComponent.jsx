@@ -7,9 +7,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Calendar } from "@/components/ui/calendar"
 import { toast } from "sonner";
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-
-const BlogStatsComponent = () => {
+const BlogStatsComponent = ({ commentCounts = {}, viewStats = {} }) => {
   const { articles, publicationArticles: contextPublicationArticles } = useArticles()
   const { currentPublication } = usePublication()
   const [selectedPeriod, setSelectedPeriod] = useState('Monthly')
@@ -19,8 +17,6 @@ const BlogStatsComponent = () => {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [calendarMonth, setCalendarMonth] = useState(new Date())
-  const [commentCounts, setCommentCounts] = useState({})
-  const [viewStats, setViewStats] = useState({})
 
   const periodMenuRef = useRef(null)
 
@@ -33,47 +29,6 @@ const BlogStatsComponent = () => {
     : articles
 
   const publicationArticles = rawPublicationArticles.filter(article => article.status === 'published')
-
-  // Fetch comment counts and view stats for all articles
-  useEffect(() => {
-    const fetchStats = async () => {
-      if (publicationArticles.length === 0) return;
-
-      try {
-        const blogIds = publicationArticles.map(a => a.id);
-
-        // Fetch comment counts
-        const commentResponse = await fetch(`${API_URL}/api/comments/counts`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ blogIds })
-        });
-
-        if (commentResponse.ok) {
-          const counts = await commentResponse.json();
-          console.log('[BlogStats] Comment counts:', counts);
-          setCommentCounts(counts);
-        }
-
-        // Fetch view stats
-        const viewResponse = await fetch(`${API_URL}/api/views/stats`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ blogIds })
-        });
-
-        if (viewResponse.ok) {
-          const stats = await viewResponse.json();
-          console.log('[BlogStats] View stats:', stats);
-          setViewStats(stats);
-        }
-      } catch (err) {
-        console.error('Error fetching stats:', err);
-      }
-    };
-
-    fetchStats();
-  }, [publicationArticles])
 
   // Filter articles based on selected period
   const getFilteredArticles = () => {

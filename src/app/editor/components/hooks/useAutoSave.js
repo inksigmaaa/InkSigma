@@ -403,13 +403,16 @@ export function useAutoSave({
           : `${API_URL}/api/blogs/auto-save`;
         const method = effectiveId ? "PUT" : "POST";
 
-        // sendBeacon for reliability (survives tab close)
+        // Prefer a single unload write path to avoid duplicate draft saves.
         const blob = new Blob([JSON.stringify(blogData)], {
           type: "application/json",
         });
-        navigator.sendBeacon(url, blob);
 
-        // Also keepalive fetch as backup
+        if (typeof navigator.sendBeacon === "function") {
+          navigator.sendBeacon(url, blob);
+          return;
+        }
+
         fetch(url, {
           method,
           headers: { "Content-Type": "application/json" },

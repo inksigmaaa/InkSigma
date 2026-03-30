@@ -7,7 +7,7 @@ import {
   blog,
   user,
 } from "../models/schema.js";
-import { eq, and, or, count } from "drizzle-orm";
+import { eq, and, count, inArray } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -433,10 +433,10 @@ router.get(
 
       if (memberIds.length > 0) {
         const [postCountResult, publishedCountResult] = await Promise.all([
-          db.select({ count: count() }).from(blog).where(or(...memberIds.map((id) => eq(blog.authorId, id)))),
+          db.select({ count: count() }).from(blog).where(inArray(blog.authorId, memberIds)),
           db.select({ count: count() }).from(blog).where(
             and(
-              or(...memberIds.map((id) => eq(blog.authorId, id))),
+              inArray(blog.authorId, memberIds),
               eq(blog.status, BLOG_STATUS.PUBLISHED),
             ),
           )

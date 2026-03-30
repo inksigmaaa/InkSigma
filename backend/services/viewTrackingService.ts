@@ -10,6 +10,10 @@ import {
 import crypto from "crypto";
 import logger from "../utils/logger.js";
 
+const VIEW_DEDUP_TTL_SECONDS = Number(
+  process.env.BLOG_VIEW_DEDUP_TTL_SECONDS || 60 * 60 * 24,
+);
+
 interface ViewResult {
     viewed: boolean;
     isNewView: boolean;
@@ -35,7 +39,10 @@ export const trackBlogView = async (blogId: number, ip: string, userAgent: strin
       const redis = getRedisClient();
       if (redis) {
         try {
-          const setResult = await redis.set(redisKey, Date.now().toString(), "NX");
+          const setResult = await redis.set(redisKey, Date.now().toString(), {
+            nx: true,
+            ex: VIEW_DEDUP_TTL_SECONDS,
+          });
           if (!setResult) {
             return { viewed: true, isNewView: false };
           }
@@ -47,31 +54,18 @@ export const trackBlogView = async (blogId: number, ip: string, userAgent: strin
       // Fall through to database check when Redis is unavailable.
     }
 
-    {
-      const [existingView] = await db
-        .select()
-        .from(blogView)
-        .where(
-          and(
-            eq(blogView.blogId, blogId),
-            eq(blogView.viewerIdentifier, viewerIdentifier),
-          ),
-        )
-        .limit(1);
+    const insertedRows = await db
+      .insert(blogView)
+      .values({
+        blogId,
+        viewerIdentifier,
+        userAgent: userAgent || null,
+        createdAt: new Date(),
+      })
+      .onConflictDoNothing()
+      .returning({ id: blogView.id });
 
-      if (existingView) {
-        return { viewed: true, isNewView: false };
-      }
-    }
-
-    await db.insert(blogView).values({
-      blogId,
-      viewerIdentifier,
-      userAgent: userAgent || null,
-      createdAt: new Date(),
-    });
-
-    return { viewed: true, isNewView: true };
+    return { viewed: true, isNewView: insertedRows.length > 0 };
   } catch (error) {
     logger.error(error, "[VIEW TRACKING] Error tracking view:");
     return { viewed: false, isNewView: false };

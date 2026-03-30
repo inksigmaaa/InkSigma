@@ -680,23 +680,20 @@ export function ArticlesProvider({ children }) {
         ids.map((id) => blogService.updateBlogStatus(id, "trash")),
       );
       const updatedArticles = updatedBlogs.map((b) => convertBlogToArticle(b));
+      const updatedArticleMap = new Map(
+        updatedArticles.map((article) => [String(article.id), article]),
+      );
 
       setArticles((prev) =>
-        prev.map((article) => {
-          const updated = updatedArticles.find(
-            (ua) => String(ua.id) === String(article.id),
-          );
-          return updated || article;
-        }),
+        prev.map(
+          (article) => updatedArticleMap.get(String(article.id)) || article,
+        ),
       );
 
       setPublicationArticles((prev) =>
-        prev.map((article) => {
-          const updated = updatedArticles.find(
-            (ua) => String(ua.id) === String(article.id),
-          );
-          return updated || article;
-        }),
+        prev.map(
+          (article) => updatedArticleMap.get(String(article.id)) || article,
+        ),
       );
     } catch (err) {
       console.error("Error bulk moving articles to trash:", err);
@@ -710,23 +707,20 @@ export function ArticlesProvider({ children }) {
         ids.map((id) => blogService.updateBlogStatus(id, "published")),
       );
       const updatedArticles = updatedBlogs.map((b) => convertBlogToArticle(b));
+      const updatedArticleMap = new Map(
+        updatedArticles.map((article) => [String(article.id), article]),
+      );
 
       setArticles((prev) =>
-        prev.map((article) => {
-          const updated = updatedArticles.find(
-            (ua) => String(ua.id) === String(article.id),
-          );
-          return updated || article;
-        }),
+        prev.map(
+          (article) => updatedArticleMap.get(String(article.id)) || article,
+        ),
       );
 
       setPublicationArticles((prev) =>
-        prev.map((article) => {
-          const updated = updatedArticles.find(
-            (ua) => String(ua.id) === String(article.id),
-          );
-          return updated || article;
-        }),
+        prev.map(
+          (article) => updatedArticleMap.get(String(article.id)) || article,
+        ),
       );
     } catch (err) {
       console.error("Error bulk publishing articles:", err);
@@ -740,23 +734,20 @@ export function ArticlesProvider({ children }) {
         ids.map((id) => blogService.updateBlogStatus(id, "draft")),
       );
       const updatedArticles = updatedBlogs.map((b) => convertBlogToArticle(b));
+      const updatedArticleMap = new Map(
+        updatedArticles.map((article) => [String(article.id), article]),
+      );
 
       setArticles((prev) =>
-        prev.map((article) => {
-          const updated = updatedArticles.find(
-            (ua) => String(ua.id) === String(article.id),
-          );
-          return updated || article;
-        }),
+        prev.map(
+          (article) => updatedArticleMap.get(String(article.id)) || article,
+        ),
       );
 
       setPublicationArticles((prev) =>
-        prev.map((article) => {
-          const updated = updatedArticles.find(
-            (ua) => String(ua.id) === String(article.id),
-          );
-          return updated || article;
-        }),
+        prev.map(
+          (article) => updatedArticleMap.get(String(article.id)) || article,
+        ),
       );
     } catch (err) {
       console.error("Error bulk moving articles to draft:", err);

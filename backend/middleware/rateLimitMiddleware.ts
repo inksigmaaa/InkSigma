@@ -39,6 +39,16 @@ type RateLimitRule = {
 const localHits = new Map();
 let redisLimiterDisabledUntil = 0;
 
+setInterval(() => {
+  const now = Date.now();
+
+  for (const [key, entry] of localHits.entries()) {
+    if (!entry || now >= entry.resetAt) {
+      localHits.delete(key);
+    }
+  }
+}, WINDOW_MS).unref();
+
 const AUTH_RATE_LIMIT_RULES: RateLimitRule[] = [
   {
     key: "auth-login",
