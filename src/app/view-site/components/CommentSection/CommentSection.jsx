@@ -472,19 +472,6 @@ export default function CommentSection({ blogId }) {
         <h2 className="text-base font-semibold leading-6 tracking-normal text-[#14142D] mb-6 max-md:text-sm max-md:pt-5 max-md:border-t max-md:border-[#EDEDED] ">
           How useful was this blog?
         </h2>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-            {error}
-            <button
-              onClick={() => setError(null)}
-              className="ml-2 text-red-800 hover:underline"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
-
         <div
           className={`flex mb-6 ${currentUser ? "gap-3 md:gap-4" : "gap-0"}`}
         >
