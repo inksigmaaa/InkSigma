@@ -32,6 +32,11 @@ import { getBlogStats } from "./viewTrackingService.js";
 import logger from "../utils/logger.js";
 import { BLOG_STATUS } from "../config/constants.js";
 import { sanitizeHtml } from "../utils/sanitizeHtml.js";
+import {
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from "../utils/errors.js";
 
 interface BlogInsertData {
   slug: string;
@@ -39,7 +44,7 @@ interface BlogInsertData {
   description: string;
   content: string;
   categories?: string[];
-  status?: string;
+  status?: (typeof BLOG_STATUS)[keyof typeof BLOG_STATUS];
   published?: boolean;
   authorId: string;
   publicationId?: number | null;
@@ -58,7 +63,7 @@ interface BlogUpdateData {
   description?: string;
   content?: string;
   categories?: string[];
-  status?: string;
+  status?: (typeof BLOG_STATUS)[keyof typeof BLOG_STATUS];
   published?: boolean;
   scheduledAt?: Date | null;
   publishedAt?: Date | null;
@@ -197,8 +202,8 @@ class BlogService {
       !this.hasMeaningfulDescription(description) ||
       !this.hasMeaningfulContent(content)
     ) {
-      throw new Error(
-        `Title, description, and content are required to ${action}|400`,
+      throw new ValidationError(
+        `Title, description, and content are required to ${action}`,
       );
     }
   }
@@ -374,7 +379,7 @@ class BlogService {
         BLOG_STATUS.REVIEW,
       ].includes(status)
     ) {
-      throw new Error(
+      throw new ValidationError(
         `Invalid status: ${status}. Must be BLOG_STATUS.DRAFT, BLOG_STATUS.PUBLISHED, BLOG_STATUS.UNPUBLISHED, BLOG_STATUS.TRASH, BLOG_STATUS.SCHEDULED, or BLOG_STATUS.REVIEW`,
       );
     }
@@ -463,7 +468,7 @@ class BlogService {
     let publicationId = query.publicationId;
     if (tenant?.type === "subdomain" || tenant?.type === "custom-domain") {
       if (!tenant.publication) {
-        throw new Error("Publication not found|404");
+        throw new NotFoundError("Publication not found");
       }
       publicationId = String(tenant.publication.id);
     }
@@ -625,14 +630,14 @@ class BlogService {
     ]);
 
     if (!pub) {
-      throw new Error("Publication not found|404");
+      throw new NotFoundError("Publication not found");
     }
 
     const isOwner = pub.userId === currentUser.id;
     const isMember = !!memberCheck;
 
     if (!isOwner && !isMember) {
-      throw new Error("Access denied|403");
+      throw new ForbiddenError("Access denied");
     }
 
     const conditions = [eq(blog.publicationId, parseInt(publicationId))];
@@ -738,16 +743,16 @@ class BlogService {
       .leftJoin(user, eq(blog.authorId, user.id))
       .where(eq(blog.id, parseInt(id)));
 
-    if (!blogData) throw new Error("Blog not found|404");
+    if (!blogData) throw new NotFoundError("Blog not found");
 
     if (tenant?.type === "subdomain" || tenant?.type === "custom-domain") {
-      if (!tenant.publication) throw new Error("Blog not found|404");
+      if (!tenant.publication) throw new NotFoundError("Blog not found");
       if (blogData.publicationId !== tenant.publication.id)
-        throw new Error("Blog not found|404");
+        throw new NotFoundError("Blog not found");
     }
 
     if (blogData.status !== BLOG_STATUS.PUBLISHED) {
-      if (!currentUserId) throw new Error("Blog not found|404");
+      if (!currentUserId) throw new NotFoundError("Blog not found");
 
       const canView = await this.canUserModifyBlog(
         currentUserId,
@@ -755,7 +760,7 @@ class BlogService {
         blogData.publicationId,
       );
 
-      if (!canView) throw new Error("Blog not found|404");
+      if (!canView) throw new NotFoundError("Blog not found");
     }
 
     return blogData;
@@ -784,16 +789,16 @@ class BlogService {
       }
     }
 
-    if (!blogData) throw new Error("Blog not found|404");
+    if (!blogData) throw new NotFoundError("Blog not found");
 
     if (tenant?.type === "subdomain" || tenant?.type === "custom-domain") {
-      if (!tenant.publication) throw new Error("Blog not found|404");
+      if (!tenant.publication) throw new NotFoundError("Blog not found");
       if (blogData.publicationId !== tenant.publication.id)
-        throw new Error("Blog not found|404");
+        throw new NotFoundError("Blog not found");
     }
 
     if (blogData.status !== BLOG_STATUS.PUBLISHED) {
-      if (!currentUserId) throw new Error("Blog not found|404");
+      if (!currentUserId) throw new NotFoundError("Blog not found");
 
       const canView = await this.canUserModifyBlog(
         currentUserId,
@@ -801,7 +806,7 @@ class BlogService {
         blogData.publicationId,
       );
 
-      if (!canView) throw new Error("Blog not found|404");
+      if (!canView) throw new NotFoundError("Blog not found");
     }
 
     return {
@@ -828,10 +833,10 @@ class BlogService {
     if (scheduledAt) {
       parsedScheduledAt = new Date(scheduledAt);
       if (Number.isNaN(parsedScheduledAt.getTime())) {
-        throw new Error("Invalid scheduled time|400");
+        throw new ValidationError("Invalid scheduled time");
       }
       if (parsedScheduledAt <= new Date()) {
-        throw new Error("Scheduled time must be in the future|400");
+        throw new ValidationError("Scheduled time must be in the future");
       }
     }
 
@@ -841,7 +846,7 @@ class BlogService {
     if (parsedScheduledAt) targetStatus = BLOG_STATUS.SCHEDULED;
 
     if (targetStatus === BLOG_STATUS.SCHEDULED && !parsedScheduledAt) {
-      throw new Error("Scheduled time is required for scheduled status|400");
+      throw new ValidationError("Scheduled time is required for scheduled status");
     }
 
     const isDraft = targetStatus === BLOG_STATUS.DRAFT;
@@ -869,7 +874,7 @@ class BlogService {
         .from(publication)
         .where(eq(publication.id, parseInt(publicationId)));
 
-      if (!pub) throw new Error("Publication not found|404");
+      if (!pub) throw new NotFoundError("Publication not found");
 
       const isOwner = pub.userId === currentUser.id;
       let isMember = false;
@@ -888,7 +893,7 @@ class BlogService {
       }
 
       if (!isOwner && !isMember) {
-        throw new Error("You don't have access to this publication|403");
+        throw new ForbiddenError("You don't have access to this publication");
       }
     }
 
@@ -948,7 +953,7 @@ class BlogService {
       (Array.isArray(categories) && categories.length > 0);
 
     if (!hasMeaningfulContent) {
-      throw new Error("Missing required fields|400");
+      throw new ValidationError("Missing required fields");
     }
 
     const finalTitle = normalizedTitle || DEFAULT_DRAFT_TITLE;
@@ -980,17 +985,17 @@ class BlogService {
       .from(blog)
       .where(eq(blog.id, parseInt(id)));
 
-    if (!originalBlog) throw new Error("Blog not found|404");
+    if (!originalBlog) throw new NotFoundError("Blog not found");
 
     const authorized = await this.canUserModifyBlog(
       currentUser.id,
       originalBlog.authorId,
       originalBlog.publicationId,
     );
-    if (!authorized) throw new Error("Unauthorized|403");
-
+    if (!authorized) throw new ForbiddenError("Unauthorized");
+    
     if (originalBlog.status !== BLOG_STATUS.PUBLISHED) {
-      throw new Error("Only published blogs can be edited as drafts|400");
+      throw new ValidationError("Only published blogs can be edited as drafts");
     }
 
     const [existingDraft] = await db
@@ -1043,10 +1048,10 @@ class BlogService {
     if (scheduledAt !== undefined) {
       parsedScheduledAt = new Date(scheduledAt);
       if (Number.isNaN(parsedScheduledAt.getTime())) {
-        throw new Error("Invalid scheduled time|400");
+        throw new ValidationError("Invalid scheduled time");
       }
       if (parsedScheduledAt <= new Date()) {
-        throw new Error("Scheduled time must be in the future|400");
+        throw new ValidationError("Scheduled time must be in the future");
       }
     }
 
@@ -1054,14 +1059,14 @@ class BlogService {
       .select()
       .from(blog)
       .where(eq(blog.id, parseInt(id)));
-    if (!existingBlog) throw new Error("Blog not found|404");
+    if (!existingBlog) throw new NotFoundError("Blog not found");
 
     const canModify = await this.canUserModifyBlog(
       currentUser.id,
       existingBlog.authorId,
       existingBlog.publicationId,
     );
-    if (!canModify) throw new Error("Not authorized to update this blog|403");
+    if (!canModify) throw new ForbiddenError("Not authorized to update this blog");
 
     let targetStatusForUpdate = existingBlog.status;
     if (status !== undefined) targetStatusForUpdate = status;
@@ -1081,24 +1086,26 @@ class BlogService {
         !effectiveScheduledAt ||
         Number.isNaN(effectiveScheduledAt.getTime())
       ) {
-        throw new Error("Scheduled time is required for scheduled status|400");
+        throw new ValidationError("Scheduled time is required for scheduled status");
       }
       if (effectiveScheduledAt <= new Date()) {
-        throw new Error("Scheduled time must be in the future|400");
+        throw new ValidationError("Scheduled time must be in the future");
       }
     }
 
-    const updateData: BlogUpdateData = { updatedAt: new Date() };
+    const updateData: BlogUpdateData & { publishedAt?: Date | null } = {
+      updatedAt: new Date(),
+    };
     let slug = existingBlog.slug;
 
     if (title !== undefined) {
       if (typeof title !== "string")
-        throw new Error("Title cannot be empty|400");
+        throw new ValidationError("Title cannot be empty");
       const nextTitle =
         title.trim() === "" && targetStatusForUpdate === BLOG_STATUS.DRAFT
           ? DEFAULT_DRAFT_TITLE
           : title.trim();
-      if (!nextTitle) throw new Error("Title cannot be empty|400");
+      if (!nextTitle) throw new ValidationError("Title cannot be empty");
       updateData.title = nextTitle;
       if (nextTitle !== existingBlog.title)
         slug = await this.ensureUniqueSlug(
@@ -1212,8 +1219,8 @@ class BlogService {
         });
         return updatedMaster;
       } else {
-        throw new Error(
-          "Original article not found. Cannot publish this draft as an update.|404",
+        throw new NotFoundError(
+          "Original article not found. Cannot publish this draft as an update.",
         );
       }
     }
@@ -1276,20 +1283,20 @@ class BlogService {
   async reviewAction(id, data, currentUser) {
     const { action, targetStatus: requestedTargetStatus } = data;
     if (!["accept", "reject"].includes(action))
-      throw new Error("Action must be 'accept' or 'reject'|400");
+      throw new ValidationError("Action must be 'accept' or 'reject'");
 
     const [existingBlog] = await db
       .select()
       .from(blog)
       .where(eq(blog.id, parseInt(id)));
-    if (!existingBlog) throw new Error("Blog not found|404");
+    if (!existingBlog) throw new NotFoundError("Blog not found");
 
     const canModify = await this.canUserModifyBlog(
       currentUser.id,
       existingBlog.authorId,
       existingBlog.publicationId,
     );
-    if (!canModify) throw new Error("Not authorized to review this blog|403");
+    if (!canModify) throw new ForbiddenError("Not authorized to review this blog");
 
     let targetStatus;
     if (action === "accept") {
@@ -1405,25 +1412,30 @@ class BlogService {
         ? BLOG_STATUS.PUBLISHED
         : BLOG_STATUS.UNPUBLISHED;
     else
-      throw new Error(
-        "Either BLOG_STATUS.PUBLISHED or 'status' must be provided|400",
+      throw new ValidationError(
+        "Either BLOG_STATUS.PUBLISHED or 'status' must be provided",
       );
 
     const [existingBlog] = await db
       .select()
       .from(blog)
       .where(eq(blog.id, parseInt(id)));
-    if (!existingBlog) throw new Error("Blog not found|404");
+    if (!existingBlog) throw new NotFoundError("Blog not found");
 
     const canModify = await this.canUserModifyBlog(
       currentUser.id,
       existingBlog.authorId,
       existingBlog.publicationId,
     );
-    if (!canModify) throw new Error("Not authorized to modify this blog|403");
+    if (!canModify) throw new ForbiddenError("Not authorized to modify this blog");
 
     const syncedFields = this.syncStatusAndPublished(targetStatus);
-    const updateData = { ...syncedFields, updatedAt: new Date() };
+    const updateData: {
+      status: (typeof BLOG_STATUS)[keyof typeof BLOG_STATUS];
+      published: boolean;
+      updatedAt: Date;
+      publishedAt?: Date;
+    } = { ...syncedFields, updatedAt: new Date() };
     if (
       targetStatus === BLOG_STATUS.PUBLISHED &&
       existingBlog.status !== BLOG_STATUS.PUBLISHED
@@ -1483,14 +1495,14 @@ class BlogService {
       .select()
       .from(blog)
       .where(eq(blog.id, parseInt(id)));
-    if (!existingBlog) throw new Error("Blog not found|404");
+    if (!existingBlog) throw new NotFoundError("Blog not found");
 
     const canModify = await this.canUserModifyBlog(
       currentUser.id,
       existingBlog.authorId,
       existingBlog.publicationId,
     );
-    if (!canModify) throw new Error("Not authorized to delete this blog|403");
+    if (!canModify) throw new ForbiddenError("Not authorized to delete this blog");
 
     const drafts = await db
       .select()

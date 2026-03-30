@@ -1,4 +1,5 @@
 import logger from "../utils/logger.js";
+import { AppError } from "../utils/errors.js";
 
 const parsePipeError = (err: Error): { message: string; statusCode: number } => {
   const message = err.message;
@@ -36,9 +37,22 @@ export const errorMiddleware = (err, req, res, next) => {
     });
   }
 
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({
+      error:
+        err.isOperational || process.env.NODE_ENV !== "production"
+          ? err.message
+          : "Internal server error",
+      code: err.code,
+    });
+  }
+
   if (err.statusCode) {
     return res.status(err.statusCode).json({
-      error: err.message,
+      error:
+        process.env.NODE_ENV === "production"
+          ? "Internal server error"
+          : err.message,
       code: err.code,
     });
   }
