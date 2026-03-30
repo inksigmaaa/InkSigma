@@ -5,6 +5,9 @@ import { eq, and, lt, or } from "drizzle-orm";
 import logger from "../utils/logger.js";
 
 class InvitationService {
+    private expirationTimer: NodeJS.Timeout | null = null;
+    private cleanupTimer: NodeJS.Timeout | null = null;
+
     async markExpiredInvitations(): Promise<number> {
         try {
             const now = new Date();
@@ -63,15 +66,34 @@ class InvitationService {
     }
 
     startScheduler(): void {
-        setInterval(async () => {
+        if (this.expirationTimer || this.cleanupTimer) {
+            logger.info("📧 Invitation cleanup scheduler already running");
+            return;
+        }
+
+        this.expirationTimer = setInterval(async () => {
             await this.markExpiredInvitations();
         }, 60 * 60 * 1000);
 
-        setInterval(async () => {
+        this.cleanupTimer = setInterval(async () => {
             await this.cleanupOldInvitations();
         }, 24 * 60 * 60 * 1000);
 
         logger.info("📧 Invitation cleanup scheduler started");
+    }
+
+    stopScheduler(): void {
+        if (this.expirationTimer) {
+            clearInterval(this.expirationTimer);
+            this.expirationTimer = null;
+        }
+
+        if (this.cleanupTimer) {
+            clearInterval(this.cleanupTimer);
+            this.cleanupTimer = null;
+        }
+
+        logger.info("📧 Invitation cleanup scheduler stopped");
     }
 }
 

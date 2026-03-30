@@ -1,7 +1,9 @@
 import "dotenv/config";
 import express from "express";
+import type { Server } from "http";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./config/betterAuth.js";
+import { db, pool } from "./config/database.js";
 import authRoutes from "./routes/authRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
@@ -28,103 +30,174 @@ import {
   notFoundMiddleware,
 } from "./middleware/errorHandler.js";
 
-const app = express();
 const PORT = process.env.PORT || 5000;
+const SHUTDOWN_TIMEOUT_MS = 10_000;
 
-// Middleware
-app.use(requestContextMiddleware);
-app.use(corsMiddleware);
-app.use(subdomainMiddleware);
-app.use(rateLimitMiddleware);
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+export let isShuttingDown = false;
 
-// Static file serving
-app.use("/uploads", express.static("uploads"));
+export const createApp = () => {
+  const app = express();
 
-// Authentication routes
-logger.info("Mounting better-auth handler at /api/auth");
-try {
-  const authHandler = toNodeHandler(auth);
-  app.use("/api/auth", authHandler);
-  logger.info("✅ Better-auth handler mounted successfully");
-} catch (error) {
-  logger.error(error, "❌ Error mounting better-auth handler:");
-}
+  // Middleware
+  app.use(requestContextMiddleware);
+  app.use(corsMiddleware);
+  app.use(subdomainMiddleware);
+  app.use(rateLimitMiddleware);
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// API routes
-app.use("/api/custom", authRoutes);
-app.use("/api/profile", profileRoutes);
-app.use("/api/blogs", blogRoutes);
-app.use("/api/upload-image", uploadRoutes);
-app.use("/api/publications", publicationRoutes);
-app.use("/api/publication-members", publicationMemberRoutes);
-app.use("/api/publication-stats", publicationStatsRoutes);
-app.use("/api/members", memberRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/comments", commentRoutes);
-app.use("/api/views", viewRoutes);
-app.use("/api", resendVerificationRoutes);
+  // Static file serving
+  app.use("/uploads", express.static("uploads"));
 
-// Debug routes have been removed for security
-
-// Health check
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
-
-app.get("/health/slis", (req, res) => {
-  res.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    slis: sliService.getSnapshot(),
-  });
-});
-
-// Global error handler - must be after all routes
-app.use(notFoundMiddleware);
-app.use(errorMiddleware);
-
-app.listen(PORT, async () => {
-  logger.info(`Server running on http://localhost:${PORT}`);
-
-  // Check database connection
-  logger.info("🔄 Checking database connection...");
+  // Authentication routes
+  logger.info("Mounting better-auth handler at /api/auth");
   try {
-    const { db } = await import("./config/database.js");
-    await db.execute("SELECT 1");
-    logger.info("✅ Database connection verified!");
-    logger.info("💡 Run 'npm run db:push' to sync schema changes");
+    const authHandler = toNodeHandler(auth);
+    app.use("/api/auth", authHandler);
+    logger.info("Better-auth handler mounted successfully");
   } catch (error) {
-    logger.error(error, "❌ Database connection failed:");
+    logger.error(error, "Error mounting better-auth handler:");
   }
 
-  // Verify SMTP connection
-  const smtpReady = await emailService.verify();
-  if (!smtpReady) {
-    logger.error(
-      "⚠️  WARNING: SMTP not configured properly. Emails will not be sent!",
-    );
-    logger.error("   Check SMTP_USER and SMTP_PASS in .env file");
-  }
+  // API routes
+  app.use("/api/custom", authRoutes);
+  app.use("/api/profile", profileRoutes);
+  app.use("/api/blogs", blogRoutes);
+  app.use("/api/upload-image", uploadRoutes);
+  app.use("/api/publications", publicationRoutes);
+  app.use("/api/publication-members", publicationMemberRoutes);
+  app.use("/api/publication-stats", publicationStatsRoutes);
+  app.use("/api/members", memberRoutes);
+  app.use("/api/notifications", notificationRoutes);
+  app.use("/api/comments", commentRoutes);
+  app.use("/api/views", viewRoutes);
+  app.use("/api", resendVerificationRoutes);
 
-  // Initialize scheduler
-  app.locals.schedulerService = schedulerService;
-  schedulerService.start();
+  // Debug routes have been removed for security
 
-  // Initialize invitation cleanup
-  invitationService.startScheduler();
-});
+  // Health check
+  app.get("/health", (req, res) => {
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      shuttingDown: isShuttingDown,
+    });
+  });
 
-// Graceful shutdown
-process.on("SIGINT", () => {
-  logger.info("\nShutting down server...");
-  schedulerService.stop();
-  process.exit(0);
-});
+  app.get("/health/slis", (req, res) => {
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      shuttingDown: isShuttingDown,
+      slis: sliService.getSnapshot(),
+    });
+  });
 
-process.on("SIGTERM", () => {
-  logger.info("\n Shutting down server...");
-  schedulerService.stop();
-  process.exit(0);
+  // Global error handler - must be after all routes
+  app.use(notFoundMiddleware);
+  app.use(errorMiddleware);
+
+  return app;
+};
+
+const closeServer = (server: Server) =>
+  new Promise<void>((resolve, reject) => {
+    server.close((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
+  });
+
+const registerGracefulShutdown = (server: Server) => {
+  let shutdownPromise: Promise<void> | null = null;
+
+  const shutdown = async (signal: NodeJS.Signals) => {
+    if (shutdownPromise) {
+      logger.warn({ signal }, "Shutdown already in progress");
+      return shutdownPromise;
+    }
+
+    shutdownPromise = (async () => {
+      isShuttingDown = true;
+      logger.info({ signal }, "Shutting down server");
+
+      const forcedExitTimer = setTimeout(() => {
+        logger.error(
+          { timeoutMs: SHUTDOWN_TIMEOUT_MS },
+          "Forced shutdown timeout reached",
+        );
+        process.exit(1);
+      }, SHUTDOWN_TIMEOUT_MS);
+
+      try {
+        await closeServer(server);
+        schedulerService.stop();
+        invitationService.stopScheduler();
+        await pool.end();
+        logger.info("Graceful shutdown completed");
+        process.exit(0);
+      } catch (error) {
+        logger.error(error, "Graceful shutdown failed");
+        process.exit(1);
+      } finally {
+        clearTimeout(forcedExitTimer);
+      }
+    })();
+
+    return shutdownPromise;
+  };
+
+  process.once("SIGINT", () => {
+    void shutdown("SIGINT");
+  });
+
+  process.once("SIGTERM", () => {
+    void shutdown("SIGTERM");
+  });
+};
+
+export const bootstrap = async () => {
+  const app = createApp();
+  const server = app.listen(PORT, async () => {
+    logger.info(`Server running on http://localhost:${PORT}`);
+
+    // Check database connection
+    logger.info("Checking database connection...");
+    try {
+      await db.execute("SELECT 1");
+      logger.info("Database connection verified");
+      logger.info("Run 'npm run db:push' to sync schema changes");
+    } catch (error) {
+      logger.error(error, "Database connection failed");
+    }
+
+    // Verify SMTP connection
+    const smtpReady = await emailService.verify();
+    if (!smtpReady) {
+      logger.error(
+        "WARNING: SMTP not configured properly. Emails will not be sent!",
+      );
+      logger.error("Check SMTP_USER and SMTP_PASS in .env file");
+    }
+
+    // Initialize scheduler
+    app.locals.schedulerService = schedulerService;
+    schedulerService.start();
+
+    // Initialize invitation cleanup
+    invitationService.startScheduler();
+  });
+
+  registerGracefulShutdown(server);
+
+  return { app, server };
+};
+
+void bootstrap().catch((error) => {
+  logger.error(error, "Failed to bootstrap server");
+  process.exit(1);
 });
