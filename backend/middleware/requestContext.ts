@@ -12,14 +12,7 @@ const getRequestId = (req) => {
   return crypto.randomUUID();
 };
 
-const getClientIp = (req) => {
-  const forwardedFor = req.headers["x-forwarded-for"];
-  if (typeof forwardedFor === "string" && forwardedFor.trim()) {
-    return forwardedFor.split(",")[0].trim();
-  }
-
-  return req.socket?.remoteAddress || "unknown";
-};
+const getClientIp = (req) => req.ip || req.socket?.remoteAddress || "unknown";
 
 export const requestContextMiddleware = (req, res, next) => {
   const requestId = getRequestId(req);

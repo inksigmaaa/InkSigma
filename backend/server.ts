@@ -38,6 +38,9 @@ export let isShuttingDown = false;
 export const createApp = () => {
   const app = express();
 
+  // Production assumes exactly one trusted reverse proxy in front of Express.
+  app.set("trust proxy", 1);
+
   // Middleware
   app.use(requestContextMiddleware);
   app.use(corsMiddleware);

@@ -20,14 +20,7 @@ const shouldBypassRateLimit = (req) => {
   return false;
 };
 
-const getClientIp = (req) => {
-  const forwardedFor = req.headers["x-forwarded-for"];
-  if (typeof forwardedFor === "string" && forwardedFor.trim()) {
-    return forwardedFor.split(",")[0].trim();
-  }
-
-  return String(req.socket?.remoteAddress || "unknown");
-};
+const getClientIp = (req) => String(req.ip || req.socket?.remoteAddress || "unknown");
 
 const setRateLimitHeaders = (res, remaining, retryAfterSeconds) => {
   res.setHeader("X-RateLimit-Limit", MAX_REQUESTS);
