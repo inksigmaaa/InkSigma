@@ -5,6 +5,7 @@ import type { Server } from "http";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./config/betterAuth.js";
 import { db, pool } from "./config/database.js";
+import { getRedisClient, isRedisAvailable } from "./config/redis.js";
 import authRoutes from "./routes/authRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
@@ -35,6 +36,67 @@ const PORT = process.env.PORT || 5000;
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
 export let isShuttingDown = false;
+export let isStartupComplete = false;
+
+const getTimestamp = () => new Date().toISOString();
+
+const checkDatabaseReadiness = async () => {
+  try {
+    await db.execute("SELECT 1");
+    return { status: "ready" as const };
+  } catch (error) {
+    logger.error(error, "Database readiness check failed");
+    return { status: "not_ready" as const };
+  }
+};
+
+const checkRedisReadiness = async () => {
+  try {
+    const client = getRedisClient();
+
+    if (!client || !isRedisAvailable()) {
+      return { status: "degraded" as const };
+    }
+
+    await client.ping();
+    return { status: "ready" as const };
+  } catch (error) {
+    logger.warn(error, "Redis readiness check degraded");
+    return { status: "degraded" as const };
+  }
+};
+
+const registerHealthRoutes = (app: express.Express) => {
+  app.get("/health", (req, res) => {
+    res.status(200).json({
+      status: "ok",
+      timestamp: getTimestamp(),
+    });
+  });
+
+  app.get("/ready", async (req, res) => {
+    const [database, redis] = await Promise.all([
+      checkDatabaseReadiness(),
+      checkRedisReadiness(),
+    ]);
+
+    const startup = isStartupComplete ? "ready" : "starting";
+    const shuttingDown = isShuttingDown;
+    const ready =
+      database.status === "ready" && startup === "ready" && !shuttingDown;
+
+    res.status(ready ? 200 : 503).json({
+      status: ready ? "ready" : "not_ready",
+      timestamp: getTimestamp(),
+      checks: {
+        database: database.status,
+        redis: redis.status,
+        startup,
+        shuttingDown: shuttingDown ? "shutting_down" : "ready",
+      },
+    });
+  });
+};
 
 export const createApp = () => {
   const app = express();
@@ -55,6 +117,7 @@ export const createApp = () => {
   );
   app.use(requestContextMiddleware);
   app.use(corsMiddleware);
+  registerHealthRoutes(app);
   app.use(subdomainMiddleware);
   app.use(rateLimitMiddleware);
   app.use(express.json({ limit: "50mb" }));
@@ -89,19 +152,10 @@ export const createApp = () => {
 
   // Debug routes have been removed for security
 
-  // Health check
-  app.get("/health", (req, res) => {
-    res.json({
-      status: "ok",
-      timestamp: new Date().toISOString(),
-      shuttingDown: isShuttingDown,
-    });
-  });
-
   app.get("/health/slis", (req, res) => {
     res.json({
       status: "ok",
-      timestamp: new Date().toISOString(),
+      timestamp: getTimestamp(),
       shuttingDown: isShuttingDown,
       slis: sliService.getSnapshot(),
     });
@@ -175,6 +229,9 @@ const registerGracefulShutdown = (server: Server) => {
 };
 
 export const bootstrap = async () => {
+  isShuttingDown = false;
+  isStartupComplete = false;
+
   const app = createApp();
   const server = app.listen(PORT, async () => {
     logger.info(`Server running on http://localhost:${PORT}`);
@@ -204,6 +261,9 @@ export const bootstrap = async () => {
 
     // Initialize invitation cleanup
     invitationService.startScheduler();
+
+    isStartupComplete = true;
+    logger.info("Startup checks completed; readiness probe is now ready");
   });
 
   registerGracefulShutdown(server);

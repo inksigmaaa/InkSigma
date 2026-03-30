@@ -1,5 +1,5 @@
 "use client"
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut, authClient } from "@/lib/auth-client";
 import Link from "next/link";
@@ -34,6 +34,10 @@ const getInitials = (name = "User") => {
     return initials || "U";
 };
 
+const subscribe = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 export default function NavbarLoggedin() {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -56,6 +60,11 @@ export default function NavbarLoggedin() {
     const { data: session, isPending, refetch } = useSession();
     const [localUserData, setLocalUserData] = useState(null);
     const user = session?.user;
+    const isMounted = useSyncExternalStore(
+        subscribe,
+        getClientSnapshot,
+        getServerSnapshot,
+    );
 
     // Check for locally stored fresh user data
     useEffect(() => {
@@ -252,8 +261,12 @@ export default function NavbarLoggedin() {
         || mergedUser?.picture
         || user?.picture
         || null;
+    const displayUserName = isMounted ? userName : "User";
+    const displayUserDescription = isMounted ? userDescription : "InkSigma member";
+    const displayUserAvatar = isMounted ? userAvatar : null;
     const joinedDateText = `Joined ${formatJoinedDate(mergedUser?.createdAt || user?.createdAt || localUserData?.createdAt) || "recently"}`;
-    const avatarFallback = getInitials(userName);
+    const displayJoinedDateText = isMounted ? joinedDateText : "Joined recently";
+    const avatarFallback = getInitials(displayUserName);
 
     return (
         <div className={`fixed left-0 right-0 top-0 z-50 transition-transform duration-300 sm:bg-white sm:border-b sm:border-gray-200 md:bg-white md:border-0 ${!isVisible ? 'sm:-translate-y-full' : 'sm:translate-y-0'}`}>
@@ -449,7 +462,7 @@ export default function NavbarLoggedin() {
                                             className="h-auto border-0 p-0 no-underline hover:border-0 hover:no-underline"
                                         >
                                             <Avatar className="w-[34px] h-[34px] opacity-100 md:w-[34px] md:h-[34px] sm:w-[40px] sm:h-[40px]">
-                                                {userAvatar ? <AvatarImage src={userAvatar} alt={userName} /> : null}
+                                                {displayUserAvatar ? <AvatarImage src={displayUserAvatar} alt={displayUserName} /> : null}
                                                 <AvatarFallback>{avatarFallback}</AvatarFallback>
                                             </Avatar>
                                         </Button>
@@ -457,17 +470,17 @@ export default function NavbarLoggedin() {
                                     <HoverCardContent align="center" sideOffset={24} className="w-80">
                                         <div className="flex items-start gap-3">
                                             <Avatar className="size-10 shrink-0">
-                                                {userAvatar ? <AvatarImage src={userAvatar} alt={userName} /> : null}
+                                                {displayUserAvatar ? <AvatarImage src={displayUserAvatar} alt={displayUserName} /> : null}
                                                 <AvatarFallback>{avatarFallback}</AvatarFallback>
                                             </Avatar>
                                             <div className="min-w-0 flex-1 space-y-1">
-                                                <h4 className="text-sm font-semibold leading-none">{isPending ? "Loading..." : userName}</h4>
+                                                <h4 className="text-sm font-semibold leading-none">{isPending || !isMounted ? "Loading..." : userName}</h4>
                                                 <p className="text-muted-foreground text-sm break-words">
-                                                    {userDescription}
+                                                    {displayUserDescription}
                                                 </p>
                                                 <div className="mt-2 flex items-center gap-1.5">
                                                     <CalendarDays className="text-muted-foreground size-3" />
-                                                    <span className="text-muted-foreground text-xs">{joinedDateText}</span>
+                                                    <span className="text-muted-foreground text-xs">{displayJoinedDateText}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -477,7 +490,7 @@ export default function NavbarLoggedin() {
                                 {/* User name with dropdown arrow - Only show on desktop (1024px+) */}
                                 <div className="hidden xl:flex items-center gap-[8px]">
                                     <span className="font-bold text-[14px] leading-[100%] tracking-[0%] text-[#2E2E2E] whitespace-nowrap" style={{ fontFamily: 'Public Sans' }}>
-                                        {isPending ? "Loading..." : userName}
+                                        {isPending || !isMounted ? "Loading..." : userName}
                                     </span>
                                     <span className="flex items-center">
                                         <svg width="11" height="7" viewBox="0 0 11 7" fill="none" xmlns="http://www.w3.org/2000/svg">
