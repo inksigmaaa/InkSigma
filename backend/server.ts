@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import helmet from "helmet";
 import type { Server } from "http";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./config/betterAuth.js";
@@ -37,11 +38,19 @@ export let isShuttingDown = false;
 
 export const createApp = () => {
   const app = express();
+  const isProduction = process.env.NODE_ENV === "production";
 
   // Production assumes exactly one trusted reverse proxy in front of Express.
   app.set("trust proxy", 1);
+  app.disable("x-powered-by");
 
   // Middleware
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      strictTransportSecurity: isProduction ? undefined : false,
+    }),
+  );
   app.use(requestContextMiddleware);
   app.use(corsMiddleware);
   app.use(subdomainMiddleware);
