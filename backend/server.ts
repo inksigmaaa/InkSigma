@@ -48,6 +48,8 @@ export const createApp = () => {
   app.use(
     helmet({
       contentSecurityPolicy: false,
+      // Uploaded media is served from the API origin and rendered by the frontend origin.
+      crossOriginResourcePolicy: { policy: "cross-origin" },
       strictTransportSecurity: isProduction ? undefined : false,
     }),
   );
