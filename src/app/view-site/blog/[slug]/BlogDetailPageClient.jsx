@@ -267,7 +267,7 @@ export default function BlogDetailPageClient({
             const publicationData = await fetchJsonWithRetry(
               `${API_URL}/api/publications/${processedBlog.publicationId}`,
               {
-                credentials: "include",
+                credentials: "omit",
                 headers: tenantHeaders,
                 signal: controller.signal,
               },
@@ -307,7 +307,7 @@ export default function BlogDetailPageClient({
                 headers: {
                   "Content-Type": "application/json",
                 },
-                credentials: "include",
+                credentials: "omit",
                 body: JSON.stringify({ blogId: processedBlog.id }),
               });
             }

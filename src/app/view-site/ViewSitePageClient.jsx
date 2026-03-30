@@ -100,7 +100,7 @@ function ViewSiteContent({
           `${API_URL}/api/blogs?publicationId=${publicationId}&status=published`,
           {
             cache: 'no-store',
-            credentials: 'include',
+            credentials: 'omit',
             signal: controller.signal,
           },
           {
