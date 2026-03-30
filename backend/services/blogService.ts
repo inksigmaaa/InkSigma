@@ -120,7 +120,7 @@ const IS_PUBLISHABLE_SQL = sql<boolean>`
   and ${PUBLISHABLE_CONTENT_SQL}
 `;
 
-const LIGHT_BLOG_SELECT = {
+const LIGHT_BLOG_SELECT_BASE = {
   id: blog.id,
   slug: blog.slug,
   title: blog.title,
@@ -136,13 +136,17 @@ const LIGHT_BLOG_SELECT = {
   updatedAt: blog.updatedAt,
   authorId: blog.authorId,
   masterId: blog.masterId,
-  isPublishable: IS_PUBLISHABLE_SQL.as("isPublishable"),
   author: {
     id: user.id,
     name: user.name,
     image: user.image,
     username: user.username,
   },
+};
+
+const LIGHT_BLOG_SELECT_WITH_PUBLISHABILITY = {
+  ...LIGHT_BLOG_SELECT_BASE,
+  isPublishable: IS_PUBLISHABLE_SQL.as("isPublishable"),
 };
 
 const FULL_BLOG_SELECT = {
@@ -182,6 +186,67 @@ const runInBackground = (label: string, task: () => Promise<unknown>) => {
 };
 
 class BlogService {
+  private buildLightBlogSelect(includePublishability: boolean) {
+    return includePublishability
+      ? LIGHT_BLOG_SELECT_WITH_PUBLISHABILITY
+      : LIGHT_BLOG_SELECT_BASE;
+  }
+
+  private chunkBlogIds(blogIds: number[], chunkSize = MAX_BLOG_STATS_BATCH_SIZE) {
+    if (!Array.isArray(blogIds) || blogIds.length === 0) {
+      return [];
+    }
+
+    const normalizedChunkSize = Math.max(1, chunkSize);
+    const chunks: number[][] = [];
+
+    for (let index = 0; index < blogIds.length; index += normalizedChunkSize) {
+      chunks.push(blogIds.slice(index, index + normalizedChunkSize));
+    }
+
+    return chunks;
+  }
+
+  private async enrichBlogsWithStats<T extends { id: number }>(blogs: T[]) {
+    if (!Array.isArray(blogs) || blogs.length === 0) {
+      return [];
+    }
+
+    const blogIds = blogs.map((entry) => entry.id);
+    const statsMap: Record<string, { views: number; shares: number }> = {};
+    const commentMap: Record<string, number> = {};
+
+    try {
+      const statChunks = this.chunkBlogIds(blogIds);
+      const [statsResults, commentsResult] = await Promise.all([
+        Promise.all(statChunks.map((chunk) => getBlogStats(chunk))),
+        db
+          .select({ blogId: comment.blogId, count: count() })
+          .from(comment)
+          .where(inArray(comment.blogId, blogIds))
+          .groupBy(comment.blogId),
+      ]);
+
+      for (const batch of statsResults) {
+        Object.assign(statsMap, batch);
+      }
+
+      for (const row of commentsResult) {
+        commentMap[String(row.blogId)] = Number(row.count) || 0;
+      }
+    } catch (err) {
+      logger.error(err, "Batch stat fetch failed:");
+    }
+
+    return blogs.map((blogRow) => ({
+      ...blogRow,
+      views: statsMap[String(blogRow.id)]?.views || 0,
+      shares: statsMap[String(blogRow.id)]?.shares || 0,
+      comments: commentMap[String(blogRow.id)] || 0,
+      revisits: 0,
+    }));
+  }
+
   isMissingRealTitle(title) {
     const normalized =
       typeof title === "string" ? title.trim().toLowerCase() : "";
@@ -773,8 +838,15 @@ class BlogService {
       publicationId = String(tenant.publication.id);
     }
 
+    const shouldComputePublishability = Boolean(
+      currentUserId ||
+        includeUnpublished === "true" ||
+        draftScope ||
+        (status && status !== BLOG_STATUS.PUBLISHED),
+    );
+
     let dbQuery = db
-      .select(LIGHT_BLOG_SELECT)
+      .select(this.buildLightBlogSelect(shouldComputePublishability))
       .from(blog)
       .leftJoin(user, eq(blog.authorId, user.id));
 
@@ -864,40 +936,12 @@ class BlogService {
       }));
     }
 
-    const blogsToProcess = blogs.slice(0, MAX_BLOG_STATS_BATCH_SIZE);
-    const blogIds = blogsToProcess.map((b) => b.id);
-    let statsMap: Record<string, { views: number; shares: number }> = {};
-    let commentMap: Record<string, number> = {};
-
-    if (blogIds.length > 0) {
-      try {
-        statsMap = await getBlogStats(blogIds);
-        const commentsResult = await db
-          .select({ blogId: comment.blogId, count: count() })
-          .from(comment)
-          .where(inArray(comment.blogId, blogIds))
-          .groupBy(comment.blogId);
-
-        for (const row of commentsResult) {
-          commentMap[String(row.blogId)] = Number(row.count) || 0;
-        }
-      } catch (err) {
-        logger.error(err, "Batch stat fetch failed:");
-      }
-    }
-
-    return blogsToProcess.map((b) => ({
-      ...b,
-      views: statsMap[String(b.id)]?.views || 0,
-      shares: statsMap[String(b.id)]?.shares || 0,
-      comments: commentMap[String(b.id)] || 0,
-      revisits: 0,
-    }));
+    return this.enrichBlogsWithStats(blogs);
   }
 
   async getPublicBlogs(publicationId) {
     return db
-      .select(LIGHT_BLOG_SELECT)
+      .select(LIGHT_BLOG_SELECT_BASE)
       .from(blog)
       .leftJoin(user, eq(blog.authorId, user.id))
       .where(
@@ -952,7 +996,7 @@ class BlogService {
     }
 
     let publicationBlogsQuery = db
-      .select(LIGHT_BLOG_SELECT)
+      .select(LIGHT_BLOG_SELECT_WITH_PUBLISHABILITY)
       .from(blog)
       .leftJoin(user, eq(blog.authorId, user.id))
       .where(and(...conditions));
@@ -982,34 +1026,7 @@ class BlogService {
       }));
     }
 
-    const blogIds = blogs.map((b) => b.id);
-    let statsMap: Record<string, { views: number; shares: number }> = {};
-    let commentMap: Record<string, number> = {};
-
-    if (blogIds.length > 0) {
-      try {
-        statsMap = await getBlogStats(blogIds);
-        const commentsResult = await db
-          .select({ blogId: comment.blogId, count: count() })
-          .from(comment)
-          .where(inArray(comment.blogId, blogIds))
-          .groupBy(comment.blogId);
-
-        for (const row of commentsResult) {
-          commentMap[String(row.blogId)] = Number(row.count) || 0;
-        }
-      } catch (err) {
-        logger.error(err, "Batch stat fetch failed:");
-      }
-    }
-
-    return blogs.map((b) => ({
-      ...b,
-      views: statsMap[String(b.id)]?.views || 0,
-      shares: statsMap[String(b.id)]?.shares || 0,
-      comments: commentMap[String(b.id)] || 0,
-      revisits: 0,
-    }));
+    return this.enrichBlogsWithStats(blogs);
   }
 
   async getBlogById(id, currentUserId, tenant) {

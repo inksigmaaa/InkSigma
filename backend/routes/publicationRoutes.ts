@@ -263,17 +263,70 @@ router.get("/resolve-host", async (req, res) => {
   try {
     const rawHost =
       typeof req.query.host === "string" ? req.query.host : String(req.query.host || "");
+    const rawSubdomain =
+      typeof req.query.subdomain === "string"
+        ? req.query.subdomain.trim().toLowerCase()
+        : "";
+    const rawCustomDomain =
+      typeof req.query.customDomain === "string"
+        ? req.query.customDomain.trim().toLowerCase()
+        : "";
+    const rawPublicationId =
+      typeof req.query.publicationId === "string"
+        ? Number.parseInt(req.query.publicationId, 10)
+        : Number.parseInt(String(req.query.publicationId || ""), 10);
 
-    if (!rawHost) {
-      return res.status(400).json({ error: "Host is required" });
+    if (!rawHost && !rawSubdomain && !rawCustomDomain && !Number.isFinite(rawPublicationId)) {
+      return res.status(400).json({ error: "Host or publication identifier is required" });
     }
 
     const { resolvePublicationRoutingByHost } = await import(
       "../services/publicationResolver.js"
     );
-    const routing = await resolvePublicationRoutingByHost(rawHost);
+    const routing = rawHost
+      ? await resolvePublicationRoutingByHost(rawHost)
+      : {
+          host: "",
+          publication: null,
+          matchedHostname: null,
+          canonicalHost: null,
+          shouldRedirect: false,
+          type: "root",
+        };
 
-    return res.json(routing);
+    let resolvedPublication = routing.publication || null;
+
+    if (!resolvedPublication && rawCustomDomain) {
+      resolvedPublication = await resolvePublicationByCustomDomain(rawCustomDomain);
+    }
+
+    if (!resolvedPublication && rawSubdomain) {
+      resolvedPublication = await resolvePublicationBySubdomain(rawSubdomain);
+    }
+
+    if (!resolvedPublication && Number.isFinite(rawPublicationId)) {
+      const [publicationById] = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.id, rawPublicationId))
+        .limit(1);
+      resolvedPublication = publicationById || null;
+    }
+
+    return res.json({
+      ...routing,
+      publication: resolvedPublication,
+      hostContext: {
+        subdomain: rawSubdomain || resolvedPublication?.subdomain || null,
+        customDomain:
+          rawCustomDomain ||
+          (routing.type === "custom-domain" ? routing.host : null) ||
+          null,
+      },
+      publicationId:
+        resolvedPublication?.id ||
+        (Number.isFinite(rawPublicationId) ? rawPublicationId : null),
+    });
   } catch (error) {
     logger.error(error, "Error resolving host routing:");
     return res.status(500).json({ error: "Failed to resolve host routing" });

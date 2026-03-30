@@ -9,6 +9,7 @@ import {
 } from "../config/redis.js";
 import crypto from "crypto";
 import logger from "../utils/logger.js";
+import sliService from "./sliService.js";
 
 const VIEW_DEDUP_TTL_SECONDS = Number(
   process.env.BLOG_VIEW_DEDUP_TTL_SECONDS || 60 * 60 * 24,
@@ -34,6 +35,7 @@ export const trackBlogView = async (blogId: number, ip: string, userAgent: strin
   try {
     const viewerIdentifier = generateViewerIdentifier(ip, userAgent);
     const redisKey = `blog:${blogId}:view:${viewerIdentifier}`;
+    let usedDatabaseFallback = true;
 
     if (isRedisAvailable()) {
       const redis = getRedisClient();
@@ -44,8 +46,15 @@ export const trackBlogView = async (blogId: number, ip: string, userAgent: strin
             ex: VIEW_DEDUP_TTL_SECONDS,
           });
           if (!setResult) {
+            sliService.recordViewTracking({
+              isNewView: false,
+              dedupeHit: true,
+              usedDatabaseFallback: false,
+            });
             return { viewed: true, isNewView: false };
           }
+
+          usedDatabaseFallback = false;
         } catch (redisError) {
           reportRedisFailure(redisError, "viewTracking.redis.set");
         }
@@ -64,6 +73,12 @@ export const trackBlogView = async (blogId: number, ip: string, userAgent: strin
       })
       .onConflictDoNothing()
       .returning({ id: blogView.id });
+
+    sliService.recordViewTracking({
+      isNewView: insertedRows.length > 0,
+      dedupeHit: insertedRows.length === 0,
+      usedDatabaseFallback,
+    });
 
     return { viewed: true, isNewView: insertedRows.length > 0 };
   } catch (error) {
