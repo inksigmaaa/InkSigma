@@ -81,6 +81,47 @@ const normalizeOrigin = (origin: string | undefined) => {
   }
 };
 
+const getPlatformDomains = () => {
+  const configuredBaseDomains =
+    process.env.BASE_DOMAINS ||
+    process.env.BASE_DOMAIN ||
+    process.env.NEXT_PUBLIC_BASE_DOMAINS ||
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN ||
+    "localhost,inksigma.local";
+  const mainDomain = (
+    process.env.MAIN_DOMAIN ||
+    process.env.NEXT_PUBLIC_MAIN_DOMAIN ||
+    "inksigma.com"
+  ).toLowerCase();
+
+  return Array.from(
+    new Set(
+      configuredBaseDomains
+        .split(",")
+        .map((domain) => domain.trim().toLowerCase())
+        .filter(Boolean)
+        .concat(mainDomain),
+    ),
+  );
+};
+
+const platformDomains = getPlatformDomains();
+
+const isPlatformOrigin = (origin: string) => {
+  try {
+    const { hostname } = new URL(origin);
+    const normalizedHostname = hostname.toLowerCase();
+
+    return platformDomains.some(
+      (domain) =>
+        normalizedHostname === domain ||
+        normalizedHostname.endsWith(`.${domain}`),
+    );
+  } catch {
+    return false;
+  }
+};
+
 const isPublicCorsRequest = (req) => {
   if (req.method === "GET" || req.method === "HEAD") {
     return (
@@ -107,7 +148,7 @@ const resolveCorsOptions = (req): CorsOptions => {
     };
   }
 
-  if (explicitAllowList.has(requestOrigin)) {
+  if (explicitAllowList.has(requestOrigin) || isPlatformOrigin(requestOrigin)) {
     return {
       origin: requestOrigin,
       credentials: true,

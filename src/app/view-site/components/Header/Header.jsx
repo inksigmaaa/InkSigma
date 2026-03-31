@@ -1,11 +1,16 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { redirectToDashboardEditor } from "@/utils/publicSiteAuth";
 
-export default function ViewSiteHeader({ userName, userAvatar = null, shareButton = null }) {
+export default function ViewSiteHeader({
+  userName,
+  userAvatar = null,
+  shareButton = null,
+  publicationId = null,
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -55,12 +60,13 @@ export default function ViewSiteHeader({ userName, userAvatar = null, shareButto
 
         {/* Right Side: Start Writing CTA */}
         <div>
-          <Link 
-            href="/editor" 
+          <button
+            type="button"
+            onClick={() => redirectToDashboardEditor({ publicationId })}
             className="bg-[#080808] text-[#EDEDED] text-sm font-medium leading-normal tracking-normal px-6 py-2 rounded-sm max-md:text-[10px] max-md:px-4 max-md:py-1.5"
           >
             Start Writing
-          </Link>
+          </button>
         </div>
       </div>
     </header>

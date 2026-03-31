@@ -536,6 +536,9 @@ export default function BlogDetailPageClient({
           blog.publication?.name ||
           (blog.author?.name ? `${blog.author.name}'s Blog` : "InkSigma")
         }
+        publicationId={
+          blog.publication?.id || blog.publicationId || blog.publication_id
+        }
         userAvatar={
           blog.publication?.logoUrl
             ? `${API_URL}${blog.publication.logoUrl}`
@@ -674,7 +677,12 @@ export default function BlogDetailPageClient({
           aria-hidden="true"
           className="footer-top-fade pointer-events-none absolute -top-14 inset-x-0 z-10 h-14"
         />
-        <Footer publicationName={blog.publication?.name} />
+        <Footer
+          publicationName={blog.publication?.name}
+          publicationId={
+            blog.publication?.id || blog.publicationId || blog.publication_id
+          }
+        />
       </div>
       <ScrollToTop />
 

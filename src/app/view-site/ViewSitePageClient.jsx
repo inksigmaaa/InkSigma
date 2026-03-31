@@ -210,7 +210,10 @@ function ViewSiteContent({
           </>
         )}
       </div>
-      <Footer publicationName={publicationName} />
+      <Footer
+        publicationName={publicationName}
+        publicationId={publicationId}
+      />
       <ScrollToTop />
     </div>
   );

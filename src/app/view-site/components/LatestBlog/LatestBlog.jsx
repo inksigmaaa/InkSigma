@@ -9,10 +9,15 @@ import { getThumbnailWithFallback } from '@/utils/fallbackThumbnail';
 import { getApiBase } from '@/utils/apiBase';
 import { getBlogPath } from '@/utils/blogUrl';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { redirectToDashboardEditor } from '@/utils/publicSiteAuth';
 
 const API_URL = getApiBase();
 
-export default function LatestBlog({ searchQuery = '', blogs = [] }) {
+export default function LatestBlog({
+  searchQuery = '',
+  blogs = [],
+  publicationId = null,
+}) {
   const pathname = usePathname();
 
   // The API returns published articles in display order already.
@@ -47,8 +52,9 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
     <section className="w-full max-w-[90%] md:max-w-[70%] mx-auto py-6 md:py-0 max-md:px-0 ">
       {/* Start Writing Button */}
       <div className="mt-10 max-md:mt-0">
-        <a
-          href="/editor"
+        <button
+          type="button"
+          onClick={() => redirectToDashboardEditor({ publicationId })}
           className="inline-flex justify-center items-center gap-2 px-6 h-[40px] bg-[#080808] text-[#EDEDED] rounded font-medium text-[14px] leading-[150%] max-md:w-full max-md:h-[32px] max-md:text-[12px]"
         >
           <svg
@@ -65,7 +71,7 @@ export default function LatestBlog({ searchQuery = '', blogs = [] }) {
             />
           </svg>
           Start Writing
-        </a>
+        </button>
       </div>
 
       <div className="mt-6 max-md:mt-0">

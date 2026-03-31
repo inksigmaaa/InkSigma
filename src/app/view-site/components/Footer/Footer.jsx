@@ -1,41 +1,16 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useSession } from '@/lib/auth-client';
-import { getApiBase } from '@/utils/apiBase';
+import { redirectToDashboardEditor } from '@/utils/publicSiteAuth';
 
-const API_URL = getApiBase();
-
-export default function Footer({ publicationName = 'Jasmin blogs' }) {
+export default function Footer({
+  publicationName = 'Jasmin blogs',
+  publicationId = null,
+}) {
   const currentYear = new Date().getFullYear();
-  const router = useRouter();
-  const { data: session } = useSession();
 
-  const handleStartWriting = async () => {
-    // If not logged in, redirect to login
-    if (!session?.user?.id) {
-      router.push('/login?redirect=/editor');
-      return;
-    }
-
-    // Check if user has a publication
-    try {
-      const response = await fetch(`${API_URL}/api/publications/user/${session.user.id}`, {
-        credentials: 'include'
-      });
-
-      if (response.status === 404) {
-        // No publication, redirect to create one
-        router.push('/create-publication');
-      } else {
-        // Has publication, go to editor
-        router.push('/editor');
-      }
-    } catch (error) {
-      console.error('Error checking publication:', error);
-      router.push('/editor');
-    }
+  const handleStartWriting = () => {
+    redirectToDashboardEditor({ publicationId });
   };
 
   return (
@@ -48,10 +23,11 @@ export default function Footer({ publicationName = 'Jasmin blogs' }) {
         <p className="text-[#202020] text-sm font-semibold leading-none tracking-normal">Eager to delve into the art of blog writing?</p>
         
         {/* Start Writing Button */}
-        <button 
+        <button
           onClick={handleStartWriting}
           className="px-4 py-2 bg-[#202020] text-white text-sm font-medium rounded hover:bg-gray-800"
           style={{ minWidth: '118px', textAlign: 'center' }}
+          type="button"
         >
           Start Writing
         </button>
