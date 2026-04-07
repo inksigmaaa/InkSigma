@@ -3,51 +3,46 @@
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff } from "lucide-react"
 
 /**
- * Reusable password input field with toggle visibility
- * @param {Object} props - Component props
- * @param {string} props.id - Input ID
- * @param {string} props.label - Field label
- * @param {string} props.placeholder - Input placeholder
- * @param {string} props.value - Input value
- * @param {Function} props.onChange - Change handler
+ * Password input field with show/hide toggle
  */
-export default function PasswordField({ 
-  id, 
-  label, 
-  placeholder, 
-  value, 
-  onChange 
+export default function PasswordField({
+  id,
+  label,
+  placeholder,
+  value,
+  onChange,
+  className = "",
+  minLength,
+  maxLength,
+  ...inputProps
 }) {
   const [showPassword, setShowPassword] = useState(false)
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor={id} className="text-gray-700">
-        {label}
-      </Label>
+    <div className={`w-full md:w-[258.5px] h-auto md:h-[55px] gap-[12px] opacity-100 rotate-0 ${className}`}>
+      <Label htmlFor={id} className="w-auto md:w-[37px] h-auto md:h-[16px] font-semibold text-[12px] md:text-[14px] leading-[100%] tracking-[0%] text-[#2E2E2E] opacity-100 rotate-0">{label}</Label>
       <div className="relative">
         <Input
           id={id}
           type={showPassword ? "text" : "password"}
           placeholder={placeholder}
-          value={value}
+          value={value || ""}
           onChange={onChange}
-          className="border-0 border-b border-gray-300 rounded-none bg-transparent px-0 pr-12 focus-visible:ring-0 focus-visible:border-gray-900"
+          minLength={minLength}
+          maxLength={maxLength}
+          className="border-0 border-b border-gray-300 rounded-none bg-transparent px-2 py-2 pr-12 md:pr-16 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300 focus:ring-offset-0 w-full placeholder:text-[#C8C8C8] [&::-ms-reveal]:hidden [&::-ms-clear]:hidden [&::-webkit-credentials-auto-fill-button]:hidden"
+          required
+          {...inputProps}
         />
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+          className="absolute right-0 top-1/2 -translate-y-1/2 px-2 py-1  focus:outline-none  focus:ring-gray-300 focus:ring-opacity-50 font-medium text-[10px] md:text-[12px] leading-[100%] tracking-[0%] text-[#808080]"
           aria-label={showPassword ? "Hide password" : "Show password"}
         >
-          {showPassword ? (
-            <EyeOff className="h-4 w-4" />
-          ) : (
-            <Eye className="h-4 w-4" />
-          )}
+          {showPassword ? "Hide" : "Show"}
         </button>
       </div>
     </div>

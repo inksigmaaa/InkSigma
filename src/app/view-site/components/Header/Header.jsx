@@ -1,63 +1,72 @@
 'use client';
 
 import Image from 'next/image';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { redirectToDashboardEditor } from "@/utils/publicSiteAuth";
 
-export default function ViewSiteHeader({ userName = 'The Nature Blog', userAvatar = null, searchQuery = '', onSearchChange }) {
+export default function ViewSiteHeader({
+  userName,
+  userAvatar = null,
+  shareButton = null,
+  publicationId = null,
+}) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const handleBack = () => {
+    // Navigate directly to view-site instead of using router.back()
+    // which may go back to the editor
+    const pubId = searchParams.get("publicationId") || searchParams.get("pub");
+    router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");
+  };
+
+  // Improved handleBack to be more robust
+  const onLogoClick = () => {
+    handleBack();
+  };
+
   return (
-    <header className="bg-white border-b border-gray-200 py-4 md:py-5 px-4 md:px-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Single Row - Logo, Blog Name on left, Search on right */}
-        <div className="flex items-center justify-between gap-4">
-          {/* Left Section - Logo and Blog Name */}
-          <div className="flex items-center gap-3 md:gap-4">
-            {/* Logo/Avatar */}
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0">
-              {userAvatar ? (
-                <Image 
-                  src={userAvatar} 
-                  alt={userName}
-                  width={48}
-                  height={48}
-                  className="object-cover"
-                />
-              ) : (
-                <Image 
-                  src="/svg/logo.svg" 
-                  alt="Logo"
-                  width={48}
-                  height={48}
-                  className="object-cover"
+    <header className="fixed top-0 left-0 right-0 z-[100] bg-white border-b border-gray-100 h-[82px] flex items-center max-md:h-[68px]">
+      <div className="w-[90%] lg:w-[70%] max-w-[1600px] mx-auto flex items-center justify-between">
+        {/* Left Side: Logo, Name, Share */}
+        <div className="flex items-center gap-4">
+          <div onClick={onLogoClick} className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+            <Avatar className="w-10 h-10 bg-gray-100 flex-shrink-0 relative max-md:w-7 max-md:h-7">
+              {userAvatar && (
+                <AvatarImage
+                  src={userAvatar}
+                  alt={userName || "Blog"}
+                  className="w-full h-full object-cover"
                 />
               )}
-            </div>
+              <AvatarFallback className="w-full h-full bg-[#FFE8C5] text-[#845F2E] font-bold text-lg">
+                {(userName || "B")?.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
             
-            {/* Blog Name */}
-            <h1 className="font-bold text-base md:text-xl text-gray-900 whitespace-nowrap">{userName}</h1>
+            <h1 className="text-base font-semibold leading-none tracking-normal text-[#000000] max-md:text-sm">
+              {userName || 'InkSigma'}
+            </h1>
           </div>
 
-          {/* Right Section - Search Bar */}
-          <div className="relative w-full max-w-[200px] md:max-w-xs">
-            <input
-              type="text"
-              placeholder="Search Articles"
-              value={searchQuery}
-              onChange={(e) => onSearchChange?.(e.target.value)}
-              className="w-full px-4 py-2 pr-10 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-300 focus:bg-white text-sm text-gray-600 placeholder-gray-400"
-            />
-            <svg
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
+          {/* Share Button Slot */}
+          {/* {shareButton && (
+            <div className="ml-2">
+              {shareButton}
+            </div>
+          )} */}
+        </div>
+
+        {/* Right Side: Start Writing CTA */}
+        <div>
+          <button
+            type="button"
+            onClick={() => redirectToDashboardEditor({ publicationId })}
+            className="bg-[#080808] text-[#EDEDED] text-sm font-medium leading-normal tracking-normal px-6 py-2 rounded-sm max-md:text-[10px] max-md:px-4 max-md:py-1.5"
+          >
+            Start Writing
+          </button>
         </div>
       </div>
     </header>

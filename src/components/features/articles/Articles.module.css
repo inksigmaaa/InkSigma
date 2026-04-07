@@ -1,0 +1,48 @@
+.selectAllContainer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    width: 110px;
+    height: 32px;
+    border-radius: 4px;
+    padding: 8px 12px;
+    background-color: #F8F8F8;
+}
+
+.selectAllCheckbox {
+    display: none;
+}
+
+.selectAllCheckboxBox {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid #C0C0C0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.selectAllCheckbox:checked + .selectAllCheckboxBox {
+    background-color: #000000;
+    border-color: #000000;
+}
+
+.selectAllCheckboxIcon {
+    width: 10px;
+    height: 10px;
+    filter: brightness(0) invert(1);
+}
+
+.selectAllText {
+    font-family: 'Public Sans', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 150%;
+    color: #000000;
+    margin: 0;
+    white-space: nowrap;
+}

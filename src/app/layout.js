@@ -1,35 +1,102 @@
 import { Public_Sans, Allison } from "next/font/google";
 import "./globals.css";
-import ConditionalLayout from "@/components/ConditionalLayout";
-import { ArticlesProvider } from "@/contexts/ArticlesContext";
 
 const publicSans = Public_Sans({
-  variable: "--font-public-sans",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-public-sans",
 });
 
 const allison = Allison({
-  variable: "--font-allison",
   subsets: ["latin"],
   weight: "400",
+  variable: "--font-allison",
 });
+import ConditionalLayout from "@/components/ConditionalLayout";
+import { Toaster } from "@/components/ui/sonner";
+import { Providers } from "@/components/Providers";
+import { headers } from "next/headers";
+
+const DASHBOARD_PATHS = [
+  "/home",
+  "/allArticle",
+  "/review",
+  "/author-review",
+  "/editor",
+  "/draft",
+  "/published",
+  "/unpublished",
+  "/trash",
+  "/schedule",
+  "/members",
+  "/my-blogs",
+  "/profile-settings",
+  "/domain",
+  "/dashboard",
+  "/create-publication",
+  "/settings",
+  "/invite",
+  "/comments",
+];
+
+const PUBLIC_ONLY_PATHS = [
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/magic-link",
+  "/auth-callback",
+];
 
 export const metadata = {
   title: "InkSigma - A platform for focussed and simple writing",
-  description: "Designed for you to write passionately. Write and Grow together.",
+  description:
+    "Designed for you to write passionately. Write and Grow together.",
+  icons: {
+    icon: "/icons/favicon.svg",
+  },
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const h = await headers();
+  const rawHost = h.get("x-forwarded-host") || h.get("host") || "";
+  const pathname = h.get("x-invoke-path") || "/";
+
+  const hostname = rawHost.split(",")[0].trim().split(":")[0].toLowerCase();
+  const cleanHost = hostname.replace(/^www\./, "");
+
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
+  const isDashboardHost =
+    cleanHost === `dashboard.${rootDomain}` ||
+    cleanHost.startsWith("dashboard.");
+
+  const isPublicationSubdomain =
+    cleanHost !== rootDomain &&
+    cleanHost !== `www.${rootDomain}` &&
+    !isDashboardHost;
+
+  const isDashboardPath = DASHBOARD_PATHS.some((p) => pathname.startsWith(p));
+  const isPublicOnlyPath = PUBLIC_ONLY_PATHS.some((p) =>
+    pathname.startsWith(p),
+  );
+
+  const needsDashboard = isDashboardHost || (isDashboardPath && !isPublicOnlyPath);
+
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${publicSans.variable} ${allison.variable} antialiased`}
+        suppressHydrationWarning
       >
-        <ArticlesProvider>
-          <ConditionalLayout>
+        <Providers isDashboard={needsDashboard}>
+          <ConditionalLayout
+            isDashboardHost={isDashboardHost}
+            isPublicationSubdomain={isPublicationSubdomain}
+          >
             {children}
           </ConditionalLayout>
-        </ArticlesProvider>
+        </Providers>
+        <Toaster />
       </body>
     </html>
   );

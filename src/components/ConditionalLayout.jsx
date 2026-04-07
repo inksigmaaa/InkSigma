@@ -1,57 +1,76 @@
-"use client"
+"use client";
 
-import { usePathname } from "next/navigation"
-import Header from "@/components/Header"
-import Footer from "@/components/Footer"
-import VisitSiteButton from "@/components/VisitSiteButton"
-import FeedbackButton from "@/components/FeedbackButton"
+import { usePathname } from "next/navigation";
+import { useMemo } from "react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import FeedbackButton from "@/components/FeedbackButton";
 
-export default function ConditionalLayout({ children }) {
-  const pathname = usePathname()
-  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/forgot-password" || pathname === "/magic-link"
-  const isDashboardPage = pathname?.startsWith("/dashboard")
-  const isSchedulePage = pathname === "/schedule"
-  const isReviewPage = pathname === "/review"
-  const isEditorPage = pathname === "/editor"
-  const isPostsPage = pathname === "/posts"
-  const isMyBlogsPage = pathname === "/my-blogs"
-  const isDraftPage = pathname === "/draft"
-  const isTrashPage = pathname === "/trash"
-  const isPublished = pathname === "/published"
-  const isUnpublishedPage = pathname === "/unpublished"
-  const isMembersPage = pathname === "/members"
-  const isHome = pathname === "/home"
-  const isCreatePublicationPage = pathname === "/create-publication"
-  const isDomain = pathname === "/domain"
-  const isViewSitePage = pathname?.startsWith("/view-site")
+export default function ConditionalLayout({
+  children,
+  isDashboardHost: isDashboardHostProp = false,
+  isPublicationSubdomain: isPublicationSubdomainProp = false,
+}) {
+  const pathname = usePathname();
+  const isDashboardHost = Boolean(isDashboardHostProp);
+  const isPublicationSubdomain = Boolean(isPublicationSubdomainProp);
 
-  // Show mobile buttons on all pages except auth pages and create-publication page
-  const showMobileButtons = !isAuthPage && !isCreatePublicationPage
+  // Memoize layout decision to prevent unnecessary re-evaluations
+  const { useCustomLayout, showMobileButtons, isLandingPage } = useMemo(() => {
+    // ALLOW LIST: Only these pages show Global Header/Footer
+    const isLandingPage = pathname === "/" && !isDashboardHost;
 
+    // Marketing Pages (Landing, Privacy, Terms)
+    const isMarketingPage =
+      !isDashboardHost &&
+      !isPublicationSubdomain &&
+      (pathname === "/" ||
+        pathname.startsWith("/privacy") ||
+        pathname.startsWith("/terms"));
 
-  if (isAuthPage || isDashboardPage || isSchedulePage || isReviewPage || isEditorPage || isPostsPage || isMyBlogsPage || isPublished || isDraftPage || isTrashPage || isUnpublishedPage || isCreatePublicationPage || isMembersPage || isViewSitePage) {
+    // Default to Custom Layout (Hidden Header/Footer) for everything else (Dashboard, Auth, App)
+    const useCustomLayout = !isMarketingPage;
+
+    // Show Mobile Feedback Button logic
+    // Simplified: Don't show on Dashboard/Settings/Auth
+    // Original allowed it on Landing, Privacy, etc.
+    // We can just rely on the layout. If it's a marketing page, we show it (handled in return JSX).
+    // If it's custom layout, we usually hide it unless it's a specific app view.
+    // For safety/cleanliness, let's keep it hidden in Custom Layout for now.
+    const showButtons = false;
+
+    return {
+      useCustomLayout,
+      showMobileButtons: showButtons,
+      isLandingPage: isLandingPage,
+    };
+  }, [pathname, isDashboardHost, isPublicationSubdomain]);
+
+  if (useCustomLayout) {
     return (
       <div className="min-h-screen">
-        {children}
+        <div className="page-transition">{children}</div>
         {showMobileButtons && (
           <>
-            <VisitSiteButton />
             <FeedbackButton />
           </>
         )}
       </div>
-    )
+    );
   }
 
   return (
     <>
       <Header />
-      <main className="">
-        {children}
+      <main className="w-full max-w-[1920px] mx-auto bg-white">
+        <div className="page-transition">{children}</div>
       </main>
       <Footer />
-      <VisitSiteButton />
-      <FeedbackButton />
+      {!isLandingPage && (
+        <>
+          <FeedbackButton />
+        </>
+      )}
     </>
-  )
+  );
 }

@@ -1,7 +1,16 @@
 import { createAuthClient } from "better-auth/react";
+import { getApiBase } from "@/utils/apiBase";
+
+// Compute baseURL - this may run during SSR/hydration
+// The AuthContext has retry logic to handle any hydration race conditions
+const baseURL = getApiBase();
 
 export const authClient = createAuthClient({
-    baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000",
+    baseURL: baseURL,
+    basePath: "/api/auth",
+    fetchOptions: {
+        credentials: "include",
+    },
 });
 
 export const {
@@ -9,6 +18,7 @@ export const {
     signUp,
     signOut,
     useSession,
+    resetPassword,
     forgetPassword,
-    resetPassword
+    $Infer
 } = authClient;

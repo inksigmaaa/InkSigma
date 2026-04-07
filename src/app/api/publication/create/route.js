@@ -1,27 +1,36 @@
-import { auth } from "@/app/lib/auth";
 import { db } from "@/db";
 import { publication } from "@/db/schema";
+import { sanitizePlainText } from "@/lib/sanitization";
+import { parsePublicationCreatePayload } from "@/lib/validation/publication";
+import {
+    authorizationErrorToResponse,
+    getPublicationForUser,
+    requireSession,
+} from "@/server/auth/session";
 import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
+import { ZodError } from "zod";
 
 export async function POST(request) {
     try {
-        const session = await auth.api.getSession({
-            headers: await headers(),
-        });
+        const session = await requireSession();
 
-        if (!session) {
-            return Response.json({ error: "Unauthorized" }, { status: 401 });
+        const payload = parsePublicationCreatePayload(await request.json());
+        const name = sanitizePlainText(payload.name);
+        const subdomain = payload.subdomain;
+        const image = payload.image;
+
+        const existingOwnerPublication = await getPublicationForUser(session.user.id);
+
+        if (existingOwnerPublication) {
+            return Response.json(
+                {
+                    success: true,
+                    publication: existingOwnerPublication,
+                },
+                { status: 200 }
+            );
         }
 
-        const body = await request.json();
-        const { name, subdomain, image } = body;
-
-        if (!name || !subdomain) {
-            return Response.json({ error: "Name and subdomain are required" }, { status: 400 });
-        }
-
-        // Check if subdomain already exists
         const existingPublication = await db
             .select()
             .from(publication)
@@ -38,7 +47,7 @@ export async function POST(request) {
             .values({
                 name,
                 subdomain,
-                image: image || null,
+                image,
                 userId: session.user.id,
             })
             .returning();
@@ -48,6 +57,15 @@ export async function POST(request) {
             publication: newPublication[0] 
         }, { status: 201 });
     } catch (error) {
+        const authErrorResponse = authorizationErrorToResponse(error);
+        if (authErrorResponse) {
+            return authErrorResponse;
+        }
+
+        if (error instanceof ZodError) {
+            return Response.json({ error: error.issues[0]?.message ?? "Invalid request" }, { status: 400 });
+        }
+
         console.error("Error creating publication:", error);
         return Response.json({ error: "Internal server error" }, { status: 500 });
     }

@@ -1,0 +1,1 @@
+ALTER TYPE "public"."notification_type" ADD VALUE 'blog_submitted_review' BEFORE 'blog_published';

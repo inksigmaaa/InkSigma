@@ -1,12 +1,25 @@
-import Link from 'next/link';
+'use client';
+
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 
 export default function BackToHomeButton() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    // Navigate directly to view-site instead of using router.back()
+    // which may go back to the editor
+    const pubId = searchParams.get("publicationId") || searchParams.get("pub");
+    router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");
+  };
+
   return (
-    <div className="sticky mbky top-28 mb-8">
-      <Link
-        href="/view-site"
-        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors"
+    <div>
+      <button
+        onClick={handleClick}
+        className="inline-flex items-center gap-2 w-[100px] my-1 text-gray-700 text-sm hover:text-black transition-colors"
       >
         <Image
           src="/svg/arrow-right.svg"
@@ -15,8 +28,8 @@ export default function BackToHomeButton() {
           height={16}
           className="rotate-180"
         />
-        <span>Go to homepage</span>
-      </Link>
+        <span>Go Back</span>
+      </button>
     </div>
   );
 }

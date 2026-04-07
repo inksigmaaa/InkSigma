@@ -1,15 +1,22 @@
-import HeroSection from "@/components/HeroSection"
-import FeaturesSection from "@/components/FeaturesSection"
-import CTASection from "@/components/CTASection"
-import RoadmapSection from "@/components/RoadmapSection"
+"use client";
+
+import Hero from "@/components/landing/Hero";
+import Features from "@/components/landing/Features";
+import Roadmap from "@/components/landing/Roadmap";
+import CTA from "@/components/landing/CTA";
 
 export default function Home() {
   return (
-    <div>
-      <HeroSection />
-      <FeaturesSection />
-      <RoadmapSection />
-      <CTASection />
+    <div className="w-full bg-white mx-auto overflow-hidden">
+      <Hero />
+
+      {/* Main content area */}
+      <main className="w-full">
+        <Features />
+      </main>
+
+      <Roadmap />
+      <CTA />
     </div>
   );
 }

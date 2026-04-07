@@ -2,20 +2,41 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import CopyIcon from '../icons/CopyIcon';
+
 import ShareIcon from '../icons/ShareIcon';
 import ArrowUpIcon from '../icons/ArrowUpIcon';
 import CloseIcon from '../icons/CloseIcon';
+import { getApiBase } from '@/utils/apiBase';
+import { getBlogUrl } from '@/utils/blogUrl';
 
-export default function MobileBottomNav({ title, url, slug, description, sections = [] }) {
+const API_URL = getApiBase();
+
+export default function MobileBottomNav({ title, url, slug, description, sections = [], blogId, onSnapshot }) {
   const [showTOC, setShowTOC] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const isSharing = useRef(false);
 
-  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/blog/${slug}` : '');
+  const blogUrl = url || getBlogUrl(slug);
   const shareText = description ? `${title} - ${description}` : title;
+
+  // Track share action
+  const trackShare = async (platform) => {
+    if (!blogId) return;
+    
+    try {
+      await fetch(`${API_URL}/api/views/share`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ blogId, platform }),
+      });
+    } catch (error) {
+      console.error('Error tracking share:', error);
+    }
+  };
 
   // Handle scroll to show/hide bottom nav
   useEffect(() => {
@@ -36,14 +57,19 @@ export default function MobileBottomNav({ title, url, slug, description, section
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(blogUrl);
-      alert('Link copied to clipboard!');
-    } catch (err) {
-      console.error('Failed to copy link:', err);
+  // Lock body scroll when TOC is open
+  useEffect(() => {
+    if (showTOC) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
     }
-  };
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showTOC]);
+
+
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -53,15 +79,15 @@ export default function MobileBottomNav({ title, url, slug, description, section
   };
 
   const scrollToSection = (id) => {
+    setShowTOC(false); // Close immediately
     const element = document.getElementById(id);
     if (element) {
-      const offset = 80;
+      const offset = 20;
       const elementPosition = element.offsetTop - offset;
       window.scrollTo({
         top: elementPosition,
         behavior: 'smooth',
       });
-      setShowTOC(false);
     }
   };
 
@@ -102,24 +128,28 @@ export default function MobileBottomNav({ title, url, slug, description, section
   const shareOnWhatsApp = () => {
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText + '\n\n' + blogUrl)}`;
     window.open(whatsappUrl, '_blank');
+    trackShare('whatsapp');
     setShowShareMenu(false);
   };
 
   const shareOnLinkedIn = () => {
     const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(blogUrl)}`;
     window.open(linkedinUrl, '_blank');
+    trackShare('linkedin');
     setShowShareMenu(false);
   };
 
   const shareOnFacebook = () => {
     const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(blogUrl)}`;
     window.open(facebookUrl, '_blank');
+    trackShare('facebook');
     setShowShareMenu(false);
   };
 
   const shareOnTwitter = () => {
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(blogUrl)}`;
     window.open(twitterUrl, '_blank');
+    trackShare('twitter');
     setShowShareMenu(false);
   };
 
@@ -127,20 +157,28 @@ export default function MobileBottomNav({ title, url, slug, description, section
     <>
       {/* Mobile Bottom Navigation Bar */}
       <div className={`lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 shadow-lg transition-transform duration-300 ${isVisible ? 'translate-y-0' : 'translate-y-full'}`}>
-        <div className="flex items-center justify-between px-4 divide-x divide-gray-200">
-          {/* Copy Link Button */}
+        <div className="flex items-center justify-between px-4 divide-x divide-[#EDEDED]">
+          {/* Snapshot Button */}
           <button
-            onClick={copyLink}
-            className="flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-gray-700 my-3 flex-1"
-            aria-label="Copy link"
+            onClick={(e) => {
+              e.preventDefault();
+              if (onSnapshot) onSnapshot();
+            }}
+            className="flex flex-col items-center justify-center gap-1 text-[#C0C0C0] hover:text-[#404040] my-3 flex-1"
+            aria-label="Save snapshot"
           >
-            <CopyIcon />
+             <Image 
+              src="/svg/save_snapshot_mobile.svg" 
+              alt="Save Snapshot"
+              width={24}
+              height={24}
+            />
           </button>
 
           {/* Share Button */}
           <button
             onClick={handleShare}
-            className="flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-gray-700 my-3 flex-1"
+            className="flex flex-col items-center justify-center gap-1 text-[#C0C0C0] hover:text-[#404040] my-3 flex-1"
             aria-label="Share"
           >
             <ShareIcon />
@@ -158,7 +196,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
           {/* Scroll to Top Button */}
           <button
             onClick={scrollToTop}
-            className="flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-gray-700 my-3 flex-1"
+            className="flex flex-col items-center justify-center gap-1 text-[#C0C0C0] hover:text-[#404040] my-3 flex-1"
             aria-label="Scroll to top"
           >
             <ArrowUpIcon />
@@ -169,28 +207,29 @@ export default function MobileBottomNav({ title, url, slug, description, section
       {/* Table of Contents Modal */}
       {showTOC && (
         <div className="lg:hidden fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4" onClick={() => setShowTOC(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className=" px-8 pb-10 pt-6 bg-white rounded-lg w-full max-w-md max-h-[80vh] overflow-hidden shadow-2xl mt-auto" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div className="bg-white px-6 py-5 flex items-center justify-between border-b border-gray-100">
-              <h3 className="text-xl font-bold text-black">Table of Contents</h3>
+            <div className="bg-white flex items-center justify-between ">
+              <h3 className="text-sm font-bold leading-7 tracking-normal text-[#000000]">Table of Contents</h3>
               <button
                 onClick={() => setShowTOC(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-[#4A4A4A] font-normal"
                 aria-label="Close"
               >
-                <CloseIcon width={28} height={28} />
+                <CloseIcon width={24} height={24} />
               </button>
             </div>
             
             {/* Content */}
-            <nav className="px-6 py-6 overflow-y-auto max-h-[calc(80vh-80px)]">
+            <nav className="overflow-y-auto max-h-[calc(80vh-80px)]">
               {sections.length > 0 ? (
-                <ul className="divide-y divide-gray-100">
+                <ul className="divide-y divide-[#F4F4F4]">
                   {sections.map((section, index) => (
                     <li key={section.id}>
                       <button
+                        type="button"
                         onClick={() => scrollToSection(section.id)}
-                        className="text-left text-base leading-relaxed text-gray-600 hover:text-black transition-colors w-full py-4 font-medium"
+                        className="text-left text-base leading-relaxed text-[#696969] hover:text-black transition-colors w-full py-4 font-medium"
                       >
                         {section.title}
                       </button>
@@ -198,7 +237,7 @@ export default function MobileBottomNav({ title, url, slug, description, section
                   ))}
                 </ul>
               ) : (
-                <p className="text-gray-400 text-center py-12">No sections available</p>
+                <p className="text-xs font-semibold leading-normal tracking-normal text-[#696969] text-center py-12">No sections available</p>
               )}
             </nav>
           </div>

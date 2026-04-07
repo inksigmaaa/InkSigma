@@ -35,7 +35,10 @@ export default function HomePage() {
   }
 
   const handleVisitSite = () => {
-    window.open("/view-site", "_blank")
+    const siteUrl = publication?.subdomain
+      ? `/view-site?publication=${publication.subdomain}`
+      : "/view-site"
+    window.open(siteUrl, "_blank")
   }
 
   // Sample articles data
@@ -113,7 +116,7 @@ export default function HomePage() {
           <div className="px-8 py-8 border-b border-gray-200 text-center max-md:p-0 max-md:border-b-0">
             <div className="max-md:bg-gray-50 max-md:border max-md:border-gray-200 max-md:rounded-l max-md:p-6 max-md:mx-4 max-md:mb-4">
               <h2 className="text-xl font-bold text-gray-900 mb-2 max-md:text-lg max-md:mb-3">
-                What's on your mind?
+                What is on your mind?
               </h2>
               <p className="text-sm text-gray-500 mb-6 leading-relaxed max-md:text-xs max-md:mb-5 max-md:text-gray-600">
                 Craft persuasive articles showcasing your novel ideas by publishing them on your very own website

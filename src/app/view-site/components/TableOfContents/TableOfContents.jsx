@@ -1,94 +1,104 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from "react";
 
-export default function TableOfContents() {
-  const [sections, setSections] = useState([]);
-  const [activeSection, setActiveSection] = useState('');
+// Constants for scroll behavior
+const HEADER_OFFSET = 0; // Matches fixed header height
+const SCROLL_OFFSET = 180; // Offset for active section detection (must be > HEADER_OFFSET + padding)
 
+export default function TableOfContents({ sections = [] }) {
+  const [activeSection, setActiveSection] = useState("");
+
+  // Removed internal extraction logic as it's now handled by the parent
+
+  // Handle scroll to highlight active section
   useEffect(() => {
-    // Extract all h2 headings from the article content
-    const article = document.querySelector('article');
-    if (article) {
-      const headings = article.querySelectorAll('h2');
-      const extractedSections = Array.from(headings).map((heading, index) => {
-        // Create an ID if it doesn't exist
-        if (!heading.id) {
-          heading.id = `section-${index + 1}`;
-        }
-        return {
-          id: heading.id,
-          title: heading.textContent,
-        };
-      });
-      setSections(extractedSections);
-    }
-  }, []);
+    let ticking = false;
 
-  useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 100;
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollPosition = window.scrollY + SCROLL_OFFSET;
 
-      // Find the current section based on scroll position
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const section = document.getElementById(sections[i].id);
-        if (section && section.offsetTop <= scrollPosition) {
-          setActiveSection(sections[i].id);
-          break;
-        }
+          // Find the current section based on scroll position
+          // We iterate backwards to find the last section that we've scrolled past
+          let currentSection = "";
+          for (let i = sections.length - 1; i >= 0; i--) {
+            const section = document.getElementById(sections[i].id);
+            if (section && section.offsetTop <= scrollPosition) {
+              currentSection = sections[i].id;
+              break;
+            }
+          }
+
+          if (currentSection !== activeSection) {
+            setActiveSection(currentSection);
+          }
+
+          ticking = false;
+        });
+
+        ticking = true;
       }
     };
 
     if (sections.length > 0) {
-      window.addEventListener('scroll', handleScroll);
-      handleScroll(); // Call once to set initial state
+      window.addEventListener("scroll", handleScroll, { passive: true });
+      handleScroll(); // Initial check
 
-      return () => window.removeEventListener('scroll', handleScroll);
+      return () => window.removeEventListener("scroll", handleScroll);
     }
-  }, [sections]);
+  }, [sections, activeSection]);
 
-  const scrollToSection = (id) => {
+  const scrollToSection = useCallback((id) => {
     const element = document.getElementById(id);
     if (element) {
-      const offset = 80;
+      const offset = HEADER_OFFSET + 40; // Header + extra breathing room
       const elementPosition = element.offsetTop - offset;
+
       window.scrollTo({
         top: elementPosition,
-        behavior: 'smooth',
+        behavior: "smooth",
       });
+
+      // Manually set active section immediately for better UX
+      setActiveSection(id);
     }
-  };
+  }, []);
 
   if (sections.length === 0) {
     return null;
   }
 
   return (
-    <div className="w-64 sticky top-44 h-fit">
-      {/* Table of Contents - Only show if there are sections */}
-      {sections.length > 0 && (
-        <div>
-          <h3 className="text-lg font-bold text-black mb-4">Table of Contents</h3>
-          <nav>
-            <ul className="space-y-3">
-              {sections.map((section) => (
-                <li key={section.id}>
-                  <button
-                    onClick={() => scrollToSection(section.id)}
-                    className={`text-left text-sm transition-colors hover:text-black ${
-                      activeSection === section.id
-                        ? 'text-black font-medium'
-                        : 'text-gray-600'
-                    }`}
-                  >
-                    {section.title}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </div>
-      )}
+    <div className="w-full flex-1 min-h-0 flex flex-col">
+      <h3 className="text-[#14142D] text-xl font-bold leading-[19.2px] tracking-normal mb-6">
+        Table of Contents
+      </h3>
+      <div className="relative flex-1 min-h-0 flex flex-col">
+        <nav className="toc-scroll flex-1 min-h-0 overflow-y-auto pr-4 pb-12">
+          <ul className="space-y-4 relative pl-0 ml-0">
+            {sections.map((section) => (
+              <li key={section.id} className="relative pl-4">
+                <button
+                  onClick={() => scrollToSection(section.id)}
+                  className={`text-left text-sm transition-all duration-200 font-normal leading-5 tracking-normal hover:text-[#202020] block w-full outline-none focus:outline-none ${
+                    activeSection === section.id
+                      ? "text-[#202020] font-bold"
+                      : "text-[#696969]"
+                  }`}
+                >
+                  {section.title}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div
+          aria-hidden="true"
+          className="toc-fade-overlay pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14"
+        />
+      </div>
     </div>
   );
 }

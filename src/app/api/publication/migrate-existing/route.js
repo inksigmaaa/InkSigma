@@ -1,29 +1,27 @@
 import { db } from "@/db";
 import { user, publication } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import {
+    authorizationErrorToResponse,
+    requireAdminSession,
+} from "@/server/auth/session";
+import { eq, notExists } from "drizzle-orm";
 
 export async function POST() {
     try {
-        // Get all users
-        const allUsers = await db.select().from(user);
+        await requireAdminSession();
+
+        const usersWithoutPublication = await db
+            .select()
+            .from(user)
+            .where(
+                notExists(
+                    db.select().from(publication).where(eq(publication.userId, user.id))
+                )
+            );
 
         let created = 0;
-        let skipped = 0;
 
-        for (const u of allUsers) {
-            // Check if user already has a publication
-            const existingPub = await db
-                .select()
-                .from(publication)
-                .where(eq(publication.userId, u.id))
-                .limit(1);
-
-            if (existingPub.length > 0) {
-                skipped++;
-                continue;
-            }
-
-            // Create default publication
+        for (const u of usersWithoutPublication) {
             const defaultSubdomain = u.email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
             const defaultName = u.name || "My Publication";
 
@@ -40,11 +38,16 @@ export async function POST() {
 
         return Response.json({
             success: true,
-            message: `Migration completed. Created: ${created}, Skipped: ${skipped}`,
+            message: `Migration completed. Created: ${created}, Skipped: 0`,
             created,
-            skipped,
+            skipped: 0,
         });
     } catch (error) {
+        const authErrorResponse = authorizationErrorToResponse(error);
+        if (authErrorResponse) {
+            return authErrorResponse;
+        }
+
         console.error("Migration error:", error);
         return Response.json(
             { error: "Migration failed", details: error.message },

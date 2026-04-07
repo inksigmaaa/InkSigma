@@ -1,29 +1,52 @@
 'use client';
 
 import Image from 'next/image';
+import { getApiBase } from '@/utils/apiBase';
 
-export default function ShareButtons({ title, url, slug, description }) {
-  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/blog/${slug}` : '');
+const API_URL = getApiBase();
+
+export default function ShareButtons({ title, url, slug, description, blogId }) {
+  const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/view-site/blog/${slug}` : '');
   const shareText = description ? `${title} - ${description}` : title;
+
+  // Track share action
+  const trackShare = async (platform) => {
+    if (!blogId) return;
+    
+    try {
+      await fetch(`${API_URL}/api/views/share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blogId, platform }),
+      });
+      console.log(`[ShareButtons] Tracked ${platform} share for blog ${blogId}`);
+    } catch (error) {
+      console.error(`[ShareButtons] Failed to track ${platform} share:`, error);
+    }
+  };
 
   const shareOnWhatsApp = () => {
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText + '\n\n' + blogUrl)}`;
     window.open(whatsappUrl, '_blank');
+    trackShare('whatsapp');
   };
 
   const shareOnLinkedIn = () => {
     const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(blogUrl)}`;
     window.open(linkedinUrl, '_blank');
+    trackShare('linkedin');
   };
 
   const shareOnFacebook = () => {
     const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(blogUrl)}`;
     window.open(facebookUrl, '_blank');
+    trackShare('facebook');
   };
 
   const shareOnTwitter = () => {
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(blogUrl)}`;
     window.open(twitterUrl, '_blank');
+    trackShare('twitter');
   };
 
   return (

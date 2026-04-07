@@ -1,29 +1,68 @@
-'use client';
+import { headers } from "next/headers";
+import { cache } from "react";
+import ViewSitePageClient from "./ViewSitePageClient";
+import { buildPublicationMetadata } from "@/utils/publicationSeo";
+import {
+  normalizeSearchParamsRecord,
+  resolvePublicSiteContext,
+} from "@/utils/publicSiteContext";
 
-import { useState } from 'react';
-import ViewSiteHeader from './components/Header/Header';
-import LatestBlog from './components/LatestBlog/LatestBlog';
-import AllArticles from './components/AllArticles/AllArticles';
-import Footer from './components/Footer/Footer';
-import ScrollToTop from './components/ScrollToTop/ScrollToTop';
+const stringifySearchParams = (searchParams = {}) => {
+  try {
+    return JSON.stringify(searchParams || {});
+  } catch {
+    return "{}";
+  }
+};
 
-export default function ViewSitePage() {
-  const [searchQuery, setSearchQuery] = useState('');
+const resolveViewSiteContextCached = cache(async (host, searchParamsKey) => {
+  const parsedSearchParams = searchParamsKey ? JSON.parse(searchParamsKey) : {};
+  return resolvePublicSiteContext({
+    host,
+    searchParams: parsedSearchParams,
+  });
+});
+
+export async function generateMetadata({ searchParams }) {
+  const resolvedSearchParams = await Promise.resolve(searchParams);
+  const normalizedSearchParams = normalizeSearchParamsRecord(resolvedSearchParams);
+  const searchParamsKey = stringifySearchParams(normalizedSearchParams);
+  const headerList = await headers();
+  const host =
+    headerList.get("x-forwarded-host") ||
+    headerList.get("host") ||
+    "";
+
+  const { publication } = await resolveViewSiteContextCached(host, searchParamsKey);
+
+  return buildPublicationMetadata({
+    publication,
+    pathname: "/",
+    title: publication?.name,
+    description: publication?.description,
+    image: publication?.metaOgImageUrl || publication?.logoUrl,
+    type: "website",
+  });
+}
+
+export default async function ViewSitePage({ searchParams }) {
+  const resolvedSearchParams = await Promise.resolve(searchParams);
+  const normalizedSearchParams = normalizeSearchParamsRecord(resolvedSearchParams);
+  const searchParamsKey = stringifySearchParams(normalizedSearchParams);
+  const headerList = await headers();
+  const host =
+    headerList.get("x-forwarded-host") ||
+    headerList.get("host") ||
+    "";
+  const { publication, publicationId } = await resolveViewSiteContextCached(
+    host,
+    searchParamsKey,
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <ViewSiteHeader 
-        userName="Guest" 
-        userAvatar={null}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
-      <div className="flex-grow">
-        <LatestBlog searchQuery={searchQuery} />
-        <AllArticles searchQuery={searchQuery} />
-      </div>
-      <Footer />
-      <ScrollToTop />
-    </div>
+    <ViewSitePageClient
+      initialPublication={publication}
+      initialPublicationId={publicationId}
+    />
   );
 }

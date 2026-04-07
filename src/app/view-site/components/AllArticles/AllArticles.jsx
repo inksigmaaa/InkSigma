@@ -1,31 +1,69 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import ShareMenu from '../ShareMenu/ShareMenu';
-import mockData from '../../mockData.json';
+"use client";
 
-export default function AllArticles({ searchQuery = '' }) {
-  const articles = mockData.blogs;
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from 'next/navigation';
+import ShareMenu from "../ShareMenu/ShareMenu";
+import { getImageUrl } from "@/utils/imageUrl";
+import CategoryBadgeList from "@/components/CategoryBadgeList";
+import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
+import { getApiBase } from "@/utils/apiBase";
+import { getBlogPath } from "@/utils/blogUrl";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-  // Filter articles based on search query
-  const filteredArticles = articles.filter((article) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      article.title.toLowerCase().includes(query) ||
-      article.description.toLowerCase().includes(query) ||
-      article.category.toLowerCase().includes(query) ||
-      article.author?.name.toLowerCase().includes(query)
-    );
+const API_URL = getApiBase();
+
+export default function AllArticles({
+  searchQuery = "",
+  selectedCategory = "",
+  blogs = [],
+}) {
+  const pathname = usePathname();
+
+  // Filter articles based on search query and selected category
+  const filteredArticles = blogs.filter((article) => {
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        article.title.toLowerCase().includes(query) ||
+        article.description.toLowerCase().includes(query) ||
+        (article.categories &&
+          article.categories.some((cat) =>
+            cat.toLowerCase().includes(query),
+          )) ||
+        article.author?.name.toLowerCase().includes(query);
+      if (!matchesSearch) return false;
+    }
+
+    // Filter by selected category
+    if (
+      selectedCategory &&
+      (!article.categories || !article.categories.includes(selectedCategory))
+    ) {
+      return false;
+    }
+
+    return true;
   });
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    return {
-      day: days[date.getDay()],
-      date: `${String(date.getDate()).padStart(2, '0')} ${months[date.getMonth()]}, ${date.getFullYear()}`,
-    };
+    const months = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+    ];
+    return `${String(date.getDate()).padStart(2, "0")} ${months[date.getMonth()]}, ${date.getFullYear()}`;
   };
 
   return (
@@ -33,80 +71,103 @@ export default function AllArticles({ searchQuery = '' }) {
       <h2 className="text-2xl md:text-4xl font-bold mb-6 md:mb-8 text-black">
         All Blog {searchQuery && `(${filteredArticles.length} results)`}
       </h2>
-      
+
       {filteredArticles.length === 0 ? (
         <p className="text-gray-500">
-          {searchQuery ? `No articles found for "${searchQuery}"` : 'No articles available yet.'}
+          {searchQuery
+            ? `No articles found for "${searchQuery}"`
+            : "No articles available yet."}
         </p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-20 md:mb-40 pb-10">
           {filteredArticles.map((article) => {
-            const dateFormatted = formatDate(article.createdAt);
+            const dateFormatted = formatDate(
+              article.publishedAt || article.createdAt,
+            );
+            const thumbnailUrl = getThumbnailWithFallback(getImageUrl(article.image), article.id);
+
             return (
-              <div key={article.id} className="flex flex-col">
+              <div
+                key={article.id}
+                className="border border-gray-200 rounded-lg hover:shadow-lg transition-shadow bg-white p-3 flex flex-col"
+              >
                 {/* Author and Date */}
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                   <div className="flex items-center gap-2 md:gap-3">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
-                      {article.author?.avatar && (
-                        <Image src={article.author.avatar} alt={article.author.name} width={40} height={40} unoptimized />
+                    <Avatar className="w-[29px] h-[29px] bg-gray-300 flex-shrink-0">
+                      {article.author?.image && (
+                        <AvatarImage
+                          src={
+                            article.author.image.startsWith("http")
+                              ? article.author.image
+                              : `${API_URL}${article.author.image}`
+                          }
+                          alt={article.author.name}
+                          className="w-full h-full object-cover"
+                        />
                       )}
-                    </div>
-                    <span className="text-gray-800 font-medium text-sm md:text-base">{article.author?.name || 'Anonymous'}</span>
+                      <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold text-sm">
+                        {article.author?.name?.charAt(0).toUpperCase() || "A"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className=" text-[#7E7B7B] text-[16px] font-normal leading-[136%] max-md:text-[#000000] max-md:font-medium max-md:text-[12px]">
+                      {article.author?.name || "Anonymous"}
+                    </span>
                   </div>
                   <div className="text-right">
-                    <div className="text-gray-700 text-xs md:text-sm font-medium whitespace-nowrap">
-                      {dateFormatted.date.split(',')[0]}
+                    <div className="text-[#808080] text-normal text-[14px] leading-[150%] max-md:text-xs max-md:font-medium whitespace-nowrap">
+                      {dateFormatted}
                     </div>
                   </div>
                 </div>
 
-            {/* Blog Card */}
-            <div className="relative w-full h-[200px] md:h-[280px] rounded-xl md:rounded-2xl group mb-3 md:mb-4">
-              {/* Share Button */}
-              <div className="absolute top-3 right-3 md:top-4 md:right-4 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-50">
-                <ShareMenu 
-                  title={article.title}
-                  slug={article.slug}
-                />
+                {/* Blog Card */}
+                <div className="relative w-full h-[200px] md:h-[280px] rounded-lg group mb-3 md:mb-4">
+                  {/* Share Button */}
+                  <div className="absolute top-5 right-4 max-md:top-3 max-md:right-2.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 z-50">
+                    <ShareMenu
+                      title={article.title}
+                      slug={article.slug}
+                      blogId={article.id}
+                    />
+                  </div>
+
+                  <Link
+                    href={getBlogPath(article.slug, pathname)}
+                    className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block"
+                  >
+                    {/* Background Image */}
+                    <Image
+                      src={thumbnailUrl}
+                      alt={article.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                  </Link>
+                </div>
+
+                {/* Title and Description - Flex grow to push category down */}
+                <div className="flex-grow mb-3 md:mb-4">
+                  <h3 className="text-2xl font-extrabold mb-1 md:mb-2 text-[#080808] leading-8 line-clamp-2 max-md:text-[16px]">
+                    {article.title}
+                  </h3>
+                  <p className="text-[#696969] font-light text-xs md:text-sm leading-[150%] line-clamp-2 max-md:text-[#808080] max-md:text-[12px]">
+                    {article.description}
+                  </p>
+                </div>
+
+                {/* Category - Always at bottom */}
+                <div className="mt-auto overflow-hidden">
+                  <CategoryBadgeList
+                    categories={
+                      article.categories && article.categories.length > 0
+                        ? article.categories
+                        : []
+                    }
+                  />
+                </div>
               </div>
-
-              <Link href={`/view-site/blog/${article.slug}`} className="absolute inset-0 rounded-xl md:rounded-2xl overflow-hidden cursor-pointer block">
-                {/* Background Image */}
-                <Image 
-                  src={article.thumbnail} 
-                  alt={article.title}
-                  fill
-                  className="object-cover"
-                  unoptimized
-                />
-              </Link>
-            </div>
-
-            {/* Title and Description */}
-            <div className="mb-3 md:mb-4">
-              <h3 className="text-lg md:text-xl font-bold mb-1 md:mb-2 text-black line-clamp-2">{article.title}</h3>
-              <p className="text-gray-700 text-xs md:text-sm line-clamp-2">{article.description}</p>
-            </div>
-
-            {/* Category */}
-            <div className="flex flex-wrap gap-2 mb-3 md:mb-4">
-              <span className="px-3 py-1.5 md:px-4 md:py-2 bg-white text-gray-700 border border-gray-300 rounded-md text-xs md:text-sm hover:bg-gray-50 transition-colors cursor-pointer">
-                {article.category}
-              </span>
-            </div>
-
-            {/* Read Article Button */}
-            <Link href={`/view-site/blog/${article.slug}`} className="flex items-center justify-center md:justify-start gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors w-full md:w-fit mt-4 md:mt-10 text-sm md:text-base">
-              Read Article
-              <Image 
-                src="/svg/arrow-right.svg" 
-                alt="Arrow"
-                width={16}
-                height={16}
-              />
-            </Link>
-          </div>
             );
           })}
         </div>

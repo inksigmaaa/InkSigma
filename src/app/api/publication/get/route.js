@@ -1,31 +1,19 @@
-import { auth } from "@/app/lib/auth";
-import { db } from "@/db";
-import { publication } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
+import {
+    authorizationErrorToResponse,
+    requirePublicationOwner,
+} from "@/server/auth/session";
 
 export async function GET() {
     try {
-        const session = await auth.api.getSession({
-            headers: await headers(),
-        });
+        const { publication } = await requirePublicationOwner();
 
-        if (!session) {
-            return Response.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const userPublications = await db
-            .select()
-            .from(publication)
-            .where(eq(publication.userId, session.user.id))
-            .limit(1);
-
-        if (userPublications.length === 0) {
-            return Response.json({ error: "No publication found" }, { status: 404 });
-        }
-
-        return Response.json({ publication: userPublications[0] });
+        return Response.json({ publication });
     } catch (error) {
+        const authErrorResponse = authorizationErrorToResponse(error);
+        if (authErrorResponse) {
+            return authErrorResponse;
+        }
+
         console.error("Error fetching publication:", error);
         return Response.json({ error: "Internal server error" }, { status: 500 });
     }

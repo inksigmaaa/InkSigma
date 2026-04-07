@@ -1,0 +1,220 @@
+// config/betterAuth.js
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { db } from "./database.js";
+import { emailService } from "../services/emailService.js";
+import { emailValidationService } from "../services/emailValidationService.js";
+import { redisSessionStorage } from "./redis.js";
+import logger from "../utils/logger.js";
+import { redactEmail } from "../utils/redactPII.js";
+
+// Inline helper to get base domains from environment
+const getBaseDomains = () => {
+  const envValue =
+    process.env.BASE_DOMAINS ||
+    process.env.BASE_DOMAIN ||
+    "localhost,inksigma.local";
+  return envValue
+    .split(",")
+    .map((d) => d.trim().toLowerCase())
+    .filter(Boolean);
+};
+
+const getPreferredBaseDomain = () => {
+  const baseDomains = getBaseDomains();
+  return (
+    baseDomains.find((d) => d.includes(".") && d !== "localhost") ||
+    baseDomains[0] ||
+    "localhost"
+  );
+};
+
+const buildTrustedOrigins = () => {
+  const fromEnv =
+    process.env.TRUSTED_ORIGINS ||
+    process.env.CORS_ORIGIN ||
+    process.env.ALLOWED_ORIGINS ||
+    process.env.FRONTEND_URL ||
+    "http://localhost:3000";
+
+  const origins = new Set(
+    fromEnv
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  );
+
+  const baseDomains = getBaseDomains();
+  for (const baseDomain of baseDomains) {
+    origins.add(`http://${baseDomain}:3000`);
+    origins.add(`http://dashboard.${baseDomain}:3000`);
+    origins.add(`http://*.${baseDomain}:3000`);
+    origins.add(`https://${baseDomain}`);
+    origins.add(`https://dashboard.${baseDomain}`);
+    origins.add(`https://*.${baseDomain}`);
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    origins.add("http://*.local:3000");
+    origins.add("http://*.localhost:3000");
+    origins.add("https://*.local");
+    origins.add("https://*.localhost");
+  }
+
+  return Array.from(origins);
+};
+
+const buildBaseUrl = () => {
+  if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
+
+  const preferredBaseDomain = getPreferredBaseDomain();
+  const dashboardSub = process.env.DASHBOARD_SUBDOMAIN || "dashboard";
+
+  // Prefer dashboard.<base>:5000 so cookies align with dashboard host in local dev
+  return `http://${dashboardSub}.${preferredBaseDomain}:5000`;
+};
+
+const getCrossSubdomainCookieDomain = () => {
+  const preferredBaseDomain = getPreferredBaseDomain();
+
+  // Prefer a real local/prod domain (e.g. inksigma.local / inksigma.com)
+  // and avoid localhost because cross-subdomain cookies there are unreliable.
+  if (preferredBaseDomain && preferredBaseDomain !== "localhost") {
+    return preferredBaseDomain;
+  }
+
+  return undefined;
+};
+
+const crossSubdomainCookieDomain = getCrossSubdomainCookieDomain();
+
+export const auth = betterAuth({
+  baseURL: buildBaseUrl(),
+  basePath: "/api/auth",
+  secret: process.env.BETTER_AUTH_SECRET,
+  trustedOrigins: buildTrustedOrigins(),
+  advanced: crossSubdomainCookieDomain
+    ? {
+        crossSubDomainCookies: {
+          enabled: true,
+          domain: crossSubdomainCookieDomain,
+        },
+      }
+    : undefined,
+
+  database: drizzleAdapter(db, {
+    provider: "pg",
+  }),
+
+  session: {
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // 1 day
+    cookieCache: {
+      enabled: true, // Enable cookie cache to reduce Redis lookups and improve performance
+      maxAge: 60 * 5, // Cache session in cookie for 5 minutes
+    },
+    // Use Redis for session storage
+    storage: redisSessionStorage,
+  },
+
+  user: {
+    additionalFields: {
+      name: {
+        type: "string",
+        required: false, // Make name field optional
+      },
+    },
+  },
+
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: true,
+
+    // Validate email before signup
+    async beforeSignUp({ email }) {
+      logger.info(`[EMAIL-VALIDATION] Validating email: ${redactEmail(email)}`);
+
+      const validation = await emailValidationService.validateEmail(email);
+      if (!validation.isValid) {
+        const errorMessage = validation.errors.join(", ");
+        logger.info(`[EMAIL-VALIDATION] Rejected: ${redactEmail(email)} - ${errorMessage}`);
+        throw new Error(errorMessage);
+      }
+
+      logger.info(`[EMAIL-VALIDATION] Approved: ${redactEmail(email)}`);
+    },
+
+    sendResetPassword: async ({ user, url }) => {
+      logger.info(`[BETTER-AUTH] sendResetPassword called for: ${redactEmail(user.email)}`);
+      try {
+        await emailService.sendPasswordReset({
+          email: user.email,
+          name: user.name || "User",
+          resetUrl: url,
+        });
+        logger.info(
+          `[BETTER-AUTH] Reset password email sent successfully to ${redactEmail(user.email)}`,
+        );
+      } catch (error) {
+        logger.error(
+          error.message,
+          "[BETTER-AUTH] Failed to send reset password email:",
+        );
+        throw error;
+      }
+    },
+  },
+
+  // Email verification configuration - this is where sendVerificationEmail should be
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    // Redirect to auth-callback after verification, which handles routing to create-publication for new users
+    callbackURL: (() => {
+      const baseDomains = getBaseDomains();
+      const dashboardSub = process.env.DASHBOARD_SUBDOMAIN || "dashboard";
+      if (baseDomains.length > 0) {
+        return `http://${dashboardSub}.${baseDomains[0]}:3000/auth-callback`;
+      }
+      return "http://localhost:3000/auth-callback";
+    })(),
+    sendVerificationEmail: async ({ user, url, token }) => {
+      logger.info(
+        `[BETTER-AUTH] sendVerificationEmail called for: ${user.email}`,
+      );
+      logger.info(`[BETTER-AUTH] Verification URL: ${url}`);
+      logger.info(`[BETTER-AUTH] Token: ${token}`);
+
+      try {
+        const result = await emailService.sendVerification({
+          email: user.email,
+          name: user.name,
+          verifyUrl: url,
+        });
+        logger.info(
+          `[BETTER-AUTH] Verification email sent successfully, result: ${result?.messageId}`,
+        );
+        return result;
+      } catch (error) {
+        logger.error(
+          error.message,
+          "[BETTER-AUTH] Failed to send verification email:",
+        );
+        logger.error(error, "[BETTER-AUTH] Full error:");
+        throw error;
+      }
+    },
+  },
+
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      authorization: {
+        params: {
+          prompt: "select_account",
+        },
+      },
+    },
+  },
+});

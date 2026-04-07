@@ -1,176 +1,125 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useState } from 'react'
+/**
+ * Backward-compatible wrapper around the Zustand articleStore.
+ *
+ * All state and logic now lives in @/stores/articleStore.
+ * This file keeps the existing <ArticlesProvider> + useArticles() API
+ * so consumers don't need any changes.
+ *
+ * The provider still exists to auto-load user articles when session changes —
+ * but it no longer holds React state (Zustand does).
+ */
 
-const ArticlesContext = createContext()
-
-// Helper function to format date
-const formatDate = (date) => {
-  const day = date.getDate()
-  const month = date.toLocaleString('en-US', { month: 'short' })
-  const year = date.getFullYear()
-
-  const suffix = (day) => {
-    if (day > 3 && day < 21) return 'th'
-    switch (day % 10) {
-      case 1: return 'st'
-      case 2: return 'nd'
-      case 3: return 'rd'
-      default: return 'th'
-    }
-  }
-
-  return `${day}${suffix(day)} ${month}, ${year}`
-}
+import { useEffect, useRef } from "react";
+import { useSession } from "@/lib/auth-client";
+import { usePublication } from "@/contexts/PublicationContext";
+import { useArticleStore } from "@/stores/articleStore";
 
 export function ArticlesProvider({ children }) {
-  const [articles, setArticles] = useState([
-    {
-      id: 1,
-      status: 'draft',
-      title: 'Title of the Blog will be in this area',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...',
-      categories: ['Sports', 'Humour', 'History'],
-      createdAt: new Date('2023-02-02'),
-      get postedTime() { return formatDate(this.createdAt) }
-    },
-    {
-      id: 2,
-      status: 'published',
-      title: 'Title of the Blog will be in this area',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...',
-      categories: ['Sports', 'Humour', 'History'],
-      createdAt: new Date('2024-11-15'),
-      get postedTime() { return formatDate(this.createdAt) }
-    },
-    {
-      id: 3,
-      status: 'review',
-      title: 'Title of the Blog will be in this area',
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin bibendum efficitur tortorsdkhbishdoisa...',
-      categories: ['Sports', 'Humour', 'History'],
-      createdAt: new Date('2024-11-15'),
-      get postedTime() { return formatDate(this.createdAt) }
-    },
-    {
-      id: 4,
-      status: 'trash',
-      title: 'Deleted Article About Technology Trends',
-      description: 'This article was moved to trash and can be restored or permanently deleted...',
-      categories: ['Technology', 'Innovation'],
-      createdAt: new Date('2024-10-20'),
-      get postedTime() { return formatDate(this.createdAt) }
-    },
-    {
-      id: 5,
-      status: 'trash',
-      title: 'Old Marketing Strategy Post',
-      description: 'An outdated marketing article that needs to be reviewed before permanent deletion...',
-      categories: ['Marketing', 'Business'],
-      createdAt: new Date('2024-09-15'),
-      get postedTime() { return formatDate(this.createdAt) }
-    },
-    {
-      id: 6,
-      status: 'trash',
-      title: 'Draft About Climate Change',
-      description: 'Incomplete draft about environmental issues, moved to trash for cleanup...',
-      categories: ['Environment', 'Science'],
-      createdAt: new Date('2024-11-01'),
-      get postedTime() { return formatDate(this.createdAt) }
-    },
-    {
-      id: 7,
-      status: 'trash',
-      title: 'Travel Guide to Europe',
-      description: 'Travel article that was replaced with updated version, ready for deletion...',
-      categories: ['Travel', 'Lifestyle'],
-      createdAt: new Date('2024-08-10'),
-      get postedTime() { return formatDate(this.createdAt) }
-    },
-    {
-      id: 8,
-      status: 'trash',
-      title: 'Recipe Collection for Summer',
-      description: 'Seasonal recipes that are no longer relevant, can be permanently removed...',
-      categories: ['Food', 'Cooking'],
-      createdAt: new Date('2024-07-25'),
-      get postedTime() { return formatDate(this.createdAt) }
+  const { data: session } = useSession();
+
+  let currentPublication = null;
+  try {
+    const pubContext = usePublication();
+    currentPublication = pubContext?.currentPublication;
+  } catch {
+    // PublicationContext not available
+  }
+
+  const currentPubRef = useRef(currentPublication);
+  useEffect(() => {
+    currentPubRef.current = currentPublication;
+  }, [currentPublication]);
+
+  const loadUserArticles = useArticleStore((s) => s.loadUserArticles);
+
+  // Auto-load user articles when session changes
+  useEffect(() => {
+    if (session?.user?.id) {
+      loadUserArticles(session, currentPubRef.current?.id);
     }
-  ])
+  }, [session?.user?.id, loadUserArticles, session]);
 
-  const moveToTrash = (id) => {
-    setArticles(prev => prev.map(article =>
-      article.id === id ? { ...article, status: 'trash' } : article
-    ))
-  }
-
-  const restoreFromTrash = (id) => {
-    setArticles(prev => prev.map(article =>
-      article.id === id ? { ...article, status: 'draft' } : article
-    ))
-  }
-
-  const deleteArticle = (id) => {
-    setArticles(prev => prev.filter(article => article.id !== id))
-  }
-
-  const publishArticle = (id) => {
-    setArticles(prev => prev.map(article =>
-      article.id === id ? { ...article, status: 'published' } : article
-    ))
-  }
-
-  const unpublishArticle = (id) => {
-    setArticles(prev => prev.map(article =>
-      article.id === id ? { ...article, status: 'unpublished' } : article
-    ))
-  }
-
-  const bulkMoveToTrash = (ids) => {
-    setArticles(prev => prev.map(article =>
-      ids.includes(article.id) ? { ...article, status: 'trash' } : article
-    ))
-  }
-
-  const bulkRestore = (ids) => {
-    setArticles(prev => prev.map(article =>
-      ids.includes(article.id) ? { ...article, status: 'draft' } : article
-    ))
-  }
-
-  const bulkDelete = (ids) => {
-    setArticles(prev => prev.filter(article => !ids.includes(article.id)))
-  }
-
-  const bulkPublish = (ids) => {
-    setArticles(prev => prev.map(article =>
-      ids.includes(article.id) ? { ...article, status: 'published' } : article
-    ))
-  }
-
-  return (
-    <ArticlesContext.Provider value={{
-      articles,
-      moveToTrash,
-      restoreFromTrash,
-      deleteArticle,
-      publishArticle,
-      unpublishArticle,
-      bulkMoveToTrash,
-      bulkRestore,
-      bulkDelete,
-      bulkPublish
-    }}>
-      {children}
-    </ArticlesContext.Provider>
-  )
+  return children;
 }
 
+/**
+ * Drop-in replacement hook — returns the same shape as the old context value.
+ * Consumers that destructure specific fields (e.g. `const { articles, loading } = useArticles()`)
+ * will only re-render when those specific Zustand slices change.
+ */
 export function useArticles() {
-  const context = useContext(ArticlesContext)
-  if (!context) {
-    throw new Error('useArticles must be used within ArticlesProvider')
+  const store = useArticleStore();
+  const { data: session } = useSession();
+
+  let currentPublication = null;
+  try {
+    const pubContext = usePublication();
+    currentPublication = pubContext?.currentPublication;
+  } catch {
+    // PublicationContext not available
   }
-  return context
+
+  // Wrap loadUserArticles to auto-inject session + publicationId (matching old API)
+  const rawLoadUserArticles = store.loadUserArticles;
+  const loadUserArticles = (
+    publicationId = null,
+    includeAllPublications = false,
+    status = null,
+    extraFilters = {},
+  ) => {
+    const effectivePubId = publicationId || currentPublication?.id;
+    return rawLoadUserArticles(session, effectivePubId, includeAllPublications, status, extraFilters);
+  };
+
+  // Wrap createArticle to auto-inject currentPublicationId (matching old API)
+  const rawCreateArticle = store.createArticle;
+  const createArticle = (articleData) => {
+    return rawCreateArticle(articleData, currentPublication?.id);
+  };
+
+  return {
+    // State
+    articles: store.articles,
+    reviewArticles: store.reviewArticles,
+    publicationArticles: store.publicationArticles,
+    loading: store.loading,
+    reviewLoading: store.reviewLoading,
+    pubArticlesLoading: store.pubArticlesLoading,
+    error: store.error,
+    reviewError: store.reviewError,
+    areUserArticlesLoaded: store.areUserArticlesLoaded,
+    arePubArticlesLoaded: store.arePubArticlesLoaded,
+
+    // Wrapped actions (inject session/publication automatically)
+    loadUserArticles,
+    createArticle,
+
+    // Pass-through actions (no wrapping needed)
+    loadReviewArticles: store.loadReviewArticles,
+    loadPublicationArticles: store.loadPublicationArticles,
+    getArticleById: store.getArticleById,
+    refreshArticle: store.refreshArticle,
+    updateArticle: store.updateArticle,
+    moveToTrash: store.moveToTrash,
+    moveToDraft: store.moveToDraft,
+    moveToTrashStatus: store.moveToTrashStatus,
+    restoreFromTrash: store.restoreFromTrash,
+    deleteArticle: store.deleteArticle,
+    publishArticle: store.publishArticle,
+    unpublishArticle: store.unpublishArticle,
+    acceptReviewArticle: store.acceptReviewArticle,
+    rejectReviewArticle: store.rejectReviewArticle,
+    revertReviewToDraft: store.revertReviewToDraft,
+    bulkMoveToTrash: store.bulkMoveToTrash,
+    bulkMoveToTrashStatus: store.bulkMoveToTrashStatus,
+    bulkMoveToDraft: store.bulkMoveToDraft,
+    bulkRestore: store.bulkRestore,
+    bulkDelete: store.bulkDelete,
+    bulkPublish: store.bulkPublish,
+    uploadArticleImage: store.uploadArticleImage,
+    createDraftFromPublished: store.createDraftFromPublished,
+    addComment: store.addComment,
+  };
 }
