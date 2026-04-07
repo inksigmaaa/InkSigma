@@ -144,15 +144,18 @@ export default function Members() {
       });
 
       setMembers((prev) =>
-        JSON.stringify(prev) === JSON.stringify(sortedMembers)
+        prev.length === sortedMembers.length &&
+        prev.every((m, i) => m.id === sortedMembers[i]?.id && m.role === sortedMembers[i]?.role)
           ? prev
           : sortedMembers,
       );
-      setPendingInvitations((prev) =>
-        JSON.stringify(prev) === JSON.stringify(membersData.pendingInvitations)
-          ? prev
-          : membersData.pendingInvitations,
-      );
+      setPendingInvitations((prev) => {
+        const next = membersData.pendingInvitations;
+        return prev.length === next.length &&
+          prev.every((p, i) => p.id === next[i]?.id && p.status === next[i]?.status)
+            ? prev
+            : next;
+      });
       setUserRole((prev) =>
         prev === membersData.userRole ? prev : membersData.userRole,
       );

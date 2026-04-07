@@ -32,6 +32,7 @@ export const api = axios.create({
   baseURL: `${getApiBase()}/api`,
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 30_000, // 30s — prevent requests from hanging indefinitely
 });
 
 api.interceptors.request.use((config) => {

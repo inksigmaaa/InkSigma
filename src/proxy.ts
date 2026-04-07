@@ -60,6 +60,8 @@ const isKnownBaseDomain = (
   );
 };
 
+// ── Pre-computed at module level (persists across requests in Node.js runtime) ──
+
 const getBaseDomains = () => {
   const configured =
     process.env.NEXT_PUBLIC_BASE_DOMAINS ||
@@ -73,8 +75,69 @@ const getBaseDomains = () => {
     .filter(Boolean);
 };
 
-const getSubdomainFromHost = (host: string, baseDomains: string[]) => {
-  for (const baseDomain of [...baseDomains].sort((a, b) => b.length - a.length)) {
+// Pre-compute once at module init (Node.js runtime — survives across requests)
+const _rootDomain = (
+  process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"
+).toLowerCase();
+const _configuredMainDomain = (
+  process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.com"
+).toLowerCase();
+
+const isLocalLikeHost = (host: string) => {
+  const normalized = host.split(":")[0].toLowerCase();
+  return (
+    normalized === "localhost" ||
+    normalized.endsWith(".localhost") ||
+    normalized.endsWith(".local")
+  );
+};
+
+const _mainDomain = isLocalLikeHost(_rootDomain)
+  ? _rootDomain
+  : _configuredMainDomain;
+
+const _baseDomains = Array.from(new Set([...getBaseDomains(), _mainDomain]));
+
+// Pre-sort by length descending (used for subdomain extraction)
+const _baseDomainsSorted = [..._baseDomains].sort((a, b) => b.length - a.length);
+
+// Pre-compute dashboard host set for O(1) lookup
+const _dashboardHosts = new Set(_baseDomains.map((d) => `dashboard.${d}`));
+
+// ── Host routing cache (in-process, TTL-based) ──
+
+interface HostCacheEntry {
+  data: any;
+  expiry: number;
+}
+
+const HOST_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes for hits
+const HOST_CACHE_MISS_TTL_MS = 30 * 1000; // 30 seconds for misses
+const HOST_CACHE_MAX_SIZE = 500;
+
+const hostCache = new Map<string, HostCacheEntry>();
+
+const getCachedHostRouting = (host: string): any | undefined => {
+  const entry = hostCache.get(host);
+  if (!entry) return undefined;
+  if (entry.expiry > Date.now()) return entry.data;
+  hostCache.delete(host);
+  return undefined;
+};
+
+const setCachedHostRouting = (host: string, data: any, ttlMs: number) => {
+  // Evict oldest entries if cache is full
+  if (hostCache.size >= HOST_CACHE_MAX_SIZE) {
+    const firstKey = hostCache.keys().next().value;
+    if (firstKey) hostCache.delete(firstKey);
+  }
+  hostCache.set(host, { data, expiry: Date.now() + ttlMs });
+};
+
+// ── End cache ──
+
+const getSubdomainFromHost = (host: string) => {
+  for (const baseDomain of _baseDomainsSorted) {
     const suffix = `.${baseDomain}`;
     if (!host.endsWith(suffix) || host === baseDomain) continue;
 
@@ -117,15 +180,6 @@ const getBackendBaseUrl = () => {
   ).replace(/\/$/, "");
 };
 
-const isLocalLikeHost = (host: string) => {
-  const normalized = host.split(":")[0].toLowerCase();
-  return (
-    normalized === "localhost" ||
-    normalized.endsWith(".localhost") ||
-    normalized.endsWith(".local")
-  );
-};
-
 const buildRedirectUrlForHost = (
   request: NextRequest,
   canonicalHost: string,
@@ -157,6 +211,10 @@ const shouldApplyCanonicalRedirect = (currentHost: string, canonicalHost: string
 const HOST_ROUTING_TIMEOUT_MS = 3000;
 
 const fetchHostRouting = async (host: string) => {
+  // Check in-process cache first
+  const cached = getCachedHostRouting(host);
+  if (cached !== undefined) return cached;
+
   try {
     const response = await fetch(
       `${getBackendBaseUrl()}/api/publications/resolve-host?host=${encodeURIComponent(host)}`,
@@ -169,11 +227,16 @@ const fetchHostRouting = async (host: string) => {
     );
 
     if (!response.ok) {
+      // Cache misses briefly to avoid hammering backend
+      setCachedHostRouting(host, null, HOST_CACHE_MISS_TTL_MS);
       return null;
     }
 
-    return response.json();
+    const data = await response.json();
+    setCachedHostRouting(host, data, HOST_CACHE_TTL_MS);
+    return data;
   } catch {
+    // Don't cache transient errors (network timeouts, etc.)
     return null;
   }
 };
@@ -206,31 +269,19 @@ const rewriteToViewSite = (
   });
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const host = request.headers.get("host") || "";
   const hostname = host.split(":")[0];
   const cleanHost = hostname.replace(/^www\./, "").toLowerCase();
 
-  const isDev = process.env.NODE_ENV === "development";
-  const rootDomain = (
-    process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"
-  ).toLowerCase();
-  const configuredMainDomain = (
-    process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.com"
-  ).toLowerCase();
-  const mainDomain = isLocalLikeHost(rootDomain)
-    ? rootDomain
-    : configuredMainDomain;
-  const baseDomains = Array.from(new Set([...getBaseDomains(), mainDomain]));
   const pathname = request.nextUrl.pathname;
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-invoke-path", pathname);
   requestHeaders.set("x-url", request.url);
 
-  const isDashboardHost = baseDomains.some(
-    (domain) => cleanHost === `dashboard.${domain}`,
-  );
+  // O(1) lookup instead of .some() on every request
+  const isDashboardHost = _dashboardHosts.has(cleanHost);
 
   if (isDashboardHost) {
     const lastPubSub = request.cookies.get(DASHBOARD_PUB_COOKIE)?.value;
@@ -313,7 +364,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle root domain - show landing page
-  if (baseDomains.some((domain) => cleanHost === domain || cleanHost === `www.${domain}`)) {
+  if (_baseDomains.some((domain) => cleanHost === domain || cleanHost === `www.${domain}`)) {
     return NextResponse.next({
       request: { headers: requestHeaders },
     });
@@ -335,7 +386,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle publication subdomains (both rootDomain and mainDomain)
-  const detectedSubdomain = getSubdomainFromHost(cleanHost, baseDomains);
+  const detectedSubdomain = getSubdomainFromHost(cleanHost);
   if (detectedSubdomain && !isDashboardHost) {
     return rewriteToViewSite(request, requestHeaders, {
       subdomain: detectedSubdomain,
@@ -345,7 +396,7 @@ export async function middleware(request: NextRequest) {
   // Handle custom domains
   // If we reach here, the host doesn't match any known base domains
   // This is a custom domain - route to view-site with customDomain parameter
-  if (!isKnownBaseDomain(cleanHost, baseDomains)) {
+  if (!isKnownBaseDomain(cleanHost, _baseDomains)) {
     return rewriteToViewSite(request, requestHeaders, {
       customDomain: cleanHost,
     });

@@ -2,17 +2,29 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ViewSiteHeader from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
-import TableOfContents from "../../components/TableOfContents/TableOfContents";
 import SocialSidebar from "../../components/SocialSidebar/SocialSidebar";
-import ShareMenu from "../../components/ShareMenu/ShareMenu";
 import ScrollToTop from "../../components/ScrollToTop/ScrollToTop";
 import MobileBottomNav from "../../components/MobileBottomNav/MobileBottomNav";
-import CommentSection from "../../components/CommentSection/CommentSection";
 import ClockIcon from "../../components/icons/ClockIcon";
+
+// Lazy-loaded below-the-fold components — reduces initial JS bundle
+const TableOfContents = dynamic(
+  () => import("../../components/TableOfContents/TableOfContents"),
+  { ssr: false },
+);
+const ShareMenu = dynamic(
+  () => import("../../components/ShareMenu/ShareMenu"),
+  { ssr: false },
+);
+const CommentSection = dynamic(
+  () => import("../../components/CommentSection/CommentSection"),
+  { ssr: false, loading: () => <div className="animate-pulse h-32 bg-gray-100 rounded-lg" /> },
+);
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";

@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import path from "path";
+import { rm } from "fs/promises";
 import fs from "fs";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
@@ -349,7 +350,7 @@ router.post(
       try {
         await blogService.getBlogById(blogId, req.user.id, req.tenant);
       } catch (error) {
-        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        await rm(req.file.path, { force: true });
         return next(error);
       }
 
@@ -363,8 +364,7 @@ router.post(
 
       res.json({ success: true, blog: updatedBlog, image: updatedBlog.image });
     } catch (error) {
-      if (req.file && fs.existsSync(req.file.path))
-        fs.unlinkSync(req.file.path);
+      if (req.file) await rm(req.file.path, { force: true });
       next(error);
     }
   },

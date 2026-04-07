@@ -20,7 +20,7 @@ import {
   inArray,
   sql,
 } from "drizzle-orm";
-import fs from "fs";
+import { rm } from "fs/promises";
 import notificationService from "./notificationService.js";
 import schedulerService from "./schedulerService.js";
 import {
@@ -351,10 +351,10 @@ class BlogService {
       : null;
   }
 
-  private removeUploadedBlogImage(imagePath?: string | null) {
+  private async removeUploadedBlogImage(imagePath?: string | null) {
     const filePath = this.getBlogImageFilePath(imagePath);
-    if (filePath && fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    if (filePath) {
+      await rm(filePath, { force: true });
     }
   }
 
@@ -546,7 +546,7 @@ class BlogService {
     if (image !== undefined) {
       updateData.image = typeof image === "string" && image ? image : null;
       if (!image) {
-        this.removeUploadedBlogImage(existingBlog.image);
+        await this.removeUploadedBlogImage(existingBlog.image);
       }
     }
     if (publicationId !== undefined) {
@@ -1576,10 +1576,10 @@ class BlogService {
       .where(eq(blog.masterId, parseInt(id)));
 
     await db.transaction(async (tx) => {
-      this.removeUploadedBlogImage(existingBlog.image);
+      await this.removeUploadedBlogImage(existingBlog.image);
 
       for (const draft of drafts) {
-        this.removeUploadedBlogImage(draft.image);
+        await this.removeUploadedBlogImage(draft.image);
       }
 
       await tx.delete(blog).where(eq(blog.id, parseInt(id)));
