@@ -12,9 +12,11 @@ import {
 } from "./appState.js";
 
 const PORT = Number(process.env.PORT || 5000);
+const HOST = process.env.HOST || "0.0.0.0";
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 const REQUIRED_ENV_VARS = ["DATABASE_URL", "NODE_ENV"] as const;
 const ALLOWED_NODE_ENVS = new Set(["development", "test", "production"]);
+const LOCAL_DATABASE_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
 
 const logStartupStep = (
   step: string,
@@ -42,6 +44,7 @@ const validateRequiredEnvVars = () => {
     throw error;
   }
 
+  const databaseHost = validateDatabaseUrl();
   const sessionSecret = process.env.SESSION_SECRET?.trim();
   const betterAuthSecret = process.env.BETTER_AUTH_SECRET?.trim();
 
@@ -62,7 +65,39 @@ const validateRequiredEnvVars = () => {
 
   process.env.BETTER_AUTH_SECRET ||= sessionSecret;
 
-  logStartupStep("env.validate", "done", { nodeEnv: process.env.NODE_ENV });
+  logStartupStep("env.validate", "done", { nodeEnv: process.env.NODE_ENV, databaseHost });
+};
+
+const validateDatabaseUrl = () => {
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+  if (!databaseUrl) {
+    return undefined;
+  }
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(databaseUrl);
+  } catch {
+    const error = new Error("DATABASE_URL must be a valid PostgreSQL connection URL");
+    logger.error({ step: "env.validate" }, error.message);
+    throw error;
+  }
+
+  if (!["postgres:", "postgresql:"].includes(parsedUrl.protocol)) {
+    const error = new Error("DATABASE_URL must use the postgres:// or postgresql:// protocol");
+    logger.error({ step: "env.validate", protocol: parsedUrl.protocol }, error.message);
+    throw error;
+  }
+
+  if (process.env.RENDER === "true" && LOCAL_DATABASE_HOSTS.has(parsedUrl.hostname)) {
+    const error = new Error(
+      "DATABASE_URL points to a local database host, but this service is running on Render. Use the Render PostgreSQL internal or external database URL instead.",
+    );
+    logger.error({ step: "env.validate", databaseHost: parsedUrl.hostname }, error.message);
+    throw error;
+  }
+
+  return parsedUrl.hostname;
 };
 
 const closeServer = (server: Server) =>
@@ -170,9 +205,9 @@ export const bootstrap = async () => {
   app.locals.schedulerService = schedulerService;
   logStartupStep("app.load", "done");
 
-  logStartupStep("http.listen", "start", { port: PORT });
-  const server = app.listen(PORT, () => {
-    logStartupStep("http.listen", "done", { port: PORT });
+  logStartupStep("http.listen", "start", { host: HOST, port: PORT });
+  const server = app.listen(PORT, HOST, () => {
+    logStartupStep("http.listen", "done", { host: HOST, port: PORT });
   });
 
   registerGracefulShutdown(server);
@@ -182,7 +217,7 @@ export const bootstrap = async () => {
     await verifySmtp();
     startBackgroundServices();
     setStartupComplete(true);
-    logStartupStep("startup.complete", "done", { port: PORT });
+    logStartupStep("startup.complete", "done", { host: HOST, port: PORT });
   } catch (error) {
     logger.error(error, "Startup validation failed");
     await closeServer(server).catch((closeError) => {
