@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
-import { parseHost } from "@/utils/hostParser";
+import { buildDashboardLoginUrlForViewSite } from "@/utils/publicSiteAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -72,54 +72,6 @@ export default function CommentSection({ blogId }) {
     setShowAuthModal(false);
   }, [currentUser]);
 
-  const getDashboardReturnToUrl = () => {
-    if (typeof window === "undefined") {
-      return "http://dashboard.localhost:3000/view-site";
-    }
-
-    const dashboardUrl = new URL(
-      window.location.pathname.startsWith("/view-site")
-        ? window.location.pathname
-        : `/view-site${window.location.pathname}`,
-      getDashboardOrigin(),
-    );
-    const currentParams = new URLSearchParams(window.location.search);
-    const parsedHost = parseHost(window.location.host);
-
-    currentParams.forEach((value, key) => {
-      dashboardUrl.searchParams.set(key, value);
-    });
-
-    if (parsedHost.isCustomDomain && parsedHost.hostname) {
-      dashboardUrl.searchParams.set("customDomain", parsedHost.hostname);
-      dashboardUrl.searchParams.delete("subdomain");
-    } else if (
-      parsedHost.subdomain &&
-      !["dashboard", "www", "api"].includes(parsedHost.subdomain)
-    ) {
-      dashboardUrl.searchParams.set("subdomain", parsedHost.subdomain);
-      dashboardUrl.searchParams.delete("customDomain");
-    }
-
-    return dashboardUrl.toString();
-  };
-
-  const getDashboardOrigin = () => {
-    if (typeof window === "undefined") {
-      return "http://dashboard.localhost:3000";
-    }
-
-    const rootDomain =
-      (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost").toLowerCase();
-    const desiredHost =
-      rootDomain === "localhost"
-        ? "dashboard.localhost"
-        : `dashboard.${rootDomain}`;
-    const port = window.location.port ? `:${window.location.port}` : "";
-
-    return `${window.location.protocol}//${desiredHost}${port}`;
-  };
-
   const openAuthModal = () => {
     setShowAuthModal(true);
   };
@@ -146,10 +98,7 @@ export default function CommentSection({ blogId }) {
 
   const redirectToDashboardLogin = () => {
     if (typeof window === "undefined") return;
-
-    const loginUrl = new URL("/login", getDashboardOrigin());
-    loginUrl.searchParams.set("returnTo", getDashboardReturnToUrl());
-    window.location.assign(loginUrl.toString());
+    window.location.assign(buildDashboardLoginUrlForViewSite());
   };
 
   // Update exactly on minute boundaries so "x min ago" changes on time.
@@ -313,8 +262,8 @@ export default function CommentSection({ blogId }) {
       if (response.ok) {
         const reply = await response.json();
         console.log("[CommentSection] New reply created:", reply);
-        setComments(
-          comments.map((c) =>
+        setComments((prev) =>
+          prev.map((c) =>
             c.id === commentId
               ? { ...c, replies: [...(c.replies || []), reply] }
               : c,
@@ -472,19 +421,6 @@ export default function CommentSection({ blogId }) {
         <h2 className="text-base font-semibold leading-6 tracking-normal text-[#14142D] mb-6 max-md:text-sm max-md:pt-5 max-md:border-t max-md:border-[#EDEDED] ">
           How useful was this blog?
         </h2>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-            {error}
-            <button
-              onClick={() => setError(null)}
-              className="ml-2 text-red-800 hover:underline"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
-
         <div
           className={`flex mb-6 ${currentUser ? "gap-3 md:gap-4" : "gap-0"}`}
         >

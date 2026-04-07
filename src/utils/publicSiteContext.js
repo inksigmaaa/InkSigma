@@ -184,38 +184,27 @@ export const resolvePublicSiteContext = async ({ host, searchParams }) => {
   });
   const publicationId = getParamValue(resolvedSearchParams, "publicationId");
 
-  let publication = null;
-
+  const params = new URLSearchParams();
+  if (host) {
+    params.set("host", host);
+  }
+  if (hostContext.subdomain) {
+    params.set("subdomain", hostContext.subdomain);
+  }
   if (hostContext.customDomain) {
-    publication = await fetchJson(
-      `${API_URL}/api/publications/by-custom-domain/${encodeURIComponent(hostContext.customDomain)}`,
-    );
+    params.set("customDomain", hostContext.customDomain);
+  }
+  if (publicationId) {
+    params.set("publicationId", publicationId);
   }
 
-  if (!publication && hostContext.subdomain) {
-    publication = await fetchJson(
-      `${API_URL}/api/publications/by-subdomain/${encodeURIComponent(hostContext.subdomain)}`,
-    );
-  }
-
-  if (!publication && publicationId) {
-    publication = await fetchJson(
-      `${API_URL}/api/publications/${encodeURIComponent(publicationId)}`,
-    );
-  }
-
-  if (!publication && host) {
-    const routing = await fetchJson(
-      `${API_URL}/api/publications/resolve-host?host=${encodeURIComponent(host)}`,
-    );
-    if (routing?.publication) {
-      publication = routing.publication;
-    }
-  }
+  const routing = await fetchJson(
+    `${API_URL}/api/publications/resolve-host?${params.toString()}`,
+  );
 
   return {
-    hostContext,
-    publication,
-    publicationId,
+    hostContext: routing?.hostContext || hostContext,
+    publication: routing?.publication || null,
+    publicationId: routing?.publicationId || publicationId,
   };
 };

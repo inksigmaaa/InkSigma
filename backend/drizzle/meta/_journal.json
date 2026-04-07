@@ -127,6 +127,20 @@
       "when": 1774508341337,
       "tag": "0017_remarkable_night_nurse",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1774843200000,
+      "tag": "0018_hot_path_integrity_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1774866314103,
+      "tag": "0019_neat_true_believers",
+      "breakpoints": true
     }
   ]
 }

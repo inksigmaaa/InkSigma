@@ -25,7 +25,7 @@ async function getSession(req) {
 router.post(
   "/forgot-password",
   validate(authValidator.emailSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const { email, redirectTo } = req.body;
       logger.info(`[AUTH] Forgot password request for: ${redactEmail(email)}`);
@@ -53,8 +53,7 @@ router.post(
       logger.info(`[AUTH] Password reset email sent to: ${redactEmail(email)}`);
       res.json({ success: true });
     } catch (error) {
-      logger.error(error, `[AUTH] Forgot password error:`);
-      res.status(500).json({ error: "Failed to send reset email" });
+      next(error);
     }
   },
 );
@@ -63,7 +62,7 @@ router.post(
 router.post(
   "/reset-password",
   validate(authValidator.resetPasswordSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const { token, email, newPassword } = req.body;
       logger.info(`[AUTH] Reset password for: ${redactEmail(email)}`);
@@ -117,8 +116,7 @@ router.post(
       logger.info(`[AUTH] Password reset successful for: ${redactEmail(email)}`);
       res.json({ success: true });
     } catch (error) {
-      logger.error(error, `[AUTH] Reset password error:`);
-      res.status(500).json({ error: "Failed to reset password" });
+      next(error);
     }
   },
 );
@@ -127,7 +125,7 @@ router.post(
 router.post(
   "/send-verification",
   validate(authValidator.emailSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const { email, redirectTo } = req.body;
       logger.info(`[AUTH] Send verification for: ${redactEmail(email)}`);
@@ -157,8 +155,7 @@ router.post(
       logger.info(`[AUTH] Verification email sent to: ${redactEmail(email)}`);
       res.json({ success: true });
     } catch (error) {
-      logger.error(error, `[AUTH] Send verification error:`);
-      res.status(500).json({ error: "Failed to send verification email" });
+      next(error);
     }
   },
 );
@@ -167,7 +164,7 @@ router.post(
 router.post(
   "/verify-email",
   validate(authValidator.verifyEmailSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const { token, email } = req.body;
       logger.info(`[AUTH] Verify email for: ${redactEmail(email)}`);
@@ -186,14 +183,13 @@ router.post(
       logger.info(`[AUTH] Email verified for: ${redactEmail(email)}`);
       res.json({ success: true });
     } catch (error) {
-      logger.error(error, `[AUTH] Verify email error:`);
-      res.status(500).json({ error: "Failed to verify email" });
+      next(error);
     }
   },
 );
 
 // GET /api/custom/redis-health - Check Redis connection
-router.get("/redis-health", async (req, res) => {
+router.get("/redis-health", async (req, res, next) => {
   try {
     const { getRedisClient } = await import("../config/redis.js");
     const client = getRedisClient();
@@ -218,12 +214,7 @@ router.get("/redis-health", async (req, res) => {
       });
     }
   } catch (error) {
-    logger.error(error, "[REDIS-HEALTH] Error:");
-    res.status(500).json({
-      status: "unhealthy",
-      redis: "disconnected",
-      error: error.message,
-    });
+    next(error);
   }
 });
 
@@ -231,7 +222,7 @@ router.get("/redis-health", async (req, res) => {
 router.post(
   "/check-email",
   validate(authValidator.emailSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const { email } = req.body;
       if (!email) {
@@ -246,8 +237,7 @@ router.post(
         emailVerified: user ? user.emailVerified : false,
       });
     } catch (error) {
-      logger.error(error, `[AUTH] Check email error:`);
-      res.status(500).json({ error: "Failed to check email" });
+      next(error);
     }
   },
 );
@@ -258,7 +248,7 @@ export default router;
 router.post(
   "/set-password",
   validate(authValidator.setPasswordSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       // Check authentication
       const session = await getSession(req);
@@ -329,14 +319,13 @@ router.post(
           "Password set successfully. You can now login with email and password.",
       });
     } catch (error) {
-      logger.error(error, `[AUTH] Set password error:`);
-      res.status(500).json({ error: "Failed to set password" });
+      next(error);
     }
   },
 );
 
 // GET /api/custom/can-set-password - Check if current user can set password
-router.get("/can-set-password", async (req, res) => {
+router.get("/can-set-password", async (req, res, next) => {
   try {
     const session = await getSession(req);
     if (!session?.user) {
@@ -346,7 +335,6 @@ router.get("/can-set-password", async (req, res) => {
     const result = await authService.canSetPassword(session.user.id);
     res.json(result);
   } catch (error) {
-    logger.error(error, `[AUTH] Can set password check error:`);
-    res.status(500).json({ error: "Failed to check password status" });
+    next(error);
   }
 });

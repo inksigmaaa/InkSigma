@@ -14,11 +14,23 @@ type SliSnapshot = {
     failures: number;
     failureRate: number;
   };
+  viewTracking: {
+    attempts: number;
+    newViews: number;
+    dedupeHits: number;
+    dbFallbacks: number;
+  };
+  scheduler: {
+    runs: number;
+    batches: number;
+    published: number;
+    publishFailures: number;
+  };
 };
 
 const LATENCY_WINDOW_SIZE = 2_000;
 
-class SliService {
+export class SliService {
   private readonly startedAt = Date.now();
   private requestCount = 0;
   private errorRequestCount = 0;
@@ -26,6 +38,14 @@ class SliService {
   private authFailureCount = 0;
   private domainVerificationChecks = 0;
   private domainVerificationFailureCount = 0;
+  private viewTrackingAttempts = 0;
+  private viewTrackingNewViews = 0;
+  private viewTrackingDedupeHits = 0;
+  private viewTrackingDbFallbacks = 0;
+  private schedulerRuns = 0;
+  private schedulerBatches = 0;
+  private schedulerPublished = 0;
+  private schedulerPublishFailures = 0;
 
   recordRequest(durationMs: number, statusCode: number) {
     this.requestCount += 1;
@@ -52,6 +72,40 @@ class SliService {
     if (!success) {
       this.domainVerificationFailureCount += 1;
     }
+  }
+
+  recordViewTracking(params: {
+    isNewView: boolean;
+    dedupeHit?: boolean;
+    usedDatabaseFallback?: boolean;
+  }) {
+    this.viewTrackingAttempts += 1;
+
+    if (params.isNewView) {
+      this.viewTrackingNewViews += 1;
+    }
+
+    if (params.dedupeHit) {
+      this.viewTrackingDedupeHits += 1;
+    }
+
+    if (params.usedDatabaseFallback) {
+      this.viewTrackingDbFallbacks += 1;
+    }
+  }
+
+  recordSchedulerRun(params: { batches?: number }) {
+    this.schedulerRuns += 1;
+    this.schedulerBatches += Math.max(0, Number(params.batches || 0));
+  }
+
+  recordSchedulerPublish(success: boolean) {
+    if (success) {
+      this.schedulerPublished += 1;
+      return;
+    }
+
+    this.schedulerPublishFailures += 1;
   }
 
   private getLatencyPercentile(percentile: number) {
@@ -89,6 +143,18 @@ class SliService {
         checks: this.domainVerificationChecks,
         failures: this.domainVerificationFailureCount,
         failureRate: domainFailureRate,
+      },
+      viewTracking: {
+        attempts: this.viewTrackingAttempts,
+        newViews: this.viewTrackingNewViews,
+        dedupeHits: this.viewTrackingDedupeHits,
+        dbFallbacks: this.viewTrackingDbFallbacks,
+      },
+      scheduler: {
+        runs: this.schedulerRuns,
+        batches: this.schedulerBatches,
+        published: this.schedulerPublished,
+        publishFailures: this.schedulerPublishFailures,
       },
     };
   }

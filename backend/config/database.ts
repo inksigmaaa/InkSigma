@@ -7,6 +7,18 @@ const { Pool } = pg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+
+  // Pool sizing
+  max: parseInt(process.env.PG_POOL_MAX ?? "20", 10),
+  min: parseInt(process.env.PG_POOL_MIN ?? "2", 10),
+
+  // Timeouts — fail fast instead of hanging
+  connectionTimeoutMillis: 5_000,
+  idleTimeoutMillis: 30_000,
+
+  // Rotate connections to prevent pg backend memory leaks
+  maxUses: 7500,
+
   // Ensure timestamps are returned in UTC
   types: {
     getTypeParser: (typeId, format) => {

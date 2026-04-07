@@ -1,130 +1,204 @@
 import "dotenv/config";
-import express from "express";
-import { toNodeHandler } from "better-auth/node";
-import { auth } from "./config/betterAuth.js";
-import authRoutes from "./routes/authRoutes.js";
-import profileRoutes from "./routes/profileRoutes.js";
-import blogRoutes from "./routes/blogRoutes.js";
-import uploadRoutes from "./routes/uploadRoutes.js";
-import publicationRoutes from "./routes/publicationRoutes.js";
-import publicationMemberRoutes from "./routes/publicationMemberRoutes.js";
-import publicationStatsRoutes from "./routes/publicationStatsRoutes.js";
-import memberRoutes from "./routes/memberRoutes.js";
-import resendVerificationRoutes from "./routes/resendVerificationRoutes.js";
-import notificationRoutes from "./routes/notificationRoutes.js";
-import commentRoutes from "./routes/commentRoutes.js";
-import viewRoutes from "./routes/viewRoutes.js";
-import { corsMiddleware } from "./middleware/cors.js";
-import { subdomainMiddleware } from "./middleware/subdomainMiddleware.js";
-import { rateLimitMiddleware } from "./middleware/rateLimitMiddleware.js";
-import { requestContextMiddleware } from "./middleware/requestContext.js";
+import type { Server } from "http";
 import { emailService } from "./services/emailService.js";
 import schedulerService from "./services/schedulerService.js";
 import invitationService from "./services/invitationService.js";
-import sliService from "./services/sliService.js";
 import logger from "./utils/logger.js";
 import {
-  errorMiddleware,
-  notFoundMiddleware,
-} from "./middleware/errorHandler.js";
+  isShuttingDown,
+  isStartupComplete,
+  setShuttingDown,
+  setStartupComplete,
+} from "./appState.js";
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT || 5000);
+const SHUTDOWN_TIMEOUT_MS = 10_000;
+const REQUIRED_ENV_VARS = ["DATABASE_URL", "NODE_ENV"] as const;
+const ALLOWED_NODE_ENVS = new Set(["development", "test", "production"]);
 
-// Middleware
-app.use(requestContextMiddleware);
-app.use(corsMiddleware);
-app.use(subdomainMiddleware);
-app.use(rateLimitMiddleware);
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+const logStartupStep = (
+  step: string,
+  status: "start" | "done" | "warn" | "fail",
+  details: Record<string, unknown> = {},
+) => {
+  logger.info({ step, status, ...details }, "Startup step");
+};
 
-// Static file serving
-app.use("/uploads", express.static("uploads"));
+const validateRequiredEnvVars = () => {
+  logStartupStep("env.validate", "start");
 
-// Authentication routes
-logger.info("Mounting better-auth handler at /api/auth");
-try {
-  const authHandler = toNodeHandler(auth);
-  app.use("/api/auth", authHandler);
-  logger.info("✅ Better-auth handler mounted successfully");
-} catch (error) {
-  logger.error(error, "❌ Error mounting better-auth handler:");
-}
-
-// API routes
-app.use("/api/custom", authRoutes);
-app.use("/api/profile", profileRoutes);
-app.use("/api/blogs", blogRoutes);
-app.use("/api/upload-image", uploadRoutes);
-app.use("/api/publications", publicationRoutes);
-app.use("/api/publication-members", publicationMemberRoutes);
-app.use("/api/publication-stats", publicationStatsRoutes);
-app.use("/api/members", memberRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/comments", commentRoutes);
-app.use("/api/views", viewRoutes);
-app.use("/api", resendVerificationRoutes);
-
-// Debug routes have been removed for security
-
-// Health check
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
-
-app.get("/health/slis", (req, res) => {
-  res.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    slis: sliService.getSnapshot(),
-  });
-});
-
-// Global error handler - must be after all routes
-app.use(notFoundMiddleware);
-app.use(errorMiddleware);
-
-app.listen(PORT, async () => {
-  logger.info(`Server running on http://localhost:${PORT}`);
-
-  // Check database connection
-  logger.info("🔄 Checking database connection...");
-  try {
-    const { db } = await import("./config/database.js");
-    await db.execute("SELECT 1");
-    logger.info("✅ Database connection verified!");
-    logger.info("💡 Run 'npm run db:push' to sync schema changes");
-  } catch (error) {
-    logger.error(error, "❌ Database connection failed:");
+  const missing = REQUIRED_ENV_VARS.filter((key) => !process.env[key]?.trim());
+  if (missing.length > 0) {
+    const error = new Error(`Missing required environment variables: ${missing.join(", ")}`);
+    logger.error({ step: "env.validate", missing }, error.message);
+    throw error;
   }
 
-  // Verify SMTP connection
-  const smtpReady = await emailService.verify();
-  if (!smtpReady) {
-    logger.error(
-      "⚠️  WARNING: SMTP not configured properly. Emails will not be sent!",
+  if (!ALLOWED_NODE_ENVS.has(process.env.NODE_ENV || "")) {
+    const error = new Error(
+      `Invalid NODE_ENV: ${process.env.NODE_ENV}. Expected one of ${Array.from(ALLOWED_NODE_ENVS).join(", ")}`,
     );
-    logger.error("   Check SMTP_USER and SMTP_PASS in .env file");
+    logger.error({ step: "env.validate", nodeEnv: process.env.NODE_ENV }, error.message);
+    throw error;
   }
 
-  // Initialize scheduler
-  app.locals.schedulerService = schedulerService;
+  const sessionSecret = process.env.SESSION_SECRET?.trim();
+  const betterAuthSecret = process.env.BETTER_AUTH_SECRET?.trim();
+
+  if (!sessionSecret && !betterAuthSecret) {
+    const error = new Error(
+      "Missing required environment variable: SESSION_SECRET or BETTER_AUTH_SECRET",
+    );
+    logger.error({ step: "env.validate" }, error.message);
+    throw error;
+  }
+
+  if (!sessionSecret && betterAuthSecret) {
+    logger.warn(
+      { step: "env.validate", envVar: "BETTER_AUTH_SECRET" },
+      "SESSION_SECRET is missing; using BETTER_AUTH_SECRET for auth secret compatibility",
+    );
+  }
+
+  process.env.BETTER_AUTH_SECRET ||= sessionSecret;
+
+  logStartupStep("env.validate", "done", { nodeEnv: process.env.NODE_ENV });
+};
+
+const closeServer = (server: Server) =>
+  new Promise<void>((resolve, reject) => {
+    server.close((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
+  });
+
+const registerGracefulShutdown = (server: Server) => {
+  let shutdownPromise: Promise<void> | null = null;
+
+  const shutdown = async (signal: NodeJS.Signals) => {
+    if (shutdownPromise) {
+      logger.warn({ signal }, "Shutdown already in progress");
+      return shutdownPromise;
+    }
+
+    shutdownPromise = (async () => {
+      setShuttingDown(true);
+      logStartupStep("shutdown", "start", {
+        signal,
+        isStartupComplete,
+        isShuttingDown,
+      });
+
+      const forcedExitTimer = setTimeout(() => {
+        logger.error(
+          { step: "shutdown", status: "fail", timeoutMs: SHUTDOWN_TIMEOUT_MS },
+          "Forced shutdown timeout reached",
+        );
+        process.exit(1);
+      }, SHUTDOWN_TIMEOUT_MS);
+
+      try {
+        await closeServer(server);
+        schedulerService.stop();
+        invitationService.stopScheduler();
+        const { pool } = await import("./config/database.js");
+        await pool.end();
+        logStartupStep("shutdown", "done", { signal });
+        process.exit(0);
+      } catch (error) {
+        logger.error(error, "Graceful shutdown failed");
+        process.exit(1);
+      } finally {
+        clearTimeout(forcedExitTimer);
+      }
+    })();
+
+    return shutdownPromise;
+  };
+
+  process.once("SIGINT", () => {
+    void shutdown("SIGINT");
+  });
+
+  process.once("SIGTERM", () => {
+    void shutdown("SIGTERM");
+  });
+};
+
+const verifyDatabase = async () => {
+  logStartupStep("database.verify", "start");
+  const { db } = await import("./config/database.js");
+  await db.execute("SELECT 1");
+  logStartupStep("database.verify", "done");
+};
+
+const verifySmtp = async () => {
+  logStartupStep("smtp.verify", "start");
+  const smtpReady = await emailService.verify();
+
+  if (!smtpReady) {
+    logger.warn(
+      { step: "smtp.verify", status: "warn" },
+      "SMTP is not configured properly; email delivery is degraded",
+    );
+    return;
+  }
+
+  logStartupStep("smtp.verify", "done");
+};
+
+const startBackgroundServices = () => {
+  logStartupStep("background.start", "start");
   schedulerService.start();
-
-  // Initialize invitation cleanup
   invitationService.startScheduler();
-});
+  logStartupStep("background.start", "done");
+};
 
-// Graceful shutdown
-process.on("SIGINT", () => {
-  logger.info("\nShutting down server...");
-  schedulerService.stop();
-  process.exit(0);
-});
+export const bootstrap = async () => {
+  validateRequiredEnvVars();
+  setShuttingDown(false);
+  setStartupComplete(false);
 
-process.on("SIGTERM", () => {
-  logger.info("\n Shutting down server...");
-  schedulerService.stop();
-  process.exit(0);
+  logStartupStep("app.load", "start");
+  const { createApp } = await import("./app.js");
+  const app = createApp();
+  app.locals.schedulerService = schedulerService;
+  logStartupStep("app.load", "done");
+
+  logStartupStep("http.listen", "start", { port: PORT });
+  const server = app.listen(PORT, () => {
+    logStartupStep("http.listen", "done", { port: PORT });
+  });
+
+  registerGracefulShutdown(server);
+
+  try {
+    await verifyDatabase();
+    await verifySmtp();
+    startBackgroundServices();
+    setStartupComplete(true);
+    logStartupStep("startup.complete", "done", { port: PORT });
+  } catch (error) {
+    logger.error(error, "Startup validation failed");
+    await closeServer(server).catch((closeError) => {
+      logger.error(closeError, "Failed to close server after startup error");
+    });
+    const { pool } = await import("./config/database.js");
+    await pool.end().catch((poolError) => {
+      logger.error(poolError, "Failed to close database pool after startup error");
+    });
+    throw error;
+  }
+
+  return { app, server };
+};
+
+void bootstrap().catch((error) => {
+  logger.error(error, "Failed to bootstrap server");
+  process.exit(1);
 });

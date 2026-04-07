@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import path from "path";
+import { rm } from "fs/promises";
 import fs from "fs";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
@@ -10,7 +11,6 @@ import { requirePublicationContext } from "../middleware/subdomainMiddleware.js"
 import { blogService } from "../services/blogService.js";
 import { validate } from "../middleware/validate.js";
 import * as blogValidator from "../validators/blogValidator.js";
-import logger from "../utils/logger.js";
 import { BLOG_STATUS } from "../config/constants.js";
 import { config } from "../config/appConfig.js";
 
@@ -47,15 +47,6 @@ const upload = multer({
   },
 });
 
-const handleError = (res, error, defaultMsg) => {
-  logger.error(error, `[Blog Route Error] ${defaultMsg}:`);
-  if (error.message.includes("|")) {
-    const [msg, status] = error.message.split("|");
-    return res.status(parseInt(status)).json({ error: msg });
-  }
-  return res.status(500).json({ error: defaultMsg, details: error.message });
-};
-
 const hasSessionHint = (req) =>
   Boolean(req.headers.cookie || req.headers.authorization);
 
@@ -82,7 +73,7 @@ const shouldResolveUserForBlogList = (query) => {
 };
 
 // GET /api/blogs
-router.get("/", validate(blogValidator.getBlogsSchema), async (req, res) => {
+router.get("/", validate(blogValidator.getBlogsSchema), async (req, res, next) => {
   try {
     let currentUserId = null;
     if (shouldResolveUserForBlogList(req.query) && hasSessionHint(req)) {
@@ -100,17 +91,17 @@ router.get("/", validate(blogValidator.getBlogsSchema), async (req, res) => {
     );
     res.json(blogs);
   } catch (error) {
-    handleError(res, error, "Failed to fetch blogs");
+    next(error);
   }
 });
 
 // GET /api/blogs/public
-router.get("/public", requirePublicationContext, async (req, res) => {
+router.get("/public", requirePublicationContext, async (req, res, next) => {
   try {
     const blogs = await blogService.getPublicBlogs(req.publication.id);
     res.json(blogs);
   } catch (error) {
-    handleError(res, error, "Failed to fetch public blogs");
+    next(error);
   }
 });
 
@@ -119,7 +110,7 @@ router.get(
   "/publication/:publicationId",
   requireAuth,
   validate(blogValidator.getPublicationBlogsSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const blogs = await blogService.getPublicationBlogs(
         req.params.publicationId,
@@ -128,13 +119,13 @@ router.get(
       );
       res.json(blogs);
     } catch (error) {
-      handleError(res, error, "Failed to fetch publication blogs");
+      next(error);
     }
   },
 );
 
 // GET /api/blogs/:id
-router.get("/:id", validate(blogValidator.byIdSchema), async (req, res) => {
+router.get("/:id", validate(blogValidator.byIdSchema), async (req, res, next) => {
   try {
     let currentUserId = null;
     if (hasSessionHint(req)) {
@@ -171,7 +162,7 @@ router.get("/:id", validate(blogValidator.byIdSchema), async (req, res) => {
 
     res.json(blog);
   } catch (error) {
-    handleError(res, error, "Failed to fetch blog");
+    next(error);
   }
 });
 
@@ -179,7 +170,7 @@ router.get("/:id", validate(blogValidator.byIdSchema), async (req, res) => {
 router.get(
   "/slug/:slug",
   validate(blogValidator.bySlugSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       let blog;
 
@@ -218,7 +209,7 @@ router.get(
 
       res.json(blog);
     } catch (error) {
-      handleError(res, error, "Failed to fetch blog");
+      next(error);
     }
   },
 );
@@ -228,12 +219,12 @@ router.post(
   "/",
   requireAuth,
   validate(blogValidator.createBlogSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const newBlog = await blogService.createBlog(req.body, req.user);
       res.status(201).json(newBlog);
     } catch (error) {
-      handleError(res, error, "Failed to create blog");
+      next(error);
     }
   },
 );
@@ -243,12 +234,12 @@ router.post(
   "/auto-save",
   requireAuth,
   validate(blogValidator.autoSaveSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const newBlog = await blogService.autoSaveDraft(req.body, req.user);
       res.status(201).json(newBlog);
     } catch (error) {
-      handleError(res, error, "Failed to auto-save blog");
+      next(error);
     }
   },
 );
@@ -258,7 +249,7 @@ router.post(
   "/:id/edit-draft",
   requireAuth,
   validate(blogValidator.byIdSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const newDraft = await blogService.createDraftFromPublished(
         req.params.id,
@@ -267,7 +258,7 @@ router.post(
       );
       res.json(newDraft);
     } catch (error) {
-      handleError(res, error, "Failed to create draft");
+      next(error);
     }
   },
 );
@@ -277,7 +268,7 @@ router.put(
   "/:id",
   requireAuth,
   validate(blogValidator.updateBlogSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const updatedBlog = await blogService.updateBlog(
         req.params.id,
@@ -286,15 +277,7 @@ router.put(
       );
       res.json(updatedBlog);
     } catch (error) {
-      if (error.code === "23502")
-        return res
-          .status(400)
-          .json({ error: "Required fields cannot be empty" });
-      if (error.code === "23505")
-        return res
-          .status(400)
-          .json({ error: "Blog with this slug already exists" });
-      handleError(res, error, "Failed to update blog");
+      next(error);
     }
   },
 );
@@ -304,7 +287,7 @@ router.patch(
   "/:id/review-action",
   requireAuth,
   validate(blogValidator.reviewActionSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const updatedBlog = await blogService.reviewAction(
         req.params.id,
@@ -313,7 +296,7 @@ router.patch(
       );
       res.json(updatedBlog);
     } catch (error) {
-      handleError(res, error, "Failed to review blog");
+      next(error);
     }
   },
 );
@@ -323,7 +306,7 @@ router.patch(
   "/:id/publish",
   requireAuth,
   validate(blogValidator.publishSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const updatedBlog = await blogService.publishBlog(
         req.params.id,
@@ -332,7 +315,7 @@ router.patch(
       );
       res.json(updatedBlog);
     } catch (error) {
-      handleError(res, error, "Failed to publish blog");
+      next(error);
     }
   },
 );
@@ -342,12 +325,12 @@ router.delete(
   "/:id",
   requireAuth,
   validate(blogValidator.byIdSchema),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const result = await blogService.deleteBlog(req.params.id, req.user);
       res.json(result);
     } catch (error) {
-      handleError(res, error, "Failed to delete blog");
+      next(error);
     }
   },
 );
@@ -358,7 +341,7 @@ router.post(
   requireAuth,
   validate(blogValidator.byIdSchema),
   upload.single("image"),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       if (!req.file)
         return res.status(400).json({ error: "No image provided" });
@@ -366,13 +349,9 @@ router.post(
       const blogId = req.params.id;
       try {
         await blogService.getBlogById(blogId, req.user.id, req.tenant);
-      } catch (e) {
-        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-        return handleError(
-          res,
-          e,
-          "Not authorized to upload image for this blog",
-        );
+      } catch (error) {
+        await rm(req.file.path, { force: true });
+        return next(error);
       }
 
       const imageUrl = `${config.backend.url}/uploads/blog-images/${req.file.filename}`;
@@ -385,9 +364,8 @@ router.post(
 
       res.json({ success: true, blog: updatedBlog, image: updatedBlog.image });
     } catch (error) {
-      if (req.file && fs.existsSync(req.file.path))
-        fs.unlinkSync(req.file.path);
-      handleError(res, error, "Failed to upload image");
+      if (req.file) await rm(req.file.path, { force: true });
+      next(error);
     }
   },
 );

@@ -24,6 +24,7 @@ export default function HomePage() {
   const { data: session } = useSession();
   const { currentPublication } = usePublication();
   const { publicationArticles, loadPublicationArticles } = useArticles();
+  const [commentCounts, setCommentCounts] = useState({});
   const [viewStats, setViewStats] = useState({});
 
   // Check if this is a refresh from editor
@@ -71,7 +72,7 @@ export default function HomePage() {
       };
     });
 
-  // Fetch comment counts and view stats for recent articles
+  // Fetch publication stats once and share them with child analytics widgets.
   useEffect(() => {
     const fetchStats = async () => {
       // Get published article IDs
@@ -86,16 +87,32 @@ export default function HomePage() {
       try {
         const blogIds = publishedArticles.map((a) => a.id);
 
-        // Fetch view stats
-        const viewResponse = await fetch(`${API_URL}/api/views/stats`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ blogIds }),
-        });
+        const [commentResponse, viewResponse] = await Promise.all([
+          fetch(`${API_URL}/api/comments/counts`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ blogIds }),
+          }),
+          fetch(`${API_URL}/api/views/stats`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ blogIds }),
+          }),
+        ]);
+
+        if (commentResponse.ok) {
+          const counts = await commentResponse.json();
+          setCommentCounts(counts || {});
+        } else {
+          console.error(
+            "[Home] Failed to fetch comment counts:",
+            commentResponse.status,
+          );
+        }
 
         if (viewResponse.ok) {
           const stats = await viewResponse.json();
-          setViewStats(stats);
+          setViewStats(stats || {});
         } else {
           console.error(
             "[Home] Failed to fetch view stats:",
@@ -185,7 +202,10 @@ export default function HomePage() {
 
             {/* Statistics Section */}
             <div className="relative py-6 border-y border-gray-200 max-md:px-4 max-md:py-0 max-md:pb-4 max-md:border-0">
-              <BlogStatsComponent />
+              <BlogStatsComponent
+                commentCounts={commentCounts}
+                viewStats={viewStats}
+              />
             </div>
 
             {/* What's on your mind Section */}

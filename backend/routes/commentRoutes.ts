@@ -2,7 +2,7 @@
 import express from "express";
 import { db } from "../config/database.js";
 import { comment, user, blog } from "../models/schema.js";
-import { eq, desc, and, isNull } from "drizzle-orm";
+import { eq, desc, count, inArray, asc } from "drizzle-orm";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 import { validate } from "../middleware/validate.js";
@@ -10,6 +10,24 @@ import * as generalValidator from "../validators/generalValidator.js";
 import logger from "../utils/logger.js";
 
 const router = express.Router();
+
+const buildCommentSelect = () => ({
+  id: comment.id,
+  content: comment.content,
+  blogId: comment.blogId,
+  authorId: comment.authorId,
+  guestName: comment.guestName,
+  guestEmail: comment.guestEmail,
+  parentId: comment.parentId,
+  createdAt: comment.createdAt,
+  updatedAt: comment.updatedAt,
+  author: {
+    id: user.id,
+    name: user.name,
+    image: user.image,
+    username: user.username,
+  },
+});
 
 // Optional auth - sets req.user if authenticated, doesn't require it
 const optionalAuth = async (req, res, next) => {
@@ -51,60 +69,33 @@ router.get("/blog/:blogId", async (req, res) => {
       return res.status(404).json({ error: "Blog not found" });
     }
 
-    // Get all top-level comments (no parentId)
-    const comments = await db
-      .select({
-        id: comment.id,
-        content: comment.content,
-        blogId: comment.blogId,
-        authorId: comment.authorId,
-        guestName: comment.guestName,
-        guestEmail: comment.guestEmail,
-        parentId: comment.parentId,
-        createdAt: comment.createdAt,
-        updatedAt: comment.updatedAt,
-        author: {
-          id: user.id,
-          name: user.name,
-          image: user.image,
-          username: user.username,
-        },
-      })
+    const commentRows = await db
+      .select(buildCommentSelect())
       .from(comment)
       .leftJoin(user, eq(comment.authorId, user.id))
-      .where(
-        and(eq(comment.blogId, parseInt(blogId)), isNull(comment.parentId)),
-      )
-      .orderBy(desc(comment.createdAt));
+      .where(eq(comment.blogId, parseInt(blogId)))
+      .orderBy(asc(comment.createdAt));
 
-    // Get replies for each comment
-    const commentsWithReplies = await Promise.all(
-      comments.map(async (c) => {
-        const replies = await db
-          .select({
-            id: comment.id,
-            content: comment.content,
-            blogId: comment.blogId,
-            authorId: comment.authorId,
-            guestName: comment.guestName,
-            guestEmail: comment.guestEmail,
-            parentId: comment.parentId,
-            createdAt: comment.createdAt,
-            updatedAt: comment.updatedAt,
-            author: {
-              id: user.id,
-              name: user.name,
-              image: user.image,
-              username: user.username,
-            },
-          })
-          .from(comment)
-          .leftJoin(user, eq(comment.authorId, user.id))
-          .where(eq(comment.parentId, c.id))
-          .orderBy(comment.createdAt);
+    const commentsById = new Map();
+    const rootComments = [];
 
-        return { ...c, replies };
-      }),
+    for (const row of commentRows) {
+      const hydratedComment = { ...row, replies: [] };
+      commentsById.set(row.id, hydratedComment);
+
+      if (row.parentId == null) {
+        rootComments.push(hydratedComment);
+        continue;
+      }
+
+      const parentComment = commentsById.get(row.parentId);
+      if (parentComment) {
+        parentComment.replies.push(hydratedComment);
+      }
+    }
+
+    const commentsWithReplies = rootComments.sort(
+      (left, right) => right.createdAt.getTime() - left.createdAt.getTime(),
     );
 
     logger.info(
@@ -425,12 +416,12 @@ router.get(
     try {
       const { blogId } = req.params;
 
-      const comments = await db
-        .select({ id: comment.id })
+      const [result] = await db
+        .select({ count: count() })
         .from(comment)
         .where(eq(comment.blogId, parseInt(blogId)));
 
-      res.json({ count: comments.length });
+      res.json({ count: Number(result?.count || 0) });
     } catch (error) {
       logger.error(error, "Error fetching comment count:");
       res.status(500).json({ error: "Failed to fetch comment count" });
@@ -447,15 +438,23 @@ router.post("/counts", async (req, res) => {
       return res.status(400).json({ error: "blogIds array is required" });
     }
 
-    const counts = {};
+    const normalizedBlogIds = blogIds
+      .map((blogId) => Number.parseInt(String(blogId), 10))
+      .filter((blogId) => Number.isFinite(blogId));
+    const counts = Object.fromEntries(
+      normalizedBlogIds.map((blogId) => [String(blogId), 0]),
+    );
 
-    for (const blogId of blogIds) {
-      const comments = await db
-        .select({ id: comment.id })
+    if (normalizedBlogIds.length > 0) {
+      const results = await db
+        .select({ blogId: comment.blogId, count: count() })
         .from(comment)
-        .where(eq(comment.blogId, parseInt(blogId)));
+        .where(inArray(comment.blogId, normalizedBlogIds))
+        .groupBy(comment.blogId);
 
-      counts[blogId] = comments.length;
+      for (const row of results) {
+        counts[String(row.blogId)] = Number(row.count || 0);
+      }
     }
 
     res.json(counts);

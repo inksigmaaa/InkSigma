@@ -2,17 +2,29 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ViewSiteHeader from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
-import TableOfContents from "../../components/TableOfContents/TableOfContents";
 import SocialSidebar from "../../components/SocialSidebar/SocialSidebar";
-import ShareMenu from "../../components/ShareMenu/ShareMenu";
 import ScrollToTop from "../../components/ScrollToTop/ScrollToTop";
 import MobileBottomNav from "../../components/MobileBottomNav/MobileBottomNav";
-import CommentSection from "../../components/CommentSection/CommentSection";
 import ClockIcon from "../../components/icons/ClockIcon";
+
+// Lazy-loaded below-the-fold components — reduces initial JS bundle
+const TableOfContents = dynamic(
+  () => import("../../components/TableOfContents/TableOfContents"),
+  { ssr: false },
+);
+const ShareMenu = dynamic(
+  () => import("../../components/ShareMenu/ShareMenu"),
+  { ssr: false },
+);
+const CommentSection = dynamic(
+  () => import("../../components/CommentSection/CommentSection"),
+  { ssr: false, loading: () => <div className="animate-pulse h-32 bg-gray-100 rounded-lg" /> },
+);
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -267,7 +279,7 @@ export default function BlogDetailPageClient({
             const publicationData = await fetchJsonWithRetry(
               `${API_URL}/api/publications/${processedBlog.publicationId}`,
               {
-                credentials: "include",
+                credentials: "omit",
                 headers: tenantHeaders,
                 signal: controller.signal,
               },
@@ -307,7 +319,7 @@ export default function BlogDetailPageClient({
                 headers: {
                   "Content-Type": "application/json",
                 },
-                credentials: "include",
+                credentials: "omit",
                 body: JSON.stringify({ blogId: processedBlog.id }),
               });
             }
@@ -536,6 +548,9 @@ export default function BlogDetailPageClient({
           blog.publication?.name ||
           (blog.author?.name ? `${blog.author.name}'s Blog` : "InkSigma")
         }
+        publicationId={
+          blog.publication?.id || blog.publicationId || blog.publication_id
+        }
         userAvatar={
           blog.publication?.logoUrl
             ? `${API_URL}${blog.publication.logoUrl}`
@@ -674,7 +689,12 @@ export default function BlogDetailPageClient({
           aria-hidden="true"
           className="footer-top-fade pointer-events-none absolute -top-14 inset-x-0 z-10 h-14"
         />
-        <Footer publicationName={blog.publication?.name} />
+        <Footer
+          publicationName={blog.publication?.name}
+          publicationId={
+            blog.publication?.id || blog.publicationId || blog.publication_id
+          }
+        />
       </div>
       <ScrollToTop />
 

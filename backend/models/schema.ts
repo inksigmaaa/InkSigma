@@ -9,7 +9,9 @@ import {
   serial,
   integer,
   pgEnum,
+  index,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // Define blog status enum
@@ -122,31 +124,54 @@ export const verification = pgTable("verification", {
   updatedAt: timestamp("updatedAt").defaultNow(),
 });
 
-export const blog = pgTable("blog", {
-  id: serial("id").primaryKey(),
-  slug: text("slug").notNull().unique(),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  content: text("content").notNull(),
-  image: text("image"),
-  authorId: text("authorId")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  publicationId: integer("publicationId").references(() => publication.id, {
-    onDelete: "set null",
+export const blog = pgTable(
+  "blog",
+  {
+    id: serial("id").primaryKey(),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    content: text("content").notNull(),
+    image: text("image"),
+    authorId: text("authorId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    publicationId: integer("publicationId").references(() => publication.id, {
+      onDelete: "set null",
+    }),
+    masterId: integer("masterId").references(() => blog.id, {
+      onDelete: "set null",
+    }), // Reference for draft copies of published articles
+    categories: text("categories").array(),
+    status: blogStatusEnum("status").notNull().default(BLOG_STATUS.DRAFT),
+    published: boolean(BLOG_STATUS.PUBLISHED).notNull().default(false),
+    scheduledAt: timestamp("scheduledAt"),
+    publishedAt: timestamp("publishedAt"),
+    readTime: integer("readTime"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    publicationStatusCreatedIdx: index("idx_blog_publication_status_created").on(
+      table.publicationId,
+      table.status,
+      table.createdAt,
+    ),
+    authorStatusCreatedIdx: index("idx_blog_author_status_created").on(
+      table.authorId,
+      table.status,
+      table.createdAt,
+    ),
+    publicationStatusPublishedIdx: index(
+      "idx_blog_publication_status_published_at",
+    ).on(table.publicationId, table.status, table.publishedAt),
+    masterIdIdx: index("idx_blog_master_id").on(table.masterId),
+    statusScheduledAtIdx: index("idx_blog_status_scheduled_at").on(
+      table.status,
+      table.scheduledAt,
+    ),
   }),
-  masterId: integer("masterId").references(() => blog.id, {
-    onDelete: "set null",
-  }), // Reference for draft copies of published articles
-  categories: text("categories").array(),
-  status: blogStatusEnum("status").notNull().default(BLOG_STATUS.DRAFT),
-  published: boolean(BLOG_STATUS.PUBLISHED).notNull().default(false),
-  scheduledAt: timestamp("scheduledAt"),
-  publishedAt: timestamp("publishedAt"),
-  readTime: integer("readTime"),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
-});
+);
 
 export const blogSlugHistory = pgTable(
   "blog_slug_history",
@@ -167,21 +192,33 @@ export const blogSlugHistory = pgTable(
   }),
 );
 
-export const comment = pgTable("comment", {
-  id: serial("id").primaryKey(),
-  content: text("content").notNull(),
-  blogId: integer("blogId")
-    .notNull()
-    .references(() => blog.id, { onDelete: "cascade" }),
-  authorId: text("authorId").references(() => user.id, { onDelete: "cascade" }),
-  guestName: text("guestName"),
-  guestEmail: text("guestEmail"),
-  parentId: integer("parentId").references(() => comment.id, {
-    onDelete: "cascade",
+export const comment = pgTable(
+  "comment",
+  {
+    id: serial("id").primaryKey(),
+    content: text("content").notNull(),
+    blogId: integer("blogId")
+      .notNull()
+      .references(() => blog.id, { onDelete: "cascade" }),
+    authorId: text("authorId").references(() => user.id, {
+      onDelete: "cascade",
+    }),
+    guestName: text("guestName"),
+    guestEmail: text("guestEmail"),
+    parentId: integer("parentId").references(() => comment.id, {
+      onDelete: "cascade",
+    }),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    blogParentCreatedIdx: index("idx_comment_blog_parent_created").on(
+      table.blogId,
+      table.parentId,
+      table.createdAt,
+    ),
   }),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
-});
+);
 
 export const publication = pgTable("publication", {
   id: serial("id").primaryKey(),
@@ -228,20 +265,28 @@ export const publicationHostname = pgTable(
   }),
 );
 
-export const publicationMember = pgTable("publication_member", {
-  id: serial("id").primaryKey(),
-  publicationId: integer("publicationId")
-    .notNull()
-    .references(() => publication.id, { onDelete: "cascade" }),
-  userId: text("userId")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  role: memberRoleEnum("role").notNull().default("author"),
-  invitedBy: text("invitedBy").references(() => user.id),
-  joinedAt: timestamp("joinedAt").notNull().defaultNow(),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
-});
+export const publicationMember = pgTable(
+  "publication_member",
+  {
+    id: serial("id").primaryKey(),
+    publicationId: integer("publicationId")
+      .notNull()
+      .references(() => publication.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    role: memberRoleEnum("role").notNull().default("author"),
+    invitedBy: text("invitedBy").references(() => user.id),
+    joinedAt: timestamp("joinedAt").notNull().defaultNow(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    publicationUserUnique: uniqueIndex(
+      "publication_member_publication_user_unique",
+    ).on(table.publicationId, table.userId),
+  }),
+);
 
 export const invitation = pgTable("invitation", {
   id: serial("id").primaryKey(),
@@ -261,48 +306,80 @@ export const invitation = pgTable("invitation", {
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
 
-export const notification = pgTable("notification", {
-  id: serial("id").primaryKey(),
-  userId: text("userId")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  type: notificationTypeEnum("type").notNull(),
-  title: text("title").notNull(),
-  message: text("message").notNull(),
-  relatedUserId: text("relatedUserId").references(() => user.id, {
-    onDelete: "cascade",
+export const notification = pgTable(
+  "notification",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    type: notificationTypeEnum("type").notNull(),
+    title: text("title").notNull(),
+    message: text("message").notNull(),
+    relatedUserId: text("relatedUserId").references(() => user.id, {
+      onDelete: "cascade",
+    }),
+    relatedBlogId: integer("relatedBlogId").references(() => blog.id, {
+      onDelete: "cascade",
+    }),
+    relatedPublicationId: integer("relatedPublicationId").references(
+      () => publication.id,
+      { onDelete: "cascade" },
+    ),
+    isRead: boolean("isRead").notNull().default(false),
+    createdAt: timestamp("createdAt", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    userReadCreatedIdx: index("idx_notification_user_read_created").on(
+      table.userId,
+      table.isRead,
+      table.createdAt,
+    ),
   }),
-  relatedBlogId: integer("relatedBlogId").references(() => blog.id, {
-    onDelete: "cascade",
+);
+
+export const blogView = pgTable(
+  "blog_view",
+  {
+    id: serial("id").primaryKey(),
+    blogId: integer("blogId")
+      .notNull()
+      .references(() => blog.id, { onDelete: "cascade" }),
+    viewerIdentifier: text("viewerIdentifier").notNull(), // IP address or user ID
+    userAgent: text("userAgent"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    blogViewerUnique: uniqueIndex("blog_view_blog_viewer_unique").on(
+      table.blogId,
+      table.viewerIdentifier,
+    ),
+    blogCreatedIdx: index("idx_blog_view_blog_created").on(
+      table.blogId,
+      table.createdAt,
+    ),
   }),
-  relatedPublicationId: integer("relatedPublicationId").references(
-    () => publication.id,
-    { onDelete: "cascade" },
-  ),
-  isRead: boolean("isRead").notNull().default(false),
-  createdAt: timestamp("createdAt", { withTimezone: true, mode: "date" })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updatedAt", { withTimezone: true, mode: "date" })
-    .notNull()
-    .defaultNow(),
-});
+);
 
-export const blogView = pgTable("blog_view", {
-  id: serial("id").primaryKey(),
-  blogId: integer("blogId")
-    .notNull()
-    .references(() => blog.id, { onDelete: "cascade" }),
-  viewerIdentifier: text("viewerIdentifier").notNull(), // IP address or user ID
-  userAgent: text("userAgent"),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-});
-
-export const blogShare = pgTable("blog_share", {
-  id: serial("id").primaryKey(),
-  blogId: integer("blogId")
-    .notNull()
-    .references(() => blog.id, { onDelete: "cascade" }),
-  platform: text("platform").notNull(), // twitter, facebook, linkedin, copy
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-});
+export const blogShare = pgTable(
+  "blog_share",
+  {
+    id: serial("id").primaryKey(),
+    blogId: integer("blogId")
+      .notNull()
+      .references(() => blog.id, { onDelete: "cascade" }),
+    platform: text("platform").notNull(), // twitter, facebook, linkedin, copy
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    blogCreatedIdx: index("idx_blog_share_blog_created").on(
+      table.blogId,
+      table.createdAt,
+    ),
+  }),
+);

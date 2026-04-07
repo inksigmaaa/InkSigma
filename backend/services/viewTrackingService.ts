@@ -9,6 +9,11 @@ import {
 } from "../config/redis.js";
 import crypto from "crypto";
 import logger from "../utils/logger.js";
+import sliService from "./sliService.js";
+
+const VIEW_DEDUP_TTL_SECONDS = Number(
+  process.env.BLOG_VIEW_DEDUP_TTL_SECONDS || 60 * 60 * 24,
+);
 
 interface ViewResult {
     viewed: boolean;
@@ -30,15 +35,26 @@ export const trackBlogView = async (blogId: number, ip: string, userAgent: strin
   try {
     const viewerIdentifier = generateViewerIdentifier(ip, userAgent);
     const redisKey = `blog:${blogId}:view:${viewerIdentifier}`;
+    let usedDatabaseFallback = true;
 
     if (isRedisAvailable()) {
       const redis = getRedisClient();
       if (redis) {
         try {
-          const setResult = await redis.set(redisKey, Date.now().toString(), "NX");
+          const setResult = await redis.set(redisKey, Date.now().toString(), {
+            nx: true,
+            ex: VIEW_DEDUP_TTL_SECONDS,
+          });
           if (!setResult) {
+            sliService.recordViewTracking({
+              isNewView: false,
+              dedupeHit: true,
+              usedDatabaseFallback: false,
+            });
             return { viewed: true, isNewView: false };
           }
+
+          usedDatabaseFallback = false;
         } catch (redisError) {
           reportRedisFailure(redisError, "viewTracking.redis.set");
         }
@@ -47,31 +63,24 @@ export const trackBlogView = async (blogId: number, ip: string, userAgent: strin
       // Fall through to database check when Redis is unavailable.
     }
 
-    {
-      const [existingView] = await db
-        .select()
-        .from(blogView)
-        .where(
-          and(
-            eq(blogView.blogId, blogId),
-            eq(blogView.viewerIdentifier, viewerIdentifier),
-          ),
-        )
-        .limit(1);
+    const insertedRows = await db
+      .insert(blogView)
+      .values({
+        blogId,
+        viewerIdentifier,
+        userAgent: userAgent || null,
+        createdAt: new Date(),
+      })
+      .onConflictDoNothing()
+      .returning({ id: blogView.id });
 
-      if (existingView) {
-        return { viewed: true, isNewView: false };
-      }
-    }
-
-    await db.insert(blogView).values({
-      blogId,
-      viewerIdentifier,
-      userAgent: userAgent || null,
-      createdAt: new Date(),
+    sliService.recordViewTracking({
+      isNewView: insertedRows.length > 0,
+      dedupeHit: insertedRows.length === 0,
+      usedDatabaseFallback,
     });
 
-    return { viewed: true, isNewView: true };
+    return { viewed: true, isNewView: insertedRows.length > 0 };
   } catch (error) {
     logger.error(error, "[VIEW TRACKING] Error tracking view:");
     return { viewed: false, isNewView: false };

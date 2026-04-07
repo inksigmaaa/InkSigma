@@ -27,6 +27,27 @@ const nextConfig = {
         port: '5000',
         pathname: '/uploads/**',
       },
+      {
+        protocol: 'http',
+        hostname: '**.inksigma.local',
+        port: '5000',
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.inksigma.com',
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**.inksigma.com',
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.onrender.com',
+        pathname: '/uploads/**',
+      },
     ],
   },
 };

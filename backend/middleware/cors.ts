@@ -1,103 +1,184 @@
 /**
- * CORS Middleware (Simplified)
- * Uses environment-based allowlist instead of parsing hosts
+ * CORS middleware with credentialed allowlists for app origins
+ * and non-credentialed access for public read routes.
  */
 
-import cors from "cors";
+import cors, { type CorsOptions } from "cors";
+import logger from "../utils/logger.js";
 
-// Build allowlist from environment variables
-const buildAllowList = () => {
-  const fromEnv =
-    process.env.CORS_ORIGIN ||
-    process.env.ALLOWED_ORIGINS ||
-    process.env.FRONTEND_URL ||
-    "http://localhost:3000";
+const EXPOSED_HEADERS = ["X-Subdomain"];
+const DEFAULT_DEVELOPMENT_ORIGINS = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://dashboard.localhost:3000",
+  "http://inksigma.local:3000",
+  "http://dashboard.inksigma.local:3000",
+];
 
-  const origins = new Set(
-    fromEnv
-      .split(",")
-      .map((origin) => origin.trim())
-      .filter(Boolean)
-  );
+const parseConfiguredOrigins = (value: string | undefined, source: string) => {
+  const origins = new Set<string>();
 
-  // Add common development origins
-  if (process.env.NODE_ENV === "development") {
-    origins.add("http://localhost:3000");
-    origins.add("http://127.0.0.1:3000");
-    origins.add("http://dashboard.localhost:3000");
-    origins.add("http://inksigma.local:3000");
-    origins.add("http://dashboard.inksigma.local:3000");
+  for (const rawOrigin of (value || "").split(",")) {
+    const origin = rawOrigin.trim();
+    if (!origin) continue;
+
+    if (origin.includes("*")) {
+      logger.warn(
+        { origin, source },
+        "Ignoring wildcard CORS origin because credentialed requests require explicit allowlists",
+      );
+      continue;
+    }
+
+    try {
+      origins.add(new URL(origin).origin);
+    } catch {
+      logger.warn({ origin, source }, "Ignoring invalid CORS origin");
+    }
   }
 
   return origins;
 };
 
-const allowList = buildAllowList();
+const buildExplicitAllowList = () => {
+  const environment = process.env.NODE_ENV || "development";
+  const configuredOrigins =
+    process.env.CORS_ORIGIN ||
+    process.env.ALLOWED_ORIGINS ||
+    process.env.FRONTEND_URL ||
+    "";
+  const origins = new Set<string>();
 
-// Get base domains for wildcard matching
-const getBaseDomains = () => {
-  const envValue =
-    process.env.BASE_DOMAINS || process.env.BASE_DOMAIN || "localhost,inksigma.local";
-  return envValue
-    .split(",")
-    .map((d) => d.trim().toLowerCase())
-    .filter(Boolean);
+  for (const origin of parseConfiguredOrigins(configuredOrigins, "env")) {
+    origins.add(origin);
+  }
+
+  if (environment !== "production") {
+    for (const origin of DEFAULT_DEVELOPMENT_ORIGINS) {
+      origins.add(origin);
+    }
+  }
+
+  if (environment === "production" && origins.size === 0) {
+    logger.warn(
+      "No explicit production CORS origins configured; credentialed browser requests will be rejected",
+    );
+  }
+
+  return origins;
 };
 
-const baseDomains = getBaseDomains();
+const explicitAllowList = buildExplicitAllowList();
 
-/**
- * Check if an origin is allowed
- * Allows any subdomain of configured base domains
- */
-const isOriginAllowed = (origin) => {
-  // No origin (same-origin or non-browser request)
-  if (!origin) return true;
-
-  // Explicitly allowed
-  if (allowList.has(origin)) return true;
+const normalizeOrigin = (origin: string | undefined) => {
+  if (!origin) return null;
 
   try {
     const url = new URL(origin);
-    const hostname = url.hostname.toLowerCase();
+    return url.origin;
+  } catch {
+    return null;
+  }
+};
 
-    if (
-      process.env.NODE_ENV === "development" &&
-      (hostname === "localhost" ||
-        hostname === "127.0.0.1" ||
-        hostname === "::1" ||
-        hostname.endsWith(".localhost") ||
-        hostname.endsWith(".local"))
-    ) {
-      return true;
-    }
+const getPlatformDomains = () => {
+  const configuredBaseDomains =
+    process.env.BASE_DOMAINS ||
+    process.env.BASE_DOMAIN ||
+    process.env.NEXT_PUBLIC_BASE_DOMAINS ||
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN ||
+    "localhost,inksigma.local";
+  const mainDomain = (
+    process.env.MAIN_DOMAIN ||
+    process.env.NEXT_PUBLIC_MAIN_DOMAIN ||
+    "inksigma.com"
+  ).toLowerCase();
 
-    // Allow any subdomain of base domains
-    for (const baseDomain of baseDomains) {
-      if (hostname === baseDomain || hostname.endsWith(`.${baseDomain}`)) {
-        return true;
-      }
-    }
+  return Array.from(
+    new Set(
+      configuredBaseDomains
+        .split(",")
+        .map((domain) => domain.trim().toLowerCase())
+        .filter(Boolean)
+        .concat(mainDomain),
+    ),
+  );
+};
 
-    // Allow inksigma.com and subdomains in production
-    if (hostname === "inksigma.com" || hostname.endsWith(".inksigma.com")) {
-      return true;
-    }
+const platformDomains = getPlatformDomains();
 
-    return false;
-  } catch (error) {
+const isPlatformOrigin = (origin: string) => {
+  try {
+    const { hostname } = new URL(origin);
+    const normalizedHostname = hostname.toLowerCase();
+
+    return platformDomains.some((domain) => {
+      if (normalizedHostname === domain) return true;
+
+      const suffix = `.${domain}`;
+      if (!normalizedHostname.endsWith(suffix)) return false;
+
+      // Only allow single-level subdomains (e.g., "blog.inksigma.com").
+      // Block nested subdomains (e.g., "evil.nested.inksigma.com") to prevent
+      // attacker-controlled origins from gaining credentialed CORS access.
+      const subdomain = normalizedHostname.slice(0, -suffix.length);
+      return subdomain.length > 0 && !subdomain.includes(".");
+    });
+  } catch {
     return false;
   }
 };
 
-// CORS configuration
-export const corsMiddleware = cors({
-  origin: (origin, callback) => {
-    if (isOriginAllowed(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error("Not allowed by CORS"));
-  },
-  credentials: true,
-  exposedHeaders: ["X-Subdomain"],
+const isPublicCorsRequest = (req) => {
+  if (req.method === "GET" || req.method === "HEAD") {
+    return (
+      req.path === "/api/blogs" ||
+      req.path.startsWith("/api/blogs/") ||
+      req.path.startsWith("/api/publications/") ||
+      req.path.startsWith("/api/comments/blog/") ||
+      req.path === "/health" ||
+      req.path === "/ready"
+    );
+  }
+
+  return req.method === "POST" && req.path === "/api/views/track";
+};
+
+const resolveCorsOptions = (req): CorsOptions => {
+  const requestOrigin = normalizeOrigin(req.header("origin"));
+
+  if (!requestOrigin) {
+    return {
+      origin: true,
+      credentials: false,
+      exposedHeaders: EXPOSED_HEADERS,
+    };
+  }
+
+  if (explicitAllowList.has(requestOrigin) || isPlatformOrigin(requestOrigin)) {
+    return {
+      origin: requestOrigin,
+      credentials: true,
+      exposedHeaders: EXPOSED_HEADERS,
+    };
+  }
+
+  if (isPublicCorsRequest(req)) {
+    return {
+      origin: requestOrigin,
+      credentials: false,
+      exposedHeaders: EXPOSED_HEADERS,
+    };
+  }
+
+  logger.warn({ origin: requestOrigin, path: req.path }, "Rejected CORS origin");
+  return {
+    origin: false,
+    credentials: false,
+    exposedHeaders: EXPOSED_HEADERS,
+  };
+};
+
+export const corsMiddleware = cors((req, callback) => {
+  callback(null, resolveCorsOptions(req));
 });

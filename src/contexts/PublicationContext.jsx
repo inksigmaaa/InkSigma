@@ -510,21 +510,49 @@ function PublicationProviderInner({ children }) {
     }
   }, [session?.user?.id, isPending]);
 
-  // Polling effect to detect membership changes (e.g., being removed by admin)
+  // Smart polling: detect membership changes only when tab is visible.
+  // Stops entirely when hidden, fires immediately on return, then resumes interval.
   useEffect(() => {
     if (!session?.user?.id || isPending || !currentPublication) return;
-
-    // Only poll for joined publications (not owned)
     if (currentPublication.isOwner) return;
 
-    const pollInterval = setInterval(() => {
-      // Only poll if window is visible to save resources and prevent 429s
-      if (document.visibilityState === "visible") {
-        loadUserPublications(true); // silent polling
-      }
-    }, 30000); // Check every 30 seconds (increased from 5s to prevent rate limiting)
+    let timer = null;
 
-    return () => clearInterval(pollInterval);
+    const startPolling = () => {
+      stopPolling();
+      timer = setInterval(() => {
+        loadUserPublications(true);
+      }, 30000);
+    };
+
+    const stopPolling = () => {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        // Tab became visible — refresh immediately, then resume interval
+        loadUserPublications(true);
+        startPolling();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    // Start polling only if tab is currently visible
+    if (!document.hidden) {
+      startPolling();
+    }
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [
     session?.user?.id,
     isPending,

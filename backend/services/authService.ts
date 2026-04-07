@@ -1,6 +1,6 @@
 // services/authService.js
 import crypto from "crypto";
-import { eq } from "drizzle-orm";
+import { eq, and, lt, inArray } from "drizzle-orm";
 import { db } from "../config/database.js";
 import { user, account, verification } from "../models/schema.js";
 import { hashPassword as betterAuthHashPassword, verifyPassword as betterAuthVerifyPassword } from "better-auth/crypto";
@@ -245,32 +245,38 @@ class AuthService {
 
     async cleanupUnverifiedUsers(): Promise<number> {
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        
-        const unverifiedUsers = await db.select()
+
+        // Single query with WHERE filter — no client-side filtering needed
+        const oldUnverifiedUsers = await db.select({ id: user.id, email: user.email })
             .from(user)
             .where(
-                eq(user.emailVerified, false)
+                and(
+                    eq(user.emailVerified, false),
+                    lt(user.createdAt, oneDayAgo),
+                )
             );
-        
-        const oldUnverifiedUsers = unverifiedUsers.filter(u => 
-            new Date(u.createdAt) < oneDayAgo
-        );
 
-        if (oldUnverifiedUsers.length > 0) {
-            logger.info(`[CLEANUP] Removing ${oldUnverifiedUsers.length} unverified users`);
-            
-            for (const u of oldUnverifiedUsers) {
-                try {
-                    await db.transaction(async (tx) => {
-                        await tx.delete(account).where(eq(account.userId, u.id));
-                        await tx.delete(verification).where(eq(verification.identifier, `verify:${u.email}`));
-                        await tx.delete(user).where(eq(user.id, u.id));
-                    });
-                    await this.invalidateUserCache(u.id, u.email);
-                } catch (error) {
-                    logger.error(error, `[CLEANUP] Error deleting user ${u.id}:`);
-                }
-            }
+        if (oldUnverifiedUsers.length === 0) return 0;
+
+        logger.info(`[CLEANUP] Removing ${oldUnverifiedUsers.length} unverified users`);
+
+        const ids = oldUnverifiedUsers.map(u => u.id);
+        const verificationIds = oldUnverifiedUsers.map(u => `verify:${u.email}`);
+
+        try {
+            // Batch delete: 3 queries total instead of 3 × N
+            await db.transaction(async (tx) => {
+                await tx.delete(account).where(inArray(account.userId, ids));
+                await tx.delete(verification).where(inArray(verification.identifier, verificationIds));
+                await tx.delete(user).where(inArray(user.id, ids));
+            });
+
+            // Invalidate caches in parallel
+            await Promise.allSettled(
+                oldUnverifiedUsers.map(u => this.invalidateUserCache(u.id, u.email))
+            );
+        } catch (error) {
+            logger.error(error, `[CLEANUP] Error batch-deleting ${ids.length} unverified users`);
         }
 
         return oldUnverifiedUsers.length;

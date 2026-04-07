@@ -333,11 +333,10 @@ function Sidebar() {
             <div className="flex-1 min-w-0">
               <a
                 href={
-                  currentPublication
-                    ? getPublicationUrl(currentPublication)
-                    : currentPublication?.id
-                      ? `/view-site?publicationId=${currentPublication.id}`
-                      : "/view-site"
+                  (currentPublication && getPublicationUrl(currentPublication)) ||
+                  (currentPublication?.id
+                    ? `/view-site?publicationId=${currentPublication.id}`
+                    : "/view-site")
                 }
                 target="_blank"
                 rel="noopener noreferrer"

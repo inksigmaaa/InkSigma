@@ -3,6 +3,7 @@ import express from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { rm } from "fs/promises";
 import { db } from "../config/database.js";
 import { user, account } from "../models/schema.js";
 import { eq, and, ne } from "drizzle-orm";
@@ -178,9 +179,7 @@ router.post(
       if (userData?.image && userData.image.includes("/uploads/avatars/")) {
         const oldPath = userData.image.split("/uploads/avatars/")[1];
         const oldFilePath = `uploads/avatars/${oldPath}`;
-        if (fs.existsSync(oldFilePath)) {
-          fs.unlinkSync(oldFilePath);
-        }
+        await rm(oldFilePath, { force: true });
       }
 
       // Update user image in database
