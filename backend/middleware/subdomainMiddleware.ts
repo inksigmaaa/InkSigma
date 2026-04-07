@@ -138,7 +138,7 @@ const resolveTenantFromHost = async (host) => {
     subdomain: publication?.subdomain || null,
     customDomain: normalizedHost,
     publication,
-    type: publication ? "custom-domain" : "custom-domain",
+    type: publication ? "custom-domain" : "unknown",
     isDashboard: false,
     isReservedSubdomain: false,
     isCustomDomain: true,
@@ -189,8 +189,23 @@ export const subdomainMiddleware = async (req, res, next) => {
 
     return next();
   } catch (error) {
-    logger.error(error, "[SubdomainMiddleware] Error:");
-    return next();
+    logger.error(error, "[SubdomainMiddleware] Error resolving tenant");
+
+    // Allow health, readiness, and auth routes through without tenant context.
+    // All other routes fail closed so that downstream authorization isn't bypassed.
+    const safePathPrefixes = ["/health", "/ready", "/api/auth"];
+    const isSafePath = safePathPrefixes.some(
+      (prefix) => req.path === prefix || req.path.startsWith(`${prefix}/`),
+    );
+
+    if (isSafePath) {
+      return next();
+    }
+
+    return res.status(503).json({
+      error: "Service temporarily unavailable",
+      code: "TENANT_RESOLUTION_FAILED",
+    });
   }
 };
 

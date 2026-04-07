@@ -154,6 +154,8 @@ const shouldApplyCanonicalRedirect = (currentHost: string, canonicalHost: string
   return normalizedCurrentHost !== normalizedCanonicalHost;
 };
 
+const HOST_ROUTING_TIMEOUT_MS = 3000;
+
 const fetchHostRouting = async (host: string) => {
   try {
     const response = await fetch(
@@ -162,6 +164,7 @@ const fetchHostRouting = async (host: string) => {
         headers: {
           "x-middleware-host-lookup": "1",
         },
+        signal: AbortSignal.timeout(HOST_ROUTING_TIMEOUT_MS),
       },
     );
 

@@ -1,4 +1,7 @@
+import path from "path";
+import { fileURLToPath } from "url";
 import express from "express";
+import crypto from "crypto";
 import helmet from "helmet";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./config/betterAuth.js";
@@ -98,20 +101,60 @@ export const createApp = () => {
 
   app.use(
     helmet({
-      contentSecurityPolicy: false,
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'none'"],
+          imgSrc: ["'self'"],
+          styleSrc: ["'none'"],
+          scriptSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+        },
+      },
       crossOriginResourcePolicy: { policy: "cross-origin" },
       strictTransportSecurity: isProduction ? undefined : false,
     }),
   );
+  // Global request timeout — abort requests that exceed this threshold
+  // to prevent indefinite connection hold from slow queries or external calls.
+  const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 30_000);
+  app.use((req, res, next) => {
+    const timer = setTimeout(() => {
+      if (!res.headersSent) {
+        res.status(503).json({
+          error: "Request timed out",
+          code: "REQUEST_TIMEOUT",
+        });
+      }
+    }, REQUEST_TIMEOUT_MS);
+
+    res.on("finish", () => clearTimeout(timer));
+    res.on("close", () => clearTimeout(timer));
+    next();
+  });
+
   app.use(requestContextMiddleware);
   app.use(corsMiddleware);
   registerHealthRoutes(app);
   app.use(subdomainMiddleware);
   app.use(rateLimitMiddleware);
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+  app.use(express.json({ limit: "1mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
-  app.use("/uploads", express.static("uploads"));
+  // Blog routes may carry large article bodies — allow up to 5MB for those.
+  app.use("/api/blogs", express.json({ limit: "5mb" }));
+
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  app.use(
+    "/uploads",
+    express.static(path.join(__dirname, "uploads"), {
+      maxAge: "7d",
+      dotfiles: "deny",
+      index: false,
+      setHeaders: (res) => {
+        res.setHeader("X-Content-Type-Options", "nosniff");
+      },
+    }),
+  );
 
   logger.info({ step: "auth.mount", status: "start" }, "Mounting auth handler");
   try {
@@ -136,6 +179,25 @@ export const createApp = () => {
   app.use("/api", resendVerificationRoutes);
 
   app.get("/health/slis", (req, res) => {
+    const expectedToken = process.env.HEALTH_SLI_TOKEN;
+
+    if (isProduction) {
+      if (!expectedToken) {
+        return res.status(404).json({ error: "Route not found", code: "NOT_FOUND" });
+      }
+
+      const supplied = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+      const suppliedBuf = Buffer.from(supplied);
+      const expectedBuf = Buffer.from(expectedToken);
+      if (
+        !supplied ||
+        suppliedBuf.length !== expectedBuf.length ||
+        !crypto.timingSafeEqual(suppliedBuf, expectedBuf)
+      ) {
+        return res.status(403).json({ error: "Forbidden", code: "FORBIDDEN" });
+      }
+    }
+
     const { isShuttingDown } = getLifecycleState();
 
     res.json({

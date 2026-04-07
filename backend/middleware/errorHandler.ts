@@ -1,21 +1,31 @@
 import logger from "../utils/logger.js";
 import { AppError } from "../utils/errors.js";
 
+const shouldSanitizeErrors = () => {
+  const env = (process.env.NODE_ENV || "development").toLowerCase();
+  return env !== "development" && env !== "test";
+};
+
+/** @deprecated Migrate callers to throw AppError instead of "message|statusCode" strings. */
 const parsePipeError = (err: Error): { message: string; statusCode: number } => {
   const message = err.message;
   const pipeIndex = message.lastIndexOf("|");
-  
+
   if (pipeIndex > 0) {
     const statusPart = message.slice(pipeIndex + 1);
     const statusCode = parseInt(statusPart, 10);
-    if (!isNaN(statusCode)) {
+    if (!isNaN(statusCode) && statusCode >= 100 && statusCode < 600) {
+      logger.warn(
+        { errorMessage: message },
+        "[DEPRECATED] Pipe-delimited error detected — migrate to AppError",
+      );
       return {
         message: message.slice(0, pipeIndex),
         statusCode,
       };
     }
   }
-  
+
   return { message: err.message, statusCode: 500 };
 };
 
@@ -40,7 +50,7 @@ export const errorMiddleware = (err, req, res, next) => {
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
       error:
-        err.isOperational || process.env.NODE_ENV !== "production"
+        err.isOperational || !shouldSanitizeErrors()
           ? err.message
           : "Internal server error",
       code: err.code,
@@ -49,10 +59,7 @@ export const errorMiddleware = (err, req, res, next) => {
 
   if (err.statusCode) {
     return res.status(err.statusCode).json({
-      error:
-        process.env.NODE_ENV === "production"
-          ? "Internal server error"
-          : err.message,
+      error: shouldSanitizeErrors() ? "Internal server error" : err.message,
       code: err.code,
     });
   }
@@ -102,10 +109,7 @@ export const errorMiddleware = (err, req, res, next) => {
   }
 
   res.status(statusCode).json({
-    error:
-      process.env.NODE_ENV === "production"
-        ? "Internal server error"
-        : message,
+    error: shouldSanitizeErrors() ? "Internal server error" : message,
     code: "INTERNAL_ERROR",
   });
 };
