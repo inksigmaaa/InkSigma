@@ -43,6 +43,11 @@ const nextConfig = {
         hostname: '**.inksigma.com',
         pathname: '/uploads/**',
       },
+      {
+        protocol: 'https',
+        hostname: '**.onrender.com',
+        pathname: '/uploads/**',
+      },
     ],
   },
 };
