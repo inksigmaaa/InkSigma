@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch server.ts",
+    "build": "echo 'No build step required — tsx runs TypeScript directly'",
     "start": "tsx server.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
