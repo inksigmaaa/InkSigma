@@ -1,16 +1,4 @@
 DO $$ BEGIN
- CREATE TYPE "public"."blog_status" AS ENUM('draft', 'published', 'unpublished', 'trash', 'scheduled');
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
- CREATE TYPE "public"."member_role" AS ENUM('owner', 'editor', 'author');
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
  CREATE TYPE "public"."invitation_status" AS ENUM('pending', 'accepted', 'declined', 'expired');
 EXCEPTION
  WHEN duplicate_object THEN null;
