@@ -171,6 +171,10 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     // Redirect to auth-callback after verification, which handles routing to create-publication for new users
     callbackURL: (() => {
+      // Use FRONTEND_URL if set (production), otherwise fall back to subdomain-based local dev URL
+      if (process.env.FRONTEND_URL) {
+        return `${process.env.FRONTEND_URL}/auth-callback`;
+      }
       const baseDomains = getBaseDomains();
       const dashboardSub = process.env.DASHBOARD_SUBDOMAIN || "dashboard";
       if (baseDomains.length > 0) {
