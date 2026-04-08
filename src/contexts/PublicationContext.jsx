@@ -50,6 +50,8 @@ const DASHBOARD_ENDPOINT_PREFIXES = [
 
 const isDashboardHost = () => {
   if (typeof window === "undefined") return false;
+  // Same-origin mode: no subdomain, dashboard is on the same host
+  if (process.env.NEXT_PUBLIC_SAME_ORIGIN_DASHBOARD === "true") return true;
   return (
     window.location.hostname === "dashboard.localhost" ||
     window.location.hostname.startsWith(DASHBOARD_HOST_PREFIX)

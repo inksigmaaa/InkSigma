@@ -72,8 +72,9 @@ export const parseHost = (rawHost) => {
     const baseDomains = getBaseDomains();
     const mainDomain = getMainDomain();
 
-    // Check if this is a dashboard subdomain
+    // Check if this is a dashboard subdomain (or same-origin dashboard mode)
     const isDashboard =
+        process.env.NEXT_PUBLIC_SAME_ORIGIN_DASHBOARD === "true" ||
         hostname === `dashboard.${baseDomains[0]}` ||
         hostname === "dashboard.localhost" ||
         hostname === `dashboard.${mainDomain}`;

@@ -363,8 +363,30 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Handle root domain - show landing page
+  // Handle root domain
   if (_baseDomains.some((domain) => cleanHost === domain || cleanHost === `www.${domain}`)) {
+    // In same-origin dashboard mode, treat non-landing non-public paths as dashboard requests.
+    // The Next.js app router already has routes for /home, /allArticle, /dashboard, etc.
+    // so we just pass through — no rewrite needed.
+    if (
+      process.env.NEXT_PUBLIC_SAME_ORIGIN_DASHBOARD === "true" &&
+      pathname !== "/" &&
+      !isPublicPath(pathname) &&
+      !pathname.startsWith("/view-site")
+    ) {
+      const res = NextResponse.next({ request: { headers: requestHeaders } });
+      // Sync the publication cookie if this is a /{pubSubdomain}/{endpoint} style URL
+      const segments = pathname.split("/").filter(Boolean);
+      if (segments.length >= 2 && !isOldDashboardEndpointPath(`/${segments[0]}`)) {
+        res.cookies.set("inksigma_dashboard_pub", segments[0], {
+          path: "/",
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 30,
+        });
+      }
+      return res;
+    }
+
     return NextResponse.next({
       request: { headers: requestHeaders },
     });
