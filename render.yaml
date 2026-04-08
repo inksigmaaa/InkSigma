@@ -3,7 +3,7 @@ services:
     name: inksigma-backend
     runtime: node
     rootDir: backend
-    buildCommand: npm install
+    buildCommand: npm install --include=dev
     preDeployCommand: npm run db:migrate
     startCommand: npm start
     healthCheckPath: /health
