@@ -172,7 +172,11 @@ function AuthCallbackContent() {
         const publications = Array.isArray(data) ? data : (data?.publications || [])
         const hasAny = Array.isArray(publications) && publications.length > 0
 
-        router.replace(hasAny ? '/' : '/create-publication')
+        const dashboardHome =
+          process.env.NEXT_PUBLIC_SAME_ORIGIN_DASHBOARD === "true"
+            ? "/dashboard"
+            : "/";
+        router.replace(hasAny ? dashboardHome : '/create-publication')
       } catch (err) {
         if (err?.name === "AbortError") {
           return
