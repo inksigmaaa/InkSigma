@@ -65,6 +65,7 @@ const isKnownBaseDomain = (
 const getBaseDomains = () => {
   const configured =
     process.env.NEXT_PUBLIC_BASE_DOMAINS ||
+    process.env.NEXT_PUBLIC_BASE_DOMAIN ||   // singular NEXT_PUBLIC_ variant
     process.env.BASE_DOMAINS ||
     process.env.BASE_DOMAIN ||
     "localhost,inksigma.local";
@@ -79,9 +80,6 @@ const getBaseDomains = () => {
 const _rootDomain = (
   process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"
 ).toLowerCase();
-const _configuredMainDomain = (
-  process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.com"
-).toLowerCase();
 
 const isLocalLikeHost = (host: string) => {
   const normalized = host.split(":")[0].toLowerCase();
@@ -92,11 +90,18 @@ const isLocalLikeHost = (host: string) => {
   );
 };
 
+// When NEXT_PUBLIC_MAIN_DOMAIN is not explicitly set and we're not on localhost,
+// use the root domain itself (e.g. the Vercel URL) rather than defaulting to inksigma.com.
+const _configuredMainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN
+  ? process.env.NEXT_PUBLIC_MAIN_DOMAIN.toLowerCase()
+  : null;
+
 const _mainDomain = isLocalLikeHost(_rootDomain)
   ? _rootDomain
-  : _configuredMainDomain;
+  : (_configuredMainDomain ?? _rootDomain);
 
-const _baseDomains = Array.from(new Set([...getBaseDomains(), _mainDomain]));
+// Always include the root domain so the Vercel/custom URL is a known base domain.
+const _baseDomains = Array.from(new Set([...getBaseDomains(), _mainDomain, _rootDomain]));
 
 // Pre-sort by length descending (used for subdomain extraction)
 const _baseDomainsSorted = [..._baseDomains].sort((a, b) => b.length - a.length);
