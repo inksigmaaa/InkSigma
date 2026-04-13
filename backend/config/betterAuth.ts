@@ -8,100 +8,16 @@ import { redisSessionStorage } from "./redis.js";
 import logger from "../utils/logger.js";
 import { redactEmail } from "../utils/redactPII.js";
 
-const LOCAL_FALLBACK_BASE_DOMAINS = ["localhost", "inksigma.local"];
-
-const normalizeDomain = (value: string) =>
-  value.trim().toLowerCase().replace(/^\./, "");
-
-const isIpAddress = (value: string) =>
-  /^\d{1,3}(?:\.\d{1,3}){3}$/.test(value) || value.includes(":");
-
-const isLocalLikeDomain = (value: string) =>
-  value === "localhost" ||
-  value === "127.0.0.1" ||
-  value === "::1" ||
-  value.endsWith(".local") ||
-  value.endsWith(".localhost");
-
-const inferBaseDomainFromHostname = (hostname: string) => {
-  const normalizedHostname = normalizeDomain(hostname);
-
-  if (!normalizedHostname || isIpAddress(normalizedHostname)) {
-    return null;
-  }
-
-  if (normalizedHostname === "localhost" || normalizedHostname === "dashboard.localhost") {
-    return "localhost";
-  }
-
-  if (normalizedHostname.endsWith(".local") || normalizedHostname.endsWith(".localhost")) {
-    const labels = normalizedHostname.split(".").filter(Boolean);
-    return labels.length >= 2 ? labels.slice(-2).join(".") : normalizedHostname;
-  }
-
-  const labels = normalizedHostname.split(".").filter(Boolean);
-  if (labels.length < 2) {
-    return normalizedHostname;
-  }
-
-  return labels.slice(-2).join(".");
-};
-
-const collectBaseDomainsFromUrlEnv = () => {
-  const envValues = [
-    process.env.FRONTEND_URL,
-    process.env.BETTER_AUTH_URL,
-    process.env.BACKEND_URL,
-    process.env.CORS_ORIGIN,
-    process.env.TRUSTED_ORIGINS,
-    process.env.ALLOWED_ORIGINS,
-    process.env.NEXT_PUBLIC_BACKEND_URL,
-    process.env.NEXT_PUBLIC_API_URL,
-  ];
-
-  const inferredDomains = new Set<string>();
-
-  for (const envValue of envValues) {
-    for (const rawValue of (envValue || "").split(",")) {
-      const value = rawValue.trim();
-      if (!value) continue;
-
-      try {
-        const hostname = new URL(value).hostname;
-        const inferredDomain = inferBaseDomainFromHostname(hostname);
-        if (inferredDomain) {
-          inferredDomains.add(inferredDomain);
-        }
-      } catch {
-        // Ignore non-URL values in origin envs.
-      }
-    }
-  }
-
-  return Array.from(inferredDomains);
-};
-
 // Inline helper to get base domains from environment
 const getBaseDomains = () => {
-  const configuredDomains = (
+  const envValue =
     process.env.BASE_DOMAINS ||
     process.env.BASE_DOMAIN ||
-    ""
-  )
+    "localhost,inksigma.local";
+  return envValue
     .split(",")
-    .map((domain) => normalizeDomain(domain))
+    .map((d) => d.trim().toLowerCase())
     .filter(Boolean);
-
-  if (configuredDomains.length > 0) {
-    return configuredDomains;
-  }
-
-  const inferredDomains = collectBaseDomainsFromUrlEnv();
-  if (inferredDomains.length > 0) {
-    return inferredDomains;
-  }
-
-  return LOCAL_FALLBACK_BASE_DOMAINS;
 };
 
 const getPreferredBaseDomain = () => {
@@ -132,11 +48,9 @@ const buildTrustedOrigins = () => {
   for (const baseDomain of baseDomains) {
     origins.add(`http://${baseDomain}:3000`);
     origins.add(`http://dashboard.${baseDomain}:3000`);
-    origins.add(`http://api.${baseDomain}:5000`);
     origins.add(`http://*.${baseDomain}:3000`);
     origins.add(`https://${baseDomain}`);
     origins.add(`https://dashboard.${baseDomain}`);
-    origins.add(`https://api.${baseDomain}`);
     origins.add(`https://*.${baseDomain}`);
   }
 
@@ -151,23 +65,13 @@ const buildTrustedOrigins = () => {
 };
 
 const buildBaseUrl = () => {
-  const explicitBaseUrl =
-    process.env.BETTER_AUTH_URL ||
-    process.env.BACKEND_URL ||
-    process.env.NEXT_PUBLIC_BACKEND_URL ||
-    process.env.NEXT_PUBLIC_API_URL;
-  if (explicitBaseUrl) return explicitBaseUrl.replace(/\/$/, "");
+  if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
 
   const preferredBaseDomain = getPreferredBaseDomain();
-  const apiSub = process.env.API_SUBDOMAIN || "api";
+  const dashboardSub = process.env.DASHBOARD_SUBDOMAIN || "dashboard";
 
-  if (preferredBaseDomain && preferredBaseDomain !== "localhost") {
-    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
-    const port = protocol === "https" ? "" : ":5000";
-    return `${protocol}://${apiSub}.${preferredBaseDomain}${port}`;
-  }
-
-  return "http://localhost:5000";
+  // Prefer dashboard.<base>:5000 so cookies align with dashboard host in local dev
+  return `http://${dashboardSub}.${preferredBaseDomain}:5000`;
 };
 
 const getCrossSubdomainCookieDomain = () => {
@@ -175,11 +79,7 @@ const getCrossSubdomainCookieDomain = () => {
 
   // Prefer a real local/prod domain (e.g. inksigma.local / inksigma.com)
   // and avoid localhost because cross-subdomain cookies there are unreliable.
-  if (preferredBaseDomain && !isLocalLikeDomain(preferredBaseDomain)) {
-    return preferredBaseDomain;
-  }
-
-  if (preferredBaseDomain === "inksigma.local") {
+  if (preferredBaseDomain && preferredBaseDomain !== "localhost") {
     return preferredBaseDomain;
   }
 

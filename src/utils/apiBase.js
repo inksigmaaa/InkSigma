@@ -1,28 +1,3 @@
-const isLocalLikeHostname = (hostname) =>
-  hostname === "localhost" ||
-  hostname === "127.0.0.1" ||
-  hostname === "::1" ||
-  hostname.endsWith(".local") ||
-  hostname.endsWith(".localhost");
-
-const inferBaseDomainFromHostname = (hostname) => {
-  const normalizedHostname = String(hostname || "").trim().toLowerCase();
-  if (!normalizedHostname) {
-    return null;
-  }
-
-  if (normalizedHostname === "localhost" || normalizedHostname === "dashboard.localhost") {
-    return "localhost";
-  }
-
-  const labels = normalizedHostname.split(".").filter(Boolean);
-  if (labels.length < 2) {
-    return normalizedHostname;
-  }
-
-  return labels.slice(-2).join(".");
-};
-
 export const getApiBase = () => {
   const envBase = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
 
@@ -35,7 +10,12 @@ export const getApiBase = () => {
       try {
         const envUrl = new URL(normalizedEnvBase);
         const { protocol, hostname } = window.location;
-        const isLocalDevHost = isLocalLikeHostname(hostname);
+        const isLocalDevHost =
+          hostname === "localhost" ||
+          hostname === "127.0.0.1" ||
+          hostname === "::1" ||
+          hostname.endsWith(".local") ||
+          hostname.endsWith(".localhost");
         const usesApiSubdomain = envUrl.hostname.startsWith("api.");
 
         if (isLocalDevHost && usesApiSubdomain) {
@@ -57,24 +37,12 @@ export const getApiBase = () => {
   // Fallback for development without env config
   if (typeof window !== "undefined") {
     const { protocol, hostname, port } = window.location;
-
-    if (isLocalLikeHostname(hostname)) {
+    // Use same host with backend port for dashboard and local development
+    // Don't try to create api subdomain - just use localhost:5000
+    if (hostname.includes('.localhost') || hostname.includes('.local')) {
       const backendPort = port || "5000";
       return `${protocol}//localhost:${backendPort}`;
     }
-
-    const configuredRootDomain = (
-      process.env.NEXT_PUBLIC_ROOT_DOMAIN || ""
-    ).trim().toLowerCase();
-    const baseDomain =
-      configuredRootDomain && !isLocalLikeHostname(configuredRootDomain)
-        ? configuredRootDomain
-        : inferBaseDomainFromHostname(hostname);
-
-    if (baseDomain && !isLocalLikeHostname(baseDomain)) {
-      return `${protocol}//api.${baseDomain}`;
-    }
-
     return `${protocol}//${hostname}:5000`;
   }
 
