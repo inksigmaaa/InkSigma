@@ -42,8 +42,8 @@ class EmailService {
         if (!this.transporter) {
             this.transporter = nodemailer.createTransport({
                 host: process.env.SMTP_HOST || "smtp.gmail.com",
-                port: 587,
-                secure: false,
+                port: Number(process.env.SMTP_PORT) || 587,
+                secure: Number(process.env.SMTP_PORT) === 465,
                 connectionTimeout: this.smtpTimeoutMs,
                 greetingTimeout: this.smtpTimeoutMs,
                 socketTimeout: this.smtpTimeoutMs,
@@ -79,7 +79,9 @@ class EmailService {
                 withTimeout(
                     () =>
                         this.getTransporter().sendMail({
-                            from: process.env.SMTP_USER,
+                            from: process.env.SMTP_FROM
+                                ? `${process.env.SMTP_FROM_NAME || "InkSigma"} <${process.env.SMTP_FROM}>`
+                                : process.env.SMTP_USER,
                             to: params.to,
                             subject: params.subject,
                             html: params.html,
