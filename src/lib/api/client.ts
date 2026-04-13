@@ -1,12 +1,7 @@
 import axios from 'axios';
 import { parseHost } from '@/utils/hostParser';
 import { buildLoginRedirectPath, isAuthFlowPath } from '@/utils/auth';
-
-const getApiBase = () => {
-  const envBase = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
-  if (envBase) return envBase.replace(/\/$/, '');
-  return process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:5000';
-};
+import { getApiBase } from '@/utils/apiBase';
 
 const getTenantHeaders = (): Record<string, string> => {
   if (typeof window === 'undefined') return {};
