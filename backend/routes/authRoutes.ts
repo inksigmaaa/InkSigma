@@ -10,6 +10,17 @@ import { redactEmail } from "../utils/redactPII.js";
 
 const router = express.Router();
 
+// Helper to resolve frontend URL for email links (reset password, verify email)
+function getFrontendUrl(): string {
+  if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL.replace(/\/$/, "");
+  const baseDomain = (process.env.BASE_DOMAINS || process.env.BASE_DOMAIN || "").split(",")[0]?.trim();
+  if (baseDomain && baseDomain !== "localhost" && baseDomain !== "inksigma.local") {
+    const sub = process.env.DASHBOARD_SUBDOMAIN || "dashboard";
+    return `https://${sub}.${baseDomain}`;
+  }
+  return "http://localhost:3000";
+}
+
 // Helper to get session from request
 async function getSession(req) {
   const headers = new Headers();
@@ -42,7 +53,7 @@ router.post(
       }
 
       const token = await authService.createResetToken(email);
-      const resetUrl = `${redirectTo || "http://localhost:3000/reset-password"}?token=${token}&email=${encodeURIComponent(email)}`;
+      const resetUrl = `${redirectTo || `${getFrontendUrl()}/reset-password`}?token=${token}&email=${encodeURIComponent(email)}`;
 
       await emailService.sendPasswordReset({
         email,
@@ -144,7 +155,7 @@ router.post(
       }
 
       const token = await authService.createVerificationToken(email);
-      const verifyUrl = `${redirectTo || "http://localhost:3000/verify-email"}?token=${token}&email=${encodeURIComponent(email)}`;
+      const verifyUrl = `${redirectTo || `${getFrontendUrl()}/verify-email`}?token=${token}&email=${encodeURIComponent(email)}`;
 
       await emailService.sendVerification({
         email,
