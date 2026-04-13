@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getDashboardUrl } from "@/utils/dashboardUrl";
 
 export default function Hero() {
   return (
@@ -33,7 +34,7 @@ export default function Hero() {
         {/* CTA Button */}
         <div className="flex items-center justify-center">
           <Link
-            href="/signup"
+            href={getDashboardUrl("/signup")}
             className="w-[200px] h-[37px] py-2 px-4 gap-1 rounded-[20px] border border-gray-300 opacity-100 font-medium text-sm leading-[150%] tracking-normal text-black bg-white hover:bg-gray-50 transition-colors shadow-sm font-sans flex items-center justify-center"
           >
             <span>Start Writing for FREE</span>
