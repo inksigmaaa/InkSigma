@@ -22,6 +22,7 @@ export default function CreatePublication() {
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { loadUserPublications, switchPublication } = usePublication();
+  const SUBDOMAIN_SUFFIX = `.${getRootDomain() || "inksigma.local"}`;
   const [publicationName, setPublicationName] = useState("");
   const [hasUserEditedName, setHasUserEditedName] = useState(false);
   const [subdomain, setSubdomain] = useState("");
@@ -76,8 +77,7 @@ export default function CreatePublication() {
     // Only check backend for database availability (not reserved, not format)
     subdomainCheckTimeout.current = setTimeout(async () => {
       try {
-const API_URL = getApiBase();
-const SUBDOMAIN_SUFFIX = `.${getRootDomain() || "inksigma.local"}`;
+        const API_URL = getApiBase();
         const response = await fetch(
           `${API_URL}/api/publications/check-subdomain/${subdomain.toLowerCase()}`,
           {
