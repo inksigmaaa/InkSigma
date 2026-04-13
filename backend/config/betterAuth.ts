@@ -88,6 +88,12 @@ const getCrossSubdomainCookieDomain = () => {
 
 const crossSubdomainCookieDomain = getCrossSubdomainCookieDomain();
 
+const isSmtpConfigured = () =>
+  !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+
+const isGoogleConfigured = () =>
+  !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+
 export const auth = betterAuth({
   baseURL: buildBaseUrl(),
   basePath: "/api/auth",
@@ -106,15 +112,16 @@ export const auth = betterAuth({
     provider: "pg",
   }),
 
+  // Correct better-auth v1.x API for secondary storage (Redis)
+  secondaryStorage: redisSessionStorage,
+
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
     cookieCache: {
-      enabled: true, // Enable cookie cache to reduce Redis lookups and improve performance
+      enabled: true,
       maxAge: 60 * 5, // Cache session in cookie for 5 minutes
     },
-    // Use Redis for session storage
-    storage: redisSessionStorage,
   },
 
   user: {
@@ -128,7 +135,7 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
+    requireEmailVerification: isSmtpConfigured(),
 
     // Validate email before signup
     async beforeSignUp({ email }) {
@@ -200,25 +207,30 @@ export const auth = betterAuth({
         );
         return result;
       } catch (error) {
+        // Log but do NOT rethrow — a missing/broken SMTP config must not
+        // turn a successful signup into a 500. The user was created; they
+        // can request a new verification email later.
         logger.error(
-          error.message,
-          "[BETTER-AUTH] Failed to send verification email:",
+          { err: error?.message },
+          "[BETTER-AUTH] Failed to send verification email — SMTP may not be configured",
         );
-        logger.error(error, "[BETTER-AUTH] Full error:");
-        throw error;
       }
     },
   },
 
   socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      authorization: {
-        params: {
-          prompt: "select_account",
-        },
-      },
-    },
+    ...(isGoogleConfigured()
+      ? {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            authorization: {
+              params: {
+                prompt: "select_account",
+              },
+            },
+          },
+        }
+      : {}),
   },
 });
