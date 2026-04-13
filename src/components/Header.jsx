@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useScrollToSection } from "@/hooks/useScrollToSection";
 import { MAIN_NAVIGATION, LOGOS } from "@/constants";
+import { getDashboardUrl } from "@/utils/dashboardUrl";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -124,7 +125,7 @@ export default function Header() {
           }}
           className="text-white hover:bg-gray-800 transition-none duration-0 text-sm font-medium border-0 max-md:w-[70px] max-md:h-[28px] max-md:text-xs max-md:px-3"
         >
-          <Link href="/login" className="flex items-center">
+          <Link href={getDashboardUrl("/login")} className="flex items-center">
             Login
           </Link>
         </Button>
@@ -189,7 +190,7 @@ export default function Header() {
               }}
               className="text-white hover:bg-gray-800 transition-none duration-0 text-sm font-medium border-0"
             >
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+              <Link href={getDashboardUrl("/login")} onClick={() => setMobileMenuOpen(false)}>
                 Login
               </Link>
             </Button>

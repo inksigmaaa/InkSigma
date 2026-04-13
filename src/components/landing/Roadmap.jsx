@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getDashboardUrl } from "@/utils/dashboardUrl";
 
 export default function Roadmap() {
   return (
@@ -43,7 +44,7 @@ export default function Roadmap() {
                   Experience the Product now
                 </p>
                 <Link
-                  href="/signup"
+                  href={getDashboardUrl("/signup")}
                   className="w-[121px] h-[37px] py-2 rounded-[20px] border border-[#2E2E2E] bg-transparent hover:bg-gray-50 transition-colors flex items-center justify-center"
                 >
                   <span className="font-medium text-sm leading-[150%] text-[#2E2E2E] font-sans">
