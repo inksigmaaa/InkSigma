@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getDashboardUrl } from "@/utils/dashboardUrl";
 
 export default function CTA() {
   return (
@@ -17,7 +18,7 @@ export default function CTA() {
 
         <div className="flex items-center justify-center">
           <Link
-            href="/signup"
+            href={getDashboardUrl("/signup")}
             className="w-[201px] h-[37px] py-2 px-4 gap-1 rounded-[20px] border border-[#2E2E2E] bg-transparent hover:bg-gray-50 transition-colors flex items-center justify-center font-[500] text-sm leading-[150%] text-black font-sans"
           >
             <span>Start Writing for FREE</span>
