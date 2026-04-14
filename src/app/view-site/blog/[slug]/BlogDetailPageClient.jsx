@@ -487,7 +487,7 @@ export default function BlogDetailPageClient({
   const currentUrl =
     typeof window !== "undefined"
       ? window.location.href
-      : `http://localhost:3000/view-site/blog/${slug}`;
+      : `${process.env.NEXT_PUBLIC_APP_URL || "https://inksigma.xyz"}/view-site/blog/${slug}`;
   const fallbackHomePath =
     typeof window !== "undefined" &&
     !window.location.pathname.startsWith("/view-site")

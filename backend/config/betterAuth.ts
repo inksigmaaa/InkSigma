@@ -13,7 +13,7 @@ const getBaseDomains = () => {
   const envValue =
     process.env.BASE_DOMAINS ||
     process.env.BASE_DOMAIN ||
-    "localhost,inksigma.local";
+    (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost,inksigma.local");
   return envValue
     .split(",")
     .map((d) => d.trim().toLowerCase())
@@ -35,7 +35,7 @@ const buildTrustedOrigins = () => {
     process.env.CORS_ORIGIN ||
     process.env.ALLOWED_ORIGINS ||
     process.env.FRONTEND_URL ||
-    "http://localhost:3000";
+    (process.env.NODE_ENV === "production" ? "https://inksigma.xyz" : "http://localhost:3000");
 
   const origins = new Set(
     fromEnv
@@ -187,7 +187,9 @@ export const auth = betterAuth({
       if (baseDomains.length > 0) {
         return `http://${dashboardSub}.${baseDomains[0]}:3000/auth-callback`;
       }
-      return "http://localhost:3000/auth-callback";
+      return process.env.NODE_ENV === "production"
+        ? "https://inksigma.xyz/auth-callback"
+        : "http://localhost:3000/auth-callback";
     })(),
     sendVerificationEmail: async ({ user, url, token }) => {
       logger.info(

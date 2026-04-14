@@ -7,13 +7,16 @@ import cors, { type CorsOptions } from "cors";
 import logger from "../utils/logger.js";
 
 const EXPOSED_HEADERS = ["X-Subdomain"];
-const DEFAULT_DEVELOPMENT_ORIGINS = [
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "http://dashboard.localhost:3000",
-  "http://inksigma.local:3000",
-  "http://dashboard.inksigma.local:3000",
-];
+const DEFAULT_DEVELOPMENT_ORIGINS =
+  process.env.NODE_ENV === "production"
+    ? []
+    : [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://dashboard.localhost:3000",
+        "http://inksigma.local:3000",
+        "http://dashboard.inksigma.local:3000",
+      ];
 
 const parseConfiguredOrigins = (value: string | undefined, source: string) => {
   const origins = new Set<string>();
@@ -87,7 +90,7 @@ const getPlatformDomains = () => {
     process.env.BASE_DOMAIN ||
     process.env.NEXT_PUBLIC_BASE_DOMAINS ||
     process.env.NEXT_PUBLIC_ROOT_DOMAIN ||
-    "localhost,inksigma.local";
+    (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost,inksigma.local");
   const mainDomain = (
     process.env.MAIN_DOMAIN ||
     process.env.NEXT_PUBLIC_MAIN_DOMAIN ||
