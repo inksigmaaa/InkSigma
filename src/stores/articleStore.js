@@ -110,14 +110,23 @@ export const useArticleStore = create((set, get) => ({
   loading: false,
   reviewLoading: false,
   pubArticlesLoading: false,
+  pubArticlesLoadingMore: false,
   error: null,
   reviewError: null,
   areUserArticlesLoaded: false,
   arePubArticlesLoaded: false,
+  hasMorePubArticles: true,        // pagination: are there more articles to load?
+  _pubArticlesOffset: 0,           // pagination: current offset
+  _PUB_PAGE_SIZE: 50,              // matches backend DEFAULT_BLOG_PAGE_SIZE
 
-  // Internal refs (not reactive — used for abort control)
+  // Internal refs (not reactive — used for abort control & staleness)
   _abortController: null,
   _pubAbortController: null,
+  _userArticlesFetchedAt: 0,       // timestamp of last successful user articles fetch
+  _userArticlesCacheKey: null,     // "pubId:status" key for cache hit comparison
+  _pubArticlesFetchedAt: 0,        // timestamp of last successful pub articles fetch
+  _pubArticlesCacheKey: null,      // "pubId:status" key for cache hit comparison
+  _STALE_MS: 30_000,              // 30s staleness window — skip re-fetch if fresh
 
   // ── Actions ──
 
@@ -127,11 +136,24 @@ export const useArticleStore = create((set, get) => ({
     includeAllPublications = false,
     status = null,
     extraFilters = {},
+    { force = false } = {},
   ) => {
     if (!session?.user?.id) return;
 
+    // ── Staleness gate: skip if same params fetched recently ──
+    const cacheKey = `user:${publicationId}:${status}:${includeAllPublications}`;
+    const state = get();
+    if (
+      !force &&
+      state._userArticlesCacheKey === cacheKey &&
+      state.areUserArticlesLoaded &&
+      Date.now() - state._userArticlesFetchedAt < state._STALE_MS
+    ) {
+      return state.articles;
+    }
+
     // Abort previous request
-    const prev = get()._abortController;
+    const prev = state._abortController;
     if (prev) prev.abort();
     const controller = new AbortController();
     set({ _abortController: controller, loading: true, error: null });
@@ -155,8 +177,11 @@ export const useArticleStore = create((set, get) => ({
       const converted = blogs.map(convertBlogToArticle);
       set({
         articles: converted,
+        _userArticlesFetchedAt: Date.now(),
+        _userArticlesCacheKey: cacheKey,
         ...(status ? {} : { areUserArticlesLoaded: true }),
       });
+      return converted;
     } catch (err) {
       if (err.name === "AbortError") return;
       set({ error: err.message });
@@ -167,14 +192,27 @@ export const useArticleStore = create((set, get) => ({
     }
   },
 
-  loadPublicationArticles: async (publicationId, status = null, extraFilters = {}) => {
-    const prev = get()._pubAbortController;
+  loadPublicationArticles: async (publicationId, status = null, extraFilters = {}, { force = false } = {}) => {
+    // ── Staleness gate: skip if same params fetched recently ──
+    const cacheKey = `pub:${publicationId}:${status}`;
+    const state = get();
+    if (
+      !force &&
+      state._pubArticlesCacheKey === cacheKey &&
+      state.arePubArticlesLoaded &&
+      Date.now() - state._pubArticlesFetchedAt < state._STALE_MS
+    ) {
+      return state.publicationArticles;
+    }
+
+    const prev = state._pubAbortController;
     if (prev) prev.abort();
     const controller = new AbortController();
     set({ _pubAbortController: controller, pubArticlesLoading: true });
 
     try {
-      const filters = status ? { status } : {};
+      const pageSize = state._PUB_PAGE_SIZE;
+      const filters = status ? { status, limit: pageSize, offset: 0 } : { limit: pageSize, offset: 0 };
       Object.assign(filters, extraFilters);
       const blogs = await blogService.getPublicationBlogs(
         publicationId,
@@ -184,6 +222,10 @@ export const useArticleStore = create((set, get) => ({
       const converted = blogs.map(convertBlogToArticle);
       set({
         publicationArticles: converted,
+        _pubArticlesFetchedAt: Date.now(),
+        _pubArticlesCacheKey: cacheKey,
+        _pubArticlesOffset: converted.length,
+        hasMorePubArticles: blogs.length >= pageSize,
         ...(status ? {} : { arePubArticlesLoaded: true }),
       });
       return converted;
@@ -194,6 +236,37 @@ export const useArticleStore = create((set, get) => ({
       if (!controller.signal.aborted) {
         set({ pubArticlesLoading: false, _pubAbortController: null });
       }
+    }
+  },
+
+  // ── Load next page of publication articles (append to existing list) ──
+  loadMorePublicationArticles: async (publicationId, status = null, extraFilters = {}) => {
+    const state = get();
+    if (!state.hasMorePubArticles || state.pubArticlesLoadingMore) return;
+
+    set({ pubArticlesLoadingMore: true });
+
+    try {
+      const pageSize = state._PUB_PAGE_SIZE;
+      const filters = status
+        ? { status, limit: pageSize, offset: state._pubArticlesOffset }
+        : { limit: pageSize, offset: state._pubArticlesOffset };
+      Object.assign(filters, extraFilters);
+
+      const blogs = await blogService.getPublicationBlogs(publicationId, filters);
+      const converted = blogs.map(convertBlogToArticle);
+
+      set((s) => ({
+        publicationArticles: [...s.publicationArticles, ...converted],
+        _pubArticlesOffset: s._pubArticlesOffset + converted.length,
+        hasMorePubArticles: blogs.length >= pageSize,
+      }));
+      return converted;
+    } catch (err) {
+      console.error("Error loading more articles:", err);
+      throw err;
+    } finally {
+      set({ pubArticlesLoadingMore: false });
     }
   },
 
@@ -211,6 +284,16 @@ export const useArticleStore = create((set, get) => ({
     } finally {
       set({ reviewLoading: false });
     }
+  },
+
+  // ── Invalidate staleness so the next page load re-fetches ──
+  _invalidateCache: () => {
+    set({
+      _userArticlesFetchedAt: 0,
+      _userArticlesCacheKey: null,
+      _pubArticlesFetchedAt: 0,
+      _pubArticlesCacheKey: null,
+    });
   },
 
   getArticleById: async (id) => {
@@ -254,6 +337,7 @@ export const useArticleStore = create((set, get) => ({
       articles: [newArticle, ...s.articles],
       publicationArticles: [newArticle, ...s.publicationArticles],
     }));
+    get()._invalidateCache();
     return newArticle;
   },
 
@@ -296,51 +380,102 @@ export const useArticleStore = create((set, get) => ({
       articles: removeFromList(s.articles, id),
       publicationArticles: removeFromList(s.publicationArticles, id),
     }));
+    get()._invalidateCache();
   },
 
   moveToDraft: async (id) => {
-    const blog = await blogService.updateBlogStatus(id, "draft");
-    const updated = convertBlogToArticle(blog);
+    // ── Optimistic: update UI immediately, rollback on error ──
+    const snapshot = { articles: get().articles, publicationArticles: get().publicationArticles };
     set((s) => ({
-      articles: updateInList(s.articles, id, updated),
-      publicationArticles: updateInList(s.publicationArticles, id, updated),
+      articles: updateInList(s.articles, id, { ...s.articles.find((a) => String(a.id) === String(id)), status: "draft" }),
+      publicationArticles: updateInList(s.publicationArticles, id, { ...s.publicationArticles.find((a) => String(a.id) === String(id)), status: "draft" }),
     }));
-    return updated;
+
+    try {
+      const blog = await blogService.updateBlogStatus(id, "draft");
+      const updated = convertBlogToArticle(blog);
+      set((s) => ({
+        articles: updateInList(s.articles, id, updated),
+        publicationArticles: updateInList(s.publicationArticles, id, updated),
+      }));
+      return updated;
+    } catch (err) {
+      set(snapshot); // rollback
+      throw err;
+    }
   },
 
   moveToTrashStatus: async (id) => {
-    const blog = await blogService.updateBlogStatus(id, "trash");
-    const updated = convertBlogToArticle(blog);
+    // ── Optimistic: update UI immediately, rollback on error ──
+    const snapshot = { articles: get().articles, publicationArticles: get().publicationArticles };
     set((s) => ({
-      articles: updateInList(s.articles, id, updated),
-      publicationArticles: updateInList(s.publicationArticles, id, updated),
+      articles: updateInList(s.articles, id, { ...s.articles.find((a) => String(a.id) === String(id)), status: "trash" }),
+      publicationArticles: updateInList(s.publicationArticles, id, { ...s.publicationArticles.find((a) => String(a.id) === String(id)), status: "trash" }),
     }));
-    return updated;
+
+    try {
+      const blog = await blogService.updateBlogStatus(id, "trash");
+      const updated = convertBlogToArticle(blog);
+      set((s) => ({
+        articles: updateInList(s.articles, id, updated),
+        publicationArticles: updateInList(s.publicationArticles, id, updated),
+      }));
+      return updated;
+    } catch (err) {
+      set(snapshot); // rollback
+      throw err;
+    }
   },
 
   publishArticle: async (id) => {
-    const blog = await blogService.updateBlogStatus(id, "published");
-    const updated = convertBlogToArticle(blog);
-    const wasMerge = String(updated.id) !== String(id);
+    // ── Optimistic: update UI immediately, rollback on error ──
+    const snapshot = { articles: get().articles, publicationArticles: get().publicationArticles };
     set((s) => ({
-      articles: wasMerge
-        ? handleMerge(s.articles, id, updated)
-        : updateInList(s.articles, id, updated),
-      publicationArticles: wasMerge
-        ? handleMerge(s.publicationArticles, id, updated)
-        : updateInList(s.publicationArticles, id, updated),
+      articles: updateInList(s.articles, id, { ...s.articles.find((a) => String(a.id) === String(id)), status: "published" }),
+      publicationArticles: updateInList(s.publicationArticles, id, { ...s.publicationArticles.find((a) => String(a.id) === String(id)), status: "published" }),
     }));
-    return updated;
+
+    try {
+      const blog = await blogService.updateBlogStatus(id, "published");
+      const updated = convertBlogToArticle(blog);
+      const wasMerge = String(updated.id) !== String(id);
+      set((s) => ({
+        articles: wasMerge
+          ? handleMerge(s.articles, id, updated)
+          : updateInList(s.articles, id, updated),
+        publicationArticles: wasMerge
+          ? handleMerge(s.publicationArticles, id, updated)
+          : updateInList(s.publicationArticles, id, updated),
+      }));
+      get()._invalidateCache();
+      return updated;
+    } catch (err) {
+      set(snapshot); // rollback
+      throw err;
+    }
   },
 
   unpublishArticle: async (id) => {
-    const blog = await blogService.updateBlogStatus(id, "unpublished");
-    const updated = convertBlogToArticle(blog);
+    // ── Optimistic: update UI immediately, rollback on error ──
+    const snapshot = { articles: get().articles, publicationArticles: get().publicationArticles };
     set((s) => ({
-      articles: updateInList(s.articles, id, updated),
-      publicationArticles: updateInList(s.publicationArticles, id, updated),
+      articles: updateInList(s.articles, id, { ...s.articles.find((a) => String(a.id) === String(id)), status: "unpublished" }),
+      publicationArticles: updateInList(s.publicationArticles, id, { ...s.publicationArticles.find((a) => String(a.id) === String(id)), status: "unpublished" }),
     }));
-    return updated;
+
+    try {
+      const blog = await blogService.updateBlogStatus(id, "unpublished");
+      const updated = convertBlogToArticle(blog);
+      set((s) => ({
+        articles: updateInList(s.articles, id, updated),
+        publicationArticles: updateInList(s.publicationArticles, id, updated),
+      }));
+      get()._invalidateCache();
+      return updated;
+    } catch (err) {
+      set(snapshot); // rollback
+      throw err;
+    }
   },
 
   acceptReviewArticle: async (id, targetStatus = "unpublished") => {
@@ -356,6 +491,7 @@ export const useArticleStore = create((set, get) => ({
         ? handleMerge(s.publicationArticles, id, updated)
         : upsertInList(s.publicationArticles, id, updated),
     }));
+    get()._invalidateCache();
     return updated;
   },
 
@@ -367,6 +503,7 @@ export const useArticleStore = create((set, get) => ({
       articles: upsertInList(s.articles, id, updated),
       publicationArticles: upsertInList(s.publicationArticles, id, updated),
     }));
+    get()._invalidateCache();
     return updated;
   },
 
@@ -377,6 +514,7 @@ export const useArticleStore = create((set, get) => ({
       reviewArticles: removeFromList(s.reviewArticles, id),
       articles: updateInList(s.articles, id, updated),
     }));
+    get()._invalidateCache();
     return updated;
   },
 
@@ -387,6 +525,7 @@ export const useArticleStore = create((set, get) => ({
       articles: s.articles.filter((a) => !stringIds.has(String(a.id))),
       publicationArticles: s.publicationArticles.filter((a) => !stringIds.has(String(a.id))),
     }));
+    get()._invalidateCache();
   },
 
   bulkMoveToTrashStatus: async (ids) => {
@@ -398,6 +537,7 @@ export const useArticleStore = create((set, get) => ({
       articles: s.articles.map((a) => map.get(String(a.id)) || a),
       publicationArticles: s.publicationArticles.map((a) => map.get(String(a.id)) || a),
     }));
+    get()._invalidateCache();
   },
 
   bulkPublish: async (ids) => {
@@ -409,6 +549,7 @@ export const useArticleStore = create((set, get) => ({
       articles: s.articles.map((a) => map.get(String(a.id)) || a),
       publicationArticles: s.publicationArticles.map((a) => map.get(String(a.id)) || a),
     }));
+    get()._invalidateCache();
   },
 
   bulkMoveToDraft: async (ids) => {
@@ -420,6 +561,7 @@ export const useArticleStore = create((set, get) => ({
       articles: s.articles.map((a) => map.get(String(a.id)) || a),
       publicationArticles: s.publicationArticles.map((a) => map.get(String(a.id)) || a),
     }));
+    get()._invalidateCache();
   },
 
   uploadArticleImage: async (id, imageFile) => {
@@ -458,6 +600,7 @@ export const useArticleStore = create((set, get) => ({
       articles: [newDraft, ...s.articles],
       publicationArticles: [newDraft, ...s.publicationArticles],
     }));
+    get()._invalidateCache();
     return newDraft;
   },
 

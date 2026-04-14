@@ -49,7 +49,9 @@ export const useCreatePublication = () => {
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PUBLICATION_KEYS.all });
+      // Only invalidate list-level queries — no need to nuke detail caches
+      queryClient.invalidateQueries({ queryKey: PUBLICATION_KEYS.lists() });
+      queryClient.invalidateQueries({ queryKey: PUBLICATION_KEYS.userPublications() });
     },
   });
 };

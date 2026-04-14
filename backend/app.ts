@@ -19,6 +19,7 @@ import resendVerificationRoutes from "./routes/resendVerificationRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js";
 import viewRoutes from "./routes/viewRoutes.js";
+import articleStatsRoutes from "./routes/articleStatsRoutes.js";
 import { corsMiddleware } from "./middleware/cors.js";
 import { subdomainMiddleware } from "./middleware/subdomainMiddleware.js";
 import { rateLimitMiddleware } from "./middleware/rateLimitMiddleware.js";
@@ -176,6 +177,7 @@ export const createApp = () => {
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/comments", commentRoutes);
   app.use("/api/views", viewRoutes);
+  app.use("/api/article-stats", articleStatsRoutes);
   app.use("/api", resendVerificationRoutes);
 
   app.get("/health/slis", (req, res) => {

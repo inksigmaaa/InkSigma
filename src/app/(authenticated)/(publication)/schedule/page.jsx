@@ -80,11 +80,12 @@ export default function SchedulePage() {
     if (shouldLoad) {
       hasMountedRef.current = true;
       loadedContextRef.current = targetContext;
+      const opts = needsRefresh ? { force: true } : {};
 
       if (targetContext === "publication") {
-        loadPublicationArticlesRef.current(currentPublication.id);
+        loadPublicationArticlesRef.current(currentPublication.id, null, {}, opts);
       } else {
-        loadUserArticlesRef.current(null, true); // Load all publications for scheduled articles
+        loadUserArticlesRef.current(null, true, null, {}, opts); // Load all publications for scheduled articles
       }
 
       // Clean up the URL if refresh param was present
