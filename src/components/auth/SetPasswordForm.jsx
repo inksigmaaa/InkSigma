@@ -15,7 +15,7 @@ export default function SetPasswordForm({ onSuccess, onCancel }) {
   const [success, setSuccess] = useState(false);
 
   const API_URL =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === "production" ? "https://api.inksigma.xyz" : "http://localhost:5000");
 
   // Check if user can set password on mount
   useEffect(() => {

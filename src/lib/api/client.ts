@@ -5,7 +5,7 @@ import { buildLoginRedirectPath, isAuthFlowPath } from '@/utils/auth';
 const getApiBase = () => {
   const envBase = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
   if (envBase) return envBase.replace(/\/$/, '');
-  return process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:5000';
+  return process.env.NEXT_PUBLIC_BETTER_AUTH_URL || (typeof window !== 'undefined' ? 'http://localhost:5000' : 'https://api.inksigma.xyz');
 };
 
 const getTenantHeaders = (): Record<string, string> => {

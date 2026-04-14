@@ -1,4 +1,4 @@
-const DEFAULT_ROOT_DOMAIN = "localhost";
+const DEFAULT_ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost");
 const DEFAULT_MAIN_DOMAIN = "inksigma.com";
 const DEV_APP_PORT = "3000";
 

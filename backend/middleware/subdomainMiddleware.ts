@@ -29,7 +29,7 @@ const MAIN_DOMAIN = (
 const BASE_DOMAINS = (
   process.env.BASE_DOMAINS ||
   process.env.BASE_DOMAIN ||
-  "localhost,inksigma.local"
+  (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost,inksigma.local")
 )
   .split(",")
   .map((domain) => domain.trim().toLowerCase())

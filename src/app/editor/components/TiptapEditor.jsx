@@ -62,10 +62,14 @@ const FONT_OPTIONS = [
 
 const FONT_MAP = new Map(FONT_OPTIONS.map((font, index) => [font, index]));
 
+const _prodBackend = "https://api.inksigma.xyz";
+const _devBackend = "http://localhost:5000";
+const _defaultBackend = process.env.NODE_ENV === "production" ? _prodBackend : _devBackend;
+
 const API_ORIGINS = [
   process.env.NEXT_PUBLIC_BACKEND_URL,
   process.env.NEXT_PUBLIC_API_URL,
-  "http://localhost:5000",
+  _defaultBackend,
 ]
   .filter(Boolean)
   .map((url) => String(url).replace(/\/$/, ""));
@@ -74,7 +78,7 @@ const createApiUrl = (relativePath) => {
   const baseUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
-    "http://localhost:5000";
+    _defaultBackend;
   const normalizedBase = baseUrl.replace(/\/$/, "");
   const normalizedPath = relativePath.startsWith("/")
     ? relativePath

@@ -15,7 +15,7 @@ import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getPublicationUrl } from "@/utils/publicationDomain";
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === "production" ? "https://api.inksigma.xyz" : "http://localhost:5000");
 
 export default function HomePage() {
   const searchParams = useSearchParams();
@@ -170,7 +170,7 @@ export default function HomePage() {
                 <Avatar className="w-[66px] h-[68px] bg-gray-100 flex-shrink-0 max-md:w-14 max-md:h-14">
                   {currentPublication?.logoUrl && (
                     <AvatarImage
-                      src={`http://localhost:5000${currentPublication.logoUrl}`}
+                      src={getImageUrl(currentPublication.logoUrl)}
                       alt={currentPublication.name}
                       className="w-full h-full object-cover"
                     />

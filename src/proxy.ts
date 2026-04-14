@@ -68,7 +68,7 @@ const getBaseDomains = () => {
     process.env.NEXT_PUBLIC_BASE_DOMAIN ||   // singular NEXT_PUBLIC_ variant
     process.env.BASE_DOMAINS ||
     process.env.BASE_DOMAIN ||
-    "localhost,inksigma.local";
+    (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost,inksigma.local");
 
   return configured
     .split(",")
@@ -78,7 +78,7 @@ const getBaseDomains = () => {
 
 // Pre-compute once at module init (Node.js runtime — survives across requests)
 const _rootDomain = (
-  process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"
+  process.env.NEXT_PUBLIC_ROOT_DOMAIN || (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost")
 ).toLowerCase();
 
 const isLocalLikeHost = (host: string) => {
@@ -181,7 +181,7 @@ const getBackendBaseUrl = () => {
     process.env.NEXT_PUBLIC_BACKEND_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
     process.env.BACKEND_URL ||
-    "http://localhost:5000"
+    (process.env.NODE_ENV === "production" ? "https://api.inksigma.xyz" : "http://localhost:5000")
   ).replace(/\/$/, "");
 };
 
