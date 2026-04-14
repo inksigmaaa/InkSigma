@@ -4,7 +4,7 @@
  * and non-credentialed access for public read routes.
  */
 
-import type { Request } from "express";
+import type { Request, Response, NextFunction } from "express";
 import cors, { type CorsOptions } from "cors";
 import logger from "../utils/logger.js";
 
@@ -220,7 +220,16 @@ const isPublicCorsRequest = (req: Request): boolean => {
 // CORS options resolver
 // ---------------------------------------------------------------------------
 
-const resolveCorsOptions = async (req: Request): Promise<CorsOptions> => {
+/**
+ * Synchronous CORS options resolver.
+ *
+ * The `cors` npm package callback must be invoked synchronously —
+ * async callbacks create a race where Express proceeds before headers
+ * are set. The allowlist and platform domain checks are all synchronous.
+ * Custom domain verification is deferred to an Express-level async
+ * middleware that runs before the cors callback.
+ */
+const resolveCorsOptions = (req: Request): CorsOptions => {
   const requestOrigin = normalizeOrigin(req.header("origin"));
 
   // No Origin header — same-origin or non-browser client.
@@ -243,14 +252,15 @@ const resolveCorsOptions = async (req: Request): Promise<CorsOptions> => {
     return { ...baseOptions, origin: requestOrigin, credentials: true };
   }
 
-  // 2. Verified custom domain — full credentialed access.
+  // 2. Verified custom domain (synchronous in-memory cache lookup).
   try {
     const { hostname } = new URL(requestOrigin);
-    if (await isVerifiedCustomDomain(hostname.toLowerCase())) {
+    const cached = verifiedDomainCache.get(hostname.toLowerCase());
+    if (cached && Date.now() < cached.expiresAt && cached.allowed) {
       return { ...baseOptions, origin: requestOrigin, credentials: true };
     }
   } catch {
-    // Invalid origin URL — fall through to rejection.
+    // Invalid origin URL — fall through.
   }
 
   // 3. Public read routes — non-credentialed access.
@@ -264,15 +274,44 @@ const resolveCorsOptions = async (req: Request): Promise<CorsOptions> => {
 };
 
 // ---------------------------------------------------------------------------
+// Custom domain warm-up middleware
+// ---------------------------------------------------------------------------
+
+export const customDomainCorsWarmup = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  if (!resolveCustomDomainFn) {
+    next();
+    return;
+  }
+
+  const requestOrigin = normalizeOrigin(req.header("origin"));
+  if (!requestOrigin) {
+    next();
+    return;
+  }
+
+  if (explicitAllowList.has(requestOrigin) || isPlatformOrigin(requestOrigin)) {
+    next();
+    return;
+  }
+
+  try {
+    const { hostname } = new URL(requestOrigin);
+    await isVerifiedCustomDomain(hostname.toLowerCase());
+  } catch {
+    // Ignore — cors callback will handle rejection.
+  }
+
+  next();
+};
+
+// ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 
 export const corsMiddleware = cors((req, callback) => {
-  resolveCorsOptions(req as Request).then(
-    (options) => callback(null, options),
-    (err) => {
-      logger.error(err, "CORS options resolution failed");
-      callback(null, { origin: false });
-    },
-  );
+  callback(null, resolveCorsOptions(req as Request));
 });
