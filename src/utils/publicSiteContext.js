@@ -4,7 +4,7 @@ const API_URL = (
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.BACKEND_URL ||
-  "http://localhost:5000"
+  (process.env.NODE_ENV === "production" ? "https://api.inksigma.xyz" : "http://localhost:5000")
 ).replace(/\/$/, "");
 const PUBLIC_SITE_REVALIDATE_SECONDS = 30;
 const PUBLIC_SITE_FETCH_TIMEOUT_MS = Number(

@@ -46,5 +46,5 @@ export const getApiBase = () => {
     return `${protocol}//${hostname}:5000`;
   }
 
-  return "http://localhost:5000";
+  return process.env.NODE_ENV === "production" ? "https://api.inksigma.xyz" : "http://localhost:5000";
 };
