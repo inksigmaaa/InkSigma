@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import Verify from "@/components/features/verify/Verify";
 import BlogStatsComponent from "@/components/features/BlogStatsComponent/BlogStatsComponent";
@@ -43,89 +43,92 @@ export default function HomePage() {
     }
   }, [currentPublication?.id, shouldRefresh, loadPublicationArticles]);
 
-  // Get recent published articles (limit to 4)
-  const recentArticles = publicationArticles
-    .filter((article) => article.status === "published")
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 4)
-    .map((article) => {
-      // Check if article has an image - use fallback if not
-      const thumbnailUrl = getThumbnailWithFallback(
-        getImageUrl(article.image),
-        article.id,
-      );
+  // ── Stable blogIds key — only changes when the actual set of IDs changes ──
+  const blogIds = useMemo(() => {
+    return publicationArticles
+      .filter((a) => a.status === "published")
+      .map((a) => a.id)
+      .sort();
+  }, [publicationArticles]);
 
-      // Check if current user is the author of this article
-      const isOwnArticle = article.authorId === session?.user?.id;
+  const blogIdsKey = blogIds.join(",");
 
-      return {
-        id: article.id,
-        title: article.title,
-        description: article.description,
-        categories:
-          article.categories?.length > 0
-            ? article.categories
-            : ["Uncategorized"],
-        thumbnail: thumbnailUrl,
-        views: viewStats[article.id]?.views || article.views || 0,
-        isOwnArticle, // Add this flag
-      };
-    });
+  // ── Memoised recent articles — recomputes only when articles or viewStats change ──
+  const recentArticles = useMemo(() => {
+    return publicationArticles
+      .filter((article) => article.status === "published")
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 4)
+      .map((article) => {
+        const thumbnailUrl = getThumbnailWithFallback(
+          getImageUrl(article.image),
+          article.id,
+        );
+        const isOwnArticle = article.authorId === session?.user?.id;
 
-  // Fetch publication stats once and share them with child analytics widgets.
+        return {
+          id: article.id,
+          title: article.title,
+          description: article.description,
+          categories:
+            article.categories?.length > 0
+              ? article.categories
+              : ["Uncategorized"],
+          thumbnail: thumbnailUrl,
+          views: viewStats[article.id]?.views || article.views || 0,
+          isOwnArticle,
+        };
+      });
+  }, [publicationArticles, viewStats, session?.user?.id]);
+
+  // ── Fetch stats in a single request when the set of published blog IDs changes ──
+  const prevBlogIdsKeyRef = useRef("");
+  const statsAbortRef = useRef(null);
+
   useEffect(() => {
+    if (blogIds.length === 0 || blogIdsKey === prevBlogIdsKeyRef.current) {
+      return;
+    }
+    prevBlogIdsKeyRef.current = blogIdsKey;
+
+    // Abort any previous in-flight stats request
+    statsAbortRef.current?.abort();
+    const controller = new AbortController();
+    statsAbortRef.current = controller;
+
     const fetchStats = async () => {
-      // Get published article IDs
-      const publishedArticles = publicationArticles.filter(
-        (article) => article.status === "published",
-      );
-
-      if (publishedArticles.length === 0) {
-        return;
-      }
-
       try {
-        const blogIds = publishedArticles.map((a) => a.id);
+        // Single combined endpoint — replaces two separate POST calls
+        const response = await fetch(`${API_URL}/api/article-stats/batch`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ blogIds }),
+          signal: controller.signal,
+        });
 
-        const [commentResponse, viewResponse] = await Promise.all([
-          fetch(`${API_URL}/api/comments/counts`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ blogIds }),
-          }),
-          fetch(`${API_URL}/api/views/stats`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ blogIds }),
-          }),
-        ]);
-
-        if (commentResponse.ok) {
-          const counts = await commentResponse.json();
-          setCommentCounts(counts || {});
-        } else {
-          console.error(
-            "[Home] Failed to fetch comment counts:",
-            commentResponse.status,
-          );
-        }
-
-        if (viewResponse.ok) {
-          const stats = await viewResponse.json();
-          setViewStats(stats || {});
-        } else {
-          console.error(
-            "[Home] Failed to fetch view stats:",
-            viewResponse.status,
-          );
+        if (response.ok) {
+          const data = await response.json();
+          // Split combined response into commentCounts and viewStats for backward compat
+          const counts = {};
+          const stats = {};
+          for (const [id, s] of Object.entries(data)) {
+            counts[id] = s.comments || 0;
+            stats[id] = { views: s.views || 0, shares: s.shares || 0 };
+          }
+          setCommentCounts(counts);
+          setViewStats(stats);
         }
       } catch (err) {
-        console.error("Error fetching stats:", err);
+        if (err.name !== "AbortError") {
+          console.error("Error fetching stats:", err);
+        }
       }
     };
 
     fetchStats();
-  }, [publicationArticles]);
+
+    return () => controller.abort();
+  }, [blogIdsKey, blogIds]);
 
   const handleStartWriting = () => {
     // Pass current publication ID to editor - navigate using router

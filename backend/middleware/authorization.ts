@@ -1,3 +1,4 @@
+import type { Request, Response, NextFunction } from "express";
 import {
   canAccessUserScopedResource,
   getPublicationAccess,
@@ -7,65 +8,100 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../config/database.js";
 import { notification } from "../models/schema.js";
 import { setRequestContext } from "../utils/logger.js";
+import type { PublicationRole } from "../types/express.js";
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse a route parameter as a positive integer.
+ * Returns the parsed number or null if invalid.
+ */
+const parsePositiveInt = (raw: unknown): number | null => {
+  const n = Number.parseInt(String(raw), 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+
+// ---------------------------------------------------------------------------
+// Middleware factories
+// ---------------------------------------------------------------------------
+
+/**
+ * Require that the authenticated user can access a user-scoped resource.
+ * Grants access if the user is the resource owner or a platform admin.
+ */
 export const requireUserParamAccess = (userIdParam = "userId") => {
-  return (req, res, next) => {
-    const targetUserId = req.params?.[userIdParam];
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const rawTargetUserId = req.params?.[userIdParam];
+    const targetUserId = Array.isArray(rawTargetUserId) ? rawTargetUserId[0] : rawTargetUserId;
 
     if (!targetUserId) {
-      return res.status(400).json({ error: "User ID is required" });
+      res.status(400).json({ error: "User ID is required", code: "BAD_REQUEST" });
+      return;
     }
 
     if (!canAccessUserScopedResource(req.user, targetUserId)) {
-      return res.status(403).json({ error: "Access denied" });
+      res.status(403).json({ error: "Access denied", code: "FORBIDDEN" });
+      return;
     }
 
     setRequestContext({ userId: targetUserId });
-
-    return next();
+    next();
   };
 };
 
+/**
+ * Require that the authenticated user holds one of the allowed roles
+ * within the target publication.
+ *
+ * Fetches the publication and membership in parallel, attaches
+ * `req.publication`, `req.publicationAccess`, and `req.userRole`.
+ */
 export const requirePublicationRole = (
-  allowedRoles: string[],
+  allowedRoles: PublicationRole[],
   options: { publicationIdParam?: string; allowOwner?: boolean } = {},
 ) => {
   const publicationIdParam = options.publicationIdParam || "publicationId";
 
-  return async (req, res, next) => {
-    const rawPublicationId = req.params?.[publicationIdParam];
-    const publicationId = Number.parseInt(String(rawPublicationId), 10);
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const publicationId = parsePositiveInt(req.params?.[publicationIdParam]);
 
-    if (!Number.isFinite(publicationId)) {
-      return res.status(400).json({ error: "Invalid publication ID" });
+    if (publicationId === null) {
+      res.status(400).json({ error: "Invalid publication ID", code: "BAD_REQUEST" });
+      return;
     }
 
-    const access = await getPublicationAccess(req.user?.id, publicationId);
+    const access = await getPublicationAccess(req.user?.id!, publicationId);
+
     if (!access?.publication) {
-      return res.status(404).json({ error: "Publication not found" });
+      res.status(404).json({ error: "Publication not found", code: "NOT_FOUND" });
+      return;
     }
 
     if (!hasPublicationRole(access, allowedRoles, options)) {
-      return res.status(403).json({ error: "Access denied" });
+      res.status(403).json({ error: "Access denied", code: "FORBIDDEN" });
+      return;
     }
 
     req.publication = access.publication;
     req.publicationAccess = access;
-    req.userRole = access.isOwner ? "admin" : access.role;
+    req.userRole = access.isOwner ? "admin" : (access.role as PublicationRole);
     setRequestContext({ publicationId: access.publication.id });
-    return next();
+    next();
   };
 };
 
-export const requireNotificationOwnership = (
-  notificationIdParam = "notificationId",
-) => {
-  return async (req, res, next) => {
-    const rawNotificationId = req.params?.[notificationIdParam];
-    const notificationId = Number.parseInt(String(rawNotificationId), 10);
+/**
+ * Require that the authenticated user owns the target notification.
+ */
+export const requireNotificationOwnership = (notificationIdParam = "notificationId") => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const notificationId = parsePositiveInt(req.params?.[notificationIdParam]);
 
-    if (!Number.isFinite(notificationId)) {
-      return res.status(400).json({ error: "Invalid notification ID" });
+    if (notificationId === null) {
+      res.status(400).json({ error: "Invalid notification ID", code: "BAD_REQUEST" });
+      return;
     }
 
     const [ownedNotification] = await db
@@ -74,17 +110,18 @@ export const requireNotificationOwnership = (
       .where(
         and(
           eq(notification.id, notificationId),
-          eq(notification.userId, req.user?.id),
+          eq(notification.userId, req.user?.id!),
         ),
       )
       .limit(1);
 
     if (!ownedNotification) {
-      return res.status(404).json({ error: "Notification not found" });
+      res.status(404).json({ error: "Notification not found", code: "NOT_FOUND" });
+      return;
     }
 
     setRequestContext({ userId: ownedNotification.userId });
     req.notificationId = notificationId;
-    return next();
+    next();
   };
 };

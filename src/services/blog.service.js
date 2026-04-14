@@ -85,7 +85,7 @@ export const blogService = {
     );
   },
 
-  // Get publication's blogs
+  // Get publication's blogs (supports pagination via limit/offset in filters)
   async getPublicationBlogs(publicationId, filters = {}, options = {}) {
     const params = new URLSearchParams();
 

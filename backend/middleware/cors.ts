@@ -1,12 +1,21 @@
 /**
- * CORS middleware with credentialed allowlists for app origins
+ * CORS middleware with credentialed allowlists for app origins,
+ * platform subdomain matching, verified custom domain support,
  * and non-credentialed access for public read routes.
  */
 
+import type { Request } from "express";
 import cors, { type CorsOptions } from "cors";
 import logger from "../utils/logger.js";
 
-const EXPOSED_HEADERS = ["X-Subdomain"];
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const EXPOSED_HEADERS = ["X-Subdomain", "X-Request-Id"];
+const ALLOWED_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
+const PREFLIGHT_MAX_AGE = 7200; // 2 hours — Chrome's maximum
+
 const DEFAULT_DEVELOPMENT_ORIGINS =
   process.env.NODE_ENV === "production"
     ? []
@@ -18,7 +27,11 @@ const DEFAULT_DEVELOPMENT_ORIGINS =
         "http://dashboard.inksigma.local:3000",
       ];
 
-const parseConfiguredOrigins = (value: string | undefined, source: string) => {
+// ---------------------------------------------------------------------------
+// Origin allowlist (computed once at startup)
+// ---------------------------------------------------------------------------
+
+const parseConfiguredOrigins = (value: string | undefined, source: string): Set<string> => {
   const origins = new Set<string>();
 
   for (const rawOrigin of (value || "").split(",")) {
@@ -28,7 +41,7 @@ const parseConfiguredOrigins = (value: string | undefined, source: string) => {
     if (origin.includes("*")) {
       logger.warn(
         { origin, source },
-        "Ignoring wildcard CORS origin because credentialed requests require explicit allowlists",
+        "Ignoring wildcard CORS origin — credentialed requests require explicit allowlists",
       );
       continue;
     }
@@ -43,7 +56,7 @@ const parseConfiguredOrigins = (value: string | undefined, source: string) => {
   return origins;
 };
 
-const buildExplicitAllowList = () => {
+const buildExplicitAllowList = (): Set<string> => {
   const environment = process.env.NODE_ENV || "development";
   const configuredOrigins =
     process.env.CORS_ORIGIN ||
@@ -73,18 +86,11 @@ const buildExplicitAllowList = () => {
 
 const explicitAllowList = buildExplicitAllowList();
 
-const normalizeOrigin = (origin: string | undefined) => {
-  if (!origin) return null;
+// ---------------------------------------------------------------------------
+// Platform domain matching
+// ---------------------------------------------------------------------------
 
-  try {
-    const url = new URL(origin);
-    return url.origin;
-  } catch {
-    return null;
-  }
-};
-
-const getPlatformDomains = () => {
+const getPlatformDomains = (): string[] => {
   const configuredBaseDomains =
     process.env.BASE_DOMAINS ||
     process.env.BASE_DOMAIN ||
@@ -110,7 +116,16 @@ const getPlatformDomains = () => {
 
 const platformDomains = getPlatformDomains();
 
-const isPlatformOrigin = (origin: string) => {
+const normalizeOrigin = (origin: string | undefined): string | null => {
+  if (!origin) return null;
+  try {
+    return new URL(origin).origin;
+  } catch {
+    return null;
+  }
+};
+
+const isPlatformOrigin = (origin: string): boolean => {
   try {
     const { hostname } = new URL(origin);
     const normalizedHostname = hostname.toLowerCase();
@@ -132,7 +147,61 @@ const isPlatformOrigin = (origin: string) => {
   }
 };
 
-const isPublicCorsRequest = (req) => {
+// ---------------------------------------------------------------------------
+// Custom domain verification cache
+// ---------------------------------------------------------------------------
+// Verified custom domains (e.g., myblog.com) need credentialed CORS access
+// to the API. We cache verified domains in-memory with a short TTL to avoid
+// DB lookups on every preflight.
+// ---------------------------------------------------------------------------
+
+const verifiedDomainCache = new Map<string, { allowed: boolean; expiresAt: number }>();
+const DOMAIN_CACHE_TTL_MS = 120_000; // 2 minutes
+const DOMAIN_CACHE_MAX_SIZE = 1_000;
+
+let resolveCustomDomainFn:
+  | ((domain: string) => Promise<unknown | null>)
+  | null = null;
+
+/**
+ * Register the custom domain resolver. Called once from app.ts after
+ * the publication resolver is available, to avoid circular imports.
+ */
+export const setCustomDomainResolver = (
+  resolver: (domain: string) => Promise<unknown | null>,
+): void => {
+  resolveCustomDomainFn = resolver;
+};
+
+const isVerifiedCustomDomain = async (hostname: string): Promise<boolean> => {
+  if (!resolveCustomDomainFn) return false;
+
+  const now = Date.now();
+  const cached = verifiedDomainCache.get(hostname);
+  if (cached && now < cached.expiresAt) return cached.allowed;
+
+  try {
+    const publication = await resolveCustomDomainFn(hostname);
+    const allowed = publication !== null;
+
+    // Evict oldest entries if cache is full.
+    if (verifiedDomainCache.size >= DOMAIN_CACHE_MAX_SIZE) {
+      const firstKey = verifiedDomainCache.keys().next().value;
+      if (firstKey) verifiedDomainCache.delete(firstKey);
+    }
+
+    verifiedDomainCache.set(hostname, { allowed, expiresAt: now + DOMAIN_CACHE_TTL_MS });
+    return allowed;
+  } catch {
+    return false;
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Public route detection
+// ---------------------------------------------------------------------------
+
+const isPublicCorsRequest = (req: Request): boolean => {
   if (req.method === "GET" || req.method === "HEAD") {
     return (
       req.path === "/api/blogs" ||
@@ -147,9 +216,14 @@ const isPublicCorsRequest = (req) => {
   return req.method === "POST" && req.path === "/api/views/track";
 };
 
-const resolveCorsOptions = (req): CorsOptions => {
+// ---------------------------------------------------------------------------
+// CORS options resolver
+// ---------------------------------------------------------------------------
+
+const resolveCorsOptions = async (req: Request): Promise<CorsOptions> => {
   const requestOrigin = normalizeOrigin(req.header("origin"));
 
+  // No Origin header — same-origin or non-browser client.
   if (!requestOrigin) {
     return {
       origin: true,
@@ -158,30 +232,47 @@ const resolveCorsOptions = (req): CorsOptions => {
     };
   }
 
-  if (explicitAllowList.has(requestOrigin) || isPlatformOrigin(requestOrigin)) {
-    return {
-      origin: requestOrigin,
-      credentials: true,
-      exposedHeaders: EXPOSED_HEADERS,
-    };
-  }
-
-  if (isPublicCorsRequest(req)) {
-    return {
-      origin: requestOrigin,
-      credentials: false,
-      exposedHeaders: EXPOSED_HEADERS,
-    };
-  }
-
-  logger.warn({ origin: requestOrigin, path: req.path }, "Rejected CORS origin");
-  return {
-    origin: false,
-    credentials: false,
+  const baseOptions: Partial<CorsOptions> = {
     exposedHeaders: EXPOSED_HEADERS,
+    methods: ALLOWED_METHODS,
+    maxAge: PREFLIGHT_MAX_AGE,
   };
+
+  // 1. Explicit allowlist or platform subdomain — full credentialed access.
+  if (explicitAllowList.has(requestOrigin) || isPlatformOrigin(requestOrigin)) {
+    return { ...baseOptions, origin: requestOrigin, credentials: true };
+  }
+
+  // 2. Verified custom domain — full credentialed access.
+  try {
+    const { hostname } = new URL(requestOrigin);
+    if (await isVerifiedCustomDomain(hostname.toLowerCase())) {
+      return { ...baseOptions, origin: requestOrigin, credentials: true };
+    }
+  } catch {
+    // Invalid origin URL — fall through to rejection.
+  }
+
+  // 3. Public read routes — non-credentialed access.
+  if (isPublicCorsRequest(req)) {
+    return { ...baseOptions, origin: requestOrigin, credentials: false };
+  }
+
+  // 4. Rejected.
+  logger.warn({ origin: requestOrigin, path: req.path }, "Rejected CORS origin");
+  return { origin: false, credentials: false, exposedHeaders: EXPOSED_HEADERS };
 };
 
+// ---------------------------------------------------------------------------
+// Export
+// ---------------------------------------------------------------------------
+
 export const corsMiddleware = cors((req, callback) => {
-  callback(null, resolveCorsOptions(req));
+  resolveCorsOptions(req as Request).then(
+    (options) => callback(null, options),
+    (err) => {
+      logger.error(err, "CORS options resolution failed");
+      callback(null, { origin: false });
+    },
+  );
 });

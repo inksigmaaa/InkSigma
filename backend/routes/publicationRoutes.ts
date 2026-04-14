@@ -336,8 +336,8 @@ router.get("/resolve-host", async (req, res) => {
 // Resolve publication by current host
 router.get("/resolve", async (req, res) => {
   try {
-    const tenant = req.tenant || {};
-    if (!tenant.publication) {
+    const tenant = req.tenant;
+    if (!tenant?.publication) {
       return res.status(404).json({ error: "Publication not found" });
     }
 

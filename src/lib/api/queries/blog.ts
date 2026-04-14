@@ -63,8 +63,11 @@ export const useCreateBlog = () => {
       const res = await api.post('/blogs', data);
       return res.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.all });
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.lists() });
+      if (result?.publicationId) {
+        queryClient.invalidateQueries({ queryKey: BLOG_KEYS.publication(String(result.publicationId)) });
+      }
     },
   });
 };
@@ -104,8 +107,9 @@ export const useDeleteBlog = () => {
       const res = await api.delete(`/blogs/${id}`);
       return res.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.all });
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.detail(id) });
+      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.lists() });
     },
   });
 };
@@ -132,8 +136,12 @@ export const useAcceptReviewArticle = () => {
       const res = await api.patch(`/blogs/${id}/review-action`, { action: 'accept', targetStatus });
       return res.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.all });
+    onSuccess: (result, { id }) => {
+      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.detail(id) });
+      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.lists() });
+      if (result?.publicationId) {
+        queryClient.invalidateQueries({ queryKey: BLOG_KEYS.review(String(result.publicationId)) });
+      }
     },
   });
 };
@@ -145,8 +153,12 @@ export const useRejectReviewArticle = () => {
       const res = await api.patch(`/blogs/${id}/review-action`, { action: 'reject' });
       return res.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.all });
+    onSuccess: (result, id) => {
+      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.detail(id) });
+      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.lists() });
+      if (result?.publicationId) {
+        queryClient.invalidateQueries({ queryKey: BLOG_KEYS.review(String(result.publicationId)) });
+      }
     },
   });
 };

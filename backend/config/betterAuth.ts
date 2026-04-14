@@ -138,7 +138,7 @@ export const auth = betterAuth({
     requireEmailVerification: isSmtpConfigured(),
 
     // Validate email before signup
-    async beforeSignUp({ email }) {
+    async beforeSignUp({ email }: { email: string }) {
       logger.info(`[EMAIL-VALIDATION] Validating email: ${redactEmail(email)}`);
 
       const validation = await emailValidationService.validateEmail(email);
@@ -177,7 +177,7 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     // Redirect to auth-callback after verification, which handles routing to create-publication for new users
-    callbackURL: (() => {
+    callbackURL: ((): string => {
       // Use FRONTEND_URL if set (production), otherwise fall back to subdomain-based local dev URL
       if (process.env.FRONTEND_URL) {
         return `${process.env.FRONTEND_URL}/auth-callback`;
