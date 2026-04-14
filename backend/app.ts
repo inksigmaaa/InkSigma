@@ -24,7 +24,7 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js";
 import viewRoutes from "./routes/viewRoutes.js";
 import articleStatsRoutes from "./routes/articleStatsRoutes.js";
-import { corsMiddleware, setCustomDomainResolver } from "./middleware/cors.js";
+import { corsMiddleware, customDomainCorsWarmup, setCustomDomainResolver } from "./middleware/cors.js";
 import { subdomainMiddleware } from "./middleware/subdomainMiddleware.js";
 import { rateLimitMiddleware } from "./middleware/rateLimitMiddleware.js";
 import { requestContextMiddleware } from "./middleware/requestContext.js";
@@ -144,6 +144,7 @@ export const createApp = () => {
   });
 
   app.use(requestContextMiddleware);
+  app.use(customDomainCorsWarmup);
   app.use(corsMiddleware);
   registerHealthRoutes(app);
   app.use(subdomainMiddleware);
