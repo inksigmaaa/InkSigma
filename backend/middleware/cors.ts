@@ -276,10 +276,6 @@ const resolveCorsOptions = (req: Request): CorsOptions => {
 // ---------------------------------------------------------------------------
 // Custom domain warm-up middleware
 // ---------------------------------------------------------------------------
-// For origins not matched by the synchronous checks above, this middleware
-// pre-warms the verified domain cache so that subsequent requests from the
-// same custom domain are handled synchronously by the cors callback.
-// ---------------------------------------------------------------------------
 
 export const customDomainCorsWarmup = async (
   req: Request,
@@ -297,13 +293,11 @@ export const customDomainCorsWarmup = async (
     return;
   }
 
-  // Skip if already allowed by allowlist or platform domain.
   if (explicitAllowList.has(requestOrigin) || isPlatformOrigin(requestOrigin)) {
     next();
     return;
   }
 
-  // Warm the cache for unknown origins (async, runs before cors middleware).
   try {
     const { hostname } = new URL(requestOrigin);
     await isVerifiedCustomDomain(hostname.toLowerCase());
