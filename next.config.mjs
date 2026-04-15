@@ -96,13 +96,9 @@ const getBackendUrl = () => {
     );
   }
 
-  if (
-    isVercel &&
-    apiAliasHosts.includes(backendHost) &&
-    process.env.ALLOW_API_SUBDOMAIN_BACKEND !== 'true'
-  ) {
-    throw new Error(
-      `BACKEND_URL points at "${backendHost}". That API alias is currently unsafe for this Vercel project because it can route back to the frontend and produce 508 INFINITE_LOOP_DETECTED. Use the backend provider origin directly, or set ALLOW_API_SUBDOMAIN_BACKEND=true only after DNS no longer points this host at Vercel.`,
+  if (isVercel && apiAliasHosts.includes(backendHost)) {
+    console.warn(
+      `BACKEND_URL points at "${backendHost}". Make sure this host resolves to the backend service, not this Vercel frontend, or /api rewrites can produce 508 INFINITE_LOOP_DETECTED.`,
     );
   }
 
