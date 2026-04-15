@@ -52,7 +52,7 @@ export const getMainDomain = () => {
 
     if (configuredMain) return configuredMain;
 
-    return "inksigma.com";
+    return "inksigma.xyz";
 };
 
 /**

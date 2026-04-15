@@ -19,7 +19,7 @@ const isAllowedExternalReturnTo = async (targetUrl, signal) => {
       process.env.NEXT_PUBLIC_ROOT_DOMAIN || (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost")
     ).toLowerCase()
     const mainDomain = (
-      process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.com"
+      process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.xyz"
     ).toLowerCase()
 
     const isKnownPlatformHost =

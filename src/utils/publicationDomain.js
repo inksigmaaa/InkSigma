@@ -1,5 +1,5 @@
 const DEFAULT_ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost");
-const DEFAULT_MAIN_DOMAIN = "inksigma.com";
+const DEFAULT_MAIN_DOMAIN = "inksigma.xyz";
 const DEV_APP_PORT = "3000";
 
 const normalizeValue = (value) => {
