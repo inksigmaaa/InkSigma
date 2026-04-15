@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
-// BACKEND_URL must point to the actual backend server (e.g. Render URL),
-// NOT the public-facing proxy URL (api.inksigma.xyz) to avoid rewrite loops.
+// BACKEND_URL must resolve to the actual backend server.
+// Use the onrender.com URL until api.inksigma.xyz points to Render.
 const backendUrl = (
   process.env.BACKEND_URL || 'http://localhost:5000'
 ).replace(/\/$/, '');
@@ -13,7 +13,12 @@ const nextConfig = {
   },
   async rewrites() {
     return {
-      beforeFiles: [],
+      beforeFiles: [
+        {
+          source: '/api/auth/:path*',
+          destination: `${backendUrl}/api/auth/:path*`,
+        },
+      ],
       afterFiles: [],
       fallback: [
         {
