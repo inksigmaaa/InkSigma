@@ -1,12 +1,16 @@
 import { createAuthClient } from "better-auth/react";
-import { getApiBase } from "@/utils/apiBase";
 
-// Compute baseURL - this may run during SSR/hydration
-// The AuthContext has retry logic to handle any hydration race conditions
-const baseURL = getApiBase();
+// Auth is handled by Next.js on the same origin (no cross-origin calls needed).
+// Use window.location.origin in the browser; fall back to the app URL for SSR.
+const getAuthBaseURL = () => {
+    if (typeof window !== "undefined") {
+        return window.location.origin;
+    }
+    return process.env.NEXT_PUBLIC_APP_URL || "https://inksigma.xyz";
+};
 
 export const authClient = createAuthClient({
-    baseURL: baseURL,
+    baseURL: getAuthBaseURL(),
     basePath: "/api/auth",
     fetchOptions: {
         credentials: "include",
