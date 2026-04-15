@@ -44,11 +44,16 @@ export const getApiBase = () => {
     return `${protocol}//${hostname}:5000`;
   }
 
-  // Server-side: use actual backend URL
+  // Server-side: use the actual backend URL. On Vercel, do not fall back to
+  // public API aliases because they may be routed to this same frontend app.
   return (
     process.env.BACKEND_URL ||
-    process.env.NEXT_PUBLIC_BACKEND_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    (process.env.NODE_ENV === "production" ? "https://api.inksigma.xyz" : "http://localhost:5000")
+    (process.env.VERCEL === "1"
+      ? undefined
+      : process.env.NEXT_PUBLIC_BACKEND_URL ||
+        process.env.NEXT_PUBLIC_API_URL) ||
+    (process.env.NODE_ENV === "production" && process.env.VERCEL !== "1"
+      ? "https://api.inksigma.xyz"
+      : "http://localhost:5000")
   );
 };

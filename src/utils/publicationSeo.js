@@ -3,13 +3,9 @@ import {
   getTenantHeadersForResolvedContext,
   resolvePublicSiteContext,
 } from "@/utils/publicSiteContext";
+import { getApiBase } from "@/utils/apiBase";
 
-const API_URL = (
-  process.env.BACKEND_URL ||
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:5000"
-).replace(/\/$/, "");
+const API_URL = getApiBase().replace(/\/$/, "");
 const PUBLIC_METADATA_REVALIDATE_SECONDS = 30;
 
 export const getAbsoluteAssetUrl = (assetPath) => {

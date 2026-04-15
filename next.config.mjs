@@ -1,9 +1,115 @@
 /** @type {import('next').NextConfig} */
 // BACKEND_URL must resolve to the actual backend server.
-// Use the onrender.com URL until api.inksigma.xyz points to Render.
-const backendUrl = (
-  process.env.BACKEND_URL || 'http://localhost:5000'
-).replace(/\/$/, '');
+// Do not point it at this Vercel app (including api.<base-domain>) or the
+// /api/* rewrites recurse until Vercel returns 508 INFINITE_LOOP_DETECTED.
+const isVercel = process.env.VERCEL === '1';
+const isProduction = process.env.NODE_ENV === 'production';
+
+const normalizeDomain = (domain) =>
+  domain
+    ?.trim()
+    .replace(/^https?:\/\//, '')
+    .replace(/\/.*$/, '')
+    .replace(/:\d+$/, '')
+    .toLowerCase();
+
+const getConfiguredBaseDomains = () => {
+  const configured =
+    process.env.NEXT_PUBLIC_BASE_DOMAINS ||
+    process.env.NEXT_PUBLIC_BASE_DOMAIN ||
+    process.env.BASE_DOMAINS ||
+    process.env.BASE_DOMAIN ||
+    '';
+
+  return configured
+    .split(',')
+    .map(normalizeDomain)
+    .filter(Boolean);
+};
+
+const getFrontendHosts = () => {
+  const hosts = new Set();
+
+  const addUrlHost = (value) => {
+    if (!value) return;
+    try {
+      hosts.add(new URL(value).hostname.toLowerCase());
+    } catch {
+      const host = normalizeDomain(value);
+      if (host) hosts.add(host);
+    }
+  };
+
+  addUrlHost(process.env.NEXT_PUBLIC_APP_URL);
+  addUrlHost(process.env.FRONTEND_URL);
+  addUrlHost(process.env.VERCEL_URL);
+  addUrlHost(process.env.VERCEL_PROJECT_PRODUCTION_URL);
+
+  for (const domain of getConfiguredBaseDomains()) {
+    hosts.add(domain);
+    hosts.add(`www.${domain}`);
+    hosts.add(`dashboard.${domain}`);
+  }
+
+  return hosts;
+};
+
+const getBackendUrl = () => {
+  const explicitBackendUrl = process.env.BACKEND_URL?.trim();
+  const localFallbackUrl = !isVercel
+    ? process.env.NEXT_PUBLIC_BACKEND_URL?.trim() ||
+      process.env.NEXT_PUBLIC_API_URL?.trim()
+    : '';
+  const rawBackendUrl =
+    explicitBackendUrl ||
+    localFallbackUrl ||
+    (!isProduction ? 'http://localhost:5000' : '');
+
+  if (!rawBackendUrl) {
+    throw new Error(
+      'BACKEND_URL is required for production frontend deploys. Set it to the real backend origin, for example the Render service URL, not a Vercel/frontend domain.',
+    );
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(rawBackendUrl);
+  } catch {
+    throw new Error(`Invalid BACKEND_URL: "${rawBackendUrl}"`);
+  }
+
+  const backendHost = parsed.hostname.toLowerCase();
+  const frontendHosts = getFrontendHosts();
+  const apiAliasHosts = getConfiguredBaseDomains().map(
+    (domain) => `api.${domain}`,
+  );
+
+  if (isVercel && !explicitBackendUrl) {
+    throw new Error(
+      'Vercel deploys must set BACKEND_URL explicitly. NEXT_PUBLIC_BACKEND_URL is browser-facing config and must not drive server rewrites.',
+    );
+  }
+
+  if (isVercel && frontendHosts.has(backendHost)) {
+    throw new Error(
+      `BACKEND_URL points at the frontend host "${backendHost}", which would create a Vercel rewrite loop.`,
+    );
+  }
+
+  if (
+    isVercel &&
+    apiAliasHosts.includes(backendHost) &&
+    process.env.ALLOW_API_SUBDOMAIN_BACKEND !== 'true'
+  ) {
+    throw new Error(
+      `BACKEND_URL points at "${backendHost}". That API alias is currently unsafe for this Vercel project because it can route back to the frontend and produce 508 INFINITE_LOOP_DETECTED. Use the backend provider origin directly, or set ALLOW_API_SUBDOMAIN_BACKEND=true only after DNS no longer points this host at Vercel.`,
+    );
+  }
+
+  return rawBackendUrl.replace(/\/$/, '');
+};
+
+const backendUrl = getBackendUrl();
 
 const nextConfig = {
   /* config options here */
