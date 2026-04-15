@@ -177,11 +177,13 @@ const urlWithPathname = (request: NextRequest, pathname: string) => {
 };
 
 const getBackendBaseUrl = () => {
+  // Prefer BACKEND_URL (actual backend, e.g. Render) over NEXT_PUBLIC_BACKEND_URL
+  // (which may point to api.inksigma.xyz → Vercel, causing a loop).
   return (
+    process.env.BACKEND_URL ||
     process.env.NEXT_PUBLIC_BACKEND_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
-    process.env.BACKEND_URL ||
-    (process.env.NODE_ENV === "production" ? "https://api.inksigma.xyz" : "http://localhost:5000")
+    "http://localhost:5000"
   ).replace(/\/$/, "");
 };
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
+import { getApiBase } from "@/utils/apiBase";
 import Verify from "@/components/features/verify/Verify";
 import BlogStatsComponent from "@/components/features/BlogStatsComponent/BlogStatsComponent";
 import { Pencil } from "lucide-react";
@@ -15,7 +16,7 @@ import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getPublicationUrl } from "@/utils/publicationDomain";
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === "production" ? "https://api.inksigma.xyz" : "http://localhost:5000");
+const API_URL = getApiBase();
 
 export default function HomePage() {
   const searchParams = useSearchParams();
