@@ -181,8 +181,10 @@ const getBackendBaseUrl = () => {
   // (which may point to api.inksigma.xyz → Vercel, causing a loop).
   return (
     process.env.BACKEND_URL ||
-    process.env.NEXT_PUBLIC_BACKEND_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
+    (process.env.VERCEL === "1"
+      ? undefined
+      : process.env.NEXT_PUBLIC_BACKEND_URL ||
+        process.env.NEXT_PUBLIC_API_URL) ||
     "http://localhost:5000"
   ).replace(/\/$/, "");
 };
