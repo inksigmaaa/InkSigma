@@ -12,24 +12,28 @@ const nextConfig = {
     root: process.cwd(),
   },
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${backendUrl}/api/:path*`,
-      },
-      {
-        source: '/health',
-        destination: `${backendUrl}/health`,
-      },
-      {
-        source: '/ready',
-        destination: `${backendUrl}/ready`,
-      },
-      {
-        source: '/uploads/:path*',
-        destination: `${backendUrl}/uploads/:path*`,
-      },
-    ];
+    return {
+      beforeFiles: [],
+      afterFiles: [],
+      fallback: [
+        {
+          source: '/api/:path*',
+          destination: `${backendUrl}/api/:path*`,
+        },
+        {
+          source: '/health',
+          destination: `${backendUrl}/health`,
+        },
+        {
+          source: '/ready',
+          destination: `${backendUrl}/ready`,
+        },
+        {
+          source: '/uploads/:path*',
+          destination: `${backendUrl}/uploads/:path*`,
+        },
+      ],
+    };
   },
   images: {
     remotePatterns: [
