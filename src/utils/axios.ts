@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { parseHost } from './hostParser';
 import { buildLoginRedirectPath, isAuthFlowPath } from './auth';
+import { getApiBase } from './apiBase';
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'https://api.inksigma.xyz/api' : 'http://localhost:5000/api');
+const API_URL = `${getApiBase()}/api`;
 
 const getTenantHeadersFromBrowser = (): Record<string, string> => {
   if (typeof window === 'undefined') return {};

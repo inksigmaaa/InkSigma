@@ -1,9 +1,35 @@
 /** @type {import('next').NextConfig} */
+// BACKEND_URL must point to the actual backend server (e.g. Render URL),
+// NOT the public-facing proxy URL (api.inksigma.xyz) to avoid rewrite loops.
+const backendUrl = (
+  process.env.BACKEND_URL || 'http://localhost:5000'
+).replace(/\/$/, '');
+
 const nextConfig = {
   /* config options here */
   reactCompiler: true,
   turbopack: {
     root: process.cwd(),
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
+      },
+      {
+        source: '/health',
+        destination: `${backendUrl}/health`,
+      },
+      {
+        source: '/ready',
+        destination: `${backendUrl}/ready`,
+      },
+      {
+        source: '/uploads/:path*',
+        destination: `${backendUrl}/uploads/:path*`,
+      },
+    ];
   },
   images: {
     remotePatterns: [
