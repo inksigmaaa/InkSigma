@@ -54,9 +54,10 @@ export const auth = betterAuth({
   advanced:
     baseDomain && baseDomain !== "localhost"
       ? {
+          cookiePrefix: "better-auth",
           crossSubDomainCookies: {
             enabled: true,
-            domain: baseDomain,
+            domain: `.${baseDomain}`,
           },
         }
       : undefined,

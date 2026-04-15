@@ -101,9 +101,10 @@ export const auth = betterAuth({
   trustedOrigins: buildTrustedOrigins(),
   advanced: crossSubdomainCookieDomain
     ? {
+        cookiePrefix: "better-auth",
         crossSubDomainCookies: {
           enabled: true,
-          domain: crossSubdomainCookieDomain,
+          domain: `.${crossSubdomainCookieDomain}`,
         },
       }
     : undefined,
