@@ -24,7 +24,7 @@ const getLocalLikeBaseDomain = (): string | undefined =>
     );
 
 const MAIN_DOMAIN = (
-  getLocalLikeBaseDomain() || process.env.MAIN_DOMAIN || "inksigma.com"
+  getLocalLikeBaseDomain() || process.env.MAIN_DOMAIN || "inksigma.xyz"
 ).toLowerCase();
 
 const BASE_DOMAINS = (

@@ -87,7 +87,7 @@ const getPreferredBaseDomain = () => {
         domain.endsWith(".local") ||
         domain.endsWith(".localhost"),
     ) ||
-    "inksigma.com"
+    "inksigma.xyz"
   ).toLowerCase();
 };
 

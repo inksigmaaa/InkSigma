@@ -13,7 +13,7 @@ const getBaseDomains = () => {
   const envValue =
     process.env.BASE_DOMAINS ||
     process.env.BASE_DOMAIN ||
-    (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost,inksigma.local");
+    "localhost,inksigma.local,inksigma.xyz";
   return envValue
     .split(",")
     .map((d) => d.trim().toLowerCase())
