@@ -26,6 +26,9 @@ export default function HomePage() {
   const { publicationArticles, loadPublicationArticles } = useArticles();
   const [commentCounts, setCommentCounts] = useState({});
   const [viewStats, setViewStats] = useState({});
+  const publicationLogoSrc = currentPublication?.logoUrl
+    ? `${API_URL}${currentPublication.logoUrl}`
+    : null;
 
   // Check if this is a refresh from editor
   const shouldRefresh = searchParams.get("refresh") === "true";
@@ -168,9 +171,9 @@ export default function HomePage() {
             <div className=" px-6 py-12 flex items-center justify-between max-md:border-b max-md:border-[#EDEDED] max-md:mx-4 max-md:py-4 max-md:pb-3 max-md:mt-4">
               <div className="flex items-center gap-6 max-md:gap-3">
                 <Avatar className="w-[66px] h-[68px] bg-gray-100 flex-shrink-0 max-md:w-14 max-md:h-14">
-                  {currentPublication?.logoUrl && (
+                  {publicationLogoSrc && (
                     <AvatarImage
-                      src={`http://localhost:5000${currentPublication.logoUrl}`}
+                      src={publicationLogoSrc}
                       alt={currentPublication.name}
                       className="w-full h-full object-cover"
                     />

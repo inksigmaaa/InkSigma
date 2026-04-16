@@ -137,6 +137,8 @@ export default function SettingsPage() {
         setMetaOgPreview(imageUrl);
         setSuccess("Meta OG image updated!");
       }
+
+      await refreshCurrentPublication();
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error("Upload error:", err);
@@ -235,6 +237,7 @@ export default function SettingsPage() {
         setMetaOgPreview("/icons/inksigma-logo.svg");
       }
 
+      await refreshCurrentPublication();
       setSuccess(`${type} removed successfully!`);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
