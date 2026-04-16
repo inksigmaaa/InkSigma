@@ -17,7 +17,7 @@ export default async function InvitationPage({ params }) {
   const port = host.includes(":") ? `:${host.split(":")[1]}` : "";
 
   // Force invite flows onto the dashboard host so auth cookies work consistently.
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost");
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
   const desiredHost =
     rootDomain === "localhost"
       ? "dashboard.localhost"

@@ -63,11 +63,8 @@ export const useCreateBlog = () => {
       const res = await api.post('/blogs', data);
       return res.data;
     },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.lists() });
-      if (result?.publicationId) {
-        queryClient.invalidateQueries({ queryKey: BLOG_KEYS.publication(String(result.publicationId)) });
-      }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.all });
     },
   });
 };
@@ -107,9 +104,8 @@ export const useDeleteBlog = () => {
       const res = await api.delete(`/blogs/${id}`);
       return res.data;
     },
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.detail(id) });
-      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.lists() });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.all });
     },
   });
 };
@@ -136,12 +132,8 @@ export const useAcceptReviewArticle = () => {
       const res = await api.patch(`/blogs/${id}/review-action`, { action: 'accept', targetStatus });
       return res.data;
     },
-    onSuccess: (result, { id }) => {
-      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.detail(id) });
-      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.lists() });
-      if (result?.publicationId) {
-        queryClient.invalidateQueries({ queryKey: BLOG_KEYS.review(String(result.publicationId)) });
-      }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.all });
     },
   });
 };
@@ -153,12 +145,8 @@ export const useRejectReviewArticle = () => {
       const res = await api.patch(`/blogs/${id}/review-action`, { action: 'reject' });
       return res.data;
     },
-    onSuccess: (result, id) => {
-      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.detail(id) });
-      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.lists() });
-      if (result?.publicationId) {
-        queryClient.invalidateQueries({ queryKey: BLOG_KEYS.review(String(result.publicationId)) });
-      }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: BLOG_KEYS.all });
     },
   });
 };

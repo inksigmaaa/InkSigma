@@ -32,26 +32,14 @@ export function ArticlesProvider({ children }) {
     currentPubRef.current = currentPublication;
   }, [currentPublication]);
 
-  // Keep session ref up-to-date so we don't depend on the whole session object
-  const sessionRef = useRef(session);
-  useEffect(() => {
-    sessionRef.current = session;
-  }, [session]);
-
   const loadUserArticles = useArticleStore((s) => s.loadUserArticles);
-  const hasLoadedRef = useRef(false);
 
-  // Auto-load user articles once per user ID (not on every session object change)
+  // Auto-load user articles when session changes
   useEffect(() => {
-    if (session?.user?.id && !hasLoadedRef.current) {
-      hasLoadedRef.current = true;
-      loadUserArticles(sessionRef.current, currentPubRef.current?.id);
+    if (session?.user?.id) {
+      loadUserArticles(session, currentPubRef.current?.id);
     }
-    // Reset flag when user changes
-    if (!session?.user?.id) {
-      hasLoadedRef.current = false;
-    }
-  }, [session?.user?.id, loadUserArticles]);
+  }, [session?.user?.id, loadUserArticles, session]);
 
   return children;
 }
@@ -80,10 +68,9 @@ export function useArticles() {
     includeAllPublications = false,
     status = null,
     extraFilters = {},
-    options = {},
   ) => {
     const effectivePubId = publicationId || currentPublication?.id;
-    return rawLoadUserArticles(session, effectivePubId, includeAllPublications, status, extraFilters, options);
+    return rawLoadUserArticles(session, effectivePubId, includeAllPublications, status, extraFilters);
   };
 
   // Wrap createArticle to auto-inject currentPublicationId (matching old API)
@@ -100,8 +87,6 @@ export function useArticles() {
     loading: store.loading,
     reviewLoading: store.reviewLoading,
     pubArticlesLoading: store.pubArticlesLoading,
-    pubArticlesLoadingMore: store.pubArticlesLoadingMore,
-    hasMorePubArticles: store.hasMorePubArticles,
     error: store.error,
     reviewError: store.reviewError,
     areUserArticlesLoaded: store.areUserArticlesLoaded,
@@ -114,7 +99,6 @@ export function useArticles() {
     // Pass-through actions (no wrapping needed)
     loadReviewArticles: store.loadReviewArticles,
     loadPublicationArticles: store.loadPublicationArticles,
-    loadMorePublicationArticles: store.loadMorePublicationArticles,
     getArticleById: store.getArticleById,
     refreshArticle: store.refreshArticle,
     updateArticle: store.updateArticle,

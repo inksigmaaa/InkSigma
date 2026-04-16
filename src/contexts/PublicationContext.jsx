@@ -80,13 +80,6 @@ function PublicationProviderInner({ children }) {
   const [error, setError] = useState(null);
   const currentPubRef = useRef(null);
 
-  // ── Request deduplication guards ──
-  const loadPubsPromiseRef = useRef(null);   // in-flight promise
-  const lastPubsFetchRef = useRef(0);        // timestamp of last successful fetch
-  const PUBS_STALE_MS = 10_000;              // skip re-fetch if data < 10s old
-  const loadDetailsPromiseRef = useRef(null); // in-flight details promise
-  const lastDetailsPubIdRef = useRef(null);   // last pubId fetched for details
-
   // Keep ref in sync with state
   useEffect(() => {
     currentPubRef.current = currentPublication;
@@ -211,17 +204,6 @@ function PublicationProviderInner({ children }) {
         return [];
       }
 
-      // ── Dedup: return in-flight promise if one already exists ──
-      if (loadPubsPromiseRef.current) {
-        return loadPubsPromiseRef.current;
-      }
-
-      // ── Staleness: skip if data was fetched recently (silent refreshes only) ──
-      if (silent && Date.now() - lastPubsFetchRef.current < PUBS_STALE_MS) {
-        return userPublications;
-      }
-
-      const execute = async () => {
       try {
         if (!silent) {
           setLoading(true);
@@ -359,7 +341,6 @@ function PublicationProviderInner({ children }) {
           }
         }
 
-        lastPubsFetchRef.current = Date.now();
         return publications;
       } catch (error) {
         console.error("Error loading user publications:", error);
@@ -375,13 +356,7 @@ function PublicationProviderInner({ children }) {
         if (!silent) {
           setLoading(false);
         }
-        loadPubsPromiseRef.current = null;
       }
-      }; // end execute
-
-      // Store the promise so concurrent callers reuse it
-      loadPubsPromiseRef.current = execute();
-      return loadPubsPromiseRef.current;
     },
     [session?.user?.id, isPending, router],
   );
@@ -406,33 +381,21 @@ function PublicationProviderInner({ children }) {
       return null;
     }
 
-    // ── Dedup: skip if already fetching the same publication's details ──
-    if (lastDetailsPubIdRef.current === publicationId && loadDetailsPromiseRef.current) {
-      return loadDetailsPromiseRef.current;
+    try {
+      const details =
+        await publicationService.getPublicationDetails(publicationId);
+      setPublicationDetails(details);
+      setCurrentPublication((prev) =>
+        prev?.id === publicationId ? { ...prev, ...details } : prev,
+      );
+      return details;
+    } catch (error) {
+      console.error("Error loading publication details:", error);
+      // Don't throw the error, just log it and continue without details
+      // This allows the app to work even if publication details fail
+      setPublicationDetails(null);
+      return null;
     }
-
-    lastDetailsPubIdRef.current = publicationId;
-
-    const execute = async () => {
-      try {
-        const details =
-          await publicationService.getPublicationDetails(publicationId);
-        setPublicationDetails(details);
-        setCurrentPublication((prev) =>
-          prev?.id === publicationId ? { ...prev, ...details } : prev,
-        );
-        return details;
-      } catch (error) {
-        console.error("Error loading publication details:", error);
-        setPublicationDetails(null);
-        return null;
-      } finally {
-        loadDetailsPromiseRef.current = null;
-      }
-    };
-
-    loadDetailsPromiseRef.current = execute();
-    return loadDetailsPromiseRef.current;
   };
 
   // Switch to a different publication
@@ -549,39 +512,24 @@ function PublicationProviderInner({ children }) {
     }
   }, [session?.user?.id, isPending]);
 
-  // Smart polling with adaptive backoff: detect membership changes only when tab is visible.
-  // Interval grows (30s → 60s → 120s → 300s) when nothing changes, resets on tab return.
+  // Smart polling: detect membership changes only when tab is visible.
+  // Stops entirely when hidden, fires immediately on return, then resumes interval.
   useEffect(() => {
     if (!session?.user?.id || isPending || !currentPublication) return;
     if (currentPublication.isOwner) return;
 
     let timer = null;
-    const POLL_INTERVALS = [30_000, 60_000, 120_000, 300_000]; // adaptive backoff
-    let backoffIndex = 0;
-    let lastPubsSnapshot = JSON.stringify(userPublications.map((p) => p.id).sort());
 
-    const poll = async () => {
-      const result = await loadUserPublications(true);
-      const newSnapshot = JSON.stringify(
-        (Array.isArray(result) ? result : []).map((p) => p.id).sort(),
-      );
-      if (newSnapshot !== lastPubsSnapshot) {
-        lastPubsSnapshot = newSnapshot;
-        backoffIndex = 0; // data changed — reset backoff
-      } else {
-        backoffIndex = Math.min(backoffIndex + 1, POLL_INTERVALS.length - 1);
-      }
-      scheduleNext();
-    };
-
-    const scheduleNext = () => {
+    const startPolling = () => {
       stopPolling();
-      timer = setTimeout(poll, POLL_INTERVALS[backoffIndex]);
+      timer = setInterval(() => {
+        loadUserPublications(true);
+      }, 30000);
     };
 
     const stopPolling = () => {
       if (timer) {
-        clearTimeout(timer);
+        clearInterval(timer);
         timer = null;
       }
     };
@@ -590,9 +538,9 @@ function PublicationProviderInner({ children }) {
       if (document.hidden) {
         stopPolling();
       } else {
-        // Tab became visible — refresh immediately, reset backoff, schedule next
-        backoffIndex = 0;
-        poll();
+        // Tab became visible — refresh immediately, then resume interval
+        loadUserPublications(true);
+        startPolling();
       }
     };
 
@@ -600,7 +548,7 @@ function PublicationProviderInner({ children }) {
 
     // Start polling only if tab is currently visible
     if (!document.hidden) {
-      scheduleNext();
+      startPolling();
     }
 
     return () => {
@@ -615,25 +563,39 @@ function PublicationProviderInner({ children }) {
     loadUserPublications,
   ]);
 
-  // Effect to handle route changes and URL parameters.
-  // Only switches the current publication when the URL explicitly points to a different one —
-  // detail fetches are deduplicated by loadPublicationDetails itself.
+  // Effect to handle route changes and URL parameters
   useEffect(() => {
     if (!userPublications.length || isPending) return;
 
     const urlPubId = getPublicationIdFromUrl(userPublications);
 
+    // If URL has a publication ID and it's different from current, switch to it
+    // Use loose equality to handle string/number ID mismatches
     if (urlPubId && currentPublication && urlPubId != currentPublication.id) {
-      const urlPub = userPublications.find((pub) => pub.id == urlPubId);
+      const urlPub = userPublications.find((pub) => pub.id == urlPubId); // Loose equality match
       if (urlPub) {
         setCurrentPublication(urlPub);
-        loadPublicationDetails(urlPub.id).catch(() => {});
+        loadPublicationDetails(urlPub.id).catch((error) => {
+          console.warn(
+            "Failed to load publication details on URL change:",
+            error,
+          );
+        });
       }
-    } else if (!urlPubId && !currentPublication && isMemberDashboard()) {
+    }
+
+    // Only auto-switch publications if no URL parameter is present AND no current publication is set
+    // This prevents unwanted switching when user explicitly navigates with their current publication
+    else if (!urlPubId && !currentPublication && isMemberDashboard()) {
       const joinedPub = userPublications.find((pub) => !pub.isOwner);
       if (joinedPub) {
         setCurrentPublication(joinedPub);
-        loadPublicationDetails(joinedPub.id).catch(() => {});
+        loadPublicationDetails(joinedPub.id).catch((error) => {
+          console.warn(
+            "Failed to load publication details on route change:",
+            error,
+          );
+        });
       }
     }
   }, [pathname, userPublications, isPending]);

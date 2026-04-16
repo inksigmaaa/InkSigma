@@ -34,7 +34,7 @@ function LoginForm() {
     if (typeof window !== "undefined") {
       return window.location.origin;
     }
-    return process.env.NEXT_PUBLIC_APP_URL || "https://inksigma.xyz";
+    return "http://localhost:3000";
   };
 
   const apiBase = getApiBase();

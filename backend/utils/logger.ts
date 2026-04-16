@@ -5,7 +5,6 @@ const isDev = process.env.NODE_ENV !== "production";
 
 type RequestLogContext = {
   requestId: string;
-  traceId?: string;
   method?: string;
   route?: string;
   userId?: string;
@@ -33,7 +32,6 @@ export const logger = pino({
     if (!context) return {};
     return {
       requestId: context.requestId,
-      traceId: context.traceId,
       method: context.method,
       route: context.route,
       userId: context.userId,

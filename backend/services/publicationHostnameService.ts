@@ -55,7 +55,7 @@ const getBaseDomains = () =>
   (
     process.env.BASE_DOMAINS ||
     process.env.BASE_DOMAIN ||
-    (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost,inksigma.local")
+    "localhost,inksigma.local"
   )
     .split(",")
     .map((domain) => domain.trim().toLowerCase())
@@ -87,7 +87,7 @@ const getPreferredBaseDomain = () => {
         domain.endsWith(".local") ||
         domain.endsWith(".localhost"),
     ) ||
-    "inksigma.xyz"
+    "inksigma.com"
   ).toLowerCase();
 };
 

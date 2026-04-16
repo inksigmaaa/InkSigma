@@ -8,7 +8,7 @@
  */
 export const getDashboardUrl = (path = "") => {
   const rootDomain =
-    process.env.NEXT_PUBLIC_ROOT_DOMAIN || (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost");
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
 
   const isLocal =
     rootDomain === "localhost" ||

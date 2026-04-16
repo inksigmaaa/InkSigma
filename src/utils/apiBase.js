@@ -1,42 +1,44 @@
 export const getApiBase = () => {
-  // In the browser, check if we're in production (non-local) context.
-  // Production uses Next.js rewrites to proxy /api/* to the backend,
-  // so we return "" (same-origin) to avoid cross-origin CORS issues.
-  if (typeof window !== "undefined") {
-    const { protocol, hostname } = window.location;
-    const isLocalDevHost =
-      hostname === "localhost" ||
-      hostname === "127.0.0.1" ||
-      hostname === "::1" ||
-      hostname.endsWith(".local") ||
-      hostname.endsWith(".localhost");
+  const envBase = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
 
-    if (!isLocalDevHost) {
-      // Production: use same-origin paths, proxied by Next.js rewrites
-      return "";
-    }
+  if (envBase) {
+    const normalizedEnvBase = envBase.replace(/\/$/, "");
 
-    // Local development: connect directly to the backend
-    const envBase = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
-    if (envBase) {
-      const normalizedEnvBase = envBase.replace(/\/$/, "");
+    // Safari can treat *.local subdomains as cross-site and drop auth cookies.
+    // In local development, prefer same-host backend origin to keep auth first-party.
+    if (typeof window !== "undefined") {
       try {
         const envUrl = new URL(normalizedEnvBase);
+        const { protocol, hostname } = window.location;
+        const isLocalDevHost =
+          hostname === "localhost" ||
+          hostname === "127.0.0.1" ||
+          hostname === "::1" ||
+          hostname.endsWith(".local") ||
+          hostname.endsWith(".localhost");
         const usesApiSubdomain = envUrl.hostname.startsWith("api.");
 
-        if (usesApiSubdomain) {
+        if (isLocalDevHost && usesApiSubdomain) {
           const backendPort = envUrl.port || "5000";
-          const backendHost = hostname === "::1" ? "[::1]" : hostname;
+          const backendHost =
+            hostname === "::1"
+              ? "[::1]"
+              : hostname;
           return `${protocol}//${backendHost}:${backendPort}`;
         }
       } catch {
-        // Ignore malformed env URL
+        // Ignore malformed env URL and continue using fallback behavior.
       }
-      return normalizedEnvBase;
     }
 
-    // Fallback for development without env config
-    const { port } = window.location;
+    return normalizedEnvBase;
+  }
+
+  // Fallback for development without env config
+  if (typeof window !== "undefined") {
+    const { protocol, hostname, port } = window.location;
+    // Use same host with backend port for dashboard and local development
+    // Don't try to create api subdomain - just use localhost:5000
     if (hostname.includes('.localhost') || hostname.includes('.local')) {
       const backendPort = port || "5000";
       return `${protocol}//localhost:${backendPort}`;
@@ -44,16 +46,5 @@ export const getApiBase = () => {
     return `${protocol}//${hostname}:5000`;
   }
 
-  // Server-side: use the actual backend URL. On Vercel, do not fall back to
-  // public API aliases because they may be routed to this same frontend app.
-  return (
-    process.env.BACKEND_URL ||
-    (process.env.VERCEL === "1"
-      ? undefined
-      : process.env.NEXT_PUBLIC_BACKEND_URL ||
-        process.env.NEXT_PUBLIC_API_URL) ||
-    (process.env.NODE_ENV === "production" && process.env.VERCEL !== "1"
-      ? "https://api.inksigma.xyz"
-      : "http://localhost:5000")
-  );
+  return "http://localhost:5000";
 };

@@ -26,7 +26,7 @@ export const getBaseDomains = () => {
     const envValue =
         process.env.NEXT_PUBLIC_BASE_DOMAINS ||
         process.env.NEXT_PUBLIC_ROOT_DOMAIN ||
-        (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost,inksigma.local");
+        "localhost,inksigma.local";
 
     return envValue
         .split(",")
@@ -39,7 +39,7 @@ export const getBaseDomains = () => {
  * @returns {string} - Main domain
  */
 export const getMainDomain = () => {
-    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost");
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
     const configuredMain = process.env.NEXT_PUBLIC_MAIN_DOMAIN;
 
     if (
@@ -52,7 +52,7 @@ export const getMainDomain = () => {
 
     if (configuredMain) return configuredMain;
 
-    return "inksigma.xyz";
+    return "inksigma.com";
 };
 
 /**

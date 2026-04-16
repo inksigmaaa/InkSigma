@@ -62,12 +62,10 @@ const FONT_OPTIONS = [
 
 const FONT_MAP = new Map(FONT_OPTIONS.map((font, index) => [font, index]));
 
-const _defaultBackend = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-
 const API_ORIGINS = [
   process.env.NEXT_PUBLIC_BACKEND_URL,
   process.env.NEXT_PUBLIC_API_URL,
-  _defaultBackend,
+  "http://localhost:5000",
 ]
   .filter(Boolean)
   .map((url) => String(url).replace(/\/$/, ""));
@@ -76,7 +74,7 @@ const createApiUrl = (relativePath) => {
   const baseUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
-    _defaultBackend;
+    "http://localhost:5000";
   const normalizedBase = baseUrl.replace(/\/$/, "");
   const normalizedPath = relativePath.startsWith("/")
     ? relativePath

@@ -67,65 +67,49 @@ export default function DraftPage() {
     }
   }, [searchParams, router, pathname]);
 
-  // Auto-refresh drafts with adaptive backoff (60s → 120s → 300s when idle)
+  // Auto-refresh draft list on an interval (stay on draft page)
   useEffect(() => {
     if (!session?.user?.id) return;
-
-    const POLL_INTERVALS = [60_000, 120_000, 300_000]; // adaptive backoff
-    let backoffIndex = 0;
-    let lastArticleCount = articles.filter((a) => a.status === "draft").length;
 
     const refreshDrafts = async () => {
       if (isPollingRef.current) return;
       isPollingRef.current = true;
       try {
-        await loadUserArticles(currentPublication?.id, false, null, {}, { force: true });
-        const newCount = articles.filter((a) => a.status === "draft").length;
-        if (newCount !== lastArticleCount) {
-          lastArticleCount = newCount;
-          backoffIndex = 0; // data changed — reset
-        } else {
-          backoffIndex = Math.min(backoffIndex + 1, POLL_INTERVALS.length - 1);
-        }
+        await loadUserArticles(currentPublication?.id);
       } catch (error) {
         console.error("Auto-refresh failed:", error);
       } finally {
         isPollingRef.current = false;
       }
-      scheduleNext();
     };
 
-    const scheduleNext = () => {
-      stopPolling();
-      pollIntervalRef.current = setTimeout(refreshDrafts, POLL_INTERVALS[backoffIndex]);
+    const startPolling = () => {
+      if (pollIntervalRef.current) return;
+      pollIntervalRef.current = setInterval(async () => {
+        await refreshDrafts();
+      }, 20000);
     };
 
-    const stopPolling = () => {
-      if (pollIntervalRef.current) {
-        clearTimeout(pollIntervalRef.current);
-        pollIntervalRef.current = null;
-      }
-    };
+    startPolling();
+    refreshDrafts();
 
     const handleVisibility = () => {
-      if (document.hidden) {
-        stopPolling();
-      } else {
-        backoffIndex = 0;
+      if (!document.hidden) {
         refreshDrafts();
       }
     };
-
-    // Start polling only if tab is visible
-    if (!document.hidden) {
-      scheduleNext();
-    }
+    const handleFocus = () => refreshDrafts();
 
     document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleFocus);
 
     return () => {
-      stopPolling();
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
       document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleFocus);
     };
   }, [session?.user?.id, currentPublication?.id, loadUserArticles]);
   const [selectedArticles, setSelectedArticles] = useState([]);

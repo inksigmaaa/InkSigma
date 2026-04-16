@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
       const redirectTo =
         typeof window !== "undefined"
           ? `${window.location.origin}/reset-password`
-          : `${process.env.NEXT_PUBLIC_APP_URL || "https://inksigma.xyz"}/reset-password`
+          : "http://localhost:3000/reset-password"
 
       // Use custom endpoint
       const response = await fetch(`${apiBase}/api/custom/forgot-password`, {
