@@ -65,7 +65,7 @@ export default async function RootLayout({ children }) {
   const hostname = rawHost.split(",")[0].trim().split(":")[0].toLowerCase();
   const cleanHost = hostname.replace(/^www\./, "");
 
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost");
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
   const isDashboardHost =
     cleanHost === `dashboard.${rootDomain}` ||
     cleanHost.startsWith("dashboard.");

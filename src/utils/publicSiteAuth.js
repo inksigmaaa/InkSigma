@@ -3,17 +3,17 @@ import { parseHost } from "@/utils/hostParser";
 const RESERVED_SUBDOMAINS = new Set(["dashboard", "www", "api"]);
 
 const getRootDomain = () =>
-  (process.env.NEXT_PUBLIC_ROOT_DOMAIN || (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost")).toLowerCase();
+  (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost").toLowerCase();
 
 export const getDashboardOrigin = () => {
   // Same-origin mode: dashboard lives on the same domain (path-based routing)
   if (process.env.NEXT_PUBLIC_SAME_ORIGIN_DASHBOARD === "true") {
     if (typeof window !== "undefined") return window.location.origin;
-    return process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === "production" ? "https://inksigma.xyz" : "http://localhost:3000");
+    return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   }
 
   if (typeof window === "undefined") {
-    return process.env.NODE_ENV === "production" ? "https://dashboard.inksigma.xyz" : "http://dashboard.localhost:3000";
+    return "http://dashboard.localhost:3000";
   }
 
   const rootDomain = getRootDomain();

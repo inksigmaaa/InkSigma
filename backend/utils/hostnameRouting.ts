@@ -13,13 +13,13 @@ const getLocalLikeBaseDomain = () =>
     );
 
 export const MAIN_DOMAIN = (
-  getLocalLikeBaseDomain() || process.env.MAIN_DOMAIN || "inksigma.xyz"
+  getLocalLikeBaseDomain() || process.env.MAIN_DOMAIN || "inksigma.com"
 ).toLowerCase();
 
 export const BASE_DOMAINS = (
   process.env.BASE_DOMAINS ||
   process.env.BASE_DOMAIN ||
-  (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost,inksigma.local")
+  "localhost,inksigma.local"
 )
   .split(",")
   .map((domain) => domain.trim().toLowerCase())

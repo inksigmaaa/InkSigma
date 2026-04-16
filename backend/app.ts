@@ -1,7 +1,3 @@
-// Must be the very first import — patches Express 4 to catch rejected
-// promises from async middleware and forward them to error handlers.
-import "express-async-errors";
-
 import path from "path";
 import { fileURLToPath } from "url";
 import express from "express";
@@ -23,12 +19,10 @@ import resendVerificationRoutes from "./routes/resendVerificationRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js";
 import viewRoutes from "./routes/viewRoutes.js";
-import articleStatsRoutes from "./routes/articleStatsRoutes.js";
-import { corsMiddleware, customDomainCorsWarmup, setCustomDomainResolver } from "./middleware/cors.js";
+import { corsMiddleware } from "./middleware/cors.js";
 import { subdomainMiddleware } from "./middleware/subdomainMiddleware.js";
 import { rateLimitMiddleware } from "./middleware/rateLimitMiddleware.js";
 import { requestContextMiddleware } from "./middleware/requestContext.js";
-import { resolvePublicationByCustomDomain } from "./services/publicationResolver.js";
 import sliService from "./services/sliService.js";
 import logger from "./utils/logger.js";
 import {
@@ -36,10 +30,6 @@ import {
   notFoundMiddleware,
 } from "./middleware/errorHandler.js";
 import { getLifecycleState } from "./appState.js";
-
-// Wire the custom domain resolver into the CORS middleware so that
-// verified custom domains get credentialed CORS access.
-setCustomDomainResolver(resolvePublicationByCustomDomain);
 
 const getTimestamp = () => new Date().toISOString();
 
@@ -124,7 +114,6 @@ export const createApp = () => {
       strictTransportSecurity: isProduction ? undefined : false,
     }),
   );
-
   // Global request timeout — abort requests that exceed this threshold
   // to prevent indefinite connection hold from slow queries or external calls.
   const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 30_000);
@@ -144,7 +133,6 @@ export const createApp = () => {
   });
 
   app.use(requestContextMiddleware);
-  app.use(customDomainCorsWarmup);
   app.use(corsMiddleware);
   registerHealthRoutes(app);
   app.use(subdomainMiddleware);
@@ -188,7 +176,6 @@ export const createApp = () => {
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/comments", commentRoutes);
   app.use("/api/views", viewRoutes);
-  app.use("/api/article-stats", articleStatsRoutes);
   app.use("/api", resendVerificationRoutes);
 
   app.get("/health/slis", (req, res) => {

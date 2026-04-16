@@ -1,9 +1,8 @@
 import axios from 'axios';
 import { parseHost } from './hostParser';
 import { buildLoginRedirectPath, isAuthFlowPath } from './auth';
-import { getApiBase } from './apiBase';
 
-const API_URL = `${getApiBase()}/api`;
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000/api';
 
 const getTenantHeadersFromBrowser = (): Record<string, string> => {
   if (typeof window === 'undefined') return {};

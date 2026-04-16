@@ -16,10 +16,10 @@ const isAllowedExternalReturnTo = async (targetUrl, signal) => {
 
     const hostname = parsedUrl.hostname.toLowerCase()
     const rootDomain = (
-      process.env.NEXT_PUBLIC_ROOT_DOMAIN || (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost")
+      process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"
     ).toLowerCase()
     const mainDomain = (
-      process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.xyz"
+      process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.com"
     ).toLowerCase()
 
     const isKnownPlatformHost =

@@ -71,16 +71,15 @@ export default function AllArticlePage() {
     if (shouldLoad) {
       hasLoadedRef.current = true;
       loadedContextRef.current = targetContext;
-      const opts = needsRefresh ? { force: true } : {};
 
       if (targetContext === "publication") {
         loadPublicationArticles(currentPublication.id, null, {
           draftScope: "publishedCopies",
-        }, opts);
+        });
       } else {
         loadUserArticles(null, false, null, {
           draftScope: "publishedCopies",
-        }, opts);
+        });
       }
     }
   }, [

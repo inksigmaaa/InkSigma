@@ -159,18 +159,19 @@ export const redisSessionStorage = {
 
   async delete(sessionId) {
     if (!redisAvailable) {
-      return; // Fall back to database
+      return false; // Fall back to database
     }
 
     try {
       const client = getRedisClient();
-      if (!client) return;
+      if (!client) return false;
 
       await client.del(`session:${sessionId}`);
       logger.info(`[REDIS] Session deleted: ${sessionId}`);
+      return true;
     } catch (error) {
       markRedisFailure(error, "session.delete");
-      // Fall back to database
+      return false; // Fall back to database
     }
   },
 

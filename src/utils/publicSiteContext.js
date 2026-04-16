@@ -1,7 +1,11 @@
 import { parseHost } from "@/utils/hostParser";
-import { getApiBase } from "@/utils/apiBase";
 
-const API_URL = getApiBase().replace(/\/$/, "");
+const API_URL = (
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.BACKEND_URL ||
+  "http://localhost:5000"
+).replace(/\/$/, "");
 const PUBLIC_SITE_REVALIDATE_SECONDS = 30;
 const PUBLIC_SITE_FETCH_TIMEOUT_MS = Number(
   process.env.PUBLIC_SITE_FETCH_TIMEOUT_MS || 3500,

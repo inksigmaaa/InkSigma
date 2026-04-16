@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "@/lib/auth-client";
-import { getApiBase } from "@/utils/apiBase";
 import PasswordField from "@/components/auth/PasswordField";
 
 export default function SetPasswordForm({ onSuccess, onCancel }) {
@@ -15,7 +14,8 @@ export default function SetPasswordForm({ onSuccess, onCancel }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const API_URL = getApiBase();
+  const API_URL =
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
   // Check if user can set password on mount
   useEffect(() => {

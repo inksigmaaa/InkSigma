@@ -68,7 +68,7 @@ const getBaseDomains = () => {
     process.env.NEXT_PUBLIC_BASE_DOMAIN ||   // singular NEXT_PUBLIC_ variant
     process.env.BASE_DOMAINS ||
     process.env.BASE_DOMAIN ||
-    (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost,inksigma.local");
+    "localhost,inksigma.local";
 
   return configured
     .split(",")
@@ -78,7 +78,7 @@ const getBaseDomains = () => {
 
 // Pre-compute once at module init (Node.js runtime — survives across requests)
 const _rootDomain = (
-  process.env.NEXT_PUBLIC_ROOT_DOMAIN || (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost")
+  process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"
 ).toLowerCase();
 
 const isLocalLikeHost = (host: string) => {
@@ -177,14 +177,10 @@ const urlWithPathname = (request: NextRequest, pathname: string) => {
 };
 
 const getBackendBaseUrl = () => {
-  // Prefer BACKEND_URL (actual backend, e.g. Render) over NEXT_PUBLIC_BACKEND_URL
-  // (which may point to api.inksigma.xyz → Vercel, causing a loop).
   return (
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
     process.env.BACKEND_URL ||
-    (process.env.VERCEL === "1"
-      ? undefined
-      : process.env.NEXT_PUBLIC_BACKEND_URL ||
-        process.env.NEXT_PUBLIC_API_URL) ||
     "http://localhost:5000"
   ).replace(/\/$/, "");
 };

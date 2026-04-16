@@ -53,8 +53,7 @@ router.post(
       }
 
       const token = await authService.createResetToken(email);
-      const frontendUrl = process.env.FRONTEND_URL || "https://inksigma.xyz";
-      const resetUrl = `${redirectTo || `${frontendUrl}/reset-password`}?token=${token}&email=${encodeURIComponent(email)}`;
+      const resetUrl = `${redirectTo || `${getFrontendUrl()}/reset-password`}?token=${token}&email=${encodeURIComponent(email)}`;
 
       await emailService.sendPasswordReset({
         email,
@@ -156,8 +155,7 @@ router.post(
       }
 
       const token = await authService.createVerificationToken(email);
-      const frontendUrl = process.env.FRONTEND_URL || "https://inksigma.xyz";
-      const verifyUrl = `${redirectTo || `${frontendUrl}/verify-email`}?token=${token}&email=${encodeURIComponent(email)}`;
+      const verifyUrl = `${redirectTo || `${getFrontendUrl()}/verify-email`}?token=${token}&email=${encodeURIComponent(email)}`;
 
       await emailService.sendVerification({
         email,

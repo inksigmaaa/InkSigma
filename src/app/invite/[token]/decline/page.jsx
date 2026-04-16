@@ -19,7 +19,7 @@ export default function DeclineInvitation() {
   // Ensure invite flows happen on the dashboard host so auth cookies work consistently.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || (process.env.NODE_ENV === "production" ? "inksigma.xyz" : "localhost");
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
     const desiredHost =
       rootDomain === "localhost"
         ? "dashboard.localhost"

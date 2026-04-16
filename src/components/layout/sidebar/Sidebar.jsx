@@ -7,7 +7,6 @@ import { usePublication } from "@/contexts/PublicationContext";
 import { hasPermission } from "@/utils/permissions";
 import { getPublicationUrl } from "@/utils/publicationDomain";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getImageUrl } from "@/utils/imageUrl";
 
 const MENU_SECTIONS = [
   {
@@ -313,7 +312,7 @@ function Sidebar() {
                 <>
                   {currentPublication?.logoUrl ? (
                     <AvatarImage
-                      src={getImageUrl(currentPublication.logoUrl)}
+                      src={`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${currentPublication.logoUrl}`}
                       alt={currentPublication.name || "Publication"}
                       className="w-full h-full object-cover"
                     />
