@@ -68,6 +68,36 @@ const isOldDashboardEndpointPath = (pathname) =>
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
 
+const normalizePublicationRecord = (publicationRecord, currentUserId) => {
+  if (!publicationRecord) return publicationRecord;
+
+  const nestedPublication = publicationRecord.publication || {};
+  const merged = {
+    ...nestedPublication,
+    ...publicationRecord,
+  };
+
+  const derivedIsOwner =
+    typeof publicationRecord.isOwner === "boolean"
+      ? publicationRecord.isOwner
+      : typeof merged.ownerId !== "undefined"
+        ? merged.ownerId === currentUserId
+        : typeof nestedPublication.userId !== "undefined"
+          ? nestedPublication.userId === currentUserId
+          : false;
+
+  return {
+    ...merged,
+    logoUrl: merged.logoUrl || nestedPublication.logoUrl || null,
+    joinedAt:
+      merged.joinedAt ||
+      publicationRecord.membership?.joinedAt ||
+      publicationRecord.createdAt ||
+      null,
+    isOwner: derivedIsOwner,
+  };
+};
+
 function PublicationProviderInner({ children }) {
   const { data: session, isPending } = useSession();
   const pathname = usePathname();
@@ -232,9 +262,12 @@ function PublicationProviderInner({ children }) {
         }
 
         // Backend returns either array (legacy) or object with publications array (new)
-        const publications = Array.isArray(data)
+        const publications = (Array.isArray(data)
           ? data
-          : data.publications || [];
+          : data.publications || []
+        ).map((publicationRecord) =>
+          normalizePublicationRecord(publicationRecord, session?.user?.id),
+        );
 
         // Check if user was removed from current publication (for joined publications only)
         const currentPub = currentPubRef.current;

@@ -141,7 +141,7 @@ export const memberService = {
         throw new Error('Backend URL is not configured. Please check NEXT_PUBLIC_BACKEND_URL in .env');
       }
 
-      const url = `${API_URL}/api/publication-members/my-publications`;
+      const url = `${API_URL}/api/members/user/publications`;
       
       const response = await fetch(url, {
         credentials: "include",
