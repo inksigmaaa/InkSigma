@@ -23,7 +23,8 @@ const buildUpstreamHeaders = (request: NextRequest) => {
   const headers = new Headers();
 
   for (const [key, value] of request.headers.entries()) {
-    if (HOP_BY_HOP_HEADERS.has(key.toLowerCase())) {
+    const lowerKey = key.toLowerCase();
+    if (lowerKey === "accept-encoding" || HOP_BY_HOP_HEADERS.has(lowerKey)) {
       continue;
     }
 
@@ -42,7 +43,11 @@ const buildResponseHeaders = (upstreamHeaders: Headers) => {
 
   for (const [key, value] of upstreamHeaders.entries()) {
     const normalizedKey = key.toLowerCase();
-    if (normalizedKey === "set-cookie" || HOP_BY_HOP_HEADERS.has(normalizedKey)) {
+    if (
+      normalizedKey === "set-cookie" ||
+      normalizedKey === "content-encoding" ||
+      HOP_BY_HOP_HEADERS.has(normalizedKey)
+    ) {
       continue;
     }
 
