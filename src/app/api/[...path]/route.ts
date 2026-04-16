@@ -42,7 +42,11 @@ const buildResponseHeaders = (upstreamHeaders: Headers) => {
 
   for (const [key, value] of upstreamHeaders.entries()) {
     const normalizedKey = key.toLowerCase();
-    if (normalizedKey === "set-cookie" || HOP_BY_HOP_HEADERS.has(normalizedKey)) {
+    if (
+      normalizedKey === "set-cookie" ||
+      normalizedKey === "content-encoding" ||
+      HOP_BY_HOP_HEADERS.has(normalizedKey)
+    ) {
       continue;
     }
 
