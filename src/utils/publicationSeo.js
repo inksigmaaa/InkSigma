@@ -11,6 +11,11 @@ const API_URL = (
   "http://localhost:5000"
 ).replace(/\/$/, "");
 const PUBLIC_METADATA_REVALIDATE_SECONDS = 30;
+const DEFAULT_SITE_ICON = "/favicon.ico";
+const DEFAULT_SITE_SHORTCUT_ICON = "/favicon.ico";
+const DEFAULT_SITE_PNG_ICON = "/icons/favicon-32x32.png";
+const DEFAULT_SITE_SVG_ICON = "/icons/favicon.svg";
+const DEFAULT_SITE_APPLE_ICON = "/icons/apple-touch-icon.png";
 
 export const getAbsoluteAssetUrl = (assetPath) => {
   if (!assetPath) return "";
@@ -105,11 +110,28 @@ export const buildPublicationMetadata = ({
   const resolvedImage = rawImage?.includes("res.cloudinary.com")
     ? rawImage.replace("/upload/", "/upload/w_1200,h_630,c_fill,f_auto,q_auto/")
     : rawImage;
-  const rawIcon = getAbsoluteAssetUrl(publication.faviconUrl) || undefined;
+  const rawIconUrl =
+    getAbsoluteAssetUrl(publication.faviconUrl) || undefined;
   // Serve favicon at standard browser size via Cloudinary transforms
-  const iconUrl = rawIcon?.includes("res.cloudinary.com")
-    ? rawIcon.replace("/upload/", "/upload/w_32,h_32,c_fill,f_png/")
-    : rawIcon;
+  const publicationIconUrl = rawIconUrl?.includes("res.cloudinary.com")
+    ? rawIconUrl.replace("/upload/", "/upload/w_32,h_32,c_fill,f_png/")
+    : rawIconUrl;
+  const resolvedIcon = publicationIconUrl
+    ? publicationIconUrl
+    : [
+        { url: DEFAULT_SITE_ICON, type: "image/x-icon" },
+        {
+          url: DEFAULT_SITE_PNG_ICON,
+          sizes: "32x32",
+          type: "image/png",
+        },
+        {
+          url: DEFAULT_SITE_SVG_ICON,
+          type: "image/svg+xml",
+        },
+      ];
+  const resolvedShortcutIconUrl = publicationIconUrl || DEFAULT_SITE_SHORTCUT_ICON;
+  const resolvedAppleIconUrl = publicationIconUrl || DEFAULT_SITE_APPLE_ICON;
 
   return {
     title: resolvedTitle,
@@ -133,11 +155,11 @@ export const buildPublicationMetadata = ({
       description: resolvedDescription,
       images: resolvedImage ? [resolvedImage] : undefined,
     },
-    icons: iconUrl
-      ? {
-          icon: iconUrl,
-        }
-      : undefined,
+    icons: {
+      icon: resolvedIcon,
+      shortcut: resolvedShortcutIconUrl,
+      apple: resolvedAppleIconUrl,
+    },
   };
 };
 

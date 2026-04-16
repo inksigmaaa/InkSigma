@@ -895,6 +895,11 @@ router.post(
         return res.status(404).json({ error: "Publication not found" });
       }
 
+      await invalidatePublicationCache({
+        subdomain: updated[0].subdomain,
+        customDomain: updated[0].customDomain,
+      });
+
       res.json({ logoUrl, publication: updated[0] });
     } catch (error) {
       logger.error(error, "Error uploading logo:");
@@ -937,6 +942,11 @@ router.post(
         return res.status(404).json({ error: "Publication not found" });
       }
 
+      await invalidatePublicationCache({
+        subdomain: updated[0].subdomain,
+        customDomain: updated[0].customDomain,
+      });
+
       res.json({ faviconUrl, publication: updated[0] });
     } catch (error) {
       logger.error(error, "Error uploading favicon:");
@@ -978,6 +988,11 @@ router.post(
       if (updated.length === 0) {
         return res.status(404).json({ error: "Publication not found" });
       }
+
+      await invalidatePublicationCache({
+        subdomain: updated[0].subdomain,
+        customDomain: updated[0].customDomain,
+      });
 
       res.json({ metaOgImageUrl, publication: updated[0] });
     } catch (error) {
@@ -1036,6 +1051,15 @@ router.delete(
         .set(updateData)
         .where(eq(publication.id, parseInt(id)))
         .returning();
+
+      if (updated.length === 0) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+
+      await invalidatePublicationCache({
+        subdomain: updated[0].subdomain,
+        customDomain: updated[0].customDomain,
+      });
 
       res.json(updated[0]);
     } catch (error) {
