@@ -310,19 +310,15 @@ function Sidebar() {
                 </AvatarFallback>
               ) : (
                 <>
-                  {currentPublication?.logoUrl ? (
-                    <AvatarImage
-                      src={`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${currentPublication.logoUrl}`}
-                      alt={currentPublication.name || "Publication"}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <AvatarImage
-                      src="/images/icons/profileuser.svg"
-                      alt="profileImg"
-                      className="w-full h-full object-cover"
-                    />
-                  )}
+                  <AvatarImage
+                    src={
+                      currentPublication?.logoUrl
+                        ? `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${currentPublication.logoUrl}`
+                        : "/icons/nib.svg"
+                    }
+                    alt={currentPublication?.name || "Publication"}
+                    className="w-full h-full object-cover"
+                  />
                   <AvatarFallback className="w-full h-full bg-gray-100 text-violet-600 font-bold text-sm">
                     {currentPublication?.name?.charAt(0).toUpperCase() || "P"}
                   </AvatarFallback>
