@@ -11,11 +11,6 @@ const API_URL = (
   "http://localhost:5000"
 ).replace(/\/$/, "");
 const PUBLIC_METADATA_REVALIDATE_SECONDS = 30;
-const DEFAULT_SITE_ICON = "/favicon.ico";
-const DEFAULT_SITE_SHORTCUT_ICON = "/favicon.ico";
-const DEFAULT_SITE_PNG_ICON = "/icons/favicon-32x32.png";
-const DEFAULT_SITE_SVG_ICON = "/icons/favicon.svg";
-const DEFAULT_SITE_APPLE_ICON = "/icons/apple-touch-icon.png";
 
 export const getAbsoluteAssetUrl = (assetPath) => {
   if (!assetPath) return "";
@@ -107,24 +102,7 @@ export const buildPublicationMetadata = ({
         publication.logoUrl ||
         publication.faviconUrl,
     ) || undefined;
-  const publicationIconUrl =
-    getAbsoluteAssetUrl(publication.faviconUrl) || undefined;
-  const resolvedIcon = publicationIconUrl
-    ? publicationIconUrl
-    : [
-        { url: DEFAULT_SITE_ICON, type: "image/x-icon" },
-        {
-          url: DEFAULT_SITE_PNG_ICON,
-          sizes: "32x32",
-          type: "image/png",
-        },
-        {
-          url: DEFAULT_SITE_SVG_ICON,
-          type: "image/svg+xml",
-        },
-      ];
-  const resolvedShortcutIconUrl = publicationIconUrl || DEFAULT_SITE_SHORTCUT_ICON;
-  const resolvedAppleIconUrl = publicationIconUrl || DEFAULT_SITE_APPLE_ICON;
+  const iconUrl = getAbsoluteAssetUrl(publication.faviconUrl) || undefined;
 
   return {
     title: resolvedTitle,
@@ -148,11 +126,11 @@ export const buildPublicationMetadata = ({
       description: resolvedDescription,
       images: resolvedImage ? [resolvedImage] : undefined,
     },
-    icons: {
-      icon: resolvedIcon,
-      shortcut: resolvedShortcutIconUrl,
-      apple: resolvedAppleIconUrl,
-    },
+    icons: iconUrl
+      ? {
+          icon: iconUrl,
+        }
+      : undefined,
   };
 };
 
