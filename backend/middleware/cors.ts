@@ -5,6 +5,7 @@
 
 import cors, { type CorsOptions } from "cors";
 import logger from "../utils/logger.js";
+import { normalizeConfiguredDomainValue, parseConfiguredDomains } from "../utils/domainConfig.js";
 
 const EXPOSED_HEADERS = ["X-Subdomain"];
 const DEFAULT_DEVELOPMENT_ORIGINS = [
@@ -92,15 +93,13 @@ const getPlatformDomains = () => {
     process.env.MAIN_DOMAIN ||
     process.env.NEXT_PUBLIC_MAIN_DOMAIN ||
     "inksigma.xyz"
-  ).toLowerCase();
+  );
 
   return Array.from(
     new Set(
-      configuredBaseDomains
-        .split(",")
-        .map((domain) => domain.trim().toLowerCase())
-        .filter(Boolean)
-        .concat(mainDomain),
+      parseConfiguredDomains(configuredBaseDomains).concat(
+        normalizeConfiguredDomainValue(mainDomain) || "inksigma.xyz",
+      ),
     ),
   );
 };

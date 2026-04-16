@@ -7,17 +7,15 @@ import { emailValidationService } from "../services/emailValidationService.js";
 import { redisSessionStorage } from "./redis.js";
 import logger from "../utils/logger.js";
 import { redactEmail } from "../utils/redactPII.js";
+import { parseConfiguredDomains } from "../utils/domainConfig.js";
 
 // Inline helper to get base domains from environment
 const getBaseDomains = () => {
   const envValue =
     process.env.BASE_DOMAINS ||
     process.env.BASE_DOMAIN ||
-    "localhost,inksigma.local";
-  return envValue
-    .split(",")
-    .map((d) => d.trim().toLowerCase())
-    .filter(Boolean);
+    "localhost,inksigma.local,inksigma.xyz";
+  return parseConfiguredDomains(envValue);
 };
 
 const getPreferredBaseDomain = () => {
@@ -35,7 +33,7 @@ const buildTrustedOrigins = () => {
     process.env.CORS_ORIGIN ||
     process.env.ALLOWED_ORIGINS ||
     process.env.FRONTEND_URL ||
-    "http://localhost:3000";
+    (process.env.NODE_ENV === "production" ? "https://inksigma.xyz" : "http://localhost:3000");
 
   const origins = new Set(
     fromEnv
@@ -101,9 +99,10 @@ export const auth = betterAuth({
   trustedOrigins: buildTrustedOrigins(),
   advanced: crossSubdomainCookieDomain
     ? {
+        cookiePrefix: "better-auth",
         crossSubDomainCookies: {
           enabled: true,
-          domain: crossSubdomainCookieDomain,
+          domain: `.${crossSubdomainCookieDomain}`,
         },
       }
     : undefined,
@@ -177,7 +176,7 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     // Redirect to auth-callback after verification, which handles routing to create-publication for new users
-    callbackURL: (() => {
+    callbackURL: ((): string => {
       // Use FRONTEND_URL if set (production), otherwise fall back to subdomain-based local dev URL
       if (process.env.FRONTEND_URL) {
         return `${process.env.FRONTEND_URL}/auth-callback`;
@@ -187,7 +186,9 @@ export const auth = betterAuth({
       if (baseDomains.length > 0) {
         return `http://${dashboardSub}.${baseDomains[0]}:3000/auth-callback`;
       }
-      return "http://localhost:3000/auth-callback";
+      return process.env.NODE_ENV === "production"
+        ? "https://inksigma.xyz/auth-callback"
+        : "http://localhost:3000/auth-callback";
     })(),
     sendVerificationEmail: async ({ user, url, token }) => {
       logger.info(

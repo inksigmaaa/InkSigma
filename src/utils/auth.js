@@ -1,6 +1,3 @@
-// Utility functions for authentication
-import { getApiBase } from "./apiBase";
-
 const AUTH_FLOW_PATH_PREFIXES = [
   "/login",
   "/signup",
@@ -91,7 +88,7 @@ export const waitForServerSession = async ({
     }
 
     try {
-      const response = await fetch(`${getApiBase()}/api/auth/get-session`, {
+      const response = await fetch("/api/auth/get-session", {
         credentials: "include",
         cache: "no-store",
         signal,
