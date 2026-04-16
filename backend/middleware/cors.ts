@@ -91,7 +91,7 @@ const getPlatformDomains = () => {
   const mainDomain = (
     process.env.MAIN_DOMAIN ||
     process.env.NEXT_PUBLIC_MAIN_DOMAIN ||
-    "inksigma.com"
+    "inksigma.xyz"
   ).toLowerCase();
 
   return Array.from(
