@@ -4,9 +4,11 @@ import { useRouter } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
 import { ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getApiBase } from "@/utils/apiBase";
 
 export default function MySpace() {
   const router = useRouter();
+  const apiBase = getApiBase();
   const {
     currentPublication,
     loading,
@@ -41,6 +43,13 @@ export default function MySpace() {
     }
   };
 
+  const getPublicationLogoSrc = (logoUrl) =>
+    logoUrl
+      ? logoUrl.startsWith("http://") || logoUrl.startsWith("https://")
+        ? logoUrl
+        : `${apiBase}${logoUrl}`
+      : "/icons/nib.svg";
+
   return (
     <main className="flex-1 bg-white px-4 sm:px-8 py-6 sm:py-10 mt-[120px] md:mt-[120px] pb-24 md:pb-0 md:ml-[165px]">
       <div className="max-w-[600px] mx-auto space-y-6 sm:space-y-8">
@@ -70,13 +79,11 @@ export default function MySpace() {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex gap-4 items-center flex-1 w-full">
                       <Avatar className="w-14 h-14 bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        {publication.logoUrl && (
-                          <AvatarImage
-                            src={`http://localhost:5000${publication.logoUrl}`}
-                            alt={`${publication.name} logo`}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
+                        <AvatarImage
+                          src={getPublicationLogoSrc(publication.logoUrl)}
+                          alt={`${publication.name} logo`}
+                          className="w-full h-full object-cover"
+                        />
                         <AvatarFallback className="w-full h-full bg-violet-100 text-violet-600 font-bold text-lg">
                           {publication.name.charAt(0).toUpperCase()}
                         </AvatarFallback>
@@ -121,13 +128,11 @@ export default function MySpace() {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex gap-4 items-center flex-1 w-full">
                       <Avatar className="w-14 h-14 bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        {publication.logoUrl && (
-                          <AvatarImage
-                            src={`http://localhost:5000${publication.logoUrl}`}
-                            alt={`${publication.name} logo`}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
+                        <AvatarImage
+                          src={getPublicationLogoSrc(publication.logoUrl)}
+                          alt={`${publication.name} logo`}
+                          className="w-full h-full object-cover"
+                        />
                         <AvatarFallback className="w-full h-full bg-blue-100 text-blue-600 font-bold text-lg">
                           {publication.name.charAt(0).toUpperCase()}
                         </AvatarFallback>
@@ -199,13 +204,11 @@ export default function MySpace() {
           <section className="bg-violet-50 rounded-lg p-4 border border-violet-200">
             <div className="flex items-center gap-3">
               <Avatar className="w-8 h-8 bg-violet-100 flex items-center justify-center">
-                {currentPublication.logoUrl && (
-                  <AvatarImage
-                    src={`http://localhost:5000${currentPublication.logoUrl}`}
-                    alt={currentPublication.name}
-                    className="w-full h-full object-cover"
-                  />
-                )}
+                <AvatarImage
+                  src={getPublicationLogoSrc(currentPublication.logoUrl)}
+                  alt={currentPublication.name}
+                  className="w-full h-full object-cover"
+                />
                 <AvatarFallback className="w-full h-full bg-violet-100 text-violet-600 font-bold text-sm">
                   {currentPublication.name?.charAt(0).toUpperCase()}
                 </AvatarFallback>
