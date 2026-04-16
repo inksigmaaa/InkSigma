@@ -1,7 +1,5 @@
 // routes/profileRoutes.js
 import express from "express";
-import multer from "multer";
-import path from "path";
 import fs from "fs";
 import { rm } from "fs/promises";
 import { db } from "../config/database.js";
@@ -9,42 +7,18 @@ import { user, account } from "../models/schema.js";
 import { eq, and, ne } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth.js";
 import logger from "../utils/logger.js";
-import { config } from "../config/appConfig.js";
+import {
+  createMulterUpload,
+  uploadToCloudinary,
+  deleteFromCloudinary,
+  extractPublicId,
+  isCloudinaryUrl,
+  CLOUDINARY_FOLDERS,
+} from "../utils/cloudinary.js";
 
 const router = express.Router();
 
-// Configure multer for image uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = "uploads/avatars";
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, `avatar-${uniqueSuffix}${path.extname(file.originalname)}`);
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(
-      path.extname(file.originalname).toLowerCase(),
-    );
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only image files are allowed"));
-    }
-  },
-});
+const upload = createMulterUpload(5 * 1024 * 1024); // 5MB limit
 
 // GET /api/profile - Get current user's profile
 router.get("/", requireAuth, async (req, res) => {
@@ -167,19 +141,33 @@ router.post(
       }
 
       const userId = req.user.id;
-      const imageUrl = `${config.backend.url}/${req.file.path.replace(/\\/g, "/")}`;
 
-      // Get current user to delete old image
+      const result = await uploadToCloudinary(req.file.buffer, {
+        folder: CLOUDINARY_FOLDERS.AVATARS,
+        publicId: `avatar-${userId}`,
+        transformation: [
+          { width: 400, height: 400, crop: "fill", gravity: "face" },
+        ],
+        overwrite: true,
+      });
+
+      const imageUrl = result.secureUrl;
+
+      // Best-effort cleanup of old local image (legacy)
       const [userData] = await db
         .select()
         .from(user)
         .where(eq(user.id, userId));
 
-      // Delete old image file if exists and is a local file
-      if (userData?.image && userData.image.includes("/uploads/avatars/")) {
+      if (
+        userData?.image &&
+        !isCloudinaryUrl(userData.image) &&
+        userData.image.includes("/uploads/avatars/")
+      ) {
         const oldPath = userData.image.split("/uploads/avatars/")[1];
-        const oldFilePath = `uploads/avatars/${oldPath}`;
-        await rm(oldFilePath, { force: true });
+        if (oldPath) {
+          await rm(`uploads/avatars/${oldPath}`, { force: true });
+        }
       }
 
       // Update user image in database
@@ -206,15 +194,25 @@ router.delete("/image", requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Get current user to delete image file
+    // Get current user to delete image
     const [userData] = await db.select().from(user).where(eq(user.id, userId));
 
-    // Delete image file if exists and is a local file
-    if (userData?.image && userData.image.includes("/uploads/avatars/")) {
-      const oldPath = userData.image.split("/uploads/avatars/")[1];
-      const oldFilePath = `uploads/avatars/${oldPath}`;
-      if (fs.existsSync(oldFilePath)) {
-        fs.unlinkSync(oldFilePath);
+    if (userData?.image) {
+      if (isCloudinaryUrl(userData.image)) {
+        // Delete from Cloudinary
+        const publicId = extractPublicId(userData.image);
+        if (publicId) {
+          await deleteFromCloudinary(publicId);
+        }
+      } else if (userData.image.includes("/uploads/avatars/")) {
+        // Legacy local file cleanup
+        const oldPath = userData.image.split("/uploads/avatars/")[1];
+        if (oldPath) {
+          const oldFilePath = `uploads/avatars/${oldPath}`;
+          if (fs.existsSync(oldFilePath)) {
+            fs.unlinkSync(oldFilePath);
+          }
+        }
       }
     }
 

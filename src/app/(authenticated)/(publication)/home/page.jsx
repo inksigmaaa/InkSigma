@@ -27,7 +27,7 @@ export default function HomePage() {
   const [commentCounts, setCommentCounts] = useState({});
   const [viewStats, setViewStats] = useState({});
   const publicationLogoSrc = currentPublication?.logoUrl
-    ? `${API_URL}${currentPublication.logoUrl}`
+    ? (currentPublication.logoUrl.startsWith("http") ? currentPublication.logoUrl : `${API_URL}${currentPublication.logoUrl}`)
     : "/icons/nib.svg";
 
   // Check if this is a refresh from editor

@@ -86,6 +86,9 @@ const normalizeImageUrl = (url, forStorage = false) => {
   if (!url) return url;
 
   if (forStorage) {
+    // Cloudinary URLs are already absolute and should be stored as-is
+    if (url.includes("res.cloudinary.com")) return url;
+
     for (const origin of API_ORIGINS) {
       if (url.startsWith(origin)) {
         const path = url.substring(origin.length) || "/";

@@ -95,14 +95,21 @@ export const buildPublicationMetadata = ({
     description ||
     publication.description ||
     "Read the latest writing from this publication on InkSigma.";
-  const resolvedImage =
-    getAbsoluteAssetUrl(
-      image ||
-        publication.metaOgImageUrl ||
-        publication.logoUrl ||
-        publication.faviconUrl,
-    ) || undefined;
-  const iconUrl = getAbsoluteAssetUrl(publication.faviconUrl) || undefined;
+  const rawImage = getAbsoluteAssetUrl(
+    image ||
+      publication.metaOgImageUrl ||
+      publication.logoUrl ||
+      publication.faviconUrl,
+  ) || undefined;
+  // Serve OG images at exact social sharing dimensions via Cloudinary transforms
+  const resolvedImage = rawImage?.includes("res.cloudinary.com")
+    ? rawImage.replace("/upload/", "/upload/w_1200,h_630,c_fill,f_auto,q_auto/")
+    : rawImage;
+  const rawIcon = getAbsoluteAssetUrl(publication.faviconUrl) || undefined;
+  // Serve favicon at standard browser size via Cloudinary transforms
+  const iconUrl = rawIcon?.includes("res.cloudinary.com")
+    ? rawIcon.replace("/upload/", "/upload/w_32,h_32,c_fill,f_png/")
+    : rawIcon;
 
   return {
     title: resolvedTitle,

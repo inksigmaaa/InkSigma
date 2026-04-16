@@ -313,7 +313,7 @@ function Sidebar() {
                   <AvatarImage
                     src={
                       currentPublication?.logoUrl
-                        ? `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${currentPublication.logoUrl}`
+                        ? (currentPublication.logoUrl.startsWith("http") ? currentPublication.logoUrl : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${currentPublication.logoUrl}`)
                         : "/icons/nib.svg"
                     }
                     alt={currentPublication?.name || "Publication"}

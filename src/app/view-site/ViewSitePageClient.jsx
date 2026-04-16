@@ -69,7 +69,9 @@ function ViewSiteContent({
 
   const publicationId = initialPublication?.id || initialPublicationId || null;
   const publicationLogoUrl = initialPublication?.logoUrl || null;
-  const avatarUrl = publicationLogoUrl ? `${API_URL}${publicationLogoUrl}` : null;
+  const avatarUrl = publicationLogoUrl
+    ? (publicationLogoUrl.startsWith("http") ? publicationLogoUrl : `${API_URL}${publicationLogoUrl}`)
+    : null;
   const publicationName = initialPublication?.name || 'Your Publication Name';
 
   useEffect(() => {

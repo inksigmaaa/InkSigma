@@ -553,7 +553,7 @@ export default function BlogDetailPageClient({
         }
         userAvatar={
           blog.publication?.logoUrl
-            ? `${API_URL}${blog.publication.logoUrl}`
+            ? (blog.publication.logoUrl.startsWith("http") ? blog.publication.logoUrl : `${API_URL}${blog.publication.logoUrl}`)
             : blog.author?.image
               ? blog.author.image.startsWith("http")
                 ? blog.author.image

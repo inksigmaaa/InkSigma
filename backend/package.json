@@ -19,6 +19,7 @@
     "@upstash/redis": "^1.36.1",
     "bcrypt": "^5.1.1",
     "better-auth": "^1.4.9",
+    "cloudinary": "^2.9.0",
     "cors": "^2.8.5",
     "disposable-email-domains": "^1.0.62",
     "dotenv": "^16.4.5",

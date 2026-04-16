@@ -102,7 +102,7 @@ export default function PreviewPage({ params }) {
               <div className="flex items-center gap-2">
                 <Avatar className="w-8 h-8 bg-gray-200">
                   <AvatarImage
-                    src={`${getApiBase()}${article.publication.logoUrl}`}
+                    src={article.publication.logoUrl.startsWith("http") ? article.publication.logoUrl : `${getApiBase()}${article.publication.logoUrl}`}
                     alt={article.publication.name}
                     className="w-full h-full object-cover"
                   />
