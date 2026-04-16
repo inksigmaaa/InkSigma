@@ -35,7 +35,7 @@ export default function PublishSuccessModal({ isOpen, onClose, onSeeLater, onVie
             {/* Icon */}
             <div className="relative mb-4 h-[68px] w-[64px]">
               <img
-                src="/images/icons/paper-plane-svgrepo-com 1.svg"
+                src="/images/icons/paper-plane.svg"
                 alt=""
                 aria-hidden="true"
                 className="h-[60px] w-[60px] object-contain"
