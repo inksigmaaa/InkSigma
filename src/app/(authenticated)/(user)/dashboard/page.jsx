@@ -98,6 +98,12 @@ export default function DashboardPage() {
 
   const ownedPublications = getOwnedPublications();
   const joinedPublications = getJoinedPublications();
+  const getPublicationLogoSrc = (logoUrl) =>
+    logoUrl
+      ? logoUrl.startsWith("http://") || logoUrl.startsWith("https://")
+        ? logoUrl
+        : `${API_URL}${logoUrl}`
+      : "/icons/nib.svg";
 
   return (
     <AuthGuard>
@@ -153,13 +159,11 @@ export default function DashboardPage() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-[88px]">
                   <div className="flex gap-6 items-center flex-1 min-w-0 w-full">
                     <Avatar className="w-[66px] h-[66px] opacity-100 border-[0.92px] border-[#EAEAEA] bg-gray-100 flex items-center justify-center flex-shrink-0">
-                      {ownedPublications[0]?.logoUrl && (
-                        <AvatarImage
-                          src={`http://localhost:5000${ownedPublications[0].logoUrl}`}
-                          alt="publication logo"
-                          className="w-full h-full object-cover"
-                        />
-                      )}
+                      <AvatarImage
+                        src={getPublicationLogoSrc(ownedPublications[0]?.logoUrl)}
+                        alt="publication logo"
+                        className="w-full h-full object-cover"
+                      />
                       <AvatarFallback className="w-full h-full bg-violet-100 text-violet-600 font-bold text-lg">
                         {ownedPublications[0]?.name?.charAt(0).toUpperCase() ||
                           "P"}
@@ -271,13 +275,11 @@ export default function DashboardPage() {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-[88px]">
                       <div className="flex gap-6 items-center flex-1 w-full">
                         <Avatar className="w-[66px] h-[66px] border-[0.92px] border-[#EAEAEA] bg-gray-100 flex items-center justify-center flex-shrink-0">
-                          {joinedPub.logoUrl && (
-                            <AvatarImage
-                              src={`http://localhost:5000${joinedPub.logoUrl}`}
-                              alt={`${joinedPub.name} logo`}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
+                          <AvatarImage
+                            src={getPublicationLogoSrc(joinedPub.logoUrl)}
+                            alt={`${joinedPub.name} logo`}
+                            className="w-full h-full object-cover"
+                          />
                           <AvatarFallback className="w-full h-full bg-blue-100 text-blue-600 font-bold text-lg">
                             {joinedPub.name.charAt(0).toUpperCase()}
                           </AvatarFallback>
