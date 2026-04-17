@@ -617,22 +617,7 @@ export default function EditorPageClient() {
       // Upload thumbnail if one was selected
       if (thumbnailData && thumbnailData.file) {
         try {
-          const uploadedImageUrl = await uploadArticleImage(
-            responseData.id,
-            thumbnailData.file,
-          );
-          if (uploadedImageUrl) {
-            setThumbnailData((current) =>
-              current
-                ? {
-                    ...current,
-                    file: null,
-                    url: uploadedImageUrl,
-                    previewUrl: uploadedImageUrl,
-                  }
-                : current,
-            );
-          }
+          await uploadArticleImage(responseData.id, thumbnailData.file);
         } catch (error) {
           console.error("Error uploading thumbnail:", error);
         }

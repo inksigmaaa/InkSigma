@@ -7,8 +7,11 @@ import ShareMenu from "../ShareMenu/ShareMenu";
 import { getImageUrl } from "@/utils/imageUrl";
 import CategoryBadgeList from "@/components/CategoryBadgeList";
 import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
+import { getApiBase } from "@/utils/apiBase";
 import { getBlogPath } from "@/utils/blogUrl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+const API_URL = getApiBase();
 
 export default function AllArticles({
   searchQuery = "",
@@ -81,8 +84,7 @@ export default function AllArticles({
             const dateFormatted = formatDate(
               article.publishedAt || article.createdAt,
             );
-            const thumbnailUrl = getThumbnailWithFallback(article.image, article.id);
-            const authorAvatarUrl = getImageUrl(article.author?.image);
+            const thumbnailUrl = getThumbnailWithFallback(getImageUrl(article.image), article.id);
 
             return (
               <div
@@ -93,9 +95,13 @@ export default function AllArticles({
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                   <div className="flex items-center gap-2 md:gap-3">
                     <Avatar className="w-[29px] h-[29px] bg-gray-300 flex-shrink-0">
-                      {authorAvatarUrl && (
+                      {article.author?.image && (
                         <AvatarImage
-                          src={authorAvatarUrl}
+                          src={
+                            article.author.image.startsWith("http")
+                              ? article.author.image
+                              : `${API_URL}${article.author.image}`
+                          }
                           alt={article.author.name}
                           className="w-full h-full object-cover"
                         />

@@ -1,15 +1,13 @@
-import { getCloudinaryThumbnail, getImageUrl } from "@/utils/imageUrl";
-
 /**
  * Get a random fallback thumbnail from the local thumbnails folder
  * Used when a blog post doesn't have a custom thumbnail image
  */
 
 const FALLBACK_THUMBNAILS = [
-  "/images/thumbnails/building.png",
-  "/images/thumbnails/night-sky.png",
-  "/images/thumbnails/pencil.png",
-  "/images/thumbnails/pencils.png",
+  '/images/thumbnails/building.png',
+  '/images/thumbnails/night-sky.png',
+  '/images/thumbnails/pencil.png',
+  '/images/thumbnails/pencils.png'
 ];
 
 /**
@@ -24,7 +22,7 @@ export function getFallbackThumbnail(blogId = null) {
     const index = Math.abs(parseInt(blogId) || 0) % FALLBACK_THUMBNAILS.length;
     return FALLBACK_THUMBNAILS[index];
   }
-
+  
   // Random selection if no blog ID provided
   const randomIndex = Math.floor(Math.random() * FALLBACK_THUMBNAILS.length);
   return FALLBACK_THUMBNAILS[randomIndex];
@@ -38,15 +36,10 @@ export function getFallbackThumbnail(blogId = null) {
  * @returns {string} Image URL or fallback thumbnail path
  */
 export function getThumbnailWithFallback(imageUrl, blogId = null) {
-  const normalizedImageUrl = getImageUrl(imageUrl);
-
-  if (!normalizedImageUrl) return getFallbackThumbnail(blogId);
-
-  return (
-    getCloudinaryThumbnail(normalizedImageUrl, {
-      width: 400,
-      height: 250,
-      crop: "fill",
-    }) || normalizedImageUrl
-  );
+  if (!imageUrl) return getFallbackThumbnail(blogId);
+  // Auto-optimize Cloudinary images for card thumbnails (400x250)
+  if (imageUrl.includes('res.cloudinary.com')) {
+    return imageUrl.replace('/upload/', '/upload/w_400,h_250,c_fill,f_auto,q_auto/');
+  }
+  return imageUrl;
 }

@@ -12,7 +12,6 @@ import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 import { getApiBase } from '@/utils/apiBase';
 import { fetchJsonWithRetry } from '@/lib/api/client';
 import { getBlogPath } from '@/utils/blogUrl';
-import { getImageUrl } from '@/utils/imageUrl';
 
 const API_URL = getApiBase();
 const BLOG_CACHE_TTL_MS = 60 * 1000;
@@ -70,7 +69,9 @@ function ViewSiteContent({
 
   const publicationId = initialPublication?.id || initialPublicationId || null;
   const publicationLogoUrl = initialPublication?.logoUrl || null;
-  const avatarUrl = getImageUrl(publicationLogoUrl);
+  const avatarUrl = publicationLogoUrl
+    ? (publicationLogoUrl.startsWith("http") ? publicationLogoUrl : `${API_URL}${publicationLogoUrl}`)
+    : null;
   const publicationName = initialPublication?.name || 'Your Publication Name';
 
   useEffect(() => {

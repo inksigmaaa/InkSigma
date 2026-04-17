@@ -430,10 +430,8 @@ export const useArticleStore = create((set, get) => ({
     const updated = convertBlogToArticle(result.blog);
     set((s) => ({
       articles: updateInList(s.articles, id, updated),
-      publicationArticles: updateInList(s.publicationArticles, id, updated),
-      reviewArticles: updateInList(s.reviewArticles, id, updated),
     }));
-    return result.image || updated.image || null;
+    return result.imageUrl;
   },
 
   restoreFromTrash: (id) => {

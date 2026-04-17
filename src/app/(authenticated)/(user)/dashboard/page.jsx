@@ -99,7 +99,11 @@ export default function DashboardPage() {
   const ownedPublications = getOwnedPublications();
   const joinedPublications = getJoinedPublications();
   const getPublicationLogoSrc = (logoUrl) =>
-    logoUrl?.startsWith("http") ? logoUrl : "/icons/nib.svg";
+    logoUrl
+      ? logoUrl.startsWith("http://") || logoUrl.startsWith("https://")
+        ? logoUrl
+        : `${API_URL}${logoUrl}`
+      : "/icons/nib.svg";
 
   return (
     <AuthGuard>

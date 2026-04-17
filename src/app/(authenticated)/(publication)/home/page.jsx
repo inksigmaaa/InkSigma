@@ -26,8 +26,9 @@ export default function HomePage() {
   const { publicationArticles, loadPublicationArticles } = useArticles();
   const [commentCounts, setCommentCounts] = useState({});
   const [viewStats, setViewStats] = useState({});
-  const publicationLogoSrc =
-    getImageUrl(currentPublication?.logoUrl) || "/icons/nib.svg";
+  const publicationLogoSrc = currentPublication?.logoUrl
+    ? (currentPublication.logoUrl.startsWith("http") ? currentPublication.logoUrl : `${API_URL}${currentPublication.logoUrl}`)
+    : "/icons/nib.svg";
 
   // Check if this is a refresh from editor
   const shouldRefresh = searchParams.get("refresh") === "true";
@@ -53,7 +54,7 @@ export default function HomePage() {
     .map((article) => {
       // Check if article has an image - use fallback if not
       const thumbnailUrl = getThumbnailWithFallback(
-        article.image,
+        getImageUrl(article.image),
         article.id,
       );
 
