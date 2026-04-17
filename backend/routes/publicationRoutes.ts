@@ -8,10 +8,6 @@ import {
   user,
 } from "../models/schema.js";
 import { eq, and, count, inArray } from "drizzle-orm";
-import multer from "multer";
-import path from "path";
-import { fileURLToPath } from "url";
-import fs from "fs";
 import { requireAuth } from "../middleware/auth.js";
 // NOTE: Domain validation logic moved to frontend (src/utils/subdomainRules.js, src/utils/domainValidation.js)
 // Backend now only checks database availability and handles data persistence
@@ -36,57 +32,18 @@ import { validate } from "../middleware/validate.js";
 import * as publicationValidator from "../validators/publicationValidator.js";
 import logger from "../utils/logger.js";
 import { BLOG_STATUS } from "../config/constants.js";
+import {
+  createMulterUpload,
+  uploadToCloudinary,
+  deleteFromCloudinary,
+  extractPublicId,
+  isCloudinaryUrl,
+  CLOUDINARY_FOLDERS,
+} from "../utils/cloudinary.js";
 
 const router = express.Router();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, "../uploads/publications");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-
-    // Map MIME types to proper file extensions
-    const extensionMap = {
-      "image/jpeg": ".jpg",
-      "image/jpg": ".jpg",
-      "image/png": ".png",
-      "image/gif": ".gif",
-      "image/webp": ".webp",
-      "image/svg+xml": ".svg",
-      "image/svg": ".svg",
-    };
-
-    // Get extension from MIME type or fall back to original extension
-    const ext = extensionMap[file.mimetype] || path.extname(file.originalname);
-
-    cb(null, file.fieldname + "-" + uniqueSuffix + ext);
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|svg|webp/;
-    const extname = allowedTypes.test(
-      path.extname(file.originalname).toLowerCase(),
-    );
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (mimetype && extname) {
-      return cb(null, true);
-    }
-    cb(new Error("Only image files are allowed"));
-  },
-});
+const upload = createMulterUpload(5 * 1024 * 1024); // 5MB limit
 
 // Check if user has a publication
 router.get("/check", requireAuth, async (req, res) => {
@@ -919,7 +876,14 @@ router.post(
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      const logoUrl = `/uploads/publications/${req.file.filename}`;
+      const result = await uploadToCloudinary(req.file.buffer, {
+        folder: CLOUDINARY_FOLDERS.PUB_LOGOS,
+        publicId: `pub-${id}-logo`,
+        transformation: [{ width: 512, height: 512, crop: "fit" }],
+        overwrite: true,
+      });
+
+      const logoUrl = result.secureUrl;
 
       const updated = await db
         .update(publication)
@@ -959,7 +923,14 @@ router.post(
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      const faviconUrl = `/uploads/publications/${req.file.filename}`;
+      const result = await uploadToCloudinary(req.file.buffer, {
+        folder: CLOUDINARY_FOLDERS.PUB_FAVICONS,
+        publicId: `pub-${id}-favicon`,
+        transformation: [{ width: 180, height: 180, crop: "fill" }],
+        overwrite: true,
+      });
+
+      const faviconUrl = result.secureUrl;
 
       const updated = await db
         .update(publication)
@@ -999,7 +970,14 @@ router.post(
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      const metaOgImageUrl = `/uploads/publications/${req.file.filename}`;
+      const result = await uploadToCloudinary(req.file.buffer, {
+        folder: CLOUDINARY_FOLDERS.PUB_OG,
+        publicId: `pub-${id}-og`,
+        transformation: [{ width: 1200, height: 630, crop: "fill" }],
+        overwrite: true,
+      });
+
+      const metaOgImageUrl = result.secureUrl;
 
       const updated = await db
         .update(publication)
@@ -1034,11 +1012,39 @@ router.delete(
     try {
       const { id, type } = req.params;
 
+      // Get current publication to clean up Cloudinary asset
+      const [currentPub] = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.id, parseInt(id)));
+
+      if (!currentPub) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+
+      let imageUrl: string | null = null;
       const updateData: any = { updatedAt: new Date() };
-      if (type === "logo") updateData.logoUrl = null;
-      else if (type === "favicon") updateData.faviconUrl = null;
-      else if (type === "meta-og") updateData.metaOgImageUrl = null;
-      else return res.status(400).json({ error: "Invalid image type" });
+
+      if (type === "logo") {
+        imageUrl = currentPub.logoUrl;
+        updateData.logoUrl = null;
+      } else if (type === "favicon") {
+        imageUrl = currentPub.faviconUrl;
+        updateData.faviconUrl = null;
+      } else if (type === "meta-og") {
+        imageUrl = currentPub.metaOgImageUrl;
+        updateData.metaOgImageUrl = null;
+      } else {
+        return res.status(400).json({ error: "Invalid image type" });
+      }
+
+      // Delete from Cloudinary if applicable
+      if (imageUrl && isCloudinaryUrl(imageUrl)) {
+        const publicId = extractPublicId(imageUrl);
+        if (publicId) {
+          await deleteFromCloudinary(publicId);
+        }
+      }
 
       const updated = await db
         .update(publication)

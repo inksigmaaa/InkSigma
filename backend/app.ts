@@ -143,6 +143,8 @@ export const createApp = () => {
   // Blog routes may carry large article bodies — allow up to 5MB for those.
   app.use("/api/blogs", express.json({ limit: "5mb" }));
 
+  // LEGACY: Serves locally-uploaded images that predate the Cloudinary migration.
+  // Safe to remove once all DB rows have been migrated to Cloudinary URLs.
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   app.use(
     "/uploads",

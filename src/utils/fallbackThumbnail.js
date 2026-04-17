@@ -30,10 +30,16 @@ export function getFallbackThumbnail(blogId = null) {
 
 /**
  * Get thumbnail URL with fallback support
+ * Automatically optimizes Cloudinary images for card display
  * @param {string} imageUrl - The blog's image URL
  * @param {string|number} blogId - Optional blog ID for consistent fallback
  * @returns {string} Image URL or fallback thumbnail path
  */
 export function getThumbnailWithFallback(imageUrl, blogId = null) {
-  return imageUrl || getFallbackThumbnail(blogId);
+  if (!imageUrl) return getFallbackThumbnail(blogId);
+  // Auto-optimize Cloudinary images for card thumbnails (400x250)
+  if (imageUrl.includes('res.cloudinary.com')) {
+    return imageUrl.replace('/upload/', '/upload/w_400,h_250,c_fill,f_auto,q_auto/');
+  }
+  return imageUrl;
 }

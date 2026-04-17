@@ -61,13 +61,13 @@ export default function SettingsPage() {
         setOriginalSubdomain(pubData.subdomain || "");
 
         const logoUrl = pubData.logoUrl
-          ? `${apiBase}${pubData.logoUrl}`
+          ? (pubData.logoUrl.startsWith("http") ? pubData.logoUrl : `${apiBase}${pubData.logoUrl}`)
           : "/icons/inksigma-logo.svg";
         const faviconUrl = pubData.faviconUrl
-          ? `${apiBase}${pubData.faviconUrl}`
+          ? (pubData.faviconUrl.startsWith("http") ? pubData.faviconUrl : `${apiBase}${pubData.faviconUrl}`)
           : "/icons/inksigma-logo.svg";
         const metaOgUrl = pubData.metaOgImageUrl
-          ? `${apiBase}${pubData.metaOgImageUrl}`
+          ? (pubData.metaOgImageUrl.startsWith("http") ? pubData.metaOgImageUrl : `${apiBase}${pubData.metaOgImageUrl}`)
           : "/icons/inksigma-logo.svg";
 
         setLogo(logoUrl);
@@ -122,7 +122,8 @@ export default function SettingsPage() {
       }
 
       const data = await res.json();
-      const imageUrl = `${apiBase}${data[type === "logo" ? "logoUrl" : type === "favicon" ? "faviconUrl" : "metaOgImageUrl"]}`;
+      const returnedUrl = data[type === "logo" ? "logoUrl" : type === "favicon" ? "faviconUrl" : "metaOgImageUrl"];
+      const imageUrl = returnedUrl.startsWith("http") ? returnedUrl : `${apiBase}${returnedUrl}`;
 
       if (type === "logo") {
         setLogo(imageUrl);

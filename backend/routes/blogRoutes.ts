@@ -1,8 +1,4 @@
 import express from "express";
-import multer from "multer";
-import path from "path";
-import { rm } from "fs/promises";
-import fs from "fs";
 import { auth } from "../config/betterAuth.js";
 import { fromNodeHeaders } from "better-auth/node";
 import { requireAuth } from "../middleware/auth.js";
@@ -12,40 +8,15 @@ import { blogService } from "../services/blogService.js";
 import { validate } from "../middleware/validate.js";
 import * as blogValidator from "../validators/blogValidator.js";
 import { BLOG_STATUS } from "../config/constants.js";
-import { config } from "../config/appConfig.js";
+import {
+  createMulterUpload,
+  uploadToCloudinary,
+  CLOUDINARY_FOLDERS,
+} from "../utils/cloudinary.js";
 
 const router = express.Router();
 
-// Configure multer for blog image uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const dir = "uploads/blog-images";
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
-});
-
-const upload = multer({
-  storage,
-  fileFilter: (req, file, cb) => {
-    if (file.size > 10 * 1024 * 1024) {
-      cb(new Error("File size exceeds 10MB limit") as any, false);
-      return;
-    }
-    const allowedTypes = /jpeg|jpg|png|webp|gif/;
-    const extname = allowedTypes.test(
-      path.extname(file.originalname).toLowerCase(),
-    );
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) return cb(null, true);
-    cb(new Error("Only image files are allowed!") as any, false);
-  },
-});
+const upload = createMulterUpload(10 * 1024 * 1024); // 10MB limit
 
 const hasSessionHint = (req) =>
   Boolean(req.headers.cookie || req.headers.authorization);
@@ -347,24 +318,22 @@ router.post(
         return res.status(400).json({ error: "No image provided" });
 
       const blogId = req.params.id;
-      try {
-        await blogService.getBlogById(blogId, req.user.id, req.tenant);
-      } catch (error) {
-        await rm(req.file.path, { force: true });
-        return next(error);
-      }
+      await blogService.getBlogById(blogId, req.user.id, req.tenant);
 
-      const imageUrl = `${config.backend.url}/uploads/blog-images/${req.file.filename}`;
+      const result = await uploadToCloudinary(req.file.buffer, {
+        folder: CLOUDINARY_FOLDERS.BLOG_IMAGES,
+        publicId: `blog-${blogId}-${Date.now()}`,
+        transformation: [{ width: 1200, height: 630, crop: "fill" }],
+      });
 
       const updatedBlog = await blogService.updateBlog(
         blogId,
-        { image: imageUrl },
+        { image: result.secureUrl },
         req.user,
       );
 
       res.json({ success: true, blog: updatedBlog, image: updatedBlog.image });
     } catch (error) {
-      if (req.file) await rm(req.file.path, { force: true });
       next(error);
     }
   },

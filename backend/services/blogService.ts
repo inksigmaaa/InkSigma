@@ -21,6 +21,11 @@ import {
   sql,
 } from "drizzle-orm";
 import { rm } from "fs/promises";
+import {
+  deleteFromCloudinary,
+  extractPublicId,
+  isCloudinaryUrl,
+} from "../utils/cloudinary.js";
 import notificationService from "./notificationService.js";
 import schedulerService from "./schedulerService.js";
 import {
@@ -352,6 +357,17 @@ class BlogService {
   }
 
   private async removeUploadedBlogImage(imagePath?: string | null) {
+    if (!imagePath) return;
+
+    if (isCloudinaryUrl(imagePath)) {
+      const publicId = extractPublicId(imagePath);
+      if (publicId) {
+        await deleteFromCloudinary(publicId);
+      }
+      return;
+    }
+
+    // Legacy local file cleanup
     const filePath = this.getBlogImageFilePath(imagePath);
     if (filePath) {
       await rm(filePath, { force: true });
