@@ -552,12 +552,10 @@ export default function BlogDetailPageClient({
           blog.publication?.id || blog.publicationId || blog.publication_id
         }
         userAvatar={
-          blog.publication?.logoUrl && !blog.publication.logoUrl.includes('/uploads/')
-            ? (blog.publication.logoUrl.startsWith("http") ? blog.publication.logoUrl : `${API_URL}${blog.publication.logoUrl}`)
-            : blog.author?.image && !blog.author.image.includes('/uploads/')
-              ? blog.author.image.startsWith("http")
-                ? blog.author.image
-                : `${API_URL}${blog.author.image}`
+          blog.publication?.logoUrl?.startsWith("http")
+            ? blog.publication.logoUrl
+            : blog.author?.image?.startsWith("http")
+              ? blog.author.image
               : null
         }
         shareButton={

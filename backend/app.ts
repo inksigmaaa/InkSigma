@@ -1,5 +1,3 @@
-import path from "path";
-import { fileURLToPath } from "url";
 import express from "express";
 import crypto from "crypto";
 import helmet from "helmet";
@@ -142,21 +140,6 @@ export const createApp = () => {
 
   // Blog routes may carry large article bodies — allow up to 5MB for those.
   app.use("/api/blogs", express.json({ limit: "5mb" }));
-
-  // LEGACY: Serves locally-uploaded images that predate the Cloudinary migration.
-  // Safe to remove once all DB rows have been migrated to Cloudinary URLs.
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  app.use(
-    "/uploads",
-    express.static(path.join(__dirname, "uploads"), {
-      maxAge: "7d",
-      dotfiles: "deny",
-      index: false,
-      setHeaders: (res) => {
-        res.setHeader("X-Content-Type-Options", "nosniff");
-      },
-    }),
-  );
 
   logger.info({ step: "auth.mount", status: "start" }, "Mounting auth handler");
   try {

@@ -142,8 +142,4 @@ export function isCloudinaryUrl(url: string | null | undefined): boolean {
   return !!url && url.includes("res.cloudinary.com");
 }
 
-export function isLegacyLocalUrl(url: string | null | undefined): boolean {
-  return !!url && url.includes("/uploads/");
-}
-
 export { cloudinary };
