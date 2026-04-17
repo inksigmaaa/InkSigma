@@ -180,6 +180,8 @@ export default function EditorPageClient() {
   const saveInFlightRef = useRef(false);
   const editorInstanceRef = useRef(null); // Ref to TipTap editor for uncontrolled reads
   const shadowIdRef = useRef(null); // Server-created ID stored silently during auto-save (no re-render)
+  const thumbnailDataRef = useRef(thumbnailData); // Always-current thumbnail data for async callbacks
+  thumbnailDataRef.current = thumbnailData;
   const initialBlogIdRef = useRef(blogId); // The blogId from the URL at mount time
   const thumbnailDirtySignal = thumbnailRemoved
     ? "removed"
@@ -329,9 +331,25 @@ export default function EditorPageClient() {
   // The ID is "flushed" to state + URL only on explicit user action (save/publish/exit).
   const handleBlogIdCreated = useCallback((result) => {
     if (result?.id != null) {
-      shadowIdRef.current = String(result.id);
+      const newId = String(result.id);
+      shadowIdRef.current = newId;
+
+      // If the user selected a thumbnail before the blog existed, upload it now.
+      const pending = thumbnailDataRef.current;
+      if (pending?.file) {
+        persistThumbnailForBlog(newId, pending, {
+          showSuccessToast: false,
+          showErrorToast: true,
+        })
+          .then((url) => {
+            if (url) syncExtraDirtySignal(`url:${url}`);
+          })
+          .catch(() => {
+            // Error already handled inside persistThumbnailForBlog (toast + status)
+          });
+      }
     }
-  }, []);
+  }, [persistThumbnailForBlog, syncExtraDirtySignal]);
 
   // Promote shadowIdRef to state + URL (called on manual save / publish / exit)
   const flushShadowId = useCallback(() => {
@@ -694,15 +712,17 @@ export default function EditorPageClient() {
       const persistedBlogId = responseData?.id ?? effectiveId;
       let nextThumbnailSignal = thumbnailDirtySignal;
 
-      // Upload thumbnail if one was selected
-      if (thumbnailData && thumbnailData.file) {
+      // Upload thumbnail if one was selected (skip during autosave to avoid
+      // coupling image uploads to content saves — thumbnails are uploaded
+      // immediately on selection or when the first autosave creates a blog ID).
+      if (!isAutoSave && thumbnailData && thumbnailData.file) {
         try {
           const uploadedImageUrl = await persistThumbnailForBlog(
             persistedBlogId,
             thumbnailData,
             {
               showSuccessToast: false,
-              showErrorToast: !isAutoSave,
+              showErrorToast: true,
             },
           );
           nextThumbnailSignal = uploadedImageUrl
@@ -719,9 +739,11 @@ export default function EditorPageClient() {
         nextThumbnailSignal = `url:${thumbnailData.url}`;
       }
 
-      // Tell the hook the save succeeded. Preserve thumbnail dirty state if upload failed.
+      // Tell the hook the save succeeded. Preserve thumbnail dirty state when
+      // the upload failed OR when autosave skipped a pending thumbnail file.
+      const hasPendingThumbnail = isAutoSave && thumbnailData?.file;
       markSaved({
-        preserveExtraDirty: thumbnailUploadFailed,
+        preserveExtraDirty: thumbnailUploadFailed || Boolean(hasPendingThumbnail),
         nextExtraDirtySignal: nextThumbnailSignal,
       });
       if (!isAutoSave) {

@@ -192,9 +192,6 @@ export function useAutoSave({
         if (result?.skipped) {
           return "skipped";
         }
-        if (result?.thumbnailUploadFailed) {
-          throw new Error("Thumbnail upload failed");
-        }
         if (result) {
           // If this was a new post and server returned an ID, remap Dexie
           if (!latestRef.current.currentBlogId && result.id != null) {
