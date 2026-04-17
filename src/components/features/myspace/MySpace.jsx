@@ -4,11 +4,10 @@ import { useRouter } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
 import { ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getApiBase } from "@/utils/apiBase";
+import { getImageUrl } from "@/utils/imageUrl";
 
 export default function MySpace() {
   const router = useRouter();
-  const apiBase = getApiBase();
   const {
     currentPublication,
     loading,
@@ -44,7 +43,7 @@ export default function MySpace() {
   };
 
   const getPublicationLogoSrc = (logoUrl) =>
-    logoUrl?.startsWith("http") ? logoUrl : "/icons/nib.svg";
+    getImageUrl(logoUrl) || "/icons/nib.svg";
 
   return (
     <main className="flex-1 bg-white px-4 sm:px-8 py-6 sm:py-10 mt-[120px] md:mt-[120px] pb-24 md:pb-0 md:ml-[165px]">
