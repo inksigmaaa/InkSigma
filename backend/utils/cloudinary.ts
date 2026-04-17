@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import multer from "multer";
 import { config } from "../config/appConfig.js";
+import { AppError } from "./errors.js";
 import logger from "./logger.js";
 
 // Configure Cloudinary SDK
@@ -14,6 +15,50 @@ cloudinary.config({
 const memoryStorage = multer.memoryStorage();
 
 const allowedTypes = /jpeg|jpg|png|gif|webp|svg/;
+const allowedImageMessage =
+  "Only JPG, PNG, GIF, WebP, or SVG images are allowed";
+
+const toUploadAppError = (error: unknown): AppError => {
+  const rawMessage =
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string"
+      ? error.message
+      : "";
+  const normalizedMessage = rawMessage.toLowerCase();
+  const httpCode =
+    typeof error === "object" &&
+    error !== null &&
+    "http_code" in error &&
+    typeof error.http_code === "number"
+      ? error.http_code
+      : undefined;
+
+  if (
+    httpCode === 400 ||
+    normalizedMessage.includes("invalid") ||
+    normalizedMessage.includes("unsupported") ||
+    normalizedMessage.includes("corrupt")
+  ) {
+    return new AppError(
+      "Invalid image file. Please upload a valid JPG, PNG, GIF, WebP, or SVG image.",
+      400,
+    );
+  }
+
+  if (httpCode && httpCode >= 400 && httpCode < 500) {
+    return new AppError(
+      "Image upload was rejected. Please try a different image.",
+      400,
+    );
+  }
+
+  return new AppError(
+    "Image upload service failed. Please try again.",
+    502,
+  );
+};
 
 export function createMulterUpload(maxSize: number) {
   return multer({
@@ -26,7 +71,7 @@ export function createMulterUpload(maxSize: number) {
       if (mimeOk && extOk) {
         cb(null, true);
       } else {
-        cb(new Error("Only image files are allowed"));
+        cb(new AppError(allowedImageMessage, 400));
       }
     },
   });
@@ -82,10 +127,15 @@ export function uploadToCloudinary(
       (error, result) => {
         if (error) {
           logger.error(error, "Cloudinary upload failed");
-          return reject(error);
+          return reject(toUploadAppError(error));
         }
         if (!result) {
-          return reject(new Error("Cloudinary returned no result"));
+          return reject(
+            new AppError(
+              "Image upload service returned no result. Please try again.",
+              502,
+            ),
+          );
         }
         resolve({
           publicId: result.public_id,

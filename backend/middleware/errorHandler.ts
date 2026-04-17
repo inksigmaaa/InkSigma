@@ -1,3 +1,4 @@
+import multer from "multer";
 import logger from "../utils/logger.js";
 import { AppError } from "../utils/errors.js";
 
@@ -29,6 +30,22 @@ const parsePipeError = (err: Error): { message: string; statusCode: number } => 
   return { message: err.message, statusCode: 500 };
 };
 
+const getMulterErrorMessage = (err: { code?: string; message?: string }) => {
+  switch (err.code) {
+    case "LIMIT_FILE_SIZE":
+      return "File size too large. Please upload an image smaller than 10MB.";
+    case "LIMIT_UNEXPECTED_FILE":
+      return "Unexpected upload field. Please try uploading the image again.";
+    case "LIMIT_PART_COUNT":
+    case "LIMIT_FIELD_KEY":
+    case "LIMIT_FIELD_VALUE":
+    case "LIMIT_FIELD_COUNT":
+      return "Upload request is too large. Please try again with a smaller payload.";
+    default:
+      return err.message || "Invalid file upload.";
+  }
+};
+
 export const errorMiddleware = (err, req, res, next) => {
   logger.error(err, "Error:");
 
@@ -44,6 +61,13 @@ export const errorMiddleware = (err, req, res, next) => {
     return res.status(401).json({
       error: err.message || "Unauthorized",
       code: err.code || "UNAUTHORIZED",
+    });
+  }
+
+  if (err instanceof multer.MulterError || err?.name === "MulterError") {
+    return res.status(400).json({
+      error: getMulterErrorMessage(err),
+      code: "UPLOAD_ERROR",
     });
   }
 
