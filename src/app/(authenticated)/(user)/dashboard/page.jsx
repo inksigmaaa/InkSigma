@@ -8,6 +8,7 @@ import { ChevronRight } from "lucide-react";
 import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { getApiBase } from "@/utils/apiBase";
+import { getImageUrl } from "@/utils/imageUrl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function DashboardPage() {
@@ -99,7 +100,7 @@ export default function DashboardPage() {
   const ownedPublications = getOwnedPublications();
   const joinedPublications = getJoinedPublications();
   const getPublicationLogoSrc = (logoUrl) =>
-    logoUrl?.startsWith("http") ? logoUrl : "/icons/nib.svg";
+    getImageUrl(logoUrl) || "/icons/nib.svg";
 
   return (
     <AuthGuard>
