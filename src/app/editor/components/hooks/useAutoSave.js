@@ -34,12 +34,19 @@ function normalizeContent(content) {
   return content;
 }
 
-function hasDraftData({ title, description, contentHtml, categories }) {
+function hasDraftData({
+  title,
+  description,
+  contentHtml,
+  categories,
+  hasAdditionalDraftData = false,
+}) {
   return Boolean(
     (title && title.trim()) ||
     (description && description.trim()) ||
     normalizeContent(contentHtml) ||
-    (Array.isArray(categories) && categories.length > 0),
+    (Array.isArray(categories) && categories.length > 0) ||
+    hasAdditionalDraftData,
   );
 }
 
@@ -65,6 +72,8 @@ export function useAutoSave({
   description,
   contentHtml,
   categories,
+  extraDirtySignal = "none",
+  hasAdditionalDraftData = false,
   existingBlogStatus,
   publicationId,
   currentPublication,
@@ -82,13 +91,15 @@ export function useAutoSave({
     description: "",
     contentHtml: "",
     categories: [],
+    extraDirtySignal: "none",
   });
 
   const hasUnsavedChanges =
     title !== snapshot.title ||
     description !== snapshot.description ||
     normalizeContent(contentHtml) !== normalizeContent(snapshot.contentHtml) ||
-    !arraysEqual(categories, snapshot.categories);
+    !arraysEqual(categories, snapshot.categories) ||
+    extraDirtySignal !== snapshot.extraDirtySignal;
 
   // ── Refs ────────────────────────────────────────────────────────────────────
   // "phase" prevents overlapping saves during publish/navigation
@@ -108,6 +119,8 @@ export function useAutoSave({
     description,
     contentHtml,
     categories,
+    extraDirtySignal,
+    hasAdditionalDraftData,
     existingBlogStatus,
     publicationId,
     currentPublication,
@@ -122,6 +135,8 @@ export function useAutoSave({
       description,
       contentHtml,
       categories,
+      extraDirtySignal,
+      hasAdditionalDraftData,
       existingBlogStatus,
       publicationId,
       currentPublication,
@@ -134,6 +149,8 @@ export function useAutoSave({
     description,
     contentHtml,
     categories,
+    extraDirtySignal,
+    hasAdditionalDraftData,
     existingBlogStatus,
     publicationId,
     currentPublication,
@@ -175,6 +192,9 @@ export function useAutoSave({
         if (result?.skipped) {
           return "skipped";
         }
+        if (result?.thumbnailUploadFailed) {
+          throw new Error("Thumbnail upload failed");
+        }
         if (result) {
           // If this was a new post and server returned an ID, remap Dexie
           if (!latestRef.current.currentBlogId && result.id != null) {
@@ -204,7 +224,17 @@ export function useAutoSave({
 
   useEffect(() => {
     if (phaseRef.current !== "idle" || isSaving) return;
-    if (!hasDraftData({ title, description, contentHtml, categories })) return;
+    if (
+      !hasDraftData({
+        title,
+        description,
+        contentHtml,
+        categories,
+        hasAdditionalDraftData,
+      })
+    ) {
+      return;
+    }
     if (!hasUnsavedChanges) return;
 
     const isDraftOrNew = !existingBlogStatus || existingBlogStatus === "draft";
@@ -252,6 +282,7 @@ export function useAutoSave({
           description: latestRef.current.description,
           contentHtml: latestRef.current.contentHtml,
           categories: latestRef.current.categories,
+          extraDirtySignal: latestRef.current.extraDirtySignal,
         });
       }
     }, 1500);
@@ -268,6 +299,7 @@ export function useAutoSave({
     contentHtml,
     categories,
     hasUnsavedChanges,
+    hasAdditionalDraftData,
     existingBlogStatus,
     isSaving,
     getDexieId,
@@ -287,6 +319,7 @@ export function useAutoSave({
           description: l.description,
           contentHtml: l.contentHtml,
           categories: l.categories,
+          hasAdditionalDraftData: l.hasAdditionalDraftData,
         })
       ) {
         // Clear existing timer and trigger a save soon
@@ -312,6 +345,7 @@ export function useAutoSave({
               description: latestRef.current.description,
               contentHtml: latestRef.current.contentHtml,
               categories: latestRef.current.categories,
+              extraDirtySignal: latestRef.current.extraDirtySignal,
             });
           }
         }, 500);
@@ -320,7 +354,7 @@ export function useAutoSave({
 
     window.addEventListener("online", handleOnline);
     return () => window.removeEventListener("online", handleOnline);
-  }, [serverSaveWithRetry, getDexieId]);
+  }, [serverSaveWithRetry, getDexieId, hasAdditionalDraftData]);
 
   // ── 5. Page-leave & visibility-change saves ────────────────────────────────
 
@@ -334,6 +368,7 @@ export function useAutoSave({
           description: l.description,
           contentHtml: l.contentHtml,
           categories: l.categories,
+          hasAdditionalDraftData: l.hasAdditionalDraftData,
         })
       ) {
         return false;
@@ -365,6 +400,7 @@ export function useAutoSave({
           description: l.description,
           contentHtml: l.contentHtml,
           categories: l.categories,
+          hasAdditionalDraftData: l.hasAdditionalDraftData,
         })
       ) {
         return;
@@ -440,15 +476,34 @@ export function useAutoSave({
 
   // ── Public imperative helpers ──────────────────────────────────────────────
 
-  const markSaved = useCallback(() => {
+  const markSaved = useCallback(({
+    preserveExtraDirty = false,
+    nextExtraDirtySignal,
+  } = {}) => {
     phaseRef.current = "idle";
-    setSnapshot({ title, description, contentHtml, categories });
+    setSnapshot({
+      title,
+      description,
+      contentHtml,
+      categories,
+      extraDirtySignal: preserveExtraDirty
+        ? snapshot.extraDirtySignal
+        : (nextExtraDirtySignal ?? extraDirtySignal),
+    });
 
     // Mark Dexie as synced and clear retry counter
     const id = currentBlogId ? String(currentBlogId) : tempIdRef.current;
     if (id) dexieMarkSynced(id);
     retryCountRef.current = 0;
-  }, [title, description, contentHtml, categories, currentBlogId]);
+  }, [
+    title,
+    description,
+    contentHtml,
+    categories,
+    extraDirtySignal,
+    snapshot.extraDirtySignal,
+    currentBlogId,
+  ]);
 
   const cancelPendingAutoSave = useCallback(() => {
     if (timerRef.current) {
@@ -473,9 +528,22 @@ export function useAutoSave({
   }, [cancelPendingAutoSave]);
 
   const resetSnapshot = useCallback((snap) => {
-    setSnapshot(snap);
+    setSnapshot({
+      title: snap?.title || "",
+      description: snap?.description || "",
+      contentHtml: snap?.contentHtml || "",
+      categories: snap?.categories || [],
+      extraDirtySignal: snap?.extraDirtySignal || "none",
+    });
     phaseRef.current = "idle";
   }, []);
+
+  const syncExtraDirtySignal = useCallback((nextExtraDirtySignal) => {
+    setSnapshot((current) => ({
+      ...current,
+      extraDirtySignal: nextExtraDirtySignal ?? extraDirtySignal,
+    }));
+  }, [extraDirtySignal]);
 
   /** Clean up Dexie draft after publish or discard. */
   const clearDraft = useCallback(() => {
@@ -498,6 +566,7 @@ export function useAutoSave({
     markNavigating,
     cancelPendingAutoSave,
     resetSnapshot,
+    syncExtraDirtySignal,
     clearDraft,
     getDexieId,
   };
