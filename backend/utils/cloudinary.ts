@@ -114,8 +114,6 @@ export function uploadToCloudinary(
       public_id: options.publicId,
       overwrite: options.overwrite ?? true,
       resource_type: options.resourceType ?? "image",
-      format: "auto",
-      quality: "auto",
     };
 
     if (options.transformation) {
