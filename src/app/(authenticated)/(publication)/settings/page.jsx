@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { getApiBase } from "@/utils/apiBase";
+import { getImageUrl } from "@/utils/imageUrl";
 import { usePublication } from "@/contexts/PublicationContext";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getRootDomain } from "@/utils/publicationDomain";
@@ -59,16 +60,12 @@ export default function SettingsPage() {
         setDescription(pubData.description || "");
         setSubdomain(pubData.subdomain || "");
         setOriginalSubdomain(pubData.subdomain || "");
-
-        const logoUrl = pubData.logoUrl
-          ? (pubData.logoUrl.startsWith("http") ? pubData.logoUrl : `${apiBase}${pubData.logoUrl}`)
-          : "/icons/inksigma-logo.svg";
-        const faviconUrl = pubData.faviconUrl
-          ? (pubData.faviconUrl.startsWith("http") ? pubData.faviconUrl : `${apiBase}${pubData.faviconUrl}`)
-          : "/icons/inksigma-logo.svg";
-        const metaOgUrl = pubData.metaOgImageUrl
-          ? (pubData.metaOgImageUrl.startsWith("http") ? pubData.metaOgImageUrl : `${apiBase}${pubData.metaOgImageUrl}`)
-          : "/icons/inksigma-logo.svg";
+        const logoUrl =
+          getImageUrl(pubData.logoUrl) || "/icons/inksigma-logo.svg";
+        const faviconUrl =
+          getImageUrl(pubData.faviconUrl) || "/icons/inksigma-logo.svg";
+        const metaOgUrl =
+          getImageUrl(pubData.metaOgImageUrl) || "/icons/inksigma-logo.svg";
 
         setLogo(logoUrl);
         setLogoPreview(logoUrl);
@@ -123,7 +120,8 @@ export default function SettingsPage() {
 
       const data = await res.json();
       const returnedUrl = data[type === "logo" ? "logoUrl" : type === "favicon" ? "faviconUrl" : "metaOgImageUrl"];
-      const imageUrl = returnedUrl.startsWith("http") ? returnedUrl : `${apiBase}${returnedUrl}`;
+      const imageUrl =
+        getImageUrl(returnedUrl) || "/icons/inksigma-logo.svg";
 
       if (type === "logo") {
         setLogo(imageUrl);

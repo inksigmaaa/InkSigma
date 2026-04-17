@@ -157,7 +157,6 @@ export const createApp = () => {
       },
     }),
   );
-
   logger.info({ step: "auth.mount", status: "start" }, "Mounting auth handler");
   try {
     const authHandler = toNodeHandler(auth);

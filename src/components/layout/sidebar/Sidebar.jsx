@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useMemo, memo } from "react";
 import { usePublication } from "@/contexts/PublicationContext";
+import { getImageUrl } from "@/utils/imageUrl";
 import { hasPermission } from "@/utils/permissions";
 import { getPublicationUrl } from "@/utils/publicationDomain";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -311,11 +312,7 @@ function Sidebar() {
               ) : (
                 <>
                   <AvatarImage
-                    src={
-                      currentPublication?.logoUrl
-                        ? (currentPublication.logoUrl.startsWith("http") ? currentPublication.logoUrl : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}${currentPublication.logoUrl}`)
-                        : "/icons/nib.svg"
-                    }
+                    src={getImageUrl(currentPublication?.logoUrl) || "/icons/nib.svg"}
                     alt={currentPublication?.name || "Publication"}
                     className="w-full h-full object-cover"
                   />

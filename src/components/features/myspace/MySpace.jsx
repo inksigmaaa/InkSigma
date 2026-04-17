@@ -44,11 +44,7 @@ export default function MySpace() {
   };
 
   const getPublicationLogoSrc = (logoUrl) =>
-    logoUrl
-      ? logoUrl.startsWith("http://") || logoUrl.startsWith("https://")
-        ? logoUrl
-        : `${apiBase}${logoUrl}`
-      : "/icons/nib.svg";
+    logoUrl?.startsWith("http") ? logoUrl : "/icons/nib.svg";
 
   return (
     <main className="flex-1 bg-white px-4 sm:px-8 py-6 sm:py-10 mt-[120px] md:mt-[120px] pb-24 md:pb-0 md:ml-[165px]">
