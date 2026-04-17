@@ -32,7 +32,6 @@ import { useSnapshot } from "@/hooks/useSnapshot";
 import { fetchJsonWithRetry } from "@/lib/api/client";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { getApiBase } from "@/utils/apiBase";
-import { getImageUrl } from "@/utils/imageUrl";
 
 const API_URL = getApiBase();
 const BLOG_DETAIL_CACHE_TTL_MS = 60 * 1000;
@@ -541,9 +540,6 @@ export default function BlogDetailPageClient({
   }
 
   const dateFormatted = formatDate(blog.createdAt);
-  const publicationAvatarUrl = getImageUrl(blog.publication?.logoUrl);
-  const authorAvatarUrl = getImageUrl(blog.author?.image);
-  const blogHeroImage = getImageUrl(blog.image);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -555,7 +551,15 @@ export default function BlogDetailPageClient({
         publicationId={
           blog.publication?.id || blog.publicationId || blog.publication_id
         }
-        userAvatar={publicationAvatarUrl || authorAvatarUrl}
+        userAvatar={
+          blog.publication?.logoUrl
+            ? (blog.publication.logoUrl.startsWith("http") ? blog.publication.logoUrl : `${API_URL}${blog.publication.logoUrl}`)
+            : blog.author?.image
+              ? blog.author.image.startsWith("http")
+                ? blog.author.image
+                : `${API_URL}${blog.author.image}`
+              : null
+        }
         shareButton={
           <ShareMenu
             title={blog.title}
@@ -605,21 +609,6 @@ export default function BlogDetailPageClient({
               {blog.description}
             </p>
 
-            {blogHeroImage ? (
-              <div className="mb-8 overflow-hidden rounded-2xl border border-[#EAEAEA] bg-[#F8F8F8]">
-                <div className="relative aspect-[1.91/1] w-full">
-                  <Image
-                    src={blogHeroImage}
-                    alt={blog.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 800px"
-                    priority
-                  />
-                </div>
-              </div>
-            ) : null}
-
             <div className="flex flex-wrap gap-2 mb-6 max-md:mb-3">
               {blog.categories && blog.categories.length > 0 ? (
                 blog.categories.map((category, index) => (
@@ -640,9 +629,16 @@ export default function BlogDetailPageClient({
             <div className="flex items-center justify-between py-3 border-t border-b border-[#EAEAEA] mb-10 max-md:mb-6">
               <div className="flex items-center gap-3">
                 <Avatar className="w-10 h-10 bg-gray-200 flex-shrink-0 max-md:w-7 max-md:h-7">
-                  {authorAvatarUrl && (
+                  {blog.author?.image && (
                     <AvatarImage
-                      src={authorAvatarUrl}
+                      src={
+                        blog.author.image.startsWith("http") ||
+                        blog.author.image.startsWith("https")
+                          ? blog.author.image
+                          : blog.author.image.startsWith("/")
+                            ? `${API_URL}${blog.author.image}`
+                            : `${API_URL}/${blog.author.image}`
+                      }
                       alt={blog.author?.name || "Author"}
                       className="w-full h-full object-cover"
                     />

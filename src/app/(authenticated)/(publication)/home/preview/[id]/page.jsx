@@ -91,9 +91,6 @@ export default function PreviewPage({ params }) {
     );
   }
 
-  const publicationLogoUrl = getImageUrl(article.publication?.logoUrl);
-  const authorAvatarUrl = getImageUrl(article.author?.image);
-
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -101,11 +98,11 @@ export default function PreviewPage({ params }) {
         <div className="h-full px-4 md:px-6 flex items-center justify-between">
           {/* Logo/Publication Name - Mobile only */}
           <div className="flex items-center gap-2 md:hidden">
-            {publicationLogoUrl ? (
+            {article.publication?.logoUrl ? (
               <div className="flex items-center gap-2">
                 <Avatar className="w-8 h-8 bg-gray-200">
                   <AvatarImage
-                    src={publicationLogoUrl}
+                    src={article.publication.logoUrl.startsWith("http") ? article.publication.logoUrl : `${getApiBase()}${article.publication.logoUrl}`}
                     alt={article.publication.name}
                     className="w-full h-full object-cover"
                   />
@@ -134,9 +131,13 @@ export default function PreviewPage({ params }) {
 
             {/* User Avatar */}
             <Avatar className="w-9 h-9 bg-gray-300">
-              {authorAvatarUrl && (
+              {article.author?.image && (
                 <AvatarImage
-                  src={authorAvatarUrl}
+                  src={
+                    article.author.image.startsWith("http")
+                      ? article.author.image
+                      : `${getApiBase()}${article.author.image}`
+                  }
                   alt={article.author.name || "User"}
                   className="w-full h-full object-cover"
                 />
