@@ -60,13 +60,13 @@ export default function SettingsPage() {
         setSubdomain(pubData.subdomain || "");
         setOriginalSubdomain(pubData.subdomain || "");
 
-        const logoUrl = pubData.logoUrl
+        const logoUrl = pubData.logoUrl && !pubData.logoUrl.includes('/uploads/')
           ? (pubData.logoUrl.startsWith("http") ? pubData.logoUrl : `${apiBase}${pubData.logoUrl}`)
           : "/icons/inksigma-logo.svg";
-        const faviconUrl = pubData.faviconUrl
+        const faviconUrl = pubData.faviconUrl && !pubData.faviconUrl.includes('/uploads/')
           ? (pubData.faviconUrl.startsWith("http") ? pubData.faviconUrl : `${apiBase}${pubData.faviconUrl}`)
           : "/icons/inksigma-logo.svg";
-        const metaOgUrl = pubData.metaOgImageUrl
+        const metaOgUrl = pubData.metaOgImageUrl && !pubData.metaOgImageUrl.includes('/uploads/')
           ? (pubData.metaOgImageUrl.startsWith("http") ? pubData.metaOgImageUrl : `${apiBase}${pubData.metaOgImageUrl}`)
           : "/icons/inksigma-logo.svg";
 

@@ -99,7 +99,7 @@ export default function DashboardPage() {
   const ownedPublications = getOwnedPublications();
   const joinedPublications = getJoinedPublications();
   const getPublicationLogoSrc = (logoUrl) =>
-    logoUrl
+    logoUrl && !logoUrl.includes('/uploads/')
       ? logoUrl.startsWith("http://") || logoUrl.startsWith("https://")
         ? logoUrl
         : `${API_URL}${logoUrl}`

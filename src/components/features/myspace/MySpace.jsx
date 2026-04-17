@@ -44,7 +44,7 @@ export default function MySpace() {
   };
 
   const getPublicationLogoSrc = (logoUrl) =>
-    logoUrl
+    logoUrl && !logoUrl.includes('/uploads/')
       ? logoUrl.startsWith("http://") || logoUrl.startsWith("https://")
         ? logoUrl
         : `${apiBase}${logoUrl}`

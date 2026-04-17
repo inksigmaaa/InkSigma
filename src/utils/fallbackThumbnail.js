@@ -37,6 +37,11 @@ export function getFallbackThumbnail(blogId = null) {
  */
 export function getThumbnailWithFallback(imageUrl, blogId = null) {
   if (!imageUrl) return getFallbackThumbnail(blogId);
+  // Legacy local uploads stored on Render's ephemeral disk are gone after
+  // restart — treat them as missing so the fallback thumbnail shows instead
+  // of a broken image. Covers both relative (/uploads/...) and absolute
+  // (https://api.inksigma.xyz/uploads/...) paths.
+  if (imageUrl.includes('/uploads/')) return getFallbackThumbnail(blogId);
   // Auto-optimize Cloudinary images for card thumbnails (400x250)
   if (imageUrl.includes('res.cloudinary.com')) {
     return imageUrl.replace('/upload/', '/upload/w_400,h_250,c_fill,f_auto,q_auto/');

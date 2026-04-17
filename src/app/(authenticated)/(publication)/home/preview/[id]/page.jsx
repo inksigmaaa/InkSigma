@@ -98,7 +98,7 @@ export default function PreviewPage({ params }) {
         <div className="h-full px-4 md:px-6 flex items-center justify-between">
           {/* Logo/Publication Name - Mobile only */}
           <div className="flex items-center gap-2 md:hidden">
-            {article.publication?.logoUrl ? (
+            {article.publication?.logoUrl && !article.publication.logoUrl.includes('/uploads/') ? (
               <div className="flex items-center gap-2">
                 <Avatar className="w-8 h-8 bg-gray-200">
                   <AvatarImage
