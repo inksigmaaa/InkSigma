@@ -130,7 +130,7 @@ export function ThumbnailModal({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/gif,image/webp"
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -138,6 +138,9 @@ export function ThumbnailModal({
           {/* Image Ratio */}
           <p className="font-['Public_Sans'] text-xs text-gray-400 mb-6">
             Image Ratio: 1.91:1 (W: 1200px H: 630px)
+          </p>
+          <p className="font-['Public_Sans'] text-xs text-gray-400 mb-6 -mt-4">
+            Supported formats: JPG, PNG, GIF, WebP
           </p>
 
           {/* Image Title */}

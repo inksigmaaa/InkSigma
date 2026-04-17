@@ -142,6 +142,7 @@ export default function EditorPageClient() {
   const [showThumbnailModal, setShowThumbnailModal] = useState(false);
   const [thumbnailData, setThumbnailData] = useState(null);
   const [thumbnailRemoved, setThumbnailRemoved] = useState(false);
+  const [thumbnailStatus, setThumbnailStatus] = useState("idle");
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
@@ -180,6 +181,70 @@ export default function EditorPageClient() {
   const editorInstanceRef = useRef(null); // Ref to TipTap editor for uncontrolled reads
   const shadowIdRef = useRef(null); // Server-created ID stored silently during auto-save (no re-render)
   const initialBlogIdRef = useRef(blogId); // The blogId from the URL at mount time
+  const thumbnailDirtySignal = thumbnailRemoved
+    ? "removed"
+    : thumbnailData?.file
+      ? `file:${thumbnailData.file.name}:${thumbnailData.file.size}:${thumbnailData.file.lastModified}`
+      : thumbnailData?.url
+        ? `url:${thumbnailData.url}`
+        : "none";
+  const hasThumbnailDraftData = Boolean(thumbnailRemoved || thumbnailData?.file);
+
+  const persistThumbnailForBlog = useCallback(
+    async (
+      blogIdToUpload,
+      nextThumbnailData,
+      { showSuccessToast = false, showErrorToast = true } = {},
+    ) => {
+      if (!nextThumbnailData?.file) {
+        return nextThumbnailData?.url || null;
+      }
+      if (!blogIdToUpload) {
+        throw new Error("Draft must be created before uploading the thumbnail");
+      }
+
+      setThumbnailStatus("uploading");
+
+      try {
+        const uploadedImageUrl = await uploadArticleImage(
+          blogIdToUpload,
+          nextThumbnailData.file,
+        );
+
+        setThumbnailData((current) => {
+          const source = current?.file ? current : nextThumbnailData;
+          return source
+            ? {
+                ...source,
+                file: null,
+                url: uploadedImageUrl,
+                previewUrl: uploadedImageUrl,
+              }
+            : {
+                url: uploadedImageUrl,
+                previewUrl: uploadedImageUrl,
+              };
+        });
+        setThumbnailRemoved(false);
+        setThumbnailStatus("uploaded");
+
+        if (showSuccessToast) {
+          toast.success("Thumbnail uploaded");
+        }
+
+        return uploadedImageUrl;
+      } catch (error) {
+        setThumbnailStatus("error");
+
+        if (showErrorToast) {
+          toast.error(error.message || "Failed to upload thumbnail");
+        }
+
+        throw error;
+      }
+    },
+    [uploadArticleImage],
+  );
 
   // Handle See Later - dismiss popup and check for unsaved changes first
   const handleSeeLater = async () => {
@@ -294,6 +359,7 @@ export default function EditorPageClient() {
     markNavigating,
     cancelPendingAutoSave,
     resetSnapshot,
+    syncExtraDirtySignal,
     clearDraft,
     getDexieId,
   } = useAutoSave({
@@ -309,37 +375,22 @@ export default function EditorPageClient() {
     isSaving,
     saveFn: saveFnForHook,
     onBlogIdCreated: handleBlogIdCreated,
+    extraDirtySignal: thumbnailDirtySignal,
+    hasAdditionalDraftData: hasThumbnailDraftData,
   });
 
   // Derived: does the editor have any content at all?
   const hasContent =
     blogTitle.trim() ||
     blogDescription.trim() ||
-    (editorContent.html && editorContent.html !== "<p></p>");
+    (editorContent.html && editorContent.html !== "<p></p>") ||
+    thumbnailData ||
+    thumbnailRemoved;
 
   // Load existing blog if editing.
   // Guard: only load when the blogId comes from the initial URL, not when
   // shadowIdRef gets promoted to state/URL after a manual save.
-  useEffect(() => {
-    if (blogId && blogId === initialBlogIdRef.current) {
-      loadExistingBlog(blogId);
-    } else if (blogId && blogId !== initialBlogIdRef.current) {
-      // Shadow ID was just promoted — update the ref but don't reload
-      initialBlogIdRef.current = blogId;
-    } else if (isMounted) {
-      // New post: check Dexie for a recovered draft
-      const checkNewDraft = async () => {
-        const dexieId = getDexieId();
-        const localDraft = await dexieGetDraft(dexieId);
-        if (localDraft && (localDraft.title || localDraft.content)) {
-          setRecoveryDraft(localDraft);
-        }
-      };
-      checkNewDraft();
-    }
-  }, [blogId, isMounted, getDexieId]);
-
-  const loadExistingBlog = async (id) => {
+  const loadExistingBlog = useCallback(async (id) => {
     setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/blogs/${id}`, {
@@ -384,6 +435,7 @@ export default function EditorPageClient() {
         description: blog.description || "",
         contentHtml: blog.content || "",
         categories: blog.categories || [],
+        extraDirtySignal: blog.image ? `url:${blog.image}` : "none",
       });
 
       // Check Dexie for a local draft that's newer than the server version
@@ -406,8 +458,13 @@ export default function EditorPageClient() {
       }
 
       if (blog.image) {
-        setThumbnailData({ url: blog.image });
+        setThumbnailData({ url: blog.image, previewUrl: blog.image });
         setThumbnailRemoved(false);
+        setThumbnailStatus("uploaded");
+      } else {
+        setThumbnailData(null);
+        setThumbnailRemoved(false);
+        setThumbnailStatus("idle");
       }
 
       if (blog.scheduledAt) {
@@ -440,7 +497,26 @@ export default function EditorPageClient() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [resetSnapshot]);
+
+  useEffect(() => {
+    if (blogId && blogId === initialBlogIdRef.current) {
+      loadExistingBlog(blogId);
+    } else if (blogId && blogId !== initialBlogIdRef.current) {
+      // Shadow ID was just promoted — update the ref but don't reload
+      initialBlogIdRef.current = blogId;
+    } else if (isMounted) {
+      // New post: check Dexie for a recovered draft
+      const checkNewDraft = async () => {
+        const dexieId = getDexieId();
+        const localDraft = await dexieGetDraft(dexieId);
+        if (localDraft && (localDraft.title || localDraft.content)) {
+          setRecoveryDraft(localDraft);
+        }
+      };
+      checkNewDraft();
+    }
+  }, [blogId, isMounted, getDexieId, loadExistingBlog]);
 
   // Save blog to database (create new or update existing)
   const saveBlog = async (
@@ -614,34 +690,47 @@ export default function EditorPageClient() {
         flushShadowId();
       }
 
+      let thumbnailUploadFailed = false;
+      const persistedBlogId = responseData?.id ?? effectiveId;
+      let nextThumbnailSignal = thumbnailDirtySignal;
+
       // Upload thumbnail if one was selected
       if (thumbnailData && thumbnailData.file) {
         try {
-          const uploadedImageUrl = await uploadArticleImage(
-            responseData.id,
-            thumbnailData.file,
+          const uploadedImageUrl = await persistThumbnailForBlog(
+            persistedBlogId,
+            thumbnailData,
+            {
+              showSuccessToast: false,
+              showErrorToast: !isAutoSave,
+            },
           );
-          if (uploadedImageUrl) {
-            setThumbnailData((current) =>
-              current
-                ? {
-                    ...current,
-                    file: null,
-                    url: uploadedImageUrl,
-                    previewUrl: uploadedImageUrl,
-                  }
-                : current,
-            );
-          }
+          nextThumbnailSignal = uploadedImageUrl
+            ? `url:${uploadedImageUrl}`
+            : "none";
         } catch (error) {
           console.error("Error uploading thumbnail:", error);
+          thumbnailUploadFailed = true;
         }
+      } else if (thumbnailRemoved) {
+        setThumbnailStatus("removed");
+        nextThumbnailSignal = "removed";
+      } else if (thumbnailData?.url) {
+        nextThumbnailSignal = `url:${thumbnailData.url}`;
       }
 
-      // Tell the hook the save succeeded
-      markSaved();
+      // Tell the hook the save succeeded. Preserve thumbnail dirty state if upload failed.
+      markSaved({
+        preserveExtraDirty: thumbnailUploadFailed,
+        nextExtraDirtySignal: nextThumbnailSignal,
+      });
       if (!isAutoSave) {
-        setSaveStatus("saved");
+        setSaveStatus(thumbnailUploadFailed ? "failed" : "saved");
+        if (thumbnailUploadFailed) {
+          toast.error(
+            "Article saved, but the thumbnail upload failed. Please retry the thumbnail.",
+          );
+        }
       }
 
       // Auto-save should stay best-effort and quiet. The list pages already refresh
@@ -650,6 +739,13 @@ export default function EditorPageClient() {
         refreshArticle(responseData.id).catch((err) =>
           console.error("Failed to refresh article context:", err),
         );
+      }
+
+      if (thumbnailUploadFailed) {
+        return {
+          ...responseData,
+          thumbnailUploadFailed: true,
+        };
       }
 
       return responseData;
@@ -983,15 +1079,73 @@ export default function EditorPageClient() {
     };
   }, [showCalendar]);
 
-  const handleThumbnailAdd = (data) => {
+  const handleThumbnailAdd = async (data) => {
     setThumbnailData(data);
     setThumbnailRemoved(false);
+    setThumbnailStatus("selected");
+
+    const effectiveId = currentBlogId || shadowIdRef.current;
+    const shouldUploadImmediately = Boolean(effectiveId);
+
+    if (!shouldUploadImmediately) {
+      return;
+    }
+
+    try {
+      const uploadedImageUrl = await persistThumbnailForBlog(effectiveId, data, {
+        showSuccessToast: true,
+        showErrorToast: true,
+      });
+      if (uploadedImageUrl) {
+        syncExtraDirtySignal(`url:${uploadedImageUrl}`);
+      }
+    } catch {
+      // Errors are surfaced by persistThumbnailForBlog.
+    }
   };
 
   const handleThumbnailRemove = () => {
     setThumbnailData(null);
     setThumbnailRemoved(true);
+    setThumbnailStatus("removed");
   };
+
+  const thumbnailButtonLabel =
+    thumbnailStatus === "uploading"
+      ? "Uploading..."
+      : thumbnailStatus === "uploaded"
+        ? "Thumbnail Saved"
+        : thumbnailStatus === "error"
+          ? "Upload Failed"
+          : thumbnailStatus === "removed"
+            ? "Thumbnail Removed"
+            : thumbnailData?.file
+              ? "Thumbnail Pending"
+              : "Thumbnail Image";
+  const thumbnailButtonClass =
+    thumbnailStatus === "error"
+      ? "border-red-300 bg-red-50"
+      : thumbnailStatus === "uploading"
+        ? "border-blue-300 bg-blue-50"
+        : thumbnailStatus === "uploaded"
+          ? "border-green-400 bg-green-50"
+          : thumbnailStatus === "removed"
+            ? "border-amber-300 bg-amber-50"
+            : thumbnailData
+              ? "border-green-400 bg-green-50"
+              : "border-gray-200 bg-white";
+  const thumbnailTextClass =
+    thumbnailStatus === "error"
+      ? "text-red-700"
+      : thumbnailStatus === "uploading"
+        ? "text-blue-700"
+        : thumbnailStatus === "uploaded"
+          ? "text-green-700"
+          : thumbnailStatus === "removed"
+            ? "text-amber-700"
+            : thumbnailData
+              ? "text-green-700"
+              : "";
 
   const formatDateValue = (date) =>
     `${String(date.getDate()).padStart(2, "0")}-${String(
@@ -1480,11 +1634,11 @@ export default function EditorPageClient() {
               />
 
               <button
-                className={`relative flex items-center w-[180px] h-8 gap-2 rounded border ${thumbnailData ? "border-green-400 bg-green-50" : "border-gray-200 bg-white"} text-sm px-4 py-2 hover:bg-gray-50 transition-colors whitespace-nowrap`}
+                className={`relative flex items-center w-[180px] h-8 gap-2 rounded border ${thumbnailButtonClass} text-sm px-4 py-2 hover:bg-gray-50 transition-colors whitespace-nowrap`}
                 onClick={() => setShowThumbnailModal(true)}
               >
                 <svg
-                  className={`w-4 h-4 flex-shrink-0 ${thumbnailData ? "text-green-600" : ""}`}
+                  className={`w-4 h-4 flex-shrink-0 ${thumbnailTextClass}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1496,10 +1650,16 @@ export default function EditorPageClient() {
                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                <span className={thumbnailData ? "text-green-700" : ""}>
-                  Thumbnail Image
+                <span className={thumbnailTextClass}>
+                  {thumbnailButtonLabel}
                 </span>
-                {thumbnailData && (
+                {thumbnailStatus === "uploading" ? (
+                  <div className="ml-auto h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
+                ) : thumbnailStatus === "error" ? (
+                  <span className="ml-auto text-sm font-semibold text-red-600">
+                    !
+                  </span>
+                ) : thumbnailData && (
                   <svg
                     className="w-4 h-4 text-green-600 ml-auto"
                     fill="none"
