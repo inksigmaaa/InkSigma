@@ -182,6 +182,7 @@ export default function EditorPageClient() {
   const shadowIdRef = useRef(null); // Server-created ID stored silently during auto-save (no re-render)
   const thumbnailDataRef = useRef(thumbnailData); // Always-current thumbnail data for async callbacks
   thumbnailDataRef.current = thumbnailData;
+  const syncExtraDirtySignalRef = useRef(null); // Filled after useAutoSave — avoids declaration-order issue
   const initialBlogIdRef = useRef(blogId); // The blogId from the URL at mount time
   const thumbnailDirtySignal = thumbnailRemoved
     ? "removed"
@@ -342,14 +343,14 @@ export default function EditorPageClient() {
           showErrorToast: true,
         })
           .then((url) => {
-            if (url) syncExtraDirtySignal(`url:${url}`);
+            if (url) syncExtraDirtySignalRef.current?.(`url:${url}`);
           })
           .catch(() => {
             // Error already handled inside persistThumbnailForBlog (toast + status)
           });
       }
     }
-  }, [persistThumbnailForBlog, syncExtraDirtySignal]);
+  }, [persistThumbnailForBlog]);
 
   // Promote shadowIdRef to state + URL (called on manual save / publish / exit)
   const flushShadowId = useCallback(() => {
@@ -396,6 +397,7 @@ export default function EditorPageClient() {
     extraDirtySignal: thumbnailDirtySignal,
     hasAdditionalDraftData: hasThumbnailDraftData,
   });
+  syncExtraDirtySignalRef.current = syncExtraDirtySignal;
 
   // Derived: does the editor have any content at all?
   const hasContent =
