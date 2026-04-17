@@ -3,6 +3,7 @@ import {
   getTenantHeadersForResolvedContext,
   resolvePublicSiteContext,
 } from "@/utils/publicSiteContext";
+import { getImageUrl } from "@/lib/utils/imageUrl";
 
 const API_URL = (
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -18,9 +19,7 @@ const DEFAULT_SITE_SVG_ICON = "/icons/favicon.svg";
 const DEFAULT_SITE_APPLE_ICON = "/icons/apple-touch-icon.png";
 
 export const getAbsoluteAssetUrl = (assetPath) => {
-  if (!assetPath) return "";
-  if (/^https?:\/\//i.test(assetPath)) return assetPath;
-  return `${API_URL}${assetPath.startsWith("/") ? assetPath : `/${assetPath}`}`;
+  return getImageUrl(assetPath) || "";
 };
 
 export const getRequestHost = (headerList) =>
