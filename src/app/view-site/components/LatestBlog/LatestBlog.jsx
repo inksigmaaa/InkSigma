@@ -6,12 +6,9 @@ import { usePathname } from 'next/navigation';
 import ShareMenu from '../ShareMenu/ShareMenu';
 import { getImageUrl } from '@/utils/imageUrl';
 import { getThumbnailWithFallback } from '@/utils/fallbackThumbnail';
-import { getApiBase } from '@/utils/apiBase';
 import { getBlogPath } from '@/utils/blogUrl';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { redirectToDashboardEditor } from '@/utils/publicSiteAuth';
-
-const API_URL = getApiBase();
 
 export default function LatestBlog({
   searchQuery = '',
@@ -46,7 +43,8 @@ export default function LatestBlog({
   const dateFormatted = formatDate(
     latestBlog.publishedAt || latestBlog.createdAt,
   );
-  const thumbnailUrl = getThumbnailWithFallback(getImageUrl(latestBlog.image), latestBlog.id);
+  const thumbnailUrl = getThumbnailWithFallback(latestBlog.image, latestBlog.id);
+  const authorAvatarUrl = getImageUrl(latestBlog.author?.image);
 
   return (
     <section className="w-full max-w-[90%] md:max-w-[70%] mx-auto py-6 md:py-0 max-md:px-0 ">
@@ -82,9 +80,9 @@ export default function LatestBlog({
         {/* Desktop View Author Info */}
         <div className="hidden md:flex items-center gap-3">
           <Avatar className="w-10 h-10 bg-gray-300 flex-shrink-0">
-            {latestBlog.author?.image && (
+            {authorAvatarUrl && (
               <AvatarImage
-                src={latestBlog.author.image.startsWith('http') ? latestBlog.author.image : `${API_URL}${latestBlog.author.image}`}
+                src={authorAvatarUrl}
                 alt={latestBlog.author.name}
                 className="w-full h-full object-cover"
               />
@@ -167,9 +165,9 @@ export default function LatestBlog({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Avatar className="w-[29px] h-[29px] bg-gray-300 flex-shrink-0">
-              {latestBlog.author?.image && (
+              {authorAvatarUrl && (
                 <AvatarImage
-                  src={latestBlog.author.image.startsWith('http') ? latestBlog.author.image : `${API_URL}${latestBlog.author.image}`}
+                  src={authorAvatarUrl}
                   alt={latestBlog.author.name}
                   className="w-full h-full object-cover"
                 />

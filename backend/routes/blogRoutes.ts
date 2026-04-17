@@ -332,7 +332,12 @@ router.post(
         req.user,
       );
 
-      res.json({ success: true, blog: updatedBlog, image: updatedBlog.image });
+      res.json({
+        success: true,
+        blog: updatedBlog,
+        image: updatedBlog.image,
+        imageUrl: updatedBlog.image,
+      });
     } catch (error) {
       next(error);
     }

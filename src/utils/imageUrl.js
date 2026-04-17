@@ -1,1 +1,1 @@
-export { getImageUrl } from '@/lib/utils/imageUrl';
+export { getCloudinaryThumbnail, getImageUrl } from "@/lib/utils/imageUrl";
