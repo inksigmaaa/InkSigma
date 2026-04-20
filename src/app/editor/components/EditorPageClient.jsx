@@ -180,6 +180,9 @@ export default function EditorPageClient() {
   const saveInFlightRef = useRef(false);
   const editorInstanceRef = useRef(null); // Ref to TipTap editor for uncontrolled reads
   const shadowIdRef = useRef(null); // Server-created ID stored silently during auto-save (no re-render)
+  const thumbnailDataRef = useRef(thumbnailData); // Always-current thumbnail data for async callbacks
+  thumbnailDataRef.current = thumbnailData;
+  const syncExtraDirtySignalRef = useRef(null); // Filled after useAutoSave — avoids declaration-order issue
   const initialBlogIdRef = useRef(blogId); // The blogId from the URL at mount time
   const thumbnailDirtySignal = thumbnailRemoved
     ? "removed"
@@ -329,9 +332,25 @@ export default function EditorPageClient() {
   // The ID is "flushed" to state + URL only on explicit user action (save/publish/exit).
   const handleBlogIdCreated = useCallback((result) => {
     if (result?.id != null) {
-      shadowIdRef.current = String(result.id);
+      const newId = String(result.id);
+      shadowIdRef.current = newId;
+
+      // If the user selected a thumbnail before the blog existed, upload it now.
+      const pending = thumbnailDataRef.current;
+      if (pending?.file) {
+        persistThumbnailForBlog(newId, pending, {
+          showSuccessToast: false,
+          showErrorToast: true,
+        })
+          .then((url) => {
+            if (url) syncExtraDirtySignalRef.current?.(`url:${url}`);
+          })
+          .catch(() => {
+            // Error already handled inside persistThumbnailForBlog (toast + status)
+          });
+      }
     }
-  }, []);
+  }, [persistThumbnailForBlog]);
 
   // Promote shadowIdRef to state + URL (called on manual save / publish / exit)
   const flushShadowId = useCallback(() => {
@@ -378,6 +397,7 @@ export default function EditorPageClient() {
     extraDirtySignal: thumbnailDirtySignal,
     hasAdditionalDraftData: hasThumbnailDraftData,
   });
+  syncExtraDirtySignalRef.current = syncExtraDirtySignal;
 
   // Derived: does the editor have any content at all?
   const hasContent =
