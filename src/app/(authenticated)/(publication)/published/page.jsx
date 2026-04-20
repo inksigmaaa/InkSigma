@@ -15,15 +15,12 @@ export default function PublishedPage() {
   const {
     articles,
     publicationArticles,
-    loading,
     pubArticlesLoading,
     error,
     moveToTrashStatus,
     bulkMoveToTrashStatus,
-    moveToDraft,
     createDraftFromPublished,
     unpublishArticle,
-    loadUserArticles,
     loadPublicationArticles,
     arePubArticlesLoaded,
   } = useArticles();
@@ -34,6 +31,7 @@ export default function PublishedPage() {
   const router = useRouter();
   const hasLoadedRef = useRef(false);
   const loadedContextRef = useRef(null); // 'user' or 'publication'
+  const [pageError, setPageError] = useState(null);
 
   // Determine user role
   const userRole = getCurrentUserRole();
@@ -64,11 +62,28 @@ export default function PublishedPage() {
       (!arePubArticlesLoaded && !isLoading && !hasLoadedRef.current) ||
       isWrongContext;
 
-    if (shouldLoad && currentPublication?.id) {
-      hasLoadedRef.current = true;
-      loadedContextRef.current = targetContext;
-      loadPublicationArticles(currentPublication.id);
-    }
+    if (!shouldLoad || !currentPublication?.id) return;
+
+    let cancelled = false;
+
+    const loadArticles = async () => {
+      try {
+        setPageError(null);
+        hasLoadedRef.current = true;
+        loadedContextRef.current = targetContext;
+        await loadPublicationArticles(currentPublication.id);
+      } catch (loadError) {
+        if (!cancelled) {
+          setPageError(loadError?.message || "Failed to load published articles");
+        }
+      }
+    };
+
+    loadArticles();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     searchParams,
     arePubArticlesLoaded,
@@ -78,6 +93,8 @@ export default function PublishedPage() {
     currentPublication?.id,
     userRole,
   ]);
+
+  const effectiveError = pageError || error;
 
   // Clean up refresh param from URL if present
   useEffect(() => {
@@ -259,7 +276,7 @@ export default function PublishedPage() {
   };
 
   // Only show loading state if we're loading AND have no articles yet
-  if (loading && articles.length === 0) {
+  if (isLoading && publicationArticles.length === 0) {
     return (
       <>
                         <Verify />
@@ -270,12 +287,12 @@ export default function PublishedPage() {
     );
   }
 
-  if (error) {
+  if (effectiveError) {
     return (
       <>
                         <Verify />
         <div className="flex justify-center items-center min-h-[400px] animate-fadeIn">
-          <div className="text-red-500">Error: {error}</div>
+          <div className="text-red-500">Error: {effectiveError}</div>
         </div>
       </>
     );

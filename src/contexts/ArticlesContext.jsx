@@ -11,13 +11,14 @@
  * but it no longer holds React state (Zustand does).
  */
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useSession } from "@/lib/auth-client";
 import { usePublication } from "@/contexts/PublicationContext";
 import { useArticleStore } from "@/stores/articleStore";
 
 export function ArticlesProvider({ children }) {
   const { data: session } = useSession();
+  const sessionUserId = session?.user?.id ?? null;
 
   let currentPublication = null;
   try {
@@ -36,10 +37,10 @@ export function ArticlesProvider({ children }) {
 
   // Auto-load user articles when session changes
   useEffect(() => {
-    if (session?.user?.id) {
-      loadUserArticles(session, currentPubRef.current?.id);
+    if (sessionUserId) {
+      loadUserArticles({ user: { id: sessionUserId } }, currentPubRef.current?.id);
     }
-  }, [session?.user?.id, loadUserArticles, session]);
+  }, [sessionUserId, loadUserArticles]);
 
   return children;
 }
@@ -52,6 +53,7 @@ export function ArticlesProvider({ children }) {
 export function useArticles() {
   const store = useArticleStore();
   const { data: session } = useSession();
+  const sessionUserId = session?.user?.id ?? null;
 
   let currentPublication = null;
   try {
@@ -63,21 +65,37 @@ export function useArticles() {
 
   // Wrap loadUserArticles to auto-inject session + publicationId (matching old API)
   const rawLoadUserArticles = store.loadUserArticles;
-  const loadUserArticles = (
-    publicationId = null,
-    includeAllPublications = false,
-    status = null,
-    extraFilters = {},
-  ) => {
-    const effectivePubId = publicationId || currentPublication?.id;
-    return rawLoadUserArticles(session, effectivePubId, includeAllPublications, status, extraFilters);
-  };
+  const loadUserArticles = useCallback(
+    (
+      publicationId = null,
+      includeAllPublications = false,
+      status = null,
+      extraFilters = {},
+    ) => {
+      if (!sessionUserId) {
+        return Promise.resolve();
+      }
+
+      const effectivePubId = publicationId ?? currentPublication?.id ?? null;
+      return rawLoadUserArticles(
+        { user: { id: sessionUserId } },
+        effectivePubId,
+        includeAllPublications,
+        status,
+        extraFilters,
+      );
+    },
+    [rawLoadUserArticles, sessionUserId, currentPublication?.id],
+  );
 
   // Wrap createArticle to auto-inject currentPublicationId (matching old API)
   const rawCreateArticle = store.createArticle;
-  const createArticle = (articleData) => {
-    return rawCreateArticle(articleData, currentPublication?.id);
-  };
+  const createArticle = useCallback(
+    (articleData) => {
+      return rawCreateArticle(articleData, currentPublication?.id);
+    },
+    [rawCreateArticle, currentPublication?.id],
+  );
 
   return {
     // State
