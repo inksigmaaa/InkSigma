@@ -1,9 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { getApiBase } from '@/utils/apiBase';
-
-const API_URL = getApiBase();
+import { buildPublicSiteApiUrl } from '@/utils/publicSiteApi';
 
 export default function ShareButtons({ title, url, slug, description, blogId }) {
   const blogUrl = url || (typeof window !== 'undefined' ? `${window.location.origin}/view-site/blog/${slug}` : '');
@@ -14,7 +12,7 @@ export default function ShareButtons({ title, url, slug, description, blogId }) 
     if (!blogId) return;
     
     try {
-      await fetch(`${API_URL}/api/views/share`, {
+      await fetch(buildPublicSiteApiUrl('/views/share'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ blogId, platform }),

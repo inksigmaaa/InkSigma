@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   buildCustomDomainLifecycleFields,
   CUSTOM_DOMAIN_STATUS,
+  getCustomDomainConfiguration,
   getCustomDomainVerificationHostname,
   getCustomDomainVerificationRecordValue,
   isCustomDomainActive,
@@ -47,6 +48,28 @@ test("verification record helpers build deterministic values", () => {
     getCustomDomainVerificationRecordValue("abc123"),
     "inksigma-verification=abc123",
   );
+});
+
+test("getCustomDomainConfiguration returns verification and routing targets", () => {
+  process.env.CUSTOM_DOMAIN_CNAME_TARGET = "proxy.inksigma.xyz";
+  process.env.CUSTOM_DOMAIN_IP_TARGETS = "203.0.113.10,2001:db8::10";
+
+  const configuration = getCustomDomainConfiguration({
+    domain: "tennyson.com",
+    token: "abc123",
+  });
+
+  assert.deepEqual(configuration, {
+    verificationRecord: {
+      type: "TXT",
+      host: "_inksigma.tennyson.com",
+      value: "inksigma-verification=abc123",
+    },
+    routingTargets: {
+      cname: ["proxy.inksigma.xyz"],
+      ip: ["203.0.113.10", "2001:db8::10"],
+    },
+  });
 });
 
 test("isCustomDomainActive only returns true for active domains", () => {

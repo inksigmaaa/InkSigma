@@ -5,10 +5,8 @@ import Image from 'next/image';
 import LinkIcon from '../icons/LinkIcon';
 import CameraIcon from '../icons/CameraIcon';
 import { toast } from "sonner";
-import { getApiBase } from '@/utils/apiBase';
 import { getBlogUrl } from '@/utils/blogUrl';
-
-const API_URL = getApiBase();
+import { buildPublicSiteApiUrl } from '@/utils/publicSiteApi';
 
 export default function ShareMenu({ title, url, slug, blogId, variant = 'icon', onSnapshot }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -38,7 +36,7 @@ export default function ShareMenu({ title, url, slug, blogId, variant = 'icon', 
     if (!blogId) return;
     
     try {
-      await fetch(`${API_URL}/api/views/share`, {
+      await fetch(buildPublicSiteApiUrl('/views/share'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ blogId, platform }),

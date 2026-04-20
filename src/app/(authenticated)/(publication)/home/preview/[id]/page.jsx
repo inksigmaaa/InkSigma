@@ -292,7 +292,7 @@ export default function PreviewPage({ params }) {
             <p className="text-sm text-gray-300">
               Copyright © 2023 designed & developed by{" "}
               <a
-                href="https://inksigma.com"
+                href="https://inksigma.xyz"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-300 hover:text-gray-400 underline"

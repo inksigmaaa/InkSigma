@@ -18,26 +18,134 @@ import {
 import { usePublication } from "@/contexts/PublicationContext";
 import { toast } from "sonner";
 
+const EMPTY_DOMAIN_CONFIGURATION = {
+  verificationRecord: null,
+  routingTargets: {
+    cname: [],
+    ip: [],
+  },
+};
+
 const DOMAIN_STATUS_LABELS = {
   pending_verification: "Pending verification",
-  verified: "DNS pending",
+  verified: "Routing pending",
   ssl_pending: "SSL pending",
-  active: "Custom Domain",
+  active: "Active",
   failed: "Verification failed",
 };
 
 const DOMAIN_STATUS_STYLES = {
-  pending_verification: "bg-amber-50 text-amber-700 border border-amber-200",
-  verified: "bg-blue-50 text-blue-700 border border-blue-200",
-  ssl_pending: "bg-blue-50 text-blue-700 border border-blue-200",
-  active: "bg-[#F4F4F4] text-[#808080] border border-[#F4F4F4]",
-  failed: "bg-red-50 text-red-700 border border-red-200",
+  pending_verification: "border border-amber-200 bg-amber-50 text-amber-700",
+  verified: "border border-blue-200 bg-blue-50 text-blue-700",
+  ssl_pending: "border border-blue-200 bg-blue-50 text-blue-700",
+  active: "border border-emerald-200 bg-emerald-50 text-emerald-700",
+  failed: "border border-red-200 bg-red-50 text-red-700",
 };
+
+const DOMAIN_STATUS_DESCRIPTIONS = {
+  pending_verification:
+    "Save the domain, add the TXT and routing records below, then run verify from this page.",
+  verified:
+    "Ownership is confirmed, but the domain is not pointing at InkSigma yet. Finish the CNAME or A/AAAA setup and verify again.",
+  ssl_pending:
+    "DNS is in place and SSL is still provisioning. Readers should continue using the current canonical host until activation finishes.",
+  active:
+    "This custom domain is the live canonical public host for the publication. Dashboard access still stays on the platform domain.",
+  failed:
+    "Verification failed. Check the TXT record, confirm the routing target, wait for DNS propagation, and verify again.",
+};
+
+const formatTimestamp = (value) => {
+  if (!value) return "Not yet";
+
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(value));
+  } catch {
+    return "Not yet";
+  }
+};
+
+function DnsRecordCard({
+  title,
+  description,
+  recordType,
+  host,
+  values,
+  onCopy,
+}) {
+  if (!host || !values?.length) return null;
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <div className="flex flex-col gap-1">
+        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+        {description ? (
+          <p className="text-sm leading-6 text-gray-600">{description}</p>
+        ) : null}
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-[160px,1fr]">
+        <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+            Type
+          </div>
+          <div className="mt-1 text-sm font-medium text-gray-900">
+            {recordType}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+            Host / Name
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <span className="break-all text-sm font-medium text-gray-900">
+              {host}
+            </span>
+            <button
+              type="button"
+              onClick={() => onCopy(host)}
+              className="rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-100"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {values.map((value) => (
+          <div
+            key={`${recordType}-${value}`}
+            className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2"
+          >
+            <span className="min-w-[52px] text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+              Value
+            </span>
+            <span className="flex-1 break-all text-sm text-gray-900">
+              {value}
+            </span>
+            <button
+              type="button"
+              onClick={() => onCopy(value)}
+              className="rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-100"
+            >
+              Copy
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function DomainPage() {
   const { currentPublication, refreshCurrentPublication } = usePublication();
   const [customDomain, setCustomDomain] = useState("");
-  const [subdomain, setSubdomain] = useState("Subdomain");
+  const [subdomain, setSubdomain] = useState("subdomain");
   const [publicationId, setPublicationId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -45,55 +153,60 @@ export default function DomainPage() {
   const [savedCustomDomain, setSavedCustomDomain] = useState("");
   const [editDomain, setEditDomain] = useState("");
   const [customDomainStatus, setCustomDomainStatus] = useState(null);
-  const [customDomainVerificationToken, setCustomDomainVerificationToken] =
-    useState("");
   const [customDomainVerificationError, setCustomDomainVerificationError] =
     useState("");
   const [customDomainVerifiedAt, setCustomDomainVerifiedAt] = useState(null);
   const [customDomainLastCheckedAt, setCustomDomainLastCheckedAt] =
     useState(null);
+  const [customDomainConfiguration, setCustomDomainConfiguration] = useState(
+    EMPTY_DOMAIN_CONFIGURATION,
+  );
+  const [canonicalHost, setCanonicalHost] = useState(null);
   const [verifying, setVerifying] = useState(false);
-
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingDomain, setPendingDomain] = useState("");
-
   const [showRevertConfirmation, setShowRevertConfirmation] = useState(false);
 
   const applyPublicationDomainState = useCallback((pubData) => {
     const existingCustomDomain = pubData?.customDomain || "";
     setPublicationId(pubData?.id || null);
-    setSubdomain(pubData?.subdomain || "Subdomain");
+    setSubdomain(pubData?.subdomain || "subdomain");
     setSavedCustomDomain(existingCustomDomain);
     setEditDomain(existingCustomDomain);
     setCustomDomainStatus(pubData?.customDomainStatus || null);
-    setCustomDomainVerificationToken(pubData?.customDomainVerificationToken || "");
     setCustomDomainVerificationError(pubData?.customDomainVerificationError || "");
     setCustomDomainVerifiedAt(pubData?.customDomainVerifiedAt || null);
     setCustomDomainLastCheckedAt(pubData?.customDomainLastCheckedAt || null);
+    setCustomDomainConfiguration(
+      pubData?.customDomainConfiguration || EMPTY_DOMAIN_CONFIGURATION,
+    );
+    setCanonicalHost(pubData?.canonicalHost || null);
   }, []);
 
   const loadPublicationData = useCallback(async () => {
     try {
       setError("");
       const apiBase = getApiBase();
-
       const targetPublicationId = currentPublication?.id;
+
       if (!targetPublicationId) {
         setLoading(false);
         return;
       }
 
       const pubRes = await fetch(
-        `${apiBase}/api/publications/${targetPublicationId}`,
+        `${apiBase}/api/publications/${targetPublicationId}/domain-management`,
         {
           credentials: "include",
         },
       );
 
-      if (pubRes.ok) {
-        const pubData = await pubRes.json();
-        applyPublicationDomainState(pubData);
+      if (!pubRes.ok) {
+        throw new Error("Failed to load publication");
       }
+
+      const pubData = await pubRes.json();
+      applyPublicationDomainState(pubData);
     } catch (err) {
       console.error("Error loading publication:", err);
       setError("Failed to load domain settings.");
@@ -120,16 +233,23 @@ export default function DomainPage() {
   });
   const statusLabel =
     DOMAIN_STATUS_LABELS[customDomainStatus] ||
-    (savedCustomDomain ? "Pending verification" : "Subdomain");
+    (savedCustomDomain ? "Subdomain fallback" : "Subdomain only");
   const statusStyle =
     DOMAIN_STATUS_STYLES[customDomainStatus] ||
-    "bg-gray-100 text-gray-600 border border-gray-200";
-  const verificationRecordName = savedCustomDomain
-    ? `_inksigma.${savedCustomDomain}`
-    : "";
-  const verificationRecordValue = customDomainVerificationToken
-    ? `inksigma-verification=${customDomainVerificationToken}`
-    : "";
+    "border border-gray-200 bg-gray-50 text-gray-700";
+  const statusDescription =
+    DOMAIN_STATUS_DESCRIPTIONS[customDomainStatus] ||
+    "The platform subdomain remains canonical until the custom domain becomes active.";
+  const effectiveCanonicalHost =
+    canonicalHost ||
+    (isCustomDomainLive
+      ? normalizeCustomDomain(savedCustomDomain)
+      : currentDomain);
+  const verificationRecord =
+    customDomainConfiguration?.verificationRecord || null;
+  const cnameTargets =
+    customDomainConfiguration?.routingTargets?.cname || [];
+  const ipTargets = customDomainConfiguration?.routingTargets?.ip || [];
 
   const handleSaveChanges = () => {
     const normalizedDomain = normalizeCustomDomain(customDomain);
@@ -197,6 +317,7 @@ export default function DomainPage() {
       setCustomDomain("");
       setShowConfirmation(false);
       setPendingDomain("");
+      toast.success("Custom domain saved");
     } catch (err) {
       setError(err.message || "Failed to save domain");
     } finally {
@@ -237,15 +358,12 @@ export default function DomainPage() {
       applyPublicationDomainState(updated);
       setCustomDomain("");
       setShowRevertConfirmation(false);
+      toast.success("Reverted to platform subdomain");
     } catch (err) {
       setError(err.message || "Failed to revert to subdomain");
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleCancelRevert = () => {
-    setShowRevertConfirmation(false);
   };
 
   const handleVerifyDomain = async () => {
@@ -285,9 +403,11 @@ export default function DomainPage() {
 
   const copyToClipboard = async (text) => {
     try {
+      if (!text) return;
+
       if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
-        toast.success("Domain copied");
+        toast.success("Copied");
         return;
       }
 
@@ -301,14 +421,14 @@ export default function DomainPage() {
         textarea.select();
         document.execCommand("copy");
         document.body.removeChild(textarea);
-        toast.success("Domain copied");
+        toast.success("Copied");
         return;
       }
 
       throw new Error("Clipboard is not available");
     } catch (err) {
-      console.error("Error copying domain:", err);
-      toast.error("Failed to copy domain. Please copy it manually.");
+      console.error("Error copying:", err);
+      toast.error("Failed to copy. Please copy it manually.");
     }
   };
 
@@ -322,394 +442,302 @@ export default function DomainPage() {
 
   return (
     <>
-      <div className="w-full min-h-screen md:absolute md:left-1/2 md:-translate-x-1/2 md:top-[120px] md:max-w-[1034px] z-20 px-0 md:px-5 pt-24 md:pt-0 pb-24 md:pb-0">
-        <div className="ml-0 md:ml-[165px] md:border-r md:border-gray-200">
-          <div className="flex flex-col pb-8 md:pb-20">
-            {/* Header */}
-            <div className="text-center mt-10 mb-6 max-md:mb-6 max-md:mt-8 max-md:w-[301px] max-md:mx-auto">
-              <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-2 max-md:text-[14px] max-md:font-bold">
-                Custom Domain Integration
+      <div className="w-full min-h-screen px-4 pb-20 pt-24 md:px-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+            <div className="flex flex-col gap-3 border-b border-gray-200 pb-6">
+              <h1 className="text-2xl font-semibold text-gray-900">
+                Custom Domain
               </h1>
-              <p className="text-sm text-gray-600 px-4 md:px-0 max-md:text-[12px]">
-                Connect your custom domain you already own{" "}
-                <br className="max-md:hidden" />
-                with Inksigma.{" "}
-                <a
-                  href="#instructions"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const element = document.getElementById("instructions");
-                    if (element) {
-                      const offset = 120; // Adjust for navbar height
-                      const elementPosition =
-                        element.getBoundingClientRect().top;
-                      const offsetPosition =
-                        elementPosition + window.pageYOffset - offset;
-                      window.scrollTo({
-                        top: offsetPosition,
-                        behavior: "smooth",
-                      });
-                    }
-                  }}
-                  className="text-black font-semibold cursor-pointer max-md:font-normal"
-                >
-                  Read instructions
-                </a>
+              <p className="max-w-3xl text-sm leading-6 text-gray-600">
+                The publication can run on a custom public hostname, but the
+                dashboard and admin surfaces stay on the InkSigma platform
+                domain. Save the hostname, add the DNS records below, and use
+                verify to activate it.
               </p>
             </div>
 
-            {error && (
-              <div className="mx-auto w-full max-w-[400px] md:max-w-[447px] mb-5 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded">
+            {error ? (
+              <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
               </div>
-            )}
+            ) : null}
 
-            {/* Current Domain Section */}
-            {!savedCustomDomain ? (
-              // Initial state - no custom domain saved
-              <div className="bg-white mx-auto rounded-lg border border-gray-200 p-6 md:p-8 space-y-5 w-full max-w-[400px] max-md:p-4 max-md:w-[301px] mb-12 md:mb-20">
-                <div className="border-b border-gray-200 pb-5">
-                  <h2 className="text-xs font-semibold text-gray-400 mb-3 max-md:text-[8px] mb-0 max-md:font-normal">
-                    YOUR CURRENT DOMAIN
-                  </h2>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-purple-600 font-medium text-sm md:text-base break-all max-md:text-[12px] max-md:font-normal">
-                      {currentDomain}
-                    </span>
-                    <span className="bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded whitespace-nowrap max-md:text-[8px]">
-                      Subdomain
-                    </span>
+            <div className="mt-8 grid gap-6 xl:grid-cols-[1.15fr,0.85fr]">
+              <section className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-semibold text-gray-900">
+                      Current routing
+                    </h2>
+                    <p className="mt-1 text-sm leading-6 text-gray-600">
+                      The platform subdomain is always preserved. Historical
+                      hostnames redirect to the canonical public host once the
+                      custom domain is active.
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${statusStyle}`}
+                  >
+                    {statusLabel}
+                  </span>
+                </div>
+
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  <div className="rounded-xl border border-gray-200 bg-white p-4">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+                      Platform subdomain
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="break-all text-sm font-medium text-gray-900">
+                        {currentDomain}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(currentDomain)}
+                        className="rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-100"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-gray-200 bg-white p-4">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+                      Canonical public host
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="break-all text-sm font-medium text-gray-900">
+                        {effectiveCanonicalHost || "Not yet assigned"}
+                      </span>
+                      {effectiveCanonicalHost ? (
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(effectiveCanonicalHost)}
+                          className="rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-100"
+                        >
+                          Copy
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 
-                {/* Warning Box */}
-                <div className="bg-orange-50 border border-orange-200 rounded p-3">
-                  <p className="text-orange-700 text-sm max-md:text-[10px] max-md:font-normal">
-                    <span className="font-semibold max-md:font-bold">
-                      Warning:
-                    </span>{" "}
-                    If you change your domain, you can only change it after 14
-                    days.
-                  </p>
-                </div>
+                <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900">
+                        Verification status
+                      </h3>
+                      <p className="mt-1 text-sm leading-6 text-gray-600">
+                        {statusDescription}
+                      </p>
+                    </div>
+                    {savedCustomDomain ? (
+                      <Button
+                        type="button"
+                        onClick={handleVerifyDomain}
+                        disabled={verifying}
+                        className="bg-black text-white hover:bg-gray-800"
+                      >
+                        {verifying ? "Checking DNS..." : "Verify domain"}
+                      </Button>
+                    ) : null}
+                  </div>
 
-                {/* Custom Domain Input */}
-                <div className="space-y-3 border-t border-gray-200 pt-5">
-                  <label className="block text-sm font-semibold text-gray-900 max-md:text-[12px] max-md:font-normal">
-                    Create your Custom Domain
+                  {customDomainVerificationError ? (
+                    <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                      {customDomainVerificationError}
+                    </div>
+                  ) : null}
+
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+                        Last verified
+                      </div>
+                      <div className="mt-1 text-sm text-gray-900">
+                        {formatTimestamp(customDomainVerifiedAt)}
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+                        Last checked
+                      </div>
+                      <div className="mt-1 text-sm text-gray-900">
+                        {formatTimestamp(customDomainLastCheckedAt)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {previewUrl ? (
+                    <a
+                      href={previewUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-4 inline-flex text-sm font-medium text-black underline-offset-4 hover:underline"
+                    >
+                      Open public site
+                    </a>
+                  ) : null}
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-gray-200 bg-white p-5">
+                <h2 className="text-base font-semibold text-gray-900">
+                  {savedCustomDomain ? "Update custom domain" : "Add custom domain"}
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-gray-600">
+                  Enter the exact hostname readers should visit. You can use a
+                  root domain such as <span className="font-medium">example.com</span>
+                  {" "}or a subdomain such as{" "}
+                  <span className="font-medium">blog.example.com</span>.
+                </p>
+
+                <div className="mt-5 space-y-2">
+                  <label className="block text-sm font-medium text-gray-900">
+                    Custom domain
                   </label>
                   <Input
                     type="text"
-                    placeholder="joshhh.com"
-                    value={customDomain}
-                    onChange={(e) => setCustomDomain(e.target.value)}
-                    className="w-full bg-gray-50 border-gray-300"
+                    placeholder="stories.example.com"
+                    value={savedCustomDomain ? editDomain : customDomain}
+                    onChange={(event) =>
+                      savedCustomDomain
+                        ? setEditDomain(event.target.value)
+                        : setCustomDomain(event.target.value)
+                    }
+                    className="w-full"
                   />
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-3">
                   <Button
-                    onClick={handleSaveChanges}
-                    disabled={saving || !customDomain.trim()}
-                    className="bg-black text-white hover:bg-gray-800 w-full md:w-auto max-md:w-[112px] max-md:text-[10px] max-md:font-bold max-md:px-2 px-8 text-sm h-10"
+                    type="button"
+                    onClick={savedCustomDomain ? handleEditSave : handleSaveChanges}
+                    disabled={
+                      saving ||
+                      !(savedCustomDomain ? editDomain.trim() : customDomain.trim())
+                    }
+                    className="bg-black text-white hover:bg-gray-800"
                   >
-                    {saving ? "Saving..." : "Save Changes"}
+                    {saving ? "Saving..." : "Save domain"}
                   </Button>
-                </div>
-              </div>
-            ) : (
-              // After custom domain is saved - exact CSS styling
-              <div className="mx-auto mb-12 md:mb-20 flex w-full max-w-[447px] flex-col gap-6 rounded-lg border border-[#EDEDED] bg-white p-5 md:p-[24px_32px]">
-                {/* Subdomain Domain Section */}
-                <div className="flex w-full flex-col gap-1 rounded border border-[#EAEAEA] bg-[#FAFAFA] p-4 md:px-6 md:py-4">
-                  <div
-                    className="font-semibold text-[#A4A4A4] text-[12px] max-md:text-[8px] max-md:font-normal leading-[150%]"
-                    style={{ fontFamily: "Public Sans" }}
-                  >
-                    YOUR SUBDOMAIN DOMAIN
-                  </div>
-                  <div
-                    className="font-semibold text-[#202020] text-[16px] max-md:text-[12px] max-md:font-normal leading-[28px]"
-                    style={{ fontFamily: "Public Sans" }}
-                  >
-                    {currentDomain}
-                  </div>
-                  <button
-                    onClick={() => copyToClipboard(currentDomain)}
-                    style={{
-                      width: "60px",
-                      height: "22px",
-                      borderRadius: "4px",
-                      padding: "2px 8px",
-                      gap: "4px",
-                      background: "#FFFFFF",
-                      border: "1px solid #EAEAEA",
-                      fontFamily: "Public Sans",
-                      fontWeight: 400,
-                      fontSize: "12px",
-                      lineHeight: "150%",
-                      color: "#696969",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <img
-                      src="/images/icons/copy-domain.svg"
-                      alt="copy"
-                      style={{ width: "12px", height: "12px" }}
-                    />
-                    Copy
-                  </button>
-                </div>
 
-                {/* Current Domain Section */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                    borderBottom: "1px solid #EDEDED",
-                    paddingBottom: "24px",
-                  }}
-                >
-                  <div
-                    className="font-semibold text-[#A4A4A4] text-[12px] max-md:text-[8px] max-md:font-normal leading-[150%]"
-                    style={{ fontFamily: "Public Sans" }}
-                  >
-                    YOUR CURRENT DOMAIN
-                  </div>
-                  <div
-                    className="flex flex-wrap items-center gap-3"
-                  >
-                    <span
-                      className="font-semibold text-[#7C3AED] text-[16px] max-md:text-[12px] max-md:font-normal leading-[28px] break-all"
-                      style={{ fontFamily: "Public Sans" }}
+                  {savedCustomDomain ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowRevertConfirmation(true)}
+                      disabled={saving}
+                      className="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {savedCustomDomain}
-                    </span>
-                    <span
-                      className={`rounded-[71px] flex items-center justify-center h-[26px] px-3 text-[12px] max-md:text-[8px] leading-[150%] whitespace-nowrap ${statusStyle}`}
-                      style={{ fontFamily: "Public Sans" }}
-                    >
-                      {statusLabel}
-                    </span>
-                  </div>
+                      Revert to subdomain
+                    </button>
+                  ) : null}
                 </div>
 
-                {/* Info Box */}
-                <div
-                  className="min-h-[88px] h-auto w-full rounded bg-[#ECF0FE] p-4 text-[#0048B5] text-[12px] leading-[18.5px] md:px-6 md:py-4 max-md:text-[10px] max-md:font-normal"
-                  style={{ fontFamily: "Public Sans" }}
-                >
-                  <span className="font-bold max-md:font-bold">Info:</span> If
-                  you wish to switch back to your subdomain,{" "}
-                  <span className="font-bold max-md:font-normal">COPY</span> and{" "}
-                  <span className="font-bold max-md:font-normal">PASTE</span>{" "}
-                  the subdomain above into the below text field and click on
-                  &apos;Save Changes&apos;.
+                <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-800">
+                  Dashboard access remains on the platform domain. Changing the
+                  custom domain only affects the public publication host, SEO
+                  canonical URLs, redirects, and reader-facing traffic.
                 </div>
-
-                {/* Edit Domain Section */}
-                <div
-                  className="flex w-full flex-col gap-3"
-                >
-                  <div
-                    style={{
-                      fontFamily: "Public Sans",
-                      fontWeight: 600,
-                      fontSize: "14px",
-                      lineHeight: "100%",
-                      color: "#202020",
-                    }}
-                    className="max-md:text-[12px] max-md:!font-normal"
-                  >
-                    Edit Your current Domain
-                  </div>
-                  <input
-                    type="text"
-                    value={editDomain}
-                    onChange={(e) => setEditDomain(e.target.value)}
-                    className="max-md:text-[12px]"
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: "1px solid #EAEAEA",
-                      borderRadius: "4px",
-                      fontFamily: "Public Sans",
-                      fontWeight: 400,
-                      fontSize: "14px",
-                      lineHeight: "150%",
-                      color: "#202020",
-                      background: "#FFFFFF",
-                    }}
-                    placeholder="Enter domain"
-                  />
-                  <button
-                    onClick={handleEditSave}
-                    disabled={saving}
-                    className="max-md:!w-[112px] max-md:text-[10px] max-md:!px-2"
-                    style={{
-                      width: "141px",
-                      height: "32px",
-                      borderRadius: "4px",
-                      padding: "8px 24px",
-                      background: "#080808",
-                      border: "none",
-                      fontFamily: "Public Sans",
-                      fontWeight: 500,
-                      fontSize: "14px",
-                      lineHeight: "150%",
-                      color: "#EDEDED",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {saving ? "Saving..." : "Save Changes"}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Divider Line */}
-            <div className="border-t border-gray-200 mb-8 md:mb-12"></div>
-
-            {/* Instructions Section */}
-            <div
-              id="instructions"
-              className="space-y-4 w-full px-10 max-w-[100%] max-md:px-0 max-md:w-[301px] max-md:mx-auto"
-            >
-              <h2 className="text-base md:text-lg font-bold text-gray-900 max-md:text-[14px] max-md:font-bold">
-                Custom Domain Integration Instructions
-              </h2>
-
-              <div className="space-y-3 text-sm text-gray-700 leading-relaxed max-md:text-[12px]">
-                <p>
-                  <span className="font-semibold max-md:font-normal">1.</span>{" "}
-                  Enter the correct domain name that you have bought/own in the
-                  domain field
-                </p>
-
-                <p className="text-gray-600 pl-4 md:pl-4">
-                  Now to connect your existing website to your new domain,
-                  please do the following steps :
-                </p>
-
-                <p>
-                  <span className="font-semibold max-md:font-normal">2.</span>{" "}
-                  Copy the IP Address that&apos;s given there by clicking the copy
-                  button
-                </p>
-
-                <p>
-                  <span className="font-semibold max-md:font-normal">3.</span>{" "}
-                  Open your domain&apos;s{" "}
-                  <span className="font-semibold max-md:font-normal">DNS</span>{" "}
-                  (Domain Name System) Management in your domain provider -like
-                  GoDaddy, Cloudflare, Bluehost, Hostgator, etc.
-                </p>
-
-                <p>
-                  <span className="font-semibold max-md:font-normal">4.</span>{" "}
-                  If there&apos;s an existing A record in your domain- please click
-                  edit and remove the existing IP Address and paste the NEW
-                  copied IP Address in the respective IP/IPv4 address field
-                </p>
-
-                <p className="text-gray-600 pl-4 md:pl-4">(or)</p>
-
-                <p className="font-semibold">
-                  If there is no existing A record, you can create your own A
-                  record by doing the following steps
-                </p>
-
-                {/* Instructional Image - Different for mobile and desktop/tablet */}
-                <div className="my-6 bg-white rounded-lg border border-gray-200 p-4 md:p-6">
-                  {/* Mobile Image - Only for small screens (phones) */}
-                  <img
-                    src="/images/Domain/DomainMobile.jpg"
-                    alt="DNS Configuration Steps showing steps 1-5 for adding A record"
-                    className="w-full h-auto block sm:hidden"
-                  />
-                  {/* Desktop/Tablet Image - For tablets and larger */}
-                  <img
-                    src="/images/Domain/Imageeess.jpg"
-                    alt="DNS Configuration Steps showing steps 1-5 for adding A record"
-                    className="w-full h-auto hidden sm:block"
-                  />
-                </div>
-
-                <p>
-                  <span className="font-semibold max-md:font-normal">5.</span>{" "}
-                  Ensure the TTL is in the lowest time possible or Auto and
-                  click SAVE.
-                </p>
-
-                <p>
-                  <span className="font-semibold max-md:font-normal">6.</span>{" "}
-                  Now come back to your admin panel and click the checkbox -
-                  that you have read all the instructions and click UPDATE.
-                </p>
-
-                <p>
-                  <span className="font-semibold max-md:font-normal">7.</span> A
-                  pop-up will appear to re-confirm your domain change request.
-                  Click YES.
-                </p>
-
-                <p>
-                  <span className="font-semibold max-md:font-normal">8.</span>{" "}
-                  You will be redirected to a 404 Error Page. Please don&apos;t
-                  worry. We are just now transferring your blog site to your new
-                  domain.
-                </p>
-
-                <p>
-                  <span className="font-semibold max-md:font-normal">9.</span>{" "}
-                  After 5 minutes, enter your newly connected domain name in the
-                  search bar of your browser to experience your own blog site.
-                </p>
-
-                <p className="mt-4">
-                  Your blog website should be now loaded to your new domain.
-                </p>
-
-                <p className="mt-2">
-                  Welcome to your own blog website, built with love from
-                  Inksigma
-                </p>
-
-                {/* Query/Support Section */}
-                <div className="mt-8 space-y-4">
-                  <h3 className="font-semibold text-gray-900">
-                    Query/Support:
-                  </h3>
-
-                  <p>
-                    Your website should be reflected within less than 15 minutes
-                    which is our maximum waiting time. In case, you are facing
-                    trouble or if you have messed up at any of the steps
-                    including entering the wrong email address,
-                  </p>
-
-                  <p>
-                    Please write to us from your registered email address
-                    explaining your problem to support@zemuria.com and we will
-                    be happy to assist you to solve it as soon as possible.
-                  </p>
-
-                  <p className="mt-4">Aspiring to help every small business,</p>
-
-                  <p className="mt-2">
-                    With love,
-                    <br />
-                    <span className="font-semibold max-md:font-normal">
-                      Inksigma
-                    </span>
-                  </p>
-                </div>
-              </div>
+              </section>
             </div>
+
+            <section
+              id="instructions"
+              className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-5"
+            >
+              <div className="flex flex-col gap-2">
+                <h2 className="text-base font-semibold text-gray-900">
+                  DNS setup
+                </h2>
+                <p className="text-sm leading-6 text-gray-600">
+                  Save the domain first, add the DNS records shown here in your
+                  registrar or DNS provider, wait for propagation, and then run
+                  verify from this page.
+                </p>
+              </div>
+
+              {savedCustomDomain ? (
+                <div className="mt-6 space-y-4">
+                  <DnsRecordCard
+                    title="Ownership verification"
+                    description="Create this TXT record exactly as shown. InkSigma uses it to confirm that you control the domain."
+                    recordType="TXT"
+                    host={verificationRecord?.host}
+                    values={verificationRecord?.value ? [verificationRecord.value] : []}
+                    onCopy={copyToClipboard}
+                  />
+
+                  <DnsRecordCard
+                    title="Subdomain routing"
+                    description="Use this CNAME target when connecting a hostname such as blog.example.com."
+                    recordType="CNAME"
+                    host={savedCustomDomain}
+                    values={cnameTargets}
+                    onCopy={copyToClipboard}
+                  />
+
+                  <DnsRecordCard
+                    title="Apex / root routing"
+                    description="Use these A or AAAA targets when connecting the root domain such as example.com."
+                    recordType="A / AAAA"
+                    host={savedCustomDomain}
+                    values={ipTargets}
+                    onCopy={copyToClipboard}
+                  />
+
+                  {!verificationRecord && !cnameTargets.length && !ipTargets.length ? (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                      No DNS targets are configured on the server yet. Set
+                      `CUSTOM_DOMAIN_CNAME_TARGET` or
+                      `CUSTOM_DOMAIN_IP_TARGET`, then reload this page.
+                    </div>
+                  ) : null}
+
+                  <div className="rounded-xl border border-gray-200 bg-white p-5">
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      Recommended rollout
+                    </h3>
+                    <div className="mt-4 grid gap-3 md:grid-cols-3">
+                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+                          Step 1
+                        </div>
+                        <p className="mt-1 text-sm leading-6 text-gray-700">
+                          Add the TXT record first so ownership verification can
+                          succeed independently of routing.
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+                          Step 2
+                        </div>
+                        <p className="mt-1 text-sm leading-6 text-gray-700">
+                          Add either the CNAME target for a subdomain or the A /
+                          AAAA targets for the root domain.
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+                          Step 3
+                        </div>
+                        <p className="mt-1 text-sm leading-6 text-gray-700">
+                          Wait for DNS propagation, then run verify. The custom
+                          domain becomes canonical only after activation.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-white px-4 py-6 text-sm text-gray-600">
+                  Save a custom domain first. InkSigma will generate the TXT
+                  verification record and show the routing targets here.
+                </div>
+              )}
+            </section>
           </div>
         </div>
       </div>
@@ -719,111 +747,43 @@ export default function DomainPage() {
         onOpenChange={(open) => !open && !saving && handleCancelSave()}
       >
         <DialogContent
-          className="w-[calc(100vw-2rem)] max-w-[350px] rounded-[4px] border-none bg-[#FEFEFE] p-6 shadow-2xl sm:p-8"
+          className="w-[calc(100vw-2rem)] max-w-[420px] rounded-xl border-none bg-white p-6 shadow-2xl"
           showClose={false}
         >
-          <DialogTitle className="sr-only">Confirm Domain Change</DialogTitle>
-          <div className="flex flex-col items-center gap-4">
-            <h3
-              className="text-center text-[16px] font-bold leading-7 text-black max-md:text-[12px] max-md:font-normal"
-              style={{
-                fontFamily: "Public Sans",
-                margin: 0,
-              }}
-            >
-              Are you sure you want to change your domain name?
+          <DialogTitle className="sr-only">Confirm domain change</DialogTitle>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Confirm custom domain
             </h3>
-
-            <div
-              className="flex w-full flex-col justify-center gap-2 rounded-[8px] border border-[#EAEAEA] p-4 sm:p-6"
-              style={{
-                minHeight: "102px",
-              }}
-            >
-              <div
-                className="max-md:text-[8px]"
-                style={{
-                  fontFamily: "Public Sans",
-                  fontWeight: 600,
-                  fontSize: "12px",
-                  lineHeight: "150%",
-                  color: "#A4A4A4",
-                  textTransform: "uppercase",
-                }}
-              >
-                YOUR DOMAIN WILL BE CHANGED TO
+            <p className="text-sm leading-6 text-gray-600">
+              InkSigma will save this hostname, keep the platform subdomain as a
+              fallback, and mark the new domain for verification.
+            </p>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+                New custom domain
               </div>
-              <div
-                className="max-md:text-[14px]"
-                style={{
-                  fontFamily: "Public Sans",
-                  fontWeight: 600,
-                  fontSize: "18px",
-                  lineHeight: "28px",
-                  background:
-                    "linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                  color: "transparent",
-                }}
-              >
+              <div className="mt-1 break-all text-base font-medium text-gray-900">
                 {pendingDomain}
               </div>
             </div>
-
-            <div className="mt-2 flex w-full justify-end gap-4">
+            <div className="flex justify-end gap-3">
               <button
+                type="button"
                 onClick={handleCancelSave}
                 disabled={saving}
-                className="max-md:min-w-[80px] max-md:text-[12px] max-md:px-4"
-                style={{
-                  minWidth: "94px",
-                  height: "32px",
-                  borderRadius: "4px",
-                  padding: "8px 24px",
-                  gap: "4px",
-                  background: "#F4F4F4",
-                  border: "none",
-                  fontFamily: "Public Sans",
-                  fontWeight: 500,
-                  fontSize: "14px",
-                  lineHeight: "150%",
-                  color: "#2E2E2E",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
+                className="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Cancel
               </button>
-              <button
+              <Button
+                type="button"
                 onClick={handleConfirmSave}
                 disabled={saving}
-                className="max-md:min-w-[100px] max-md:text-[12px] max-md:px-4"
-                style={{
-                  minWidth: "123px",
-                  height: "32px",
-                  borderRadius: "4px",
-                  padding: "8px 16px",
-                  gap: "10px",
-                  background:
-                    "linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)",
-                  border: "none",
-                  fontFamily: "Public Sans",
-                  fontWeight: 600,
-                  fontSize: "14px",
-                  lineHeight: "100%",
-                  color: "#EDEDED",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
+                className="bg-black text-white hover:bg-gray-800"
               >
-                {saving ? "Saving..." : "Save changes"}
-              </button>
+                {saving ? "Saving..." : "Confirm"}
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -831,76 +791,47 @@ export default function DomainPage() {
 
       <Dialog
         open={showRevertConfirmation}
-        onOpenChange={(open) => !open && !saving && handleCancelRevert()}
+        onOpenChange={(open) => !open && !saving && setShowRevertConfirmation(false)}
       >
         <DialogContent
-          className="w-[calc(100vw-2rem)] max-w-[350px] rounded-[4px] border-none bg-[#FEFEFE] p-6 shadow-2xl sm:p-8"
+          className="w-[calc(100vw-2rem)] max-w-[420px] rounded-xl border-none bg-white p-6 shadow-2xl"
           showClose={false}
         >
-          <DialogTitle className="sr-only">Confirm Revert To Subdomain</DialogTitle>
-          <div className="flex flex-col items-center justify-center gap-6">
-            <h3
-              className="text-center text-[16px] font-bold leading-7 text-black max-md:text-[12px] max-md:font-normal"
-              style={{
-                fontFamily: "Public Sans",
-                margin: 0,
-              }}
-            >
-              Are you sure you want to change back to Subdomain ?
+          <DialogTitle className="sr-only">Revert to subdomain</DialogTitle>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Revert to platform subdomain
             </h3>
-
-            <div className="flex gap-2">
+            <p className="text-sm leading-6 text-gray-600">
+              The publication will go back to the InkSigma subdomain as its
+              canonical host. The previous custom domain will remain in hostname
+              history and redirect if it still points to InkSigma.
+            </p>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+                Canonical host after revert
+              </div>
+              <div className="mt-1 break-all text-base font-medium text-gray-900">
+                {currentDomain}
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
               <button
-                onClick={handleCancelRevert}
+                type="button"
+                onClick={() => setShowRevertConfirmation(false)}
                 disabled={saving}
-                className="max-md:min-w-[80px] max-md:text-[12px] max-md:px-4"
-                style={{
-                  minWidth: "94px",
-                  height: "32px",
-                  borderRadius: "4px",
-                  padding: "8px 24px",
-                  gap: "4px",
-                  background: "#F4F4F4",
-                  border: "none",
-                  fontFamily: "Public Sans",
-                  fontWeight: 500,
-                  fontSize: "14px",
-                  lineHeight: "150%",
-                  color: "#2E2E2E",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
+                className="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                No, Cancel
+                Cancel
               </button>
-              <button
+              <Button
+                type="button"
                 onClick={handleConfirmRevert}
                 disabled={saving}
-                className="max-md:min-w-[80px] max-md:text-[12px] max-md:px-4"
-                style={{
-                  minWidth: "82px",
-                  height: "32px",
-                  borderRadius: "4px",
-                  padding: "8px 16px",
-                  gap: "10px",
-                  background:
-                    "linear-gradient(224.74deg, #A941FB 4.1%, rgba(120, 100, 240, 0.92) 96.28%)",
-                  border: "none",
-                  fontFamily: "Public Sans",
-                  fontWeight: 600,
-                  fontSize: "14px",
-                  lineHeight: "100%",
-                  color: "#EDEDED",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
+                className="bg-black text-white hover:bg-gray-800"
               >
-                {saving ? "Saving..." : "Yes"}
-              </button>
+                {saving ? "Saving..." : "Revert"}
+              </Button>
             </div>
           </div>
         </DialogContent>

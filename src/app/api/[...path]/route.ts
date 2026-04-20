@@ -21,6 +21,10 @@ const METHODS_WITHOUT_BODY = new Set(["GET", "HEAD"]);
 
 const buildUpstreamHeaders = (request: NextRequest) => {
   const headers = new Headers();
+  const originalHost = request.headers.get("host") || request.nextUrl.host;
+  const originalProto =
+    request.headers.get("x-forwarded-proto") ||
+    request.nextUrl.protocol.replace(/:$/, "");
 
   for (const [key, value] of request.headers.entries()) {
     const lowerKey = key.toLowerCase();
@@ -31,8 +35,12 @@ const buildUpstreamHeaders = (request: NextRequest) => {
     headers.set(key, value);
   }
 
-  headers.set("x-forwarded-host", request.headers.get("host") || request.nextUrl.host);
-  headers.set("x-forwarded-proto", request.nextUrl.protocol.replace(/:$/, ""));
+  headers.set("x-forwarded-host", originalHost);
+  headers.set("x-forwarded-proto", originalProto);
+  headers.set("x-original-host", originalHost);
+  if (request.nextUrl.port) {
+    headers.set("x-forwarded-port", request.nextUrl.port);
+  }
   headers.set("x-proxied-by", "next-app-route");
 
   return headers;

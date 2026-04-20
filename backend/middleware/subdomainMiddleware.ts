@@ -10,30 +10,15 @@ import {
   resolvePublicationBySubdomain,
   resolvePublicationByCustomDomain,
 } from "../services/publicationResolver.js";
+import {
+  getConfiguredBaseDomains,
+  getConfiguredDashboardSubdomain,
+  getConfiguredMainDomain,
+} from "../utils/domainConfig.js";
 
-const DASHBOARD_SUBDOMAIN = process.env.DASHBOARD_SUBDOMAIN || "dashboard";
-const getLocalLikeBaseDomain = () =>
-  (process.env.BASE_DOMAINS || process.env.BASE_DOMAIN || "")
-    .split(",")
-    .map((domain) => domain.trim().toLowerCase())
-    .find(
-      (domain) =>
-        domain === "localhost" ||
-        domain.endsWith(".local") ||
-        domain.endsWith(".localhost"),
-    );
-
-const MAIN_DOMAIN = (
-  getLocalLikeBaseDomain() || process.env.MAIN_DOMAIN || "inksigma.com"
-).toLowerCase();
-const BASE_DOMAINS = (
-  process.env.BASE_DOMAINS ||
-  process.env.BASE_DOMAIN ||
-  "localhost,inksigma.local"
-)
-  .split(",")
-  .map((domain) => domain.trim().toLowerCase())
-  .filter(Boolean);
+const DASHBOARD_SUBDOMAIN = getConfiguredDashboardSubdomain();
+const MAIN_DOMAIN = getConfiguredMainDomain();
+const BASE_DOMAINS = getConfiguredBaseDomains();
 
 // Reserved subdomains that don't map to publications
 const RESERVED_SUBDOMAINS = new Set([

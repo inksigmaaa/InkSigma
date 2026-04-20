@@ -1,29 +1,12 @@
-export const DASHBOARD_SUBDOMAIN =
-  process.env.DASHBOARD_SUBDOMAIN || "dashboard";
+import {
+  getConfiguredBaseDomains,
+  getConfiguredDashboardSubdomain,
+  getConfiguredMainDomain,
+} from "./domainConfig.js";
 
-const getLocalLikeBaseDomain = () =>
-  (process.env.BASE_DOMAINS || process.env.BASE_DOMAIN || "")
-    .split(",")
-    .map((domain) => domain.trim().toLowerCase())
-    .find(
-      (domain) =>
-        domain === "localhost" ||
-        domain.endsWith(".local") ||
-        domain.endsWith(".localhost"),
-    );
-
-export const MAIN_DOMAIN = (
-  getLocalLikeBaseDomain() || process.env.MAIN_DOMAIN || "inksigma.com"
-).toLowerCase();
-
-export const BASE_DOMAINS = (
-  process.env.BASE_DOMAINS ||
-  process.env.BASE_DOMAIN ||
-  "localhost,inksigma.local"
-)
-  .split(",")
-  .map((domain) => domain.trim().toLowerCase())
-  .filter(Boolean);
+export const DASHBOARD_SUBDOMAIN = getConfiguredDashboardSubdomain();
+export const MAIN_DOMAIN = getConfiguredMainDomain();
+export const BASE_DOMAINS = getConfiguredBaseDomains();
 
 export const RESERVED_SUBDOMAINS = new Set([
   "dashboard",

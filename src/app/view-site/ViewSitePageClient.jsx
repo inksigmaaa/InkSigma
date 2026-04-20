@@ -8,12 +8,12 @@ import LatestBlog from './components/LatestBlog/LatestBlog';
 import AllArticles from './components/AllArticles/AllArticles';
 import Footer from './components/Footer/Footer';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
-import { getApiBase } from '@/utils/apiBase';
 import { fetchJsonWithRetry } from '@/lib/api/client';
 import { getBlogPath } from '@/utils/blogUrl';
 import { getImageUrl } from '@/utils/imageUrl';
+import { buildPublicSiteApiUrl } from '@/utils/publicSiteApi';
+import { consumePublicSiteAuthTokenFromUrl } from '@/utils/publicSiteSession';
 
-const API_URL = getApiBase();
 const BLOG_CACHE_TTL_MS = 60 * 1000;
 
 const getBlogCacheKey = (publicationId) => `view-site:blogs:${publicationId}`;
@@ -73,6 +73,10 @@ function ViewSiteContent({
   const publicationName = initialPublication?.name || 'Your Publication Name';
 
   useEffect(() => {
+    consumePublicSiteAuthTokenFromUrl();
+  }, []);
+
+  useEffect(() => {
     const controller = new AbortController();
 
     const fetchBlogs = async () => {
@@ -97,7 +101,9 @@ function ViewSiteContent({
         }
 
         const data = await fetchJsonWithRetry(
-          `${API_URL}/api/blogs?publicationId=${publicationId}&status=published`,
+          buildPublicSiteApiUrl(
+            `/blogs?publicationId=${publicationId}&status=published`,
+          ),
           {
             cache: 'no-store',
             credentials: 'omit',

@@ -2,11 +2,9 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { getApiBase } from '@/utils/apiBase';
 import { getBlogUrl } from '@/utils/blogUrl';
 import { NightTooltip } from "@/components/ui/tooltip";
-
-const API_URL = getApiBase();
+import { buildPublicSiteApiUrl } from '@/utils/publicSiteApi';
 
 export default function SocialSidebar({ title, url, slug, blogId, onSnapshot }) {
   const [showCopied, setShowCopied] = useState(false);
@@ -18,7 +16,7 @@ export default function SocialSidebar({ title, url, slug, blogId, onSnapshot }) 
     if (!blogId) return;
     
     try {
-      await fetch(`${API_URL}/api/views/share`, {
+      await fetch(buildPublicSiteApiUrl('/views/share'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ blogId, platform }),
