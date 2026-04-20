@@ -2,8 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import FullPageErrorState from '@/components/common/FullPageErrorState';
 import HomeHeader from './components/Header/HomeHeader';
 import LatestBlog from './components/LatestBlog/LatestBlog';
 import AllArticles from './components/AllArticles/AllArticles';
@@ -184,17 +183,13 @@ function ViewSiteContent({
             <p className="text-gray-500">Loading blogs...</p>
           </div>
         ) : loadError ? (
-          <div className="mx-auto flex min-h-[400px] w-full max-w-2xl items-center px-4">
-            <Alert variant="destructive">
-              <AlertTitle>View site unavailable</AlertTitle>
-              <AlertDescription className="space-y-4">
-                <p>{loadError}</p>
-                <Button type="button" variant="outline" onClick={handleRetry}>
-                  Try again
-                </Button>
-              </AlertDescription>
-            </Alert>
-          </div>
+          <FullPageErrorState
+            title="View site unavailable"
+            description={loadError}
+            primaryLabel="Try again"
+            onPrimaryAction={handleRetry}
+            className="min-h-[400px]"
+          />
         ) : (
           <>
             <LatestBlog

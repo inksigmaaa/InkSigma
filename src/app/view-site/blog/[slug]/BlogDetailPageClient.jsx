@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,6 +10,7 @@ import SocialSidebar from "../../components/SocialSidebar/SocialSidebar";
 import ScrollToTop from "../../components/ScrollToTop/ScrollToTop";
 import MobileBottomNav from "../../components/MobileBottomNav/MobileBottomNav";
 import ClockIcon from "../../components/icons/ClockIcon";
+import FullPageErrorState from "@/components/common/FullPageErrorState";
 
 // Lazy-loaded below-the-fold components — reduces initial JS bundle
 const TableOfContents = dynamic(
@@ -25,9 +25,7 @@ const CommentSection = dynamic(
   () => import("../../components/CommentSection/CommentSection"),
   { ssr: false, loading: () => <div className="animate-pulse h-32 bg-gray-100 rounded-lg" /> },
 );
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { useSnapshot } from "@/hooks/useSnapshot";
 import { fetchJsonWithRetry } from "@/lib/api/client";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
@@ -517,24 +515,16 @@ export default function BlogDetailPageClient({
     return (
       <div className="min-h-screen bg-white flex flex-col">
         <ViewSiteHeader userName="Publication" userAvatar={null} />
-        <div className="flex flex-grow items-center justify-center px-6 py-12">
-          <div className="w-full max-w-2xl">
-            <Alert variant="destructive">
-              <AlertTitle>Blog unavailable right now</AlertTitle>
-              <AlertDescription className="space-y-4">
-                <p>{error || "We could not load this blog."}</p>
-                <div className="flex gap-3">
-                  <Button type="button" onClick={() => setRetryNonce((prev) => prev + 1)}>
-                    Try again
-                  </Button>
-                  <Button type="button" variant="outline" asChild>
-                    <Link href={fallbackHomePath}>Back to home</Link>
-                  </Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-          </div>
-        </div>
+        <FullPageErrorState
+          title="Blog unavailable right now"
+          description={error || "We could not load this blog."}
+          primaryLabel="Try again"
+          onPrimaryAction={() => setRetryNonce((prev) => prev + 1)}
+          secondaryLabel="Back to home"
+          secondaryHref={fallbackHomePath}
+          className="flex-grow"
+          contentClassName="max-w-2xl"
+        />
         <Footer />
       </div>
     );
