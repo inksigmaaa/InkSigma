@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { hasActiveCustomDomain } from "@/utils/publicationDomain";
-import { getApiBase } from "@/utils/apiBase";
 import { fetchJsonWithRetry } from "@/lib/api/client";
-
-const API_URL = getApiBase();
+import { buildPublicSiteApiUrl } from "@/utils/publicSiteApi";
 
 export function usePublicationMeta(identifier = null) {
   const [publication, setPublication] = useState(null);
@@ -36,8 +34,8 @@ export function usePublicationMeta(identifier = null) {
 
       try {
         const endpoint = customDomain
-          ? `${API_URL}/api/publications/by-custom-domain/${encodeURIComponent(customDomain)}`
-          : `${API_URL}/api/publications/by-subdomain/${encodeURIComponent(subdomain)}`;
+          ? buildPublicSiteApiUrl(`/publications/by-custom-domain/${encodeURIComponent(customDomain)}`)
+          : buildPublicSiteApiUrl(`/publications/by-subdomain/${encodeURIComponent(subdomain)}`);
 
         console.log('[usePublicationMeta] Making API call to:', endpoint);
         const data = await fetchJsonWithRetry(

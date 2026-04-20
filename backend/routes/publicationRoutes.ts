@@ -7,7 +7,7 @@ import {
   blog,
   user,
 } from "../models/schema.js";
-import { eq, and, count, inArray } from "drizzle-orm";
+import { eq, and, count, inArray, sql } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth.js";
 // NOTE: Domain validation logic moved to frontend (src/utils/subdomainRules.js, src/utils/domainValidation.js)
 // Backend now only checks database availability and handles data persistence
@@ -21,11 +21,13 @@ import {
   isPublicationHostnameAvailable,
   syncPublicationHostnames,
   PUBLICATION_HOSTNAME_KIND,
+  getPublicationCanonicalHost,
 } from "../services/publicationHostnameService.js";
 import {
   buildCustomDomainLifecycleFields,
   verifyCustomDomainLifecycle,
   CUSTOM_DOMAIN_STATUS,
+  getCustomDomainConfiguration,
 } from "../services/customDomainService.js";
 import { requirePublicationRole } from "../middleware/authorization.js";
 import { validate } from "../middleware/validate.js";
@@ -40,10 +42,127 @@ import {
   isCloudinaryUrl,
   CLOUDINARY_FOLDERS,
 } from "../utils/cloudinary.js";
+import { classifyHostForRouting } from "../utils/hostnameRouting.js";
 
 const router = express.Router();
 
 const upload = createMulterUpload(5 * 1024 * 1024); // 5MB limit
+const DOMAIN_RECONCILE_STATUSES = [
+  CUSTOM_DOMAIN_STATUS.PENDING_VERIFICATION,
+  CUSTOM_DOMAIN_STATUS.VERIFIED,
+  CUSTOM_DOMAIN_STATUS.ACTIVE,
+];
+
+const serializePublicationForClient = (
+  publicationRecord,
+  { includeDomainManagement = false } = {},
+) => {
+  if (!publicationRecord) return null;
+
+  const serialized = {
+    ...publicationRecord,
+    canonicalHost: getPublicationCanonicalHost(publicationRecord) || null,
+  };
+
+  if (includeDomainManagement) {
+    serialized.customDomainConfiguration = getCustomDomainConfiguration({
+      domain: publicationRecord.customDomain,
+      token: publicationRecord.customDomainVerificationToken,
+    });
+  }
+
+  return serialized;
+};
+
+const reconcilePublicationCustomDomain = async (currentPublication) => {
+  if (!currentPublication?.customDomain) {
+    return null;
+  }
+
+  const verificationFields = await verifyCustomDomainLifecycle(currentPublication);
+
+  const updated = await db.transaction(async (tx) => {
+    const result = await tx
+      .update(publication)
+      .set({
+        ...verificationFields,
+        updatedAt: new Date(),
+      })
+      .where(eq(publication.id, currentPublication.id))
+      .returning();
+
+    if (result.length === 0) {
+      return result;
+    }
+
+    await syncPublicationHostnames(tx, {
+      previousPublication: currentPublication,
+      nextPublication: result[0],
+    });
+
+    return result;
+  });
+
+  if (updated.length === 0) {
+    return null;
+  }
+
+  await invalidatePublicationCache({
+    subdomain: currentPublication.subdomain,
+    customDomain: currentPublication.customDomain,
+  });
+  await invalidatePublicationCache({
+    subdomain: updated[0].subdomain,
+    customDomain: updated[0].customDomain,
+  });
+
+  return updated[0];
+};
+
+const resolveHostKind = ({
+  rawHost,
+  rawSubdomain,
+  rawCustomDomain,
+}: {
+  rawHost?: string;
+  rawSubdomain?: string;
+  rawCustomDomain?: string;
+}) => {
+  if (rawHost) {
+    const classified = classifyHostForRouting(rawHost);
+
+    if (classified.isDashboard) return "dashboard";
+    if (classified.isRootDomain) return "root";
+    if (classified.kind === "subdomain") return "subdomain";
+    if (classified.isCustomDomain) return "custom-domain";
+  }
+
+  if (rawCustomDomain) return "custom-domain";
+  if (rawSubdomain) return "subdomain";
+  return "unknown";
+};
+
+const requireDomainReconcileToken = (req, res, next) => {
+  const configuredToken = String(process.env.DOMAIN_RECONCILE_TOKEN || "").trim();
+  if (!configuredToken) {
+    return res.status(503).json({
+      error: "DOMAIN_RECONCILE_TOKEN is not configured",
+    });
+  }
+
+  const authorization = String(req.headers.authorization || "").trim();
+  const bearerToken = authorization.toLowerCase().startsWith("bearer ")
+    ? authorization.slice(7).trim()
+    : "";
+  const headerToken = String(req.headers["x-domain-reconcile-token"] || "").trim();
+  const providedToken = bearerToken || headerToken;
+
+  if (!providedToken || providedToken !== configuredToken) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  return next();
+};
 
 // Check if user has a publication
 router.get("/check", requireAuth, async (req, res) => {
@@ -148,7 +267,7 @@ router.get(
         return res.status(404).json({ error: "Publication not found" });
       }
 
-      res.json(publication);
+      res.json(serializePublicationForClient(publication));
     } catch (error) {
       logger.error(error, "Error fetching publication by subdomain:");
       res.status(500).json({ error: "Failed to fetch publication" });
@@ -174,7 +293,7 @@ router.get(
         return res.status(404).json({ error: "Publication not found" });
       }
 
-      res.json(publication);
+      res.json(serializePublicationForClient(publication));
     } catch (error) {
       logger.error(error, "Error fetching publication by custom domain:");
       res.status(500).json({ error: "Failed to fetch publication" });
@@ -270,19 +389,36 @@ router.get("/resolve-host", async (req, res) => {
       resolvedPublication = publicationById || null;
     }
 
+    const hostContext = {
+      subdomain: rawSubdomain || resolvedPublication?.subdomain || null,
+      customDomain:
+        rawCustomDomain ||
+        (routing.type === "custom-domain" ? routing.host : null) ||
+        null,
+    };
+    const kind = resolveHostKind({
+      rawHost: routing.host || rawHost,
+      rawSubdomain: hostContext.subdomain || "",
+      rawCustomDomain: hostContext.customDomain || "",
+    });
+
     return res.json({
       ...routing,
-      publication: resolvedPublication,
-      hostContext: {
-        subdomain: rawSubdomain || resolvedPublication?.subdomain || null,
-        customDomain:
-          rawCustomDomain ||
-          (routing.type === "custom-domain" ? routing.host : null) ||
-          null,
-      },
+      kind,
+      host: routing.host || rawHost || "",
+      subdomain: hostContext.subdomain,
+      customDomain: hostContext.customDomain,
+      publication: serializePublicationForClient(resolvedPublication),
+      hostContext,
       publicationId:
         resolvedPublication?.id ||
         (Number.isFinite(rawPublicationId) ? rawPublicationId : null),
+      canonicalHost:
+        routing.canonicalHost ||
+        getPublicationCanonicalHost(resolvedPublication) ||
+        null,
+      matchedHostnameStatus: routing.matchedHostname?.status || null,
+      shouldRedirect: Boolean(routing.shouldRedirect),
     });
   } catch (error) {
     logger.error(error, "Error resolving host routing:");
@@ -332,7 +468,7 @@ router.get(
         return res.status(404).json({ error: "Publication not found" });
       }
 
-      res.json(userPublication[0]);
+      res.json(serializePublicationForClient(userPublication[0]));
     } catch (error) {
       logger.error(error, "Error fetching publication:");
       res.status(500).json({ error: "Failed to fetch publication" });
@@ -341,6 +477,37 @@ router.get(
 );
 
 // Get publication by ID
+router.get(
+  "/:id/domain-management",
+  requireAuth,
+  validate(publicationValidator.byIdSchema),
+  requirePublicationRole(["admin"], { publicationIdParam: "id" }),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const [pub] = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.id, parseInt(id)))
+        .limit(1);
+
+      if (!pub) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+
+      return res.json(
+        serializePublicationForClient(pub, {
+          includeDomainManagement: true,
+        }),
+      );
+    } catch (error) {
+      logger.error(error, "Error fetching publication domain management data:");
+      return res.status(500).json({ error: "Failed to fetch publication" });
+    }
+  },
+);
+
 router.get(
   "/:id",
   validate(publicationValidator.byIdSchema),
@@ -357,7 +524,7 @@ router.get(
         return res.status(404).json({ error: "Publication not found" });
       }
 
-      res.json(pub);
+      res.json(serializePublicationForClient(pub));
     } catch (error) {
       logger.error(error, "Error fetching publication:");
       res.status(500).json({ error: "Failed to fetch publication" });
@@ -591,7 +758,11 @@ router.post(
         subdomain: result.subdomain,
         customDomain: result.customDomain,
       });
-      return res.status(201).json(result);
+      return res.status(201).json(
+        serializePublicationForClient(result, {
+          includeDomainManagement: true,
+        }),
+      );
     } catch (error) {
       logger.error(error, "Error creating publication");
       logger.error(error, "Error details:", {
@@ -768,7 +939,11 @@ router.put(
         customDomain: updated[0].customDomain,
       });
 
-      res.json(updated[0]);
+      res.json(
+        serializePublicationForClient(updated[0], {
+          includeDomainManagement: true,
+        }),
+      );
     } catch (error) {
       logger.error(error, "Error updating publication:");
 
@@ -807,56 +982,103 @@ router.post(
         return res.status(400).json({ error: "Custom domain is not configured" });
       }
 
-      const verificationFields =
-        await verifyCustomDomainLifecycle(currentPublication);
+      const updatedPublication = await reconcilePublicationCustomDomain(
+        currentPublication,
+      );
 
-      const updated = await db.transaction(async (tx) => {
-        const result = await tx
-          .update(publication)
-          .set({
-            ...verificationFields,
-            updatedAt: new Date(),
-          })
-          .where(eq(publication.id, currentPublication.id))
-          .returning();
-
-        if (result.length === 0) {
-          return result;
-        }
-
-        await syncPublicationHostnames(tx, {
-          previousPublication: currentPublication,
-          nextPublication: result[0],
-        });
-
-        return result;
-      });
-
-      if (updated.length === 0) {
+      if (!updatedPublication) {
         return res.status(404).json({ error: "Publication not found" });
       }
 
-      await invalidatePublicationCache({
-        subdomain: currentPublication.subdomain,
-        customDomain: currentPublication.customDomain,
-      });
-      await invalidatePublicationCache({
-        subdomain: updated[0].subdomain,
-        customDomain: updated[0].customDomain,
-      });
-
       return res.json({
-        ...updated[0],
+        ...serializePublicationForClient(updatedPublication, {
+          includeDomainManagement: true,
+        }),
         verificationState: {
           isActive:
-            updated[0].customDomainStatus === CUSTOM_DOMAIN_STATUS.ACTIVE,
+            updatedPublication.customDomainStatus === CUSTOM_DOMAIN_STATUS.ACTIVE,
           requiresDnsUpdate:
-            updated[0].customDomainStatus !== CUSTOM_DOMAIN_STATUS.ACTIVE,
+            updatedPublication.customDomainStatus !== CUSTOM_DOMAIN_STATUS.ACTIVE,
         },
       });
     } catch (error) {
       logger.error(error, "Error verifying custom domain:");
       return res.status(500).json({ error: "Failed to verify custom domain" });
+    }
+  },
+);
+
+router.post(
+  "/internal/custom-domains/reconcile",
+  requireDomainReconcileToken,
+  async (req, res) => {
+    try {
+      const requestedPublicationId = Number.parseInt(
+        String(req.body?.publicationId || req.query.publicationId || ""),
+        10,
+      );
+
+      const candidates = Number.isFinite(requestedPublicationId)
+        ? await db
+            .select()
+            .from(publication)
+            .where(eq(publication.id, requestedPublicationId))
+            .limit(1)
+        : await db
+            .select()
+            .from(publication)
+            .where(
+              and(
+                sql`${publication.customDomain} is not null`,
+                inArray(
+                  publication.customDomainStatus,
+                  DOMAIN_RECONCILE_STATUSES as string[],
+                ),
+              ),
+            );
+
+      const results = [];
+
+      for (const currentPublication of candidates) {
+        if (!currentPublication?.customDomain) {
+          continue;
+        }
+
+        const updatedPublication = await reconcilePublicationCustomDomain(
+          currentPublication,
+        );
+
+        results.push({
+          publicationId: currentPublication.id,
+          customDomain: currentPublication.customDomain,
+          previousStatus: currentPublication.customDomainStatus,
+          nextStatus:
+            updatedPublication?.customDomainStatus ||
+            currentPublication.customDomainStatus,
+          verificationError:
+            updatedPublication?.customDomainVerificationError || null,
+          lastCheckedAt:
+            updatedPublication?.customDomainLastCheckedAt || null,
+        });
+      }
+
+      const statusCounts = results.reduce(
+        (accumulator, entry) => {
+          const key = entry.nextStatus || "unknown";
+          accumulator[key] = Number(accumulator[key] || 0) + 1;
+          return accumulator;
+        },
+        {} as Record<string, number>,
+      );
+
+      return res.json({
+        processedCount: results.length,
+        statusCounts,
+        results,
+      });
+    } catch (error) {
+      logger.error(error, "Error reconciling custom domains:");
+      return res.status(500).json({ error: "Failed to reconcile custom domains" });
     }
   },
 );

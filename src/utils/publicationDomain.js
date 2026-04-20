@@ -1,5 +1,9 @@
-const DEFAULT_ROOT_DOMAIN = "localhost";
-const DEFAULT_MAIN_DOMAIN = "inksigma.com";
+import {
+  getConfiguredMainDomain,
+  getConfiguredRootDomain,
+  isLocalLikeHost,
+} from "@/utils/domainConfig";
+
 const DEV_APP_PORT = "3000";
 
 const normalizeValue = (value) => {
@@ -19,13 +23,9 @@ export const getLocalCustomDomainAlias = (customDomain) => {
   return label ? `${label}.local` : "";
 };
 
-export const getRootDomain = () =>
-  normalizeValue(process.env.NEXT_PUBLIC_ROOT_DOMAIN) || DEFAULT_ROOT_DOMAIN;
+export const getRootDomain = () => getConfiguredRootDomain();
 
-export const getMainDomain = () =>
-  isLocalLikeHost(getRootDomain())
-    ? getRootDomain()
-    : normalizeValue(process.env.NEXT_PUBLIC_MAIN_DOMAIN) || DEFAULT_MAIN_DOMAIN;
+export const getMainDomain = () => getConfiguredMainDomain();
 
 const deriveRootDomainFromWindowHost = () => {
   if (typeof window === "undefined") return "";
@@ -68,15 +68,6 @@ const shouldPreferRootDomain = () => {
   }
 
   return process.env.NODE_ENV !== "production";
-};
-
-export const isLocalLikeHost = (host) => {
-  const normalized = normalizeValue(host);
-  return (
-    normalized === "localhost" ||
-    normalized.endsWith(".localhost") ||
-    normalized.endsWith(".local")
-  );
 };
 
 export const getSubdomainHost = (subdomain) => {

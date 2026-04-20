@@ -31,8 +31,13 @@ import { fetchJsonWithRetry } from "@/lib/api/client";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { getApiBase } from "@/utils/apiBase";
 import { getImageUrl } from "@/utils/imageUrl";
+import {
+  buildPublicSiteApiUrl,
+  buildTenantHeaders,
+} from "@/utils/publicSiteApi";
+import { consumePublicSiteAuthTokenFromUrl } from "@/utils/publicSiteSession";
 
-const API_URL = getApiBase();
+const BACKEND_URL = getApiBase();
 const BLOG_DETAIL_CACHE_TTL_MS = 60 * 1000;
 
 const getBlogCacheKey = (slug, tenantSubdomain, tenantCustomDomain) => {
@@ -97,7 +102,7 @@ const enrichBlogContent = (blogData) => {
   images.forEach((img, index) => {
     const src = img.getAttribute("src");
     if (src && src.startsWith("/")) {
-      img.setAttribute("src", `${API_URL}${src}`);
+      img.setAttribute("src", `${BACKEND_URL}${src}`);
     }
 
     if (index === 0) {
@@ -142,6 +147,10 @@ export default function BlogDetailPageClient({
   const tocStickyRef = useRef(null);
   const footerRef = useRef(null);
   const footerPreviousTopRef = useRef(null);
+
+  useEffect(() => {
+    consumePublicSiteAuthTokenFromUrl();
+  }, []);
 
   const handleSnapshot = () => {
     if (!contentRef.current) return;
@@ -209,7 +218,10 @@ export default function BlogDetailPageClient({
       try {
         setLoading(true);
         setError(null);
-        const tenantHeaders = {};
+        const tenantHeaders = buildTenantHeaders({
+          subdomain: tenantSubdomain,
+          customDomain: tenantCustomDomain,
+        });
 
         if (initialBlog && retryNonce === 0) {
           const enriched = enrichBlogContent(initialBlog);
@@ -241,15 +253,8 @@ export default function BlogDetailPageClient({
           }
         }
 
-        if (tenantCustomDomain) {
-          tenantHeaders["X-Custom-Domain"] = tenantCustomDomain;
-          delete tenantHeaders["X-Subdomain"];
-        } else if (tenantSubdomain) {
-          tenantHeaders["X-Subdomain"] = tenantSubdomain;
-        }
-
         const foundBlog = await fetchJsonWithRetry(
-          `${API_URL}/api/blogs/slug/${slug}`,
+          buildPublicSiteApiUrl(`/blogs/slug/${slug}`),
           {
             headers: tenantHeaders,
             signal: controller.signal,
@@ -276,7 +281,7 @@ export default function BlogDetailPageClient({
         if (!processedBlog.publication && processedBlog.publicationId) {
           try {
             const publicationData = await fetchJsonWithRetry(
-              `${API_URL}/api/publications/${processedBlog.publicationId}`,
+              buildPublicSiteApiUrl(`/publications/${processedBlog.publicationId}`),
               {
                 credentials: "omit",
                 headers: tenantHeaders,
@@ -313,7 +318,7 @@ export default function BlogDetailPageClient({
             }
 
             if (shouldTrack) {
-              await fetch(`${API_URL}/api/views/track`, {
+              await fetch(buildPublicSiteApiUrl("/views/track"), {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
