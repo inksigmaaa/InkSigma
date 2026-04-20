@@ -38,6 +38,7 @@ export default function Unpublished() {
   const [showTrashModal, setShowTrashModal] = useState(false);
   const [actionArticleId, setActionArticleId] = useState(null);
   const [isBulkAction, setIsBulkAction] = useState(false);
+  const [pageError, setPageError] = useState(null);
 
   // Determine user role and which articles to show
   const userRole = getCurrentUserRole();
@@ -54,17 +55,37 @@ export default function Unpublished() {
 
   // Load appropriate articles on mount or when publication changes
   useEffect(() => {
-    if (isAdmin && currentPublication?.id) {
-      loadPublicationArticles(currentPublication.id);
-    } else {
-      loadUserArticles(currentPublication?.id);
-    }
+    let cancelled = false;
+
+    const loadArticles = async () => {
+      try {
+        setPageError(null);
+
+        if (isAdmin && currentPublication?.id) {
+          await loadPublicationArticles(currentPublication.id);
+        } else {
+          await loadUserArticles(currentPublication?.id);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setPageError(loadError?.message || "Failed to load unpublished articles");
+        }
+      }
+    };
+
+    loadArticles();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     isAdmin,
     currentPublication?.id,
     loadPublicationArticles,
     loadUserArticles,
   ]);
+
+  const effectiveError = isAdmin && currentPublication ? pageError : error;
 
   // Filter unpublished articles (api already filters for pubArticles, but safety check)
   const unpublishedArticles = displayArticles
@@ -253,7 +274,7 @@ export default function Unpublished() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <>
                         <Verify />
@@ -264,12 +285,12 @@ export default function Unpublished() {
     );
   }
 
-  if (error) {
+  if (effectiveError) {
     return (
       <>
                         <Verify />
         <div className="flex justify-center items-center min-h-[400px] animate-fadeIn">
-          <div className="text-red-500">Error: {error}</div>
+          <div className="text-red-500">Error: {effectiveError}</div>
         </div>
       </>
     );
