@@ -714,17 +714,15 @@ export default function EditorPageClient() {
       const persistedBlogId = responseData?.id ?? effectiveId;
       let nextThumbnailSignal = thumbnailDirtySignal;
 
-      // Upload thumbnail if one was selected (skip during autosave to avoid
-      // coupling image uploads to content saves — thumbnails are uploaded
-      // immediately on selection or when the first autosave creates a blog ID).
-      if (!isAutoSave && thumbnailData && thumbnailData.file) {
+      // Upload thumbnail if one was selected
+      if (thumbnailData && thumbnailData.file) {
         try {
           const uploadedImageUrl = await persistThumbnailForBlog(
             persistedBlogId,
             thumbnailData,
             {
               showSuccessToast: false,
-              showErrorToast: true,
+              showErrorToast: !isAutoSave,
             },
           );
           nextThumbnailSignal = uploadedImageUrl
@@ -741,11 +739,9 @@ export default function EditorPageClient() {
         nextThumbnailSignal = `url:${thumbnailData.url}`;
       }
 
-      // Tell the hook the save succeeded. Preserve thumbnail dirty state when
-      // the upload failed OR when autosave skipped a pending thumbnail file.
-      const hasPendingThumbnail = isAutoSave && thumbnailData?.file;
+      // Tell the hook the save succeeded. Preserve thumbnail dirty state if upload failed.
       markSaved({
-        preserveExtraDirty: thumbnailUploadFailed || Boolean(hasPendingThumbnail),
+        preserveExtraDirty: thumbnailUploadFailed,
         nextExtraDirtySignal: nextThumbnailSignal,
       });
       if (!isAutoSave) {
