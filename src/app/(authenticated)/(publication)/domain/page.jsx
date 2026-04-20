@@ -442,9 +442,10 @@ export default function DomainPage() {
 
   return (
     <>
-      <div className="w-full min-h-screen px-4 pb-20 pt-24 md:px-8">
-        <div className="mx-auto max-w-5xl">
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+      <div className="w-full min-h-screen pb-20 pt-[112px] max-md:px-4 max-md:pt-24">
+        <div className="mx-auto max-w-[1034px] px-5 max-md:px-0">
+          <div className="md:ml-[195px]">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
             <div className="flex flex-col gap-3 border-b border-gray-200 pb-6">
               <h1 className="text-2xl font-semibold text-gray-900">
                 Custom Domain
@@ -738,6 +739,7 @@ export default function DomainPage() {
                 </div>
               )}
             </section>
+            </div>
           </div>
         </div>
       </div>
