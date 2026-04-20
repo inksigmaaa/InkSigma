@@ -71,41 +71,6 @@ const mergeUserData = (sessionUser, profileUser) => {
   };
 };
 
-const readFreshUserData = () => {
-  if (typeof window === "undefined") return null;
-
-  const storedValue = window.localStorage.getItem("freshUserData");
-  if (!storedValue) return null;
-
-  try {
-    return JSON.parse(storedValue);
-  } catch (error) {
-    console.error("[CommentSection] Failed to parse freshUserData:", error);
-    return null;
-  }
-};
-
-const mergeUserData = (sessionUser, profileUser) => {
-  if (!sessionUser) return null;
-
-  return {
-    ...sessionUser,
-    ...(profileUser && {
-      name: profileUser.profileName || profileUser.name || sessionUser.name,
-      username: profileUser.username || sessionUser.username,
-      image:
-        profileUser.image ||
-        sessionUser.image ||
-        sessionUser.avatar ||
-        sessionUser.picture ||
-        sessionUser.photo,
-      avatar: profileUser.avatar || sessionUser.avatar,
-      picture: profileUser.picture || sessionUser.picture,
-      photo: profileUser.photo || sessionUser.photo,
-    }),
-  };
-};
-
 import { formatTimeAgo } from "../../../../utils/timeFormatter";
 import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import { toast } from "sonner";
