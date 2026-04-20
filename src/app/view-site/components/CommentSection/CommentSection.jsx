@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
+import { getImageUrl } from "@/utils/imageUrl";
 import { buildDashboardLoginUrlForViewSite } from "@/utils/publicSiteAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,41 @@ import {
 } from "@/components/ui/dialog";
 
 const API_URL = getApiBase();
+
+const readFreshUserData = () => {
+  if (typeof window === "undefined") return null;
+
+  const storedValue = window.localStorage.getItem("freshUserData");
+  if (!storedValue) return null;
+
+  try {
+    return JSON.parse(storedValue);
+  } catch (error) {
+    console.error("[CommentSection] Failed to parse freshUserData:", error);
+    return null;
+  }
+};
+
+const mergeUserData = (sessionUser, profileUser) => {
+  if (!sessionUser) return null;
+
+  return {
+    ...sessionUser,
+    ...(profileUser && {
+      name: profileUser.profileName || profileUser.name || sessionUser.name,
+      username: profileUser.username || sessionUser.username,
+      image:
+        profileUser.image ||
+        sessionUser.image ||
+        sessionUser.avatar ||
+        sessionUser.picture ||
+        sessionUser.photo,
+      avatar: profileUser.avatar || sessionUser.avatar,
+      picture: profileUser.picture || sessionUser.picture,
+      photo: profileUser.photo || sessionUser.photo,
+    }),
+  };
+};
 
 import { formatTimeAgo } from "../../../../utils/timeFormatter";
 import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
@@ -34,8 +70,9 @@ export default function CommentSection({ blogId }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [freshProfile, setFreshProfile] = useState(null);
   const { data: session, isPending: sessionPending } = useSession();
-  const currentUser = session?.user || null;
+  const currentUser = mergeUserData(session?.user || null, freshProfile);
 
   // Delete confirmation state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -65,6 +102,65 @@ export default function CommentSection({ blogId }) {
   useEffect(() => {
     fetchComments();
   }, [fetchComments]);
+
+  useEffect(() => {
+    const sessionUserId = session?.user?.id;
+    if (!sessionUserId) {
+      setFreshProfile(null);
+      return;
+    }
+
+    let isActive = true;
+    const controller = new AbortController();
+
+    const syncStoredProfile = () => {
+      const storedProfile = readFreshUserData();
+      if (storedProfile && isActive) {
+        setFreshProfile(storedProfile);
+      }
+    };
+
+    const fetchFreshProfile = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/profile`, {
+          credentials: "include",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) return;
+
+        const profile = await response.json();
+        if (isActive) {
+          setFreshProfile(profile);
+        }
+      } catch (fetchError) {
+        if (fetchError?.name === "AbortError") return;
+        console.error(
+          "[CommentSection] Failed to refresh current user profile:",
+          fetchError,
+        );
+      }
+    };
+
+    const handleStorageChange = (event) => {
+      if (event.key !== "freshUserData" && event.key !== "profileUpdated") {
+        return;
+      }
+
+      syncStoredProfile();
+      fetchFreshProfile();
+    };
+
+    syncStoredProfile();
+    fetchFreshProfile();
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      isActive = false;
+      controller.abort();
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -364,14 +460,22 @@ export default function CommentSection({ blogId }) {
   };
 
   const getAuthorAvatar = (author) => {
-    if (!author?.image) return null;
-    if (author.image.startsWith("http")) return author.image;
-    return `${API_URL}${author.image.startsWith("/") ? "" : "/"}${author.image}`;
+    const rawAvatar =
+      author?.image || author?.avatar || author?.picture || author?.photo;
+
+    if (typeof rawAvatar !== "string" || rawAvatar.trim() === "") return null;
+
+    const trimmedAvatar = rawAvatar.trim();
+    const normalizedAvatar = getImageUrl(trimmedAvatar);
+    if (normalizedAvatar) return normalizedAvatar;
+
+    return `${API_URL}${trimmedAvatar.startsWith("/") ? "" : "/"}${trimmedAvatar}`;
   };
 
   const getDisplayName = (comment) => {
     if (comment.author?.name) return comment.author.name;
-    return "Guest"; // Fallback for old data if any
+    if (comment.guestName) return comment.guestName;
+    return "Guest";
   };
 
   const getInitial = (comment) => {
@@ -383,6 +487,9 @@ export default function CommentSection({ blogId }) {
     (acc, c) => acc + 1 + (c.replies?.length || 0),
     0,
   );
+  const currentUserAvatar = getAuthorAvatar(currentUser);
+  const currentUserName = currentUser?.name || "User";
+  const currentUserInitial = currentUserName.charAt(0).toUpperCase() || "?";
 
   return (
     <div className="mt-12">
@@ -426,15 +533,15 @@ export default function CommentSection({ blogId }) {
         >
           {currentUser && (
             <Avatar className="w-8 h-8 bg-purple-100 flex-shrink-0 max-md:w-6 max-md:h-6">
-              {currentUser.image && (
+              {currentUserAvatar && (
                 <AvatarImage
-                  src={getAuthorAvatar(currentUser)}
-                  alt={currentUser.name}
+                  src={currentUserAvatar}
+                  alt={currentUserName}
                   className="w-full h-full object-cover"
                 />
               )}
               <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold">
-                {currentUser.name?.charAt(0).toUpperCase() || "?"}
+                {currentUserInitial}
               </AvatarFallback>
             </Avatar>
           )}
@@ -486,7 +593,7 @@ export default function CommentSection({ blogId }) {
                 >
                   <div className="flex gap-2">
                     <Avatar className="w-8 h-8 bg-purple-100 flex-shrink-0 max-md:w-6 max-md:h-6">
-                      {comment.author?.image && (
+                      {getAuthorAvatar(comment.author) && (
                         <AvatarImage
                           src={getAuthorAvatar(comment.author)}
                           alt={getDisplayName(comment)}
@@ -567,16 +674,15 @@ export default function CommentSection({ blogId }) {
                         <div className="mt-4 bg-white rounded-lg p-3 ">
                           <div className="flex gap-3">
                             <Avatar className="w-8 h-8 flex-shrink-0 max-md:w-6 max-md:h-6">
-                              {currentUser?.image && (
+                              {currentUserAvatar && (
                                 <AvatarImage
-                                  src={getAuthorAvatar(currentUser)}
-                                  alt={currentUser?.name || "User"}
+                                  src={currentUserAvatar}
+                                  alt={currentUserName}
                                   className="w-full h-full object-cover"
                                 />
                               )}
                               <AvatarFallback className="w-full h-full bg-purple-100 text-purple-600 font-semibold text-sm">
-                                {currentUser?.name?.charAt(0).toUpperCase() ||
-                                  "?"}
+                                {currentUserInitial}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
@@ -632,7 +738,7 @@ export default function CommentSection({ blogId }) {
                                 className="flex gap-3 bg-white !mt-8 rounded-lg max-md:!mt-4"
                               >
                                 <Avatar className="w-8 h-8 flex-shrink-0 max-md:w-6 max-md:h-6">
-                                  {reply.author?.image && (
+                                  {getAuthorAvatar(reply.author) && (
                                     <AvatarImage
                                       src={getAuthorAvatar(reply.author)}
                                       alt={getDisplayName(reply)}
