@@ -1,8 +1,7 @@
-import {
-    getConfiguredBaseDomains,
-    getConfiguredDashboardSubdomain,
-    getConfiguredMainDomain,
-} from "@/utils/domainConfig";
+/**
+ * Host parsing utilities for subdomain detection
+ * Ported from backend to frontend for client-side parsing
+ */
 
 /**
  * Normalize a host value (remove port, lowercase, handle IPv6)
@@ -23,7 +22,16 @@ export const normalizeHost = (rawHost) => {
  * @returns {string[]} - Array of base domains
  */
 export const getBaseDomains = () => {
-    return getConfiguredBaseDomains();
+    // In browser context, use NEXT_PUBLIC_ prefixed env vars
+    const envValue =
+        process.env.NEXT_PUBLIC_BASE_DOMAINS ||
+        process.env.NEXT_PUBLIC_ROOT_DOMAIN ||
+        "localhost,inksigma.local";
+
+    return envValue
+        .split(",")
+        .map((d) => d.trim().toLowerCase())
+        .filter(Boolean);
 };
 
 /**
@@ -31,7 +39,20 @@ export const getBaseDomains = () => {
  * @returns {string} - Main domain
  */
 export const getMainDomain = () => {
-    return getConfiguredMainDomain();
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost";
+    const configuredMain = process.env.NEXT_PUBLIC_MAIN_DOMAIN;
+
+    if (
+        rootDomain === "localhost" ||
+        rootDomain.endsWith(".local") ||
+        rootDomain.endsWith(".localhost")
+    ) {
+        return rootDomain;
+    }
+
+    if (configuredMain) return configuredMain;
+
+    return "inksigma.com";
 };
 
 /**
@@ -50,13 +71,13 @@ export const parseHost = (rawHost) => {
     const hostname = normalizeHost(rawHost);
     const baseDomains = getBaseDomains();
     const mainDomain = getMainDomain();
-    const dashboardSubdomain = getConfiguredDashboardSubdomain();
 
     // Check if this is a dashboard subdomain (or same-origin dashboard mode)
     const isDashboard =
         process.env.NEXT_PUBLIC_SAME_ORIGIN_DASHBOARD === "true" ||
-        baseDomains.some((baseDomain) => hostname === `${dashboardSubdomain}.${baseDomain}`) ||
-        hostname === `${dashboardSubdomain}.${mainDomain}`;
+        hostname === `dashboard.${baseDomains[0]}` ||
+        hostname === "dashboard.localhost" ||
+        hostname === `dashboard.${mainDomain}`;
 
     // Find matching base domain
     let matchedBase = null;
@@ -100,7 +121,7 @@ export const parseHost = (rawHost) => {
         baseDomain: matchedBase,
         subdomain,
         isRootDomain: false,
-            isCustomDomain: false,
-            isDashboard: subdomain === dashboardSubdomain,
-        };
+        isCustomDomain: false,
+        isDashboard: subdomain === "dashboard",
+    };
 };

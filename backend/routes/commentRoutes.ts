@@ -3,10 +3,11 @@ import express from "express";
 import { db } from "../config/database.js";
 import { comment, user, blog } from "../models/schema.js";
 import { eq, desc, count, inArray, asc } from "drizzle-orm";
+import { auth } from "../config/betterAuth.js";
+import { fromNodeHeaders } from "better-auth/node";
 import { validate } from "../middleware/validate.js";
 import * as generalValidator from "../validators/generalValidator.js";
 import logger from "../utils/logger.js";
-import { resolveRequestUser } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -33,11 +34,12 @@ const optionalAuth = async (req, res, next) => {
   req.user = null; // Default to no user
 
   try {
-    req.user = await resolveRequestUser(req, {
-      allowPublicSiteToken: true,
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
     });
 
-    if (req.user) {
+    if (session?.user) {
+      req.user = session.user;
       logger.info(`[COMMENT] Authenticated user: ${req.user.id}`);
     } else {
       logger.info(`[COMMENT] No session - guest user`);

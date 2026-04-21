@@ -1,11 +1,6 @@
 import { and, eq, ne } from "drizzle-orm";
 import { publicationHostname } from "../models/schema.js";
 import { isCustomDomainActive } from "./customDomainService.js";
-import {
-  getConfiguredBaseDomains,
-  getConfiguredMainDomain,
-  isLocalLikeDomain,
-} from "../utils/domainConfig.js";
 
 export const PUBLICATION_HOSTNAME_KIND = {
   SUBDOMAIN: "subdomain",
@@ -38,6 +33,10 @@ type HostnameEntry = {
 const normalizeValue = (value: string | null | undefined) =>
   typeof value === "string" ? value.trim().toLowerCase() : "";
 
+const isLocalLikeDomain = (domain: string) =>
+  Boolean(domain) &&
+  (domain === "localhost" || domain.endsWith(".local") || domain.endsWith(".localhost"));
+
 export const normalizePublicationHostnameValue = (
   kind: HostnameKind,
   value: string | null | undefined,
@@ -52,15 +51,25 @@ export const normalizePublicationHostnameValue = (
   return normalized.replace(/^https?:\/\//, "").split("/")[0];
 };
 
+const getBaseDomains = () =>
+  (
+    process.env.BASE_DOMAINS ||
+    process.env.BASE_DOMAIN ||
+    "localhost,inksigma.local"
+  )
+    .split(",")
+    .map((domain) => domain.trim().toLowerCase())
+    .filter(Boolean);
+
 const shouldPreferBaseDomain = () => {
   if (process.env.NODE_ENV !== "production") return true;
 
-  const baseDomains = getConfiguredBaseDomains();
+  const baseDomains = getBaseDomains();
   return baseDomains.some((domain) => isLocalLikeDomain(domain));
 };
 
 const getPreferredBaseDomain = () => {
-  const baseDomains = getConfiguredBaseDomains();
+  const baseDomains = getBaseDomains();
 
   if (shouldPreferBaseDomain()) {
     return (
@@ -71,9 +80,14 @@ const getPreferredBaseDomain = () => {
   }
 
   return (
-    getConfiguredMainDomain() ||
-    getConfiguredBaseDomains().find((domain) => isLocalLikeDomain(domain)) ||
-    "inksigma.xyz"
+    process.env.MAIN_DOMAIN ||
+    getBaseDomains().find(
+      (domain) =>
+        domain === "localhost" ||
+        domain.endsWith(".local") ||
+        domain.endsWith(".localhost"),
+    ) ||
+    "inksigma.com"
   ).toLowerCase();
 };
 

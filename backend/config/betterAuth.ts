@@ -75,7 +75,7 @@ const buildBaseUrl = () => {
 const getCrossSubdomainCookieDomain = () => {
   const preferredBaseDomain = getPreferredBaseDomain();
 
-  // Prefer a real local/prod domain (e.g. inksigma.local / inksigma.xyz)
+  // Prefer a real local/prod domain (e.g. inksigma.local / inksigma.com)
   // and avoid localhost because cross-subdomain cookies there are unreliable.
   if (preferredBaseDomain && preferredBaseDomain !== "localhost") {
     return preferredBaseDomain;

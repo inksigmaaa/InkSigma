@@ -117,8 +117,8 @@ const isPlatformOrigin = (origin: string) => {
       const suffix = `.${domain}`;
       if (!normalizedHostname.endsWith(suffix)) return false;
 
-      // Only allow single-level subdomains (e.g., "blog.inksigma.xyz").
-      // Block nested subdomains (e.g., "evil.nested.inksigma.xyz") to prevent
+      // Only allow single-level subdomains (e.g., "blog.inksigma.com").
+      // Block nested subdomains (e.g., "evil.nested.inksigma.com") to prevent
       // attacker-controlled origins from gaining credentialed CORS access.
       const subdomain = normalizedHostname.slice(0, -suffix.length);
       return subdomain.length > 0 && !subdomain.includes(".");
