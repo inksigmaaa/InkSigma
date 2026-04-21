@@ -5,10 +5,7 @@ import { rm } from "fs/promises";
 import { db } from "../config/database.js";
 import { user, account } from "../models/schema.js";
 import { eq, and, ne } from "drizzle-orm";
-import {
-  requireAuth,
-  requireSessionOrPublicSiteAuth,
-} from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
 import logger from "../utils/logger.js";
 import {
   createMulterUpload,
@@ -18,60 +15,13 @@ import {
   isCloudinaryUrl,
   CLOUDINARY_FOLDERS,
 } from "../utils/cloudinary.js";
-import {
-  createPublicSiteAuthToken,
-  getPublicSiteAuthTokenExpiry,
-} from "../services/publicSiteAuthService.js";
 
 const router = express.Router();
 
 const upload = createMulterUpload(5 * 1024 * 1024); // 5MB limit
 
-router.get("/public-site-auth-token", requireAuth, async (req, res) => {
-  try {
-    const [userData] = await db
-      .select()
-      .from(user)
-      .where(eq(user.id, req.user.id));
-
-    if (!userData) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const token = createPublicSiteAuthToken({
-      id: userData.id,
-      email: userData.email,
-      name: userData.name,
-      image: userData.image,
-      username: userData.username,
-    });
-
-    if (!token) {
-      return res.status(503).json({
-        error:
-          "Public-site auth token signing is not configured. Set PUBLIC_SITE_AUTH_SECRET or BETTER_AUTH_SECRET.",
-      });
-    }
-
-    return res.json({
-      token,
-      expiresIn: getPublicSiteAuthTokenExpiry(),
-      user: {
-        id: userData.id,
-        email: userData.email,
-        name: userData.name,
-        image: userData.image,
-        username: userData.username || "",
-      },
-    });
-  } catch (error) {
-    logger.error(error, "Error creating public-site auth token:");
-    return res.status(500).json({ error: "Failed to create public-site auth token" });
-  }
-});
-
 // GET /api/profile - Get current user's profile
-router.get("/", requireSessionOrPublicSiteAuth, async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -92,7 +42,6 @@ router.get("/", requireSessionOrPublicSiteAuth, async (req, res) => {
     const hasPasswordAccount = !!passwordAccount;
 
     res.json({
-      id: userData.id,
       email: userData.email,
       name: userData.name,
       image: userData.image,

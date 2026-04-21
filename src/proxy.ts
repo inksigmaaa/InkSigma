@@ -91,7 +91,7 @@ const isLocalLikeHost = (host: string) => {
 };
 
 // When NEXT_PUBLIC_MAIN_DOMAIN is not explicitly set and we're not on localhost,
-// use the root domain itself (e.g. the Vercel URL) rather than defaulting to inksigma.xyz.
+// use the root domain itself (e.g. the Vercel URL) rather than defaulting to inksigma.com.
 const _configuredMainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN
   ? process.env.NEXT_PUBLIC_MAIN_DOMAIN.toLowerCase()
   : null;

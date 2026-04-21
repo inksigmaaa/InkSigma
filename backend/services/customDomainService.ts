@@ -44,18 +44,6 @@ type CustomDomainVerificationFields = {
   customDomainLastCheckedAt: Date | null;
 };
 
-type CustomDomainConfiguration = {
-  verificationRecord: {
-    type: "TXT";
-    host: string;
-    value: string;
-  } | null;
-  routingTargets: {
-    cname: string[];
-    ip: string[];
-  };
-};
-
 const normalizeCustomDomainValue = (value: string | null | undefined) => {
   const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
   if (!normalized) return null;
@@ -161,17 +149,6 @@ const resolveAaaaValues = async (hostname: string) => {
   }
 };
 
-export const getConfiguredCustomDomainTargets = () => ({
-  cname: parseConfiguredTargets(
-    process.env.CUSTOM_DOMAIN_CNAME_TARGETS,
-    process.env.CUSTOM_DOMAIN_CNAME_TARGET,
-  ),
-  ip: parseConfiguredTargets(
-    process.env.CUSTOM_DOMAIN_IP_TARGETS,
-    process.env.CUSTOM_DOMAIN_IP_TARGET,
-  ),
-});
-
 export const getCustomDomainVerificationRecordValue = (
   token: string | null | undefined,
 ) => {
@@ -184,30 +161,6 @@ export const getCustomDomainVerificationHostname = (
 ) => {
   const normalized = normalizeCustomDomainValue(domain);
   return normalized ? `_inksigma.${normalized}` : "";
-};
-
-export const getCustomDomainConfiguration = ({
-  domain,
-  token,
-}: {
-  domain: string | null | undefined;
-  token: string | null | undefined;
-}): CustomDomainConfiguration => {
-  const verificationHost = getCustomDomainVerificationHostname(domain);
-  const verificationValue = getCustomDomainVerificationRecordValue(token);
-  const routingTargets = getConfiguredCustomDomainTargets();
-
-  return {
-    verificationRecord:
-      verificationHost && verificationValue
-        ? {
-            type: "TXT",
-            host: verificationHost,
-            value: verificationValue,
-          }
-        : null,
-    routingTargets,
-  };
 };
 
 export const isCustomDomainActive = (
@@ -365,8 +318,14 @@ export const verifyCustomDomainLifecycle = async (
     );
   }
 
-  const { cname: expectedCnameTargets, ip: expectedIpTargets } =
-    getConfiguredCustomDomainTargets();
+  const expectedCnameTargets = parseConfiguredTargets(
+    process.env.CUSTOM_DOMAIN_CNAME_TARGETS,
+    process.env.CUSTOM_DOMAIN_CNAME_TARGET,
+  );
+  const expectedIpTargets = parseConfiguredTargets(
+    process.env.CUSTOM_DOMAIN_IP_TARGETS,
+    process.env.CUSTOM_DOMAIN_IP_TARGET,
+  );
 
   const cnameValues = await resolveCnameValues(customDomain);
   const ipValues = [

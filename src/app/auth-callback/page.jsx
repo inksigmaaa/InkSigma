@@ -4,10 +4,6 @@ import { useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getApiBase } from "@/utils/apiBase"
 import { buildLoginRedirectPath, waitForServerSession } from "@/utils/auth"
-import {
-  getConfiguredMainDomain,
-  getConfiguredRootDomain,
-} from "@/utils/domainConfig"
 
 const isAllowedExternalReturnTo = async (targetUrl, signal) => {
   if (!targetUrl) return false
@@ -19,8 +15,12 @@ const isAllowedExternalReturnTo = async (targetUrl, signal) => {
     }
 
     const hostname = parsedUrl.hostname.toLowerCase()
-    const rootDomain = getConfiguredRootDomain()
-    const mainDomain = getConfiguredMainDomain()
+    const rootDomain = (
+      process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost"
+    ).toLowerCase()
+    const mainDomain = (
+      process.env.NEXT_PUBLIC_MAIN_DOMAIN || "inksigma.com"
+    ).toLowerCase()
 
     const isKnownPlatformHost =
       hostname === rootDomain ||
@@ -52,19 +52,6 @@ const isAllowedExternalReturnTo = async (targetUrl, signal) => {
   } catch {
     return false
   }
-}
-
-const buildReturnToWithPublicAuthToken = (targetUrl, token) => {
-  if (!token) {
-    return targetUrl
-  }
-
-  const url = new URL(targetUrl)
-  const hash = url.hash.startsWith("#") ? url.hash.slice(1) : url.hash
-  const hashParams = new URLSearchParams(hash)
-  hashParams.set("publicAuthToken", token)
-  url.hash = hashParams.toString()
-  return url.toString()
 }
 
 function AuthCallbackContent() {
@@ -133,33 +120,7 @@ function AuthCallbackContent() {
           )
 
           if (canReturnExternally) {
-            let externalReturnTo = returnTo
-
-            try {
-              const tokenResponse = await fetch(
-                `${apiBase}/api/profile/public-site-auth-token`,
-                {
-                  credentials: "include",
-                  signal: controller.signal,
-                },
-              )
-
-              if (tokenResponse.ok) {
-                const tokenData = await tokenResponse.json().catch(() => null)
-                if (tokenData?.token) {
-                  externalReturnTo = buildReturnToWithPublicAuthToken(
-                    returnTo,
-                    tokenData.token,
-                  )
-                }
-              }
-            } catch (tokenError) {
-              if (tokenError?.name !== "AbortError") {
-                console.error("Error creating public-site auth token:", tokenError)
-              }
-            }
-
-            window.location.replace(externalReturnTo)
+            window.location.replace(returnTo)
             return
           }
 

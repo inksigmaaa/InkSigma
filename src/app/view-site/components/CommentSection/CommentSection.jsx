@@ -5,12 +5,6 @@ import { useSession } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
 import { getImageUrl } from "@/utils/imageUrl";
 import { buildDashboardLoginUrlForViewSite } from "@/utils/publicSiteAuth";
-import {
-  buildPublicSiteApiUrl,
-  clearInvalidPublicSiteAuth,
-  withPublicSiteAuth,
-} from "@/utils/publicSiteApi";
-import { consumePublicSiteAuthTokenFromUrl } from "@/utils/publicSiteSession";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const BACKEND_URL = getApiBase();
+const API_URL = getApiBase();
 
 const readFreshUserData = () => {
   if (typeof window === "undefined") return null;
@@ -38,20 +32,7 @@ const readFreshUserData = () => {
 };
 
 const mergeUserData = (sessionUser, profileUser) => {
-  if (!sessionUser && !profileUser) return null;
-
-  if (!sessionUser && profileUser) {
-    return {
-      ...profileUser,
-      id: profileUser.id,
-      name: profileUser.profileName || profileUser.name || "User",
-      username: profileUser.username || "",
-      image: profileUser.image || profileUser.avatar || profileUser.picture || profileUser.photo,
-      avatar: profileUser.avatar || null,
-      picture: profileUser.picture || null,
-      photo: profileUser.photo || null,
-    };
-  }
+  if (!sessionUser) return null;
 
   return {
     ...sessionUser,
@@ -102,7 +83,7 @@ export default function CommentSection({ blogId }) {
 
     try {
       setLoading(true);
-      const response = await fetch(buildPublicSiteApiUrl(`/comments/blog/${blogId}`));
+      const response = await fetch(`${API_URL}/api/comments/blog/${blogId}`);
       if (response.ok) {
         const data = await response.json();
         console.log("[CommentSection] Fetched comments:", data);
@@ -123,14 +104,10 @@ export default function CommentSection({ blogId }) {
   }, [fetchComments]);
 
   useEffect(() => {
-    consumePublicSiteAuthTokenFromUrl();
-  }, []);
-
-  useEffect(() => {
     const sessionUserId = session?.user?.id;
     if (!sessionUserId) {
       setFreshProfile(null);
-      // Continue: a public-site auth token may still be present on custom domains.
+      return;
     }
 
     let isActive = true;
@@ -145,22 +122,12 @@ export default function CommentSection({ blogId }) {
 
     const fetchFreshProfile = async () => {
       try {
-        const response = await fetch(
-          buildPublicSiteApiUrl("/profile"),
-          withPublicSiteAuth({
-            credentials: "include",
-            signal: controller.signal,
-          }),
-        );
+        const response = await fetch(`${API_URL}/api/profile`, {
+          credentials: "include",
+          signal: controller.signal,
+        });
 
-        clearInvalidPublicSiteAuth(response);
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            setFreshProfile(null);
-          }
-          return;
-        }
+        if (!response.ok) return;
 
         const profile = await response.json();
         if (isActive) {
@@ -277,24 +244,19 @@ export default function CommentSection({ blogId }) {
 
       console.log(
         "[CommentSection] Submitting comment to:",
-        buildPublicSiteApiUrl("/comments"),
+        `${API_URL}/api/comments`,
       );
       console.log("[CommentSection] Request body:", {
         ...body,
         content: body.content.substring(0, 50) + "...",
       });
 
-      const response = await fetch(
-        buildPublicSiteApiUrl("/comments"),
-        withPublicSiteAuth({
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(body),
-        }),
-      );
-
-      clearInvalidPublicSiteAuth(response);
+      const response = await fetch(`${API_URL}/api/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
 
       console.log("[CommentSection] Response status:", response.status);
       console.log("[CommentSection] Response ok:", response.ok);
@@ -322,10 +284,6 @@ export default function CommentSection({ blogId }) {
       } else {
         let errorMessage = "Failed to post comment";
         let responseData = null;
-
-        if (response.status === 401) {
-          openAuthModal();
-        }
 
         try {
           responseData = await response.json();
@@ -390,17 +348,12 @@ export default function CommentSection({ blogId }) {
         content: body.content.substring(0, 50) + "...",
       });
 
-      const response = await fetch(
-        buildPublicSiteApiUrl("/comments"),
-        withPublicSiteAuth({
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(body),
-        }),
-      );
-
-      clearInvalidPublicSiteAuth(response);
+      const response = await fetch(`${API_URL}/api/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
 
       if (response.ok) {
         const reply = await response.json();
@@ -419,9 +372,6 @@ export default function CommentSection({ blogId }) {
         toast.success("Reply added successfully");
       } else {
         let errorMessage = "Failed to post reply";
-        if (response.status === 401) {
-          openAuthModal();
-        }
         try {
           const data = await response.json();
           console.error("[CommentSection] Failed to post reply:", data);
@@ -458,14 +408,12 @@ export default function CommentSection({ blogId }) {
 
     try {
       const response = await fetch(
-        buildPublicSiteApiUrl(`/comments/${commentToDelete}`),
-        withPublicSiteAuth({
+        `${API_URL}/api/comments/${commentToDelete}`,
+        {
           method: "DELETE",
           credentials: "include",
-        }),
+        },
       );
-
-      clearInvalidPublicSiteAuth(response);
 
       if (response.ok) {
         setComments((prev) => {
@@ -484,9 +432,6 @@ export default function CommentSection({ blogId }) {
         });
         toast.success("Comment deleted successfully");
       } else {
-        if (response.status === 401) {
-          openAuthModal();
-        }
         const data = await response.json();
         setError(data.error || "Failed to delete comment");
         toast.error(data.error || "Failed to delete comment");
@@ -524,7 +469,7 @@ export default function CommentSection({ blogId }) {
     const normalizedAvatar = getImageUrl(trimmedAvatar);
     if (normalizedAvatar) return normalizedAvatar;
 
-    return `${BACKEND_URL}${trimmedAvatar.startsWith("/") ? "" : "/"}${trimmedAvatar}`;
+    return `${API_URL}${trimmedAvatar.startsWith("/") ? "" : "/"}${trimmedAvatar}`;
   };
 
   const getDisplayName = (comment) => {
