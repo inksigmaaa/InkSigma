@@ -35,11 +35,39 @@ const DOMAIN_STATUS_LABELS = {
 };
 
 const DOMAIN_STATUS_STYLES = {
-  pending_verification: "border border-amber-200 bg-amber-50 text-amber-700",
-  verified: "border border-blue-200 bg-blue-50 text-blue-700",
-  ssl_pending: "border border-blue-200 bg-blue-50 text-blue-700",
-  active: "border border-emerald-200 bg-emerald-50 text-emerald-700",
-  failed: "border border-red-200 bg-red-50 text-red-700",
+  pending_verification: "border-amber-200 bg-amber-50 text-amber-800",
+  verified: "border-sky-200 bg-sky-50 text-sky-800",
+  ssl_pending: "border-indigo-200 bg-indigo-50 text-indigo-800",
+  active: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  failed: "border-rose-200 bg-rose-50 text-rose-800",
+};
+
+const DOMAIN_STATUS_ACCENTS = {
+  pending_verification: {
+    dot: "bg-amber-400",
+    ring: "shadow-[0_0_0_6px_rgba(251,191,36,0.18)]",
+    hero: "from-amber-500/20 via-orange-400/10 to-transparent",
+  },
+  verified: {
+    dot: "bg-sky-400",
+    ring: "shadow-[0_0_0_6px_rgba(56,189,248,0.16)]",
+    hero: "from-sky-500/20 via-cyan-400/10 to-transparent",
+  },
+  ssl_pending: {
+    dot: "bg-indigo-400",
+    ring: "shadow-[0_0_0_6px_rgba(129,140,248,0.16)]",
+    hero: "from-indigo-500/20 via-violet-400/10 to-transparent",
+  },
+  active: {
+    dot: "bg-emerald-400",
+    ring: "shadow-[0_0_0_6px_rgba(52,211,153,0.16)]",
+    hero: "from-emerald-500/20 via-teal-400/10 to-transparent",
+  },
+  failed: {
+    dot: "bg-rose-400",
+    ring: "shadow-[0_0_0_6px_rgba(251,113,133,0.18)]",
+    hero: "from-rose-500/20 via-red-400/10 to-transparent",
+  },
 };
 
 const DOMAIN_STATUS_DESCRIPTIONS = {
@@ -68,75 +96,101 @@ const formatTimestamp = (value) => {
   }
 };
 
-function DnsRecordCard({
-  title,
-  description,
-  recordType,
-  host,
-  values,
-  onCopy,
-}) {
+function CopyButton({ value, onCopy, dark = false }) {
+  if (!value) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onCopy(value)}
+      className={
+        dark
+          ? "rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-white/80 backdrop-blur transition hover:bg-white/15 hover:text-white"
+          : "rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+      }
+    >
+      Copy
+    </button>
+  );
+}
+
+function MetricCard({ label, value, helper, onCopy }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
+        {label}
+      </div>
+      <div className="mt-3 flex items-start gap-3">
+        <div className="min-w-0 flex-1 break-all font-mono text-sm font-semibold leading-6 text-white">
+          {value || "Not assigned"}
+        </div>
+        <CopyButton value={value} onCopy={onCopy} dark />
+      </div>
+      {helper ? (
+        <p className="mt-2 text-xs leading-5 text-white/50">{helper}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function DnsRecordCard({ title, description, recordType, host, values, onCopy }) {
   if (!host || !values?.length) return null;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
-      <div className="flex flex-col gap-1">
-        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-        {description ? (
-          <p className="text-sm leading-6 text-gray-600">{description}</p>
-        ) : null}
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_20px_60px_-50px_rgba(15,23,42,0.55)]">
+      <div className="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-950">{title}</h3>
+          {description ? (
+            <p className="mt-1 text-sm leading-6 text-gray-500">{description}</p>
+          ) : null}
+        </div>
+        <span className="w-fit rounded-full border border-gray-200 bg-gray-50 px-3 py-1 font-mono text-xs font-semibold text-gray-700">
+          {recordType}
+        </span>
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-[160px,1fr]">
-        <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
-            Type
+      <div className="divide-y divide-gray-100">
+        <div className="grid gap-3 px-5 py-4 md:grid-cols-[120px,1fr,auto] md:items-center">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
+            Host / name
           </div>
-          <div className="mt-1 text-sm font-medium text-gray-900">
-            {recordType}
+          <div className="break-all font-mono text-sm font-medium text-gray-950">
+            {host}
           </div>
+          <CopyButton value={host} onCopy={onCopy} />
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
-            Host / Name
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span className="break-all text-sm font-medium text-gray-900">
-              {host}
-            </span>
-            <button
-              type="button"
-              onClick={() => onCopy(host)}
-              className="rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-100"
-            >
-              Copy
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 space-y-2">
         {values.map((value) => (
           <div
             key={`${recordType}-${value}`}
-            className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2"
+            className="grid gap-3 px-5 py-4 md:grid-cols-[120px,1fr,auto] md:items-center"
           >
-            <span className="min-w-[52px] text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
               Value
-            </span>
-            <span className="flex-1 break-all text-sm text-gray-900">
+            </div>
+            <div className="break-all font-mono text-sm font-medium text-gray-950">
               {value}
-            </span>
-            <button
-              type="button"
-              onClick={() => onCopy(value)}
-              className="rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-100"
-            >
-              Copy
-            </button>
+            </div>
+            <CopyButton value={value} onCopy={onCopy} />
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function SetupStep({ number, title, description }) {
+  return (
+    <div className="relative rounded-2xl border border-gray-200 bg-white p-4">
+      <div className="flex items-start gap-3">
+        <div className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-gray-950 text-xs font-semibold text-white">
+          {number}
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-gray-950">{title}</h3>
+          <p className="mt-1 text-sm leading-6 text-gray-500">{description}</p>
+        </div>
       </div>
     </div>
   );
@@ -236,7 +290,14 @@ export default function DomainPage() {
     (savedCustomDomain ? "Subdomain fallback" : "Subdomain only");
   const statusStyle =
     DOMAIN_STATUS_STYLES[customDomainStatus] ||
-    "border border-gray-200 bg-gray-50 text-gray-700";
+    "border-gray-200 bg-gray-50 text-gray-700";
+  const statusAccent =
+    DOMAIN_STATUS_ACCENTS[customDomainStatus] ||
+    {
+      dot: "bg-gray-400",
+      ring: "shadow-[0_0_0_6px_rgba(148,163,184,0.16)]",
+      hero: "from-gray-400/20 via-slate-400/10 to-transparent",
+    };
   const statusDescription =
     DOMAIN_STATUS_DESCRIPTIONS[customDomainStatus] ||
     "The platform subdomain remains canonical until the custom domain becomes active.";
@@ -442,153 +503,179 @@ export default function DomainPage() {
 
   return (
     <>
-      <div className="w-full min-h-screen pb-20 pt-[112px] max-md:px-4 max-md:pt-24 max-md:pb-24">
-        <div className="mx-auto max-w-[1034px] px-5 max-md:px-0">
+      <div className="relative w-full min-h-screen overflow-hidden bg-[#F7F4EE] pb-24 pt-[112px] max-md:px-4 max-md:pt-24">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_22%_10%,rgba(169,65,251,0.18),transparent_32%),radial-gradient(circle_at_78%_18%,rgba(16,185,129,0.16),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(247,244,238,0))]" />
+        <div className="relative mx-auto max-w-[1120px] px-5 max-md:px-0">
           <div className="md:pl-[195px]">
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8 max-md:rounded-xl">
-            <div className="flex flex-col gap-3 border-b border-gray-200 pb-6">
-              <h1 className="text-2xl font-semibold text-gray-900">
-                Custom Domain
-              </h1>
-              <p className="max-w-3xl text-sm leading-6 text-gray-600">
-                The publication can run on a custom public hostname, but the
-                dashboard and admin surfaces stay on the InkSigma platform
-                domain. Save the hostname, add the DNS records below, and use
-                verify to activate it.
-              </p>
-            </div>
+            <div className="overflow-hidden rounded-[30px] border border-black/10 bg-white/85 shadow-[0_30px_90px_-55px_rgba(15,23,42,0.65)] backdrop-blur max-md:rounded-2xl">
+              <div className="relative overflow-hidden bg-[#111111] px-6 py-7 text-white md:px-8 md:py-8">
+                <div className={`absolute inset-0 bg-gradient-to-br ${statusAccent.hero}`} />
+                <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full border border-white/10" />
+                <div className="absolute -bottom-24 left-16 h-64 w-64 rounded-full bg-white/[0.04] blur-3xl" />
+
+                <div className="relative">
+                  <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="max-w-2xl">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${statusStyle}`}>
+                          <span className={`h-2 w-2 rounded-full ${statusAccent.dot} ${statusAccent.ring}`} />
+                          {statusLabel}
+                        </span>
+                        <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-medium text-white/60">
+                          Control plane stays on InkSigma
+                        </span>
+                      </div>
+                      <h1 className="mt-5 text-3xl font-semibold tracking-[-0.04em] text-white md:text-4xl">
+                        Custom domain control room
+                      </h1>
+                      <p className="mt-3 max-w-xl text-sm leading-6 text-white/62 md:text-[15px]">
+                        Connect a reader-facing hostname, verify ownership, and
+                        keep the dashboard safely on the platform domain.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                      {savedCustomDomain ? (
+                        <Button
+                          type="button"
+                          onClick={handleVerifyDomain}
+                          disabled={verifying}
+                          className="rounded-full bg-white px-5 text-sm font-semibold text-gray-950 hover:bg-white/90"
+                        >
+                          {verifying ? "Checking DNS..." : "Verify now"}
+                        </Button>
+                      ) : null}
+                      {previewUrl ? (
+                        <a
+                          href={previewUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex h-10 items-center rounded-full border border-white/15 bg-white/10 px-5 text-sm font-semibold text-white transition hover:bg-white/15"
+                        >
+                          Open public site
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="mt-7 grid gap-3 md:grid-cols-2">
+                    <MetricCard
+                      label="Platform subdomain"
+                      value={currentDomain}
+                      helper="Always preserved as a fallback and redirect target."
+                      onCopy={copyToClipboard}
+                    />
+                    <MetricCard
+                      label="Canonical public host"
+                      value={effectiveCanonicalHost}
+                      helper="This is the host readers and search engines should use."
+                      onCopy={copyToClipboard}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 md:p-8">
 
             {error ? (
-              <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
                 {error}
               </div>
             ) : null}
 
-            <div className="mt-8 grid gap-6 xl:grid-cols-[1.15fr,0.85fr]">
-              <section className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+            <div className="grid gap-5 xl:grid-cols-[1.08fr,0.92fr]">
+              <section className="rounded-[24px] border border-gray-200 bg-[#FBFAF7] p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-base font-semibold text-gray-900">
-                      Current routing
+                    <h2 className="text-base font-semibold text-gray-950">
+                      Health and routing
                     </h2>
-                    <p className="mt-1 text-sm leading-6 text-gray-600">
-                      The platform subdomain is always preserved. Historical
-                      hostnames redirect to the canonical public host once the
-                      custom domain is active.
+                    <p className="mt-1 text-sm leading-6 text-gray-500">
+                      The domain only becomes canonical after ownership and DNS
+                      routing both pass.
                     </p>
                   </div>
                   <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${statusStyle}`}
+                    className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusStyle}`}
                   >
                     {statusLabel}
                   </span>
                 </div>
 
-                <div className="mt-6 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-xl border border-gray-200 bg-white p-4">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
-                      Platform subdomain
+                <div className="mt-6 grid gap-3 md:grid-cols-2">
+                  <div className="rounded-2xl border border-gray-200 bg-white p-4">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
+                      Last verified
                     </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span className="break-all text-sm font-medium text-gray-900">
-                        {currentDomain}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(currentDomain)}
-                        className="rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-100"
-                      >
-                        Copy
-                      </button>
+                    <div className="mt-2 text-sm font-semibold text-gray-950">
+                      {formatTimestamp(customDomainVerifiedAt)}
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-gray-200 bg-white p-4">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
-                      Canonical public host
+                  <div className="rounded-2xl border border-gray-200 bg-white p-4">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
+                      Last checked
                     </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span className="break-all text-sm font-medium text-gray-900">
-                        {effectiveCanonicalHost || "Not yet assigned"}
-                      </span>
-                      {effectiveCanonicalHost ? (
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(effectiveCanonicalHost)}
-                          className="rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-100"
-                        >
-                          Copy
-                        </button>
-                      ) : null}
+                    <div className="mt-2 text-sm font-semibold text-gray-950">
+                      {formatTimestamp(customDomainLastCheckedAt)}
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-900">
-                        Verification status
-                      </h3>
-                      <p className="mt-1 text-sm leading-6 text-gray-600">
-                        {statusDescription}
-                      </p>
+                <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-5">
+                  <h3 className="text-sm font-semibold text-gray-950">
+                    Current diagnosis
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-gray-500">
+                    {statusDescription}
+                  </p>
+
+                  {customDomainVerificationError ? (
+                    <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-800">
+                      {customDomainVerificationError}
                     </div>
+                  ) : null}
+
+                  <div className="mt-5 flex flex-wrap gap-3">
                     {savedCustomDomain ? (
                       <Button
                         type="button"
                         onClick={handleVerifyDomain}
                         disabled={verifying}
-                        className="bg-black text-white hover:bg-gray-800"
+                        className="rounded-full bg-gray-950 px-5 text-white hover:bg-gray-800"
                       >
-                        {verifying ? "Checking DNS..." : "Verify domain"}
+                        {verifying ? "Checking DNS..." : "Run verification"}
                       </Button>
                     ) : null}
+                    {previewUrl ? (
+                      <a
+                        href={previewUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-10 items-center rounded-full border border-gray-200 bg-white px-5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                      >
+                        Open public site
+                      </a>
+                    ) : null}
                   </div>
-
-                  {customDomainVerificationError ? (
-                    <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                      {customDomainVerificationError}
-                    </div>
-                  ) : null}
-
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
-                        Last verified
-                      </div>
-                      <div className="mt-1 text-sm text-gray-900">
-                        {formatTimestamp(customDomainVerifiedAt)}
-                      </div>
-                    </div>
-                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
-                        Last checked
-                      </div>
-                      <div className="mt-1 text-sm text-gray-900">
-                        {formatTimestamp(customDomainLastCheckedAt)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {previewUrl ? (
-                    <a
-                      href={previewUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-4 inline-flex text-sm font-medium text-black underline-offset-4 hover:underline"
-                    >
-                      Open public site
-                    </a>
-                  ) : null}
                 </div>
               </section>
 
-              <section className="rounded-xl border border-gray-200 bg-white p-5">
-                <h2 className="text-base font-semibold text-gray-900">
+              <section className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-[0_20px_60px_-50px_rgba(15,23,42,0.5)]">
+                <div className="rounded-2xl bg-[#111111] p-5 text-white">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
+                    Domain control
+                  </div>
+                  <h2 className="mt-3 text-xl font-semibold tracking-[-0.03em]">
                   {savedCustomDomain ? "Update custom domain" : "Add custom domain"}
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-gray-600">
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-white/55">
+                    Save the exact hostname readers should type. Verification
+                    runs separately so DNS propagation never blocks editing.
+                  </p>
+                </div>
+
+                <p className="mt-5 text-sm leading-6 text-gray-500">
                   Enter the exact hostname readers should visit. You can use a
                   root domain such as <span className="font-medium">example.com</span>
                   {" "}or a subdomain such as{" "}
@@ -596,7 +683,7 @@ export default function DomainPage() {
                 </p>
 
                 <div className="mt-5 space-y-2">
-                  <label className="block text-sm font-medium text-gray-900">
+                  <label className="block text-sm font-semibold text-gray-950">
                     Custom domain
                   </label>
                   <Input
@@ -608,7 +695,7 @@ export default function DomainPage() {
                         ? setEditDomain(event.target.value)
                         : setCustomDomain(event.target.value)
                     }
-                    className="w-full"
+                    className="h-12 rounded-xl border-gray-200 bg-gray-50 px-4 font-mono text-sm shadow-none focus-visible:ring-gray-950"
                   />
                 </div>
 
@@ -620,7 +707,7 @@ export default function DomainPage() {
                       saving ||
                       !(savedCustomDomain ? editDomain.trim() : customDomain.trim())
                     }
-                    className="bg-black text-white hover:bg-gray-800"
+                    className="rounded-full bg-gray-950 px-5 text-white hover:bg-gray-800"
                   >
                     {saving ? "Saving..." : "Save domain"}
                   </Button>
@@ -630,14 +717,14 @@ export default function DomainPage() {
                       type="button"
                       onClick={() => setShowRevertConfirmation(true)}
                       disabled={saving}
-                      className="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="rounded-full border border-gray-200 px-5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Revert to subdomain
                     </button>
                   ) : null}
                 </div>
 
-                <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-800">
+                <div className="mt-6 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm leading-6 text-sky-900">
                   Dashboard access remains on the platform domain. Changing the
                   custom domain only affects the public publication host, SEO
                   canonical URLs, redirects, and reader-facing traffic.
@@ -647,17 +734,22 @@ export default function DomainPage() {
 
             <section
               id="instructions"
-              className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-5"
+              className="mt-6 rounded-[24px] border border-gray-200 bg-[#FBFAF7] p-5 md:p-6"
             >
-              <div className="flex flex-col gap-2">
-                <h2 className="text-base font-semibold text-gray-900">
-                  DNS setup
-                </h2>
-                <p className="text-sm leading-6 text-gray-600">
-                  Save the domain first, add the DNS records shown here in your
-                  registrar or DNS provider, wait for propagation, and then run
-                  verify from this page.
-                </p>
+              <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
+                    DNS setup
+                  </div>
+                  <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-gray-950">
+                    Records to publish
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500">
+                    Add these records in your DNS provider, wait for propagation,
+                    then run verification. Use CNAME for subdomains and A/AAAA
+                    records for apex domains.
+                  </p>
+                </div>
               </div>
 
               {savedCustomDomain ? (
@@ -690,55 +782,44 @@ export default function DomainPage() {
                   />
 
                   {!verificationRecord && !cnameTargets.length && !ipTargets.length ? (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
                       No DNS targets are configured on the server yet. Set
                       `CUSTOM_DOMAIN_CNAME_TARGET` or
                       `CUSTOM_DOMAIN_IP_TARGET`, then reload this page.
                     </div>
                   ) : null}
 
-                  <div className="rounded-xl border border-gray-200 bg-white p-5">
-                    <h3 className="text-sm font-semibold text-gray-900">
+                  <div className="rounded-[24px] border border-gray-200 bg-white p-5">
+                    <h3 className="text-sm font-semibold text-gray-950">
                       Recommended rollout
                     </h3>
                     <div className="mt-4 grid gap-3 md:grid-cols-3">
-                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
-                          Step 1
-                        </div>
-                        <p className="mt-1 text-sm leading-6 text-gray-700">
-                          Add the TXT record first so ownership verification can
-                          succeed independently of routing.
-                        </p>
-                      </div>
-                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
-                          Step 2
-                        </div>
-                        <p className="mt-1 text-sm leading-6 text-gray-700">
-                          Add either the CNAME target for a subdomain or the A /
-                          AAAA targets for the root domain.
-                        </p>
-                      </div>
-                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
-                          Step 3
-                        </div>
-                        <p className="mt-1 text-sm leading-6 text-gray-700">
-                          Wait for DNS propagation, then run verify. The custom
-                          domain becomes canonical only after activation.
-                        </p>
-                      </div>
+                      <SetupStep
+                        number="1"
+                        title="Verify ownership"
+                        description="Add the TXT record first so ownership can pass independently of routing."
+                      />
+                      <SetupStep
+                        number="2"
+                        title="Point traffic"
+                        description="Add the CNAME target for a subdomain or A/AAAA targets for a root domain."
+                      />
+                      <SetupStep
+                        number="3"
+                        title="Activate"
+                        description="Wait for DNS propagation, then run verification from this page."
+                      />
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-white px-4 py-6 text-sm text-gray-600">
+                <div className="mt-6 rounded-2xl border border-dashed border-gray-300 bg-white px-5 py-8 text-sm leading-6 text-gray-500">
                   Save a custom domain first. InkSigma will generate the TXT
-                  verification record and show the routing targets here.
+                  verification record and show routing targets here.
                 </div>
               )}
             </section>
+              </div>
             </div>
           </div>
         </div>
