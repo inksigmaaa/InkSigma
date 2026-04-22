@@ -34,6 +34,8 @@ import {
   Loader2,
   Mic,
   Square,
+  Sparkles,
+  Check,
   X,
 } from "lucide-react";
 import { ImageModal } from "./ImageModal";
@@ -125,6 +127,30 @@ const isTitleOrDescriptionFocused = () => {
   return Boolean(
     activeElement?.matches?.("input.title-input, input.desc-input"),
   );
+};
+
+const escapeHtml = (value) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+const textToEditorContent = (text) => {
+  const normalized = text.trim();
+  if (!normalized) return "";
+
+  if (!/\n/.test(normalized)) {
+    return escapeHtml(normalized);
+  }
+
+  return normalized
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
+    .join("");
 };
 
 const normalizeImageUrl = (url, forStorage = false) => {
@@ -1672,6 +1698,15 @@ export const TiptapEditor = memo(function TiptapEditor({
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [voiceState, setVoiceState] = useState("idle");
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [aiToolbar, setAiToolbar] = useState({
+    visible: false,
+    top: 0,
+    left: 0,
+    text: "",
+    range: null,
+  });
+  const [aiState, setAiState] = useState("idle");
+  const [aiSuggestion, setAiSuggestion] = useState(null);
 
   const dropdownKeys = [
     "heading",
@@ -1706,6 +1741,7 @@ export const TiptapEditor = memo(function TiptapEditor({
   const recordingTimerRef = useRef(null);
   const shouldTranscribeRecordingRef = useRef(false);
   const voiceAbortControllerRef = useRef(null);
+  const aiAbortControllerRef = useRef(null);
   const suppressNextVoiceClickRef = useRef(false);
 
   useEffect(() => {
@@ -1885,6 +1921,69 @@ export const TiptapEditor = memo(function TiptapEditor({
   }, [editor, currentFont]);
 
   useEffect(() => {
+    if (!editor) return;
+
+    const updateAiToolbar = () => {
+      if (aiState === "loading") {
+        return;
+      }
+
+      if (aiSuggestion) {
+        setAiToolbar((current) =>
+          current.visible ? { ...current, visible: false } : current,
+        );
+        return;
+      }
+
+      const { from, to, empty } = editor.state.selection;
+      const selectedText = editor.state.doc.textBetween(from, to, "\n\n").trim();
+
+      if (empty || !selectedText) {
+        setAiToolbar((current) =>
+          current.visible ? { ...current, visible: false } : current,
+        );
+        return;
+      }
+
+      try {
+        const start = editor.view.coordsAtPos(from);
+        const end = editor.view.coordsAtPos(to);
+        const toolbarWidth = 180;
+        const left = Math.min(
+          Math.max((start.left + end.right) / 2 - toolbarWidth / 2, 12),
+          window.innerWidth - toolbarWidth - 12,
+        );
+        const top = Math.max(Math.min(start.top, end.top) - 52, 12);
+
+        setAiToolbar({
+          visible: true,
+          top,
+          left,
+          text: selectedText,
+          range: { from, to },
+        });
+      } catch {
+        setAiToolbar((current) =>
+          current.visible ? { ...current, visible: false } : current,
+        );
+      }
+    };
+
+    updateAiToolbar();
+    editor.on("selectionUpdate", updateAiToolbar);
+    editor.on("transaction", updateAiToolbar);
+    window.addEventListener("scroll", updateAiToolbar, true);
+    window.addEventListener("resize", updateAiToolbar);
+
+    return () => {
+      editor.off("selectionUpdate", updateAiToolbar);
+      editor.off("transaction", updateAiToolbar);
+      window.removeEventListener("scroll", updateAiToolbar, true);
+      window.removeEventListener("resize", updateAiToolbar);
+    };
+  }, [aiState, aiSuggestion, editor]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       const isAnyOpen = Object.values(dropdownState).some((d) => d.isOpen);
       if (!isAnyOpen) return;
@@ -1944,6 +2043,72 @@ export const TiptapEditor = memo(function TiptapEditor({
     },
     [editor],
   );
+
+  const runFixGrammar = useCallback(async () => {
+    if (aiState === "loading" || !aiToolbar.text || !aiToolbar.range) return;
+
+    setAiState("loading");
+    setAiSuggestion(null);
+
+    const abortController = new AbortController();
+    aiAbortControllerRef.current = abortController;
+
+    try {
+      const response = await fetch(createApiUrl("/api/writing-assistant"), {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "fix_grammar",
+          text: aiToolbar.text,
+        }),
+        signal: abortController.signal,
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Writing assistant failed.");
+      }
+
+      if (!data?.text?.trim()) {
+        throw new Error("No suggestion was returned.");
+      }
+
+      setAiSuggestion({
+        original: aiToolbar.text,
+        text: data.text.trim(),
+        range: aiToolbar.range,
+      });
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        toast.error(error?.message || "Writing assistant failed.");
+      }
+    } finally {
+      if (aiAbortControllerRef.current === abortController) {
+        aiAbortControllerRef.current = null;
+      }
+      setAiState("idle");
+    }
+  }, [aiState, aiToolbar.range, aiToolbar.text]);
+
+  const acceptAiSuggestion = useCallback(() => {
+    if (!editor || !aiSuggestion?.text || !aiSuggestion?.range) return;
+
+    editor
+      .chain()
+      .focus()
+      .insertContentAt(aiSuggestion.range, textToEditorContent(aiSuggestion.text))
+      .run();
+    setAiSuggestion(null);
+    toast.success("Grammar fix applied.");
+  }, [aiSuggestion, editor]);
+
+  const rejectAiSuggestion = useCallback(() => {
+    setAiSuggestion(null);
+  }, []);
 
   const stopRecordingTimer = useCallback(() => {
     if (recordingTimerRef.current) {
@@ -2168,6 +2333,7 @@ export const TiptapEditor = memo(function TiptapEditor({
   useEffect(() => {
     return () => {
       voiceAbortControllerRef.current?.abort();
+      aiAbortControllerRef.current?.abort();
       resetVoiceSession();
     };
   }, [resetVoiceSession]);
@@ -2232,6 +2398,36 @@ export const TiptapEditor = memo(function TiptapEditor({
           pointer-events: none;
         }
 
+        .ai-selection-toolbar {
+          position: fixed;
+          z-index: 120;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          height: 40px;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          background: #ffffff;
+          padding: 4px;
+          box-shadow:
+            0 14px 30px rgba(15, 23, 42, 0.12),
+            0 4px 12px rgba(15, 23, 42, 0.08);
+        }
+
+        .ai-suggestion-review {
+          position: fixed;
+          right: 24px;
+          bottom: 196px;
+          z-index: 121;
+          width: 380px;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          background: #ffffff;
+          box-shadow:
+            0 18px 38px rgba(15, 23, 42, 0.12),
+            0 5px 16px rgba(15, 23, 42, 0.08);
+        }
+
         .voice-dictation-shell {
           pointer-events: auto;
           display: flex;
@@ -2293,12 +2489,26 @@ export const TiptapEditor = memo(function TiptapEditor({
           .voice-dictation-control {
             right: calc(50% - 444px);
           }
+
+          .ai-suggestion-review {
+            right: calc(50% - 444px);
+          }
         }
 
         @media (max-width: 767px) {
           .voice-dictation-control {
             right: 18px;
             bottom: 118px;
+          }
+
+          .ai-selection-toolbar {
+            max-width: calc(100vw - 24px);
+          }
+
+          .ai-suggestion-review {
+            right: 18px;
+            bottom: 184px;
+            width: calc(100vw - 36px);
           }
 
           .voice-dictation-shell[data-state="recording"] {
@@ -2320,6 +2530,70 @@ export const TiptapEditor = memo(function TiptapEditor({
       />
 
       <EditorContent editor={editor} />
+
+      {aiToolbar.visible && (
+        <div
+          className="ai-selection-toolbar"
+          style={{ top: `${aiToolbar.top}px`, left: `${aiToolbar.left}px` }}
+          onMouseDown={(event) => event.preventDefault()}
+        >
+          <Button
+            type="button"
+            className="h-8 rounded-md bg-gray-900 px-3 text-sm text-white shadow-none hover:bg-gray-800 disabled:cursor-not-allowed"
+            onClick={runFixGrammar}
+            disabled={aiState === "loading"}
+          >
+            {aiState === "loading" ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-1.5 h-4 w-4" />
+            )}
+            Fix Grammar
+          </Button>
+        </div>
+      )}
+
+      {aiSuggestion && (
+        <div className="ai-suggestion-review p-3">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-gray-900">Fix Grammar</p>
+            <button
+              type="button"
+              className="rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              onClick={rejectAiSuggestion}
+              aria-label="Reject grammar suggestion"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="grid gap-2">
+            <div className="max-h-28 overflow-y-auto rounded-md border border-red-100 bg-red-50 p-3 text-sm leading-6 text-red-900 line-through decoration-red-500">
+              {aiSuggestion.original}
+            </div>
+            <div className="max-h-40 overflow-y-auto rounded-md border border-emerald-100 bg-emerald-50 p-3 text-sm leading-6 text-emerald-950">
+              {aiSuggestion.text}
+            </div>
+          </div>
+          <div className="mt-3 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-9 rounded-md px-3 text-sm shadow-none"
+              onClick={rejectAiSuggestion}
+            >
+              Reject
+            </Button>
+            <Button
+              type="button"
+              className="h-9 rounded-md bg-gray-900 px-3 text-sm text-white shadow-none hover:bg-gray-800"
+              onClick={acceptAiSuggestion}
+            >
+              <Check className="mr-1.5 h-4 w-4" />
+              Accept
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="voice-dictation-control">
         <div className="voice-dictation-shell" data-state={voiceState}>
