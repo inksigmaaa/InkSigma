@@ -99,6 +99,20 @@ const VOICE_MIME_TYPES = [
 const VOICE_CONTENT_ONLY_MESSAGE =
   "Voice dictation is only for article content, not the title or short description.";
 
+const AI_ACTIONS = [
+  { key: "fix_grammar", label: "Fix Grammar" },
+  { key: "improve_writing", label: "Improve Writing" },
+  { key: "make_shorter", label: "Make Shorter" },
+  { key: "make_longer", label: "Make Longer" },
+  { key: "fix_transcription", label: "Fix Voice Text" },
+];
+
+const AI_TONE_ACTIONS = [
+  { key: "tone_formal", label: "Formal" },
+  { key: "tone_casual", label: "Casual" },
+  { key: "tone_professional", label: "Professional" },
+];
+
 const getSupportedVoiceMimeType = () => {
   if (typeof MediaRecorder === "undefined") return "";
   return (
@@ -1948,7 +1962,7 @@ export const TiptapEditor = memo(function TiptapEditor({
       try {
         const start = editor.view.coordsAtPos(from);
         const end = editor.view.coordsAtPos(to);
-        const toolbarWidth = 180;
+        const toolbarWidth = Math.min(680, window.innerWidth - 24);
         const left = Math.min(
           Math.max((start.left + end.right) / 2 - toolbarWidth / 2, 12),
           window.innerWidth - toolbarWidth - 12,
@@ -2044,7 +2058,7 @@ export const TiptapEditor = memo(function TiptapEditor({
     [editor],
   );
 
-  const runFixGrammar = useCallback(async () => {
+  const runAiAction = useCallback(async (actionKey, actionLabel) => {
     if (aiState === "loading" || !aiToolbar.text || !aiToolbar.range) return;
 
     setAiState("loading");
@@ -2061,7 +2075,7 @@ export const TiptapEditor = memo(function TiptapEditor({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          action: "fix_grammar",
+          action: actionKey,
           text: aiToolbar.text,
         }),
         signal: abortController.signal,
@@ -2081,6 +2095,7 @@ export const TiptapEditor = memo(function TiptapEditor({
         original: aiToolbar.text,
         text: data.text.trim(),
         range: aiToolbar.range,
+        label: data.label || actionLabel,
       });
     } catch (error) {
       if (error?.name !== "AbortError") {
@@ -2103,7 +2118,7 @@ export const TiptapEditor = memo(function TiptapEditor({
       .insertContentAt(aiSuggestion.range, textToEditorContent(aiSuggestion.text))
       .run();
     setAiSuggestion(null);
-    toast.success("Grammar fix applied.");
+    toast.success("AI suggestion applied.");
   }, [aiSuggestion, editor]);
 
   const rejectAiSuggestion = useCallback(() => {
@@ -2404,7 +2419,6 @@ export const TiptapEditor = memo(function TiptapEditor({
           display: flex;
           align-items: center;
           gap: 6px;
-          height: 40px;
           border: 1px solid #e5e7eb;
           border-radius: 8px;
           background: #ffffff;
@@ -2412,6 +2426,19 @@ export const TiptapEditor = memo(function TiptapEditor({
           box-shadow:
             0 14px 30px rgba(15, 23, 42, 0.12),
             0 4px 12px rgba(15, 23, 42, 0.08);
+        }
+
+        .ai-selection-scroll {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          max-width: min(680px, calc(100vw - 24px));
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+
+        .ai-selection-scroll::-webkit-scrollbar {
+          display: none;
         }
 
         .ai-suggestion-review {
@@ -2537,26 +2564,50 @@ export const TiptapEditor = memo(function TiptapEditor({
           style={{ top: `${aiToolbar.top}px`, left: `${aiToolbar.left}px` }}
           onMouseDown={(event) => event.preventDefault()}
         >
-          <Button
-            type="button"
-            className="h-8 rounded-md bg-gray-900 px-3 text-sm text-white shadow-none hover:bg-gray-800 disabled:cursor-not-allowed"
-            onClick={runFixGrammar}
-            disabled={aiState === "loading"}
-          >
-            {aiState === "loading" ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="mr-1.5 h-4 w-4" />
-            )}
-            Fix Grammar
-          </Button>
+          <div className="ai-selection-scroll">
+            {AI_ACTIONS.map((action, index) => (
+              <Button
+                key={action.key}
+                type="button"
+                className={`h-8 rounded-md px-3 text-sm shadow-none disabled:cursor-not-allowed ${
+                  index === 0
+                    ? "bg-gray-900 text-white hover:bg-gray-800"
+                    : "border border-gray-200 bg-white text-gray-800 hover:bg-gray-100"
+                }`}
+                onClick={() => runAiAction(action.key, action.label)}
+                disabled={aiState === "loading"}
+              >
+                {index === 0 &&
+                  (aiState === "loading" ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-1.5 h-4 w-4" />
+                  ))}
+                {action.label}
+              </Button>
+            ))}
+            <span className="mx-1 h-5 w-px shrink-0 bg-gray-200" />
+            {AI_TONE_ACTIONS.map((action) => (
+              <Button
+                key={action.key}
+                type="button"
+                className="h-8 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-800 shadow-none hover:bg-gray-100 disabled:cursor-not-allowed"
+                onClick={() => runAiAction(action.key, action.label)}
+                disabled={aiState === "loading"}
+              >
+                {action.label}
+              </Button>
+            ))}
+          </div>
         </div>
       )}
 
       {aiSuggestion && (
         <div className="ai-suggestion-review p-3">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-gray-900">Fix Grammar</p>
+            <p className="text-sm font-semibold text-gray-900">
+              {aiSuggestion.label || "AI Suggestion"}
+            </p>
             <button
               type="button"
               className="rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
