@@ -117,6 +117,14 @@ const formatVoiceDuration = (seconds) => {
   ).padStart(2, "0")}`;
 };
 
+const isTitleOrDescriptionFocused = () => {
+  if (typeof document === "undefined") return false;
+  const activeElement = document.activeElement;
+  return Boolean(
+    activeElement?.matches?.("input.title-input, input.desc-input"),
+  );
+};
+
 const normalizeImageUrl = (url, forStorage = false) => {
   if (!url) return url;
 
@@ -2046,6 +2054,13 @@ export const TiptapEditor = memo(function TiptapEditor({
 
   const startVoiceRecording = useCallback(async () => {
     if (voiceState !== "idle") return;
+
+    if (isTitleOrDescriptionFocused()) {
+      toast.error(
+        "Voice dictation is only for article content, not the title or short description.",
+      );
+      return;
+    }
 
     if (
       typeof navigator === "undefined" ||
