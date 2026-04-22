@@ -2206,37 +2206,52 @@ export const TiptapEditor = memo(function TiptapEditor({
           pointer-events: auto;
           display: flex;
           justify-content: flex-end;
+          align-items: center;
           overflow: hidden;
+          height: 56px;
+          border: 1px solid #e5e7eb;
+          border-radius: 9999px;
+          background: #ffffff;
+          box-shadow:
+            0 14px 30px rgba(15, 23, 42, 0.08),
+            0 4px 12px rgba(15, 23, 42, 0.08);
           transform-origin: right center;
           transition:
-            width 220ms ease,
-            opacity 180ms ease,
-            transform 220ms ease;
-          will-change: width, opacity, transform;
+            width 360ms cubic-bezier(0.22, 1, 0.36, 1),
+            border-color 260ms ease,
+            box-shadow 260ms ease,
+            opacity 220ms ease,
+            transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: width, border-color, box-shadow, opacity, transform;
         }
 
         .voice-dictation-shell[data-state="idle"],
         .voice-dictation-shell[data-state="requesting"] {
-          width: 48px;
+          width: 56px;
         }
 
         .voice-dictation-shell[data-state="recording"] {
-          width: 188px;
+          width: 196px;
+          border-color: #fecaca;
+          box-shadow:
+            0 16px 34px rgba(239, 68, 68, 0.1),
+            0 5px 14px rgba(15, 23, 42, 0.08);
         }
 
         .voice-dictation-shell[data-state="transcribing"] {
-          width: 158px;
+          width: 172px;
         }
 
         .voice-dictation-panel {
           flex-shrink: 0;
-          animation: voice-panel-in 180ms ease both;
+          height: 56px;
+          animation: voice-panel-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
         @keyframes voice-panel-in {
           from {
             opacity: 0;
-            transform: translateX(10px);
+            transform: translateX(14px);
           }
           to {
             opacity: 1;
@@ -2257,7 +2272,7 @@ export const TiptapEditor = memo(function TiptapEditor({
           }
 
           .voice-dictation-shell[data-state="recording"] {
-            width: 176px;
+            width: 188px;
           }
         }
       `}</style>
@@ -2279,7 +2294,7 @@ export const TiptapEditor = memo(function TiptapEditor({
       <div className="voice-dictation-control">
         <div className="voice-dictation-shell" data-state={voiceState}>
           {voiceState === "recording" ? (
-            <div className="voice-dictation-panel flex items-center gap-2 rounded-full border border-red-200 bg-white px-3 py-2 shadow-lg">
+            <div className="voice-dictation-panel flex items-center gap-2 px-4">
               <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
               <span className="min-w-[44px] text-sm font-medium text-gray-900">
                 {recordingTimeLabel}
@@ -2288,7 +2303,7 @@ export const TiptapEditor = memo(function TiptapEditor({
                 type="button"
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8 rounded-full border-0 text-gray-900 hover:bg-gray-100"
+                className="h-9 w-9 rounded-full border-0 text-gray-900 shadow-none hover:bg-gray-100"
                 onClick={stopVoiceRecording}
                 aria-label="Stop recording"
               >
@@ -2298,7 +2313,7 @@ export const TiptapEditor = memo(function TiptapEditor({
                 type="button"
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8 rounded-full border-0 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                className="h-9 w-9 rounded-full border-0 text-gray-500 shadow-none hover:bg-gray-100 hover:text-gray-900"
                 onClick={cancelVoiceRecording}
                 aria-label="Cancel recording"
               >
@@ -2306,7 +2321,7 @@ export const TiptapEditor = memo(function TiptapEditor({
               </Button>
             </div>
           ) : voiceState === "transcribing" ? (
-            <div className="voice-dictation-panel flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-lg">
+            <div className="voice-dictation-panel flex items-center gap-2 px-4 text-sm font-medium text-gray-900">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>Transcribing...</span>
             </div>
@@ -2315,7 +2330,7 @@ export const TiptapEditor = memo(function TiptapEditor({
               <Button
                 type="button"
                 size="icon"
-                className="h-12 w-12 rounded-full border border-gray-200 bg-white text-gray-900 shadow-lg hover:bg-gray-50 disabled:cursor-not-allowed"
+                className="h-14 w-14 rounded-full border-0 bg-transparent text-gray-900 shadow-none hover:bg-gray-50 disabled:cursor-not-allowed"
                 onClick={startVoiceRecording}
                 disabled={isVoiceBusy}
                 aria-label="Dictate article text"
