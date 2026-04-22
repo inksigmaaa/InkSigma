@@ -1819,6 +1819,7 @@ export const TiptapEditor = memo(function TiptapEditor({
     visible: false,
     top: 0,
     left: 0,
+    width: 0,
     text: "",
     range: null,
     popup: null,
@@ -2071,19 +2072,38 @@ export const TiptapEditor = memo(function TiptapEditor({
       try {
         const start = editor.view.coordsAtPos(from);
         const end = editor.view.coordsAtPos(to);
-        const toolbarWidth = Math.min(680, window.innerWidth - 24);
+        const viewportPadding = 12;
+        const editorBounds = editor.view.dom.getBoundingClientRect();
+        const editorLeft = Math.max(editorBounds.left, viewportPadding);
+        const editorRight = Math.min(
+          editorBounds.right,
+          window.innerWidth - viewportPadding,
+        );
+        const editorWidth = Math.max(editorRight - editorLeft, 0);
+        const toolbarRenderedWidth =
+          typeof document !== "undefined"
+            ? document
+                .querySelector(".ai-selection-toolbar")
+                ?.getBoundingClientRect().width
+            : 0;
+        const toolbarWidth = Math.min(
+          Math.max(toolbarRenderedWidth || 620, 320),
+          editorWidth || window.innerWidth - viewportPadding * 2,
+        );
+        const selectionCenter = Math.min(
+          Math.max((start.left + end.right) / 2, editorLeft + toolbarWidth / 2),
+          editorRight - toolbarWidth / 2,
+        );
         const left = Math.min(
-          Math.max((start.left + end.right) / 2 - toolbarWidth / 2, 12),
-          window.innerWidth - toolbarWidth - 12,
+          Math.max(selectionCenter - toolbarWidth / 2, editorLeft),
+          Math.max(editorLeft, editorRight - toolbarWidth),
         );
         const top = Math.max(Math.min(start.top, end.top) - 52, 12);
-        const viewportPadding = 12;
         const popupGap = 12;
         const popupWidth = Math.min(
           AI_POPUP_WIDTH,
           window.innerWidth - viewportPadding * 2,
         );
-        const selectionCenter = (start.left + end.right) / 2;
         const selectionLeft = Math.min(start.left, end.left);
         const selectionRight = Math.max(start.right, end.right);
         const selectionTop = Math.min(start.top, end.top);
@@ -2125,6 +2145,7 @@ export const TiptapEditor = memo(function TiptapEditor({
           visible: true,
           top,
           left,
+          width: toolbarWidth,
           text: selectedText,
           range: { from, to },
           popup: {
@@ -3005,6 +3026,8 @@ export const TiptapEditor = memo(function TiptapEditor({
           border-radius: 8px;
           background: #ffffff;
           padding: 4px;
+          max-width: calc(100vw - 24px);
+          overflow: hidden;
           box-shadow:
             0 14px 30px rgba(15, 23, 42, 0.12),
             0 4px 12px rgba(15, 23, 42, 0.08);
@@ -3014,7 +3037,7 @@ export const TiptapEditor = memo(function TiptapEditor({
           display: flex;
           align-items: center;
           gap: 4px;
-          max-width: min(680px, calc(100vw - 24px));
+          max-width: 100%;
           overflow-x: auto;
           scrollbar-width: none;
         }
@@ -3291,7 +3314,11 @@ export const TiptapEditor = memo(function TiptapEditor({
       {aiToolbar.visible && (
         <div
           className="ai-selection-toolbar"
-          style={{ top: `${aiToolbar.top}px`, left: `${aiToolbar.left}px` }}
+          style={{
+            top: `${aiToolbar.top}px`,
+            left: `${aiToolbar.left}px`,
+            width: `${aiToolbar.width}px`,
+          }}
           onMouseDown={(event) => event.preventDefault()}
         >
           <div className="ai-selection-scroll">
