@@ -94,6 +94,8 @@ const VOICE_MIME_TYPES = [
   "audio/webm",
   "audio/mp4",
 ];
+const VOICE_CONTENT_ONLY_MESSAGE =
+  "Voice dictation is only for article content, not the title or short description.";
 
 const getSupportedVoiceMimeType = () => {
   if (typeof MediaRecorder === "undefined") return "";
@@ -1704,6 +1706,7 @@ export const TiptapEditor = memo(function TiptapEditor({
   const recordingTimerRef = useRef(null);
   const shouldTranscribeRecordingRef = useRef(false);
   const voiceAbortControllerRef = useRef(null);
+  const suppressNextVoiceClickRef = useRef(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -2053,12 +2056,15 @@ export const TiptapEditor = memo(function TiptapEditor({
   }, [resetVoiceSession]);
 
   const startVoiceRecording = useCallback(async () => {
+    if (suppressNextVoiceClickRef.current) {
+      suppressNextVoiceClickRef.current = false;
+      return;
+    }
+
     if (voiceState !== "idle") return;
 
     if (isTitleOrDescriptionFocused()) {
-      toast.error(
-        "Voice dictation is only for article content, not the title or short description.",
-      );
+      toast.error(VOICE_CONTENT_ONLY_MESSAGE);
       return;
     }
 
@@ -2149,6 +2155,15 @@ export const TiptapEditor = memo(function TiptapEditor({
     transcribeRecording,
     voiceState,
   ]);
+
+  const handleVoiceButtonMouseDown = useCallback((event) => {
+    if (!isTitleOrDescriptionFocused()) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    suppressNextVoiceClickRef.current = true;
+    toast.error(VOICE_CONTENT_ONLY_MESSAGE);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -2347,6 +2362,7 @@ export const TiptapEditor = memo(function TiptapEditor({
                 size="icon"
                 className="h-14 w-14 rounded-full border-0 bg-transparent text-gray-900 shadow-none hover:bg-gray-50 disabled:cursor-not-allowed"
                 onClick={startVoiceRecording}
+                onMouseDown={handleVoiceButtonMouseDown}
                 disabled={isVoiceBusy}
                 aria-label="Dictate article text"
               >
