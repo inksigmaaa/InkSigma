@@ -2191,6 +2191,26 @@ export const TiptapEditor = memo(function TiptapEditor({
           border-bottom: none !important;
           outline: none !important;
         }
+
+        .voice-dictation-control {
+          position: fixed;
+          right: 24px;
+          bottom: 128px;
+          z-index: 90;
+        }
+
+        @media (min-width: 1280px) {
+          .voice-dictation-control {
+            right: calc(50% - 444px);
+          }
+        }
+
+        @media (max-width: 767px) {
+          .voice-dictation-control {
+            right: 18px;
+            bottom: 118px;
+          }
+        }
       `}</style>
 
       <EditorToolbar
@@ -2207,7 +2227,7 @@ export const TiptapEditor = memo(function TiptapEditor({
 
       <EditorContent editor={editor} />
 
-      <div className="absolute right-6 bottom-6 z-30">
+      <div className="voice-dictation-control">
         {voiceState === "recording" ? (
           <div className="flex items-center gap-2 rounded-full border border-red-200 bg-white px-3 py-2 shadow-lg">
             <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
