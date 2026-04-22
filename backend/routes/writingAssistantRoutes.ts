@@ -75,6 +75,54 @@ const writingActionKeys = Object.keys(writingActions) as [
   ...(keyof typeof writingActions)[],
 ];
 
+const writingActions = {
+  fix_grammar: {
+    label: "Fix Grammar",
+    instruction:
+      "Fix grammar, spelling, punctuation, and sentence structure errors in the text below. Keep meaning and tone identical. Only fix errors; do not rewrite.",
+  },
+  improve_writing: {
+    label: "Improve Writing",
+    instruction:
+      "Rewrite the text below so it flows better, reads more naturally, and has clearer word choice. Keep the same meaning and approximate length.",
+  },
+  make_shorter: {
+    label: "Make Shorter",
+    instruction:
+      "Condense the text below to be shorter. Keep all key ideas. Remove redundancy, filler words, and repeated phrasing.",
+  },
+  make_longer: {
+    label: "Make Longer",
+    instruction:
+      "Expand the text below with useful detail and smoother transitions. Stay on the same topic and do not add unsupported facts.",
+  },
+  fix_transcription: {
+    label: "Fix Voice Text",
+    instruction:
+      "The text below may be voice-to-text output. Fix missing punctuation, wrong words that sound similar, run-on sentences, missing capitalization, and filler words. Do not change the meaning.",
+  },
+  tone_formal: {
+    label: "Formal Tone",
+    instruction:
+      "Rewrite the text below in a formal tone. Keep the same meaning and only change tone and style.",
+  },
+  tone_casual: {
+    label: "Casual Tone",
+    instruction:
+      "Rewrite the text below in a casual, natural tone. Keep the same meaning and only change tone and style.",
+  },
+  tone_professional: {
+    label: "Professional Tone",
+    instruction:
+      "Rewrite the text below in a polished professional tone. Keep the same meaning and only change tone and style.",
+  },
+} as const;
+
+const writingActionKeys = Object.keys(writingActions) as [
+  keyof typeof writingActions,
+  ...(keyof typeof writingActions)[],
+];
+
 const requestSchema = z.object({
   action: z.enum(writingActionKeys),
   text: z.string().trim().min(1).max(5_000),
