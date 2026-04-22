@@ -2197,6 +2197,51 @@ export const TiptapEditor = memo(function TiptapEditor({
           right: 24px;
           bottom: 128px;
           z-index: 90;
+          display: flex;
+          justify-content: flex-end;
+          pointer-events: none;
+        }
+
+        .voice-dictation-shell {
+          pointer-events: auto;
+          display: flex;
+          justify-content: flex-end;
+          overflow: hidden;
+          transform-origin: right center;
+          transition:
+            width 220ms ease,
+            opacity 180ms ease,
+            transform 220ms ease;
+          will-change: width, opacity, transform;
+        }
+
+        .voice-dictation-shell[data-state="idle"],
+        .voice-dictation-shell[data-state="requesting"] {
+          width: 48px;
+        }
+
+        .voice-dictation-shell[data-state="recording"] {
+          width: 188px;
+        }
+
+        .voice-dictation-shell[data-state="transcribing"] {
+          width: 158px;
+        }
+
+        .voice-dictation-panel {
+          flex-shrink: 0;
+          animation: voice-panel-in 180ms ease both;
+        }
+
+        @keyframes voice-panel-in {
+          from {
+            opacity: 0;
+            transform: translateX(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
         }
 
         @media (min-width: 1280px) {
@@ -2209,6 +2254,10 @@ export const TiptapEditor = memo(function TiptapEditor({
           .voice-dictation-control {
             right: 18px;
             bottom: 118px;
+          }
+
+          .voice-dictation-shell[data-state="recording"] {
+            width: 176px;
           }
         }
       `}</style>
@@ -2228,56 +2277,58 @@ export const TiptapEditor = memo(function TiptapEditor({
       <EditorContent editor={editor} />
 
       <div className="voice-dictation-control">
-        {voiceState === "recording" ? (
-          <div className="flex items-center gap-2 rounded-full border border-red-200 bg-white px-3 py-2 shadow-lg">
-            <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-            <span className="min-w-[44px] text-sm font-medium text-gray-900">
-              {recordingTimeLabel}
-            </span>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 rounded-full border-0 text-gray-900 hover:bg-gray-100"
-              onClick={stopVoiceRecording}
-              aria-label="Stop recording"
-            >
-              <Square className="h-4 w-4 fill-current" />
-            </Button>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 rounded-full border-0 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-              onClick={cancelVoiceRecording}
-              aria-label="Cancel recording"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        ) : voiceState === "transcribing" ? (
-          <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-lg">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Transcribing...</span>
-          </div>
-        ) : (
-          <Tooltip text="Dictate article text">
-            <Button
-              type="button"
-              size="icon"
-              className="h-12 w-12 rounded-full border border-gray-200 bg-white text-gray-900 shadow-lg hover:bg-gray-50 disabled:cursor-not-allowed"
-              onClick={startVoiceRecording}
-              disabled={isVoiceBusy}
-              aria-label="Dictate article text"
-            >
-              {voiceState === "requesting" ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Mic className="h-5 w-5" />
-              )}
-            </Button>
-          </Tooltip>
-        )}
+        <div className="voice-dictation-shell" data-state={voiceState}>
+          {voiceState === "recording" ? (
+            <div className="voice-dictation-panel flex items-center gap-2 rounded-full border border-red-200 bg-white px-3 py-2 shadow-lg">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+              <span className="min-w-[44px] text-sm font-medium text-gray-900">
+                {recordingTimeLabel}
+              </span>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 rounded-full border-0 text-gray-900 hover:bg-gray-100"
+                onClick={stopVoiceRecording}
+                aria-label="Stop recording"
+              >
+                <Square className="h-4 w-4 fill-current" />
+              </Button>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 rounded-full border-0 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                onClick={cancelVoiceRecording}
+                aria-label="Cancel recording"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : voiceState === "transcribing" ? (
+            <div className="voice-dictation-panel flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-lg">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Transcribing...</span>
+            </div>
+          ) : (
+            <Tooltip text="Dictate article text">
+              <Button
+                type="button"
+                size="icon"
+                className="h-12 w-12 rounded-full border border-gray-200 bg-white text-gray-900 shadow-lg hover:bg-gray-50 disabled:cursor-not-allowed"
+                onClick={startVoiceRecording}
+                disabled={isVoiceBusy}
+                aria-label="Dictate article text"
+              >
+                {voiceState === "requesting" ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Mic className="h-5 w-5" />
+                )}
+              </Button>
+            </Tooltip>
+          )}
+        </div>
       </div>
 
       {isImageModalOpen && (
