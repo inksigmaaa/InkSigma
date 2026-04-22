@@ -36,6 +36,9 @@ import {
   Square,
   Sparkles,
   Check,
+  CheckCircle2,
+  AlertTriangle,
+  RotateCcw,
   X,
 } from "lucide-react";
 import { ImageModal } from "./ImageModal";
@@ -116,6 +119,8 @@ const AI_TONE_ACTIONS = [
 const AI_REQUEST_DEBOUNCE_MS = 500;
 const AI_MIN_RECOMMENDED_CHARS = 24;
 const AI_LARGE_SELECTION_CHARS = 2500;
+const AI_POPUP_WIDTH = 480;
+const AI_POPUP_ESTIMATED_HEIGHT = 360;
 
 const getSupportedVoiceMimeType = () => {
   if (typeof MediaRecorder === "undefined") return "";
@@ -188,6 +193,81 @@ const textToEditorContent = (text) => {
       type: "paragraph",
       content: textToJsonContent(paragraph),
     }));
+};
+
+const normalizeForComparison = (text) =>
+  decodeBasicHtmlEntities(text || "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const getWordDiff = (before = "", after = "") => {
+  const oldWords = normalizeForComparison(before)
+    .split(/\s+/)
+    .filter(Boolean);
+  const newWords = normalizeForComparison(after)
+    .split(/\s+/)
+    .filter(Boolean);
+  const matrix = Array.from({ length: oldWords.length + 1 }, () =>
+    Array(newWords.length + 1).fill(0),
+  );
+
+  for (let i = oldWords.length - 1; i >= 0; i -= 1) {
+    for (let j = newWords.length - 1; j >= 0; j -= 1) {
+      matrix[i][j] =
+        oldWords[i] === newWords[j]
+          ? matrix[i + 1][j + 1] + 1
+          : Math.max(matrix[i + 1][j], matrix[i][j + 1]);
+    }
+  }
+
+  const parts = [];
+  let i = 0;
+  let j = 0;
+
+  while (i < oldWords.length && j < newWords.length) {
+    if (oldWords[i] === newWords[j]) {
+      parts.push({ type: "equal", text: oldWords[i] });
+      i += 1;
+      j += 1;
+    } else if (matrix[i + 1][j] >= matrix[i][j + 1]) {
+      parts.push({ type: "delete", text: oldWords[i] });
+      i += 1;
+    } else {
+      parts.push({ type: "insert", text: newWords[j] });
+      j += 1;
+    }
+  }
+
+  while (i < oldWords.length) {
+    parts.push({ type: "delete", text: oldWords[i] });
+    i += 1;
+  }
+
+  while (j < newWords.length) {
+    parts.push({ type: "insert", text: newWords[j] });
+    j += 1;
+  }
+
+  return parts;
+};
+
+const countDiffChanges = (parts) => {
+  let count = 0;
+  let inChange = false;
+
+  parts.forEach((part) => {
+    if (part.type === "equal") {
+      inChange = false;
+      return;
+    }
+
+    if (!inChange) {
+      count += 1;
+      inChange = true;
+    }
+  });
+
+  return count;
 };
 
 const normalizeImageUrl = (url, forStorage = false) => {
@@ -1741,9 +1821,12 @@ export const TiptapEditor = memo(function TiptapEditor({
     left: 0,
     text: "",
     range: null,
+    popup: null,
   });
   const [aiState, setAiState] = useState("idle");
   const [aiSuggestion, setAiSuggestion] = useState(null);
+  const [aiDisplayedFixCount, setAiDisplayedFixCount] = useState(0);
+  const [aiAcceptFlash, setAiAcceptFlash] = useState(false);
 
   const dropdownKeys = [
     "heading",
@@ -1781,6 +1864,7 @@ export const TiptapEditor = memo(function TiptapEditor({
   const aiAbortControllerRef = useRef(null);
   const aiLastRequestRef = useRef(null);
   const aiLastClickRef = useRef(0);
+  const aiPopupRef = useRef(null);
   const suppressNextVoiceClickRef = useRef(false);
 
   useEffect(() => {
@@ -1993,6 +2077,19 @@ export const TiptapEditor = memo(function TiptapEditor({
           window.innerWidth - toolbarWidth - 12,
         );
         const top = Math.max(Math.min(start.top, end.top) - 52, 12);
+        const popupWidth = Math.min(AI_POPUP_WIDTH, window.innerWidth - 24);
+        const selectionCenter = (start.left + end.right) / 2;
+        const selectionTop = Math.min(start.top, end.top);
+        const selectionBottom = Math.max(start.bottom, end.bottom);
+        const hasSpaceBelow =
+          selectionBottom + AI_POPUP_ESTIMATED_HEIGHT + 16 < window.innerHeight;
+        const popupTop = hasSpaceBelow
+          ? selectionBottom + 10
+          : Math.max(selectionTop - AI_POPUP_ESTIMATED_HEIGHT - 10, 12);
+        const popupLeft = Math.min(
+          Math.max(selectionCenter - popupWidth / 2, 12),
+          window.innerWidth - popupWidth - 12,
+        );
 
         setAiToolbar({
           visible: true,
@@ -2000,6 +2097,12 @@ export const TiptapEditor = memo(function TiptapEditor({
           left,
           text: selectedText,
           range: { from, to },
+          popup: {
+            top: popupTop,
+            left: popupLeft,
+            width: popupWidth,
+            placement: hasSpaceBelow ? "below" : "above",
+          },
         });
       } catch {
         setAiToolbar((current) =>
@@ -2157,6 +2260,7 @@ export const TiptapEditor = memo(function TiptapEditor({
     const requestText = options.text || aiToolbar.text;
     const requestRange = options.range || aiToolbar.range;
     const requestOriginal = options.original || requestText;
+    const requestPosition = options.position || aiToolbar.popup;
 
     if (!requestText || !requestRange) return;
 
@@ -2167,7 +2271,16 @@ export const TiptapEditor = memo(function TiptapEditor({
     aiLastClickRef.current = now;
 
     if (typeof navigator !== "undefined" && !navigator.onLine) {
-      toast.error("No connection. Please try again when you are online.");
+      setAiSuggestion({
+        original: requestOriginal,
+        text: "",
+        range: requestRange,
+        label: actionLabel,
+        status: "error",
+        error: "No internet connection",
+        actionKey,
+        position: requestPosition,
+      });
       return;
     }
 
@@ -2186,6 +2299,7 @@ export const TiptapEditor = memo(function TiptapEditor({
       text: requestText,
       original: requestOriginal,
       range: requestRange,
+      position: requestPosition,
     };
     setAiSuggestion({
       original: requestOriginal,
@@ -2194,6 +2308,7 @@ export const TiptapEditor = memo(function TiptapEditor({
       label: actionLabel,
       status: "streaming",
       actionKey,
+      position: requestPosition,
     });
 
     const abortController = new AbortController();
@@ -2235,7 +2350,7 @@ export const TiptapEditor = memo(function TiptapEditor({
           streamedText += nextText;
           setAiSuggestion((current) => ({
             ...current,
-            text: streamedText,
+            text: decodeBasicHtmlEntities(streamedText),
           }));
           return;
         }
@@ -2248,7 +2363,11 @@ export const TiptapEditor = memo(function TiptapEditor({
           setAiSuggestion((current) => ({
             ...current,
             text: finalText,
-            status: "ready",
+            status:
+              normalizeForComparison(finalText) ===
+              normalizeForComparison(requestOriginal)
+                ? "no_changes"
+                : "ready",
             label: data.label || current?.label || actionLabel,
           }));
           streamedText = finalText;
@@ -2282,7 +2401,13 @@ export const TiptapEditor = memo(function TiptapEditor({
       }
       setAiState("idle");
     }
-  }, [aiState, aiToolbar.range, aiToolbar.text, parseAiStream]);
+  }, [
+    aiState,
+    aiToolbar.popup,
+    aiToolbar.range,
+    aiToolbar.text,
+    parseAiStream,
+  ]);
 
   const acceptAiSuggestion = useCallback(() => {
     if (
@@ -2300,6 +2425,8 @@ export const TiptapEditor = memo(function TiptapEditor({
       .insertContentAt(aiSuggestion.range, textToEditorContent(aiSuggestion.text))
       .run();
     setAiSuggestion(null);
+    setAiAcceptFlash(true);
+    setTimeout(() => setAiAcceptFlash(false), 420);
     toast.success("AI suggestion applied.");
   }, [aiSuggestion, editor]);
 
@@ -2317,9 +2444,119 @@ export const TiptapEditor = memo(function TiptapEditor({
       text: lastRequest.text,
       original: lastRequest.original,
       range: lastRequest.range,
+      position: lastRequest.position,
       retry: true,
     });
   }, [runAiAction]);
+
+  const hasAiSuggestionText = Boolean(aiSuggestion?.text);
+
+  const dismissAiPopup = useCallback(
+    (confirmDiscard = false) => {
+      if (
+        confirmDiscard &&
+        hasAiSuggestionText &&
+        ["ready", "partial"].includes(aiSuggestion.status) &&
+        !window.confirm("Discard AI suggestion?")
+      ) {
+        return;
+      }
+
+      rejectAiSuggestion();
+    },
+    [aiSuggestion?.status, hasAiSuggestionText, rejectAiSuggestion],
+  );
+
+  const aiDiffParts = useMemo(
+    () => getWordDiff(aiSuggestion?.original || "", aiSuggestion?.text || ""),
+    [aiSuggestion?.original, aiSuggestion?.text],
+  );
+
+  const aiFixCount = useMemo(
+    () => countDiffChanges(aiDiffParts),
+    [aiDiffParts],
+  );
+
+  useEffect(() => {
+    if (!aiSuggestion || aiSuggestion.status !== "ready") {
+      setAiDisplayedFixCount(0);
+      return;
+    }
+
+    let current = 0;
+    const target = aiFixCount;
+    if (!target) return;
+
+    const timer = setInterval(() => {
+      current += 1;
+      setAiDisplayedFixCount(Math.min(current, target));
+      if (current >= target) clearInterval(timer);
+    }, 80);
+
+    return () => clearInterval(timer);
+  }, [aiFixCount, aiSuggestion]);
+
+  useEffect(() => {
+    if (aiSuggestion?.status !== "no_changes") return;
+
+    const timer = setTimeout(() => {
+      setAiSuggestion(null);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [aiSuggestion?.status]);
+
+  useEffect(() => {
+    if (!aiSuggestion?.status) return;
+
+    const popup = aiPopupRef.current;
+    const getFocusable = () =>
+      Array.from(
+        popup?.querySelectorAll(
+          'button:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) || [],
+      );
+
+    const focusables = getFocusable();
+    focusables[0]?.focus?.();
+
+    const handlePointerDown = (event) => {
+      if (popup?.contains(event.target)) return;
+      dismissAiPopup(true);
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        dismissAiPopup(true);
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const items = getFocusable();
+      if (!items.length) return;
+
+      const first = items[0];
+      const last = items[items.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [aiSuggestion?.status, dismissAiPopup]);
 
   const stopRecordingTimer = useCallback(() => {
     if (recordingTimerRef.current) {
@@ -2637,18 +2874,142 @@ export const TiptapEditor = memo(function TiptapEditor({
           display: none;
         }
 
+        .ai-editor-accept-flash {
+          animation: ai-editor-flash 420ms ease-out;
+        }
+
         .ai-suggestion-review {
           position: fixed;
-          right: 24px;
-          bottom: 196px;
           z-index: 121;
-          width: 380px;
+          width: 480px;
           border: 1px solid #e5e7eb;
-          border-radius: 8px;
+          border-radius: 12px;
           background: #ffffff;
+          color: #1a1a2e;
+          overflow: hidden;
           box-shadow:
-            0 18px 38px rgba(15, 23, 42, 0.12),
-            0 5px 16px rgba(15, 23, 42, 0.08);
+            0 20px 60px rgba(0, 0, 0, 0.15),
+            0 6px 18px rgba(15, 23, 42, 0.08);
+          animation: ai-popup-in 150ms ease-out both;
+        }
+
+        .ai-popup-mobile-handle {
+          display: none;
+        }
+
+        .ai-popup-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          min-height: 48px;
+          background: #1a1a2e;
+          color: #ffffff;
+          padding: 0 14px;
+        }
+
+        .ai-popup-body {
+          max-height: min(440px, 60vh);
+          overflow-y: auto;
+          padding: 14px;
+        }
+
+        .ai-popup-label {
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+
+        .ai-diff-box {
+          margin-top: 6px;
+          border-radius: 8px;
+          border: 1px solid #e2e8f0;
+          padding: 10px;
+          font-size: 14px;
+          line-height: 1.7;
+          color: #334155;
+        }
+
+        .ai-diff-delete {
+          border-radius: 4px;
+          background: rgba(255, 77, 77, 0.13);
+          color: #ef4444;
+          text-decoration: line-through;
+          text-decoration-color: #ef4444;
+        }
+
+        .ai-diff-insert {
+          border-radius: 4px;
+          background: rgba(34, 197, 94, 0.13);
+          color: #22c55e;
+        }
+
+        .ai-change-badge {
+          display: inline-flex;
+          align-items: center;
+          border-radius: 9999px;
+          background: #f1f5f9;
+          color: #475569;
+          padding: 4px 9px;
+          font-size: 12px;
+          font-weight: 600;
+        }
+
+        .ai-popup-skeleton {
+          height: 92px;
+          border-radius: 8px;
+          background: linear-gradient(
+            90deg,
+            #f1f5f9 0%,
+            #e2e8f0 45%,
+            #f1f5f9 90%
+          );
+          background-size: 220% 100%;
+          animation: ai-shimmer 1.2s ease-in-out infinite;
+        }
+
+        .ai-spin-sparkle {
+          animation: ai-spin 900ms linear infinite;
+        }
+
+        @keyframes ai-popup-in {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes ai-shimmer {
+          from {
+            background-position: 120% 0;
+          }
+          to {
+            background-position: -120% 0;
+          }
+        }
+
+        @keyframes ai-spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes ai-editor-flash {
+          0% {
+            background: rgba(34, 197, 94, 0);
+          }
+          35% {
+            background: rgba(34, 197, 94, 0.14);
+          }
+          100% {
+            background: rgba(34, 197, 94, 0);
+          }
         }
 
         .voice-dictation-shell {
@@ -2712,10 +3073,6 @@ export const TiptapEditor = memo(function TiptapEditor({
           .voice-dictation-control {
             right: calc(50% - 444px);
           }
-
-          .ai-suggestion-review {
-            right: calc(50% - 444px);
-          }
         }
 
         @media (max-width: 767px) {
@@ -2729,9 +3086,34 @@ export const TiptapEditor = memo(function TiptapEditor({
           }
 
           .ai-suggestion-review {
-            right: 18px;
-            bottom: 184px;
-            width: calc(100vw - 36px);
+            left: 0 !important;
+            right: 0;
+            top: auto !important;
+            bottom: 0;
+            width: 100vw !important;
+            max-height: 60vh;
+            border-radius: 16px 16px 0 0;
+            animation: ai-bottom-sheet-in 150ms ease-out both;
+          }
+
+          .ai-popup-body {
+            max-height: calc(60vh - 48px);
+            padding-top: 18px;
+          }
+
+          .ai-popup-mobile-handle {
+            display: block;
+          }
+
+          @keyframes ai-bottom-sheet-in {
+            from {
+              opacity: 0;
+              transform: translateY(24px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
           }
 
           .voice-dictation-shell[data-state="recording"] {
@@ -2752,7 +3134,9 @@ export const TiptapEditor = memo(function TiptapEditor({
         onImageInsert={handleImageInsert}
       />
 
-      <EditorContent editor={editor} />
+      <div className={aiAcceptFlash ? "ai-editor-accept-flash" : ""}>
+        <EditorContent editor={editor} />
+      </div>
 
       {aiToolbar.visible && (
         <div
@@ -2812,75 +3196,200 @@ export const TiptapEditor = memo(function TiptapEditor({
       )}
 
       {aiSuggestion && (
-        <div className="ai-suggestion-review p-3">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-gray-900">
-                {aiSuggestion.label || "AI Suggestion"}
+        <div
+          ref={aiPopupRef}
+          className="ai-suggestion-review"
+          style={{
+            top: `${aiSuggestion.position?.top ?? 120}px`,
+            left: `${aiSuggestion.position?.left ?? 24}px`,
+            width: `${aiSuggestion.position?.width ?? AI_POPUP_WIDTH}px`,
+          }}
+          role="dialog"
+          aria-label={aiSuggestion.label || "AI writing suggestion"}
+          aria-live="polite"
+        >
+          <div className="ai-popup-mobile-handle mx-auto mt-2 h-1.5 w-10 rounded-full bg-slate-300" />
+          <div className="ai-popup-header">
+            <div className="flex min-w-0 items-center gap-2">
+              <Sparkles
+                className={`h-4 w-4 shrink-0 ${
+                  aiSuggestion.status === "streaming" ? "ai-spin-sparkle" : ""
+                }`}
+              />
+              <p className="truncate text-sm font-semibold">
+                {aiSuggestion.label || "Grammar Fix"}
               </p>
-              {aiSuggestion.status === "streaming" && (
-                <p className="text-xs text-gray-500">Generating...</p>
-              )}
-              {aiSuggestion.status === "partial" && (
-                <p className="text-xs text-amber-700">
-                  Streaming stopped. You can retry or accept the partial result.
-                </p>
-              )}
-              {aiSuggestion.status === "error" && (
-                <p className="text-xs text-red-700">
-                  {aiSuggestion.error || "AI could not improve this text."}
-                </p>
-              )}
             </div>
             <button
               type="button"
-              className="rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-              onClick={rejectAiSuggestion}
-              aria-label="Dismiss AI suggestion"
+              className="rounded-md p-1 text-white/80 hover:bg-white/10 hover:text-white"
+              onClick={() => dismissAiPopup(true)}
+              aria-label="Close AI suggestion"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="grid gap-2">
-            <div className="max-h-28 overflow-y-auto rounded-md border border-red-100 bg-red-50 p-3 text-sm leading-6 text-red-900 line-through decoration-red-500">
-              {aiSuggestion.original}
-            </div>
-            <div className="max-h-40 overflow-y-auto rounded-md border border-emerald-100 bg-emerald-50 p-3 text-sm leading-6 text-emerald-950">
-              {aiSuggestion.text || (
-                <span className="inline-flex items-center gap-2 text-emerald-800">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Generating suggestion...
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="mt-3 flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-9 rounded-md px-3 text-sm shadow-none"
-              onClick={rejectAiSuggestion}
-            >
-              {aiSuggestion.status === "streaming" ? "Cancel" : "Reject"}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-9 rounded-md px-3 text-sm shadow-none"
-              onClick={retryAiSuggestion}
-              disabled={aiState === "loading"}
-            >
-              Retry
-            </Button>
-            <Button
-              type="button"
-              className="h-9 rounded-md bg-gray-900 px-3 text-sm text-white shadow-none hover:bg-gray-800"
-              onClick={acceptAiSuggestion}
-              disabled={!aiSuggestion.text || aiSuggestion.status === "streaming"}
-            >
-              <Check className="mr-1.5 h-4 w-4" />
-              Accept
-            </Button>
+
+          <div className="ai-popup-body">
+            {aiSuggestion.status === "streaming" && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 text-[#1a1a2e]">
+                  <Sparkles className="ai-spin-sparkle h-5 w-5" />
+                  <span className="text-sm font-semibold">
+                    Analyzing your text...
+                  </span>
+                </div>
+                <div className="ai-popup-skeleton" />
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-9 rounded-lg px-3 text-sm text-slate-600 shadow-none"
+                    onClick={rejectAiSuggestion}
+                  >
+                    <X className="mr-1.5 h-4 w-4" />
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {aiSuggestion.status === "no_changes" && (
+              <div className="flex min-h-[190px] flex-col items-center justify-center gap-3 text-center">
+                <CheckCircle2 className="h-12 w-12 text-[#22c55e]" />
+                <p className="text-base font-semibold text-[#1a1a2e]">
+                  Looks great! No grammar issues found.
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-9 rounded-lg px-3 text-sm text-slate-600 shadow-none"
+                  onClick={rejectAiSuggestion}
+                >
+                  <X className="mr-1.5 h-4 w-4" />
+                  Close
+                </Button>
+              </div>
+            )}
+
+            {aiSuggestion.status === "error" && (
+              <div className="flex min-h-[190px] flex-col items-center justify-center gap-3 text-center">
+                <AlertTriangle className="h-12 w-12 text-[#ef4444]" />
+                <div>
+                  <p className="text-base font-semibold text-[#1a1a2e]">
+                    Something went wrong. Please try again.
+                  </p>
+                  <p className="mt-1 text-sm text-[#64748b]">
+                    {aiSuggestion.error || "AI could not improve this text."}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 shadow-none"
+                    onClick={retryAiSuggestion}
+                    disabled={aiState === "loading"}
+                  >
+                    <RotateCcw className="mr-1.5 h-4 w-4" />
+                    Retry
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-9 rounded-lg px-3 text-sm text-slate-600 shadow-none"
+                    onClick={rejectAiSuggestion}
+                  >
+                    <X className="mr-1.5 h-4 w-4" />
+                    Close
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {["ready", "partial"].includes(aiSuggestion.status) && (
+              <div className="space-y-4">
+                <div>
+                  <p className="ai-popup-label">Before</p>
+                  <div className="ai-diff-box">
+                    {aiDiffParts
+                      .filter((part) => part.type !== "insert")
+                      .map((part, index) => (
+                        <span
+                          key={`${part.type}-before-${index}`}
+                          className={
+                            part.type === "delete" ? "ai-diff-delete" : ""
+                          }
+                        >
+                          {part.text}
+                          {" "}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="ai-popup-label">After</p>
+                  <div className="ai-diff-box">
+                    {aiDiffParts
+                      .filter((part) => part.type !== "delete")
+                      .map((part, index) => (
+                        <span
+                          key={`${part.type}-after-${index}`}
+                          className={
+                            part.type === "insert" ? "ai-diff-insert" : ""
+                          }
+                        >
+                          {part.text}
+                          {" "}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+
+                {aiSuggestion.status === "partial" && (
+                  <p className="text-xs text-amber-700">
+                    Streaming stopped. You can retry or accept the partial result.
+                  </p>
+                )}
+
+                <div className="ai-change-badge">
+                  Changes: {aiDisplayedFixCount}{" "}
+                  {aiDisplayedFixCount === 1 ? "fix" : "fixes"} found
+                </div>
+
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button
+                    type="button"
+                    className="h-9 rounded-lg bg-[#22c55e] px-3 text-sm text-white shadow-none transition-transform hover:scale-[1.02] hover:bg-[#16a34a]"
+                    onClick={acceptAiSuggestion}
+                    disabled={!aiSuggestion.text}
+                  >
+                    <Check className="mr-1.5 h-4 w-4" />
+                    Accept
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-9 rounded-lg border border-[#ef4444] px-3 text-sm text-[#ef4444] shadow-none hover:bg-red-50"
+                    onClick={rejectAiSuggestion}
+                  >
+                    <X className="mr-1.5 h-4 w-4" />
+                    Discard
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-9 rounded-lg px-3 text-sm text-slate-600 shadow-none"
+                    onClick={retryAiSuggestion}
+                    disabled={aiState === "loading"}
+                  >
+                    <RotateCcw className="mr-1.5 h-4 w-4" />
+                    Retry
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
