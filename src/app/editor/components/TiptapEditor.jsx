@@ -31,14 +31,20 @@ import {
   AlignCenter,
   AlignRight,
   AlignJustify,
+  Loader2,
+  Mic,
+  Square,
+  X,
 } from "lucide-react";
 import { ImageModal } from "./ImageModal";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip as ShadTooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 const FONT_OPTIONS = [
   "Arial",
@@ -80,6 +86,35 @@ const createApiUrl = (relativePath) => {
     ? relativePath
     : `/${relativePath}`;
   return `${normalizedBase}${normalizedPath}`;
+};
+
+const VOICE_MAX_RECORDING_SECONDS = 300;
+const VOICE_MIME_TYPES = [
+  "audio/webm;codecs=opus",
+  "audio/webm",
+  "audio/mp4",
+];
+
+const getSupportedVoiceMimeType = () => {
+  if (typeof MediaRecorder === "undefined") return "";
+  return (
+    VOICE_MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type)) || ""
+  );
+};
+
+const getVoiceFileExtension = (mimeType) => {
+  if (mimeType.includes("mp4")) return "m4a";
+  if (mimeType.includes("wav")) return "wav";
+  if (mimeType.includes("ogg")) return "ogg";
+  return "webm";
+};
+
+const formatVoiceDuration = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(
+    remainingSeconds,
+  ).padStart(2, "0")}`;
 };
 
 const normalizeImageUrl = (url, forStorage = false) => {
@@ -1625,6 +1660,8 @@ export const TiptapEditor = memo(function TiptapEditor({
   const [isMounted, setIsMounted] = useState(false);
   const [currentFont, setCurrentFont] = useState("Roboto");
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [voiceState, setVoiceState] = useState("idle");
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
 
   const dropdownKeys = [
     "heading",
@@ -1653,6 +1690,12 @@ export const TiptapEditor = memo(function TiptapEditor({
 
   const initialContentSetRef = useRef(false);
   const editorRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const mediaRecorderRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const recordingTimerRef = useRef(null);
+  const shouldTranscribeRecordingRef = useRef(false);
+  const voiceAbortControllerRef = useRef(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -1891,6 +1934,214 @@ export const TiptapEditor = memo(function TiptapEditor({
     [editor],
   );
 
+  const stopRecordingTimer = useCallback(() => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  }, []);
+
+  const stopMediaStream = useCallback(() => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+  }, []);
+
+  const resetVoiceSession = useCallback(() => {
+    stopRecordingTimer();
+    stopMediaStream();
+    audioChunksRef.current = [];
+    shouldTranscribeRecordingRef.current = false;
+    mediaRecorderRef.current = null;
+    setRecordingSeconds(0);
+  }, [stopMediaStream, stopRecordingTimer]);
+
+  const insertTranscript = useCallback(
+    (text) => {
+      const transcript = text.trim();
+      if (!editor || !transcript) return;
+
+      editor.chain().focus().insertContent(transcript).run();
+    },
+    [editor],
+  );
+
+  const transcribeRecording = useCallback(
+    async (audioBlob) => {
+      if (!audioBlob?.size) {
+        toast.error("No voice was recorded.");
+        setVoiceState("idle");
+        return;
+      }
+
+      const abortController = new AbortController();
+      voiceAbortControllerRef.current = abortController;
+      setVoiceState("transcribing");
+
+      try {
+        const mimeType = audioBlob.type || "audio/webm";
+        const extension = getVoiceFileExtension(mimeType);
+        const audioFile = new File(
+          [audioBlob],
+          `voice-recording.${extension}`,
+          { type: mimeType },
+        );
+        const formData = new FormData();
+        formData.append("audio", audioFile);
+
+        const response = await fetch(createApiUrl("/api/transcriptions"), {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+          signal: abortController.signal,
+        });
+
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(data?.error || "Transcription failed.");
+        }
+
+        if (!data?.text?.trim()) {
+          throw new Error("No speech was detected in the recording.");
+        }
+
+        insertTranscript(data.text);
+        toast.success("Transcript inserted.");
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          toast.error(error?.message || "Transcription failed.");
+        }
+      } finally {
+        if (voiceAbortControllerRef.current === abortController) {
+          voiceAbortControllerRef.current = null;
+        }
+        setVoiceState("idle");
+      }
+    },
+    [insertTranscript],
+  );
+
+  const stopVoiceRecording = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state === "inactive") return;
+
+    shouldTranscribeRecordingRef.current = true;
+    recorder.stop();
+  }, []);
+
+  const cancelVoiceRecording = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    shouldTranscribeRecordingRef.current = false;
+
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+      return;
+    }
+
+    resetVoiceSession();
+    setVoiceState("idle");
+  }, [resetVoiceSession]);
+
+  const startVoiceRecording = useCallback(async () => {
+    if (voiceState !== "idle") return;
+
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices?.getUserMedia ||
+      typeof MediaRecorder === "undefined"
+    ) {
+      toast.error("Voice recording is not supported in this browser.");
+      return;
+    }
+
+    setVoiceState("requesting");
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      });
+      const mimeType = getSupportedVoiceMimeType();
+      const recorder = new MediaRecorder(
+        stream,
+        mimeType ? { mimeType } : undefined,
+      );
+
+      mediaStreamRef.current = stream;
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+      shouldTranscribeRecordingRef.current = false;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data?.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onerror = () => {
+        toast.error("Voice recording failed.");
+        cancelVoiceRecording();
+      };
+
+      recorder.onstop = () => {
+        const shouldTranscribe = shouldTranscribeRecordingRef.current;
+        const chunks = [...audioChunksRef.current];
+        const recordingMimeType =
+          mimeType || chunks[0]?.type || "audio/webm";
+
+        resetVoiceSession();
+
+        if (!shouldTranscribe) {
+          setVoiceState("idle");
+          return;
+        }
+
+        transcribeRecording(
+          new Blob(chunks, {
+            type: recordingMimeType,
+          }),
+        );
+      };
+
+      recorder.start();
+      setRecordingSeconds(0);
+      setVoiceState("recording");
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((current) => {
+          const next = current + 1;
+          if (next >= VOICE_MAX_RECORDING_SECONDS) {
+            toast.info("Recording limit reached. Transcribing now.");
+            stopVoiceRecording();
+          }
+          return next;
+        });
+      }, 1000);
+    } catch (error) {
+      resetVoiceSession();
+      setVoiceState("idle");
+      toast.error(
+        error?.name === "NotAllowedError"
+          ? "Microphone permission was denied."
+          : "Could not start voice recording.",
+      );
+    }
+  }, [
+    cancelVoiceRecording,
+    resetVoiceSession,
+    stopVoiceRecording,
+    transcribeRecording,
+    voiceState,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      voiceAbortControllerRef.current?.abort();
+      resetVoiceSession();
+    };
+  }, [resetVoiceSession]);
+
   useEffect(() => {
     return () => {
       if (editor && !editor.isDestroyed) {
@@ -1926,6 +2177,10 @@ export const TiptapEditor = memo(function TiptapEditor({
     );
   }
 
+  const recordingTimeLabel = formatVoiceDuration(recordingSeconds);
+  const isVoiceBusy =
+    voiceState === "requesting" || voiceState === "transcribing";
+
   return (
     <div className="w-full relative bg-white" style={{ overflow: "visible" }}>
       <style jsx>{`
@@ -1951,6 +2206,59 @@ export const TiptapEditor = memo(function TiptapEditor({
       />
 
       <EditorContent editor={editor} />
+
+      <div className="absolute right-6 bottom-6 z-30">
+        {voiceState === "recording" ? (
+          <div className="flex items-center gap-2 rounded-full border border-red-200 bg-white px-3 py-2 shadow-lg">
+            <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+            <span className="min-w-[44px] text-sm font-medium text-gray-900">
+              {recordingTimeLabel}
+            </span>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 rounded-full border-0 text-gray-900 hover:bg-gray-100"
+              onClick={stopVoiceRecording}
+              aria-label="Stop recording"
+            >
+              <Square className="h-4 w-4 fill-current" />
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 rounded-full border-0 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              onClick={cancelVoiceRecording}
+              aria-label="Cancel recording"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : voiceState === "transcribing" ? (
+          <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-lg">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Transcribing...</span>
+          </div>
+        ) : (
+          <Tooltip text="Dictate article text">
+            <Button
+              type="button"
+              size="icon"
+              className="h-12 w-12 rounded-full border border-gray-200 bg-white text-gray-900 shadow-lg hover:bg-gray-50 disabled:cursor-not-allowed"
+              onClick={startVoiceRecording}
+              disabled={isVoiceBusy}
+              aria-label="Dictate article text"
+            >
+              {voiceState === "requesting" ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Mic className="h-5 w-5" />
+              )}
+            </Button>
+          </Tooltip>
+        )}
+      </div>
 
       {isImageModalOpen && (
         <ImageModal
