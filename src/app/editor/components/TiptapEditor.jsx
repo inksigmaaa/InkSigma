@@ -147,28 +147,47 @@ const isTitleOrDescriptionFocused = () => {
   );
 };
 
-const escapeHtml = (value) =>
+const decodeBasicHtmlEntities = (value) =>
   value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0?39;/gi, "'");
+
+const textToJsonContent = (text) => {
+  if (!text) return [];
+
+  return text
+    .split("\n")
+    .reduce((content, line, index) => {
+      if (index > 0) {
+        content.push({ type: "hardBreak" });
+      }
+      if (line) {
+        content.push({ type: "text", text: line });
+      }
+      return content;
+    }, []);
+};
 
 const textToEditorContent = (text) => {
-  const normalized = text.trim();
-  if (!normalized) return "";
+  const normalized = decodeBasicHtmlEntities(text).trim();
+  if (!normalized) return [];
 
   if (!/\n/.test(normalized)) {
-    return escapeHtml(normalized);
+    return { type: "text", text: normalized };
   }
 
   return normalized
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean)
-    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
-    .join("");
+    .map((paragraph) => ({
+      type: "paragraph",
+      content: textToJsonContent(paragraph),
+    }));
 };
 
 const normalizeImageUrl = (url, forStorage = false) => {

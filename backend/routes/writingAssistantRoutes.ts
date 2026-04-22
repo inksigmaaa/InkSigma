@@ -96,7 +96,7 @@ const decodeBasicHtmlEntities = (text: string) =>
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'");
+    .replace(/&#0?39;/gi, "'");
 
 const cleanModelText = (text: string) => {
   const withoutFence = text
