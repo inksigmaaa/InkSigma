@@ -1,6 +1,7 @@
 import express from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
+import { getRedisClient } from "../config/redis.js";
 import { AppError } from "../utils/errors.js";
 import logger from "../utils/logger.js";
 
@@ -10,6 +11,21 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 const GEMINI_FALLBACK_MODEL =
   process.env.GEMINI_FALLBACK_MODEL || "gemini-2.5-flash";
 const FALLBACK_STATUS_CODES = new Set([404, 429, 500, 502, 503, 504]);
+const AI_RATE_LIMIT_MAX = Number(process.env.AI_RATE_LIMIT_MAX || 30);
+const AI_RATE_LIMIT_WINDOW_SECONDS = Number(
+  process.env.AI_RATE_LIMIT_WINDOW_SECONDS || 60 * 60,
+);
+const AI_RATE_LIMIT_WINDOW_MS = AI_RATE_LIMIT_WINDOW_SECONDS * 1000;
+const aiLocalHits = new Map<string, { count: number; resetAt: number }>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of aiLocalHits.entries()) {
+    if (now >= entry.resetAt) {
+      aiLocalHits.delete(key);
+    }
+  }
+}, AI_RATE_LIMIT_WINDOW_MS).unref();
 
 const writingActions = {
   fix_grammar: {
@@ -62,6 +78,7 @@ const writingActionKeys = Object.keys(writingActions) as [
 const requestSchema = z.object({
   action: z.enum(writingActionKeys),
   text: z.string().trim().min(1).max(5_000),
+  stream: z.boolean().optional(),
 });
 
 type WritingActionKey = keyof typeof writingActions;
@@ -94,6 +111,70 @@ const cleanModelText = (text: string) => {
   return withoutHtml || withoutFence.trim();
 };
 
+const setAiRateLimitHeaders = (
+  res: express.Response,
+  remaining: number,
+  retryAfterSeconds = 0,
+) => {
+  res.setHeader("X-AI-RateLimit-Limit", AI_RATE_LIMIT_MAX);
+  res.setHeader("X-AI-RateLimit-Remaining", Math.max(0, remaining));
+  if (retryAfterSeconds > 0) {
+    res.setHeader("Retry-After", retryAfterSeconds);
+  }
+};
+
+const applyLocalAiRateLimit = (userId: string, res: express.Response) => {
+  const now = Date.now();
+  const entry = aiLocalHits.get(userId);
+
+  if (!entry || now >= entry.resetAt) {
+    aiLocalHits.set(userId, {
+      count: 1,
+      resetAt: now + AI_RATE_LIMIT_WINDOW_MS,
+    });
+    setAiRateLimitHeaders(res, AI_RATE_LIMIT_MAX - 1);
+    return true;
+  }
+
+  if (entry.count >= AI_RATE_LIMIT_MAX) {
+    const retryAfterSeconds = Math.max(
+      1,
+      Math.ceil((entry.resetAt - now) / 1000),
+    );
+    setAiRateLimitHeaders(res, 0, retryAfterSeconds);
+    return false;
+  }
+
+  entry.count += 1;
+  setAiRateLimitHeaders(res, AI_RATE_LIMIT_MAX - entry.count);
+  return true;
+};
+
+const applyAiRateLimit = async (req: express.Request, res: express.Response) => {
+  const userId = String(req.user?.id || req.ip || "unknown");
+  const redisClient = getRedisClient();
+
+  if (!redisClient) {
+    return applyLocalAiRateLimit(userId, res);
+  }
+
+  try {
+    const windowBucket = Math.floor(Date.now() / AI_RATE_LIMIT_WINDOW_MS);
+    const key = `ratelimit:ai-writing:${userId}:${windowBucket}`;
+    const currentCount = Number(await redisClient.incr(key));
+
+    if (currentCount === 1) {
+      await redisClient.expire(key, AI_RATE_LIMIT_WINDOW_SECONDS);
+    }
+
+    setAiRateLimitHeaders(res, AI_RATE_LIMIT_MAX - currentCount);
+    return currentCount <= AI_RATE_LIMIT_MAX;
+  } catch (error) {
+    logger.warn(error, "AI writing rate limiter failed; using local fallback");
+    return applyLocalAiRateLimit(userId, res);
+  }
+};
+
 const getGeminiText = (data: unknown) => {
   if (
     data &&
@@ -108,6 +189,24 @@ const getGeminiText = (data: unknown) => {
       .map((part) => (typeof part?.text === "string" ? part.text : ""))
       .join("")
       .trim();
+  }
+
+  return "";
+};
+
+const getGeminiChunkText = (data: unknown) => {
+  if (
+    data &&
+    typeof data === "object" &&
+    "candidates" in data &&
+    Array.isArray(data.candidates)
+  ) {
+    const parts = data.candidates[0]?.content?.parts;
+    if (!Array.isArray(parts)) return "";
+
+    return parts
+      .map((part) => (typeof part?.text === "string" ? part.text : ""))
+      .join("");
   }
 
   return "";
@@ -174,6 +273,93 @@ const requestGemini = async ({
   return { response, data, contentType };
 };
 
+const requestGeminiStream = async ({
+  apiKey,
+  model,
+  action,
+  selectedText,
+}: {
+  apiKey: string;
+  model: string;
+  action: WritingActionKey;
+  selectedText: string;
+}) => {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: buildGeminiBody({ action, selectedText }),
+    },
+  );
+
+  return response;
+};
+
+const sendSse = (
+  res: express.Response,
+  event: string,
+  data: Record<string, unknown>,
+) => {
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+};
+
+const streamGeminiToClient = async ({
+  response,
+  res,
+}: {
+  response: Response;
+  res: express.Response;
+}) => {
+  if (!response.body) {
+    throw new AppError("Writing assistant stream was empty", 502);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let fullText = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const messages = buffer.split("\n\n");
+    buffer = messages.pop() || "";
+
+    for (const message of messages) {
+      const dataLine = message
+        .split("\n")
+        .find((line) => line.startsWith("data:"));
+
+      if (!dataLine) continue;
+
+      const payload = dataLine.replace(/^data:\s*/, "");
+      if (!payload || payload === "[DONE]") continue;
+
+      let data: unknown;
+      try {
+        data = JSON.parse(payload);
+      } catch {
+        continue;
+      }
+
+      const chunkText = getGeminiChunkText(data);
+      if (!chunkText) continue;
+
+      fullText += chunkText;
+      sendSse(res, "chunk", { text: chunkText });
+    }
+  }
+
+  return cleanModelText(fullText);
+};
+
 router.post("/", requireAuth, async (req, res, next) => {
   try {
     const parsed = requestSchema.safeParse(req.body);
@@ -190,6 +376,104 @@ router.post("/", requireAuth, async (req, res, next) => {
     const selectedText = stripHtml(parsed.data.text);
     if (!selectedText) {
       throw new AppError("Selected text is empty", 400);
+    }
+
+    const allowed = await applyAiRateLimit(req, res);
+    if (!allowed) {
+      throw new AppError("AI request limit reached. Please try again later.", 429);
+    }
+
+    if (parsed.data.stream) {
+      let activeModel = GEMINI_MODEL;
+      let response = await requestGeminiStream({
+        apiKey,
+        model: activeModel,
+        action: parsed.data.action,
+        selectedText,
+      });
+
+      if (
+        !response.ok &&
+        GEMINI_FALLBACK_MODEL &&
+        GEMINI_FALLBACK_MODEL !== activeModel &&
+        FALLBACK_STATUS_CODES.has(response.status)
+      ) {
+        logger.warn(
+          {
+            status: response.status,
+            provider: "gemini",
+            model: activeModel,
+            fallbackModel: GEMINI_FALLBACK_MODEL,
+            action: parsed.data.action,
+          },
+          "Gemini writing assistant stream using fallback model",
+        );
+
+        activeModel = GEMINI_FALLBACK_MODEL;
+        response = await requestGeminiStream({
+          apiKey,
+          model: activeModel,
+          action: parsed.data.action,
+          selectedText,
+        });
+      }
+
+      if (!response.ok) {
+        logger.warn(
+          {
+            status: response.status,
+            provider: "gemini",
+            model: activeModel,
+            action: parsed.data.action,
+          },
+          "Gemini writing assistant stream request failed",
+        );
+
+        throw new AppError("Writing assistant failed. Please try again.", 502);
+      }
+
+      res.status(200);
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+      res.flushHeaders?.();
+
+      sendSse(res, "start", {
+        action: parsed.data.action,
+        label: writingActions[parsed.data.action].label,
+        provider: "gemini",
+        model: activeModel,
+      });
+
+      try {
+        const text = await streamGeminiToClient({ response, res });
+
+        if (!text) {
+          sendSse(res, "error", {
+            error: "Writing assistant returned no suggestion",
+          });
+          res.end();
+          return;
+        }
+
+        sendSse(res, "done", {
+          text,
+          action: parsed.data.action,
+          label: writingActions[parsed.data.action].label,
+          provider: "gemini",
+          model: activeModel,
+        });
+        res.end();
+        return;
+      } catch (error) {
+        logger.warn(error, "Gemini writing assistant stream interrupted");
+        sendSse(res, "error", {
+          error: "Streaming interrupted. You can retry the suggestion.",
+        });
+        res.end();
+        return;
+      }
     }
 
     let activeModel = GEMINI_MODEL;

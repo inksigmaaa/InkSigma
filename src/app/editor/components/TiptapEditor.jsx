@@ -113,6 +113,10 @@ const AI_TONE_ACTIONS = [
   { key: "tone_professional", label: "Professional" },
 ];
 
+const AI_REQUEST_DEBOUNCE_MS = 500;
+const AI_MIN_RECOMMENDED_CHARS = 24;
+const AI_LARGE_SELECTION_CHARS = 2500;
+
 const getSupportedVoiceMimeType = () => {
   if (typeof MediaRecorder === "undefined") return "";
   return (
@@ -1756,6 +1760,8 @@ export const TiptapEditor = memo(function TiptapEditor({
   const shouldTranscribeRecordingRef = useRef(false);
   const voiceAbortControllerRef = useRef(null);
   const aiAbortControllerRef = useRef(null);
+  const aiLastRequestRef = useRef(null);
+  const aiLastClickRef = useRef(0);
   const suppressNextVoiceClickRef = useRef(false);
 
   useEffect(() => {
@@ -1998,6 +2004,31 @@ export const TiptapEditor = memo(function TiptapEditor({
   }, [aiState, aiSuggestion, editor]);
 
   useEffect(() => {
+    if (!editor || aiState !== "loading") return;
+
+    const cancelAiOnEdit = ({ transaction }) => {
+      if (!transaction?.docChanged) return;
+
+      aiAbortControllerRef.current?.abort();
+      setAiState("idle");
+      setAiSuggestion((current) =>
+        current
+          ? {
+              ...current,
+              status: current.text ? "partial" : "error",
+              error: "Suggestion cancelled because the text changed.",
+            }
+          : current,
+      );
+    };
+
+    editor.on("transaction", cancelAiOnEdit);
+    return () => {
+      editor.off("transaction", cancelAiOnEdit);
+    };
+  }, [aiState, editor]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       const isAnyOpen = Object.values(dropdownState).some((d) => d.isOpen);
       if (!isAnyOpen) return;
@@ -2058,11 +2089,93 @@ export const TiptapEditor = memo(function TiptapEditor({
     [editor],
   );
 
-  const runAiAction = useCallback(async (actionKey, actionLabel) => {
-    if (aiState === "loading" || !aiToolbar.text || !aiToolbar.range) return;
+  const parseAiStream = useCallback(async (response, onEvent) => {
+    if (!response.body) {
+      const data = await response.json().catch(() => null);
+      onEvent("done", data || {});
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const messages = buffer.split("\n\n");
+      buffer = messages.pop() || "";
+
+      for (const message of messages) {
+        const lines = message.split("\n");
+        const eventLine = lines.find((line) => line.startsWith("event:"));
+        const dataLine = lines.find((line) => line.startsWith("data:"));
+        const event = eventLine?.replace(/^event:\s*/, "") || "message";
+
+        if (!dataLine) continue;
+
+        const payload = dataLine.replace(/^data:\s*/, "");
+        if (!payload) continue;
+
+        let data;
+        try {
+          data = JSON.parse(payload);
+        } catch {
+          // Ignore malformed stream fragments and keep reading.
+          continue;
+        }
+
+        onEvent(event, data);
+      }
+    }
+  }, []);
+
+  const runAiAction = useCallback(async (actionKey, actionLabel, options = {}) => {
+    if (aiState === "loading") return;
+
+    const requestText = options.text || aiToolbar.text;
+    const requestRange = options.range || aiToolbar.range;
+    const requestOriginal = options.original || requestText;
+
+    if (!requestText || !requestRange) return;
+
+    const now = Date.now();
+    if (!options.retry && now - aiLastClickRef.current < AI_REQUEST_DEBOUNCE_MS) {
+      return;
+    }
+    aiLastClickRef.current = now;
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      toast.error("No connection. Please try again when you are online.");
+      return;
+    }
+
+    if (requestText.length < AI_MIN_RECOMMENDED_CHARS) {
+      toast.info("Select at least a sentence for best results.");
+    }
+
+    if (requestText.length > AI_LARGE_SELECTION_CHARS) {
+      toast.info("Large selection may take longer.");
+    }
 
     setAiState("loading");
-    setAiSuggestion(null);
+    aiLastRequestRef.current = {
+      actionKey,
+      actionLabel,
+      text: requestText,
+      original: requestOriginal,
+      range: requestRange,
+    };
+    setAiSuggestion({
+      original: requestOriginal,
+      text: "",
+      range: requestRange,
+      label: actionLabel,
+      status: "streaming",
+      actionKey,
+    });
 
     const abortController = new AbortController();
     aiAbortControllerRef.current = abortController;
@@ -2076,29 +2189,72 @@ export const TiptapEditor = memo(function TiptapEditor({
         },
         body: JSON.stringify({
           action: actionKey,
-          text: aiToolbar.text,
+          text: requestText,
+          stream: true,
         }),
         signal: abortController.signal,
       });
 
-      const data = await response.json().catch(() => null);
-
       if (!response.ok) {
+        const data = await response.json().catch(() => null);
         throw new Error(data?.error || "Writing assistant failed.");
       }
 
-      if (!data?.text?.trim()) {
+      let streamedText = "";
+
+      await parseAiStream(response, (event, data) => {
+        if (event === "start") {
+          setAiSuggestion((current) => ({
+            ...current,
+            label: data.label || actionLabel,
+          }));
+          return;
+        }
+
+        if (event === "chunk") {
+          const nextText = typeof data.text === "string" ? data.text : "";
+          streamedText += nextText;
+          setAiSuggestion((current) => ({
+            ...current,
+            text: streamedText,
+          }));
+          return;
+        }
+
+        if (event === "done") {
+          const finalText =
+            typeof data.text === "string" && data.text.trim()
+              ? data.text.trim()
+              : streamedText.trim();
+          setAiSuggestion((current) => ({
+            ...current,
+            text: finalText,
+            status: "ready",
+            label: data.label || current?.label || actionLabel,
+          }));
+          streamedText = finalText;
+          return;
+        }
+
+        if (event === "error") {
+          throw new Error(data.error || "Writing assistant failed.");
+        }
+      });
+
+      if (!streamedText.trim()) {
         throw new Error("No suggestion was returned.");
       }
-
-      setAiSuggestion({
-        original: aiToolbar.text,
-        text: data.text.trim(),
-        range: aiToolbar.range,
-        label: data.label || actionLabel,
-      });
     } catch (error) {
       if (error?.name !== "AbortError") {
+        setAiSuggestion((current) =>
+          current
+            ? {
+                ...current,
+                status: current.text ? "partial" : "error",
+                error: error?.message || "Writing assistant failed.",
+              }
+            : current,
+        );
         toast.error(error?.message || "Writing assistant failed.");
       }
     } finally {
@@ -2107,10 +2263,17 @@ export const TiptapEditor = memo(function TiptapEditor({
       }
       setAiState("idle");
     }
-  }, [aiState, aiToolbar.range, aiToolbar.text]);
+  }, [aiState, aiToolbar.range, aiToolbar.text, parseAiStream]);
 
   const acceptAiSuggestion = useCallback(() => {
-    if (!editor || !aiSuggestion?.text || !aiSuggestion?.range) return;
+    if (
+      !editor ||
+      !aiSuggestion?.text ||
+      !aiSuggestion?.range ||
+      aiSuggestion.status === "streaming"
+    ) {
+      return;
+    }
 
     editor
       .chain()
@@ -2122,8 +2285,22 @@ export const TiptapEditor = memo(function TiptapEditor({
   }, [aiSuggestion, editor]);
 
   const rejectAiSuggestion = useCallback(() => {
+    aiAbortControllerRef.current?.abort();
     setAiSuggestion(null);
+    setAiState("idle");
   }, []);
+
+  const retryAiSuggestion = useCallback(() => {
+    const lastRequest = aiLastRequestRef.current;
+    if (!lastRequest) return;
+
+    runAiAction(lastRequest.actionKey, lastRequest.actionLabel, {
+      text: lastRequest.text,
+      original: lastRequest.original,
+      range: lastRequest.range,
+      retry: true,
+    });
+  }, [runAiAction]);
 
   const stopRecordingTimer = useCallback(() => {
     if (recordingTimerRef.current) {
@@ -2587,17 +2764,30 @@ export const TiptapEditor = memo(function TiptapEditor({
               </Button>
             ))}
             <span className="mx-1 h-5 w-px shrink-0 bg-gray-200" />
-            {AI_TONE_ACTIONS.map((action) => (
-              <Button
-                key={action.key}
-                type="button"
-                className="h-8 rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-800 shadow-none hover:bg-gray-100 disabled:cursor-not-allowed"
-                onClick={() => runAiAction(action.key, action.label)}
-                disabled={aiState === "loading"}
-              >
-                {action.label}
-              </Button>
-            ))}
+            <select
+              className="h-8 rounded-md border border-gray-200 bg-white px-2 text-sm text-gray-800 shadow-none outline-none hover:bg-gray-100 disabled:cursor-not-allowed"
+              defaultValue=""
+              disabled={aiState === "loading"}
+              onChange={(event) => {
+                const action = AI_TONE_ACTIONS.find(
+                  (item) => item.key === event.target.value,
+                );
+                event.target.value = "";
+                if (action) {
+                  runAiAction(action.key, action.label);
+                }
+              }}
+              aria-label="Change tone"
+            >
+              <option value="" disabled>
+                Change Tone
+              </option>
+              {AI_TONE_ACTIONS.map((action) => (
+                <option key={action.key} value={action.key}>
+                  {action.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       )}
@@ -2605,14 +2795,29 @@ export const TiptapEditor = memo(function TiptapEditor({
       {aiSuggestion && (
         <div className="ai-suggestion-review p-3">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-gray-900">
-              {aiSuggestion.label || "AI Suggestion"}
-            </p>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-gray-900">
+                {aiSuggestion.label || "AI Suggestion"}
+              </p>
+              {aiSuggestion.status === "streaming" && (
+                <p className="text-xs text-gray-500">Generating...</p>
+              )}
+              {aiSuggestion.status === "partial" && (
+                <p className="text-xs text-amber-700">
+                  Streaming stopped. You can retry or accept the partial result.
+                </p>
+              )}
+              {aiSuggestion.status === "error" && (
+                <p className="text-xs text-red-700">
+                  {aiSuggestion.error || "AI could not improve this text."}
+                </p>
+              )}
+            </div>
             <button
               type="button"
               className="rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
               onClick={rejectAiSuggestion}
-              aria-label="Reject grammar suggestion"
+              aria-label="Dismiss AI suggestion"
             >
               <X className="h-4 w-4" />
             </button>
@@ -2622,7 +2827,12 @@ export const TiptapEditor = memo(function TiptapEditor({
               {aiSuggestion.original}
             </div>
             <div className="max-h-40 overflow-y-auto rounded-md border border-emerald-100 bg-emerald-50 p-3 text-sm leading-6 text-emerald-950">
-              {aiSuggestion.text}
+              {aiSuggestion.text || (
+                <span className="inline-flex items-center gap-2 text-emerald-800">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating suggestion...
+                </span>
+              )}
             </div>
           </div>
           <div className="mt-3 flex justify-end gap-2">
@@ -2632,12 +2842,22 @@ export const TiptapEditor = memo(function TiptapEditor({
               className="h-9 rounded-md px-3 text-sm shadow-none"
               onClick={rejectAiSuggestion}
             >
-              Reject
+              {aiSuggestion.status === "streaming" ? "Cancel" : "Reject"}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-9 rounded-md px-3 text-sm shadow-none"
+              onClick={retryAiSuggestion}
+              disabled={aiState === "loading"}
+            >
+              Retry
             </Button>
             <Button
               type="button"
               className="h-9 rounded-md bg-gray-900 px-3 text-sm text-white shadow-none hover:bg-gray-800"
               onClick={acceptAiSuggestion}
+              disabled={!aiSuggestion.text || aiSuggestion.status === "streaming"}
             >
               <Check className="mr-1.5 h-4 w-4" />
               Accept
