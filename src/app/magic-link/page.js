@@ -62,7 +62,7 @@ function MagicLinkPage() {
               Check Your Email
             </h2>
             <p className="text-gray-700 text-sm md:text-base">
-              We've sent a magic link to <strong>{email}</strong>
+              We&apos;ve sent a magic link to <strong>{email}</strong>
             </p>
             <p className="text-xs md:text-sm text-gray-500">
               Click the link in your email to sign in.

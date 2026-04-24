@@ -136,20 +136,6 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: isSmtpConfigured(),
 
-    // Validate email before signup
-    async beforeSignUp({ email }) {
-      logger.info(`[EMAIL-VALIDATION] Validating email: ${redactEmail(email)}`);
-
-      const validation = await emailValidationService.validateEmail(email);
-      if (!validation.isValid) {
-        const errorMessage = validation.errors.join(", ");
-        logger.info(`[EMAIL-VALIDATION] Rejected: ${redactEmail(email)} - ${errorMessage}`);
-        throw new Error(errorMessage);
-      }
-
-      logger.info(`[EMAIL-VALIDATION] Approved: ${redactEmail(email)}`);
-    },
-
     sendResetPassword: async ({ user, url }) => {
       logger.info(`[BETTER-AUTH] sendResetPassword called for: ${redactEmail(user.email)}`);
       try {
@@ -175,21 +161,6 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-    // Redirect to auth-callback after verification, which handles routing to create-publication for new users
-    callbackURL: ((): string => {
-      // Use FRONTEND_URL if set (production), otherwise fall back to subdomain-based local dev URL
-      if (process.env.FRONTEND_URL) {
-        return `${process.env.FRONTEND_URL}/auth-callback`;
-      }
-      const baseDomains = getBaseDomains();
-      const dashboardSub = process.env.DASHBOARD_SUBDOMAIN || "dashboard";
-      if (baseDomains.length > 0) {
-        return `http://${dashboardSub}.${baseDomains[0]}:3000/auth-callback`;
-      }
-      return process.env.NODE_ENV === "production"
-        ? "https://inksigma.xyz/auth-callback"
-        : "http://localhost:3000/auth-callback";
-    })(),
     sendVerificationEmail: async ({ user, url, token }) => {
       logger.info(
         `[BETTER-AUTH] sendVerificationEmail called for: ${user.email}`,
@@ -225,13 +196,40 @@ export const auth = betterAuth({
           google: {
             clientId: process.env.GOOGLE_CLIENT_ID!,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-            authorization: {
-              params: {
-                prompt: "select_account",
-              },
-            },
+            prompt: "select_account",
           },
         }
       : {}),
+  },
+
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          if (!user?.email) {
+            return;
+          }
+
+          logger.info(
+            `[EMAIL-VALIDATION] Validating email: ${redactEmail(user.email)}`,
+          );
+
+          const validation = await emailValidationService.validateEmail(
+            user.email,
+          );
+          if (!validation.isValid) {
+            const errorMessage = validation.errors.join(", ");
+            logger.info(
+              `[EMAIL-VALIDATION] Rejected: ${redactEmail(user.email)} - ${errorMessage}`,
+            );
+            throw new Error(errorMessage);
+          }
+
+          logger.info(
+            `[EMAIL-VALIDATION] Approved: ${redactEmail(user.email)}`,
+          );
+        },
+      },
+    },
   },
 });

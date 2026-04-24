@@ -45,14 +45,15 @@ export default function DomainPage() {
   const [savedCustomDomain, setSavedCustomDomain] = useState("");
   const [editDomain, setEditDomain] = useState("");
   const [customDomainStatus, setCustomDomainStatus] = useState(null);
-  const [customDomainVerificationToken, setCustomDomainVerificationToken] =
-    useState("");
   const [customDomainVerificationError, setCustomDomainVerificationError] =
     useState("");
   const [customDomainVerifiedAt, setCustomDomainVerifiedAt] = useState(null);
   const [customDomainLastCheckedAt, setCustomDomainLastCheckedAt] =
     useState(null);
   const [verifying, setVerifying] = useState(false);
+  const [setupPlan, setSetupPlan] = useState(null);
+  const [setupPlanLoading, setSetupPlanLoading] = useState(false);
+  const [setupPlanError, setSetupPlanError] = useState("");
 
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingDomain, setPendingDomain] = useState("");
@@ -66,7 +67,6 @@ export default function DomainPage() {
     setSavedCustomDomain(existingCustomDomain);
     setEditDomain(existingCustomDomain);
     setCustomDomainStatus(pubData?.customDomainStatus || null);
-    setCustomDomainVerificationToken(pubData?.customDomainVerificationToken || "");
     setCustomDomainVerificationError(pubData?.customDomainVerificationError || "");
     setCustomDomainVerifiedAt(pubData?.customDomainVerifiedAt || null);
     setCustomDomainLastCheckedAt(pubData?.customDomainLastCheckedAt || null);
@@ -109,6 +109,12 @@ export default function DomainPage() {
   const currentDomain = getSubdomainDomainLabel(subdomain);
   const normalizedCurrentDomain = normalizeCustomDomain(currentDomain);
   const normalizedPublicationSubdomain = normalizeSubdomain(subdomain);
+  const normalizedDraftDomain = normalizeCustomDomain(
+    savedCustomDomain ? editDomain : customDomain,
+  );
+  const setupPlanRequestDomain = savedCustomDomain
+    ? normalizedDraftDomain || normalizeCustomDomain(savedCustomDomain)
+    : normalizedDraftDomain;
   const previewUrl = getPublicationUrl({
     subdomain,
     customDomain: savedCustomDomain,
@@ -124,12 +130,59 @@ export default function DomainPage() {
   const statusStyle =
     DOMAIN_STATUS_STYLES[customDomainStatus] ||
     "bg-gray-100 text-gray-600 border border-gray-200";
-  const verificationRecordName = savedCustomDomain
-    ? `_inksigma.${savedCustomDomain}`
-    : "";
-  const verificationRecordValue = customDomainVerificationToken
-    ? `inksigma-verification=${customDomainVerificationToken}`
-    : "";
+  const shouldShowSetupPlanCard = Boolean(
+    publicationId &&
+      (setupPlanRequestDomain || setupPlanLoading || setupPlanError || setupPlan),
+  );
+  const canVerifySavedDomain =
+    Boolean(savedCustomDomain) && setupPlan?.domain === savedCustomDomain;
+
+  useEffect(() => {
+    if (!publicationId || !setupPlanRequestDomain) {
+      setSetupPlan(null);
+      setSetupPlanError("");
+      setSetupPlanLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const apiBase = getApiBase();
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        setSetupPlanLoading(true);
+        setSetupPlanError("");
+        const response = await fetch(
+          `${apiBase}/api/publications/${publicationId}/custom-domain/setup-plan?domain=${encodeURIComponent(setupPlanRequestDomain)}`,
+          {
+            credentials: "include",
+          },
+        );
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to load DNS setup records");
+        }
+
+        if (!cancelled) {
+          setSetupPlan(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setSetupPlan(null);
+          setSetupPlanError(err.message || "Failed to load DNS setup records");
+        }
+      } finally {
+        if (!cancelled) {
+          setSetupPlanLoading(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [publicationId, setupPlanRequestDomain]);
 
   const handleSaveChanges = () => {
     const normalizedDomain = normalizeCustomDomain(customDomain);
@@ -283,11 +336,11 @@ export default function DomainPage() {
     }
   };
 
-  const copyToClipboard = async (text) => {
+  const copyToClipboard = async (text, label = "Value") => {
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
-        toast.success("Domain copied");
+        toast.success(`${label} copied`);
         return;
       }
 
@@ -301,14 +354,14 @@ export default function DomainPage() {
         textarea.select();
         document.execCommand("copy");
         document.body.removeChild(textarea);
-        toast.success("Domain copied");
+        toast.success(`${label} copied`);
         return;
       }
 
       throw new Error("Clipboard is not available");
     } catch (err) {
       console.error("Error copying domain:", err);
-      toast.error("Failed to copy domain. Please copy it manually.");
+      toast.error(`Failed to copy ${label.toLowerCase()}. Please copy it manually.`);
     }
   };
 
@@ -432,7 +485,7 @@ export default function DomainPage() {
                     {currentDomain}
                   </div>
                   <button
-                    onClick={() => copyToClipboard(currentDomain)}
+                    onClick={() => copyToClipboard(currentDomain, "Domain")}
                     style={{
                       width: "60px",
                       height: "22px",
@@ -571,6 +624,120 @@ export default function DomainPage() {
               </div>
             )}
 
+            {shouldShowSetupPlanCard && (
+              <div className="mx-auto mb-12 md:mb-20 flex w-full max-w-[447px] flex-col gap-4 rounded-lg border border-[#EDEDED] bg-white p-5 md:p-[24px_32px]">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <div
+                      className="font-semibold text-[#A4A4A4] text-[12px] max-md:text-[8px] max-md:font-normal leading-[150%]"
+                      style={{ fontFamily: "Public Sans" }}
+                    >
+                      DNS SETUP RECORDS
+                    </div>
+                    <div
+                      className="font-semibold text-[#202020] text-[16px] max-md:text-[12px] max-md:font-normal leading-[28px] break-all"
+                      style={{ fontFamily: "Public Sans" }}
+                    >
+                      {setupPlan?.domain || setupPlanRequestDomain}
+                    </div>
+                    <p className="text-[12px] leading-[18px] text-[#696969] max-md:text-[10px]">
+                      {setupPlan?.domainType === "apex"
+                        ? "Add these records for your root domain."
+                        : "Add this CNAME record for your subdomain."}
+                    </p>
+                  </div>
+                  {canVerifySavedDomain && (
+                    <Button
+                      type="button"
+                      onClick={handleVerifyDomain}
+                      disabled={verifying}
+                      className="bg-black text-white hover:bg-gray-800 min-w-[112px] text-xs h-9"
+                    >
+                      {verifying ? "Checking..." : "Verify DNS"}
+                    </Button>
+                  )}
+                </div>
+
+                {setupPlanLoading && (
+                  <div className="rounded border border-[#EAEAEA] bg-[#FAFAFA] px-4 py-3 text-sm text-[#696969]">
+                    Loading DNS records...
+                  </div>
+                )}
+
+                {setupPlanError && !setupPlanLoading && (
+                  <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {setupPlanError}
+                  </div>
+                )}
+
+                {!setupPlanLoading && setupPlan?.records?.length > 0 && (
+                  <div className="flex flex-col gap-3">
+                    {setupPlan.records.map((record, index) => {
+                      const recordKey = `${record.type}-${record.name}-${record.value}-${index}`;
+                      return (
+                        <div
+                          key={recordKey}
+                          className="rounded border border-[#EAEAEA] bg-[#FAFAFA] p-4"
+                        >
+                          <div className="mb-3 flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-white px-2.5 py-1 text-[11px] text-[#696969] border border-[#EAEAEA]">
+                              {record.role === "required"
+                                ? "Required"
+                                : "Recommended"}
+                            </span>
+                          </div>
+
+                          <div className="grid gap-3 md:grid-cols-2">
+                            {[
+                              { label: "Type", value: record.type },
+                              { label: "Host", value: record.name },
+                              { label: "Value", value: record.value },
+                              { label: "TTL", value: record.ttl },
+                            ].map((field) => (
+                              <div
+                                key={`${recordKey}-${field.label}`}
+                                className="rounded border border-[#EAEAEA] bg-white p-3"
+                              >
+                                <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#A4A4A4]">
+                                  {field.label}
+                                </div>
+                                <div className="mb-3 break-all text-[13px] text-[#202020]">
+                                  {field.value}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    copyToClipboard(field.value, `${field.label}`)
+                                  }
+                                  className="inline-flex items-center gap-1 rounded border border-[#EAEAEA] bg-[#FAFAFA] px-2.5 py-1 text-[12px] text-[#696969]"
+                                >
+                                  Copy
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {!!setupPlan?.warnings?.length && !setupPlanLoading && (
+                  <div className="space-y-2 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    {setupPlan.warnings.map((warning) => (
+                      <p key={warning}>{warning}</p>
+                    ))}
+                  </div>
+                )}
+
+                {customDomainVerificationError && savedCustomDomain && (
+                  <div className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    {customDomainVerificationError}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Divider Line */}
             <div className="border-t border-gray-200 mb-8 md:mb-12"></div>
 
@@ -597,8 +764,8 @@ export default function DomainPage() {
 
                 <p>
                   <span className="font-semibold max-md:font-normal">2.</span>{" "}
-                  Copy the IP Address that&apos;s given there by clicking the copy
-                  button
+                  Copy the DNS record type, host, and value shown above by
+                  clicking the copy buttons
                 </p>
 
                 <p>
@@ -611,9 +778,10 @@ export default function DomainPage() {
 
                 <p>
                   <span className="font-semibold max-md:font-normal">4.</span>{" "}
-                  If there&apos;s an existing A record in your domain- please click
-                  edit and remove the existing IP Address and paste the NEW
-                  copied IP Address in the respective IP/IPv4 address field
+                  If there&apos;s an existing record for the same host, edit it and
+                  replace it with the new DNS value shown above. Root domains
+                  usually need an A record, while subdomains usually need a
+                  CNAME record.
                 </p>
 
                 <p className="text-gray-600 pl-4 md:pl-4">(or)</p>
@@ -647,8 +815,7 @@ export default function DomainPage() {
 
                 <p>
                   <span className="font-semibold max-md:font-normal">6.</span>{" "}
-                  Now come back to your admin panel and click the checkbox -
-                  that you have read all the instructions and click UPDATE.
+                  Now come back to your admin panel and click VERIFY DNS.
                 </p>
 
                 <p>

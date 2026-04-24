@@ -28,6 +28,12 @@ export const byUserIdSchema = z.object({
   }),
 });
 
+export const customDomainSetupPlanSchema = byIdSchema.extend({
+  query: z.object({
+    domain: z.string().min(1).optional(),
+  }),
+});
+
 export const createPublicationSchema = z.object({
   body: z
     .object({

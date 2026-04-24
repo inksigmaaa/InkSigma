@@ -24,7 +24,9 @@ import {
 } from "../services/publicationHostnameService.js";
 import {
   buildCustomDomainLifecycleFields,
+  buildCustomDomainSetupPlan,
   verifyCustomDomainLifecycle,
+  validateCustomDomainInput,
   CUSTOM_DOMAIN_STATUS,
 } from "../services/customDomainService.js";
 import { requirePublicationRole } from "../middleware/authorization.js";
@@ -167,7 +169,12 @@ router.get(
         return res.status(400).json({ error: "Domain is required" });
       }
 
-      const normalizedDomain = String(domain).trim().toLowerCase();
+      const validation = validateCustomDomainInput(domain);
+      if (validation.valid === false) {
+        return res.status(400).json({ error: validation.error });
+      }
+
+      const normalizedDomain = validation.normalizedDomain;
       const publication = await resolvePublicationByCustomDomain(normalizedDomain);
 
       if (!publication) {
@@ -193,7 +200,12 @@ router.get(
         return res.status(400).json({ error: "Domain is required" });
       }
 
-      const normalizedDomain = String(domain).trim().toLowerCase();
+      const validation = validateCustomDomainInput(domain);
+      if (validation.valid === false) {
+        return res.status(400).json({ error: validation.error });
+      }
+
+      const normalizedDomain = validation.normalizedDomain;
       const publication = await resolvePublicationByCustomDomain(normalizedDomain);
 
       if (!publication) {
@@ -212,6 +224,48 @@ router.get(
     } catch (error) {
       logger.error(error, "Error verifying domain:");
       res.status(500).json({ error: "Failed to verify domain" });
+    }
+  },
+);
+
+router.get(
+  "/:id/custom-domain/setup-plan",
+  requireAuth,
+  validate(publicationValidator.customDomainSetupPlanSchema),
+  requirePublicationRole(["admin"], { publicationIdParam: "id" }),
+  async (req, res) => {
+    try {
+      const publicationId = parseInt(req.params.id, 10);
+      const requestedDomain =
+        typeof req.query.domain === "string" ? req.query.domain : undefined;
+
+      const [currentPublication] = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.id, publicationId))
+        .limit(1);
+
+      if (!currentPublication) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+
+      const targetDomain = requestedDomain || currentPublication.customDomain;
+      if (!targetDomain) {
+        return res.status(400).json({ error: "Domain is required" });
+      }
+
+      const plan = buildCustomDomainSetupPlan(targetDomain);
+      return res.json({
+        publicationId,
+        customDomain: currentPublication.customDomain,
+        customDomainStatus: currentPublication.customDomainStatus,
+        ...plan,
+      });
+    } catch (error: any) {
+      logger.error(error, "Error building custom domain setup plan:");
+      return res.status(400).json({
+        error: error?.message || "Failed to build custom domain setup plan",
+      });
     }
   },
 );
@@ -522,7 +576,12 @@ router.post(
       // Check custom domain availability if provided
       let normalizedCustomDomain = null;
       if (customDomain) {
-        normalizedCustomDomain = String(customDomain).trim().toLowerCase();
+        const customDomainValidation = validateCustomDomainInput(customDomain);
+        if (customDomainValidation.valid === false) {
+          return res.status(400).json({ error: customDomainValidation.error });
+        }
+
+        normalizedCustomDomain = customDomainValidation.normalizedDomain;
         const existingCustom = await db
           .select()
           .from(publication)
@@ -537,6 +596,7 @@ router.post(
         subdomain,
         customDomain: normalizedCustomDomain,
       });
+
       const customDomainLifecycle = buildCustomDomainLifecycleFields({
         nextCustomDomain: normalizedCustomDomain,
       });
@@ -670,11 +730,20 @@ router.put(
       if (name !== undefined) updateData.name = name;
       if (subdomain !== undefined)
         updateData.subdomain = subdomain.toLowerCase();
+      let normalizedIncomingCustomDomain: string | null | undefined = undefined;
       if (customDomain !== undefined) {
-        const nextCustomDomain =
-          customDomain === null || customDomain === ""
-            ? null
-            : String(customDomain).trim().toLowerCase();
+        if (customDomain === null || customDomain === "") {
+          normalizedIncomingCustomDomain = null;
+        } else {
+          const customDomainValidation = validateCustomDomainInput(customDomain);
+          if (customDomainValidation.valid === false) {
+            return res.status(400).json({ error: customDomainValidation.error });
+          }
+
+          normalizedIncomingCustomDomain = customDomainValidation.normalizedDomain;
+        }
+
+        const nextCustomDomain = normalizedIncomingCustomDomain;
         const lifecycleFields = buildCustomDomainLifecycleFields({
           currentPublication,
           nextCustomDomain,
@@ -708,10 +777,8 @@ router.put(
       }
 
       // Check custom domain availability if being changed
-      if (customDomain) {
-        const normalizedCustomDomain = String(customDomain)
-          .trim()
-          .toLowerCase();
+      if (normalizedIncomingCustomDomain) {
+        const normalizedCustomDomain = normalizedIncomingCustomDomain;
         const existingCustom = await db
           .select()
           .from(publication)
