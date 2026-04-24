@@ -119,8 +119,8 @@ const AI_TONE_ACTIONS = [
 const AI_REQUEST_DEBOUNCE_MS = 500;
 const AI_MIN_RECOMMENDED_CHARS = 24;
 const AI_LARGE_SELECTION_CHARS = 2500;
-const AI_POPUP_WIDTH = 480;
-const AI_POPUP_ESTIMATED_HEIGHT = 360;
+const AI_POPUP_WIDTH = 420;
+const AI_POPUP_ESTIMATED_HEIGHT = 320;
 
 const getSupportedVoiceMimeType = () => {
   if (typeof MediaRecorder === "undefined") return "";
@@ -1819,6 +1819,7 @@ export const TiptapEditor = memo(function TiptapEditor({
     visible: false,
     top: 0,
     left: 0,
+    width: 0,
     text: "",
     range: null,
     popup: null,
@@ -2071,37 +2072,87 @@ export const TiptapEditor = memo(function TiptapEditor({
       try {
         const start = editor.view.coordsAtPos(from);
         const end = editor.view.coordsAtPos(to);
-        const toolbarWidth = Math.min(680, window.innerWidth - 24);
+        const viewportPadding = 12;
+        const editorBounds = editor.view.dom.getBoundingClientRect();
+        const editorLeft = Math.max(editorBounds.left, viewportPadding);
+        const editorRight = Math.min(
+          editorBounds.right,
+          window.innerWidth - viewportPadding,
+        );
+        const editorWidth = Math.max(editorRight - editorLeft, 0);
+        const toolbarRenderedWidth =
+          typeof document !== "undefined"
+            ? document
+                .querySelector(".ai-selection-toolbar")
+                ?.getBoundingClientRect().width
+            : 0;
+        const toolbarWidth = Math.min(
+          Math.max(toolbarRenderedWidth || 620, 320),
+          editorWidth || window.innerWidth - viewportPadding * 2,
+        );
+        const selectionCenter = Math.min(
+          Math.max((start.left + end.right) / 2, editorLeft + toolbarWidth / 2),
+          editorRight - toolbarWidth / 2,
+        );
         const left = Math.min(
-          Math.max((start.left + end.right) / 2 - toolbarWidth / 2, 12),
-          window.innerWidth - toolbarWidth - 12,
+          Math.max(selectionCenter - toolbarWidth / 2, editorLeft),
+          Math.max(editorLeft, editorRight - toolbarWidth),
         );
         const top = Math.max(Math.min(start.top, end.top) - 52, 12);
-        const popupWidth = Math.min(AI_POPUP_WIDTH, window.innerWidth - 24);
-        const selectionCenter = (start.left + end.right) / 2;
+        const popupGap = 12;
+        const popupWidth = Math.min(
+          AI_POPUP_WIDTH,
+          window.innerWidth - viewportPadding * 2,
+        );
+        const selectionLeft = Math.min(start.left, end.left);
+        const selectionRight = Math.max(start.right, end.right);
         const selectionTop = Math.min(start.top, end.top);
         const selectionBottom = Math.max(start.bottom, end.bottom);
+        const maxPopupTop = Math.max(
+          viewportPadding,
+          window.innerHeight - AI_POPUP_ESTIMATED_HEIGHT - viewportPadding,
+        );
         const hasSpaceBelow =
           selectionBottom + AI_POPUP_ESTIMATED_HEIGHT + 16 < window.innerHeight;
-        const popupTop = hasSpaceBelow
+        const hasSpaceRight =
+          window.innerWidth - selectionRight >= popupWidth + popupGap + viewportPadding;
+        const hasSpaceLeft =
+          selectionLeft >= popupWidth + popupGap + viewportPadding;
+        let popupTop = hasSpaceBelow
           ? selectionBottom + 10
-          : Math.max(selectionTop - AI_POPUP_ESTIMATED_HEIGHT - 10, 12);
-        const popupLeft = Math.min(
-          Math.max(selectionCenter - popupWidth / 2, 12),
-          window.innerWidth - popupWidth - 12,
+          : Math.max(
+              selectionTop - AI_POPUP_ESTIMATED_HEIGHT - 10,
+              viewportPadding,
+            );
+        let popupLeft = Math.min(
+          Math.max(selectionCenter - popupWidth / 2, viewportPadding),
+          window.innerWidth - popupWidth - viewportPadding,
         );
+        let popupPlacement = hasSpaceBelow ? "below" : "above";
+
+        if (hasSpaceRight || hasSpaceLeft) {
+          popupLeft = hasSpaceRight
+            ? selectionRight + popupGap
+            : selectionLeft - popupWidth - popupGap;
+          popupTop = Math.min(
+            Math.max(selectionTop - 16, viewportPadding),
+            maxPopupTop,
+          );
+          popupPlacement = hasSpaceRight ? "right" : "left";
+        }
 
         setAiToolbar({
           visible: true,
           top,
           left,
+          width: toolbarWidth,
           text: selectedText,
           range: { from, to },
           popup: {
             top: popupTop,
             left: popupLeft,
             width: popupWidth,
-            placement: hasSpaceBelow ? "below" : "above",
+            placement: popupPlacement,
           },
         });
       } catch {
@@ -2254,6 +2305,78 @@ export const TiptapEditor = memo(function TiptapEditor({
     }
   }, []);
 
+  const getAiResponseError = useCallback(async (response) => {
+    const data = await response.json().catch(() => null);
+    const rawMessage = data?.error || data?.message || "";
+    let message = rawMessage || "Writing assistant failed.";
+
+    if (response.status === 401 || response.status === 403) {
+      message = "Your session expired. Sign in again and retry.";
+    } else if (/not configured/i.test(rawMessage)) {
+      message = "AI is not configured. Add GEMINI_API_KEY in Render.";
+    } else if (response.status === 429) {
+      message = rawMessage || "AI request limit reached. Please try again later.";
+    } else if (response.status >= 500) {
+      message =
+        rawMessage ||
+        "AI service did not respond. Check the backend logs and Gemini key.";
+    }
+
+    const error = new Error(message);
+    error.status = response.status;
+    error.rawMessage = rawMessage;
+    return error;
+  }, []);
+
+  const requestAiSuggestion = useCallback(
+    async ({ actionKey, requestText, stream, signal }) => {
+      const response = await fetch(createApiUrl("/api/writing-assistant"), {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: actionKey,
+          text: requestText,
+          stream,
+        }),
+        signal,
+      });
+
+      if (!response.ok) {
+        throw await getAiResponseError(response);
+      }
+
+      return response;
+    },
+    [getAiResponseError],
+  );
+
+  const requestAiSuggestionFallback = useCallback(
+    async ({ actionKey, requestText, signal }) => {
+      const response = await requestAiSuggestion({
+        actionKey,
+        requestText,
+        stream: false,
+        signal,
+      });
+      const data = await response.json().catch(() => null);
+      const text =
+        typeof data?.text === "string" ? decodeBasicHtmlEntities(data.text) : "";
+
+      if (!text.trim()) {
+        throw new Error("AI returned an empty suggestion.");
+      }
+
+      return {
+        text: text.trim(),
+        label: data?.label,
+      };
+    },
+    [requestAiSuggestion],
+  );
+
   const runAiAction = useCallback(async (actionKey, actionLabel, options = {}) => {
     if (aiState === "loading") return;
 
@@ -2315,25 +2438,12 @@ export const TiptapEditor = memo(function TiptapEditor({
     aiAbortControllerRef.current = abortController;
 
     try {
-      const response = await fetch(createApiUrl("/api/writing-assistant"), {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: actionKey,
-          text: requestText,
-          stream: true,
-        }),
+      const response = await requestAiSuggestion({
+        actionKey,
+        requestText,
+        stream: true,
         signal: abortController.signal,
       });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        throw new Error(data?.error || "Writing assistant failed.");
-      }
-
       let streamedText = "";
 
       await parseAiStream(response, (event, data) => {
@@ -2383,18 +2493,76 @@ export const TiptapEditor = memo(function TiptapEditor({
         throw new Error("No suggestion was returned.");
       }
     } catch (error) {
-      if (error?.name !== "AbortError") {
-        setAiSuggestion((current) =>
-          current
-            ? {
-                ...current,
-                status: current.text ? "partial" : "error",
-                error: error?.message || "Writing assistant failed.",
-              }
-            : current,
-        );
-        toast.error(error?.message || "Writing assistant failed.");
+      if (error?.name === "AbortError") {
+        return;
       }
+
+      const shouldTryFallback =
+        !error?.status || error.status === 502 || error.status === 504;
+
+      if (shouldTryFallback) {
+        try {
+          setAiSuggestion((current) =>
+            current
+              ? {
+                  ...current,
+                  error: "Live preview stopped. Retrying once...",
+                }
+              : current,
+          );
+
+          const fallback = await requestAiSuggestionFallback({
+            actionKey,
+            requestText,
+            signal: abortController.signal,
+          });
+
+          setAiSuggestion((current) => ({
+            ...current,
+            text: fallback.text,
+            status:
+              normalizeForComparison(fallback.text) ===
+              normalizeForComparison(requestOriginal)
+                ? "no_changes"
+                : "ready",
+            label: fallback.label || current?.label || actionLabel,
+            error: "",
+          }));
+          return;
+        } catch (fallbackError) {
+          if (fallbackError?.name === "AbortError") {
+            return;
+          }
+
+          setAiSuggestion((current) =>
+            current
+              ? {
+                  ...current,
+                  status: current.text ? "partial" : "error",
+                  error:
+                    fallbackError?.message ||
+                    error?.message ||
+                    "Writing assistant failed.",
+                }
+              : current,
+          );
+          toast.error(
+            fallbackError?.message || error?.message || "Writing assistant failed.",
+          );
+          return;
+        }
+      }
+
+      setAiSuggestion((current) =>
+        current
+          ? {
+              ...current,
+              status: current.text ? "partial" : "error",
+              error: error?.message || "Writing assistant failed.",
+            }
+          : current,
+      );
+      toast.error(error?.message || "Writing assistant failed.");
     } finally {
       if (aiAbortControllerRef.current === abortController) {
         aiAbortControllerRef.current = null;
@@ -2406,6 +2574,8 @@ export const TiptapEditor = memo(function TiptapEditor({
     aiToolbar.popup,
     aiToolbar.range,
     aiToolbar.text,
+    requestAiSuggestion,
+    requestAiSuggestionFallback,
     parseAiStream,
   ]);
 
@@ -2856,6 +3026,8 @@ export const TiptapEditor = memo(function TiptapEditor({
           border-radius: 8px;
           background: #ffffff;
           padding: 4px;
+          max-width: calc(100vw - 24px);
+          overflow: hidden;
           box-shadow:
             0 14px 30px rgba(15, 23, 42, 0.12),
             0 4px 12px rgba(15, 23, 42, 0.08);
@@ -2865,7 +3037,7 @@ export const TiptapEditor = memo(function TiptapEditor({
           display: flex;
           align-items: center;
           gap: 4px;
-          max-width: min(680px, calc(100vw - 24px));
+          max-width: 100%;
           overflow-x: auto;
           scrollbar-width: none;
         }
@@ -2881,15 +3053,15 @@ export const TiptapEditor = memo(function TiptapEditor({
         .ai-suggestion-review {
           position: fixed;
           z-index: 121;
-          width: 480px;
+          width: 420px;
           border: 1px solid #e5e7eb;
-          border-radius: 12px;
+          border-radius: 10px;
           background: #ffffff;
           color: #1a1a2e;
           overflow: hidden;
           box-shadow:
-            0 20px 60px rgba(0, 0, 0, 0.15),
-            0 6px 18px rgba(15, 23, 42, 0.08);
+            0 18px 42px rgba(15, 23, 42, 0.13),
+            0 5px 16px rgba(15, 23, 42, 0.08);
           animation: ai-popup-in 150ms ease-out both;
         }
 
@@ -2902,16 +3074,17 @@ export const TiptapEditor = memo(function TiptapEditor({
           align-items: center;
           justify-content: space-between;
           gap: 12px;
-          min-height: 48px;
-          background: #1a1a2e;
-          color: #ffffff;
-          padding: 0 14px;
+          min-height: 42px;
+          border-bottom: 1px solid #e2e8f0;
+          background: #f8fafc;
+          color: #0f172a;
+          padding: 0 12px;
         }
 
         .ai-popup-body {
-          max-height: min(440px, 60vh);
+          max-height: min(360px, 56vh);
           overflow-y: auto;
-          padding: 14px;
+          padding: 12px;
         }
 
         .ai-popup-label {
@@ -2924,11 +3097,11 @@ export const TiptapEditor = memo(function TiptapEditor({
 
         .ai-diff-box {
           margin-top: 6px;
-          border-radius: 8px;
+          border-radius: 7px;
           border: 1px solid #e2e8f0;
-          padding: 10px;
-          font-size: 14px;
-          line-height: 1.7;
+          padding: 9px;
+          font-size: 13px;
+          line-height: 1.6;
           color: #334155;
         }
 
@@ -2958,8 +3131,8 @@ export const TiptapEditor = memo(function TiptapEditor({
         }
 
         .ai-popup-skeleton {
-          height: 92px;
-          border-radius: 8px;
+          height: 78px;
+          border-radius: 7px;
           background: linear-gradient(
             90deg,
             #f1f5f9 0%,
@@ -3141,7 +3314,11 @@ export const TiptapEditor = memo(function TiptapEditor({
       {aiToolbar.visible && (
         <div
           className="ai-selection-toolbar"
-          style={{ top: `${aiToolbar.top}px`, left: `${aiToolbar.left}px` }}
+          style={{
+            top: `${aiToolbar.top}px`,
+            left: `${aiToolbar.left}px`,
+            width: `${aiToolbar.width}px`,
+          }}
           onMouseDown={(event) => event.preventDefault()}
         >
           <div className="ai-selection-scroll">
@@ -3222,7 +3399,7 @@ export const TiptapEditor = memo(function TiptapEditor({
             </div>
             <button
               type="button"
-              className="rounded-md p-1 text-white/80 hover:bg-white/10 hover:text-white"
+              className="rounded-md p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-900"
               onClick={() => dismissAiPopup(true)}
               aria-label="Close AI suggestion"
             >
@@ -3239,6 +3416,11 @@ export const TiptapEditor = memo(function TiptapEditor({
                     Analyzing your text...
                   </span>
                 </div>
+                {aiSuggestion.error && (
+                  <p className="text-xs font-medium text-slate-500">
+                    {aiSuggestion.error}
+                  </p>
+                )}
                 <div className="ai-popup-skeleton" />
                 <div className="flex justify-end">
                   <Button
@@ -3255,8 +3437,8 @@ export const TiptapEditor = memo(function TiptapEditor({
             )}
 
             {aiSuggestion.status === "no_changes" && (
-              <div className="flex min-h-[190px] flex-col items-center justify-center gap-3 text-center">
-                <CheckCircle2 className="h-12 w-12 text-[#22c55e]" />
+              <div className="flex min-h-[150px] flex-col items-center justify-center gap-3 text-center">
+                <CheckCircle2 className="h-10 w-10 text-[#22c55e]" />
                 <p className="text-base font-semibold text-[#1a1a2e]">
                   Looks great! No grammar issues found.
                 </p>
@@ -3273,8 +3455,8 @@ export const TiptapEditor = memo(function TiptapEditor({
             )}
 
             {aiSuggestion.status === "error" && (
-              <div className="flex min-h-[190px] flex-col items-center justify-center gap-3 text-center">
-                <AlertTriangle className="h-12 w-12 text-[#ef4444]" />
+              <div className="flex min-h-[150px] flex-col items-center justify-center gap-3 text-center">
+                <AlertTriangle className="h-10 w-10 text-[#ef4444]" />
                 <div>
                   <p className="text-base font-semibold text-[#1a1a2e]">
                     Something went wrong. Please try again.

@@ -75,54 +75,6 @@ const writingActionKeys = Object.keys(writingActions) as [
   ...(keyof typeof writingActions)[],
 ];
 
-const writingActions = {
-  fix_grammar: {
-    label: "Fix Grammar",
-    instruction:
-      "Fix grammar, spelling, punctuation, and sentence structure errors in the text below. Keep meaning and tone identical. Only fix errors; do not rewrite.",
-  },
-  improve_writing: {
-    label: "Improve Writing",
-    instruction:
-      "Rewrite the text below so it flows better, reads more naturally, and has clearer word choice. Keep the same meaning and approximate length.",
-  },
-  make_shorter: {
-    label: "Make Shorter",
-    instruction:
-      "Condense the text below to be shorter. Keep all key ideas. Remove redundancy, filler words, and repeated phrasing.",
-  },
-  make_longer: {
-    label: "Make Longer",
-    instruction:
-      "Expand the text below with useful detail and smoother transitions. Stay on the same topic and do not add unsupported facts.",
-  },
-  fix_transcription: {
-    label: "Fix Voice Text",
-    instruction:
-      "The text below may be voice-to-text output. Fix missing punctuation, wrong words that sound similar, run-on sentences, missing capitalization, and filler words. Do not change the meaning.",
-  },
-  tone_formal: {
-    label: "Formal Tone",
-    instruction:
-      "Rewrite the text below in a formal tone. Keep the same meaning and only change tone and style.",
-  },
-  tone_casual: {
-    label: "Casual Tone",
-    instruction:
-      "Rewrite the text below in a casual, natural tone. Keep the same meaning and only change tone and style.",
-  },
-  tone_professional: {
-    label: "Professional Tone",
-    instruction:
-      "Rewrite the text below in a polished professional tone. Keep the same meaning and only change tone and style.",
-  },
-} as const;
-
-const writingActionKeys = Object.keys(writingActions) as [
-  keyof typeof writingActions,
-  ...(keyof typeof writingActions)[],
-];
-
 const requestSchema = z.object({
   action: z.enum(writingActionKeys),
   text: z.string().trim().min(1).max(5_000),
@@ -258,6 +210,78 @@ const getGeminiChunkText = (data: unknown) => {
   }
 
   return "";
+};
+
+const getGeminiErrorText = (data: unknown) => {
+  if (!data) return "";
+
+  if (typeof data === "string") {
+    return data.trim().slice(0, 500);
+  }
+
+  if (typeof data === "object" && "error" in data) {
+    const error = data.error;
+
+    if (error && typeof error === "object" && "message" in error) {
+      const message = error.message;
+      return typeof message === "string" ? message.trim().slice(0, 500) : "";
+    }
+  }
+
+  return "";
+};
+
+const getGeminiFailureMessage = ({
+  status,
+  data,
+  model,
+  primaryStatus,
+}: {
+  status: number;
+  data?: unknown;
+  model: string;
+  primaryStatus?: number;
+}) => {
+  const providerMessage = getGeminiErrorText(data);
+  const suffix = providerMessage ? ` Gemini says: ${providerMessage}` : "";
+
+  if (primaryStatus === 429) {
+    return `Gemini rate limit reached for the primary model, and fallback model ${model} also failed.${suffix}`;
+  }
+
+  if (status === 429) {
+    return `Gemini rate limit reached for ${model}. Please try again later or use a key with more quota.${suffix}`;
+  }
+
+  if (status === 401 || status === 403) {
+    return `Gemini API key is invalid or not allowed for ${model}. Check GEMINI_API_KEY in Render.${suffix}`;
+  }
+
+  if (status === 404) {
+    return `Gemini model ${model} is not available. Check GEMINI_MODEL in Render.${suffix}`;
+  }
+
+  if (status === 503) {
+    return `Gemini model ${model} is temporarily unavailable. Please try again shortly.${suffix}`;
+  }
+
+  return `Gemini request failed for ${model}.${suffix}`;
+};
+
+const getGeminiClientStatus = (status: number, primaryStatus?: number) => {
+  if (primaryStatus === 429 || status === 429) return 429;
+  if (status === 401 || status === 403 || status === 404) return 503;
+  if (status === 503) return 503;
+  return 502;
+};
+
+const readGeminiFailure = async (response: Response) => {
+  const contentType = response.headers.get("content-type") || "";
+  const data = contentType.includes("application/json")
+    ? await response.json().catch(() => null)
+    : await response.text().catch(() => "");
+
+  return { data, contentType, status: response.status };
 };
 
 const buildGeminiBody = ({
@@ -439,6 +463,9 @@ router.post("/", requireAuth, async (req, res, next) => {
         action: parsed.data.action,
         selectedText,
       });
+      let primaryFailure:
+        | { status: number; data: unknown; contentType: string; model: string }
+        | null = null;
 
       if (
         !response.ok &&
@@ -446,13 +473,21 @@ router.post("/", requireAuth, async (req, res, next) => {
         GEMINI_FALLBACK_MODEL !== activeModel &&
         FALLBACK_STATUS_CODES.has(response.status)
       ) {
+        const failure = await readGeminiFailure(response);
+        primaryFailure = {
+          ...failure,
+          model: activeModel,
+        };
+
         logger.warn(
           {
-            status: response.status,
+            status: failure.status,
             provider: "gemini",
             model: activeModel,
             fallbackModel: GEMINI_FALLBACK_MODEL,
             action: parsed.data.action,
+            contentType: failure.contentType,
+            providerMessage: getGeminiErrorText(failure.data),
           },
           "Gemini writing assistant stream using fallback model",
         );
@@ -467,17 +502,32 @@ router.post("/", requireAuth, async (req, res, next) => {
       }
 
       if (!response.ok) {
+        const failure = await readGeminiFailure(response);
+        const providerMessage = getGeminiFailureMessage({
+          status: failure.status,
+          data: failure.data,
+          model: activeModel,
+          primaryStatus: primaryFailure?.status,
+        });
+
         logger.warn(
           {
-            status: response.status,
+            status: failure.status,
             provider: "gemini",
             model: activeModel,
+            primaryStatus: primaryFailure?.status,
+            primaryModel: primaryFailure?.model,
             action: parsed.data.action,
+            contentType: failure.contentType,
+            providerMessage: getGeminiErrorText(failure.data),
           },
           "Gemini writing assistant stream request failed",
         );
 
-        throw new AppError("Writing assistant failed. Please try again.", 502);
+        throw new AppError(
+          providerMessage,
+          getGeminiClientStatus(failure.status, primaryFailure?.status),
+        );
       }
 
       res.status(200);
@@ -531,6 +581,10 @@ router.post("/", requireAuth, async (req, res, next) => {
       action: parsed.data.action,
       selectedText,
     });
+    const primaryFailure =
+      !response.ok && FALLBACK_STATUS_CODES.has(response.status)
+        ? { status: response.status, data, contentType, model: activeModel }
+        : null;
 
     let text = response.ok ? cleanModelText(getGeminiText(data)) : "";
 
@@ -548,6 +602,7 @@ router.post("/", requireAuth, async (req, res, next) => {
           fallbackModel: GEMINI_FALLBACK_MODEL,
           action: parsed.data.action,
           contentType,
+          providerMessage: getGeminiErrorText(data),
         },
         "Gemini writing assistant using fallback model",
       );
@@ -563,18 +618,31 @@ router.post("/", requireAuth, async (req, res, next) => {
     }
 
     if (!response.ok) {
+      const providerMessage = getGeminiFailureMessage({
+        status: response.status,
+        data,
+        model: activeModel,
+        primaryStatus: primaryFailure?.status,
+      });
+
       logger.warn(
         {
           status: response.status,
           provider: "gemini",
           model: activeModel,
+          primaryStatus: primaryFailure?.status,
+          primaryModel: primaryFailure?.model,
           action: parsed.data.action,
           contentType,
+          providerMessage: getGeminiErrorText(data),
         },
         "Gemini writing assistant request failed",
       );
 
-      throw new AppError("Writing assistant failed. Please try again.", 502);
+      throw new AppError(
+        providerMessage,
+        getGeminiClientStatus(response.status, primaryFailure?.status),
+      );
     }
 
     if (!text) {
