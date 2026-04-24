@@ -212,51 +212,11 @@ const getGeminiChunkText = (data: unknown) => {
   return "";
 };
 
-const extractRetryAfterSeconds = (message: string) => {
-  const match = message.match(/Please retry in\s+([\d.]+)s/i);
-  if (!match) return "";
-
-  const seconds = Number(match[1]);
-  if (!Number.isFinite(seconds) || seconds <= 0) return "";
-
-  return `${Math.ceil(seconds)}s`;
-};
-
-const normalizeGeminiErrorText = (value: string) => {
-  const normalized = value
-    .replace(/^data:\s*/gm, "")
-    .replace(/\[DONE\]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!normalized) return "";
-
-  const jsonMatch = normalized.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    try {
-      const parsed = JSON.parse(jsonMatch[0]);
-      const message = parsed?.error?.message;
-      if (typeof message === "string" && message.trim()) {
-        return message.trim();
-      }
-    } catch {
-      // Fall through to string parsing below.
-    }
-  }
-
-  const messageMatch = normalized.match(/"message"\s*:\s*"([^"]+)"/i);
-  if (messageMatch?.[1]) {
-    return messageMatch[1].replace(/\\n/g, " ").trim();
-  }
-
-  return normalized;
-};
-
 const getGeminiErrorText = (data: unknown) => {
   if (!data) return "";
 
   if (typeof data === "string") {
-    return normalizeGeminiErrorText(data).slice(0, 500);
+    return data.trim().slice(0, 500);
   }
 
   if (typeof data === "object" && "error" in data) {
@@ -264,9 +224,7 @@ const getGeminiErrorText = (data: unknown) => {
 
     if (error && typeof error === "object" && "message" in error) {
       const message = error.message;
-      return typeof message === "string"
-        ? normalizeGeminiErrorText(message).slice(0, 500)
-        : "";
+      return typeof message === "string" ? message.trim().slice(0, 500) : "";
     }
   }
 
@@ -285,51 +243,29 @@ const getGeminiFailureMessage = ({
   primaryStatus?: number;
 }) => {
   const providerMessage = getGeminiErrorText(data);
-  const retryAfter = extractRetryAfterSeconds(providerMessage);
-  const retrySuffix = retryAfter ? ` Retry in about ${retryAfter}.` : "";
-  const hasBillingHint = /billing details|current quota|quota exceeded/i.test(
-    providerMessage,
-  );
-  const cleanedProviderMessage = providerMessage
-    .replace(/\* Quota exceeded[^.]*\.?/gi, "")
-    .replace(/To monitor your current usage, head to:\s*\S+/gi, "")
-    .replace(/For more information on this error, head to:\s*\S+/gi, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  const suffix = providerMessage ? ` Gemini says: ${providerMessage}` : "";
 
   if (primaryStatus === 429) {
-    if (hasBillingHint) {
-      return `Gemini quota is exhausted for both the primary model and fallback model ${model}. Enable billing or wait for quota reset.${retrySuffix}`;
-    }
-
-    return `Gemini rate limit reached for the primary model, and fallback model ${model} also failed.${retrySuffix}`;
+    return `Gemini rate limit reached for the primary model, and fallback model ${model} also failed.${suffix}`;
   }
 
   if (status === 429) {
-    if (hasBillingHint) {
-      return `Gemini quota is exhausted for ${model}. Enable billing or wait for quota reset.${retrySuffix}`;
-    }
-
-    return `Gemini rate limit reached for ${model}. Please try again later or use a key with more quota.${retrySuffix}`;
+    return `Gemini rate limit reached for ${model}. Please try again later or use a key with more quota.${suffix}`;
   }
 
   if (status === 401 || status === 403) {
-    return `Gemini API key is invalid or not allowed for ${model}. Check GEMINI_API_KEY in Render.`;
+    return `Gemini API key is invalid or not allowed for ${model}. Check GEMINI_API_KEY in Render.${suffix}`;
   }
 
   if (status === 404) {
-    return `Gemini model ${model} is not available. Check GEMINI_MODEL in Render.`;
+    return `Gemini model ${model} is not available. Check GEMINI_MODEL in Render.${suffix}`;
   }
 
   if (status === 503) {
-    return `Gemini model ${model} is temporarily unavailable. Please try again shortly.${retrySuffix}`;
+    return `Gemini model ${model} is temporarily unavailable. Please try again shortly.${suffix}`;
   }
 
-  if (cleanedProviderMessage) {
-    return `Gemini request failed for ${model}. ${cleanedProviderMessage}`;
-  }
-
-  return `Gemini request failed for ${model}.`;
+  return `Gemini request failed for ${model}.${suffix}`;
 };
 
 const getGeminiClientStatus = (status: number, primaryStatus?: number) => {
