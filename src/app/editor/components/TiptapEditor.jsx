@@ -3085,6 +3085,8 @@ export const TiptapEditor = memo(function TiptapEditor({
           max-height: min(360px, 56vh);
           overflow-y: auto;
           padding: 12px;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .ai-popup-label {
@@ -3103,6 +3105,17 @@ export const TiptapEditor = memo(function TiptapEditor({
           font-size: 13px;
           line-height: 1.6;
           color: #334155;
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        .ai-popup-message {
+          width: 100%;
+          max-width: 100%;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+          white-space: pre-wrap;
         }
 
         .ai-diff-delete {
@@ -3455,13 +3468,13 @@ export const TiptapEditor = memo(function TiptapEditor({
             )}
 
             {aiSuggestion.status === "error" && (
-              <div className="flex min-h-[150px] flex-col items-center justify-center gap-3 text-center">
+              <div className="flex min-h-[150px] flex-col items-center justify-center gap-3">
                 <AlertTriangle className="h-10 w-10 text-[#ef4444]" />
-                <div>
+                <div className="ai-popup-message text-center">
                   <p className="text-base font-semibold text-[#1a1a2e]">
                     Something went wrong. Please try again.
                   </p>
-                  <p className="mt-1 text-sm text-[#64748b]">
+                  <p className="ai-popup-message mt-1 text-sm text-[#64748b]">
                     {aiSuggestion.error || "AI could not improve this text."}
                   </p>
                 </div>
