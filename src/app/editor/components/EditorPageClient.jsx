@@ -170,7 +170,6 @@ export default function EditorPageClient() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [showDraftConfirmModal, setShowDraftConfirmModal] = useState(false);
   const [exitDestination, setExitDestination] = useState(null); // 'published', 'drafts', 'home'
-  const [recoveryDraft, setRecoveryDraft] = useState(null); // Dexie draft for recovery banner
   const scheduleMinDate = new Date();
   scheduleMinDate.setHours(0, 0, 0, 0);
   const scheduleCurrentYear = scheduleMinDate.getFullYear();
@@ -407,6 +406,34 @@ export default function EditorPageClient() {
     thumbnailData ||
     thumbnailRemoved;
 
+  const restoreLocalDraft = useCallback((draft) => {
+    if (!draft) return;
+
+    const nextContent = draft.content || "";
+    const nextText = nextContent
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .trim();
+
+    setBlogTitle(draft.title || "");
+    setBlogDescription(draft.description || "");
+    setSelectedCategories(Array.isArray(draft.categories) ? draft.categories : []);
+    setInitialContent(nextContent);
+    setEditorContent({
+      html: nextContent,
+      text: nextText,
+      charCount: nextText.length,
+      wordCount: nextText ? nextText.split(/\s+/).length : 0,
+    });
+    setExistingBlogStatus((current) => current || "draft");
+
+    if (editorInstanceRef.current) {
+      editorInstanceRef.current.commands.setContent(nextContent || "");
+    }
+
+    toast.info("Recovered your local draft");
+  }, []);
+
   // Load existing blog if editing.
   // Guard: only load when the blogId comes from the initial URL, not when
   // shadowIdRef gets promoted to state/URL after a manual save.
@@ -466,8 +493,7 @@ export default function EditorPageClient() {
             blog.updatedAt || blog.createdAt,
           ).getTime();
           if (localDraft.lastModified > serverTime) {
-            // Local draft is newer — show recovery banner
-            setRecoveryDraft(localDraft);
+            restoreLocalDraft(localDraft);
           } else {
             // Stale local draft — clean it up
             dexieDeleteDraft(String(id));
@@ -517,7 +543,7 @@ export default function EditorPageClient() {
     } finally {
       setIsLoading(false);
     }
-  }, [resetSnapshot]);
+  }, [resetSnapshot, restoreLocalDraft]);
 
   useEffect(() => {
     if (blogId && blogId === initialBlogIdRef.current) {
@@ -531,12 +557,12 @@ export default function EditorPageClient() {
         const dexieId = getDexieId();
         const localDraft = await dexieGetDraft(dexieId);
         if (localDraft && (localDraft.title || localDraft.content)) {
-          setRecoveryDraft(localDraft);
+          restoreLocalDraft(localDraft);
         }
       };
       checkNewDraft();
     }
-  }, [blogId, isMounted, getDexieId, loadExistingBlog]);
+  }, [blogId, isMounted, getDexieId, loadExistingBlog, restoreLocalDraft]);
 
   // Save blog to database (create new or update existing)
   const saveBlog = async (
@@ -990,6 +1016,7 @@ export default function EditorPageClient() {
 
   const handleDiscard = () => {
     markNavigating();
+    clearDraft();
     setShowExitModal(false);
 
     // Navigate based on destination
