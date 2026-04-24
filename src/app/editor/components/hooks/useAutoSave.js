@@ -19,6 +19,7 @@ const API_URL = getApiBase();
 
 // Statuses that should never be auto-saved to the server
 const NON_DRAFT_STATUSES = ["published", "scheduled", "review", "unpublished"];
+const TEMP_DRAFT_KEY_PREFIX = "inksigma:editor:draft";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -180,6 +181,46 @@ export function useAutoSave({
     currentPublication,
     hasUnsavedChanges,
   ]);
+
+  const getTempDraftStorageKey = useCallback(() => {
+    if (typeof window === "undefined") return null;
+    const publicationKey = publicationId || "default";
+    return `${TEMP_DRAFT_KEY_PREFIX}:${window.location.pathname}:${publicationKey}`;
+  }, [publicationId]);
+
+  const readPersistedDraftId = useCallback(() => {
+    const storageKey = getTempDraftStorageKey();
+    if (!storageKey || typeof window === "undefined") return null;
+
+    try {
+      return window.sessionStorage.getItem(storageKey);
+    } catch (error) {
+      console.warn("[useAutoSave] Failed to read draft session key:", error);
+      return null;
+    }
+  }, [getTempDraftStorageKey]);
+
+  const persistDraftId = useCallback((draftId) => {
+    const storageKey = getTempDraftStorageKey();
+    if (!storageKey || !draftId || typeof window === "undefined") return;
+
+    try {
+      window.sessionStorage.setItem(storageKey, String(draftId));
+    } catch (error) {
+      console.warn("[useAutoSave] Failed to persist draft session key:", error);
+    }
+  }, [getTempDraftStorageKey]);
+
+  const clearPersistedDraftId = useCallback(() => {
+    const storageKey = getTempDraftStorageKey();
+    if (!storageKey || typeof window === "undefined") return;
+
+    try {
+      window.sessionStorage.removeItem(storageKey);
+    } catch (error) {
+      console.warn("[useAutoSave] Failed to clear draft session key:", error);
+    }
+  }, [getTempDraftStorageKey]);
 
   // ── Dexie postId resolver ──────────────────────────────────────────────────
   // For new posts we need a stable ID for Dexie before the server gives us one.
