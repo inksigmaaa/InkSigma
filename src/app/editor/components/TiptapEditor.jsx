@@ -102,12 +102,9 @@ const VOICE_MIME_TYPES = [
 const VOICE_CONTENT_ONLY_MESSAGE =
   "Voice dictation is only for article content, not the title or short description.";
 
-const AI_QUICK_ACTIONS = [
+const AI_ACTIONS = [
   { key: "fix_grammar", label: "Fix Grammar" },
   { key: "improve_writing", label: "Improve Writing" },
-];
-
-const AI_REWRITE_ACTIONS = [
   { key: "make_shorter", label: "Make Shorter" },
   { key: "make_longer", label: "Make Longer" },
 ];
@@ -1830,10 +1827,6 @@ export const TiptapEditor = memo(function TiptapEditor({
     range: null,
     popup: null,
   });
-  const [aiMenu, setAiMenu] = useState({
-    type: null,
-    position: null,
-  });
   const [aiState, setAiState] = useState("idle");
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [aiDisplayedFixCount, setAiDisplayedFixCount] = useState(0);
@@ -1876,8 +1869,6 @@ export const TiptapEditor = memo(function TiptapEditor({
   const aiLastRequestRef = useRef(null);
   const aiLastClickRef = useRef(0);
   const aiPopupRef = useRef(null);
-  const aiToolbarRef = useRef(null);
-  const aiMenuRef = useRef(null);
   const suppressNextVoiceClickRef = useRef(false);
 
   useEffect(() => {
@@ -2065,7 +2056,6 @@ export const TiptapEditor = memo(function TiptapEditor({
       }
 
       if (aiSuggestion) {
-        setAiMenu((current) => (current.type ? { type: null, position: null } : current));
         setAiToolbar((current) =>
           current.visible ? { ...current, visible: false } : current,
         );
@@ -2076,7 +2066,6 @@ export const TiptapEditor = memo(function TiptapEditor({
       const selectedText = editor.state.doc.textBetween(from, to, "\n\n").trim();
 
       if (empty || !selectedText) {
-        setAiMenu((current) => (current.type ? { type: null, position: null } : current));
         setAiToolbar((current) =>
           current.visible ? { ...current, visible: false } : current,
         );
@@ -2101,7 +2090,7 @@ export const TiptapEditor = memo(function TiptapEditor({
                 ?.getBoundingClientRect().width
             : 0;
         const toolbarWidth = Math.min(
-          Math.max(toolbarRenderedWidth || 540, 320),
+          Math.max(toolbarRenderedWidth || 760, 320),
           editorWidth || window.innerWidth - viewportPadding * 2,
         );
         const selectionCenter = Math.min(
@@ -2169,7 +2158,6 @@ export const TiptapEditor = memo(function TiptapEditor({
             placement: popupPlacement,
           },
         });
-        setAiMenu((current) => (current.type ? { type: null, position: null } : current));
       } catch {
         setAiToolbar((current) =>
           current.visible ? { ...current, visible: false } : current,
@@ -2331,92 +2319,6 @@ export const TiptapEditor = memo(function TiptapEditor({
   ]);
 
   useEffect(() => {
-    if (!editor || !aiToolbar.visible || !aiToolbar.range || !aiToolbarRef.current) return;
-
-    const updateMeasuredToolbarPosition = () => {
-      try {
-        const { from, to } = aiToolbar.range;
-        const start = editor.view.coordsAtPos(from);
-        const end = editor.view.coordsAtPos(to);
-        const viewportPadding = AI_VIEWPORT_PADDING;
-        const editorBounds = editor.view.dom.getBoundingClientRect();
-        const editorLeft = Math.max(editorBounds.left, viewportPadding);
-        const editorRight = Math.min(
-          editorBounds.right,
-          window.innerWidth - viewportPadding,
-        );
-        const editorWidth = Math.max(editorRight - editorLeft, 0);
-        const measuredWidth = Math.min(
-          aiToolbarRef.current.getBoundingClientRect().width,
-          editorWidth || window.innerWidth - viewportPadding * 2,
-        );
-        const selectionCenter = Math.min(
-          Math.max((start.left + end.right) / 2, editorLeft + measuredWidth / 2),
-          editorRight - measuredWidth / 2,
-        );
-        const nextLeft = Math.min(
-          Math.max(selectionCenter - measuredWidth / 2, editorLeft),
-          Math.max(editorLeft, editorRight - measuredWidth),
-        );
-        const nextTop = Math.max(Math.min(start.top, end.top) - 52, 12);
-
-        setAiToolbar((current) => {
-          if (!current.visible) return current;
-
-          if (
-            Math.abs((current.left ?? 0) - nextLeft) < 1 &&
-            Math.abs((current.top ?? 0) - nextTop) < 1 &&
-            Math.abs((current.width ?? 0) - measuredWidth) < 1
-          ) {
-            return current;
-          }
-
-          return {
-            ...current,
-            top: nextTop,
-            left: nextLeft,
-            width: measuredWidth,
-          };
-        });
-      } catch {
-        // Keep the last stable toolbar position if measurement fails.
-      }
-    };
-
-    const frame = window.requestAnimationFrame(updateMeasuredToolbarPosition);
-    window.addEventListener("resize", updateMeasuredToolbarPosition);
-
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener("resize", updateMeasuredToolbarPosition);
-    };
-  }, [aiToolbar.range, aiToolbar.visible, aiToolbar.text, editor]);
-
-  useEffect(() => {
-    if (!aiMenu.type) return;
-
-    const handlePointerDown = (event) => {
-      if (aiMenuRef.current?.contains(event.target)) return;
-      if (aiToolbarRef.current?.contains(event.target)) return;
-      closeAiMenu();
-    };
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        closeAiMenu();
-      }
-    };
-
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [aiMenu.type, closeAiMenu]);
-
-  useEffect(() => {
     if (!editor || aiState !== "loading") return;
 
     const cancelAiOnEdit = ({ transaction }) => {
@@ -2545,29 +2447,6 @@ export const TiptapEditor = memo(function TiptapEditor({
     }
   }, []);
 
-  const closeAiMenu = useCallback(() => {
-    setAiMenu((current) => (current.type ? { type: null, position: null } : current));
-  }, []);
-
-  const openAiMenu = useCallback((type, event) => {
-    const triggerRect = event.currentTarget.getBoundingClientRect();
-    const menuWidth = type === "tone" ? 188 : 208;
-    const left = clampNumber(
-      triggerRect.right - menuWidth,
-      AI_VIEWPORT_PADDING,
-      window.innerWidth - menuWidth - AI_VIEWPORT_PADDING,
-    );
-
-    setAiMenu({
-      type,
-      position: {
-        top: triggerRect.bottom + 8,
-        left,
-        width: menuWidth,
-      },
-    });
-  }, []);
-
   const getAiResponseError = useCallback(async (response) => {
     const data = await response.json().catch(() => null);
     const rawMessage = data?.error || data?.message || "";
@@ -2642,7 +2521,6 @@ export const TiptapEditor = memo(function TiptapEditor({
 
   const runAiAction = useCallback(async (actionKey, actionLabel, options = {}) => {
     if (aiState === "loading") return;
-    closeAiMenu();
 
     const requestText = options.text || aiToolbar.text;
     const requestRange = options.range || aiToolbar.range;
@@ -2838,7 +2716,6 @@ export const TiptapEditor = memo(function TiptapEditor({
     aiToolbar.popup,
     aiToolbar.range,
     aiToolbar.text,
-    closeAiMenu,
     requestAiSuggestion,
     requestAiSuggestionFallback,
     parseAiStream,
@@ -3286,125 +3163,29 @@ export const TiptapEditor = memo(function TiptapEditor({
           z-index: 120;
           display: flex;
           align-items: center;
-          justify-content: flex-start;
-          border: 1px solid rgba(226, 232, 240, 0.95);
-          border-radius: 14px;
-          background: rgba(255, 255, 255, 0.98);
-          padding: 6px;
+          gap: 6px;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          background: #ffffff;
+          padding: 4px;
           max-width: calc(100vw - 24px);
           overflow: hidden;
           box-shadow:
-            0 18px 34px rgba(15, 23, 42, 0.14),
-            0 6px 14px rgba(15, 23, 42, 0.08);
-          backdrop-filter: blur(14px);
+            0 14px 30px rgba(15, 23, 42, 0.12),
+            0 4px 12px rgba(15, 23, 42, 0.08);
         }
 
         .ai-selection-scroll {
           display: flex;
           align-items: center;
-          justify-content: flex-start;
-          gap: 6px;
+          justify-content: center;
+          flex-wrap: wrap;
+          gap: 4px;
+          row-gap: 6px;
           width: 100%;
           max-width: 100%;
           overflow: visible;
           scrollbar-width: none;
-        }
-
-        .ai-selection-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          height: 36px;
-          padding: 0 12px;
-          border-radius: 10px;
-          background: #0f172a;
-          color: #ffffff;
-          font-size: 13px;
-          font-weight: 600;
-          flex-shrink: 0;
-        }
-
-        .ai-selection-button {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          height: 36px;
-          padding: 0 12px;
-          border: 1px solid #e2e8f0;
-          border-radius: 10px;
-          background: #ffffff;
-          color: #334155;
-          font-size: 13px;
-          font-weight: 600;
-          transition:
-            border-color 160ms ease,
-            background-color 160ms ease,
-            color 160ms ease,
-            transform 160ms ease;
-          flex-shrink: 0;
-        }
-
-        .ai-selection-button:hover:not(:disabled) {
-          border-color: #cbd5e1;
-          background: #f8fafc;
-          color: #0f172a;
-        }
-
-        .ai-selection-button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .ai-selection-button[data-primary="true"] {
-          background: #f8fafc;
-          color: #0f172a;
-        }
-
-        .ai-selection-divider {
-          width: 1px;
-          height: 20px;
-          background: #e2e8f0;
-          flex-shrink: 0;
-        }
-
-        .ai-selection-menu {
-          min-width: 188px;
-          padding: 6px;
-          border-radius: 12px;
-          background: rgba(255, 255, 255, 0.98);
-          box-shadow:
-            0 18px 34px rgba(15, 23, 42, 0.14),
-            0 6px 14px rgba(15, 23, 42, 0.08);
-          backdrop-filter: blur(14px);
-        }
-
-        .ai-selection-menu-header {
-          padding: 6px 8px 8px;
-          font-size: 11px;
-          font-weight: 700;
-          color: #64748b;
-          text-transform: uppercase;
-        }
-
-        .ai-selection-menu-item {
-          display: flex;
-          width: 100%;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          border: 0;
-          border-radius: 10px;
-          background: transparent;
-          padding: 9px 10px;
-          color: #1e293b;
-          font-size: 13px;
-          font-weight: 600;
-          text-align: left;
-        }
-
-        .ai-selection-menu-item:hover:not(:disabled) {
-          background: #f8fafc;
         }
 
         .ai-selection-scroll::-webkit-scrollbar {
@@ -3627,6 +3408,7 @@ export const TiptapEditor = memo(function TiptapEditor({
           .ai-selection-scroll {
             justify-content: flex-start;
             flex-wrap: nowrap;
+            row-gap: 0;
             overflow-x: auto;
           }
 
@@ -3685,114 +3467,64 @@ export const TiptapEditor = memo(function TiptapEditor({
 
       {aiToolbar.visible && (
         <div
-          ref={aiToolbarRef}
           className="ai-selection-toolbar"
           style={{
             top: `${aiToolbar.top}px`,
             left: `${aiToolbar.left}px`,
-            maxWidth: aiToolbar.width ? `${aiToolbar.width}px` : undefined,
+            width: `${aiToolbar.width}px`,
           }}
           onMouseDown={(event) => event.preventDefault()}
         >
           <div className="ai-selection-scroll">
-            <div className="ai-selection-badge">
-              <Sparkles className="h-4 w-4" />
-              <span>Ask AI</span>
-            </div>
-
-            {AI_QUICK_ACTIONS.map((action, index) => (
-              <button
+            {AI_ACTIONS.map((action, index) => (
+              <Button
                 key={action.key}
                 type="button"
-                className="ai-selection-button"
-                data-primary={index === 0 ? "true" : "false"}
+                className={`h-8 rounded-md px-3 text-sm shadow-none disabled:cursor-not-allowed ${
+                  index === 0
+                    ? "bg-gray-900 text-white hover:bg-gray-800"
+                    : "border border-gray-200 bg-white text-gray-800 hover:bg-gray-100"
+                }`}
                 onClick={() => runAiAction(action.key, action.label)}
                 disabled={aiState === "loading"}
               >
-                {index === 0 ? (
-                  aiState === "loading" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                {index === 0 &&
+                  (aiState === "loading" ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                   ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )
-                ) : null}
+                    <Sparkles className="mr-1.5 h-4 w-4" />
+                  ))}
                 {action.label}
-              </button>
+              </Button>
             ))}
-
-            <span className="ai-selection-divider" />
-
-            <button
-              type="button"
-              className="ai-selection-button"
-              onClick={(event) =>
-                aiMenu.type === "rewrite"
-                  ? closeAiMenu()
-                  : openAiMenu("rewrite", event)
-              }
-              aria-expanded={aiMenu.type === "rewrite"}
-              aria-haspopup="menu"
+            <span className="mx-1 h-5 w-px shrink-0 bg-gray-200" />
+            <select
+              className="h-8 rounded-md border border-gray-200 bg-white px-2 text-sm text-gray-800 shadow-none outline-none hover:bg-gray-100 disabled:cursor-not-allowed"
+              defaultValue=""
               disabled={aiState === "loading"}
+              onChange={(event) => {
+                const action = AI_TONE_ACTIONS.find(
+                  (item) => item.key === event.target.value,
+                );
+                event.target.value = "";
+                if (action) {
+                  runAiAction(action.key, action.label);
+                }
+              }}
+              aria-label="Change tone"
             >
-              Rewrite
-              <ChevronDown className="h-4 w-4" />
-            </button>
-
-            <button
-              type="button"
-              className="ai-selection-button"
-              onClick={(event) =>
-                aiMenu.type === "tone"
-                  ? closeAiMenu()
-                  : openAiMenu("tone", event)
-              }
-              aria-expanded={aiMenu.type === "tone"}
-              aria-haspopup="menu"
-              disabled={aiState === "loading"}
-            >
-              Tone
-              <ChevronDown className="h-4 w-4" />
-            </button>
+              <option value="" disabled>
+                Change Tone
+              </option>
+              {AI_TONE_ACTIONS.map((action) => (
+                <option key={action.key} value={action.key}>
+                  {action.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       )}
-
-      <DropdownMenu
-        isOpen={Boolean(aiMenu.type)}
-        position={aiMenu.position || {}}
-        onClose={closeAiMenu}
-        className="ai-selection-menu"
-      >
-        <div ref={aiMenuRef}>
-          <div className="ai-selection-menu-header">
-            {aiMenu.type === "tone" ? "Change Tone" : "Rewrite"}
-          </div>
-          {(aiMenu.type === "tone" ? AI_TONE_ACTIONS : AI_REWRITE_ACTIONS).map(
-            (action) => (
-              <button
-                key={action.key}
-                type="button"
-                className="ai-selection-menu-item"
-                onClick={() => runAiAction(action.key, action.label)}
-                disabled={aiState === "loading"}
-              >
-                <span>{action.label}</span>
-                {action.key === "tone_formal" ? (
-                  <span className="text-xs font-medium text-slate-400">A</span>
-                ) : action.key === "tone_casual" ? (
-                  <span className="text-xs font-medium text-slate-400">a</span>
-                ) : action.key === "tone_professional" ? (
-                  <Sparkles className="h-3.5 w-3.5 text-slate-400" />
-                ) : action.key === "make_shorter" ? (
-                  <span className="text-xs font-medium text-slate-400">−</span>
-                ) : (
-                  <span className="text-xs font-medium text-slate-400">+</span>
-                )}
-              </button>
-            ),
-          )}
-        </div>
-      </DropdownMenu>
 
       {aiSuggestion && (
         <div
