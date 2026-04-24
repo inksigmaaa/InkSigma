@@ -13,6 +13,7 @@ const API_URL = getApiBase();
 
 // Statuses that should never be auto-saved to the server
 const NON_DRAFT_STATUSES = ["published", "scheduled", "review", "unpublished"];
+const TEMP_DRAFT_KEY_PREFIX = "inksigma:editor:draft";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -157,19 +158,75 @@ export function useAutoSave({
     hasUnsavedChanges,
   ]);
 
+  const getTempDraftStorageKey = useCallback(() => {
+    if (typeof window === "undefined") return null;
+    const publicationKey = publicationId || "default";
+    return `${TEMP_DRAFT_KEY_PREFIX}:${window.location.pathname}:${publicationKey}`;
+  }, [publicationId]);
+
+  const readPersistedDraftId = useCallback(() => {
+    const storageKey = getTempDraftStorageKey();
+    if (!storageKey || typeof window === "undefined") return null;
+
+    try {
+      return window.sessionStorage.getItem(storageKey);
+    } catch (error) {
+      console.warn("[useAutoSave] Failed to read draft session key:", error);
+      return null;
+    }
+  }, [getTempDraftStorageKey]);
+
+  const persistDraftId = useCallback((draftId) => {
+    const storageKey = getTempDraftStorageKey();
+    if (!storageKey || !draftId || typeof window === "undefined") return;
+
+    try {
+      window.sessionStorage.setItem(storageKey, String(draftId));
+    } catch (error) {
+      console.warn("[useAutoSave] Failed to persist draft session key:", error);
+    }
+  }, [getTempDraftStorageKey]);
+
+  const clearPersistedDraftId = useCallback(() => {
+    const storageKey = getTempDraftStorageKey();
+    if (!storageKey || typeof window === "undefined") return;
+
+    try {
+      window.sessionStorage.removeItem(storageKey);
+    } catch (error) {
+      console.warn("[useAutoSave] Failed to clear draft session key:", error);
+    }
+  }, [getTempDraftStorageKey]);
+
   // ── Dexie postId resolver ──────────────────────────────────────────────────
   // For new posts we need a stable ID for Dexie before the server gives us one.
 
   const getDexieId = useCallback(() => {
     if (currentBlogId) return String(currentBlogId);
+    if (shadowId) return String(shadowId);
+    if (tempIdRef.current) return tempIdRef.current;
+
+    const persistedDraftId = readPersistedDraftId();
+    if (persistedDraftId) {
+      tempIdRef.current = persistedDraftId;
+      return persistedDraftId;
+    }
+
     if (!tempIdRef.current) {
       tempIdRef.current =
         typeof crypto !== "undefined" && crypto.randomUUID
           ? crypto.randomUUID()
           : `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      persistDraftId(tempIdRef.current);
     }
     return tempIdRef.current;
-  }, [currentBlogId]);
+  }, [currentBlogId, shadowId, persistDraftId, readPersistedDraftId]);
+
+  useEffect(() => {
+    if (!currentBlogId) return;
+    clearPersistedDraftId();
+    tempIdRef.current = null;
+  }, [currentBlogId, clearPersistedDraftId]);
 
   // ── 1. Keystroke-level Dexie save ──────────────────────────────────────────
   // Runs on every content change. Non-blocking, never causes re-render.
@@ -202,8 +259,9 @@ export function useAutoSave({
             const newId = String(result.id);
             if (oldDexieId && oldDexieId !== newId) {
               remapDraftId(oldDexieId, newId);
-              tempIdRef.current = null;
             }
+            tempIdRef.current = newId;
+            persistDraftId(newId);
             onBlogIdCreated?.(result);
           }
           return true;
@@ -218,7 +276,7 @@ export function useAutoSave({
       }
     }
     return false;
-  }, [saveFn, onBlogIdCreated]);
+  }, [saveFn, onBlogIdCreated, persistDraftId]);
 
   // ── 3. Debounced server sync ───────────────────────────────────────────────
 
@@ -492,7 +550,11 @@ export function useAutoSave({
     });
 
     // Mark Dexie as synced and clear retry counter
-    const id = currentBlogId ? String(currentBlogId) : tempIdRef.current;
+    const id = currentBlogId
+      ? String(currentBlogId)
+      : shadowId
+        ? String(shadowId)
+        : tempIdRef.current;
     if (id) dexieMarkSynced(id);
     retryCountRef.current = 0;
   }, [
@@ -503,6 +565,7 @@ export function useAutoSave({
     extraDirtySignal,
     snapshot.extraDirtySignal,
     currentBlogId,
+    shadowId,
   ]);
 
   const cancelPendingAutoSave = useCallback(() => {
@@ -547,14 +610,19 @@ export function useAutoSave({
 
   /** Clean up Dexie draft after publish or discard. */
   const clearDraft = useCallback(() => {
-    const id = currentBlogId ? String(currentBlogId) : tempIdRef.current;
+    const id = currentBlogId
+      ? String(currentBlogId)
+      : shadowId
+        ? String(shadowId)
+        : tempIdRef.current;
     if (id) dexieDelete(id);
     // Also clear temp ID entry if it exists
     if (tempIdRef.current && currentBlogId) {
       dexieDelete(tempIdRef.current);
-      tempIdRef.current = null;
     }
-  }, [currentBlogId]);
+    tempIdRef.current = null;
+    clearPersistedDraftId();
+  }, [currentBlogId, shadowId, clearPersistedDraftId]);
 
   return {
     hasUnsavedChanges,
