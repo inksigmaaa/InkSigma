@@ -8,6 +8,7 @@ import { usePublication } from "@/contexts/PublicationContext";
 import SetPasswordForm from "@/components/auth/SetPasswordForm";
 import { signOut } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
+import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
 
 export default function AcceptInvitation() {
   const { token } = useParams();

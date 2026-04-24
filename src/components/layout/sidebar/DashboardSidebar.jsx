@@ -2,6 +2,31 @@
 import Link from "next/link";
 import { useState } from "react";
 
+function SidebarItem({ href, iconSrc, label }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <Link href={href}>
+      <div
+        className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${isHovered ? "bg-[#F6F6F6]" : ""}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <img
+          src={iconSrc}
+          alt=""
+          className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${isHovered ? "brightness-0 opacity-100" : "opacity-60"}`}
+        />
+        <p
+          className={`text-[14px] font-normal leading-[150%] m-0 max-md:text-[11px] max-md:text-center tracking-[0%] whitespace-nowrap ${isHovered ? "text-[#2E2E2E]" : "text-[#B0B0B0]"}`}
+        >
+          {label}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
 export default function DashboardSidebar() {
   return (
     <>
@@ -11,56 +36,16 @@ export default function DashboardSidebar() {
         <div className="relative w-[165px] h-[612px] bg-white border-r border-gray-200 p-[14px] pr-[10px] flex flex-col gap-[10px] overflow-hidden pointer-events-auto max-md:w-auto max-md:min-w-max max-md:h-[70px] max-md:px-4 max-md:py-2 max-md:flex-row max-md:gap-2 max-md:border-r-0 max-md:overflow-visible">
           {/* MY SPACE */}
           <div className="max-md:pb-0 max-md:border-none max-md:flex-shrink-0">
-            {(() => {
-              const [isHovered, setIsHovered] = useState(false);
-              return (
-                <div
-                  className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${isHovered ? "bg-[#F6F6F6]" : ""}`}
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                >
-                  <img
-                    src="/images/icons/myspace.svg"
-                    className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${isHovered ? "brightness-0" : ""}`}
-                  />
-                  <Link href="/">
-                    <p
-                      className={`text-[14px] font-normal leading-[150%] m-0 max-md:text-[11px] max-md:text-center tracking-[0%] ${isHovered ? "text-[#2E2E2E]" : "text-[#B0B0B0]"}`}
-                    >
-                      My Space
-                    </p>
-                  </Link>
-                </div>
-              );
-            })()}
+            <SidebarItem href="/" iconSrc="/images/icons/myspace.svg" label="My Space" />
           </div>
 
           {/* SETTINGS */}
           <div className="flex flex-col gap-[3px] max-md:flex-row max-md:gap-2 max-md:p-0">
-            {(() => {
-              const [isHovered, setIsHovered] = useState(false);
-              return (
-                <Link href="/profile-settings">
-                  <div
-                    className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered ? "bg-[#F6F6F6]" : ""}`}
-                    onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}
-                  >
-                    <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
-                      <img
-                        src="/images/icons/settings.svg"
-                        className={`w-6 h-6 flex-shrink-0 max-md:w-6 max-md:h-6 transition-all ${isHovered ? "opacity-100 brightness-0" : "opacity-60"}`}
-                      />
-                      <p
-                        className={`text-[14px] font-normal leading-[150%] m-0 max-md:text-[11px] max-md:text-center whitespace-nowrap  tracking-[0%] ${isHovered ? "text-[#2E2E2E]" : "text-[#B0B0B0]"}`}
-                      >
-                        Settings
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })()}
+            <SidebarItem
+              href="/profile-settings"
+              iconSrc="/images/icons/settings.svg"
+              label="Settings"
+            />
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 // config/redis.js - Upstash Redis Configuration
 import { Redis } from "@upstash/redis";
+import type { SecondaryStorage } from "@better-auth/core/db";
 import logger from "../utils/logger.js";
 
 let redisClient = null;
@@ -104,7 +105,7 @@ export const getRedisClient = () => {
 export const isRedisAvailable = () => redisAvailable && !isRedisInCooldown();
 
 // Session storage adapter for better-auth
-export const redisSessionStorage = {
+export const redisSessionStorage: SecondaryStorage = {
   async get(sessionId) {
     if (!redisAvailable) {
       return null; // Fall back to database
@@ -133,14 +134,15 @@ export const redisSessionStorage = {
 
   async set(sessionId, session, ttl) {
     if (!redisAvailable) {
-      return false; // Fall back to database
+      return null; // Fall back to database
     }
 
     try {
       const client = getRedisClient();
-      if (!client) return false;
+      if (!client) return null;
 
-      const data = JSON.stringify(session);
+      const data =
+        typeof session === "string" ? session : JSON.stringify(session);
 
       if (ttl) {
         // TTL in seconds
@@ -150,35 +152,31 @@ export const redisSessionStorage = {
       }
 
       logger.info(`[REDIS] Session stored: ${sessionId} (TTL: ${ttl}s)`);
-      return true;
+      return null;
     } catch (error) {
       markRedisFailure(error, "session.set");
-      return false; // Fall back to database
+      return null; // Fall back to database
     }
   },
 
   async delete(sessionId) {
     if (!redisAvailable) {
-      return false; // Fall back to database
+      return null; // Fall back to database
     }
 
     try {
       const client = getRedisClient();
-      if (!client) return false;
+      if (!client) return null;
 
       await client.del(`session:${sessionId}`);
       logger.info(`[REDIS] Session deleted: ${sessionId}`);
-      return true;
+      return null;
     } catch (error) {
       markRedisFailure(error, "session.delete");
-      return false; // Fall back to database
+      return null; // Fall back to database
     }
   },
 
-  async update(sessionId, session, ttl) {
-    // Update is the same as set
-    return this.set(sessionId, session, ttl);
-  },
 };
 
 // User cache functions

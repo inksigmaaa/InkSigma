@@ -28,6 +28,16 @@ services:
         sync: false
       - key: CORS_ORIGIN
         sync: false
+      - key: CUSTOM_DOMAIN_IP_TARGET
+        sync: false
+      - key: CUSTOM_DOMAIN_IP_TARGETS
+        sync: false
+      - key: CUSTOM_DOMAIN_CNAME_TARGET
+        sync: false
+      - key: CUSTOM_DOMAIN_CNAME_TARGETS
+        sync: false
+      - key: CUSTOM_DOMAIN_MULTI_LABEL_SUFFIXES
+        sync: false
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT

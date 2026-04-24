@@ -2,6 +2,38 @@
 
 import React, { useEffect, useState } from "react";
 
+const PRIVACY_TOC_ITEMS = [
+  ["collection", "Collection of Information"],
+  ["use", "Use of Information"],
+  ["sharing", "Sharing of Information"],
+  ["embeds", "Third-Party Embeds"],
+  ["transfers", "International Data Transfers"],
+  ["choices", "Your Choices"],
+  ["contact", "Contact Us"],
+];
+
+function TableOfContents({ activeSection, onNavigate }) {
+  return (
+    <nav className="space-y-1 pl-12" style={{ width: "271px" }}>
+      <ul className="space-y-2 text-sm list-disc pl-4">
+        {PRIVACY_TOC_ITEMS.map(([id, label]) => (
+          <li key={id}>
+            <a
+              href={`#${id}`}
+              onClick={(e) => onNavigate(e, id)}
+              className={`block py-1 hover:text-black transition-colors ${
+                activeSection === id ? "text-black font-semibold" : "text-gray-500"
+              }`}
+            >
+              {label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
 export default function PrivacyPage() {
   const [activeSection, setActiveSection] = useState("collection");
   const [showTOC, setShowTOC] = useState(false);
@@ -42,104 +74,6 @@ export default function PrivacyPage() {
       setShowTOC(false); // Close TOC after clicking
     }
   };
-
-  const TableOfContents = () => (
-    <nav className="space-y-1 pl-12" style={{ width: '271px' }}>
-      <ul className="space-y-2 text-sm list-disc pl-4">
-        <li>
-          <a
-            href="#collection"
-            onClick={(e) => scrollToSection(e, "collection")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "collection"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            Collection of Information
-          </a>
-        </li>
-        <li>
-          <a
-            href="#use"
-            onClick={(e) => scrollToSection(e, "use")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "use"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            Use of Information
-          </a>
-        </li>
-        <li>
-          <a
-            href="#sharing"
-            onClick={(e) => scrollToSection(e, "sharing")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "sharing"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            Sharing of Information
-          </a>
-        </li>
-        <li>
-          <a
-            href="#embeds"
-            onClick={(e) => scrollToSection(e, "embeds")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "embeds"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            Third-Party Embeds
-          </a>
-        </li>
-        <li>
-          <a
-            href="#transfers"
-            onClick={(e) => scrollToSection(e, "transfers")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "transfers"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            International Data Transfers
-          </a>
-        </li>
-        <li>
-          <a
-            href="#choices"
-            onClick={(e) => scrollToSection(e, "choices")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "choices"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            Your Choices
-          </a>
-        </li>
-        <li>
-          <a
-            href="#contact"
-            onClick={(e) => scrollToSection(e, "contact")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "contact"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            Contact Us
-          </a>
-        </li>
-      </ul>
-    </nav>
-  );
 
   return (
     <div className="w-full md:max-w-[80%] mx-auto px-6 md:px-8 pt-[98px] md:pt-[140px] pb-12 md:pb-20 lg:pb-24">
@@ -278,8 +212,11 @@ export default function PrivacyPage() {
       <div className="flex flex-col md:flex-row gap-8 lg:gap-16">
         {/* Sidebar / Table of Contents - Hidden on small mobile, visible on desktop */}
         <aside className="hidden md:block flex-shrink-0">
-          <div className="sticky top-28">
-            <TableOfContents />
+            <div className="sticky top-28">
+            <TableOfContents
+              activeSection={activeSection}
+              onNavigate={scrollToSection}
+            />
           </div>
         </aside>
 
@@ -292,7 +229,14 @@ export default function PrivacyPage() {
           <div className="space-y-8 text-gray-700 font-sans text-[8px] md:text-base leading-[13px] md:leading-normal">
             <div className="space-y-4">
               <p>
-                This Privacy Policy outlines how Inksigma ("we," "us," or "our") collects, uses, and discloses information about you. This Privacy Policy is applicable when you use our websites, mobile applications, and other online products and services that link to this Privacy Policy (collectively referred to as "Services"), communicate with our customer support, interact with us on social media, or engage with us in any other way.
+                This Privacy Policy outlines how Inksigma (&quot;we,&quot;
+                &quot;us,&quot; or &quot;our,&quot;) collects, uses, and
+                discloses information about you. This Privacy Policy is applicable
+                when you use our websites, mobile applications, and other online
+                products and services that link to this Privacy Policy
+                (collectively referred to as &quot;Services&quot;), communicate
+                with our customer support, interact with us on social media, or
+                engage with us in any other way.
               </p>
               <p>
                 We may update this Privacy Policy periodically. Changes will be indicated by revising the date at the top of this policy, and we may provide additional notice if necessary. We encourage you to regularly review this Privacy Policy to stay informed about our data practices and your choices.
@@ -314,7 +258,11 @@ export default function PrivacyPage() {
                     We collect the information you directly provide to us. For instance, when you create an account, submit forms, post content through our Services, contact customer support, or engage with us on third-party platforms. The personal information we may collect includes your name, username, email address, profile details, business information, content you submit, and any other information you provide.
                   </p>
                   <p className="mt-2">
-                    Occasionally, we may collect information about others from you, such as when you purchase a subscription for someone else. We'll only use this information to fulfill your request, and we won't send unrelated communications to your contacts without their consent.
+                    Occasionally, we may collect information about others from
+                    you, such as when you purchase a subscription for someone
+                    else. We&apos;ll only use this information to fulfill your
+                    request, and we won&apos;t send unrelated communications to
+                    your contacts without their consent.
                   </p>
                 </div>
 

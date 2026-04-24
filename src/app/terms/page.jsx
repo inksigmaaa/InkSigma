@@ -2,6 +2,39 @@
 
 import React, { useEffect, useState } from "react";
 
+const TERMS_TOC_ITEMS = [
+  ["conduct", "User Conduct"],
+  ["content", "User Content"],
+  ["intellectual", "Intellectual Property"],
+  ["termination", "Termination"],
+  ["liability", "Limitation of Liability"],
+  ["governing", "Governing Law"],
+  ["changes", "Changes"],
+  ["contact", "Contact Us"],
+];
+
+function TableOfContents({ activeSection, onNavigate }) {
+  return (
+    <nav className="space-y-1 pl-12" style={{ width: "271px" }}>
+      <ul className="space-y-2 text-sm list-disc pl-4">
+        {TERMS_TOC_ITEMS.map(([id, label]) => (
+          <li key={id}>
+            <a
+              href={`#${id}`}
+              onClick={(e) => onNavigate(e, id)}
+              className={`block py-1 hover:text-black transition-colors ${
+                activeSection === id ? "text-black font-semibold" : "text-gray-500"
+              }`}
+            >
+              {label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
 export default function TermsPage() {
   const [activeSection, setActiveSection] = useState("conduct");
   const [showTOC, setShowTOC] = useState(false);
@@ -42,117 +75,6 @@ export default function TermsPage() {
       setShowTOC(false); // Close TOC after clicking
     }
   };
-
-  const TableOfContents = () => (
-    <nav className="space-y-1 pl-12" style={{ width: '271px' }}>
-      <ul className="space-y-2 text-sm list-disc pl-4">
-        <li>
-          <a
-            href="#conduct"
-            onClick={(e) => scrollToSection(e, "conduct")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "conduct"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            User Conduct
-          </a>
-        </li>
-        <li>
-          <a
-            href="#content"
-            onClick={(e) => scrollToSection(e, "content")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "content"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            User Content
-          </a>
-        </li>
-        <li>
-          <a
-            href="#intellectual"
-            onClick={(e) => scrollToSection(e, "intellectual")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "intellectual"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            Intellectual Property
-          </a>
-        </li>
-        <li>
-          <a
-            href="#termination"
-            onClick={(e) => scrollToSection(e, "termination")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "termination"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            Termination
-          </a>
-        </li>
-        <li>
-          <a
-            href="#liability"
-            onClick={(e) => scrollToSection(e, "liability")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "liability"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            Limitation of Liability
-          </a>
-        </li>
-        <li>
-          <a
-            href="#governing"
-            onClick={(e) => scrollToSection(e, "governing")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "governing"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            Governing Law
-          </a>
-        </li>
-        <li>
-          <a
-            href="#changes"
-            onClick={(e) => scrollToSection(e, "changes")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "changes"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            Changes
-          </a>
-        </li>
-        <li>
-          <a
-            href="#contact"
-            onClick={(e) => scrollToSection(e, "contact")}
-            className={`block py-1 hover:text-black transition-colors ${
-              activeSection === "contact"
-                ? "text-black font-semibold"
-                : "text-gray-500"
-            }`}
-          >
-            Contact Us
-          </a>
-        </li>
-      </ul>
-    </nav>
-  );
 
   return (
     <div className="w-full md:max-w-[80%] mx-auto px-6 md:px-8 pt-[98px] md:pt-[140px] pb-12 md:pb-20 lg:pb-24">
@@ -302,7 +224,10 @@ export default function TermsPage() {
         {/* Sidebar / Table of Contents - Hidden on small mobile, visible on desktop */}
         <aside className="hidden md:block flex-shrink-0">
           <div className="sticky top-28">
-            <TableOfContents />
+            <TableOfContents
+              activeSection={activeSection}
+              onNavigate={scrollToSection}
+            />
           </div>
         </aside>
 
@@ -315,7 +240,11 @@ export default function TermsPage() {
           <div className="space-y-8 text-gray-700 font-sans text-[8px] md:text-base leading-[13px] md:leading-normal">
             <div className="space-y-4">
               <p>
-                Please read these Terms of Use ("Terms") carefully before using the Inksigma website, mobile applications, and other online products and services (collectively referred to as the "Service") operated by Zemuria Inc. ("we," "us," "our," or "Zemuria").
+                Please read these Terms of Use (&quot;Terms&quot;) carefully
+                before using the Inksigma website, mobile applications, and
+                other online products and services (collectively referred to as
+                the &quot;Service&quot;) operated by Zemuria Inc. (&quot;we,&quot;
+                &quot;us,&quot; &quot;our,&quot; or &quot;Zemuria&quot;).
               </p>
               <p>
                 By accessing or using the Service, you agree to be bound by these Terms. If you do not agree with any part of these Terms, please do not use the Service.
@@ -350,7 +279,13 @@ export default function TermsPage() {
                 2. User Content
               </h2>
               <p>
-                You retain ownership of any content you submit, post, or display on or through the Service ("User Content"). By posting User Content, you grant Inksigma a non-exclusive, worldwide, royalty-free, and sublicensable license to use, reproduce, modify, adapt, publish, translate, distribute, publicly perform, and publicly display your User Content in connection with the Service.
+                You retain ownership of any content you submit, post, or
+                display on or through the Service (&quot;User Content&quot;).
+                By posting User Content, you grant Inksigma a non-exclusive,
+                worldwide, royalty-free, and sublicensable license to use,
+                reproduce, modify, adapt, publish, translate, distribute,
+                publicly perform, and publicly display your User Content in
+                connection with the Service.
               </p>
             </section>
 
