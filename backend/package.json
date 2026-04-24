@@ -12,7 +12,7 @@
     "db:studio": "drizzle-kit studio",
     "verify:migrations": "node scripts/verify-migration-smoke.mjs",
     "migrate:data": "node migrate-existing-data.js",
-    "test:redis": "node test-redis.js",
+    "test:redis": "tsx scripts/test-redis.ts",
     "test:domains": "node --test --import tsx tests/*.test.ts"
   },
   "dependencies": {

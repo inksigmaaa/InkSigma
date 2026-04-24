@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import pg from "pg";
 
 const { Client } = pg;
@@ -21,7 +23,14 @@ const requiredIndexes = [
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required for migration smoke verification");
+  if (process.env.CI === "true") {
+    throw new Error("DATABASE_URL is required for migration smoke verification");
+  }
+
+  process.stdout.write(
+    "Migration smoke skipped: set DATABASE_URL in backend/.env or the shell to run it locally.\n",
+  );
+  process.exit(0);
 }
 
 const client = new Client({ connectionString: databaseUrl });
