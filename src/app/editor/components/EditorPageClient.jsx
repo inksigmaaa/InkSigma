@@ -97,15 +97,9 @@ export default function EditorPageClient() {
   const publicationId = searchParams.get("publicationId"); // For joined publications
   const [currentBlogId, setCurrentBlogId] = useState(blogId);
   const [editorRenderKey, setEditorRenderKey] = useState(blogId || "new");
-  const promotedBlogIdRef = useRef(null);
 
   useEffect(() => {
     const nextBlogId = blogId || null;
-    if (promotedBlogIdRef.current === nextBlogId) {
-      promotedBlogIdRef.current = null;
-      setCurrentBlogId(nextBlogId);
-      return;
-    }
     if (nextBlogId === (currentBlogId || null)) return;
 
     setCurrentBlogId(nextBlogId);
@@ -420,30 +414,24 @@ export default function EditorPageClient() {
     ],
   );
 
-  const replaceEditorUrlId = useCallback((newId, nextStatus = "draft") => {
+  const syncDraftIdToUrl = useCallback((newId, nextStatus = "draft") => {
     if (!newId) return;
 
-    const nextId = String(newId);
-    promotedBlogIdRef.current = nextId;
-    setCurrentBlogId((current) => current || nextId);
+    setCurrentBlogId((current) => current || newId);
 
-    if (typeof window === "undefined") return;
-
-    const url = new URL(window.location.href);
-    url.searchParams.set("id", nextId);
-    if (!url.searchParams.get("status")) {
-      url.searchParams.set("status", nextStatus);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("id", newId);
+    if (!params.get("status")) {
+      params.set("status", nextStatus);
     }
     if (publicationId) {
-      url.searchParams.set("publicationId", publicationId);
+      params.set("publicationId", publicationId);
     }
 
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `${url.pathname}${url.search}${url.hash}`,
-    );
-  }, [publicationId]);
+    router.replace(withPub(`/editor?${params.toString()}`), {
+      scroll: false,
+    });
+  }, [searchParams, publicationId, router, withPub]);
 
   // Callback for when the first server save creates a new blog ID.
   // Promote the draft into the URL immediately so refresh always reopens it.
@@ -474,13 +462,14 @@ export default function EditorPageClient() {
   }, [persistThumbnailForBlog, replaceEditorUrlId, publicationId]);
 
   // Promote shadowIdRef to state + URL (called on manual save / publish / exit)
+  // Promote shadowIdRef to state + URL (called on manual save / publish / exit)
   const flushShadowId = useCallback(() => {
     if (shadowIdRef.current && !currentBlogId) {
       const newId = shadowIdRef.current;
-      replaceEditorUrlId(newId);
+      syncDraftIdToUrl(newId);
       shadowIdRef.current = null;
     }
-  }, [currentBlogId, replaceEditorUrlId]);
+  }, [currentBlogId, syncDraftIdToUrl]);
 
   const {
     hasUnsavedChanges,
@@ -1002,7 +991,7 @@ export default function EditorPageClient() {
           shadowIdRef.current = String(responseData.id);
         } else {
           // Manual save: promote to state + URL immediately
-          replaceEditorUrlId(responseData.id, status);
+          syncDraftIdToUrl(responseData.id, status);
         }
       }
 
