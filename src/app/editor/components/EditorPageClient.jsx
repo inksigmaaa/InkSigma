@@ -777,7 +777,7 @@ export default function EditorPageClient() {
       initialBlogIdRef.current = blogId;
       lastLoadedBlogIdRef.current = blogId;
     }
-  }, [blogId, isMounted, getDexieId, loadExistingBlog]);
+  }, [blogId, isMounted, getDexieId, loadExistingBlog, restoreLocalDraft]);
 
   useEffect(() => {
     if (
