@@ -107,7 +107,6 @@ const AI_ACTIONS = [
   { key: "improve_writing", label: "Improve Writing" },
   { key: "make_shorter", label: "Make Shorter" },
   { key: "make_longer", label: "Make Longer" },
-  { key: "fix_transcription", label: "Fix Voice Text" },
 ];
 
 const AI_TONE_ACTIONS = [
