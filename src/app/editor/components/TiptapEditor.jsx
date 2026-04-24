@@ -2091,7 +2091,7 @@ export const TiptapEditor = memo(function TiptapEditor({
                 ?.getBoundingClientRect().width
             : 0;
         const toolbarWidth = Math.min(
-          Math.max(toolbarRenderedWidth || 620, 320),
+          Math.max(toolbarRenderedWidth || 760, 320),
           editorWidth || window.innerWidth - viewportPadding * 2,
         );
         const selectionCenter = Math.min(
@@ -3179,9 +3179,13 @@ export const TiptapEditor = memo(function TiptapEditor({
         .ai-selection-scroll {
           display: flex;
           align-items: center;
+          justify-content: center;
+          flex-wrap: wrap;
           gap: 4px;
+          row-gap: 6px;
+          width: 100%;
           max-width: 100%;
-          overflow-x: auto;
+          overflow: visible;
           scrollbar-width: none;
         }
 
@@ -3400,6 +3404,13 @@ export const TiptapEditor = memo(function TiptapEditor({
 
           .ai-selection-toolbar {
             max-width: calc(100vw - 24px);
+          }
+
+          .ai-selection-scroll {
+            justify-content: flex-start;
+            flex-wrap: nowrap;
+            row-gap: 0;
+            overflow-x: auto;
           }
 
           .ai-suggestion-review {
