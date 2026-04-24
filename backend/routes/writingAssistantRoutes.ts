@@ -7,9 +7,9 @@ import logger from "../utils/logger.js";
 
 const router = express.Router();
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash-lite";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 const GEMINI_FALLBACK_MODEL =
-  process.env.GEMINI_FALLBACK_MODEL || "gemini-2.0-flash";
+  process.env.GEMINI_FALLBACK_MODEL || "gemini-2.5-flash";
 const FALLBACK_STATUS_CODES = new Set([404, 429, 500, 502, 503, 504]);
 const AI_RATE_LIMIT_MAX = Number(process.env.AI_RATE_LIMIT_MAX || 30);
 const AI_RATE_LIMIT_WINDOW_SECONDS = Number(
