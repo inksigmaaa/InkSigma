@@ -1880,6 +1880,29 @@ export const TiptapEditor = memo(function TiptapEditor({
   const aiMenuRef = useRef(null);
   const suppressNextVoiceClickRef = useRef(false);
 
+  const closeAiMenu = useCallback(() => {
+    setAiMenu((current) => (current.type ? { type: null, position: null } : current));
+  }, []);
+
+  const openAiMenu = useCallback((type, event) => {
+    const triggerRect = event.currentTarget.getBoundingClientRect();
+    const menuWidth = type === "tone" ? 188 : 208;
+    const left = clampNumber(
+      triggerRect.right - menuWidth,
+      AI_VIEWPORT_PADDING,
+      window.innerWidth - menuWidth - AI_VIEWPORT_PADDING,
+    );
+
+    setAiMenu({
+      type,
+      position: {
+        top: triggerRect.bottom + 8,
+        left,
+        width: menuWidth,
+      },
+    });
+  }, []);
+
   useEffect(() => {
     setIsMounted(true);
     return () => {
@@ -2481,29 +2504,6 @@ export const TiptapEditor = memo(function TiptapEditor({
         onEvent(event, data);
       }
     }
-  }, []);
-
-  const closeAiMenu = useCallback(() => {
-    setAiMenu((current) => (current.type ? { type: null, position: null } : current));
-  }, []);
-
-  const openAiMenu = useCallback((type, event) => {
-    const triggerRect = event.currentTarget.getBoundingClientRect();
-    const menuWidth = type === "tone" ? 188 : 208;
-    const left = clampNumber(
-      triggerRect.right - menuWidth,
-      AI_VIEWPORT_PADDING,
-      window.innerWidth - menuWidth - AI_VIEWPORT_PADDING,
-    );
-
-    setAiMenu({
-      type,
-      position: {
-        top: triggerRect.bottom + 8,
-        left,
-        width: menuWidth,
-      },
-    });
   }, []);
 
   const getAiResponseError = useCallback(async (response) => {
