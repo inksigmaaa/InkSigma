@@ -32,10 +32,6 @@ import {
   writeLocalArticleId,
 } from "./services/DraftRecoveryService";
 import { getApiBase } from "@/utils/apiBase";
-import {
-  getDraft as dexieGetDraft,
-  deleteDraft as dexieDeleteDraft,
-} from "./services/DexieService";
 import SaveStatusIndicator from "./SaveStatusIndicator";
 import EditorPageStyles from "./EditorPageStyles";
 import EditorStatsBar from "./EditorStatsBar";
@@ -781,7 +777,7 @@ export default function EditorPageClient() {
       initialBlogIdRef.current = blogId;
       lastLoadedBlogIdRef.current = blogId;
     }
-  }, [blogId, isMounted, getDexieId, loadExistingBlog, restoreLocalDraft]);
+  }, [blogId, isMounted, getDexieId, loadExistingBlog]);
 
   useEffect(() => {
     if (
