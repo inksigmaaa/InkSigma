@@ -78,11 +78,14 @@ export default function EditorPageClient() {
   const blogId = articleId; // Alias for backward compatibility
   const publicationId = searchParams.get("publicationId"); // For joined publications
   const [currentBlogId, setCurrentBlogId] = useState(blogId);
+  const [editorRenderKey, setEditorRenderKey] = useState(blogId || "new");
 
   useEffect(() => {
-    if (blogId && blogId !== currentBlogId) {
-      setCurrentBlogId(blogId);
-    }
+    const nextBlogId = blogId || null;
+    if (nextBlogId === (currentBlogId || null)) return;
+
+    setCurrentBlogId(nextBlogId);
+    setEditorRenderKey(nextBlogId || "new");
   }, [blogId, currentBlogId]);
 
   // Determine if user is owner or member
@@ -326,13 +329,32 @@ export default function EditorPageClient() {
     ],
   );
 
-  // Callback for when the first server save creates a new blog ID
-  // Only stores the ID in a ref — no state change, no URL update, no re-render.
-  // The ID is "flushed" to state + URL only on explicit user action (save/publish/exit).
+  const syncDraftIdToUrl = useCallback((newId, nextStatus = "draft") => {
+    if (!newId) return;
+
+    setCurrentBlogId((current) => current || newId);
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("id", newId);
+    if (!params.get("status")) {
+      params.set("status", nextStatus);
+    }
+    if (publicationId) {
+      params.set("publicationId", publicationId);
+    }
+
+    router.replace(withPub(`/editor?${params.toString()}`), {
+      scroll: false,
+    });
+  }, [searchParams, publicationId, router, withPub]);
+
+  // Callback for when the first server save creates a new blog ID.
+  // Promote the draft into the URL immediately so refresh always reopens it.
   const handleBlogIdCreated = useCallback((result) => {
     if (result?.id != null) {
       const newId = String(result.id);
       shadowIdRef.current = newId;
+      syncDraftIdToUrl(newId);
 
       // If the user selected a thumbnail before the blog existed, upload it now.
       const pending = thumbnailDataRef.current;
@@ -349,7 +371,7 @@ export default function EditorPageClient() {
           });
       }
     }
-  }, [persistThumbnailForBlog]);
+  }, [persistThumbnailForBlog, syncDraftIdToUrl]);
 
   // Promote shadowIdRef to state + URL (called on manual save / publish / exit)
   const flushShadowId = useCallback(() => {
@@ -1745,7 +1767,7 @@ export default function EditorPageClient() {
               </div>
             ) : (
               <TiptapEditor
-                key={currentBlogId || "new"}
+                key={editorRenderKey}
                 onUpdate={handleEditorUpdate}
                 initialContent={initialContent}
                 editorRef={editorInstanceRef}
