@@ -121,6 +121,10 @@ const AI_MIN_RECOMMENDED_CHARS = 24;
 const AI_LARGE_SELECTION_CHARS = 2500;
 const AI_POPUP_WIDTH = 420;
 const AI_POPUP_ESTIMATED_HEIGHT = 320;
+const AI_VIEWPORT_PADDING = 12;
+const AI_POPUP_GAP = 12;
+
+const clampNumber = (value, min, max) => Math.min(Math.max(value, min), max);
 
 const getSupportedVoiceMimeType = () => {
   if (typeof MediaRecorder === "undefined") return "";
@@ -2072,7 +2076,7 @@ export const TiptapEditor = memo(function TiptapEditor({
       try {
         const start = editor.view.coordsAtPos(from);
         const end = editor.view.coordsAtPos(to);
-        const viewportPadding = 12;
+        const viewportPadding = AI_VIEWPORT_PADDING;
         const editorBounds = editor.view.dom.getBoundingClientRect();
         const editorLeft = Math.max(editorBounds.left, viewportPadding);
         const editorRight = Math.min(
@@ -2099,7 +2103,7 @@ export const TiptapEditor = memo(function TiptapEditor({
           Math.max(editorLeft, editorRight - toolbarWidth),
         );
         const top = Math.max(Math.min(start.top, end.top) - 52, 12);
-        const popupGap = 12;
+        const popupGap = AI_POPUP_GAP;
         const popupWidth = Math.min(
           AI_POPUP_WIDTH,
           window.innerWidth - viewportPadding * 2,
@@ -2175,6 +2179,145 @@ export const TiptapEditor = memo(function TiptapEditor({
       window.removeEventListener("resize", updateAiToolbar);
     };
   }, [aiState, aiSuggestion, editor]);
+
+  useEffect(() => {
+    if (!editor || !aiSuggestion?.range || !aiPopupRef.current) return;
+    if (typeof window === "undefined" || window.innerWidth <= 767) return;
+
+    const updateAiPopupPosition = () => {
+      const popup = aiPopupRef.current;
+      if (!popup) return;
+
+      try {
+        const { from, to } = aiSuggestion.range;
+        const start = editor.view.coordsAtPos(from);
+        const end = editor.view.coordsAtPos(to);
+        const popupRect = popup.getBoundingClientRect();
+        const viewportPadding = AI_VIEWPORT_PADDING;
+        const popupGap = AI_POPUP_GAP;
+        const popupWidth = Math.min(
+          popupRect.width,
+          window.innerWidth - viewportPadding * 2,
+        );
+        const popupHeight = popupRect.height;
+        const editorBounds = editor.view.dom.getBoundingClientRect();
+        const editorLeft = Math.max(editorBounds.left, viewportPadding);
+        const editorRight = Math.min(
+          editorBounds.right,
+          window.innerWidth - viewportPadding,
+        );
+        const selectionCenter = (start.left + end.right) / 2;
+        const selectionLeft = Math.min(start.left, end.left);
+        const selectionRight = Math.max(start.right, end.right);
+        const selectionTop = Math.min(start.top, end.top);
+        const selectionBottom = Math.max(start.bottom, end.bottom);
+        const hasSpaceBelow =
+          selectionBottom + popupGap + popupHeight <=
+          window.innerHeight - viewportPadding;
+        const hasSpaceAbove =
+          selectionTop - popupGap - popupHeight >= viewportPadding;
+        const hasSpaceRight = selectionRight + popupGap + popupWidth <= editorRight;
+        const hasSpaceLeft = selectionLeft - popupGap - popupWidth >= editorLeft;
+        const currentPlacement = aiSuggestion.position?.placement;
+
+        let nextPlacement = currentPlacement;
+        let nextLeft = clampNumber(
+          selectionCenter - popupWidth / 2,
+          editorLeft,
+          Math.max(editorLeft, editorRight - popupWidth),
+        );
+        let nextTop = hasSpaceBelow
+          ? selectionBottom + 10
+          : selectionTop - popupHeight - 10;
+
+        if (
+          (currentPlacement === "right" && hasSpaceRight) ||
+          (!hasSpaceBelow && !hasSpaceAbove && hasSpaceRight)
+        ) {
+          nextPlacement = "right";
+          nextLeft = Math.min(selectionRight + popupGap, editorRight - popupWidth);
+          nextTop = clampNumber(
+            selectionTop - 16,
+            viewportPadding,
+            window.innerHeight - popupHeight - viewportPadding,
+          );
+        } else if (
+          (currentPlacement === "left" && hasSpaceLeft) ||
+          (!hasSpaceBelow && !hasSpaceAbove && hasSpaceLeft)
+        ) {
+          nextPlacement = "left";
+          nextLeft = Math.max(selectionLeft - popupWidth - popupGap, editorLeft);
+          nextTop = clampNumber(
+            selectionTop - 16,
+            viewportPadding,
+            window.innerHeight - popupHeight - viewportPadding,
+          );
+        } else if (hasSpaceBelow) {
+          nextPlacement = "below";
+          nextTop = selectionBottom + 10;
+        } else if (hasSpaceAbove) {
+          nextPlacement = "above";
+          nextTop = selectionTop - popupHeight - 10;
+        } else {
+          nextPlacement = selectionBottom <= window.innerHeight / 2 ? "below" : "above";
+          nextTop = clampNumber(
+            selectionBottom + 10,
+            viewportPadding,
+            window.innerHeight - popupHeight - viewportPadding,
+          );
+        }
+
+        nextTop = clampNumber(
+          nextTop,
+          viewportPadding,
+          window.innerHeight - popupHeight - viewportPadding,
+        );
+
+        setAiSuggestion((current) => {
+          if (!current) return current;
+
+          const previous = current.position || {};
+          if (
+            Math.abs((previous.top ?? 0) - nextTop) < 1 &&
+            Math.abs((previous.left ?? 0) - nextLeft) < 1 &&
+            Math.abs((previous.width ?? popupWidth) - popupWidth) < 1 &&
+            previous.placement === nextPlacement
+          ) {
+            return current;
+          }
+
+          return {
+            ...current,
+            position: {
+              ...previous,
+              top: nextTop,
+              left: nextLeft,
+              width: popupWidth,
+              placement: nextPlacement,
+            },
+          };
+        });
+      } catch {
+        // Keep the last stable popup position if measurement fails.
+      }
+    };
+
+    const frame = window.requestAnimationFrame(updateAiPopupPosition);
+    window.addEventListener("resize", updateAiPopupPosition);
+    window.addEventListener("scroll", updateAiPopupPosition, true);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateAiPopupPosition);
+      window.removeEventListener("scroll", updateAiPopupPosition, true);
+    };
+  }, [
+    aiSuggestion?.position?.placement,
+    aiSuggestion?.range,
+    aiSuggestion?.status,
+    aiSuggestion?.text,
+    editor,
+  ]);
 
   useEffect(() => {
     if (!editor || aiState !== "loading") return;
@@ -3054,6 +3197,7 @@ export const TiptapEditor = memo(function TiptapEditor({
           position: fixed;
           z-index: 121;
           width: 420px;
+          max-height: calc(100vh - 24px);
           border: 1px solid #e5e7eb;
           border-radius: 10px;
           background: #ffffff;
@@ -3082,7 +3226,7 @@ export const TiptapEditor = memo(function TiptapEditor({
         }
 
         .ai-popup-body {
-          max-height: min(360px, 56vh);
+          max-height: min(360px, calc(100vh - 96px), 56vh);
           overflow-y: auto;
           padding: 12px;
         }
