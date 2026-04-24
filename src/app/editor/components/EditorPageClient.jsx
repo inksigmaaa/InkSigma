@@ -23,6 +23,10 @@ import {
 import { TiptapEditor } from "./TiptapEditor";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { getApiBase } from "@/utils/apiBase";
+import {
+  getDraft as dexieGetDraft,
+  deleteDraft as dexieDeleteDraft,
+} from "./services/DexieService";
 import SaveStatusIndicator from "./SaveStatusIndicator";
 import {
   DEFAULT_DRAFT_TITLE,
@@ -501,6 +505,24 @@ export default function EditorPageClient() {
         extraDirtySignal: blog.image ? `url:${blog.image}` : "none",
       });
 
+      // Check Dexie for a local draft that's newer than the server version
+      try {
+        const localDraft = await dexieGetDraft(String(id));
+        if (localDraft && localDraft.lastModified) {
+          const serverTime = new Date(
+            blog.updatedAt || blog.createdAt,
+          ).getTime();
+          if (localDraft.lastModified > serverTime) {
+            restoreLocalDraft(localDraft);
+          } else {
+            // Stale local draft — clean it up
+            dexieDeleteDraft(String(id));
+          }
+        }
+      } catch (err) {
+        console.warn("[Editor] Dexie draft check failed:", err);
+      }
+
       if (blog.image) {
         setThumbnailData({ url: blog.image, previewUrl: blog.image });
         setThumbnailRemoved(false);
@@ -541,7 +563,7 @@ export default function EditorPageClient() {
     } finally {
       setIsLoading(false);
     }
-  }, [resetSnapshot]);
+  }, [resetSnapshot, restoreLocalDraft]);
 
   useEffect(() => {
     if (blogId && blogId === initialBlogIdRef.current) {
@@ -549,8 +571,18 @@ export default function EditorPageClient() {
     } else if (blogId && blogId !== initialBlogIdRef.current) {
       // Shadow ID was just promoted — update the ref but don't reload
       initialBlogIdRef.current = blogId;
+    } else if (isMounted) {
+      // New post: check Dexie for a recovered draft
+      const checkNewDraft = async () => {
+        const dexieId = getDexieId();
+        const localDraft = await dexieGetDraft(dexieId);
+        if (localDraft && (localDraft.title || localDraft.content)) {
+          restoreLocalDraft(localDraft);
+        }
+      };
+      checkNewDraft();
     }
-  }, [blogId, isMounted, getDexieId, loadExistingBlog]);
+  }, [blogId, isMounted, getDexieId, loadExistingBlog, restoreLocalDraft]);
 
   // Save blog to database (create new or update existing)
   const saveBlog = async (
