@@ -2331,68 +2331,6 @@ export const TiptapEditor = memo(function TiptapEditor({
   ]);
 
   useEffect(() => {
-    if (!editor || !aiToolbar.visible || !aiToolbar.range || !aiToolbarRef.current) return;
-
-    const updateMeasuredToolbarPosition = () => {
-      try {
-        const { from, to } = aiToolbar.range;
-        const start = editor.view.coordsAtPos(from);
-        const end = editor.view.coordsAtPos(to);
-        const viewportPadding = AI_VIEWPORT_PADDING;
-        const editorBounds = editor.view.dom.getBoundingClientRect();
-        const editorLeft = Math.max(editorBounds.left, viewportPadding);
-        const editorRight = Math.min(
-          editorBounds.right,
-          window.innerWidth - viewportPadding,
-        );
-        const editorWidth = Math.max(editorRight - editorLeft, 0);
-        const measuredWidth = Math.min(
-          aiToolbarRef.current.getBoundingClientRect().width,
-          editorWidth || window.innerWidth - viewportPadding * 2,
-        );
-        const selectionCenter = Math.min(
-          Math.max((start.left + end.right) / 2, editorLeft + measuredWidth / 2),
-          editorRight - measuredWidth / 2,
-        );
-        const nextLeft = Math.min(
-          Math.max(selectionCenter - measuredWidth / 2, editorLeft),
-          Math.max(editorLeft, editorRight - measuredWidth),
-        );
-        const nextTop = Math.max(Math.min(start.top, end.top) - 52, 12);
-
-        setAiToolbar((current) => {
-          if (!current.visible) return current;
-
-          if (
-            Math.abs((current.left ?? 0) - nextLeft) < 1 &&
-            Math.abs((current.top ?? 0) - nextTop) < 1 &&
-            Math.abs((current.width ?? 0) - measuredWidth) < 1
-          ) {
-            return current;
-          }
-
-          return {
-            ...current,
-            top: nextTop,
-            left: nextLeft,
-            width: measuredWidth,
-          };
-        });
-      } catch {
-        // Keep the last stable toolbar position if measurement fails.
-      }
-    };
-
-    const frame = window.requestAnimationFrame(updateMeasuredToolbarPosition);
-    window.addEventListener("resize", updateMeasuredToolbarPosition);
-
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener("resize", updateMeasuredToolbarPosition);
-    };
-  }, [aiToolbar.range, aiToolbar.visible, aiToolbar.text, editor]);
-
-  useEffect(() => {
     if (!aiMenu.type) return;
 
     const handlePointerDown = (event) => {
@@ -3690,7 +3628,7 @@ export const TiptapEditor = memo(function TiptapEditor({
           style={{
             top: `${aiToolbar.top}px`,
             left: `${aiToolbar.left}px`,
-            maxWidth: aiToolbar.width ? `${aiToolbar.width}px` : undefined,
+            width: `${aiToolbar.width}px`,
           }}
           onMouseDown={(event) => event.preventDefault()}
         >
