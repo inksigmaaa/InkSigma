@@ -452,8 +452,6 @@ export default function EditorPageClient() {
     if (editorInstanceRef.current) {
       editorInstanceRef.current.commands.setContent(nextContent || "");
     }
-
-    toast.info("Recovered your local draft");
   }, []);
 
   // Load existing blog if editing.
