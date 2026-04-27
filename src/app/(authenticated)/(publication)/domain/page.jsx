@@ -35,6 +35,130 @@ const DOMAIN_STATUS_STYLES = {
   failed: "bg-red-50 text-red-700 border border-red-200",
 };
 
+function DnsSetupRecords({
+  setupPlan,
+  setupPlanRequestDomain,
+  setupPlanLoading,
+  setupPlanError,
+  canVerifySavedDomain,
+  verifying,
+  onVerifyDomain,
+  onCopyValue,
+  customDomainVerificationError,
+  savedCustomDomain,
+}) {
+  return (
+    <div className="flex w-full flex-col gap-4 border-t border-[#EDEDED] pt-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 space-y-1">
+          <div
+            className="font-semibold text-[#A4A4A4] text-[12px] max-md:text-[8px] max-md:font-normal leading-[150%]"
+            style={{ fontFamily: "Public Sans" }}
+          >
+            DNS SETUP RECORDS
+          </div>
+          <div
+            className="font-semibold text-[#202020] text-[16px] max-md:text-[12px] max-md:font-normal leading-[28px] break-all"
+            style={{ fontFamily: "Public Sans" }}
+          >
+            {setupPlan?.domain || setupPlanRequestDomain}
+          </div>
+          <p className="text-[12px] leading-[18px] text-[#696969] max-md:text-[10px]">
+            {setupPlan?.domainType === "apex"
+              ? "Add these records for your root domain."
+              : "Add this CNAME record for your subdomain."}
+          </p>
+        </div>
+        {canVerifySavedDomain && (
+          <Button
+            type="button"
+            onClick={onVerifyDomain}
+            disabled={verifying}
+            className="bg-black text-white hover:bg-gray-800 min-w-[112px] text-xs h-9"
+          >
+            {verifying ? "Checking..." : "Verify DNS"}
+          </Button>
+        )}
+      </div>
+
+      {setupPlanLoading && (
+        <div className="rounded border border-[#EAEAEA] bg-[#FAFAFA] px-4 py-3 text-sm text-[#696969]">
+          Loading DNS records...
+        </div>
+      )}
+
+      {setupPlanError && !setupPlanLoading && (
+        <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {setupPlanError}
+        </div>
+      )}
+
+      {!setupPlanLoading && setupPlan?.records?.length > 0 && (
+        <div className="flex flex-col gap-3">
+          {setupPlan.records.map((record, index) => {
+            const recordKey = `${record.type}-${record.name}-${record.value}-${index}`;
+
+            return (
+              <div
+                key={recordKey}
+                className="rounded border border-[#EAEAEA] bg-[#FAFAFA] p-3"
+              >
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <span className="rounded-full bg-white px-2.5 py-1 text-[11px] text-[#696969] border border-[#EAEAEA]">
+                    {record.role === "required" ? "Required" : "Recommended"}
+                  </span>
+                </div>
+
+                <div className="overflow-hidden rounded border border-[#EAEAEA] bg-white">
+                  <div className="grid grid-cols-[64px_64px_minmax(0,1fr)] border-b border-[#EAEAEA] bg-[#FCFCFC] text-[10px] font-semibold uppercase leading-none tracking-wide text-[#A4A4A4] sm:grid-cols-[92px_92px_minmax(0,1fr)]">
+                    <div className="px-3 py-2">Type</div>
+                    <div className="border-l border-[#EAEAEA] px-3 py-2">Host</div>
+                    <div className="border-l border-[#EAEAEA] px-3 py-2">Value</div>
+                  </div>
+                  <div className="grid grid-cols-[64px_64px_minmax(0,1fr)] items-stretch text-[13px] text-[#202020] sm:grid-cols-[92px_92px_minmax(0,1fr)]">
+                    <div className="flex items-center px-3 py-3 font-medium">
+                      {record.type}
+                    </div>
+                    <div className="flex items-center border-l border-[#EAEAEA] px-3 py-3">
+                      {record.name}
+                    </div>
+                    <div className="flex min-w-0 items-center justify-between gap-2 border-l border-[#EAEAEA] px-3 py-2">
+                      <span className="min-w-0 break-all">{record.value}</span>
+                      <button
+                        type="button"
+                        onClick={() => onCopyValue(record.value)}
+                        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded border border-[#EAEAEA] bg-[#FAFAFA] px-2.5 text-[12px] font-medium text-[#696969] transition hover:border-[#D4D4D4] hover:bg-white"
+                        aria-label={`Copy DNS value for ${record.type} ${record.name}`}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {!!setupPlan?.warnings?.length && !setupPlanLoading && (
+        <div className="space-y-2 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {setupPlan.warnings.map((warning) => (
+            <p key={warning}>{warning}</p>
+          ))}
+        </div>
+      )}
+
+      {customDomainVerificationError && savedCustomDomain && (
+        <div className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {customDomainVerificationError}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DomainPage() {
   const { currentPublication, refreshCurrentPublication } = usePublication();
   const [customDomain, setCustomDomain] = useState("");
@@ -421,7 +545,7 @@ export default function DomainPage() {
             {/* Current Domain Section */}
             {!savedCustomDomain ? (
               // Initial state - no custom domain saved
-              <div className="bg-white mx-auto rounded-lg border border-gray-200 p-6 md:p-8 space-y-5 w-full max-w-[400px] max-md:p-4 max-md:w-[301px] mb-12 md:mb-20">
+              <div className="bg-white mx-auto rounded-lg border border-gray-200 p-6 md:p-8 space-y-5 w-full max-w-[720px] max-md:p-4 max-md:w-[301px] mb-12 md:mb-20">
                 <div className="border-b border-gray-200 pb-5">
                   <h2 className="text-xs font-semibold text-gray-400 mb-3 max-md:text-[8px] mb-0 max-md:font-normal">
                     YOUR CURRENT DOMAIN
@@ -467,10 +591,25 @@ export default function DomainPage() {
                     {saving ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
+
+                {shouldShowSetupPlanCard && (
+                  <DnsSetupRecords
+                    setupPlan={setupPlan}
+                    setupPlanRequestDomain={setupPlanRequestDomain}
+                    setupPlanLoading={setupPlanLoading}
+                    setupPlanError={setupPlanError}
+                    canVerifySavedDomain={canVerifySavedDomain}
+                    verifying={verifying}
+                    onVerifyDomain={handleVerifyDomain}
+                    onCopyValue={(value) => copyToClipboard(value, "Value")}
+                    customDomainVerificationError={customDomainVerificationError}
+                    savedCustomDomain={savedCustomDomain}
+                  />
+                )}
               </div>
             ) : (
               // After custom domain is saved - exact CSS styling
-              <div className="mx-auto mb-12 md:mb-20 flex w-full max-w-[447px] flex-col gap-6 rounded-lg border border-[#EDEDED] bg-white p-5 md:p-[24px_32px]">
+              <div className="mx-auto mb-12 md:mb-20 flex w-full max-w-[720px] flex-col gap-6 rounded-lg border border-[#EDEDED] bg-white p-5 md:p-[24px_32px] max-md:w-[301px]">
                 {/* Subdomain Domain Section */}
                 <div className="flex w-full flex-col gap-1 rounded border border-[#EAEAEA] bg-[#FAFAFA] p-4 md:px-6 md:py-4">
                   <div
@@ -622,121 +761,20 @@ export default function DomainPage() {
                     {saving ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
-              </div>
-            )}
 
-            {shouldShowSetupPlanCard && (
-              <div className="mx-auto mb-12 md:mb-20 flex w-full max-w-[447px] flex-col gap-4 rounded-lg border border-[#EDEDED] bg-white p-5 md:p-[24px_32px]">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <div
-                      className="font-semibold text-[#A4A4A4] text-[12px] max-md:text-[8px] max-md:font-normal leading-[150%]"
-                      style={{ fontFamily: "Public Sans" }}
-                    >
-                      DNS SETUP RECORDS
-                    </div>
-                    <div
-                      className="font-semibold text-[#202020] text-[16px] max-md:text-[12px] max-md:font-normal leading-[28px] break-all"
-                      style={{ fontFamily: "Public Sans" }}
-                    >
-                      {setupPlan?.domain || setupPlanRequestDomain}
-                    </div>
-                    <p className="text-[12px] leading-[18px] text-[#696969] max-md:text-[10px]">
-                      {setupPlan?.domainType === "apex"
-                        ? "Add these records for your root domain."
-                        : "Add this CNAME record for your subdomain."}
-                    </p>
-                  </div>
-                  {canVerifySavedDomain && (
-                    <Button
-                      type="button"
-                      onClick={handleVerifyDomain}
-                      disabled={verifying}
-                      className="bg-black text-white hover:bg-gray-800 min-w-[112px] text-xs h-9"
-                    >
-                      {verifying ? "Checking..." : "Verify DNS"}
-                    </Button>
-                  )}
-                </div>
-
-                {setupPlanLoading && (
-                  <div className="rounded border border-[#EAEAEA] bg-[#FAFAFA] px-4 py-3 text-sm text-[#696969]">
-                    Loading DNS records...
-                  </div>
-                )}
-
-                {setupPlanError && !setupPlanLoading && (
-                  <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {setupPlanError}
-                  </div>
-                )}
-
-                {!setupPlanLoading && setupPlan?.records?.length > 0 && (
-                  <div className="flex flex-col gap-3">
-                    {setupPlan.records.map((record, index) => {
-                      const recordKey = `${record.type}-${record.name}-${record.value}-${index}`;
-                      return (
-                        <div
-                          key={recordKey}
-                          className="rounded border border-[#EAEAEA] bg-[#FAFAFA] p-3"
-                        >
-                          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                            <span className="rounded-full bg-white px-2.5 py-1 text-[11px] text-[#696969] border border-[#EAEAEA]">
-                              {record.role === "required"
-                                ? "Required"
-                                : "Recommended"}
-                            </span>
-                          </div>
-
-                          <div className="overflow-hidden rounded border border-[#EAEAEA] bg-white">
-                            <div className="grid grid-cols-[72px_72px_minmax(0,1fr)] border-b border-[#EAEAEA] bg-[#FCFCFC] text-[10px] font-semibold uppercase leading-none tracking-wide text-[#A4A4A4] md:grid-cols-[88px_88px_minmax(0,1fr)]">
-                              <div className="px-3 py-2">Type</div>
-                              <div className="border-l border-[#EAEAEA] px-3 py-2">Host</div>
-                              <div className="border-l border-[#EAEAEA] px-3 py-2">Value</div>
-                            </div>
-                            <div className="grid grid-cols-[72px_72px_minmax(0,1fr)] items-stretch text-[13px] text-[#202020] md:grid-cols-[88px_88px_minmax(0,1fr)]">
-                              <div className="flex items-center px-3 py-3 font-medium">
-                                {record.type}
-                              </div>
-                              <div className="flex items-center border-l border-[#EAEAEA] px-3 py-3">
-                                {record.name}
-                              </div>
-                              <div className="flex min-w-0 items-center justify-between gap-2 border-l border-[#EAEAEA] px-3 py-2">
-                                <span className="min-w-0 break-all">
-                                  {record.value}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    copyToClipboard(record.value, "Value")
-                                  }
-                                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded border border-[#EAEAEA] bg-[#FAFAFA] px-2.5 text-[12px] font-medium text-[#696969] transition hover:border-[#D4D4D4] hover:bg-white"
-                                  aria-label={`Copy DNS value for ${record.type} ${record.name}`}
-                                >
-                                  <Copy className="h-3.5 w-3.5" />
-                                  Copy
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {!!setupPlan?.warnings?.length && !setupPlanLoading && (
-                  <div className="space-y-2 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                    {setupPlan.warnings.map((warning) => (
-                      <p key={warning}>{warning}</p>
-                    ))}
-                  </div>
-                )}
-
-                {customDomainVerificationError && savedCustomDomain && (
-                  <div className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                    {customDomainVerificationError}
-                  </div>
+                {shouldShowSetupPlanCard && (
+                  <DnsSetupRecords
+                    setupPlan={setupPlan}
+                    setupPlanRequestDomain={setupPlanRequestDomain}
+                    setupPlanLoading={setupPlanLoading}
+                    setupPlanError={setupPlanError}
+                    canVerifySavedDomain={canVerifySavedDomain}
+                    verifying={verifying}
+                    onVerifyDomain={handleVerifyDomain}
+                    onCopyValue={(value) => copyToClipboard(value, "Value")}
+                    customDomainVerificationError={customDomainVerificationError}
+                    savedCustomDomain={savedCustomDomain}
+                  />
                 )}
               </div>
             )}
