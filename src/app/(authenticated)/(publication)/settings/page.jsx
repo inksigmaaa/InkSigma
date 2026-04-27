@@ -137,6 +137,15 @@ const getUploadErrorMessage = async (response, fallback = "Upload failed") => {
   }
 };
 
+const IMAGE_UPLOAD_TOAST_ID = "publication-image-upload";
+
+const getImageTypeLabel = (type) => {
+  if (type === "meta_og") return "Meta OG image";
+  if (type === "favicon") return "Favicon";
+  return "Logo";
+};
+
+
 export default function SettingsPage() {
   const router = useRouter();
   const apiBase = getApiBase();
