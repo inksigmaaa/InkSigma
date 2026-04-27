@@ -109,13 +109,54 @@ function DnsSetupRecords({
                   </span>
                 </div>
 
-                <div className="overflow-hidden rounded border border-[#EAEAEA] bg-white">
-                  <div className="grid grid-cols-[64px_64px_minmax(0,1fr)] border-b border-[#EAEAEA] bg-[#FCFCFC] text-[10px] font-semibold uppercase leading-none tracking-wide text-[#A4A4A4] sm:grid-cols-[92px_92px_minmax(0,1fr)]">
+                <div className="space-y-2 sm:hidden">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded border border-[#EAEAEA] bg-white px-3 py-2">
+                      <div className="text-[10px] font-semibold uppercase leading-none tracking-wide text-[#A4A4A4]">
+                        Type
+                      </div>
+                      <div className="mt-2 text-[14px] font-medium text-[#202020]">
+                        {record.type}
+                      </div>
+                    </div>
+                    <div className="rounded border border-[#EAEAEA] bg-white px-3 py-2">
+                      <div className="text-[10px] font-semibold uppercase leading-none tracking-wide text-[#A4A4A4]">
+                        Host
+                      </div>
+                      <div className="mt-2 break-all text-[14px] text-[#202020]">
+                        {record.name}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded border border-[#EAEAEA] bg-white px-3 py-2">
+                    <div className="text-[10px] font-semibold uppercase leading-none tracking-wide text-[#A4A4A4]">
+                      Value
+                    </div>
+                    <div className="mt-2 flex min-w-0 items-start justify-between gap-3">
+                      <span className="min-w-0 break-all text-[14px] leading-5 text-[#202020]">
+                        {record.value}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onCopyValue(record.value)}
+                        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded border border-[#EAEAEA] bg-[#FAFAFA] px-2.5 text-[12px] font-medium text-[#696969] transition hover:border-[#D4D4D4] hover:bg-white"
+                        aria-label={`Copy DNS value for ${record.type} ${record.name}`}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hidden overflow-hidden rounded border border-[#EAEAEA] bg-white sm:block">
+                  <div className="grid grid-cols-[92px_92px_minmax(0,1fr)] border-b border-[#EAEAEA] bg-[#FCFCFC] text-[10px] font-semibold uppercase leading-none tracking-wide text-[#A4A4A4]">
                     <div className="px-3 py-2">Type</div>
                     <div className="border-l border-[#EAEAEA] px-3 py-2">Host</div>
                     <div className="border-l border-[#EAEAEA] px-3 py-2">Value</div>
                   </div>
-                  <div className="grid grid-cols-[64px_64px_minmax(0,1fr)] items-stretch text-[13px] text-[#202020] sm:grid-cols-[92px_92px_minmax(0,1fr)]">
+                  <div className="grid grid-cols-[92px_92px_minmax(0,1fr)] items-stretch text-[13px] text-[#202020]">
                     <div className="flex items-center px-3 py-3 font-medium">
                       {record.type}
                     </div>
@@ -545,7 +586,7 @@ export default function DomainPage() {
             {/* Current Domain Section */}
             {!savedCustomDomain ? (
               // Initial state - no custom domain saved
-              <div className="bg-white mx-auto rounded-lg border border-gray-200 p-6 md:p-8 space-y-5 w-full max-w-[720px] max-md:p-4 max-md:w-[301px] mb-12 md:mb-20">
+              <div className="bg-white mx-auto rounded-lg border border-gray-200 p-6 md:p-8 space-y-5 w-full max-w-[720px] max-md:w-[calc(100vw-2rem)] max-md:p-4 mb-12 md:mb-20">
                 <div className="border-b border-gray-200 pb-5">
                   <h2 className="text-xs font-semibold text-gray-400 mb-3 max-md:text-[8px] mb-0 max-md:font-normal">
                     YOUR CURRENT DOMAIN
@@ -609,7 +650,7 @@ export default function DomainPage() {
               </div>
             ) : (
               // After custom domain is saved - exact CSS styling
-              <div className="mx-auto mb-12 md:mb-20 flex w-full max-w-[720px] flex-col gap-6 rounded-lg border border-[#EDEDED] bg-white p-5 md:p-[24px_32px] max-md:w-[301px]">
+              <div className="mx-auto mb-12 md:mb-20 flex w-full max-w-[720px] flex-col gap-6 rounded-lg border border-[#EDEDED] bg-white p-5 md:p-[24px_32px] max-md:w-[calc(100vw-2rem)]">
                 {/* Subdomain Domain Section */}
                 <div className="flex w-full flex-col gap-1 rounded border border-[#EAEAEA] bg-[#FAFAFA] p-4 md:px-6 md:py-4">
                   <div
