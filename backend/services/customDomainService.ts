@@ -12,6 +12,17 @@ import {
   normalizeCustomDomainValue,
   validateCustomDomainInput,
 } from "./customDomainPlanner.js";
+import {
+  VercelDomainError,
+  addVercelProjectDomain,
+  buildVercelDnsRecords,
+  buildVercelVerificationRecords,
+  getVercelProjectDomain,
+  getVercelProjectDomainStatusMessage,
+  isVercelDomainIntegrationConfigured,
+  shouldRequireVercelDomainIntegration,
+  verifyVercelProjectDomain,
+} from "./vercelDomainService.js";
 
 export const CUSTOM_DOMAIN_STATUS = {
   PENDING_VERIFICATION: "pending_verification",
@@ -46,6 +57,12 @@ type CustomDomainReachabilityStatus = {
   message: string | null;
 };
 
+type CustomDomainProviderStatus = {
+  ready: boolean;
+  status: "ready" | "pending" | "failed";
+  message: string | null;
+};
+
 type CustomDomainLifecycleFields = {
   customDomain: string | null;
   customDomainStatus: CustomDomainStatus | null;
@@ -60,6 +77,23 @@ type CustomDomainVerificationFields = {
   customDomainVerificationError: string | null;
   customDomainVerifiedAt: Date | null;
   customDomainLastCheckedAt: Date | null;
+};
+
+type CustomDomainSetupPlan = ReturnType<typeof buildCustomDomainSetupPlan>;
+
+type CustomDomainSetupPlanWithProvider = Omit<
+  CustomDomainSetupPlan,
+  "records"
+> & {
+  records: Array<{
+    type: "A" | "CNAME" | "TXT";
+    name: string;
+    value: string;
+    ttl: string;
+    role: "required" | "recommended";
+  }>;
+  provider?: "vercel";
+  providerConfigured?: boolean;
 };
 
 const normalizeCustomDomainStatus = (
@@ -83,6 +117,19 @@ const isLocalDomain = (domain: string | null | undefined) =>
 const shouldAutoActivateCustomDomain = (domain: string | null | undefined) =>
   Boolean(domain) &&
   (process.env.NODE_ENV === "development" || isLocalDomain(domain));
+
+const shouldUseVercelDomainProvider = () =>
+  isVercelDomainIntegrationConfigured();
+
+const assertVercelDomainProviderConfiguredForSave = () => {
+  if (isVercelDomainIntegrationConfigured()) return;
+  if (!shouldRequireVercelDomainIntegration()) return;
+
+  throw new VercelDomainError(
+    "Vercel custom-domain integration is not configured on the server.",
+    { code: "vercel_not_configured" },
+  );
+};
 
 const DNS_LOOKUP_TIMEOUT_MS = getEnvNumber(
   process.env.DNS_LOOKUP_TIMEOUT_MS,
@@ -391,6 +438,128 @@ const inspectCustomDomainReachability = async (
   }
 };
 
+const inspectVercelDomainProviderStatus = async (
+  customDomain: string,
+): Promise<CustomDomainProviderStatus> => {
+  if (!shouldUseVercelDomainProvider()) {
+    return {
+      ready: true,
+      status: "ready",
+      message: null,
+    };
+  }
+
+  try {
+    let projectDomain = await verifyVercelProjectDomain(customDomain);
+    if (!projectDomain || projectDomain.verified === undefined) {
+      projectDomain = await getVercelProjectDomain(customDomain);
+    }
+
+    if (projectDomain.verified === false) {
+      return {
+        ready: false,
+        status: "pending",
+        message: getVercelProjectDomainStatusMessage(projectDomain),
+      };
+    }
+
+    return {
+      ready: true,
+      status: "ready",
+      message: null,
+    };
+  } catch (error) {
+    if (
+      error instanceof VercelDomainError &&
+      error.code === "vercel_not_configured"
+    ) {
+      return {
+        ready: false,
+        status: "failed",
+        message:
+          "Vercel custom-domain integration is not configured on the server.",
+      };
+    }
+
+    return {
+      ready: false,
+      status: "failed",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to verify the domain with Vercel.",
+    };
+  }
+};
+
+export const attachCustomDomainToHostingProvider = async (
+  customDomain: string,
+): Promise<CustomDomainVerificationFields | null> => {
+  assertVercelDomainProviderConfiguredForSave();
+  if (!shouldUseVercelDomainProvider()) return null;
+
+  const now = new Date();
+  const projectDomain = await addVercelProjectDomain(customDomain);
+
+  if (projectDomain.verified === false) {
+    return {
+      customDomainStatus: CUSTOM_DOMAIN_STATUS.PENDING_VERIFICATION,
+      customDomainVerificationError:
+        getVercelProjectDomainStatusMessage(projectDomain),
+      customDomainVerifiedAt: null,
+      customDomainLastCheckedAt: now,
+    };
+  }
+
+  return {
+    customDomainStatus: CUSTOM_DOMAIN_STATUS.VERIFIED,
+    customDomainVerificationError: null,
+    customDomainVerifiedAt: now,
+    customDomainLastCheckedAt: now,
+  };
+};
+
+export const buildCustomDomainSetupPlanWithProvider = async (
+  domain: string | null | undefined,
+): Promise<CustomDomainSetupPlanWithProvider> => {
+  const fallbackPlan = buildCustomDomainSetupPlan(domain);
+
+  if (!shouldUseVercelDomainProvider()) {
+    return {
+      ...fallbackPlan,
+      providerConfigured: false,
+    };
+  }
+
+  const [dnsPlan, projectDomain] = await Promise.all([
+    buildVercelDnsRecords(fallbackPlan.domain),
+    getVercelProjectDomain(fallbackPlan.domain).catch(() => null),
+  ]);
+  const verificationRecords = projectDomain
+    ? buildVercelVerificationRecords(projectDomain)
+    : [];
+
+  return {
+    ...fallbackPlan,
+    provider: "vercel",
+    providerConfigured: true,
+    records:
+      dnsPlan.records.length > 0
+        ? [...dnsPlan.records, ...verificationRecords]
+        : [...fallbackPlan.records, ...verificationRecords],
+    warnings: [
+      ...fallbackPlan.warnings.filter(
+        (warning) =>
+          !warning.includes("No apex A record targets") &&
+          !warning.includes("No subdomain CNAME target"),
+      ),
+      ...(dnsPlan.configuration.misconfigured
+        ? ["Vercel reports this domain is not configured correctly yet."]
+        : []),
+    ],
+  };
+};
+
 export const verifyCustomDomainLifecycle = async (
   publicationRecord: PublicationCustomDomainLike | null | undefined,
   options: {
@@ -438,6 +607,37 @@ export const verifyCustomDomainLifecycle = async (
   }
 
   if (shouldAutoActivateCustomDomain(customDomain)) {
+    return verificationSuccess(
+      CUSTOM_DOMAIN_STATUS.ACTIVE as CustomDomainStatus,
+      now,
+    );
+  }
+
+  if (shouldUseVercelDomainProvider()) {
+    const providerStatus = await inspectVercelDomainProviderStatus(customDomain);
+    if (!providerStatus.ready) {
+      return verificationFailure(
+        providerStatus.status === "failed"
+          ? (CUSTOM_DOMAIN_STATUS.FAILED as CustomDomainStatus)
+          : (CUSTOM_DOMAIN_STATUS.PENDING_VERIFICATION as CustomDomainStatus),
+        providerStatus.message ||
+          "The hosting provider has not verified this domain yet.",
+        null,
+      );
+    }
+
+    const reachabilityStatus = await reachabilityInspector(customDomain);
+    if (!reachabilityStatus.ready) {
+      return verificationFailure(
+        reachabilityStatus.status === "ssl_pending"
+          ? (CUSTOM_DOMAIN_STATUS.SSL_PENDING as CustomDomainStatus)
+          : (CUSTOM_DOMAIN_STATUS.VERIFIED as CustomDomainStatus),
+        reachabilityStatus.message ||
+          "DNS is verified, but the custom domain is not serving InkSigma yet.",
+        now,
+      );
+    }
+
     return verificationSuccess(
       CUSTOM_DOMAIN_STATUS.ACTIVE as CustomDomainStatus,
       now,

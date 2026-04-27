@@ -40,6 +40,16 @@ services:
         sync: false
       - key: CUSTOM_DOMAIN_REACHABILITY_TIMEOUT_MS
         value: 8000
+      - key: VERCEL_TOKEN
+        sync: false
+      - key: VERCEL_PROJECT_ID_OR_NAME
+        sync: false
+      - key: VERCEL_TEAM_ID
+        sync: false
+      - key: VERCEL_TEAM_SLUG
+        sync: false
+      - key: VERCEL_API_TIMEOUT_MS
+        value: 8000
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
