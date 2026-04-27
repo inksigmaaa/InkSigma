@@ -17,6 +17,8 @@ const DEFAULT_SITE_SHORTCUT_ICON = "/favicon.ico";
 const DEFAULT_SITE_PNG_ICON = "/icons/favicon-32x32.png";
 const DEFAULT_SITE_SVG_ICON = "/icons/favicon.svg";
 const DEFAULT_SITE_APPLE_ICON = "/icons/apple-touch-icon.png";
+const OG_IMAGE_WIDTH = 1200;
+const OG_IMAGE_HEIGHT = 630;
 
 export const getAbsoluteAssetUrl = (assetPath) => {
   return getImageUrl(assetPath) || "";
@@ -105,10 +107,24 @@ export const buildPublicationMetadata = ({
       publication.logoUrl ||
       publication.faviconUrl,
   ) || undefined;
-  // Serve OG images at exact social sharing dimensions via Cloudinary transforms
-  const resolvedImage = rawImage?.includes("res.cloudinary.com")
-    ? rawImage.replace("/upload/", "/upload/w_1200,h_630,c_fill,f_auto,q_auto/")
+  // Serve OG images at fixed social sharing dimensions and a deterministic JPEG format.
+  const isCloudinaryImage = rawImage?.includes("res.cloudinary.com");
+  const resolvedImage = isCloudinaryImage
+    ? rawImage.replace(
+        "/upload/",
+        `/upload/w_${OG_IMAGE_WIDTH},h_${OG_IMAGE_HEIGHT},c_fill,f_jpg,q_auto/`,
+      )
     : rawImage;
+  const resolvedImageMetadata = resolvedImage
+    ? {
+        url: resolvedImage,
+        secureUrl: resolvedImage,
+        width: OG_IMAGE_WIDTH,
+        height: OG_IMAGE_HEIGHT,
+        alt: resolvedTitle,
+        ...(isCloudinaryImage ? { type: "image/jpeg" } : {}),
+      }
+    : undefined;
   const rawIconUrl =
     getAbsoluteAssetUrl(publication.faviconUrl) || undefined;
   // Serve favicon at standard browser size via Cloudinary transforms
@@ -146,7 +162,7 @@ export const buildPublicationMetadata = ({
       description: resolvedDescription,
       url: canonical || undefined,
       siteName: publication.name || "InkSigma",
-      images: resolvedImage ? [{ url: resolvedImage }] : undefined,
+      images: resolvedImageMetadata ? [resolvedImageMetadata] : undefined,
     },
     twitter: {
       card: resolvedImage ? "summary_large_image" : "summary",

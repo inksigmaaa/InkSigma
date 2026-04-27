@@ -66,7 +66,7 @@ export async function generateMetadata({ params, searchParams }) {
     pathname: `/blog/${blog?.canonicalSlug || blog?.slug || slug}`,
     title: blog?.title,
     description: blog?.description,
-    image: blog?.image || publication?.metaOgImageUrl || publication?.logoUrl,
+    image: publication?.metaOgImageUrl || blog?.image || publication?.logoUrl,
     type: "article",
   });
 }
