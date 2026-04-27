@@ -108,7 +108,7 @@ test("verifyCustomDomainLifecycle stays pending when DNS is not ready", async ()
   );
 });
 
-test("verifyCustomDomainLifecycle activates when DNS is ready", async () => {
+test("verifyCustomDomainLifecycle stays provider-pending when DNS is ready but hosting is not attached", async () => {
   await withEnv(
     {
       NODE_ENV: "production",
@@ -120,6 +120,80 @@ test("verifyCustomDomainLifecycle activates when DNS is ready", async () => {
         },
         {
           dnsInspector: async () => ({
+            ready: true,
+            status: "ready",
+            message: null,
+          }),
+          reachabilityInspector: async () => ({
+            ready: false,
+            status: "provider_pending",
+            message:
+              "DNS is verified, but the custom domain is not attached to the frontend hosting project yet.",
+          }),
+        },
+      );
+
+      assert.equal(result.customDomainStatus, CUSTOM_DOMAIN_STATUS.VERIFIED);
+      assert.match(
+        result.customDomainVerificationError || "",
+        /not attached to the frontend hosting project/i,
+      );
+      assert.ok(result.customDomainVerifiedAt instanceof Date);
+    },
+  );
+});
+
+test("verifyCustomDomainLifecycle stays ssl-pending when DNS is ready but HTTPS is not ready", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "production",
+    },
+    async () => {
+      const result = await verifyCustomDomainLifecycle(
+        {
+          customDomain: "www.example.com",
+        },
+        {
+          dnsInspector: async () => ({
+            ready: true,
+            status: "ready",
+            message: null,
+          }),
+          reachabilityInspector: async () => ({
+            ready: false,
+            status: "ssl_pending",
+            message: "DNS is verified, but HTTPS is not ready yet.",
+          }),
+        },
+      );
+
+      assert.equal(result.customDomainStatus, CUSTOM_DOMAIN_STATUS.SSL_PENDING);
+      assert.equal(
+        result.customDomainVerificationError,
+        "DNS is verified, but HTTPS is not ready yet.",
+      );
+      assert.ok(result.customDomainVerifiedAt instanceof Date);
+    },
+  );
+});
+
+test("verifyCustomDomainLifecycle activates only after DNS and HTTPS are ready", async () => {
+  await withEnv(
+    {
+      NODE_ENV: "production",
+    },
+    async () => {
+      const result = await verifyCustomDomainLifecycle(
+        {
+          customDomain: "www.example.com",
+        },
+        {
+          dnsInspector: async () => ({
+            ready: true,
+            status: "ready",
+            message: null,
+          }),
+          reachabilityInspector: async () => ({
             ready: true,
             status: "ready",
             message: null,
