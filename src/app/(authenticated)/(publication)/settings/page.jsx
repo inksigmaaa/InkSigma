@@ -9,6 +9,66 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getRootDomain } from "@/utils/publicationDomain";
 import { validateSubdomain, normalizeSubdomain } from "@/utils/subdomainRules";
 
+const DEFAULT_PUBLICATION_IMAGE = "/icons/inksigma-logo.svg";
+const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/svg+xml",
+  "image/x-icon",
+  "image/vnd.microsoft.icon",
+]);
+const ALLOWED_IMAGE_EXTENSIONS = new Set([
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "webp",
+  "svg",
+  "ico",
+]);
+const IMAGE_ACCEPT = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/svg+xml",
+  "image/x-icon",
+  ".ico",
+].join(",");
+
+const getFileExtension = (fileName = "") =>
+  fileName.split(".").pop()?.toLowerCase() || "";
+
+const getImageUploadValidationError = (file) => {
+  if (!file) return "No image selected";
+
+  const extension = getFileExtension(file.name);
+  const hasAllowedMime = ALLOWED_IMAGE_MIME_TYPES.has(file.type);
+  const hasAllowedExtension = ALLOWED_IMAGE_EXTENSIONS.has(extension);
+
+  if (!hasAllowedMime && !hasAllowedExtension) {
+    return "Only JPG, PNG, GIF, WebP, SVG, or ICO images are allowed";
+  }
+
+  if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+    return "Image must be smaller than 5MB";
+  }
+
+  return null;
+};
+
+const getUploadErrorMessage = async (response, fallback = "Upload failed") => {
+  try {
+    const data = await response.json();
+    return data?.error || data?.message || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 export default function SettingsPage() {
   const router = useRouter();
   const apiBase = getApiBase();
@@ -17,7 +77,7 @@ export default function SettingsPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
@@ -27,15 +87,15 @@ export default function SettingsPage() {
   const [description, setDescription] = useState("");
   const [subdomain, setSubdomain] = useState("");
   const [originalSubdomain, setOriginalSubdomain] = useState("");
-  const [logo, setLogo] = useState("/icons/inksigma-logo.svg");
-  const [logoPreview, setLogoPreview] = useState("/icons/inksigma-logo.svg");
-  const [favicon, setFavicon] = useState("/icons/inksigma-logo.svg");
+  const [logo, setLogo] = useState(DEFAULT_PUBLICATION_IMAGE);
+  const [logoPreview, setLogoPreview] = useState(DEFAULT_PUBLICATION_IMAGE);
+  const [favicon, setFavicon] = useState(DEFAULT_PUBLICATION_IMAGE);
   const [faviconPreview, setFaviconPreview] = useState(
-    "/icons/inksigma-logo.svg",
+    DEFAULT_PUBLICATION_IMAGE,
   );
-  const [metaOg, setMetaOg] = useState("/icons/inksigma-logo.svg");
+  const [metaOg, setMetaOg] = useState(DEFAULT_PUBLICATION_IMAGE);
   const [metaOgPreview, setMetaOgPreview] = useState(
-    "/icons/inksigma-logo.svg",
+    DEFAULT_PUBLICATION_IMAGE,
   );
 
   const loadPublicationData = useCallback(async () => {
@@ -61,11 +121,11 @@ export default function SettingsPage() {
         setSubdomain(pubData.subdomain || "");
         setOriginalSubdomain(pubData.subdomain || "");
         const logoUrl =
-          getImageUrl(pubData.logoUrl) || "/icons/inksigma-logo.svg";
+          getImageUrl(pubData.logoUrl) || DEFAULT_PUBLICATION_IMAGE;
         const faviconUrl =
-          getImageUrl(pubData.faviconUrl) || "/icons/inksigma-logo.svg";
+          getImageUrl(pubData.faviconUrl) || DEFAULT_PUBLICATION_IMAGE;
         const metaOgUrl =
-          getImageUrl(pubData.metaOgImageUrl) || "/icons/inksigma-logo.svg";
+          getImageUrl(pubData.metaOgImageUrl) || DEFAULT_PUBLICATION_IMAGE;
 
         setLogo(logoUrl);
         setLogoPreview(logoUrl);
@@ -87,14 +147,18 @@ export default function SettingsPage() {
   }, [loadPublicationData]);
 
   const handleImageUpload = async (file, type) => {
-    if (!publicationId) {
+    if (uploading) return;
+
+    const targetPublicationId = publicationId || currentPublication?.id;
+    if (!targetPublicationId) {
       setError("Publication not found");
       return;
     }
 
     try {
-      setUploading(true);
+      setUploading(type);
       setError(null);
+      setSuccess(null);
 
       const formData = new FormData();
       formData.append(
@@ -105,7 +169,7 @@ export default function SettingsPage() {
       const endpoint =
         type === "logo" ? "logo" : type === "favicon" ? "favicon" : "meta-og";
       const res = await fetch(
-        `${apiBase}/api/publications/${publicationId}/${endpoint}`,
+        `${apiBase}/api/publications/${targetPublicationId}/${endpoint}`,
         {
           method: "POST",
           credentials: "include",
@@ -114,14 +178,13 @@ export default function SettingsPage() {
       );
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Upload failed");
+        throw new Error(await getUploadErrorMessage(res));
       }
 
       const data = await res.json();
       const returnedUrl = data[type === "logo" ? "logoUrl" : type === "favicon" ? "faviconUrl" : "metaOgImageUrl"];
       const imageUrl =
-        getImageUrl(returnedUrl) || "/icons/inksigma-logo.svg";
+        getImageUrl(returnedUrl) || DEFAULT_PUBLICATION_IMAGE;
 
       if (type === "logo") {
         setLogo(imageUrl);
@@ -141,77 +204,81 @@ export default function SettingsPage() {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error("Upload error:", err);
+      if (type === "logo") {
+        setLogoPreview(logo);
+      } else if (type === "favicon") {
+        setFaviconPreview(favicon);
+      } else if (type === "meta_og") {
+        setMetaOgPreview(metaOg);
+      }
       setError(`Failed to upload ${type}: ${err.message}`);
     } finally {
-      setUploading(false);
+      setUploading(null);
     }
   };
 
+  const handleSelectedImage = async (file, type, setPreview) => {
+    if (!file || uploading) return;
+
+    const validationError = getImageUploadValidationError(file);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    await handleImageUpload(file, type);
+  };
+
   const handleLogoChange = () => {
+    if (uploading) return;
+
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "image/*";
+    input.accept = IMAGE_ACCEPT;
     input.onchange = async (e) => {
       const file = e.target.files[0];
-      if (file) {
-        // Show preview immediately
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setLogoPreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-
-        await handleImageUpload(file, "logo");
-      }
+      await handleSelectedImage(file, "logo", setLogoPreview);
     };
     input.click();
   };
 
   const handleFaviconChange = () => {
+    if (uploading) return;
+
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "image/*";
+    input.accept = IMAGE_ACCEPT;
     input.onchange = async (e) => {
       const file = e.target.files[0];
-      if (file) {
-        // Show preview immediately
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setFaviconPreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-
-        await handleImageUpload(file, "favicon");
-      }
+      await handleSelectedImage(file, "favicon", setFaviconPreview);
     };
     input.click();
   };
 
   const handleMetaOgChange = () => {
+    if (uploading) return;
+
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "image/*";
+    input.accept = IMAGE_ACCEPT;
     input.onchange = async (e) => {
       const file = e.target.files[0];
-      if (file) {
-        // Show preview immediately
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setMetaOgPreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-
-        await handleImageUpload(file, "meta_og");
-      }
+      await handleSelectedImage(file, "meta_og", setMetaOgPreview);
     };
     input.click();
   };
 
   const handleImageRemove = async (type) => {
-    if (!publicationId) return;
+    if (!publicationId || uploading) return;
 
     try {
-      setUploading(true);
+      setUploading(type);
       const endpoint =
         type === "logo" ? "logo" : type === "favicon" ? "favicon" : "meta-og";
 
@@ -226,14 +293,14 @@ export default function SettingsPage() {
       if (!res.ok) throw new Error("Failed to remove image");
 
       if (type === "logo") {
-        setLogo("/icons/inksigma-logo.svg");
-        setLogoPreview("/icons/inksigma-logo.svg");
+        setLogo(DEFAULT_PUBLICATION_IMAGE);
+        setLogoPreview(DEFAULT_PUBLICATION_IMAGE);
       } else if (type === "favicon") {
-        setFavicon("/icons/inksigma-logo.svg");
-        setFaviconPreview("/icons/inksigma-logo.svg");
+        setFavicon(DEFAULT_PUBLICATION_IMAGE);
+        setFaviconPreview(DEFAULT_PUBLICATION_IMAGE);
       } else if (type === "meta_og") {
-        setMetaOg("/icons/inksigma-logo.svg");
-        setMetaOgPreview("/icons/inksigma-logo.svg");
+        setMetaOg(DEFAULT_PUBLICATION_IMAGE);
+        setMetaOgPreview(DEFAULT_PUBLICATION_IMAGE);
       }
 
       await refreshCurrentPublication();
@@ -242,7 +309,7 @@ export default function SettingsPage() {
     } catch (err) {
       setError(err.message);
     } finally {
-      setUploading(false);
+      setUploading(null);
     }
   };
 
@@ -347,7 +414,7 @@ export default function SettingsPage() {
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-6 mb-3">
               <div
-                className={`w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden ${logoPreview === "/icons/inksigma-logo.svg" || logoPreview.includes("/icons/inksigma-logo.svg") ? "p-4" : ""}`}
+                className={`w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden ${logoPreview === DEFAULT_PUBLICATION_IMAGE || logoPreview.includes(DEFAULT_PUBLICATION_IMAGE) ? "p-4" : ""}`}
               >
                 <img
                   key={logoPreview}
@@ -359,13 +426,15 @@ export default function SettingsPage() {
               <div className="flex flex-col gap-3">
                 <button
                   onClick={handleLogoChange}
-                  className="text-purple-500 text-sm hover:text-purple-600"
+                  disabled={!!uploading}
+                  className="text-purple-500 text-sm hover:text-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Change Logo
                 </button>
                 <button
                   onClick={handleLogoRemove}
-                  className="text-gray-400 text-sm hover:text-gray-600"
+                  disabled={!!uploading}
+                  className="text-gray-400 text-sm hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Remove
                 </button>
@@ -380,7 +449,7 @@ export default function SettingsPage() {
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-6 mb-3">
               <div
-                className={`w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden ${faviconPreview === "/icons/inksigma-logo.svg" || faviconPreview.includes("/icons/inksigma-logo.svg") ? "p-4" : ""}`}
+                className={`w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden ${faviconPreview === DEFAULT_PUBLICATION_IMAGE || faviconPreview.includes(DEFAULT_PUBLICATION_IMAGE) ? "p-4" : ""}`}
               >
                 <img
                   key={faviconPreview}
@@ -392,13 +461,15 @@ export default function SettingsPage() {
               <div className="flex flex-col gap-3">
                 <button
                   onClick={handleFaviconChange}
-                  className="text-purple-500 text-sm hover:text-purple-600"
+                  disabled={!!uploading}
+                  className="text-purple-500 text-sm hover:text-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Change Favicon
                 </button>
                 <button
                   onClick={handleFaviconRemove}
-                  className="text-gray-400 text-sm hover:text-gray-600"
+                  disabled={!!uploading}
+                  className="text-gray-400 text-sm hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Remove
                 </button>
@@ -413,7 +484,7 @@ export default function SettingsPage() {
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-6 mb-3">
               <div
-                className={`w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden ${metaOgPreview === "/icons/inksigma-logo.svg" || metaOgPreview.includes("/icons/inksigma-logo.svg") ? "p-4" : ""}`}
+                className={`w-24 h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white overflow-hidden ${metaOgPreview === DEFAULT_PUBLICATION_IMAGE || metaOgPreview.includes(DEFAULT_PUBLICATION_IMAGE) ? "p-4" : ""}`}
               >
                 <img
                   key={metaOgPreview}
@@ -425,13 +496,15 @@ export default function SettingsPage() {
               <div className="flex flex-col gap-3">
                 <button
                   onClick={handleMetaOgChange}
-                  className="text-purple-500 text-sm hover:text-purple-600"
+                  disabled={!!uploading}
+                  className="text-purple-500 text-sm hover:text-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Change Meta OG
                 </button>
                 <button
                   onClick={handleMetaOgRemove}
-                  className="text-gray-400 text-sm hover:text-gray-600"
+                  disabled={!!uploading}
+                  className="text-gray-400 text-sm hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Remove
                 </button>
@@ -500,7 +573,7 @@ export default function SettingsPage() {
           {/* Save Button */}
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || !!uploading}
             className="w-full bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors mb-6 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save"}
