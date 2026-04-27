@@ -77,6 +77,66 @@ const getImageTypeLabel = (type) => {
   return "Logo";
 };
 
+const DEFAULT_PUBLICATION_IMAGE = "/icons/inksigma-logo.svg";
+const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/svg+xml",
+  "image/x-icon",
+  "image/vnd.microsoft.icon",
+]);
+const ALLOWED_IMAGE_EXTENSIONS = new Set([
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "webp",
+  "svg",
+  "ico",
+]);
+const IMAGE_ACCEPT = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/svg+xml",
+  "image/x-icon",
+  ".ico",
+].join(",");
+
+const getFileExtension = (fileName = "") =>
+  fileName.split(".").pop()?.toLowerCase() || "";
+
+const getImageUploadValidationError = (file) => {
+  if (!file) return "No image selected";
+
+  const extension = getFileExtension(file.name);
+  const hasAllowedMime = ALLOWED_IMAGE_MIME_TYPES.has(file.type);
+  const hasAllowedExtension = ALLOWED_IMAGE_EXTENSIONS.has(extension);
+
+  if (!hasAllowedMime && !hasAllowedExtension) {
+    return "Only JPG, PNG, GIF, WebP, SVG, or ICO images are allowed";
+  }
+
+  if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+    return "Image must be smaller than 5MB";
+  }
+
+  return null;
+};
+
+const getUploadErrorMessage = async (response, fallback = "Upload failed") => {
+  try {
+    const data = await response.json();
+    return data?.error || data?.message || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 export default function SettingsPage() {
   const router = useRouter();
   const apiBase = getApiBase();
