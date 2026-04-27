@@ -132,20 +132,6 @@ const resolveAaaaValues = async (hostname: string) => {
   }
 };
 
-export const getCustomDomainVerificationRecordValue = (
-  token: string | null | undefined,
-) => {
-  if (!token) return "";
-  return `inksigma-verification=${String(token).trim()}`;
-};
-
-export const getCustomDomainVerificationHostname = (
-  domain: string | null | undefined,
-) => {
-  const normalized = normalizeCustomDomainValue(domain);
-  return normalized ? `_inksigma.${normalized}` : "";
-};
-
 export const isCustomDomainActive = (
   publicationRecord: PublicationCustomDomainLike | null | undefined,
 ) => {

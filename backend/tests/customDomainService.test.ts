@@ -3,8 +3,6 @@ import assert from "node:assert/strict";
 import {
   buildCustomDomainLifecycleFields,
   CUSTOM_DOMAIN_STATUS,
-  getCustomDomainVerificationHostname,
-  getCustomDomainVerificationRecordValue,
   isCustomDomainActive,
 } from "../services/customDomainService.ts";
 
@@ -35,17 +33,6 @@ test("buildCustomDomainLifecycleFields preserves active domains on no-op updates
   assert.equal(
     fields.customDomainVerifiedAt?.toISOString(),
     "2025-01-01T00:00:00.000Z",
-  );
-});
-
-test("verification record helpers build deterministic values", () => {
-  assert.equal(
-    getCustomDomainVerificationHostname("tennyson.com"),
-    "_inksigma.tennyson.com",
-  );
-  assert.equal(
-    getCustomDomainVerificationRecordValue("abc123"),
-    "inksigma-verification=abc123",
   );
 });
 
