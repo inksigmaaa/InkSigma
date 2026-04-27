@@ -778,8 +778,16 @@ router.put(
         const isCustomDomainChange =
           normalizeCustomDomainValue(currentPublication.customDomain) !==
           lifecycleFields.customDomain;
+        const shouldRetryProviderAttach =
+          lifecycleFields.customDomain &&
+          !new Set<string>([
+            CUSTOM_DOMAIN_STATUS.ACTIVE,
+            CUSTOM_DOMAIN_STATUS.VERIFIED,
+            CUSTOM_DOMAIN_STATUS.SSL_PENDING,
+          ]).has(currentPublication.customDomainStatus || "");
         const providerFields =
-          lifecycleFields.customDomain && isCustomDomainChange
+          lifecycleFields.customDomain &&
+          (isCustomDomainChange || shouldRetryProviderAttach)
             ? await attachCustomDomainToHostingProvider(
                 lifecycleFields.customDomain,
               )
