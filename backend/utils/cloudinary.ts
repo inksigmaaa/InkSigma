@@ -14,9 +14,9 @@ cloudinary.config({
 // Shared memory storage — files stay in RAM, get pushed to Cloudinary, then GC'd
 const memoryStorage = multer.memoryStorage();
 
-const allowedTypes = /jpeg|jpg|png|gif|webp|svg/;
+const allowedTypes = /jpeg|jpg|png|gif|webp|svg|ico|x-icon|vnd\.microsoft\.icon/;
 const allowedImageMessage =
-  "Only JPG, PNG, GIF, WebP, or SVG images are allowed";
+  "Only JPG, PNG, GIF, WebP, SVG, or ICO images are allowed";
 
 const toUploadAppError = (error: unknown): AppError => {
   const rawMessage =
@@ -42,7 +42,7 @@ const toUploadAppError = (error: unknown): AppError => {
     normalizedMessage.includes("corrupt")
   ) {
     return new AppError(
-      "Invalid image file. Please upload a valid JPG, PNG, GIF, WebP, or SVG image.",
+      "Invalid image file. Please upload a valid JPG, PNG, GIF, WebP, SVG, or ICO image.",
       400,
     );
   }
@@ -92,6 +92,7 @@ interface UploadOptions {
   publicId: string;
   transformation?: Record<string, unknown>[];
   overwrite?: boolean;
+  invalidate?: boolean;
   resourceType?: "image" | "video" | "raw" | "auto";
 }
 
@@ -113,6 +114,7 @@ export function uploadToCloudinary(
       folder: options.folder,
       public_id: options.publicId,
       overwrite: options.overwrite ?? true,
+      invalidate: options.invalidate ?? false,
       resource_type: options.resourceType ?? "image",
     };
 

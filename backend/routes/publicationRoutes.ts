@@ -53,6 +53,23 @@ const router = express.Router();
 
 const upload = createMulterUpload(5 * 1024 * 1024); // 5MB limit
 
+const cleanupReplacedPublicationImage = (
+  previousUrl: string | null | undefined,
+  nextPublicId: string,
+) => {
+  if (!previousUrl || !isCloudinaryUrl(previousUrl)) return;
+
+  const previousPublicId = extractPublicId(previousUrl);
+  if (!previousPublicId || previousPublicId === nextPublicId) return;
+
+  deleteFromCloudinary(previousPublicId).catch((cleanupError) => {
+    logger.warn(
+      cleanupError,
+      "Failed to remove previous publication image from Cloudinary",
+    );
+  });
+};
+
 // Check if user has a publication
 router.get("/check", requireAuth, async (req, res) => {
   try {
@@ -1038,11 +1055,22 @@ router.post(
         return res.status(400).json({ error: "No file uploaded" });
       }
 
+      const [currentPub] = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.id, parseInt(id as string)))
+        .limit(1);
+
+      if (!currentPub) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+
       const result = await uploadToCloudinary(req.file.buffer, {
         folder: CLOUDINARY_FOLDERS.PUB_LOGOS,
-        publicId: `pub-${id}-logo`,
+        publicId: `pub-${id}-logo-${Date.now()}`,
         transformation: [{ width: 512, height: 512, crop: "fit" }],
         overwrite: true,
+        invalidate: true,
       });
 
       const logoUrl = result.secureUrl;
@@ -1061,6 +1089,8 @@ router.post(
         subdomain: updated[0].subdomain,
         customDomain: updated[0].customDomain,
       });
+
+      cleanupReplacedPublicationImage(currentPub.logoUrl, result.publicId);
 
       res.json({ logoUrl, publication: updated[0] });
     } catch (error) {
@@ -1085,11 +1115,22 @@ router.post(
         return res.status(400).json({ error: "No file uploaded" });
       }
 
+      const [currentPub] = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.id, parseInt(id as string)))
+        .limit(1);
+
+      if (!currentPub) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+
       const result = await uploadToCloudinary(req.file.buffer, {
         folder: CLOUDINARY_FOLDERS.PUB_FAVICONS,
-        publicId: `pub-${id}-favicon`,
+        publicId: `pub-${id}-favicon-${Date.now()}`,
         transformation: [{ width: 180, height: 180, crop: "fill" }],
         overwrite: true,
+        invalidate: true,
       });
 
       const faviconUrl = result.secureUrl;
@@ -1108,6 +1149,8 @@ router.post(
         subdomain: updated[0].subdomain,
         customDomain: updated[0].customDomain,
       });
+
+      cleanupReplacedPublicationImage(currentPub.faviconUrl, result.publicId);
 
       res.json({ faviconUrl, publication: updated[0] });
     } catch (error) {
@@ -1132,11 +1175,22 @@ router.post(
         return res.status(400).json({ error: "No file uploaded" });
       }
 
+      const [currentPub] = await db
+        .select()
+        .from(publication)
+        .where(eq(publication.id, parseInt(id as string)))
+        .limit(1);
+
+      if (!currentPub) {
+        return res.status(404).json({ error: "Publication not found" });
+      }
+
       const result = await uploadToCloudinary(req.file.buffer, {
         folder: CLOUDINARY_FOLDERS.PUB_OG,
-        publicId: `pub-${id}-og`,
+        publicId: `pub-${id}-og-${Date.now()}`,
         transformation: [{ width: 1200, height: 630, crop: "fill" }],
         overwrite: true,
+        invalidate: true,
       });
 
       const metaOgImageUrl = result.secureUrl;
@@ -1155,6 +1209,8 @@ router.post(
         subdomain: updated[0].subdomain,
         customDomain: updated[0].customDomain,
       });
+
+      cleanupReplacedPublicationImage(currentPub.metaOgImageUrl, result.publicId);
 
       res.json({ metaOgImageUrl, publication: updated[0] });
     } catch (error) {
