@@ -35,6 +35,29 @@ const DOMAIN_STATUS_STYLES = {
   failed: "bg-red-50 text-red-700 border border-red-200",
 };
 
+const getDnsRecordPriority = (record) => {
+  const value = String(record?.value || "").toLowerCase();
+  if (value.includes(".vercel-dns-") && !value.includes("cname.vercel-dns.com")) {
+    return 0;
+  }
+  if (value === "cname.vercel-dns.com") return 2;
+  return 1;
+};
+
+const getDisplayDnsRecords = (records = []) => {
+  const recordsByTarget = new Map();
+
+  for (const record of records) {
+    const key = `${record.type}:${record.name}`.toLowerCase();
+    const existing = recordsByTarget.get(key);
+    if (!existing || getDnsRecordPriority(record) < getDnsRecordPriority(existing)) {
+      recordsByTarget.set(key, record);
+    }
+  }
+
+  return Array.from(recordsByTarget.values());
+};
+
 function DnsSetupRecords({
   setupPlan,
   setupPlanRequestDomain,
@@ -47,6 +70,8 @@ function DnsSetupRecords({
   customDomainVerificationError,
   savedCustomDomain,
 }) {
+  const displayRecords = getDisplayDnsRecords(setupPlan?.records);
+
   return (
     <div className="flex w-full flex-col gap-4 border-t border-[#EDEDED] pt-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -93,9 +118,9 @@ function DnsSetupRecords({
         </div>
       )}
 
-      {!setupPlanLoading && setupPlan?.records?.length > 0 && (
+      {!setupPlanLoading && displayRecords.length > 0 && (
         <div className="flex flex-col gap-3">
-          {setupPlan.records.map((record, index) => {
+          {displayRecords.map((record, index) => {
             const recordKey = `${record.type}-${record.name}-${record.value}-${index}`;
 
             return (
