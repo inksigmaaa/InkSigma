@@ -496,6 +496,8 @@ export default function DomainPage() {
         toast.info("DNS is verified. Hosting setup is still pending.");
       } else if (updated.customDomainStatus === "ssl_pending") {
         toast.info("DNS is verified. SSL is still pending.");
+      } else if (updated.customDomainVerificationError) {
+        toast.info(updated.customDomainVerificationError);
       } else {
         toast.info("Verification checked. DNS still needs attention.");
       }
