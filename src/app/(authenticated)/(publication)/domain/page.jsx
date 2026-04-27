@@ -21,7 +21,7 @@ import { toast } from "sonner";
 
 const DOMAIN_STATUS_LABELS = {
   pending_verification: "Pending verification",
-  verified: "DNS pending",
+  verified: "Provider pending",
   ssl_pending: "SSL pending",
   active: "Custom Domain",
   failed: "Verification failed",
@@ -490,11 +490,15 @@ export default function DomainPage() {
       const updated = await response.json();
       await refreshCurrentPublication();
       applyPublicationDomainState(updated);
-      toast.success(
-        updated.customDomainStatus === "active"
-          ? "Custom domain is now active"
-          : "Verification checked. DNS still needs attention.",
-      );
+      if (updated.customDomainStatus === "active") {
+        toast.success("Custom domain is now active");
+      } else if (updated.customDomainStatus === "verified") {
+        toast.info("DNS is verified. Hosting setup is still pending.");
+      } else if (updated.customDomainStatus === "ssl_pending") {
+        toast.info("DNS is verified. SSL is still pending.");
+      } else {
+        toast.info("Verification checked. DNS still needs attention.");
+      }
     } catch (err) {
       setError(err.message || "Failed to verify domain");
     } finally {

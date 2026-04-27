@@ -918,7 +918,12 @@ router.post(
           isActive:
             updated[0].customDomainStatus === CUSTOM_DOMAIN_STATUS.ACTIVE,
           requiresDnsUpdate:
-            updated[0].customDomainStatus !== CUSTOM_DOMAIN_STATUS.ACTIVE,
+            updated[0].customDomainStatus ===
+              CUSTOM_DOMAIN_STATUS.PENDING_VERIFICATION ||
+            updated[0].customDomainStatus === CUSTOM_DOMAIN_STATUS.FAILED,
+          requiresHostingUpdate:
+            updated[0].customDomainStatus === CUSTOM_DOMAIN_STATUS.VERIFIED ||
+            updated[0].customDomainStatus === CUSTOM_DOMAIN_STATUS.SSL_PENDING,
         },
       });
     } catch (error) {

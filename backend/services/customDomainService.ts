@@ -40,6 +40,12 @@ type CustomDomainDnsStatus = {
   message: string | null;
 };
 
+type CustomDomainReachabilityStatus = {
+  ready: boolean;
+  status: "ready" | "provider_pending" | "ssl_pending" | "failed";
+  message: string | null;
+};
+
 type CustomDomainLifecycleFields = {
   customDomain: string | null;
   customDomainStatus: CustomDomainStatus | null;
@@ -87,6 +93,11 @@ const DNS_LOOKUP_MAX_CONCURRENCY = getEnvNumber(
   process.env.DNS_LOOKUP_MAX_CONCURRENCY,
   8,
   1,
+);
+const CUSTOM_DOMAIN_REACHABILITY_TIMEOUT_MS = getEnvNumber(
+  process.env.CUSTOM_DOMAIN_REACHABILITY_TIMEOUT_MS,
+  8000,
+  500,
 );
 const runDnsLookupLimited = createConcurrencyLimiter(DNS_LOOKUP_MAX_CONCURRENCY);
 
@@ -304,15 +315,96 @@ const inspectCustomDomainDnsStatus = async (
   };
 };
 
+const isTlsOrConnectionFailure = (error: unknown) => {
+  const message = String((error as Error)?.message || "");
+  const cause = (error as { cause?: { code?: string } })?.cause;
+  const code = cause?.code || "";
+
+  return [
+    "CERT_",
+    "ERR_TLS",
+    "DEPTH_ZERO_SELF_SIGNED_CERT",
+    "SELF_SIGNED_CERT",
+    "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+    "ECONNREFUSED",
+    "ECONNRESET",
+    "ENOTFOUND",
+    "EAI_AGAIN",
+    "ETIMEDOUT",
+  ].some((token) => code.includes(token) || message.includes(token));
+};
+
+const inspectCustomDomainReachability = async (
+  customDomain: string,
+): Promise<CustomDomainReachabilityStatus> => {
+  const url = `https://${customDomain}/`;
+
+  try {
+    const response = await withTimeout(
+      () =>
+        fetch(url, {
+          method: "GET",
+          redirect: "manual",
+          headers: {
+            "User-Agent": "InkSigma-Custom-Domain-Verification/1.0",
+          },
+        }),
+      {
+        timeoutMs: CUSTOM_DOMAIN_REACHABILITY_TIMEOUT_MS,
+        operationName: `customDomain.reachability:${customDomain}`,
+      },
+    );
+
+    const providerError = response.headers.get("x-vercel-error");
+    if (providerError) {
+      return {
+        ready: false,
+        status: "provider_pending",
+        message:
+          providerError === "DEPLOYMENT_NOT_FOUND"
+            ? "DNS is verified, but the custom domain is not attached to the frontend hosting project yet."
+            : `DNS is verified, but the hosting provider is not ready yet (${providerError}).`,
+      };
+    }
+
+    if (response.status >= 500) {
+      return {
+        ready: false,
+        status: "provider_pending",
+        message:
+          "DNS is verified, but the custom domain is not serving InkSigma yet. Wait for hosting propagation and try again.",
+      };
+    }
+
+    return {
+      ready: true,
+      status: "ready",
+      message: null,
+    };
+  } catch (error) {
+    return {
+      ready: false,
+      status: isTlsOrConnectionFailure(error) ? "ssl_pending" : "provider_pending",
+      message:
+        "DNS is verified, but HTTPS is not ready yet. Wait for the hosting provider to attach the domain and issue SSL.",
+    };
+  }
+};
+
 export const verifyCustomDomainLifecycle = async (
   publicationRecord: PublicationCustomDomainLike | null | undefined,
   options: {
     dnsInspector?: (customDomain: string) => Promise<CustomDomainDnsStatus>;
+    reachabilityInspector?: (
+      customDomain: string,
+    ) => Promise<CustomDomainReachabilityStatus>;
   } = {},
 ): Promise<CustomDomainVerificationFields> => {
   const customDomain = normalizeCustomDomainValue(publicationRecord?.customDomain);
   const now = new Date();
   const dnsInspector = options.dnsInspector || inspectCustomDomainDnsStatus;
+  const reachabilityInspector =
+    options.reachabilityInspector || inspectCustomDomainReachability;
 
   const verificationFailure = (
     status: CustomDomainStatus | null,
@@ -360,6 +452,18 @@ export const verifyCustomDomainLifecycle = async (
         : (CUSTOM_DOMAIN_STATUS.PENDING_VERIFICATION as CustomDomainStatus),
       dnsStatus.message || "DNS is not configured correctly yet.",
       null,
+    );
+  }
+
+  const reachabilityStatus = await reachabilityInspector(customDomain);
+  if (!reachabilityStatus.ready) {
+    return verificationFailure(
+      reachabilityStatus.status === "ssl_pending"
+        ? (CUSTOM_DOMAIN_STATUS.SSL_PENDING as CustomDomainStatus)
+        : (CUSTOM_DOMAIN_STATUS.VERIFIED as CustomDomainStatus),
+      reachabilityStatus.message ||
+        "DNS is verified, but the custom domain is not serving InkSigma yet.",
+      now,
     );
   }
 
