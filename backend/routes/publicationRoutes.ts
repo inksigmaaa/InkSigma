@@ -945,6 +945,16 @@ router.post(
         return res.status(400).json({ error: "Custom domain is not configured" });
       }
 
+      const shouldRetryProviderAttach =
+        !new Set<string>([
+          CUSTOM_DOMAIN_STATUS.ACTIVE,
+          CUSTOM_DOMAIN_STATUS.VERIFIED,
+          CUSTOM_DOMAIN_STATUS.SSL_PENDING,
+        ]).has(currentPublication.customDomainStatus || "");
+      if (shouldRetryProviderAttach) {
+        await attachCustomDomainToHostingProvider(currentPublication.customDomain);
+      }
+
       const verificationFields =
         await verifyCustomDomainLifecycle(currentPublication);
 
@@ -999,6 +1009,15 @@ router.post(
       });
     } catch (error) {
       logger.error(error, "Error verifying custom domain:");
+      if (isVercelDomainError(error)) {
+        return res
+          .status(error.statusCode && error.statusCode < 500 ? 400 : 502)
+          .json({
+            error: error.message || "Failed to verify custom domain with Vercel",
+            code: error.code,
+          });
+      }
+
       return res.status(500).json({ error: "Failed to verify custom domain" });
     }
   },
