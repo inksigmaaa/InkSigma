@@ -8,6 +8,7 @@ import { usePublication } from "@/contexts/PublicationContext";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getRootDomain } from "@/utils/publicationDomain";
 import { validateSubdomain, normalizeSubdomain } from "@/utils/subdomainRules";
+import { toast } from "sonner";
 
 const DEFAULT_PUBLICATION_IMAGE = "/icons/inksigma-logo.svg";
 const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024;
@@ -69,6 +70,14 @@ const getUploadErrorMessage = async (response, fallback = "Upload failed") => {
   }
 };
 
+const IMAGE_UPLOAD_TOAST_ID = "publication-image-upload";
+
+const getImageTypeLabel = (type) => {
+  if (type === "meta_og") return "Meta OG image";
+  if (type === "favicon") return "Favicon";
+  return "Logo";
+};
+
 export default function SettingsPage() {
   const router = useRouter();
   const apiBase = getApiBase();
@@ -78,8 +87,6 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(null);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
 
   // Publication data
   const [publicationId, setPublicationId] = useState(null);
@@ -101,7 +108,6 @@ export default function SettingsPage() {
   const loadPublicationData = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
 
       const targetPublicationId = currentPublication?.id;
       if (!targetPublicationId) {
@@ -151,14 +157,15 @@ export default function SettingsPage() {
 
     const targetPublicationId = publicationId || currentPublication?.id;
     if (!targetPublicationId) {
-      setError("Publication not found");
+      toast.error("Publication not found");
       return;
     }
 
     try {
       setUploading(type);
-      setError(null);
-      setSuccess(null);
+      toast.loading(`Uploading ${getImageTypeLabel(type)}...`, {
+        id: IMAGE_UPLOAD_TOAST_ID,
+      });
 
       const formData = new FormData();
       formData.append(
@@ -189,19 +196,18 @@ export default function SettingsPage() {
       if (type === "logo") {
         setLogo(imageUrl);
         setLogoPreview(imageUrl);
-        setSuccess("Logo updated!");
       } else if (type === "favicon") {
         setFavicon(imageUrl);
         setFaviconPreview(imageUrl);
-        setSuccess("Favicon updated!");
       } else if (type === "meta_og") {
         setMetaOg(imageUrl);
         setMetaOgPreview(imageUrl);
-        setSuccess("Meta OG image updated!");
       }
 
       await refreshCurrentPublication();
-      setTimeout(() => setSuccess(null), 3000);
+      toast.success(`${getImageTypeLabel(type)} updated!`, {
+        id: IMAGE_UPLOAD_TOAST_ID,
+      });
     } catch (err) {
       console.error("Upload error:", err);
       if (type === "logo") {
@@ -211,7 +217,10 @@ export default function SettingsPage() {
       } else if (type === "meta_og") {
         setMetaOgPreview(metaOg);
       }
-      setError(`Failed to upload ${type}: ${err.message}`);
+      toast.error(
+        `Failed to upload ${getImageTypeLabel(type)}: ${err.message}`,
+        { id: IMAGE_UPLOAD_TOAST_ID },
+      );
     } finally {
       setUploading(null);
     }
@@ -222,7 +231,7 @@ export default function SettingsPage() {
 
     const validationError = getImageUploadValidationError(file);
     if (validationError) {
-      setError(validationError);
+      toast.error(validationError);
       return;
     }
 
@@ -279,6 +288,9 @@ export default function SettingsPage() {
 
     try {
       setUploading(type);
+      toast.loading(`Removing ${getImageTypeLabel(type)}...`, {
+        id: IMAGE_UPLOAD_TOAST_ID,
+      });
       const endpoint =
         type === "logo" ? "logo" : type === "favicon" ? "favicon" : "meta-og";
 
@@ -304,10 +316,11 @@ export default function SettingsPage() {
       }
 
       await refreshCurrentPublication();
-      setSuccess(`${type} removed successfully!`);
-      setTimeout(() => setSuccess(null), 3000);
+      toast.success(`${getImageTypeLabel(type)} removed successfully!`, {
+        id: IMAGE_UPLOAD_TOAST_ID,
+      });
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message, { id: IMAGE_UPLOAD_TOAST_ID });
     } finally {
       setUploading(null);
     }
@@ -319,14 +332,12 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     if (!publicationId) {
-      setError("Publication not found");
+      toast.error("Publication not found");
       return;
     }
 
     try {
       setSaving(true);
-      setError(null);
-      setSuccess(null);
 
       // Validate inputs
       if (!name || name.length < 2 || name.length > 50) {
@@ -370,7 +381,7 @@ export default function SettingsPage() {
       router.push(`/${updatedPub.subdomain}/home`);
     } catch (err) {
       console.error("Save error:", err);
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setSaving(false);
     }
@@ -391,24 +402,6 @@ export default function SettingsPage() {
           <h1 className="text-lg font-bold text-gray-900 text-center">
             Publication Settings
           </h1>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
-              {error}
-            </div>
-          )}
-
-          {uploading && (
-            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded text-sm">
-              Uploading image...
-            </div>
-          )}
-
-          {success && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded text-sm">
-              {success}
-            </div>
-          )}
 
           {/* Logo Upload */}
           <div className="border border-gray-200 rounded-lg p-4">
