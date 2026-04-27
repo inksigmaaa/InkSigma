@@ -23,12 +23,18 @@ import {
   PUBLICATION_HOSTNAME_KIND,
 } from "../services/publicationHostnameService.js";
 import {
+  attachCustomDomainToHostingProvider,
   buildCustomDomainLifecycleFields,
-  buildCustomDomainSetupPlan,
+  buildCustomDomainSetupPlanWithProvider,
   verifyCustomDomainLifecycle,
   validateCustomDomainInput,
+  normalizeCustomDomainValue,
   CUSTOM_DOMAIN_STATUS,
 } from "../services/customDomainService.js";
+import {
+  isVercelDomainError,
+  removeVercelProjectDomain,
+} from "../services/vercelDomainService.js";
 import { requirePublicationRole } from "../middleware/authorization.js";
 import { validate } from "../middleware/validate.js";
 import * as publicationValidator from "../validators/publicationValidator.js";
@@ -254,7 +260,7 @@ router.get(
         return res.status(400).json({ error: "Domain is required" });
       }
 
-      const plan = buildCustomDomainSetupPlan(targetDomain);
+      const plan = await buildCustomDomainSetupPlanWithProvider(targetDomain);
       return res.json({
         publicationId,
         customDomain: currentPublication.customDomain,
@@ -263,6 +269,15 @@ router.get(
       });
     } catch (error: any) {
       logger.error(error, "Error building custom domain setup plan:");
+      if (isVercelDomainError(error)) {
+        return res
+          .status(error.statusCode && error.statusCode < 500 ? 400 : 502)
+          .json({
+            error: error.message || "Failed to load Vercel DNS setup plan",
+            code: error.code,
+          });
+      }
+
       return res.status(400).json({
         error: error?.message || "Failed to build custom domain setup plan",
       });
@@ -600,6 +615,14 @@ router.post(
       const customDomainLifecycle = buildCustomDomainLifecycleFields({
         nextCustomDomain: normalizedCustomDomain,
       });
+      const providerFields = customDomainLifecycle.customDomain
+        ? await attachCustomDomainToHostingProvider(
+            customDomainLifecycle.customDomain,
+          )
+        : null;
+      if (providerFields) {
+        Object.assign(customDomainLifecycle, providerFields);
+      }
 
       // Create publication and add creator as admin member in a transaction
       const result = await db.transaction(async (tx) => {
@@ -665,7 +688,11 @@ router.post(
       let statusCode = 500;
       let errorMessage = "Failed to create publication";
 
-      if (error.code === "23505") {
+      if (isVercelDomainError(error)) {
+        errorMessage =
+          error.message || "Failed to attach custom domain to Vercel";
+        statusCode = error.statusCode && error.statusCode < 500 ? 400 : 502;
+      } else if (error.code === "23505") {
         // Unique constraint violation
         if (error.detail && error.detail.includes("subdomain")) {
           errorMessage = "Subdomain already taken";
@@ -748,6 +775,18 @@ router.put(
           currentPublication,
           nextCustomDomain,
         });
+        const isCustomDomainChange =
+          normalizeCustomDomainValue(currentPublication.customDomain) !==
+          lifecycleFields.customDomain;
+        const providerFields =
+          lifecycleFields.customDomain && isCustomDomainChange
+            ? await attachCustomDomainToHostingProvider(
+                lifecycleFields.customDomain,
+              )
+            : null;
+        if (providerFields) {
+          Object.assign(lifecycleFields, providerFields);
+        }
 
         updateData.customDomain = lifecycleFields.customDomain;
         updateData.customDomainStatus = lifecycleFields.customDomainStatus;
@@ -835,9 +874,33 @@ router.put(
         customDomain: updated[0].customDomain,
       });
 
+      const oldCustomDomain = normalizeCustomDomainValue(
+        currentPublication.customDomain,
+      );
+      const nextSavedCustomDomain = normalizeCustomDomainValue(
+        updated[0].customDomain,
+      );
+      if (oldCustomDomain && oldCustomDomain !== nextSavedCustomDomain) {
+        removeVercelProjectDomain(oldCustomDomain).catch((cleanupError) => {
+          logger.warn(
+            cleanupError,
+            "Failed to remove previous custom domain from Vercel project",
+          );
+        });
+      }
+
       res.json(updated[0]);
     } catch (error) {
       logger.error(error, "Error updating publication:");
+
+      if (isVercelDomainError(error)) {
+        const statusCode =
+          error.statusCode && error.statusCode < 500 ? 400 : 502;
+        return res.status(statusCode).json({
+          error: error.message || "Failed to attach custom domain to Vercel",
+          code: error.code,
+        });
+      }
 
       if (
         error.message === "Subdomain is already reserved" ||
