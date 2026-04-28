@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "@/lib/auth-client"
+import { toast } from "sonner"
 
 export default function DashboardNavbar() {
   const router = useRouter()
@@ -66,9 +67,7 @@ export default function DashboardNavbar() {
       router.push("/")
     } catch (error) {
       console.error("Logout error:", error)
-      localStorage.clear()
-      sessionStorage.clear()
-      router.push("/")
+      toast.error("Logout failed. Please try again.")
     }
   }
 

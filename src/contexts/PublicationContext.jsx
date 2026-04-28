@@ -23,7 +23,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/signup",
   "/forgot-password",
   "/reset-password",
-  "/magic-link",
+  "/verify-email",
   "/auth-callback",
   "/create-publication",
   "/invite",

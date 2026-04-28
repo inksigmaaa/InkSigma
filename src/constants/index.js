@@ -14,7 +14,6 @@ export const APP_ROUTES = {
   REVIEW: '/review',
   SCHEDULE: '/schedule',
   FORGOT_PASSWORD: '/forgot-password',
-  MAGIC_LINK: '/magic-link',
   BUGS_FEATURE_REQUESTS: 'https://inksigma.canny.io/'
 }
 

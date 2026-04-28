@@ -6,6 +6,7 @@ import { user, account, verification } from "../models/schema.js";
 import { hashPassword as betterAuthHashPassword, verifyPassword as betterAuthVerifyPassword } from "better-auth/crypto";
 import { userCache } from "../config/redis.js";
 import logger from "../utils/logger.js";
+import { hashToken, tokenMatches } from "../utils/tokenHash.js";
 
 interface UserRow {
     id: string;
@@ -132,7 +133,7 @@ class AuthService {
         await db.insert(verification).values({
             id: this.generateToken(16),
             identifier: `reset:${email}`,
-            value: token,
+            value: hashToken(token),
             expiresAt,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -145,7 +146,7 @@ class AuthService {
         const tokens = await db.select().from(verification)
             .where(eq(verification.identifier, `reset:${email}`));
         
-        return tokens.find(t => t.value === token && new Date(t.expiresAt) > new Date()) || null;
+        return tokens.find(t => tokenMatches(t.value, token) && new Date(t.expiresAt) > new Date()) || null;
     }
 
     async updatePassword(accountId: string, newPassword: string): Promise<void> {
@@ -166,7 +167,7 @@ class AuthService {
         await db.insert(verification).values({
             id: this.generateToken(16),
             identifier: `verify:${email}`,
-            value: token,
+            value: hashToken(token),
             expiresAt,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -179,7 +180,7 @@ class AuthService {
         const tokens = await db.select().from(verification)
             .where(eq(verification.identifier, `verify:${email}`));
         
-        return tokens.find(t => t.value === token && new Date(t.expiresAt) > new Date()) || null;
+        return tokens.find(t => tokenMatches(t.value, token) && new Date(t.expiresAt) > new Date()) || null;
     }
 
     async verifyUserEmail(email: string): Promise<void> {
@@ -284,4 +285,3 @@ class AuthService {
 }
 
 export const authService = new AuthService();
-

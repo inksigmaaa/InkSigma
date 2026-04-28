@@ -44,7 +44,7 @@ const PUBLIC_ONLY_PATHS = [
   "/signup",
   "/forgot-password",
   "/reset-password",
-  "/magic-link",
+  "/verify-email",
   "/auth-callback",
 ];
 

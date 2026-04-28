@@ -11,6 +11,7 @@ import { formatTimeAgo } from "@/utils/timeFormatter";
 import { getApiBase } from "@/utils/apiBase";
 import { useExclusivePopup } from "@/hooks/useExclusivePopup";
 import { CalendarDays } from "lucide-react";
+import { toast } from "sonner";
 
 const formatJoinedDate = (dateValue) => {
     if (!dateValue) return null;
@@ -227,21 +228,15 @@ export default function NavbarLoggedin() {
     };
 
     const handleLogout = async () => {
-        // Clear local data first
-        localStorage.clear();
-        sessionStorage.clear();
-
         try {
-            // Try to sign out from server (but don't wait for it)
-            signOut().catch(() => {
-                // Silently ignore server errors
-            });
+            await signOut();
+            localStorage.clear();
+            sessionStorage.clear();
+            router.push("/");
         } catch (error) {
-            // Silently ignore any errors
+            console.error("Logout error:", error);
+            toast.error("Logout failed. Please try again.");
         }
-
-        // Redirect immediately
-        router.push("/");
     };
 
     const userName = mergedUser?.name || user?.name || "User";

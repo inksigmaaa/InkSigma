@@ -292,10 +292,6 @@ function LoginForm() {
     }
   };
 
-  const handleMagicLink = () => {
-    router.push("/magic-link");
-  };
-
   const handleResendVerification = async () => {
     setResendLoading(true);
     setResendSuccess(false);
@@ -392,16 +388,6 @@ function LoginForm() {
             </div>
           )}
 
-          {!showResendVerification ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleMagicLink}
-              className="w-full md:w-[259px] h-[28px] md:h-[32px] opacity-100 rotate-0 gap-[4px] rounded-[4px] pt-[6px] md:pt-[8px] pr-[20px] md:pr-[109px] pb-[6px] md:pb-[8px] pl-[20px] md:pl-[109px] border bg-[#F4F4F4] border-[#ECECEC] text-black hover:bg-gray-50 text-xs md:text-sm flex items-center justify-center mt-6"
-            >
-              <span className="h-[18px]">Login with Magic link</span>
-            </Button>
-          ) : null}
         </form>
 
         <div className="text-center mt-6 flex items-center justify-center gap-1 whitespace-nowrap">
