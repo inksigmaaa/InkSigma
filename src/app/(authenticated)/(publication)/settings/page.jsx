@@ -250,6 +250,8 @@ export default function SettingsPage() {
     await handleImageUpload(file, type);
   };
 
+
+
   const handleLogoChange = () => {
     if (uploading) return;
 
