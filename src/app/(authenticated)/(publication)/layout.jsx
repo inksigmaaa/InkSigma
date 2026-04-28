@@ -1,6 +1,7 @@
 'use client';
 
 import Sidebar from "@/components/layout/sidebar/Sidebar";
+import VisitSiteButton from "@/components/VisitSiteButton";
 import { usePathname } from "next/navigation";
 
 export default function PublicationLayout({ children }) {
@@ -17,6 +18,7 @@ export default function PublicationLayout({ children }) {
     <>
       <Sidebar />
       {children}
+      <VisitSiteButton />
     </>
   );
 }

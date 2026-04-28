@@ -1,10 +1,21 @@
+"use client";
+
 import { NightTooltip } from "@/components/ui/tooltip";
+import { usePublication } from "@/contexts/PublicationContext";
+import { getPublicationUrl } from "@/utils/publicationDomain";
 
 export default function VisitSiteButton() {
+  const { currentPublication } = usePublication();
+  const publicationSiteHref =
+    (currentPublication && getPublicationUrl(currentPublication)) ||
+    (currentPublication?.id
+      ? `/view-site?publicationId=${currentPublication.id}`
+      : "/view-site");
+
   return (
     <NightTooltip content="Visit site">
-      <a 
-        href="/" 
+      <a
+        href={publicationSiteHref}
         target="_blank"
         rel="noopener noreferrer"
         style={{
@@ -28,7 +39,7 @@ export default function VisitSiteButton() {
           textDecoration: 'none',
           whiteSpace: 'nowrap'
         }}
-        className="hover:opacity-90 transition-opacity"
+        className="fixed bottom-20 right-4 z-[100] hover:opacity-90 transition-opacity md:hidden"
         aria-label="Visit site"
       >
         View Site
