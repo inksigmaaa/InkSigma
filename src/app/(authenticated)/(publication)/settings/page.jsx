@@ -5,10 +5,9 @@ import { useState, useEffect, useCallback } from "react";
 import { getApiBase } from "@/utils/apiBase";
 import { getImageUrl } from "@/utils/imageUrl";
 import { usePublication } from "@/contexts/PublicationContext";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getRootDomain } from "@/utils/publicationDomain";
 import { validateSubdomain, normalizeSubdomain } from "@/utils/subdomainRules";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 
 const DEFAULT_PUBLICATION_IMAGE = "/icons/inksigma-logo.svg";
 const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024;
@@ -78,13 +77,10 @@ const getImageTypeLabel = (type) => {
   return "Logo";
 };
 
-
 export default function SettingsPage() {
   const router = useRouter();
   const apiBase = getApiBase();
   const { currentPublication, refreshCurrentPublication } = usePublication();
-  const [showResetModal, setShowResetModal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(null);
@@ -116,9 +112,12 @@ export default function SettingsPage() {
         return;
       }
 
-      const pubRes = await fetch(`${apiBase}/api/publications/${targetPublicationId}`, {
-        credentials: "include",
-      });
+      const pubRes = await fetch(
+        `${apiBase}/api/publications/${targetPublicationId}`,
+        {
+          credentials: "include",
+        },
+      );
 
       if (pubRes.ok) {
         const pubData = await pubRes.json();
@@ -190,9 +189,15 @@ export default function SettingsPage() {
       }
 
       const data = await res.json();
-      const returnedUrl = data[type === "logo" ? "logoUrl" : type === "favicon" ? "faviconUrl" : "metaOgImageUrl"];
-      const imageUrl =
-        getImageUrl(returnedUrl) || DEFAULT_PUBLICATION_IMAGE;
+      const returnedUrl =
+        data[
+          type === "logo"
+            ? "logoUrl"
+            : type === "favicon"
+              ? "faviconUrl"
+              : "metaOgImageUrl"
+        ];
+      const imageUrl = getImageUrl(returnedUrl) || DEFAULT_PUBLICATION_IMAGE;
 
       if (type === "logo") {
         setLogo(imageUrl);
@@ -244,8 +249,6 @@ export default function SettingsPage() {
 
     await handleImageUpload(file, type);
   };
-
-
 
   const handleLogoChange = () => {
     if (uploading) return;
@@ -557,7 +560,9 @@ export default function SettingsPage() {
                 type="text"
                 placeholder="Graceblog"
                 value={subdomain}
-                onChange={(e) => setSubdomain(normalizeSubdomain(e.target.value))}
+                onChange={(e) =>
+                  setSubdomain(normalizeSubdomain(e.target.value))
+                }
                 minLength={3}
                 maxLength={63}
                 className="flex-1 text-sm focus:outline-none"
@@ -576,97 +581,6 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
-
-      {/* Reset Password Modal */}
-      <Dialog
-        open={showResetModal}
-        onOpenChange={(open) => !open && setShowResetModal(false)}
-      >
-        <DialogContent
-          className="max-w-[353px] w-[calc(100%-2rem)] py-12 px-14"
-          showClose={false}
-        >
-          <DialogTitle className="text-sm font-semibold leading-none tracking-normal mb-4">
-            Do you want to reset your password?
-          </DialogTitle>
-          <p className="text-sm font-normal leading-normal tracking-normal text-[#808080] mb-8">
-            we will send you a link to your Email and You will be logged out
-          </p>
-          <div className="flex gap-4">
-            <button
-              onClick={() => setShowResetModal(false)}
-              className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-md hover:bg-gray-300 transition-colors"
-            >
-              Close
-            </button>
-            <button
-              onClick={() => {
-                setShowResetModal(false);
-                setShowSuccessModal(true);
-              }}
-              className="flex-1 bg-black text-white py-3 rounded-md hover:bg-gray-800 transition-colors"
-            >
-              Confirm
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Success Modal */}
-      <Dialog
-        open={showSuccessModal}
-        onOpenChange={(open) => !open && setShowSuccessModal(false)}
-      >
-        <DialogContent
-          className="max-w-sm w-[calc(100%-2rem)] p-6 relative"
-          showClose={false}
-        >
-          <DialogTitle className="sr-only">Settings Saved</DialogTitle>
-          <button
-            onClick={() => setShowSuccessModal(false)}
-            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
-            aria-label="Close success modal"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-          <div className="flex flex-col items-center text-center py-4">
-            <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-            </div>
-            <h2 className="text-lg font-bold text-gray-900 mb-2">
-              Settings Saved
-            </h2>
-            <p className="text-sm text-gray-500">
-              Your publication settings have been updated successfully
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
