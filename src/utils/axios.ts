@@ -53,27 +53,12 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   async (error) => {
-    const originalRequest = error.config;
-
-    // If 401 and not already retried, try to refresh token
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        // Try to refresh session
-        await axiosInstance.post('/auth/refresh');
-        // Retry original request
-        return axiosInstance(originalRequest);
-      } catch (refreshError) {
-        // Refresh failed, redirect to login
-        if (
-          typeof window !== 'undefined' &&
-          !isAuthFlowPath(window.location.pathname)
-        ) {
-          window.location.href = buildLoginRedirectPath();
-        }
-        return Promise.reject(refreshError);
-      }
+    if (
+      error.response?.status === 401 &&
+      typeof window !== 'undefined' &&
+      !isAuthFlowPath(window.location.pathname)
+    ) {
+      window.location.href = buildLoginRedirectPath();
     }
 
     return Promise.reject(error);

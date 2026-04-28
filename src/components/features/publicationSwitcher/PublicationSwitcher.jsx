@@ -49,7 +49,7 @@ export default function PublicationSwitcher() {
       "/signup",
       "/forgot-password",
       "/reset-password",
-      "/magic-link",
+      "/verify-email",
       "/auth-callback",
       "/create-publication",
       "/invite",

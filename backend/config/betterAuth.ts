@@ -85,6 +85,7 @@ const getCrossSubdomainCookieDomain = () => {
 };
 
 const crossSubdomainCookieDomain = getCrossSubdomainCookieDomain();
+const isProduction = process.env.NODE_ENV === "production";
 
 const isSmtpConfigured = () =>
   !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
@@ -97,15 +98,24 @@ export const auth = betterAuth({
   basePath: "/api/auth",
   secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: buildTrustedOrigins(),
-  advanced: crossSubdomainCookieDomain
-    ? {
-        cookiePrefix: "better-auth",
+  advanced: {
+    cookiePrefix: "better-auth",
+    useSecureCookies: isProduction,
+    defaultCookieAttributes: {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: isProduction,
+      path: "/",
+    },
+    ...(crossSubdomainCookieDomain
+      ? {
         crossSubDomainCookies: {
           enabled: true,
           domain: `.${crossSubdomainCookieDomain}`,
         },
       }
-    : undefined,
+      : {}),
+  },
 
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -161,12 +171,10 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url, token }) => {
+    sendVerificationEmail: async ({ user, url }) => {
       logger.info(
-        `[BETTER-AUTH] sendVerificationEmail called for: ${user.email}`,
+        `[BETTER-AUTH] sendVerificationEmail called for: ${redactEmail(user.email)}`,
       );
-      logger.info(`[BETTER-AUTH] Verification URL: ${url}`);
-      logger.info(`[BETTER-AUTH] Token: ${token}`);
 
       try {
         const result = await emailService.sendVerification({

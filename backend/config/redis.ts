@@ -118,13 +118,13 @@ export const redisSessionStorage: SecondaryStorage = {
       const data = await client.get(`session:${sessionId}`);
 
       if (!data) {
-        logger.info(`[REDIS] Session not found: ${sessionId}`);
+        logger.info("[REDIS] Session not found");
         return null;
       }
 
       // Upstash returns parsed JSON automatically if it's JSON
       const session = typeof data === "string" ? JSON.parse(data) : data;
-      logger.info(`[REDIS] Session retrieved: ${sessionId}`);
+      logger.info("[REDIS] Session retrieved");
       return session;
     } catch (error) {
       markRedisFailure(error, "session.get");
@@ -151,7 +151,7 @@ export const redisSessionStorage: SecondaryStorage = {
         await client.set(`session:${sessionId}`, data);
       }
 
-      logger.info(`[REDIS] Session stored: ${sessionId} (TTL: ${ttl}s)`);
+      logger.info(`[REDIS] Session stored (TTL: ${ttl}s)`);
       return null;
     } catch (error) {
       markRedisFailure(error, "session.set");
@@ -169,7 +169,7 @@ export const redisSessionStorage: SecondaryStorage = {
       if (!client) return null;
 
       await client.del(`session:${sessionId}`);
-      logger.info(`[REDIS] Session deleted: ${sessionId}`);
+      logger.info("[REDIS] Session deleted");
       return null;
     } catch (error) {
       markRedisFailure(error, "session.delete");
