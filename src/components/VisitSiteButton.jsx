@@ -33,13 +33,10 @@ export default function VisitSiteButton() {
           letterSpacing: '0%',
           color: '#EDEDED',
           opacity: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
           textDecoration: 'none',
           whiteSpace: 'nowrap'
         }}
-        className="fixed bottom-20 right-4 z-[100] hover:opacity-90 transition-opacity md:hidden"
+        className="fixed bottom-20 right-4 z-[100] flex items-center justify-center hover:opacity-90 transition-opacity md:hidden"
         aria-label="Visit site"
       >
         View Site
