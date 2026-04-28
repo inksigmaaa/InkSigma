@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="bg-white min-h-screen overflow-hidden px-4 relative">
       {/* Logo - positioned 193px above center */}
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -mt-[230]">
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -mt-[230px]">
         <Image
           src={LOGOS.auth}
           alt="InkSigma Logo"

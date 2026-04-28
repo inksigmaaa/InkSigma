@@ -45,22 +45,14 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      try {
-        await api.post('/auth/refresh');
-        return api(originalRequest);
-      } catch {
-        if (
-          typeof window !== 'undefined' &&
-          !isAuthFlowPath(window.location.pathname)
-        ) {
-          window.location.href = buildLoginRedirectPath();
-        }
-        return Promise.reject(error);
-      }
+    if (
+      error.response?.status === 401 &&
+      typeof window !== 'undefined' &&
+      !isAuthFlowPath(window.location.pathname)
+    ) {
+      window.location.href = buildLoginRedirectPath();
     }
+
     return Promise.reject(error);
   }
 );

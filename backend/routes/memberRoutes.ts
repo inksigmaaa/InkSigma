@@ -14,6 +14,7 @@ import { requirePublicationRole } from "../middleware/authorization.js";
 import nodemailer from "nodemailer";
 import notificationService from "../services/notificationService.js";
 import { redactEmail } from "../utils/redactPII.js";
+import { hashToken } from "../utils/tokenHash.js";
 import logger from "../utils/logger.js";
 
 const router = express.Router();
@@ -29,6 +30,16 @@ const requireCanInvite = requirePublicationRole(["admin", "editor"], {
 const requireCanRemove = requirePublicationRole(["admin", "editor"], {
   publicationIdParam: "publicationId",
 });
+
+const findInvitationByRawToken = async (rawToken: string) => {
+  const [invite] = await db
+    .select()
+    .from(invitation)
+    .where(or(eq(invitation.token, hashToken(rawToken)), eq(invitation.token, rawToken)))
+    .limit(1);
+
+  return invite || null;
+};
 
 // Get all members of a publication
 router.get(
@@ -186,7 +197,7 @@ router.post(
           inviterId,
           email,
           role,
-          token,
+          token: hashToken(token),
           expiresAt,
         })
         .returning();
@@ -271,12 +282,15 @@ router.post(
         return res.status(400).json({ error: "Invitation already accepted" });
       }
 
-      // Update expiration date
+      const token = crypto.randomBytes(32).toString("hex");
+
+      // Update expiration date and rotate the invitation token.
       const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
       await db
         .update(invitation)
         .set({
           status: "pending",
+          token: hashToken(token),
           expiresAt: newExpiresAt,
           updatedAt: new Date(),
         })
@@ -294,7 +308,7 @@ router.post(
           invite.email,
           pub.name,
           invite.role,
-          invite.token,
+          token,
           req.user.name,
         );
       } catch (emailError) {
@@ -572,10 +586,7 @@ router.get("/invite/:token", requireAuth, async (req, res) => {
     const { token } = req.params;
 
     // Get invitation
-    const [invite] = await db
-      .select()
-      .from(invitation)
-      .where(eq(invitation.token, token));
+    const invite = await findInvitationByRawToken(token);
 
     if (!invite) {
       return res.status(404).json({ error: "Invalid invitation link" });
@@ -664,18 +675,15 @@ router.post("/invite/:token/accept", requireAuth, async (req, res) => {
     );
 
     // Get invitation
-    const [invite] = await db
-      .select()
-      .from(invitation)
-      .where(eq(invitation.token, token));
+    const invite = await findInvitationByRawToken(token);
 
     if (!invite) {
-      logger.info(`[Invitation Accept] Invalid token: ${token}`);
+      logger.info("[Invitation Accept] Invalid invitation token");
       return res.status(404).json({ error: "Invalid invitation link" });
     }
 
     logger.info(
-      `[Invitation Accept] Found invitation ID: ${invite.id}, email: ${invite.email}, status: ${invite.status}`,
+      `[Invitation Accept] Found invitation ID: ${invite.id}, email: ${redactEmail(invite.email)}, status: ${invite.status}`,
     );
 
     if (invite.status !== "pending") {
@@ -695,7 +703,7 @@ router.post("/invite/:token/accept", requireAuth, async (req, res) => {
     // Check if user email matches invitation email
     if (req.user.email !== invite.email) {
       logger.info(
-        `[Invitation Accept] Email mismatch: user=${req.user.email}, invite=${invite.email}`,
+        `[Invitation Accept] Email mismatch: user=${redactEmail(req.user.email)}, invite=${redactEmail(invite.email)}`,
       );
       return res.status(400).json({
         error: "This invitation was sent to a different email address",
@@ -805,22 +813,19 @@ router.post("/invite/:token/decline", requireAuth, async (req, res) => {
     const userId = req.user.id;
 
     logger.info(
-      `[Invitation Decline] User ${userId} (${req.user.email}) attempting to decline invitation with token: ${token}`,
+      `[Invitation Decline] User ${userId} (${redactEmail(req.user.email)}) attempting to decline invitation`,
     );
 
     // Get invitation
-    const [invite] = await db
-      .select()
-      .from(invitation)
-      .where(eq(invitation.token, token));
+    const invite = await findInvitationByRawToken(token);
 
     if (!invite) {
-      logger.info(`[Invitation Decline] Invalid token: ${token}`);
+      logger.info("[Invitation Decline] Invalid invitation token");
       return res.status(404).json({ error: "Invalid invitation link" });
     }
 
     logger.info(
-      `[Invitation Decline] Found invitation ID: ${invite.id}, email: ${invite.email}, status: ${invite.status}`,
+      `[Invitation Decline] Found invitation ID: ${invite.id}, email: ${redactEmail(invite.email)}, status: ${invite.status}`,
     );
 
     if (invite.status !== "pending") {
@@ -833,7 +838,7 @@ router.post("/invite/:token/decline", requireAuth, async (req, res) => {
     // Check if user email matches invitation email
     if (req.user.email !== invite.email) {
       logger.info(
-        `[Invitation Decline] Email mismatch: user=${req.user.email}, invite=${invite.email}`,
+        `[Invitation Decline] Email mismatch: user=${redactEmail(req.user.email)}, invite=${redactEmail(invite.email)}`,
       );
       return res.status(400).json({
         error: "This invitation was sent to a different email address",

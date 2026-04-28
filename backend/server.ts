@@ -17,6 +17,19 @@ const SHUTDOWN_TIMEOUT_MS = 10_000;
 const REQUIRED_ENV_VARS = ["DATABASE_URL", "NODE_ENV"] as const;
 const ALLOWED_NODE_ENVS = new Set(["development", "test", "production"]);
 const LOCAL_DATABASE_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
+const PRODUCTION_ORIGIN_ENV_VARS = [
+  "BETTER_AUTH_URL",
+  "FRONTEND_URL",
+  "TRUSTED_ORIGINS",
+  "CORS_ORIGIN",
+  "ALLOWED_ORIGINS",
+] as const;
+const PRODUCTION_DOMAIN_ENV_VARS = [
+  "BASE_DOMAIN",
+  "BASE_DOMAINS",
+  "NEXT_PUBLIC_BASE_DOMAIN",
+  "NEXT_PUBLIC_BASE_DOMAINS",
+] as const;
 
 const logStartupStep = (
   step: string,
@@ -64,8 +77,98 @@ const validateRequiredEnvVars = () => {
   }
 
   process.env.BETTER_AUTH_SECRET ||= sessionSecret;
+  validateProductionAuthConfig();
 
   logStartupStep("env.validate", "done", { nodeEnv: process.env.NODE_ENV, databaseHost });
+};
+
+const splitConfiguredValues = (value: string | undefined) =>
+  (value || "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+const normalizeConfiguredHost = (value: string) => {
+  const raw = value.trim();
+  if (!raw) return "";
+
+  try {
+    return new URL(raw).hostname.replace(/^\*\./, "").toLowerCase();
+  } catch {
+    return raw
+      .replace(/^https?:\/\//i, "")
+      .replace(/\/.*$/, "")
+      .replace(/:\d+$/, "")
+      .replace(/^\*\./, "")
+      .replace(/^\./, "")
+      .replace(/^\[(.*)]$/, "$1")
+      .toLowerCase();
+  }
+};
+
+const isLocalOnlyHost = (host: string) =>
+  host === "localhost" ||
+  host === "local" ||
+  host === "127.0.0.1" ||
+  host === "::1" ||
+  host === "0.0.0.0" ||
+  host.endsWith(".localhost") ||
+  host.endsWith(".local");
+
+const collectLocalOnlyEnvVars = (
+  names: readonly string[],
+) => {
+  const localOnlyVars = new Set<string>();
+
+  for (const name of names) {
+    for (const configuredValue of splitConfiguredValues(process.env[name])) {
+      const host = normalizeConfiguredHost(configuredValue);
+      if (host && isLocalOnlyHost(host)) {
+        localOnlyVars.add(name);
+      }
+    }
+  }
+
+  return Array.from(localOnlyVars);
+};
+
+const validateProductionAuthConfig = () => {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const missing: string[] = [];
+  if (!process.env.BETTER_AUTH_URL?.trim()) missing.push("BETTER_AUTH_URL");
+  if (
+    !process.env.FRONTEND_URL?.trim() &&
+    !process.env.TRUSTED_ORIGINS?.trim() &&
+    !process.env.CORS_ORIGIN?.trim() &&
+    !process.env.ALLOWED_ORIGINS?.trim()
+  ) {
+    missing.push("FRONTEND_URL or TRUSTED_ORIGINS/CORS_ORIGIN/ALLOWED_ORIGINS");
+  }
+  if (!process.env.BASE_DOMAIN?.trim() && !process.env.BASE_DOMAINS?.trim()) {
+    missing.push("BASE_DOMAIN or BASE_DOMAINS");
+  }
+
+  if (missing.length > 0) {
+    const error = new Error(
+      `Missing required production auth configuration: ${missing.join(", ")}`,
+    );
+    logger.error({ step: "env.validate", missing }, error.message);
+    throw error;
+  }
+
+  const localOnlyVars = collectLocalOnlyEnvVars([
+    ...PRODUCTION_ORIGIN_ENV_VARS,
+    ...PRODUCTION_DOMAIN_ENV_VARS,
+  ]);
+
+  if (localOnlyVars.length > 0) {
+    const error = new Error(
+      `Production auth/domain configuration contains local-only values: ${localOnlyVars.join(", ")}`,
+    );
+    logger.error({ step: "env.validate", envVars: localOnlyVars }, error.message);
+    throw error;
+  }
 };
 
 const validateDatabaseUrl = () => {

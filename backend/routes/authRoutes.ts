@@ -114,7 +114,7 @@ router.post(
           );
           await authService.deleteToken(validToken.id);
           logger.info(
-            `[AUTH] Password set for Google user via reset: ${email}`,
+            `[AUTH] Password set for Google user via reset: ${redactEmail(email)}`,
           );
           return res.json({ success: true });
         }
