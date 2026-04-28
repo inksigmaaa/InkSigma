@@ -152,8 +152,8 @@ export default function DashboardPage() {
               Your Publication
             </h2>
             {ownedPublications.length > 0 ? (
-              <div className="w-full max-w-[819px] h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-[88px]">
+              <div className="w-full max-w-[819px] min-h-[143px] sm:h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-auto sm:h-full w-full gap-4 sm:gap-[88px]">
                   <div className="flex gap-6 items-center flex-1 min-w-0 w-full">
                     <Avatar className="w-[66px] h-[66px] opacity-100 border-[0.92px] border-[#EAEAEA] bg-gray-100 flex items-center justify-center flex-shrink-0">
                       <AvatarImage
@@ -190,7 +190,7 @@ export default function DashboardPage() {
                       switchPublication(ownedPublications[0]);
                       router.push(`/${ownedPublications[0].subdomain}/home`);
                     }}
-                    className="flex-shrink-0 min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center w-full sm:w-auto"
+                    className="mt-1 sm:mt-0 flex-shrink-0 min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center w-full sm:w-auto"
                   >
                     <span
                       className="font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
@@ -205,8 +205,8 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : (
-              <div className="w-full max-w-[819px] h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-[88px]">
+              <div className="w-full max-w-[819px] min-h-[143px] sm:h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-auto sm:h-full w-full gap-4 sm:gap-[88px]">
                   <div className="flex gap-6 items-center flex-1 min-w-0 w-full">
                     <Avatar className="w-[66px] h-[66px] opacity-100 border-[0.92px] border-[#EAEAEA] bg-gray-100 flex items-center justify-center flex-shrink-0">
                       <AvatarImage
@@ -237,7 +237,7 @@ export default function DashboardPage() {
                   </div>
                   <button
                     onClick={() => router.push("/create-publication")}
-                    className="flex-shrink-0 min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center w-full sm:w-auto"
+                    className="mt-1 sm:mt-0 flex-shrink-0 min-h-[26px] pt-[8px] pr-[4px] pb-[8px] pl-[4px] opacity-100 flex items-center justify-center w-full sm:w-auto"
                   >
                     <span
                       className="font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
@@ -267,9 +267,9 @@ export default function DashboardPage() {
                 {joinedPublications.map((joinedPub) => (
                   <div
                     key={joinedPub.id}
-                    className="w-full max-w-[819px] h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto"
+                    className="w-full max-w-[819px] min-h-[143px] sm:h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto"
                   >
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full w-full gap-4 sm:gap-[88px]">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-auto sm:h-full w-full gap-4 sm:gap-[88px]">
                       <div className="flex gap-6 items-center flex-1 w-full">
                         <Avatar className="w-[66px] h-[66px] border-[0.92px] border-[#EAEAEA] bg-gray-100 flex items-center justify-center flex-shrink-0">
                           <AvatarImage
@@ -328,7 +328,7 @@ export default function DashboardPage() {
                           switchPublication(joinedPub);
                           router.push(`/${joinedPub.subdomain}/home`);
                         }}
-                        className="flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
+                        className="mt-1 sm:mt-0 flex items-center gap-1 text-purple-500 hover:text-purple-600 text-xs whitespace-nowrap w-full sm:w-auto justify-center sm:justify-start"
                       >
                         <span
                           className="font-medium text-[14px] leading-[150%] tracking-[0%] inline-block bg-gradient-to-r from-[#A941FB] to-[rgba(120,100,240,0.92)] bg-clip-text text-transparent"
@@ -345,8 +345,8 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="w-full max-w-[819px] h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-[88px] h-full w-full">
+              <div className="w-full max-w-[819px] min-h-[143px] sm:h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-[88px] h-auto sm:h-full w-full">
                   <div className="flex gap-6 items-center flex-1 min-w-0 w-full">
                     <Avatar className="w-[66px] h-[66px] border-[0.92px] border-[#EAEAEA] opacity-100 bg-gray-100 flex items-center justify-center flex-shrink-0">
                       <AvatarImage
