@@ -14,6 +14,7 @@ import {
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "@/lib/auth-client"
 import { toast } from "sonner"
+import { getPostLogoutPath } from "@/utils/auth"
 
 export default function DashboardNavbar() {
   const router = useRouter()
@@ -64,7 +65,7 @@ export default function DashboardNavbar() {
       await signOut()
       localStorage.clear()
       sessionStorage.clear()
-      router.push("/")
+      window.location.replace(getPostLogoutPath())
     } catch (error) {
       console.error("Logout error:", error)
       toast.error("Logout failed. Please try again.")
