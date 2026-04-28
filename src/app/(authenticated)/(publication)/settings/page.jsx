@@ -7,7 +7,7 @@ import { getImageUrl } from "@/utils/imageUrl";
 import { usePublication } from "@/contexts/PublicationContext";
 import { getRootDomain } from "@/utils/publicationDomain";
 import { validateSubdomain, normalizeSubdomain } from "@/utils/subdomainRules";
-import { toast } from "@/components/ui/toast";
+import { toast } from "sonner";
 
 const DEFAULT_PUBLICATION_IMAGE = "/icons/inksigma-logo.svg";
 const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024;
