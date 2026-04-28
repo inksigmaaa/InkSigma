@@ -123,27 +123,8 @@ export const buildDashboardLoginUrlForEditor = ({ publicationId } = {}) => {
   return loginUrl.toString();
 };
 
-export const redirectToDashboardEditor = async ({ publicationId } = {}) => {
+export const redirectToDashboardEditor = ({ publicationId } = {}) => {
   if (typeof window === "undefined") return;
-
-  try {
-    const session = await waitForServerSession({
-      attempts: 1,
-      delayMs: 0,
-    });
-
-    if (session?.user?.id) {
-      window.location.assign(
-        new URL(
-          buildDashboardEditorRedirectPath({ publicationId }),
-          getDashboardOrigin(),
-        ).toString(),
-      );
-      return;
-    }
-  } catch {
-    // Fall through to login so guests and transient session failures keep working.
-  }
 
   window.location.assign(buildDashboardLoginUrlForEditor({ publicationId }));
 };
