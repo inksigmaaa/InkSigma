@@ -308,7 +308,7 @@ function Sidebar() {
         {/* SIDEBAR CONTAINER */}
         <div className="relative w-[165px] h-[612px] bg-white border-r border-gray-200 p-[14px] pr-[10px] flex flex-col gap-[10px] overflow-hidden pointer-events-auto max-md:w-auto max-md:min-w-max max-md:h-[70px] max-md:px-4 max-md:py-2 max-md:flex-row max-md:gap-2 max-md:border-r-0 max-md:overflow-visible ">
           {/* PROFILE */}
-          <div className="hidden md:flex items-center gap-2 pb-[10px]">
+          <div className="hidden max-md:!hidden md:flex items-center gap-2 pb-[10px]">
             <Avatar className="w-[34px] h-[34px] border-2 border-violet-500 flex-shrink-0 bg-gray-100">
               {loading ? (
                 <AvatarFallback className="w-full h-full bg-gray-100 flex items-center justify-center">
@@ -333,6 +333,7 @@ function Sidebar() {
                 href={publicationSiteHref}
                 target="_blank"
                 rel="noopener noreferrer"
+                className="hidden max-md:!hidden md:inline-flex"
               >
                 <button className="w-[94px] h-[32px] text-white px-[16px] py-[8px] rounded-[4px] text-[14px] font-semibold leading-[100%] whitespace-nowrap hover:opacity-90 transition-opacity flex items-center justify-center bg-gradient-to-br from-[#A941FB] to-[#7864F0] shadow-[0px_4px_8px_0px_#EADBF9]">
                   View Site
