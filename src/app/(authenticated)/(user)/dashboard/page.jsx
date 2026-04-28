@@ -140,7 +140,7 @@ export default function DashboardPage() {
             </h2>
             {ownedPublications.length > 0 ? (
               <div className="w-full max-w-[819px] min-h-[143px] sm:h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-auto sm:h-full w-full gap-4 sm:gap-[88px]">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-auto sm:h-full w-full gap-2 sm:gap-[88px]">
                   <div className="flex gap-6 items-center flex-1 min-w-0 w-full">
                     <Avatar className="w-[66px] h-[66px] opacity-100 border-[0.92px] border-[#EAEAEA] bg-gray-100 flex items-center justify-center flex-shrink-0">
                       <AvatarImage
@@ -194,7 +194,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="w-full max-w-[819px] min-h-[143px] sm:h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-auto sm:h-full w-full gap-4 sm:gap-[88px]">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-auto sm:h-full w-full gap-2 sm:gap-[88px]">
                   <div className="flex gap-6 items-center flex-1 min-w-0 w-full">
                     <Avatar className="w-[66px] h-[66px] opacity-100 border-[0.92px] border-[#EAEAEA] bg-gray-100 flex items-center justify-center flex-shrink-0">
                       <AvatarImage
@@ -259,7 +259,7 @@ export default function DashboardPage() {
                     className="w-full max-w-[819px] min-h-[143px] sm:h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto"
                     className="w-full max-w-[819px] min-h-[143px] sm:h-[143px] rounded-[4px] opacity-100 border border-[#EDEDED] p-[24px] bg-white mx-auto"
                   >
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-auto sm:h-full w-full gap-4 sm:gap-[88px]">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-auto sm:h-full w-full gap-2 sm:gap-[88px]">
                       <div className="flex gap-6 items-center flex-1 w-full">
                         <Avatar className="w-[66px] h-[66px] border-[0.92px] border-[#EAEAEA] bg-gray-100 flex items-center justify-center flex-shrink-0">
                           <AvatarImage
