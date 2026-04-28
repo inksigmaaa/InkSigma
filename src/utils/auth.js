@@ -1,3 +1,5 @@
+import { getDashboardUrl } from "@/utils/dashboardUrl";
+
 const AUTH_FLOW_PATH_PREFIXES = [
   "/login",
   "/signup",
@@ -76,6 +78,51 @@ export const buildLoginRedirectPath = (redirectTo = getCurrentAppPath()) => {
     ? "/login"
     : `/login?redirect=${encodeURIComponent(redirectTo)}`;
 };
+
+export const getDefaultDashboardPath = () => {
+  if (process.env.NEXT_PUBLIC_SAME_ORIGIN_DASHBOARD === "true") {
+    return "/dashboard";
+  }
+
+  if (typeof window !== "undefined") {
+    const { hostname } = window.location;
+    if (
+      hostname === "dashboard.localhost" ||
+      hostname.startsWith("dashboard.")
+    ) {
+      return "/";
+    }
+  }
+
+  return getDashboardUrl("/");
+};
+
+export const buildAuthCallbackPath = ({
+  redirectTo = "/",
+  returnTo = "",
+} = {}) =>
+  returnTo
+    ? `/auth-callback?returnTo=${encodeURIComponent(returnTo)}`
+    : redirectTo && redirectTo !== "/"
+      ? `/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
+      : "/auth-callback";
+
+export const getAuthenticatedLoginRedirectPath = ({
+  redirectTo = "/",
+  returnTo = "",
+} = {}) => {
+  if (returnTo || redirectTo?.startsWith("/invite/")) {
+    return buildAuthCallbackPath({ redirectTo, returnTo });
+  }
+
+  if (redirectTo && redirectTo !== "/") {
+    return redirectTo;
+  }
+
+  return getDefaultDashboardPath();
+};
+
+export const getPostLogoutPath = () => "/login";
 
 export const waitForServerSession = async ({
   attempts = 4,

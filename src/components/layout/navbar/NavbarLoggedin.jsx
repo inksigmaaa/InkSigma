@@ -9,6 +9,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { Button } from "@/components/ui/button";
 import { formatTimeAgo } from "@/utils/timeFormatter";
 import { getApiBase } from "@/utils/apiBase";
+import { getPostLogoutPath } from "@/utils/auth";
 import { useExclusivePopup } from "@/hooks/useExclusivePopup";
 import { CalendarDays } from "lucide-react";
 import { toast } from "sonner";
@@ -232,7 +233,7 @@ export default function NavbarLoggedin() {
             await signOut();
             localStorage.clear();
             sessionStorage.clear();
-            router.push("/");
+            window.location.replace(getPostLogoutPath());
         } catch (error) {
             console.error("Logout error:", error);
             toast.error("Logout failed. Please try again.");

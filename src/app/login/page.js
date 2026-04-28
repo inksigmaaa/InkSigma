@@ -11,7 +11,11 @@ import PasswordField from "@/components/auth/PasswordField";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 import { signIn, useSession } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
-import { waitForServerSession } from "@/utils/auth";
+import {
+  buildAuthCallbackPath,
+  getAuthenticatedLoginRedirectPath,
+  waitForServerSession,
+} from "@/utils/auth";
 
 function LoginForm() {
   const router = useRouter();
@@ -29,6 +33,7 @@ function LoginForm() {
   const [showResendVerification, setShowResendVerification] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
+  const [checkingExistingSession, setCheckingExistingSession] = useState(true);
 
   const getOrigin = () => {
     if (typeof window !== "undefined") {
@@ -52,6 +57,7 @@ function LoginForm() {
 
     const redirectAuthenticatedUser = async () => {
       if (isPending) return;
+      let redirected = false;
 
       try {
         const activeSession = session?.user?.id
@@ -65,16 +71,17 @@ function LoginForm() {
           return;
         }
 
-        const callbackPath = returnTo
-          ? `/auth-callback?returnTo=${encodeURIComponent(returnTo)}`
-          : redirectTo !== "/"
-            ? `/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
-            : "/auth-callback";
-
-        router.replace(callbackPath);
+        redirected = true;
+        router.replace(
+          getAuthenticatedLoginRedirectPath({ redirectTo, returnTo }),
+        );
       } catch (error) {
         if (error?.name !== "AbortError") {
           console.error("Error redirecting authenticated user:", error);
+        }
+      } finally {
+        if (!cancelled && !redirected) {
+          setCheckingExistingSession(false);
         }
       }
     };
@@ -102,11 +109,7 @@ function LoginForm() {
 
     try {
       const origin = getOrigin();
-      const callbackPath = returnTo
-        ? `/auth-callback?returnTo=${encodeURIComponent(returnTo)}`
-        : redirectTo !== "/"
-          ? `/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
-          : "/auth-callback";
+      const callbackPath = buildAuthCallbackPath({ redirectTo, returnTo });
       const callbackURL = `${origin}${callbackPath}`;
 
       const result = await signIn.email({
@@ -274,11 +277,7 @@ function LoginForm() {
   const handleGoogleLogin = async () => {
     try {
       const origin = getOrigin();
-      const callbackPath = returnTo
-        ? `/auth-callback?returnTo=${encodeURIComponent(returnTo)}`
-        : redirectTo !== "/"
-          ? `/auth-callback?redirect=${encodeURIComponent(redirectTo)}`
-          : "/auth-callback";
+      const callbackPath = buildAuthCallbackPath({ redirectTo, returnTo });
       const callbackURL = `${origin}${callbackPath}`;
 
       await signIn.social({
@@ -320,6 +319,14 @@ function LoginForm() {
       setResendLoading(false);
     }
   };
+
+  if (isPending || checkingExistingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-sm text-gray-500">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen flex flex-col">
