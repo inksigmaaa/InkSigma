@@ -342,19 +342,6 @@ function Sidebar() {
             </div>
           </div>
 
-          {/* VIEW SITE - MOBILE */}
-          <div className="hidden max-md:flex max-md:items-center max-md:flex-shrink-0">
-            <a
-              href={publicationSiteHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="h-[48px] min-w-[84px] px-3 rounded-md text-white text-[11px] font-semibold leading-[150%] whitespace-nowrap hover:opacity-90 transition-opacity flex flex-col items-center justify-center bg-gradient-to-br from-[#A941FB] to-[#7864F0] shadow-[0px_4px_8px_0px_#EADBF9]"
-              aria-label="View site"
-            >
-              View Site
-            </a>
-          </div>
-
           {/* MY SPACE */}
           <div className="pb-2 max-md:pb-0 max-md:border-none max-md:flex-shrink-0">
             <MySpaceItem pathname={pathname} />
