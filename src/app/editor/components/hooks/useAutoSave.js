@@ -264,7 +264,9 @@ export function useAutoSave({
             persistDraftId(newId);
             onBlogIdCreated?.(result);
           }
-          return true;
+          return {
+            savedSnapshot: result.__savedSnapshot || null,
+          };
         }
         return false;
       } catch (err) {
@@ -325,23 +327,19 @@ export function useAutoSave({
 
       const success = await serverSaveWithRetry();
       setSaveStatus(
-        success === true ? "saved" : success === "skipped" ? "idle" : "failed",
+        success === "skipped" ? "idle" : success ? "saved" : "failed",
       );
       setIsAutoSaving(false);
 
-      if (success === true) {
+      if (success && success !== "skipped") {
         const dexieId = getDexieId();
         dexieMarkSynced(dexieId);
         retryCountRef.current = 0;
 
         // Update snapshot so change detection doesn't re-trigger
-        setSnapshot({
-          title: latestRef.current.title,
-          description: latestRef.current.description,
-          contentHtml: latestRef.current.contentHtml,
-          categories: latestRef.current.categories,
-          extraDirtySignal: latestRef.current.extraDirtySignal,
-        });
+        if (success.savedSnapshot) {
+          setSnapshot(success.savedSnapshot);
+        }
       }
     }, 1500);
 
@@ -389,22 +387,18 @@ export function useAutoSave({
           setSaveStatus("saving");
           const success = await serverSaveWithRetry();
           setSaveStatus(
-            success === true
-              ? "saved"
-              : success === "skipped"
-                ? "idle"
+            success === "skipped"
+              ? "idle"
+              : success
+                ? "saved"
                 : "failed",
           );
           setIsAutoSaving(false);
-          if (success === true) {
+          if (success && success !== "skipped") {
             dexieMarkSynced(getDexieId());
-            setSnapshot({
-              title: latestRef.current.title,
-              description: latestRef.current.description,
-              contentHtml: latestRef.current.contentHtml,
-              categories: latestRef.current.categories,
-              extraDirtySignal: latestRef.current.extraDirtySignal,
-            });
+            if (success.savedSnapshot) {
+              setSnapshot(success.savedSnapshot);
+            }
           }
         }, 500);
       }
@@ -537,17 +531,20 @@ export function useAutoSave({
   const markSaved = useCallback(({
     preserveExtraDirty = false,
     nextExtraDirtySignal,
+    savedSnapshot,
   } = {}) => {
     phaseRef.current = "idle";
-    setSnapshot({
-      title,
-      description,
-      contentHtml,
-      categories,
-      extraDirtySignal: preserveExtraDirty
-        ? snapshot.extraDirtySignal
-        : (nextExtraDirtySignal ?? extraDirtySignal),
-    });
+    setSnapshot(
+      savedSnapshot || {
+        title,
+        description,
+        contentHtml,
+        categories,
+        extraDirtySignal: preserveExtraDirty
+          ? snapshot.extraDirtySignal
+          : (nextExtraDirtySignal ?? extraDirtySignal),
+      },
+    );
 
     // Mark Dexie as synced and clear retry counter
     const id = currentBlogId
