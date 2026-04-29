@@ -533,7 +533,6 @@ export default function BlogDetailPageClient({
   const dateFormatted = formatDate(blog.createdAt);
   const publicationAvatarUrl = getImageUrl(blog.publication?.logoUrl);
   const authorAvatarUrl = getImageUrl(blog.author?.image);
-  const blogHeroImage = getImageUrl(blog.image);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -594,21 +593,6 @@ export default function BlogDetailPageClient({
             <p className="text-base font-normal leading-7 tracking-[0.01em] text-[#696969] mb-6 break-words max-md:text-sm max-md:leading-[1.5] max-md:mb-3 max-md:text-[#808080]">
               {blog.description}
             </p>
-
-            {blogHeroImage ? (
-              <div className="mb-8 overflow-hidden rounded-2xl border border-[#EAEAEA] bg-[#F8F8F8]">
-                <div className="relative aspect-[1.91/1] w-full">
-                  <Image
-                    src={blogHeroImage}
-                    alt={blog.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 800px"
-                    priority
-                  />
-                </div>
-              </div>
-            ) : null}
 
             <div className="flex flex-wrap gap-2 mb-6 max-md:mb-3">
               {blog.categories && blog.categories.length > 0 ? (
