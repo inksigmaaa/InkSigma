@@ -1512,15 +1512,29 @@ export default function EditorPageClient() {
             flex-shrink: 0;
           }
 
+          .mobile-schedule-container .date-time-input:first-of-type {
+            width: 76px;
+          }
+
+          .mobile-schedule-container .date-time-input:nth-of-type(2) {
+            width: 36px;
+            margin-left: 4px;
+          }
+
+          .mobile-schedule-container > div {
+            padding-left: 6px;
+            padding-right: 6px;
+          }
+
           .mobile-schedule-container svg {
             margin-left: 4px;
-            margin-right: 4px;
+            margin-right: 0;
           }
 
           .mobile-schedule-btn {
-            min-width: 69px;
-            max-width: 69px;
-            padding: 8px 5px;
+            min-width: 64px;
+            max-width: 64px;
+            padding: 8px 4px;
             font-size: 12px;
             line-height: 150%;
           }
