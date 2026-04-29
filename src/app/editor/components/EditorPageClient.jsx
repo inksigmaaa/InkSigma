@@ -75,9 +75,15 @@ export default function EditorPageClient() {
   const publicationId = searchParams.get("publicationId"); // For joined publications
   const [currentBlogId, setCurrentBlogId] = useState(blogId);
   const [editorRenderKey, setEditorRenderKey] = useState(blogId || "new");
+  const promotedBlogIdRef = useRef(null);
 
   useEffect(() => {
     const nextBlogId = blogId || null;
+    if (promotedBlogIdRef.current === nextBlogId) {
+      promotedBlogIdRef.current = null;
+      setCurrentBlogId(nextBlogId);
+      return;
+    }
     if (nextBlogId === (currentBlogId || null)) return;
 
     setCurrentBlogId(nextBlogId);
@@ -306,6 +312,21 @@ export default function EditorPageClient() {
   };
 
   // ── Auto-save via custom hook ───────────────────────────────────────────
+  const getCurrentEditorContent = useCallback(() => {
+    const editor = editorInstanceRef.current;
+    if (!editor) return editorContent;
+
+    const html = editor.getHTML();
+    const text = editor.getText();
+
+    return {
+      html,
+      text,
+      charCount: text.length,
+      wordCount: text.trim() ? text.trim().split(/\s+/).length : 0,
+    };
+  }, [editorContent]);
+
   const saveFnForHook = useCallback(
     async (isAutoSave) => {
       return saveBlog("draft", null, true, isAutoSave);
@@ -328,10 +349,12 @@ export default function EditorPageClient() {
   const syncDraftIdToUrl = useCallback((newId, nextStatus = "draft") => {
     if (!newId) return;
 
-    setCurrentBlogId((current) => current || newId);
+    const nextId = String(newId);
+    promotedBlogIdRef.current = nextId;
+    setCurrentBlogId((current) => current || nextId);
 
     const params = new URLSearchParams(searchParams.toString());
-    params.set("id", newId);
+    params.set("id", nextId);
     if (!params.get("status")) {
       params.set("status", nextStatus);
     }
@@ -559,8 +582,11 @@ export default function EditorPageClient() {
     skipValidation = false,
     isAutoSave = false,
   ) => {
+    const currentEditorContent = getCurrentEditorContent();
+    const currentContentHtml = currentEditorContent.html || "";
+
     const hasBodyContent = (() => {
-      const html = editorContent.html || "";
+      const html = currentContentHtml;
       if (!html) return false;
       if (/<img\b[^>]*>/i.test(html)) return true;
       const plainText = html
@@ -626,10 +652,12 @@ export default function EditorPageClient() {
     saveInFlightRef.current = true;
 
     try {
+      setEditorContent(currentEditorContent);
+
       const blogData = {
         title: blogTitle,
         description: blogDescription,
-        content: editorContent.html,
+        content: currentContentHtml,
         categories: selectedCategories,
         status: status,
         published: status === "published",
@@ -704,6 +732,7 @@ export default function EditorPageClient() {
         } else {
           // Manual save: promote to state + URL immediately
           const newId = String(responseData.id);
+          promotedBlogIdRef.current = newId;
           setCurrentBlogId(newId);
           const params = new URLSearchParams(searchParams.toString());
           params.set("id", newId);
@@ -754,9 +783,19 @@ export default function EditorPageClient() {
       }
 
       // Tell the hook the save succeeded. Preserve thumbnail dirty state if upload failed.
+      const savedSnapshot = {
+        title: blogTitle,
+        description: blogDescription,
+        contentHtml: currentContentHtml,
+        categories: selectedCategories,
+        extraDirtySignal: thumbnailUploadFailed
+          ? thumbnailDirtySignal
+          : nextThumbnailSignal,
+      };
       markSaved({
         preserveExtraDirty: thumbnailUploadFailed,
         nextExtraDirtySignal: nextThumbnailSignal,
+        savedSnapshot,
       });
       if (!isAutoSave) {
         setSaveStatus(thumbnailUploadFailed ? "failed" : "saved");
@@ -777,12 +816,16 @@ export default function EditorPageClient() {
 
       if (thumbnailUploadFailed) {
         return {
-          ...responseData,
+          ...(responseData || {}),
           thumbnailUploadFailed: true,
+          __savedSnapshot: savedSnapshot,
         };
       }
 
-      return responseData;
+      return {
+        ...(responseData || {}),
+        __savedSnapshot: savedSnapshot,
+      };
     } catch (error) {
       console.error("Error saving blog:", error);
       if (isAutoSave) {
@@ -821,10 +864,12 @@ export default function EditorPageClient() {
       setIsSaving(true);
 
       // Gather current editor state
+      const currentEditorContent = getCurrentEditorContent();
+      setEditorContent(currentEditorContent);
       const draftData = {
         title: `${blogTitle} [Update draft]`,
         description: blogDescription,
-        content: editorContent.html,
+        content: currentEditorContent.html,
         categories: selectedCategories,
         // image is handled separately via thumbnailData/thumbnailRemoved if needed,
         // but for now we'll stick to text content to be safe.
@@ -870,11 +915,14 @@ export default function EditorPageClient() {
 
   // Handle Publish
   const handlePublish = async () => {
+    const currentEditorContent = getCurrentEditorContent();
+    setEditorContent(currentEditorContent);
+
     if (
       !isArticlePublishable({
         title: blogTitle,
         description: blogDescription,
-        content: editorContent.html,
+        content: currentEditorContent.html,
       })
     ) {
       toast.error(
@@ -963,11 +1011,12 @@ export default function EditorPageClient() {
 
   // Handle Back - Check for unsaved changes and show exit modal if needed
   const handleBack = async () => {
+    const currentEditorContent = getCurrentEditorContent();
     const isEmptyDraft =
       !currentBlogId &&
       !blogTitle.trim() &&
       !blogDescription.trim() &&
-      (!editorContent.html || editorContent.html === "<p></p>") &&
+      (!currentEditorContent.html || currentEditorContent.html === "<p></p>") &&
       (!selectedCategories || selectedCategories.length === 0);
 
     if (isEmptyDraft) {
