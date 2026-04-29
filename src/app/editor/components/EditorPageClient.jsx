@@ -161,9 +161,16 @@ export default function EditorPageClient() {
     html: "",
     text: "",
   });
-  const handleEditorUpdate = useCallback((data) => {
+  const editorContentRef = useRef(editorContent);
+
+  const updateEditorContent = useCallback((data) => {
+    editorContentRef.current = data;
     setEditorContent(data);
   }, []);
+
+  const handleEditorUpdate = useCallback((data) => {
+    updateEditorContent(data);
+  }, [updateEditorContent]);
   const [blogTitle, setBlogTitle] = useState("");
   const [blogDescription, setBlogDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -314,7 +321,7 @@ export default function EditorPageClient() {
   // ── Auto-save via custom hook ───────────────────────────────────────────
   const getCurrentEditorContent = useCallback(() => {
     const editor = editorInstanceRef.current;
-    if (!editor) return editorContent;
+    if (!editor) return editorContentRef.current;
 
     const html = editor.getHTML();
     const text = editor.getText();
@@ -325,7 +332,7 @@ export default function EditorPageClient() {
       charCount: text.length,
       wordCount: text.trim() ? text.trim().split(/\s+/).length : 0,
     };
-  }, [editorContent]);
+  }, []);
 
   const saveFnForHook = useCallback(
     async (isAutoSave) => {
@@ -346,26 +353,30 @@ export default function EditorPageClient() {
     ],
   );
 
-  const syncDraftIdToUrl = useCallback((newId, nextStatus = "draft") => {
+  const replaceEditorUrlId = useCallback((newId, nextStatus = "draft") => {
     if (!newId) return;
 
     const nextId = String(newId);
     promotedBlogIdRef.current = nextId;
     setCurrentBlogId((current) => current || nextId);
 
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("id", nextId);
-    if (!params.get("status")) {
-      params.set("status", nextStatus);
+    if (typeof window === "undefined") return;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("id", nextId);
+    if (!url.searchParams.get("status")) {
+      url.searchParams.set("status", nextStatus);
     }
     if (publicationId) {
-      params.set("publicationId", publicationId);
+      url.searchParams.set("publicationId", publicationId);
     }
 
-    router.replace(withPub(`/editor?${params.toString()}`), {
-      scroll: false,
-    });
-  }, [searchParams, publicationId, router, withPub]);
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  }, [publicationId]);
 
   // Callback for when the first server save creates a new blog ID.
   // Promote the draft into the URL immediately so refresh always reopens it.
@@ -373,7 +384,7 @@ export default function EditorPageClient() {
     if (result?.id != null) {
       const newId = String(result.id);
       shadowIdRef.current = newId;
-      syncDraftIdToUrl(newId);
+      replaceEditorUrlId(newId);
 
       // If the user selected a thumbnail before the blog existed, upload it now.
       const pending = thumbnailDataRef.current;
@@ -390,23 +401,16 @@ export default function EditorPageClient() {
           });
       }
     }
-  }, [persistThumbnailForBlog, syncDraftIdToUrl]);
+  }, [persistThumbnailForBlog, replaceEditorUrlId]);
 
   // Promote shadowIdRef to state + URL (called on manual save / publish / exit)
   const flushShadowId = useCallback(() => {
     if (shadowIdRef.current && !currentBlogId) {
       const newId = shadowIdRef.current;
-      setCurrentBlogId(newId);
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("id", newId);
-      if (!params.get("status")) params.set("status", "draft");
-      if (publicationId) params.set("publicationId", publicationId);
-      router.replace(withPub(`/editor?${params.toString()}`), {
-        scroll: false,
-      });
+      replaceEditorUrlId(newId);
       shadowIdRef.current = null;
     }
-  }, [currentBlogId, searchParams, publicationId, router, withPub]);
+  }, [currentBlogId, replaceEditorUrlId]);
 
   const {
     hasUnsavedChanges,
@@ -460,7 +464,7 @@ export default function EditorPageClient() {
     setBlogDescription(draft.description || "");
     setSelectedCategories(Array.isArray(draft.categories) ? draft.categories : []);
     setInitialContent(nextContent);
-    setEditorContent({
+    updateEditorContent({
       html: nextContent,
       text: nextText,
       charCount: nextText.length,
@@ -471,7 +475,7 @@ export default function EditorPageClient() {
     if (editorInstanceRef.current) {
       editorInstanceRef.current.commands.setContent(nextContent || "");
     }
-  }, []);
+  }, [updateEditorContent]);
 
   // Load existing blog if editing.
   // Guard: only load when the blogId comes from the initial URL, not when
@@ -506,7 +510,7 @@ export default function EditorPageClient() {
       setInitialContent(blog.content || "");
 
       // Initialize editorContent state to prevent data loss if saving without editing body
-      setEditorContent({
+      updateEditorContent({
         html: blog.content || "",
         text: "",
         charCount: (blog.content || "").length,
@@ -564,7 +568,7 @@ export default function EditorPageClient() {
     } finally {
       setIsLoading(false);
     }
-  }, [resetSnapshot]);
+  }, [resetSnapshot, updateEditorContent]);
 
   useEffect(() => {
     if (blogId && blogId === initialBlogIdRef.current) {
@@ -652,7 +656,7 @@ export default function EditorPageClient() {
     saveInFlightRef.current = true;
 
     try {
-      setEditorContent(currentEditorContent);
+      updateEditorContent(currentEditorContent);
 
       const blogData = {
         title: blogTitle,
@@ -731,20 +735,7 @@ export default function EditorPageClient() {
           shadowIdRef.current = String(responseData.id);
         } else {
           // Manual save: promote to state + URL immediately
-          const newId = String(responseData.id);
-          promotedBlogIdRef.current = newId;
-          setCurrentBlogId(newId);
-          const params = new URLSearchParams(searchParams.toString());
-          params.set("id", newId);
-          if (!params.get("status")) {
-            params.set("status", status);
-          }
-          if (publicationId) {
-            params.set("publicationId", publicationId);
-          }
-          router.replace(withPub(`/editor?${params.toString()}`), {
-            scroll: false,
-          });
+          replaceEditorUrlId(responseData.id, status);
         }
       }
 
@@ -865,7 +856,7 @@ export default function EditorPageClient() {
 
       // Gather current editor state
       const currentEditorContent = getCurrentEditorContent();
-      setEditorContent(currentEditorContent);
+      updateEditorContent(currentEditorContent);
       const draftData = {
         title: `${blogTitle} [Update draft]`,
         description: blogDescription,
@@ -916,7 +907,7 @@ export default function EditorPageClient() {
   // Handle Publish
   const handlePublish = async () => {
     const currentEditorContent = getCurrentEditorContent();
-    setEditorContent(currentEditorContent);
+    updateEditorContent(currentEditorContent);
 
     if (
       !isArticlePublishable({
