@@ -29,6 +29,7 @@ export default function Members() {
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [sending, setSending] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -118,8 +119,13 @@ export default function Members() {
     }
 
     try {
-      if (!silent) {
+      const shouldBlock =
+        !silent && members.length === 0 && pendingInvitations.length === 0;
+
+      if (shouldBlock) {
         setLoading(true);
+      } else if (!silent) {
+        setRefreshing(true);
       }
 
       const membersData = await memberService.getMembers(currentPublication.id);
@@ -167,6 +173,7 @@ export default function Members() {
     } finally {
       if (!silent) {
         setLoading(false);
+        setRefreshing(false);
       }
     }
   };
@@ -336,6 +343,7 @@ export default function Members() {
             <button
               onClick={() => router.push("/")}
               className="bg-violet-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-violet-700"
+              disabled={refreshing}
             >
               Go to Dashboard
             </button>

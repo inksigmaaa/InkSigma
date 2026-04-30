@@ -86,7 +86,8 @@ export default async function RootLayout({ children }) {
     pathname.startsWith(p),
   );
 
-  const needsDashboard = isDashboardHost || (isDashboardPath && !isPublicOnlyPath);
+  const needsDashboard =
+    !isPublicOnlyPath && (isDashboardHost || isDashboardPath);
 
   return (
     <html lang="en" suppressHydrationWarning>

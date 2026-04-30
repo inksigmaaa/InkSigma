@@ -12,6 +12,7 @@ import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
 import PageTransition from "@/components/PageTransition";
 import { toast } from "sonner";
+import { withPublicationPath } from "@/utils/dashboardUrl";
 
 export default function SchedulePage() {
   const {
@@ -28,6 +29,7 @@ export default function SchedulePage() {
     bulkMoveToDraft,
   } = useArticles();
   const { currentPublication, getCurrentUserRole } = usePublication();
+  const currentPublicationSubdomain = currentPublication?.subdomain;
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -54,8 +56,7 @@ export default function SchedulePage() {
   // Refs to prevent stale closures and unnecessary re-renders
   const loadUserArticlesRef = useRef(loadUserArticles);
   const loadPublicationArticlesRef = useRef(loadPublicationArticles);
-  const hasMountedRef = useRef(false);
-  const loadedContextRef = useRef(null); // 'user' or 'publication'
+  const loadedRequestRef = useRef(null);
 
   // Update refs when functions change
   useEffect(() => {
@@ -70,16 +71,15 @@ export default function SchedulePage() {
     // Target context based on current state
     const targetContext =
       isAdmin && currentPublication?.id ? "publication" : "user";
-
-    // Check if context changed
-    const isWrongContext =
-      hasMountedRef.current && loadedContextRef.current !== targetContext;
-
-    const shouldLoad = needsRefresh || !hasMountedRef.current || isWrongContext;
+    const requestKey =
+      targetContext === "publication"
+        ? `publication:${currentPublication.id}`
+        : `user:${session?.user?.id || "anonymous"}`;
+    const shouldLoad =
+      needsRefresh || loadedRequestRef.current !== requestKey;
 
     if (shouldLoad) {
-      hasMountedRef.current = true;
-      loadedContextRef.current = targetContext;
+      loadedRequestRef.current = requestKey;
 
       if (targetContext === "publication") {
         loadPublicationArticlesRef.current(currentPublication.id);
@@ -89,10 +89,20 @@ export default function SchedulePage() {
 
       // Clean up the URL if refresh param was present
       if (needsRefresh) {
-        router.replace("/schedule", { scroll: false });
+        router.replace(
+          withPublicationPath("/schedule", currentPublicationSubdomain),
+          { scroll: false },
+        );
       }
     }
-  }, [searchParams, router, isAdmin, currentPublication?.id]);
+  }, [
+    searchParams,
+    router,
+    isAdmin,
+    currentPublication?.id,
+    currentPublicationSubdomain,
+    session?.user?.id,
+  ]);
 
   // Filter scheduled articles - separate from action handlers to prevent re-renders
   const scheduledArticleIds = useMemo(() => {
@@ -132,9 +142,6 @@ export default function SchedulePage() {
     allArticles,
     handleDeleteAction,
     handleDraftAction,
-    session?.user?.id,
-    currentPublication,
-    userRole,
   ]);
 
   // Smart refresh: set a single timer for the next scheduled article to publish

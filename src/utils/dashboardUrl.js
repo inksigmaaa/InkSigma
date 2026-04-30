@@ -22,3 +22,33 @@ export const getDashboardUrl = (path = "") => {
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
   return `https://dashboard.${rootDomain}${cleanPath}`;
 };
+
+export const withPublicationPath = (path = "/", publication) => {
+  if (!path || typeof path !== "string" || !path.startsWith("/")) {
+    return path;
+  }
+
+  const subdomain =
+    typeof publication === "string" ? publication : publication?.subdomain;
+
+  if (!subdomain) {
+    return path;
+  }
+
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname.toLowerCase();
+    const isDashboardHost =
+      hostname === "dashboard.localhost" ||
+      hostname.startsWith("dashboard.");
+
+    if (!isDashboardHost) {
+      return path;
+    }
+  }
+
+  if (path === `/${subdomain}` || path.startsWith(`/${subdomain}/`)) {
+    return path;
+  }
+
+  return `/${subdomain}${path}`;
+};

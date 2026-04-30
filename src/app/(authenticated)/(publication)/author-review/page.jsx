@@ -136,7 +136,7 @@ export default function AuthorReviewPage() {
         setSelectedArticleForPublish(null);
         // Refresh the review articles list
         if (currentPublication?.id) {
-          loadReviewArticles(currentPublication.id);
+          loadReviewArticles(currentPublication.id, { background: true });
         }
       } catch (error) {
         console.error("Error publishing article:", error);
@@ -154,7 +154,7 @@ export default function AuthorReviewPage() {
         setSelectedArticleForPublish(null);
         // Refresh the review articles list
         if (currentPublication?.id) {
-          loadReviewArticles(currentPublication.id);
+          loadReviewArticles(currentPublication.id, { background: true });
         }
       } catch (error) {
         console.error("Error storing to unpublished:", error);
@@ -197,7 +197,7 @@ export default function AuthorReviewPage() {
 
       // Refresh the review articles list
       if (currentPublication?.id) {
-        loadReviewArticles(currentPublication.id);
+        loadReviewArticles(currentPublication.id, { background: true });
       }
     } catch (error) {
       console.error("Error performing action:", error);
@@ -291,7 +291,7 @@ export default function AuthorReviewPage() {
     filteredArticles.length > 0 &&
     selectedPosts.length === filteredArticles.length;
 
-  if (reviewLoading) {
+  if (reviewLoading && reviewArticles.length === 0) {
     return (
       <>
         <Verify />

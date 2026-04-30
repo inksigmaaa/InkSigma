@@ -14,6 +14,7 @@ import { getImageUrl } from "@/utils/imageUrl";
 import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getPublicationUrl } from "@/utils/publicationDomain";
+import { withPublicationPath } from "@/utils/dashboardUrl";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -132,7 +133,12 @@ export default function HomePage() {
   const handleStartWriting = () => {
     // Pass current publication ID to editor - navigate using router
     if (currentPublication?.id) {
-      router.push(`/editor?publicationId=${currentPublication.id}`);
+      router.push(
+        withPublicationPath(
+          `/editor?publicationId=${currentPublication.id}`,
+          currentPublication,
+        ),
+      );
     } else {
       router.push("/editor");
     }
@@ -248,7 +254,12 @@ export default function HomePage() {
                       key={article.id}
                       className="border border-[#EAEAEA] rounded-lg hover:shadow-lg transition-shadow bg-white p-4 cursor-pointer flex flex-col"
                       onClick={() =>
-                        router.push(`/home/preview/${article.id}`)
+                        router.push(
+                          withPublicationPath(
+                            `/home/preview/${article.id}`,
+                            currentPublication,
+                          ),
+                        )
                       }
                     >
                       <div className="aspect-video bg-gray-100 overflow-hidden rounded-sm mb-4 relative flex-shrink-0">
@@ -285,7 +296,12 @@ export default function HomePage() {
                               className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors flex-shrink-0"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                router.push(`/editor?status=published&id=${article.id}&source=${pathname}`);
+                                router.push(
+                                  withPublicationPath(
+                                    `/editor?status=published&id=${article.id}&source=${pathname}`,
+                                    currentPublication,
+                                  ),
+                                );
                               }}
                             >
                               <Pencil className="w-5 h-5" />

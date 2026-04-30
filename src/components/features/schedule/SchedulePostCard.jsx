@@ -12,6 +12,8 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from 'next/navigation'
+import { usePublication } from "@/contexts/PublicationContext"
+import { withPublicationPath } from "@/utils/dashboardUrl"
 
 export default function SchedulePostCard({ 
   post, 
@@ -20,9 +22,15 @@ export default function SchedulePostCard({
   onDelete 
 }) {
   const router = useRouter()
+  const { currentPublication } = usePublication()
 
   const handleEdit = () => {
-    router.push(`/editor?status=scheduled&id=${post.id}`)
+    router.push(
+      withPublicationPath(
+        `/editor?status=scheduled&id=${post.id}`,
+        currentPublication,
+      ),
+    )
   }
 
   return (

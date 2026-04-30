@@ -100,6 +100,8 @@ const handleMerge = (list, draftId, updated) => {
   return updateInList(withoutDraft, updated.id, updated);
 };
 
+const createRequestKey = (parts) => JSON.stringify(parts);
+
 // ── Zustand store ──
 
 export const useArticleStore = create((set, get) => ({
@@ -108,16 +110,26 @@ export const useArticleStore = create((set, get) => ({
   reviewArticles: [],
   publicationArticles: [],
   loading: false,
+  refreshing: false,
   reviewLoading: false,
+  reviewRefreshing: false,
   pubArticlesLoading: false,
+  pubArticlesRefreshing: false,
   error: null,
   reviewError: null,
   areUserArticlesLoaded: false,
   arePubArticlesLoaded: false,
+  areReviewArticlesLoaded: false,
 
   // Internal refs (not reactive — used for abort control)
   _abortController: null,
   _pubAbortController: null,
+  _articlesKey: null,
+  _articlesLoaded: false,
+  _pubArticlesKey: null,
+  _pubArticlesLoaded: false,
+  _reviewArticlesKey: null,
+  _reviewArticlesLoaded: false,
 
   // ── Actions ──
 
@@ -134,7 +146,24 @@ export const useArticleStore = create((set, get) => ({
     const prev = get()._abortController;
     if (prev) prev.abort();
     const controller = new AbortController();
-    set({ _abortController: controller, loading: true, error: null });
+    const requestKey = createRequestKey({
+      userId: session.user.id,
+      publicationId,
+      includeAllPublications,
+      status,
+      extraFilters,
+    });
+    const state = get();
+    const sameRequest = state._articlesKey === requestKey;
+    const hasExistingData =
+      sameRequest && (state._articlesLoaded || state.articles.length > 0);
+    set({
+      _abortController: controller,
+      loading: !hasExistingData,
+      refreshing: hasExistingData,
+      error: null,
+      ...(sameRequest ? {} : { articles: [] }),
+    });
 
     try {
       const filters = includeAllPublications
@@ -155,6 +184,8 @@ export const useArticleStore = create((set, get) => ({
       const converted = blogs.map(convertBlogToArticle);
       set({
         articles: converted,
+        _articlesKey: requestKey,
+        _articlesLoaded: true,
         ...(status ? {} : { areUserArticlesLoaded: true }),
       });
     } catch (err) {
@@ -162,7 +193,11 @@ export const useArticleStore = create((set, get) => ({
       set({ error: err.message });
     } finally {
       if (!controller.signal.aborted) {
-        set({ loading: false, _abortController: null });
+        set({
+          loading: false,
+          refreshing: false,
+          _abortController: null,
+        });
       }
     }
   },
@@ -171,7 +206,22 @@ export const useArticleStore = create((set, get) => ({
     const prev = get()._pubAbortController;
     if (prev) prev.abort();
     const controller = new AbortController();
-    set({ _pubAbortController: controller, pubArticlesLoading: true });
+    const requestKey = createRequestKey({
+      publicationId,
+      status,
+      extraFilters,
+    });
+    const state = get();
+    const sameRequest = state._pubArticlesKey === requestKey;
+    const hasExistingData =
+      sameRequest &&
+      (state._pubArticlesLoaded || state.publicationArticles.length > 0);
+    set({
+      _pubAbortController: controller,
+      pubArticlesLoading: !hasExistingData,
+      pubArticlesRefreshing: hasExistingData,
+      ...(sameRequest ? {} : { publicationArticles: [] }),
+    });
 
     try {
       const filters = status ? { status } : {};
@@ -184,6 +234,8 @@ export const useArticleStore = create((set, get) => ({
       const converted = blogs.map(convertBlogToArticle);
       set({
         publicationArticles: converted,
+        _pubArticlesKey: requestKey,
+        _pubArticlesLoaded: true,
         ...(status ? {} : { arePubArticlesLoaded: true }),
       });
       return converted;
@@ -192,24 +244,45 @@ export const useArticleStore = create((set, get) => ({
       throw err;
     } finally {
       if (!controller.signal.aborted) {
-        set({ pubArticlesLoading: false, _pubAbortController: null });
+        set({
+          pubArticlesLoading: false,
+          pubArticlesRefreshing: false,
+          _pubAbortController: null,
+        });
       }
     }
   },
 
-  loadReviewArticles: async (publicationId) => {
+  loadReviewArticles: async (publicationId, options = {}) => {
     if (!publicationId) return [];
-    set({ reviewLoading: true, reviewError: null });
+    const requestKey = createRequestKey({ publicationId });
+    const state = get();
+    const sameRequest = state._reviewArticlesKey === requestKey;
+    const hasExistingData =
+      sameRequest &&
+      (state._reviewArticlesLoaded || state.reviewArticles.length > 0);
+    const shouldBlock = !options.background && !hasExistingData;
+    set({
+      reviewLoading: shouldBlock,
+      reviewRefreshing: !shouldBlock,
+      reviewError: null,
+      ...(sameRequest ? {} : { reviewArticles: [] }),
+    });
     try {
       const blogs = await blogService.getReviewArticles(publicationId);
       const converted = blogs.map(convertBlogToArticle);
-      set({ reviewArticles: converted });
+      set({
+        reviewArticles: converted,
+        areReviewArticlesLoaded: true,
+        _reviewArticlesKey: requestKey,
+        _reviewArticlesLoaded: true,
+      });
       return converted;
     } catch (err) {
       set({ reviewError: err.message });
       throw err;
     } finally {
-      set({ reviewLoading: false });
+      set({ reviewLoading: false, reviewRefreshing: false });
     }
   },
 

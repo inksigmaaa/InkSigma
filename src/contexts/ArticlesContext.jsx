@@ -103,12 +103,16 @@ export function useArticles() {
     reviewArticles: store.reviewArticles,
     publicationArticles: store.publicationArticles,
     loading: store.loading,
+    refreshing: store.refreshing,
     reviewLoading: store.reviewLoading,
+    reviewRefreshing: store.reviewRefreshing,
     pubArticlesLoading: store.pubArticlesLoading,
+    pubArticlesRefreshing: store.pubArticlesRefreshing,
     error: store.error,
     reviewError: store.reviewError,
     areUserArticlesLoaded: store.areUserArticlesLoaded,
     arePubArticlesLoaded: store.arePubArticlesLoaded,
+    areReviewArticlesLoaded: store.areReviewArticlesLoaded,
 
     // Wrapped actions (inject session/publication automatically)
     loadUserArticles,

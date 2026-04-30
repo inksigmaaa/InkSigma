@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
 import React from "react";
 import { NightTooltip } from "@/components/ui/tooltip";
+import { withPublicationPath } from "@/utils/dashboardUrl";
 
 // Helper function to format relative time
 const getRelativeTime = (dateString) => {
@@ -93,14 +94,18 @@ export default function ArticleContainer({
     if (publicationId) {
       params.append("publicationId", publicationId.toString());
     }
-    router.push(`/editor?${params.toString()}`);
+    router.push(
+      withPublicationPath(`/editor?${params.toString()}`, currentPublication),
+    );
   };
 
   const handlePreview = () => {
     const publicationQuery = currentPublication?.id
       ? `?publicationId=${currentPublication.id}`
       : "";
-    router.push(`/home/preview/${id}${publicationQuery}`);
+    router.push(
+      withPublicationPath(`/home/preview/${id}${publicationQuery}`, currentPublication),
+    );
   };
 
   // Long press handlers for mobile
