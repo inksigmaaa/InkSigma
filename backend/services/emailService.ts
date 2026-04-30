@@ -1,5 +1,4 @@
-// services/emailService.js
-import nodemailer, { Transporter, SentMessageInfo } from "nodemailer";
+import { Resend } from "resend";
 import logger from "../utils/logger.js";
 import {
     createConcurrencyLimiter,
@@ -11,6 +10,12 @@ interface SendEmailParams {
     to: string;
     subject: string;
     html: string;
+    text?: string;
+}
+
+interface SendEmailResult {
+    id: string;
+    messageId: string;
 }
 
 interface PasswordResetParams {
@@ -26,72 +31,102 @@ interface VerificationParams {
 }
 
 class EmailService {
-    private transporter: Transporter | null = null;
+    private resend: Resend | null = null;
 
-    private readonly smtpTimeoutMs = getEnvNumber(
-        process.env.SMTP_OPERATION_TIMEOUT_MS,
+    private readonly resendTimeoutMs = getEnvNumber(
+        process.env.RESEND_OPERATION_TIMEOUT_MS,
         8000,
         500,
     );
 
-    private readonly runSmtpOperation = createConcurrencyLimiter(
-        getEnvNumber(process.env.SMTP_MAX_CONCURRENCY, 5, 1),
+    private readonly runResendOperation = createConcurrencyLimiter(
+        getEnvNumber(process.env.RESEND_MAX_CONCURRENCY, 5, 1),
     );
 
-    private getTransporter(): Transporter {
-        if (!this.transporter) {
-            this.transporter = nodemailer.createTransport({
-                host: process.env.SMTP_HOST || "smtp.gmail.com",
-                port: Number(process.env.SMTP_PORT) || 587,
-                secure: Number(process.env.SMTP_PORT) === 465,
-                connectionTimeout: this.smtpTimeoutMs,
-                greetingTimeout: this.smtpTimeoutMs,
-                socketTimeout: this.smtpTimeoutMs,
-                auth: {
-                    user: process.env.SMTP_USER,
-                    pass: process.env.SMTP_PASS,
-                },
-            });
+    private getApiKey(): string {
+        const apiKey = process.env.RESEND_API_KEY?.trim();
+        if (!apiKey) {
+            throw new Error("RESEND_API_KEY is required to send email");
         }
-        return this.transporter;
+        return apiKey;
+    }
+
+    private getResend(): Resend {
+        if (!this.resend) {
+            this.resend = new Resend(this.getApiKey());
+        }
+        return this.resend;
+    }
+
+    private getFromAddress(): string {
+        const configuredFrom = process.env.RESEND_FROM?.trim();
+        if (configuredFrom) return configuredFrom;
+
+        const fromEmail = process.env.RESEND_FROM_EMAIL?.trim();
+
+        if (!fromEmail) {
+            throw new Error("RESEND_FROM or RESEND_FROM_EMAIL is required to send email");
+        }
+
+        const fromName = process.env.RESEND_FROM_NAME?.trim() || "InkSigma";
+
+        return `${fromName} <${fromEmail}>`;
+    }
+
+    isConfigured(): boolean {
+        return Boolean(
+            process.env.RESEND_API_KEY?.trim() &&
+            (process.env.RESEND_FROM?.trim() ||
+                process.env.RESEND_FROM_EMAIL?.trim()),
+        );
     }
 
     async verify(): Promise<boolean> {
         try {
-            await this.runSmtpOperation(() =>
-                withTimeout(() => this.getTransporter().verify(), {
-                    timeoutMs: this.smtpTimeoutMs,
-                    operationName: "smtp.verify",
-                }),
-            );
-            logger.info("[EMAIL] SMTP connection verified");
+            this.getApiKey();
+            this.getFromAddress();
+            this.getResend();
+            logger.info("[EMAIL] Resend configuration verified");
             return true;
         } catch (error) {
-            logger.error({ err: error }, "[EMAIL] SMTP verification failed");
+            logger.error({ err: error }, "[EMAIL] Resend configuration failed");
             return false;
         }
     }
 
-    async send(params: SendEmailParams): Promise<SentMessageInfo> {
+    async send(params: SendEmailParams): Promise<SendEmailResult> {
         logger.info(`[EMAIL] Sending "${params.subject}" to ${params.to}`);
         try {
-            const result = (await this.runSmtpOperation(() =>
+            const result = await this.runResendOperation(() =>
                 withTimeout(
-                    () =>
-                        this.getTransporter().sendMail({
-                            from: process.env.SMTP_FROM
-                                ? `${process.env.SMTP_FROM_NAME || "InkSigma"} <${process.env.SMTP_FROM}>`
-                                : process.env.SMTP_USER,
+                    async () => {
+                        const { data, error } = await this.getResend().emails.send({
+                            from: this.getFromAddress(),
                             to: params.to,
                             subject: params.subject,
                             html: params.html,
-                        }),
+                            ...(params.text ? { text: params.text } : {}),
+                        });
+
+                        if (error) {
+                            throw new Error(error.message);
+                        }
+
+                        if (!data?.id) {
+                            throw new Error("Resend did not return an email id");
+                        }
+
+                        return {
+                            id: data.id,
+                            messageId: data.id,
+                        };
+                    },
                     {
-                        timeoutMs: this.smtpTimeoutMs,
-                        operationName: "smtp.sendMail",
+                        timeoutMs: this.resendTimeoutMs,
+                        operationName: "resend.emails.send",
                     },
                 ),
-            )) as SentMessageInfo;
+            );
             logger.info(`[EMAIL] Sent successfully: ${result.messageId}`);
             return result;
         } catch (error) {
@@ -100,7 +135,7 @@ class EmailService {
         }
     }
 
-    async sendPasswordReset(params: PasswordResetParams): Promise<SentMessageInfo> {
+    async sendPasswordReset(params: PasswordResetParams): Promise<SendEmailResult> {
         return this.send({
             to: params.email,
             subject: "Reset your password - InkSigma",
@@ -118,7 +153,7 @@ class EmailService {
         });
     }
 
-    async sendVerification(params: VerificationParams): Promise<SentMessageInfo> {
+    async sendVerification(params: VerificationParams): Promise<SendEmailResult> {
         return this.send({
             to: params.email,
             subject: "Verify your email - InkSigma",

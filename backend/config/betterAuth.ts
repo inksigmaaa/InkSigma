@@ -87,8 +87,7 @@ const getCrossSubdomainCookieDomain = () => {
 const crossSubdomainCookieDomain = getCrossSubdomainCookieDomain();
 const isProduction = process.env.NODE_ENV === "production";
 
-const isSmtpConfigured = () =>
-  !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+const isEmailConfigured = () => emailService.isConfigured();
 
 const isGoogleConfigured = () =>
   !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
@@ -144,7 +143,7 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: isSmtpConfigured(),
+    requireEmailVerification: isEmailConfigured(),
 
     sendResetPassword: async ({ user, url }) => {
       logger.info(`[BETTER-AUTH] sendResetPassword called for: ${redactEmail(user.email)}`);
@@ -185,14 +184,13 @@ export const auth = betterAuth({
         logger.info(
           `[BETTER-AUTH] Verification email sent successfully, result: ${result?.messageId}`,
         );
-        return result;
       } catch (error) {
-        // Log but do NOT rethrow — a missing/broken SMTP config must not
+        // Log but do NOT rethrow — a missing/broken email config must not
         // turn a successful signup into a 500. The user was created; they
         // can request a new verification email later.
         logger.error(
           { err: error?.message },
-          "[BETTER-AUTH] Failed to send verification email — SMTP may not be configured",
+          "[BETTER-AUTH] Failed to send verification email — email delivery may not be configured",
         );
       }
     },
