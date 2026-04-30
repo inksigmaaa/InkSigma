@@ -10,6 +10,7 @@ import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { toast } from "sonner";
+import { withPublicationPath } from "@/utils/dashboardUrl";
 
 export default function PublishedPage() {
   const {
@@ -26,11 +27,11 @@ export default function PublishedPage() {
   } = useArticles();
 
   const { currentPublication, getCurrentUserRole } = usePublication();
+  const currentPublicationSubdomain = currentPublication?.subdomain;
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const hasLoadedRef = useRef(false);
-  const loadedContextRef = useRef(null); // 'user' or 'publication'
+  const loadedRequestRef = useRef(null);
   const [pageError, setPageError] = useState(null);
 
   // Determine user role
@@ -50,17 +51,13 @@ export default function PublishedPage() {
   useEffect(() => {
     const needsRefresh = searchParams.get("refresh") === "true";
 
-    // Always load publication articles (for all roles including authors)
-    const targetContext = "publication";
-
-    // Helper to check if we need to load
-    const isWrongContext =
-      hasLoadedRef.current && loadedContextRef.current !== targetContext;
-
+    const requestKey = currentPublication?.id
+      ? `publication:${currentPublication.id}`
+      : null;
     const shouldLoad =
       needsRefresh ||
-      (!arePubArticlesLoaded && !isLoading && !hasLoadedRef.current) ||
-      isWrongContext;
+      (!arePubArticlesLoaded && !isLoading) ||
+      loadedRequestRef.current !== requestKey;
 
     if (!shouldLoad || !currentPublication?.id) return;
 
@@ -69,8 +66,7 @@ export default function PublishedPage() {
     const loadArticles = async () => {
       try {
         setPageError(null);
-        hasLoadedRef.current = true;
-        loadedContextRef.current = targetContext;
+        loadedRequestRef.current = requestKey;
         await loadPublicationArticles(currentPublication.id);
       } catch (loadError) {
         if (!cancelled) {
@@ -87,11 +83,9 @@ export default function PublishedPage() {
   }, [
     searchParams,
     arePubArticlesLoaded,
-    displayArticles.length,
     isLoading,
     loadPublicationArticles,
     currentPublication?.id,
-    userRole,
   ]);
 
   const effectiveError = pageError || error;
@@ -99,9 +93,12 @@ export default function PublishedPage() {
   // Clean up refresh param from URL if present
   useEffect(() => {
     if (searchParams.get("refresh") === "true") {
-      router.replace("/published", { scroll: false });
+      router.replace(
+        withPublicationPath("/published", currentPublicationSubdomain),
+        { scroll: false },
+      );
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, currentPublicationSubdomain]);
   const [selectedArticles, setSelectedArticles] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);

@@ -14,7 +14,6 @@ import { getApiBase } from "@/utils/apiBase";
 import {
   buildAuthCallbackPath,
   getAuthenticatedLoginRedirectPath,
-  waitForServerSession,
 } from "@/utils/auth";
 
 function LoginForm() {
@@ -53,21 +52,13 @@ function LoginForm() {
 
   useEffect(() => {
     let cancelled = false;
-    const controller = new AbortController();
 
     const redirectAuthenticatedUser = async () => {
       if (isPending) return;
       let redirected = false;
 
       try {
-        const activeSession = session?.user?.id
-          ? session
-          : await waitForServerSession({
-              attempts: 2,
-              signal: controller.signal,
-            });
-
-        if (!activeSession?.user?.id || cancelled) {
+        if (!session?.user?.id || cancelled) {
           return;
         }
 
@@ -90,7 +81,6 @@ function LoginForm() {
 
     return () => {
       cancelled = true;
-      controller.abort();
     };
   }, [isPending, redirectTo, returnTo, router, session]);
 

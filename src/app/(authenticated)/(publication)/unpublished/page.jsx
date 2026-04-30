@@ -274,7 +274,7 @@ export default function Unpublished() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && displayArticles.length === 0) {
     return (
       <>
                         <Verify />

@@ -189,7 +189,7 @@ export default function Articles(props) {
   const mobileTopPosition = "max-md:top-[120px]";
   const isLoading = props.loading !== undefined ? props.loading : loading;
 
-  if (isLoading) {
+  if (isLoading && sourceArticles.length === 0) {
     return (
       <div
         className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}

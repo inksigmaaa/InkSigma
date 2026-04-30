@@ -109,11 +109,16 @@ function PublicationProviderInner({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const currentPubRef = useRef(null);
+  const userPublicationsRef = useRef([]);
 
   // Keep ref in sync with state
   useEffect(() => {
     currentPubRef.current = currentPublication;
   }, [currentPublication]);
+
+  useEffect(() => {
+    userPublicationsRef.current = userPublications;
+  }, [userPublications]);
 
   // Helper function to determine if we're on member dashboard routes
   const isMemberDashboard = () => {
@@ -234,8 +239,13 @@ function PublicationProviderInner({ children }) {
         return [];
       }
 
+      const shouldShowBlockingLoading =
+        !silent &&
+        !currentPubRef.current &&
+        userPublicationsRef.current.length === 0;
+
       try {
-        if (!silent) {
+        if (shouldShowBlockingLoading) {
           setLoading(true);
         }
 
@@ -377,6 +387,14 @@ function PublicationProviderInner({ children }) {
         return publications;
       } catch (error) {
         console.error("Error loading user publications:", error);
+        if (
+          silent ||
+          currentPubRef.current ||
+          userPublicationsRef.current.length > 0
+        ) {
+          return userPublicationsRef.current;
+        }
+
         if (!silent) {
           setError(error.message || "Failed to load publications");
         }
@@ -386,7 +404,7 @@ function PublicationProviderInner({ children }) {
         setPublicationDetails(null);
         return [];
       } finally {
-        if (!silent) {
+        if (shouldShowBlockingLoading) {
           setLoading(false);
         }
       }
