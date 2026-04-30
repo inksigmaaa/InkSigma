@@ -18,13 +18,11 @@ export const config = {
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
   },
-  smtp: {
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-    from: process.env.SMTP_FROM,
-    fromName: process.env.SMTP_FROM_NAME,
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY,
+    from: process.env.RESEND_FROM,
+    fromEmail: process.env.RESEND_FROM_EMAIL,
+    fromName: process.env.RESEND_FROM_NAME,
   },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
