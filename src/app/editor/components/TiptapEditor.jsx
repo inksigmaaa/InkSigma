@@ -6,7 +6,6 @@ import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
-import { Markdown } from "@tiptap/markdown";
 import Placeholder from "@tiptap/extension-placeholder";
 import Superscript from "@tiptap/extension-superscript";
 import Subscript from "@tiptap/extension-subscript";
@@ -14,7 +13,6 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
 import { LineHeight } from "./extensions/LineHeight";
 import { Indent } from "./extensions/Indent";
-import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import {
   useState,
   useEffect,
@@ -34,7 +32,6 @@ import {
   AlignRight,
   AlignJustify,
   Loader2,
-  FileUp,
   Mic,
   Square,
   Sparkles,
@@ -46,14 +43,6 @@ import {
 } from "lucide-react";
 import { ImageModal } from "./ImageModal";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Tooltip as ShadTooltip,
   TooltipContent,
@@ -112,9 +101,6 @@ const VOICE_MIME_TYPES = [
 ];
 const VOICE_CONTENT_ONLY_MESSAGE =
   "Voice dictation is only for article content, not the title or short description.";
-const MAX_MARKDOWN_FILE_BYTES = 2 * 1024 * 1024;
-const MARKDOWN_FILE_EXTENSION_PATTERN = /\.(md|markdown)$/i;
-const MARKDOWN_ACCEPT_TYPES = ".md,.markdown,text/markdown,text/plain";
 
 const AI_QUICK_ACTIONS = [
   { key: "fix_grammar", label: "Fix Grammar" },
@@ -329,15 +315,6 @@ const processEditorContent = (content, normalizeFn) => {
   });
 };
 
-const stripMarkdownByteOrderMarks = (value) =>
-  String(value || "").replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]+/, "");
-
-const isValidMarkdownFile = (file) =>
-  MARKDOWN_FILE_EXTENSION_PATTERN.test(file?.name || "") ||
-  file?.type === "text/markdown" ||
-  (file?.type === "text/plain" &&
-    MARKDOWN_FILE_EXTENSION_PATTERN.test(file?.name || ""));
-
 const Tooltip = ({ text, children, className = "" }) => {
   return (
     <TooltipProvider delayDuration={200}>
@@ -444,7 +421,6 @@ const EditorToolbar = ({
   onLinkSubmit,
   onLinkCancel,
   onImageInsert,
-  onMarkdownImport,
 }) => {
   const activeState = useToolbarActiveState(editor);
   const buttonBaseClass = "p-1.5 rounded shrink-0 shadow-none";
@@ -496,11 +472,6 @@ const EditorToolbar = ({
       action: () => onImageInsert?.(),
       title: "Insert Image",
       src: "/editor-icons/image.svg",
-    },
-    {
-      action: () => onMarkdownImport?.(),
-      title: "Import Markdown",
-      Icon: FileUp,
     },
     {
       action: () => editor.chain().focus().toggleCodeBlock().run(),
@@ -606,7 +577,6 @@ const EditorToolbar = ({
         buttonBaseClass={buttonBaseClass}
         buttonActiveClass={buttonActiveClass}
         onImageInsert={onImageInsert}
-        onMarkdownImport={onMarkdownImport}
         activeState={activeState}
       />
 
@@ -616,7 +586,6 @@ const EditorToolbar = ({
         onDropdownToggle={onDropdownToggle}
         dropdownState={dropdownState}
         onImageInsert={onImageInsert}
-        onMarkdownImport={onMarkdownImport}
         activeState={activeState}
       />
     </>
@@ -749,11 +718,7 @@ const FormatButtons = ({ buttons, buttonBaseClass, buttonActiveClass }) => {
               className={`${buttonBaseClass} ${buttonActiveClass(isActive)}`}
               style={isActive ? { backgroundColor: "#E5E7EB" } : undefined}
             >
-              {btn.Icon ? (
-                <btn.Icon className="w-4 h-4 text-gray-700" />
-              ) : (
-                <img src={btn.src} alt={btn.title} className="w-4 h-4" />
-              )}
+              <img src={btn.src} alt={btn.title} className="w-4 h-4" />
             </button>
           </Tooltip>
         );
@@ -1114,7 +1079,6 @@ const MobileToolbar = ({
   buttonBaseClass,
   buttonActiveClass,
   onImageInsert,
-  onMarkdownImport,
   activeState,
 }) => {
   const headingOptions = ["H1", "H2", "H3", "H4", "H5", "H6"];
@@ -1336,16 +1300,6 @@ const MobileToolbar = ({
             />
           </button>
         </Tooltip>
-        <Tooltip text="Import Markdown">
-          <button
-            type="button"
-            className="p-1.5 hover:bg-gray-100 rounded"
-            onClick={() => onMarkdownImport?.()}
-            aria-label="Import Markdown"
-          >
-            <FileUp className="w-4 h-4 text-gray-700" />
-          </button>
-        </Tooltip>
         <Tooltip text="Code Block">
           <button
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
@@ -1486,7 +1440,6 @@ const TabletToolbar = ({
   onDropdownToggle,
   dropdownState,
   onImageInsert,
-  onMarkdownImport,
   activeState,
 }) => {
   const headings = ["P", "H1", "H2", "H3", "H4", "H5", "H6"];
@@ -1736,11 +1689,6 @@ const TabletToolbar = ({
             src: "/editor-icons/image.svg",
           },
           {
-            action: () => onMarkdownImport?.(),
-            title: "Import Markdown",
-            Icon: FileUp,
-          },
-          {
             action: () => editor.chain().focus().toggleCodeBlock().run(),
             isActive: activeState.codeBlock,
             title: "Code Block",
@@ -1871,7 +1819,6 @@ export const TiptapEditor = memo(function TiptapEditor({
   const [isMounted, setIsMounted] = useState(false);
   const [currentFont, setCurrentFont] = useState("Roboto");
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [pendingMarkdownImport, setPendingMarkdownImport] = useState(null);
   const [voiceState, setVoiceState] = useState("idle");
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [aiToolbar, setAiToolbar] = useState({
@@ -1919,7 +1866,6 @@ export const TiptapEditor = memo(function TiptapEditor({
 
   const initialContentSetRef = useRef(false);
   const editorRef = useRef(null);
-  const markdownInputRef = useRef(null);
   const audioChunksRef = useRef([]);
   const mediaRecorderRef = useRef(null);
   const mediaStreamRef = useRef(null);
@@ -2067,11 +2013,6 @@ export const TiptapEditor = memo(function TiptapEditor({
       Subscript,
       TextStyle,
       Color,
-      Markdown.configure({
-        markedOptions: {
-          gfm: true,
-        },
-      }),
       LineHeight.configure({ types: ["paragraph", "heading"] }),
       Indent.configure({ types: ["paragraph", "heading"] }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
@@ -2520,115 +2461,6 @@ export const TiptapEditor = memo(function TiptapEditor({
       }
     },
     [editor],
-  );
-
-  const editorHasBodyContent = useCallback(() => {
-    if (!editor) return false;
-
-    const html = editor.getHTML() || "";
-    return editor.getText().trim().length > 0 || /<img\b[^>]*>/i.test(html);
-  }, [editor]);
-
-  const sanitizeCurrentEditorHtml = useCallback(() => {
-    if (!editor) return;
-
-    const html = editor.getHTML();
-    const sanitizedHtml = sanitizeHtml(html);
-
-    if (sanitizedHtml && sanitizedHtml !== html) {
-      editor.commands.setContent(sanitizedHtml, {
-        contentType: "html",
-        emitUpdate: true,
-      });
-    }
-  }, [editor]);
-
-  const applyMarkdownImport = useCallback(
-    (markdown, mode = "replace", fileName = "Markdown file") => {
-      if (!editor) return;
-
-      const normalizedMarkdown = stripMarkdownByteOrderMarks(markdown).trim();
-      if (!normalizedMarkdown) {
-        toast.error("Markdown file is empty.");
-        return;
-      }
-
-      const commandSucceeded =
-        mode === "insert"
-          ? editor
-              .chain()
-              .focus()
-              .insertContent(normalizedMarkdown, {
-                contentType: "markdown",
-                updateSelection: true,
-              })
-              .run()
-          : editor.commands.setContent(normalizedMarkdown, {
-              contentType: "markdown",
-              emitUpdate: true,
-            });
-
-      if (!commandSucceeded) {
-        toast.error("Could not import this Markdown file.");
-        return;
-      }
-
-      sanitizeCurrentEditorHtml();
-      setPendingMarkdownImport(null);
-      toast.success(
-        mode === "insert"
-          ? `Inserted ${fileName}`
-          : `Imported ${fileName}`,
-      );
-    },
-    [editor, sanitizeCurrentEditorHtml],
-  );
-
-  const handleMarkdownImportClick = useCallback(() => {
-    markdownInputRef.current?.click();
-  }, []);
-
-  const handleMarkdownFileSelect = useCallback(
-    async (event) => {
-      const file = event.target.files?.[0];
-      event.target.value = "";
-
-      if (!file) return;
-
-      if (!isValidMarkdownFile(file)) {
-        toast.error("Please choose a Markdown file (.md or .markdown).");
-        return;
-      }
-
-      if (file.size > MAX_MARKDOWN_FILE_BYTES) {
-        toast.error("Markdown file must be 2MB or smaller.");
-        return;
-      }
-
-      try {
-        const markdown = await file.text();
-        const normalizedMarkdown = stripMarkdownByteOrderMarks(markdown).trim();
-
-        if (!normalizedMarkdown) {
-          toast.error("Markdown file is empty.");
-          return;
-        }
-
-        if (editorHasBodyContent()) {
-          setPendingMarkdownImport({
-            fileName: file.name,
-            markdown: normalizedMarkdown,
-          });
-          return;
-        }
-
-        applyMarkdownImport(normalizedMarkdown, "replace", file.name);
-      } catch (error) {
-        console.error("Markdown import failed:", error);
-        toast.error("Failed to read Markdown file.");
-      }
-    },
-    [applyMarkdownImport, editorHasBodyContent],
   );
 
   const parseAiStream = useCallback(async (response, onEvent) => {
@@ -3784,15 +3616,6 @@ export const TiptapEditor = memo(function TiptapEditor({
         onLinkSubmit={handleLinkSubmit}
         onLinkCancel={handleLinkCancel}
         onImageInsert={handleImageInsert}
-        onMarkdownImport={handleMarkdownImportClick}
-      />
-
-      <input
-        ref={markdownInputRef}
-        type="file"
-        accept={MARKDOWN_ACCEPT_TYPES}
-        onChange={handleMarkdownFileSelect}
-        className="hidden"
       />
 
       <div className={aiAcceptFlash ? "ai-editor-accept-flash" : ""}>
@@ -4180,65 +4003,6 @@ export const TiptapEditor = memo(function TiptapEditor({
           onImageAdd={handleImageAdd}
         />
       )}
-
-      <Dialog
-        open={Boolean(pendingMarkdownImport)}
-        onOpenChange={(open) => {
-          if (!open) setPendingMarkdownImport(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-[460px]" showClose={true}>
-          <DialogHeader>
-            <DialogTitle>Import Markdown</DialogTitle>
-            <DialogDescription>
-              This editor already has article content. Replace the body or insert
-              the Markdown at your current cursor position.
-            </DialogDescription>
-          </DialogHeader>
-
-          {pendingMarkdownImport?.fileName ? (
-            <p className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700">
-              {pendingMarkdownImport.fileName}
-            </p>
-          ) : null}
-
-          <DialogFooter className="gap-2 sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setPendingMarkdownImport(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                applyMarkdownImport(
-                  pendingMarkdownImport?.markdown || "",
-                  "insert",
-                  pendingMarkdownImport?.fileName || "Markdown file",
-                )
-              }
-            >
-              Insert at cursor
-            </Button>
-            <Button
-              type="button"
-              className="bg-black text-white hover:bg-gray-800"
-              onClick={() =>
-                applyMarkdownImport(
-                  pendingMarkdownImport?.markdown || "",
-                  "replace",
-                  pendingMarkdownImport?.fileName || "Markdown file",
-                )
-              }
-            >
-              Replace body
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 });
