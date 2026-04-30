@@ -11,8 +11,9 @@ import { eq, and, or } from "drizzle-orm";
 import crypto from "crypto";
 import { requireAuth } from "../middleware/auth.js";
 import { requirePublicationRole } from "../middleware/authorization.js";
-import nodemailer from "nodemailer";
 import notificationService from "../services/notificationService.js";
+import { emailService } from "../services/emailService.js";
+import { config } from "../config/appConfig.js";
 import { redactEmail } from "../utils/redactPII.js";
 import { hashToken } from "../utils/tokenHash.js";
 import logger from "../utils/logger.js";
@@ -915,22 +916,11 @@ async function sendInvitationEmail(
   inviterName,
 ) {
   try {
-    // Create SMTP transporter
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    const frontendUrl = config.frontend.url.replace(/\/$/, "");
+    const acceptUrl = `${frontendUrl}/invite/${token}`;
+    const declineUrl = `${frontendUrl}/invite/${token}/decline`;
 
-    const acceptUrl = `${process.env.FRONTEND_URL}/invite/${token}`;
-    const declineUrl = `${process.env.FRONTEND_URL}/invite/${token}/decline`;
-
-    const mailOptions = {
-      from: `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_FROM}>`,
+    await emailService.send({
       to: email,
       subject: `You're invited to join ${publicationName}`,
       html: `
@@ -950,9 +940,7 @@ async function sendInvitationEmail(
           <p style="color: #6B7280; font-size: 12px;">Decline: ${declineUrl}</p>
         </div>
       `,
-    };
-
-    await transporter.sendMail(mailOptions);
+    });
     logger.info(`Invitation email sent to ${redactEmail(email)}`);
   } catch (error) {
     logger.error(error, "Error sending invitation email:");
