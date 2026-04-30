@@ -304,6 +304,7 @@ router.post(
         .where(eq(publication.id, parseInt(publicationId)));
 
       // Resend email
+      let emailSent = true;
       try {
         await sendInvitationEmail(
           invite.email,
@@ -314,10 +315,15 @@ router.post(
         );
       } catch (emailError) {
         logger.error(emailError, "Failed to resend invitation email:");
-        // Still return success since the invitation was updated in the database
+        emailSent = false;
       }
 
-      res.json({ message: "Invitation resent successfully" });
+      res.json({
+        message: emailSent
+          ? "Invitation resent successfully"
+          : "Invitation updated but email failed to send. Check SMTP configuration and try again.",
+        emailSent,
+      });
     } catch (error) {
       logger.error(error, "Error resending invitation:");
       res.status(500).json({ error: "Failed to resend invitation" });

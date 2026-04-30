@@ -221,14 +221,20 @@ export default function Members() {
     setSending(true);
 
     try {
-      await memberService.sendInvitation(
+      const result = await memberService.sendInvitation(
         currentPublication.id,
         email,
         role.toLowerCase(),
       );
 
-      // Show custom invitation sent toast
-      toast.success("Invitation sent successfully");
+      if (result?.emailSent === false) {
+        toast.warning(
+          result.message ||
+            "Invitation was created, but the email could not be sent.",
+        );
+      } else {
+        toast.success(result?.message || "Invitation sent successfully");
+      }
 
       setEmail("");
       setRole(null);
@@ -245,8 +251,18 @@ export default function Members() {
 
   const handleResendInvite = async (invitationId) => {
     try {
-      await memberService.resendInvitation(currentPublication.id, invitationId);
-      toast.success("Invitation resent successfully!");
+      const result = await memberService.resendInvitation(
+        currentPublication.id,
+        invitationId,
+      );
+      if (result?.emailSent === false) {
+        toast.warning(
+          result.message ||
+            "Invitation was updated, but the email could not be sent.",
+        );
+      } else {
+        toast.success(result?.message || "Invitation resent successfully!");
+      }
       await loadData();
     } catch (error) {
       toast.error(error.message);
