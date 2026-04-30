@@ -3329,12 +3329,13 @@ export const TiptapEditor = memo(function TiptapEditor({
 
   useEffect(() => {
     return () => {
-      if (editor && !editor.isDestroyed) {
-        editor.commands.clearContent();
+      if (externalEditorRef) {
+        externalEditorRef.current = null;
       }
+      editorRef.current = null;
       initialContentSetRef.current = false;
     };
-  }, []);
+  }, [externalEditorRef]);
 
   if (!isMounted || !editor) {
     return (
