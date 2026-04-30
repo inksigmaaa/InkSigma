@@ -275,19 +275,19 @@ const verifyDatabase = async () => {
   logStartupStep("database.verify", "done");
 };
 
-const verifySmtp = async () => {
-  logStartupStep("smtp.verify", "start");
-  const smtpReady = await emailService.verify();
+const verifyEmailDelivery = async () => {
+  logStartupStep("email.verify", "start");
+  const emailReady = await emailService.verify();
 
-  if (!smtpReady) {
+  if (!emailReady) {
     logger.warn(
-      { step: "smtp.verify", status: "warn" },
-      "SMTP is not configured properly; email delivery is degraded",
+      { step: "email.verify", status: "warn" },
+      "Email delivery is not configured properly; email delivery is degraded",
     );
     return;
   }
 
-  logStartupStep("smtp.verify", "done");
+  logStartupStep("email.verify", "done");
 };
 
 const startBackgroundServices = () => {
@@ -317,7 +317,7 @@ export const bootstrap = async () => {
 
   try {
     await verifyDatabase();
-    await verifySmtp();
+    await verifyEmailDelivery();
     startBackgroundServices();
     setStartupComplete(true);
     logStartupStep("startup.complete", "done", { host: HOST, port: PORT });

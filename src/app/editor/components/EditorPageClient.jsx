@@ -75,9 +75,15 @@ export default function EditorPageClient() {
   const publicationId = searchParams.get("publicationId"); // For joined publications
   const [currentBlogId, setCurrentBlogId] = useState(blogId);
   const [editorRenderKey, setEditorRenderKey] = useState(blogId || "new");
+  const promotedBlogIdRef = useRef(null);
 
   useEffect(() => {
     const nextBlogId = blogId || null;
+    if (promotedBlogIdRef.current === nextBlogId) {
+      promotedBlogIdRef.current = null;
+      setCurrentBlogId(nextBlogId);
+      return;
+    }
     if (nextBlogId === (currentBlogId || null)) return;
 
     setCurrentBlogId(nextBlogId);
@@ -155,9 +161,16 @@ export default function EditorPageClient() {
     html: "",
     text: "",
   });
-  const handleEditorUpdate = useCallback((data) => {
+  const editorContentRef = useRef(editorContent);
+
+  const updateEditorContent = useCallback((data) => {
+    editorContentRef.current = data;
     setEditorContent(data);
   }, []);
+
+  const handleEditorUpdate = useCallback((data) => {
+    updateEditorContent(data);
+  }, [updateEditorContent]);
   const [blogTitle, setBlogTitle] = useState("");
   const [blogDescription, setBlogDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -306,6 +319,21 @@ export default function EditorPageClient() {
   };
 
   // ── Auto-save via custom hook ───────────────────────────────────────────
+  const getCurrentEditorContent = useCallback(() => {
+    const editor = editorInstanceRef.current;
+    if (!editor) return editorContentRef.current;
+
+    const html = editor.getHTML();
+    const text = editor.getText();
+
+    return {
+      html,
+      text,
+      charCount: text.length,
+      wordCount: text.trim() ? text.trim().split(/\s+/).length : 0,
+    };
+  }, []);
+
   const saveFnForHook = useCallback(
     async (isAutoSave) => {
       return saveBlog("draft", null, true, isAutoSave);
@@ -325,24 +353,30 @@ export default function EditorPageClient() {
     ],
   );
 
-  const syncDraftIdToUrl = useCallback((newId, nextStatus = "draft") => {
+  const replaceEditorUrlId = useCallback((newId, nextStatus = "draft") => {
     if (!newId) return;
 
-    setCurrentBlogId((current) => current || newId);
+    const nextId = String(newId);
+    promotedBlogIdRef.current = nextId;
+    setCurrentBlogId((current) => current || nextId);
 
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("id", newId);
-    if (!params.get("status")) {
-      params.set("status", nextStatus);
+    if (typeof window === "undefined") return;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("id", nextId);
+    if (!url.searchParams.get("status")) {
+      url.searchParams.set("status", nextStatus);
     }
     if (publicationId) {
-      params.set("publicationId", publicationId);
+      url.searchParams.set("publicationId", publicationId);
     }
 
-    router.replace(withPub(`/editor?${params.toString()}`), {
-      scroll: false,
-    });
-  }, [searchParams, publicationId, router, withPub]);
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  }, [publicationId]);
 
   // Callback for when the first server save creates a new blog ID.
   // Promote the draft into the URL immediately so refresh always reopens it.
@@ -350,7 +384,7 @@ export default function EditorPageClient() {
     if (result?.id != null) {
       const newId = String(result.id);
       shadowIdRef.current = newId;
-      syncDraftIdToUrl(newId);
+      replaceEditorUrlId(newId);
 
       // If the user selected a thumbnail before the blog existed, upload it now.
       const pending = thumbnailDataRef.current;
@@ -367,23 +401,16 @@ export default function EditorPageClient() {
           });
       }
     }
-  }, [persistThumbnailForBlog, syncDraftIdToUrl]);
+  }, [persistThumbnailForBlog, replaceEditorUrlId]);
 
   // Promote shadowIdRef to state + URL (called on manual save / publish / exit)
   const flushShadowId = useCallback(() => {
     if (shadowIdRef.current && !currentBlogId) {
       const newId = shadowIdRef.current;
-      setCurrentBlogId(newId);
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("id", newId);
-      if (!params.get("status")) params.set("status", "draft");
-      if (publicationId) params.set("publicationId", publicationId);
-      router.replace(withPub(`/editor?${params.toString()}`), {
-        scroll: false,
-      });
+      replaceEditorUrlId(newId);
       shadowIdRef.current = null;
     }
-  }, [currentBlogId, searchParams, publicationId, router, withPub]);
+  }, [currentBlogId, replaceEditorUrlId]);
 
   const {
     hasUnsavedChanges,
@@ -437,7 +464,7 @@ export default function EditorPageClient() {
     setBlogDescription(draft.description || "");
     setSelectedCategories(Array.isArray(draft.categories) ? draft.categories : []);
     setInitialContent(nextContent);
-    setEditorContent({
+    updateEditorContent({
       html: nextContent,
       text: nextText,
       charCount: nextText.length,
@@ -448,7 +475,7 @@ export default function EditorPageClient() {
     if (editorInstanceRef.current) {
       editorInstanceRef.current.commands.setContent(nextContent || "");
     }
-  }, []);
+  }, [updateEditorContent]);
 
   // Load existing blog if editing.
   // Guard: only load when the blogId comes from the initial URL, not when
@@ -483,7 +510,7 @@ export default function EditorPageClient() {
       setInitialContent(blog.content || "");
 
       // Initialize editorContent state to prevent data loss if saving without editing body
-      setEditorContent({
+      updateEditorContent({
         html: blog.content || "",
         text: "",
         charCount: (blog.content || "").length,
@@ -541,7 +568,7 @@ export default function EditorPageClient() {
     } finally {
       setIsLoading(false);
     }
-  }, [resetSnapshot]);
+  }, [resetSnapshot, updateEditorContent]);
 
   useEffect(() => {
     if (blogId && blogId === initialBlogIdRef.current) {
@@ -559,8 +586,11 @@ export default function EditorPageClient() {
     skipValidation = false,
     isAutoSave = false,
   ) => {
+    const currentEditorContent = getCurrentEditorContent();
+    const currentContentHtml = currentEditorContent.html || "";
+
     const hasBodyContent = (() => {
-      const html = editorContent.html || "";
+      const html = currentContentHtml;
       if (!html) return false;
       if (/<img\b[^>]*>/i.test(html)) return true;
       const plainText = html
@@ -626,10 +656,12 @@ export default function EditorPageClient() {
     saveInFlightRef.current = true;
 
     try {
+      updateEditorContent(currentEditorContent);
+
       const blogData = {
         title: blogTitle,
         description: blogDescription,
-        content: editorContent.html,
+        content: currentContentHtml,
         categories: selectedCategories,
         status: status,
         published: status === "published",
@@ -703,19 +735,7 @@ export default function EditorPageClient() {
           shadowIdRef.current = String(responseData.id);
         } else {
           // Manual save: promote to state + URL immediately
-          const newId = String(responseData.id);
-          setCurrentBlogId(newId);
-          const params = new URLSearchParams(searchParams.toString());
-          params.set("id", newId);
-          if (!params.get("status")) {
-            params.set("status", status);
-          }
-          if (publicationId) {
-            params.set("publicationId", publicationId);
-          }
-          router.replace(withPub(`/editor?${params.toString()}`), {
-            scroll: false,
-          });
+          replaceEditorUrlId(responseData.id, status);
         }
       }
 
@@ -754,9 +774,19 @@ export default function EditorPageClient() {
       }
 
       // Tell the hook the save succeeded. Preserve thumbnail dirty state if upload failed.
+      const savedSnapshot = {
+        title: blogTitle,
+        description: blogDescription,
+        contentHtml: currentContentHtml,
+        categories: selectedCategories,
+        extraDirtySignal: thumbnailUploadFailed
+          ? thumbnailDirtySignal
+          : nextThumbnailSignal,
+      };
       markSaved({
         preserveExtraDirty: thumbnailUploadFailed,
         nextExtraDirtySignal: nextThumbnailSignal,
+        savedSnapshot,
       });
       if (!isAutoSave) {
         setSaveStatus(thumbnailUploadFailed ? "failed" : "saved");
@@ -777,12 +807,16 @@ export default function EditorPageClient() {
 
       if (thumbnailUploadFailed) {
         return {
-          ...responseData,
+          ...(responseData || {}),
           thumbnailUploadFailed: true,
+          __savedSnapshot: savedSnapshot,
         };
       }
 
-      return responseData;
+      return {
+        ...(responseData || {}),
+        __savedSnapshot: savedSnapshot,
+      };
     } catch (error) {
       console.error("Error saving blog:", error);
       if (isAutoSave) {
@@ -821,10 +855,12 @@ export default function EditorPageClient() {
       setIsSaving(true);
 
       // Gather current editor state
+      const currentEditorContent = getCurrentEditorContent();
+      updateEditorContent(currentEditorContent);
       const draftData = {
         title: `${blogTitle} [Update draft]`,
         description: blogDescription,
-        content: editorContent.html,
+        content: currentEditorContent.html,
         categories: selectedCategories,
         // image is handled separately via thumbnailData/thumbnailRemoved if needed,
         // but for now we'll stick to text content to be safe.
@@ -870,11 +906,14 @@ export default function EditorPageClient() {
 
   // Handle Publish
   const handlePublish = async () => {
+    const currentEditorContent = getCurrentEditorContent();
+    updateEditorContent(currentEditorContent);
+
     if (
       !isArticlePublishable({
         title: blogTitle,
         description: blogDescription,
-        content: editorContent.html,
+        content: currentEditorContent.html,
       })
     ) {
       toast.error(
@@ -963,11 +1002,12 @@ export default function EditorPageClient() {
 
   // Handle Back - Check for unsaved changes and show exit modal if needed
   const handleBack = async () => {
+    const currentEditorContent = getCurrentEditorContent();
     const isEmptyDraft =
       !currentBlogId &&
       !blogTitle.trim() &&
       !blogDescription.trim() &&
-      (!editorContent.html || editorContent.html === "<p></p>") &&
+      (!currentEditorContent.html || currentEditorContent.html === "<p></p>") &&
       (!selectedCategories || selectedCategories.length === 0);
 
     if (isEmptyDraft) {
@@ -1472,15 +1512,29 @@ export default function EditorPageClient() {
             flex-shrink: 0;
           }
 
+          .mobile-schedule-container .date-time-input:first-of-type {
+            width: 76px;
+          }
+
+          .mobile-schedule-container .date-time-input:nth-of-type(2) {
+            width: 36px;
+            margin-left: 4px;
+          }
+
+          .mobile-schedule-container > div {
+            padding-left: 6px;
+            padding-right: 6px;
+          }
+
           .mobile-schedule-container svg {
             margin-left: 4px;
-            margin-right: 4px;
+            margin-right: 0;
           }
 
           .mobile-schedule-btn {
-            min-width: 69px;
-            max-width: 69px;
-            padding: 8px 5px;
+            min-width: 64px;
+            max-width: 64px;
+            padding: 8px 4px;
             font-size: 12px;
             line-height: 150%;
           }
