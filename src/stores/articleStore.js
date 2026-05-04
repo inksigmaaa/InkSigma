@@ -102,6 +102,44 @@ const handleMerge = (list, draftId, updated) => {
 
 const createRequestKey = (parts) => JSON.stringify(parts);
 
+const articleDetailRequests = new Map();
+
+const mergeCachedArticle = (existing = {}, next = {}) => {
+  const cleanNext = Object.fromEntries(
+    Object.entries(next).filter(([, value]) => value !== undefined),
+  );
+
+  return {
+    ...existing,
+    ...cleanNext,
+    content:
+      typeof next.content !== "undefined" ? next.content : existing.content,
+    _cachedAt: Date.now(),
+    _hasFullContent: typeof next.content !== "undefined",
+  };
+};
+
+const upsertArticleCache = (cache = {}, articles = []) => {
+  const nextCache = { ...cache };
+  articles.filter(Boolean).forEach((article) => {
+    if (article.id == null) return;
+    const key = String(article.id);
+    nextCache[key] = mergeCachedArticle(nextCache[key], article);
+  });
+  return nextCache;
+};
+
+const findArticleInLists = (state, id) => {
+  const key = String(id);
+  return [
+    state.articles,
+    state.publicationArticles,
+    state.reviewArticles,
+  ]
+    .flat()
+    .find((article) => String(article?.id) === key);
+};
+
 // ── Zustand store ──
 
 export const useArticleStore = create((set, get) => ({
@@ -117,6 +155,7 @@ export const useArticleStore = create((set, get) => ({
   pubArticlesRefreshing: false,
   error: null,
   reviewError: null,
+  editorArticleCache: {},
   areUserArticlesLoaded: false,
   arePubArticlesLoaded: false,
   areReviewArticlesLoaded: false,
@@ -184,6 +223,7 @@ export const useArticleStore = create((set, get) => ({
       const converted = blogs.map(convertBlogToArticle);
       set({
         articles: converted,
+        editorArticleCache: upsertArticleCache(get().editorArticleCache, converted),
         _articlesKey: requestKey,
         _articlesLoaded: true,
         ...(status ? {} : { areUserArticlesLoaded: true }),
@@ -234,6 +274,7 @@ export const useArticleStore = create((set, get) => ({
       const converted = blogs.map(convertBlogToArticle);
       set({
         publicationArticles: converted,
+        editorArticleCache: upsertArticleCache(get().editorArticleCache, converted),
         _pubArticlesKey: requestKey,
         _pubArticlesLoaded: true,
         ...(status ? {} : { arePubArticlesLoaded: true }),
@@ -273,6 +314,7 @@ export const useArticleStore = create((set, get) => ({
       const converted = blogs.map(convertBlogToArticle);
       set({
         reviewArticles: converted,
+        editorArticleCache: upsertArticleCache(get().editorArticleCache, converted),
         areReviewArticlesLoaded: true,
         _reviewArticlesKey: requestKey,
         _reviewArticlesLoaded: true,
@@ -286,9 +328,73 @@ export const useArticleStore = create((set, get) => ({
     }
   },
 
+  primeEditorArticle: (article) => {
+    if (!article?.id) return;
+    set((s) => ({
+      editorArticleCache: upsertArticleCache(s.editorArticleCache, [article]),
+    }));
+  },
+
+  getCachedArticleById: (id) => {
+    if (id == null) return null;
+    const state = get();
+    return state.editorArticleCache[String(id)] || findArticleInLists(state, id) || null;
+  },
+
+  prefetchArticle: async (id, seedArticle = null) => {
+    if (seedArticle?.id) {
+      get().primeEditorArticle(seedArticle);
+    }
+
+    const key = String(id);
+    const cached = get().getCachedArticleById(id);
+    if (cached?._hasFullContent || typeof cached?.content !== "undefined") {
+      return cached;
+    }
+
+    if (articleDetailRequests.has(key)) {
+      return articleDetailRequests.get(key);
+    }
+
+    const request = blogService
+      .getBlog(id)
+      .then((blog) => {
+        const fullArticle = convertBlogToArticle(blog, true);
+        set((s) => ({
+          editorArticleCache: upsertArticleCache(s.editorArticleCache, [
+            fullArticle,
+          ]),
+          articles: updateInList(s.articles, id, fullArticle),
+          publicationArticles: updateInList(
+            s.publicationArticles,
+            id,
+            fullArticle,
+          ),
+          reviewArticles: updateInList(s.reviewArticles, id, fullArticle),
+        }));
+        return fullArticle;
+      })
+      .finally(() => {
+        articleDetailRequests.delete(key);
+      });
+
+    articleDetailRequests.set(key, request);
+    return request;
+  },
+
   getArticleById: async (id) => {
+    return get().prefetchArticle(id);
+  },
+
+  getArticleByIdUncached: async (id) => {
     const blog = await blogService.getBlog(id);
-    return convertBlogToArticle(blog, true);
+    const fullArticle = convertBlogToArticle(blog, true);
+    set((s) => ({
+      editorArticleCache: upsertArticleCache(s.editorArticleCache, [
+        fullArticle,
+      ]),
+    }));
+    return fullArticle;
   },
 
   refreshArticle: async (id) => {
@@ -298,6 +404,8 @@ export const useArticleStore = create((set, get) => ({
       set((s) => ({
         articles: upsertInList(s.articles, id, updated),
         publicationArticles: upsertInList(s.publicationArticles, id, updated),
+        reviewArticles: updateInList(s.reviewArticles, id, updated),
+        editorArticleCache: upsertArticleCache(s.editorArticleCache, [updated]),
       }));
       return updated;
     } catch {
@@ -326,6 +434,7 @@ export const useArticleStore = create((set, get) => ({
     set((s) => ({
       articles: [newArticle, ...s.articles],
       publicationArticles: [newArticle, ...s.publicationArticles],
+      editorArticleCache: upsertArticleCache(s.editorArticleCache, [newArticle]),
     }));
     return newArticle;
   },
@@ -355,6 +464,7 @@ export const useArticleStore = create((set, get) => ({
       publicationArticles: wasMerge
         ? handleMerge(s.publicationArticles, id, updated)
         : updateInList(s.publicationArticles, id, updated),
+      editorArticleCache: upsertArticleCache(s.editorArticleCache, [updated]),
     }));
     return updated;
   },

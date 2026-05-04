@@ -4,6 +4,7 @@ import { usePublication } from "@/contexts/PublicationContext";
 import React from "react";
 import { NightTooltip } from "@/components/ui/tooltip";
 import { withPublicationPath } from "@/utils/dashboardUrl";
+import { useArticleStore } from "@/stores/articleStore";
 
 // Helper function to format relative time
 const getRelativeTime = (dateString, status) => {
@@ -90,6 +91,7 @@ export default function PersonalArticleContainer({
 }) {
   const router = useRouter();
   const { currentPublication } = usePublication();
+  const prefetchArticle = useArticleStore((s) => s.prefetchArticle);
   const [longPressTimer, setLongPressTimer] = React.useState(null);
 
   // Explicitly ensure 'author' and 'editor' cannot publish, even if isOwner is somehow true (edge case)
@@ -101,6 +103,14 @@ export default function PersonalArticleContainer({
 
   const pathname = usePathname();
   const handleEdit = () => {
+    prefetchArticle(id, {
+      id,
+      status,
+      title,
+      description,
+      categories,
+      createdAt,
+    }).catch(() => {});
     const publicationQuery = currentPublication?.id
       ? `&publicationId=${currentPublication.id}`
       : "";

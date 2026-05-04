@@ -24,7 +24,11 @@ export default function HomePage() {
   const router = useRouter();
   const { data: session } = useSession();
   const { currentPublication } = usePublication();
-  const { publicationArticles, loadPublicationArticles } = useArticles();
+  const {
+    publicationArticles,
+    loadPublicationArticles,
+    prefetchArticle,
+  } = useArticles();
   const [commentCounts, setCommentCounts] = useState({});
   const [viewStats, setViewStats] = useState({});
   const publicationLogoSrc =
@@ -296,6 +300,7 @@ export default function HomePage() {
                               className="text-[#4A4A4A] hover:text-gray-900 border border-[#EAEAEA] rounded-lg p-2 hover:bg-gray-50 transition-colors flex-shrink-0"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                prefetchArticle(article.id, article).catch(() => {});
                                 router.push(
                                   withPublicationPath(
                                     `/editor?status=published&id=${article.id}&source=${pathname}`,
