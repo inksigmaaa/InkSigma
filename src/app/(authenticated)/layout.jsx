@@ -1,6 +1,9 @@
 'use client';
 
 import NavbarLoggedin from "@/components/layout/navbar/NavbarLoggedin";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { PublicationProvider } from "@/contexts/PublicationContext";
+import { ArticlesProvider } from "@/contexts/ArticlesContext";
 import { usePathname } from "next/navigation";
 
 export default function AuthenticatedLayout({ children }) {
@@ -9,14 +12,31 @@ export default function AuthenticatedLayout({ children }) {
   const isPreviewRoute = pathname?.includes("/preview");
   const isEditorRoute = pathname?.startsWith("/editor");
 
+  const content =
+    isPreviewRoute || isEditorRoute ? (
+      <>{children}</>
+    ) : (
+      <>
+        <NavbarLoggedin />
+        {children}
+      </>
+    );
+
   if (isPreviewRoute || isEditorRoute) {
-    return <>{children}</>;
+    return (
+      <AuthProvider>
+        <PublicationProvider>
+          <ArticlesProvider>{content}</ArticlesProvider>
+        </PublicationProvider>
+      </AuthProvider>
+    );
   }
 
   return (
-    <>
-      <NavbarLoggedin />
-      {children}
-    </>
+    <AuthProvider>
+      <PublicationProvider>
+        <ArticlesProvider>{content}</ArticlesProvider>
+      </PublicationProvider>
+    </AuthProvider>
   );
 }

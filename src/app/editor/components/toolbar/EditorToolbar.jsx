@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, memo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   ChevronDown,
@@ -12,15 +12,15 @@ import {
   AlignRight,
   AlignJustify,
 } from "lucide-react";
-import { FONT_MAP, FONT_OPTIONS } from "./utils/EditorUtils.js";
 import {
   Tooltip as ShadTooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { FONT_MAP, FONT_OPTIONS } from "../utils/EditorUtils";
 
-const Tooltip = ({ text, children, className = "" }) => {
+export const Tooltip = ({ text, children, className = "" }) => {
   return (
     <TooltipProvider delayDuration={200}>
       <ShadTooltip>
@@ -35,17 +35,17 @@ const Tooltip = ({ text, children, className = "" }) => {
   );
 };
 
-const DropdownMenu = memo(({
+export const DropdownMenu = ({
   isOpen,
   position,
+  onClose,
   children,
   className = "",
 }) => {
   const mounted = typeof window !== "undefined";
 
-  if (!isOpen || !mounted || position.top === undefined || position.top === null) {
+  if (!isOpen || !mounted || position.top === undefined || position.top === null)
     return null;
-  }
 
   return createPortal(
     <div
@@ -60,9 +60,7 @@ const DropdownMenu = memo(({
     </div>,
     document.body,
   );
-});
-
-DropdownMenu.displayName = "DropdownMenu";
+};
 
 const getToolbarActiveState = (editor) => ({
   bold: editor?.isActive("bold") ?? false,
@@ -118,7 +116,188 @@ export const useToolbarActiveState = (editor) => {
   return activeState;
 };
 
-const FontSelector = memo(({ currentFont, onFontChange }) => {
+export const EditorToolbar = ({
+  editor,
+  currentFont,
+  onFontChange,
+  onDropdownToggle,
+  dropdownState,
+  linkState,
+  onLinkSubmit,
+  onLinkCancel,
+  onImageInsert,
+}) => {
+  const activeState = useToolbarActiveState(editor);
+  const buttonBaseClass = "p-1.5 rounded shrink-0 shadow-none";
+  const buttonActiveClass = (isActive) =>
+    isActive
+      ? "bg-gray-200 hover:bg-gray-200 shadow-none"
+      : "hover:bg-gray-100";
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+  };
+
+  const headingOptions = ["H1", "H2", "H3", "H4", "H5", "H6"];
+  const lineHeightOptions = ["1", "1.15", "1.5", "2", "2.5", "3"];
+
+  const formatButtons = [
+    {
+      action: () => editor.chain().focus().toggleBold().run(),
+      isActive: activeState.bold,
+      icon: "B",
+      title: "Bold",
+      src: "/editor-icons/B.svg",
+    },
+    {
+      action: () => editor.chain().focus().toggleItalic().run(),
+      isActive: activeState.italic,
+      icon: "I",
+      title: "Italic",
+      src: "/editor-icons/italic.svg",
+    },
+    {
+      action: () => editor.chain().focus().toggleUnderline().run(),
+      isActive: activeState.underline,
+      icon: "U",
+      title: "Underline",
+      src: "/editor-icons/underline.svg",
+    },
+    {
+      action: () => editor.chain().focus().toggleStrike().run(),
+      isActive: activeState.strike,
+      icon: "S",
+      title: "Strikethrough",
+      src: "/editor-icons/strike.svg",
+    },
+  ];
+
+  const insertButtons = [
+    {
+      action: () => onImageInsert?.(),
+      title: "Insert Image",
+      src: "/editor-icons/image.svg",
+    },
+    {
+      action: () => editor.chain().focus().toggleCodeBlock().run(),
+      isActive: activeState.codeBlock,
+      title: "Code Block",
+      src: "/editor-icons/block.svg",
+    },
+    {
+      action: () => editor.chain().focus().toggleBlockquote().run(),
+      isActive: activeState.blockquote,
+      title: "Quote",
+      src: "/editor-icons/quote.svg",
+    },
+  ];
+
+  return (
+    <>
+      {/* Desktop Toolbar */}
+      <div
+        className="hidden xl:flex items-center gap-1 md:gap-2 px-4 bg-white overflow-x-auto scrollbar-hide whitespace-nowrap w-full xl:max-w-[917px]"
+        style={{ height: "52px", borderBottom: "1px solid #E5E7EB" }}
+      >
+        <FontSelector currentFont={currentFont} onFontChange={onFontChange} />
+
+        <HeadingSelector
+          editor={editor}
+          isOpen={dropdownState.heading.isOpen}
+          position={dropdownState.heading.position}
+          onToggle={(e) => onDropdownToggle("heading", e)}
+          onClose={() => onDropdownToggle("heading", null)}
+          onSelect={(level) => {
+            editor.chain().focus().setParagraph().run();
+            if (level !== "P") {
+              const levelNum = parseInt(level.replace("H", ""));
+              editor.chain().focus().toggleHeading({ level: levelNum }).run();
+            }
+            onDropdownToggle("heading", null);
+          }}
+          dropdownKey="heading"
+        />
+
+        <FormatButtons
+          buttons={formatButtons}
+          buttonBaseClass={buttonBaseClass}
+          buttonActiveClass={buttonActiveClass}
+        />
+
+        <ListSelector
+          editor={editor}
+          isOpen={dropdownState.list.isOpen}
+          position={dropdownState.list.position}
+          onToggle={(e) => onDropdownToggle("list", e)}
+          onClose={() => onDropdownToggle("list", null)}
+          dropdownKey="list"
+        />
+
+        <AlignSelector
+          editor={editor}
+          isOpen={dropdownState.align.isOpen}
+          position={dropdownState.align.position}
+          onToggle={(e) => onDropdownToggle("align", e)}
+          onClose={() => onDropdownToggle("align", null)}
+          dropdownKey="align"
+        />
+
+        <InsertButtons
+          buttons={insertButtons}
+          buttonBaseClass={buttonBaseClass}
+          buttonActiveClass={buttonActiveClass}
+        />
+
+        <LinkButton
+          editor={editor}
+          isOpen={dropdownState.link.isOpen}
+          position={dropdownState.link.position}
+          onToggle={(e) => onDropdownToggle("link", e)}
+          onClose={() => onDropdownToggle("link", null)}
+          linkState={linkState}
+          onLinkSubmit={onLinkSubmit}
+          onLinkCancel={onLinkCancel}
+          dropdownKey="link"
+        />
+
+        <AdvancedOptions
+          editor={editor}
+          isOpen={dropdownState.advanced.isOpen}
+          position={dropdownState.advanced.position}
+          onToggle={(e) => onDropdownToggle("advanced", e)}
+          onClose={() => onDropdownToggle("advanced", null)}
+          dropdownKey="advanced"
+        />
+      </div>
+
+      {/* Mobile Toolbar */}
+      <MobileToolbar
+        editor={editor}
+        currentFont={currentFont}
+        onDropdownToggle={onDropdownToggle}
+        dropdownState={dropdownState}
+        linkState={linkState}
+        onLinkSubmit={onLinkSubmit}
+        onLinkCancel={onLinkCancel}
+        buttonBaseClass={buttonBaseClass}
+        buttonActiveClass={buttonActiveClass}
+        onImageInsert={onImageInsert}
+        activeState={activeState}
+      />
+
+      {/* Tablet Toolbar */}
+      <TabletToolbar
+        editor={editor}
+        onDropdownToggle={onDropdownToggle}
+        dropdownState={dropdownState}
+        onImageInsert={onImageInsert}
+        activeState={activeState}
+      />
+    </>
+  );
+};
+
+const FontSelector = ({ currentFont, onFontChange }) => {
   const cycleFont = useCallback(
     (direction) => {
       const currentIndex = FONT_MAP.get(currentFont) ?? 0;
@@ -140,29 +319,25 @@ const FontSelector = memo(({ currentFont, onFontChange }) => {
       <span className="text-sm font-normal text-gray-700 w-[70px] truncate">
         {currentFont}
       </span>
-      <div className="flex flex-col">
+      <div className="flex flex-col -space-y-1">
         <button
-          type="button"
           onClick={() => cycleFont("up")}
-          className="p-0.5 hover:bg-gray-100 rounded -mb-1"
+          className="hover:bg-gray-100 rounded p-0.5"
         >
-          <ChevronUp className="w-3 h-3 text-gray-500" />
+          <ChevronUp className="h-3 w-3 text-gray-600" />
         </button>
         <button
-          type="button"
           onClick={() => cycleFont("down")}
-          className="p-0.5 hover:bg-gray-100 -mt-1"
+          className="hover:bg-gray-100 rounded p-0.5"
         >
-          <ChevronDown className="w-3 h-3 text-gray-500" />
+          <ChevronDown className="h-3 w-3 text-gray-600" />
         </button>
       </div>
     </div>
   );
-});
+};
 
-FontSelector.displayName = "FontSelector";
-
-const HeadingSelector = memo(({
+const HeadingSelector = ({
   editor,
   isOpen,
   position,
@@ -171,92 +346,183 @@ const HeadingSelector = memo(({
   onSelect,
   dropdownKey,
 }) => {
-  const headingOptions = ["P", "H1", "H2", "H3", "H4", "H5", "H6"];
+  const headings = ["P", "H1", "H2", "H3", "H4", "H5", "H6"];
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={onToggle}
-        className="px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded shrink-0"
-      >
-        {headingOptions.find((h) => {
-          if (h === "P") return editor?.isActive("paragraph");
-          return editor?.isActive("heading", { level: parseInt(h.replace("H", "")) });
-        }) || "P"}
-      </button>
-      <DropdownMenu
-        isOpen={isOpen}
-        position={position}
-        onClose={onClose}
-        dropdownKey={dropdownKey}
-      >
-        {headingOptions.map((option) => (
-          <button
-            key={option}
-            type="button"
-            onClick={() => onSelect(option)}
-            className="block w-full px-4 py-1.5 text-sm text-left text-gray-700 hover:bg-gray-100"
-          >
-            {option}
-          </button>
-        ))}
-      </DropdownMenu>
-    </>
+    <div
+      className="flex items-center gap-1 dropdown-container shrink-0 px-1 border-r border-gray-200"
+      data-key={dropdownKey}
+    >
+      <Tooltip text="Paragraph">
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().setParagraph().run()}
+          className={`p-1.5 hover:bg-gray-100 rounded ${editor.isActive("paragraph") ? "bg-gray-200" : ""}`}
+        >
+          <img src="/editor-icons/P.svg" alt="P" className="w-4 h-4" />
+        </button>
+      </Tooltip>
+      <div className="relative">
+        <button
+          type="button"
+          className="flex items-center hover:bg-gray-100 rounded px-1 py-1.5"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            isOpen ? onClose() : onToggle(e);
+          }}
+        >
+          <img src="/editor-icons/H.svg" alt="H" className="w-5 h-5" />
+          <ChevronDown className="h-3 w-3 text-gray-600 ml-0.5" />
+        </button>
+        <DropdownMenu
+          isOpen={isOpen}
+          position={position}
+          className="min-w-[80px]"
+          onClose={onClose}
+        >
+          {headings.map((heading) => (
+            <button
+              type="button"
+              key={heading}
+              className="flex items-center px-4 py-2 hover:bg-gray-100 w-full text-left text-sm font-medium"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onSelect(heading);
+              }}
+            >
+              {heading}
+            </button>
+          ))}
+        </DropdownMenu>
+      </div>
+    </div>
   );
-});
+};
 
-HeadingSelector.displayName = "HeadingSelector";
+const FormatButtons = ({ buttons, buttonBaseClass, buttonActiveClass }) => {
+  const [clickedState, setClickedState] = useState({});
 
-const ListSelector = memo(({
+  return (
+    <div className="flex items-center gap-0.5 px-1 border-r border-gray-200 shrink-0">
+      {buttons.map((btn, idx) => {
+        const isActive = Boolean(btn.isActive || clickedState[idx]);
+
+        return (
+          <Tooltip key={idx} text={btn.title}>
+            <button
+              type="button"
+              aria-pressed={isActive}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                btn.action();
+                if (typeof btn.isActive === "boolean") {
+                  setClickedState((prev) => ({ ...prev, [idx]: !prev[idx] }));
+                }
+              }}
+              className={`${buttonBaseClass} ${buttonActiveClass(isActive)}`}
+              style={isActive ? { backgroundColor: "#E5E7EB" } : undefined}
+            >
+              <img src={btn.src} alt={btn.title} className="w-4 h-4" />
+            </button>
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
+};
+
+const InsertButtons = ({ buttons, buttonBaseClass, buttonActiveClass }) => {
+  const [clickedState, setClickedState] = useState({});
+
+  return (
+    <div className="flex items-center gap-0.5 px-1 border-r border-gray-200 shrink-0">
+      {buttons.map((btn, idx) => {
+        const isActive = Boolean(btn.isActive || clickedState[idx]);
+
+        return (
+          <Tooltip key={idx} text={btn.title}>
+            <button
+              type="button"
+              aria-pressed={isActive}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                btn.action();
+                if (typeof btn.isActive === "boolean") {
+                  setClickedState((prev) => ({ ...prev, [idx]: !prev[idx] }));
+                }
+              }}
+              className={`${buttonBaseClass} ${buttonActiveClass(isActive)}`}
+              style={isActive ? { backgroundColor: "#E5E7EB" } : undefined}
+            >
+              <img src={btn.src} alt={btn.title} className="w-4 h-4" />
+            </button>
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
+};
+
+const ListSelector = ({
   editor,
   isOpen,
   position,
   onToggle,
   onClose,
   dropdownKey,
-}) => {
-  const listOptions = [
-    { type: "bullet", icon: List, label: "Bullet List" },
-    { type: "ordered", icon: ListOrdered, label: "Numbered List" },
-  ];
-
-  return (
-    <>
+}) => (
+  <div
+    className="relative dropdown-container shrink-0 px-1 border-r border-gray-200"
+    data-key={dropdownKey}
+  >
+    <Tooltip text="Lists">
       <button
         type="button"
-        onClick={onToggle}
-        className="p-1.5 hover:bg-gray-100 rounded shrink-0"
+        className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          isOpen ? onClose() : onToggle(e);
+        }}
       >
-        <List className="w-4 h-4 text-gray-600" />
+        <img src="/editor-icons/list.svg" alt="Lists" className="w-4 h-4" />
+        <ChevronDown className="h-3 w-3 text-gray-700" />
       </button>
-      <DropdownMenu isOpen={isOpen} position={position} onClose={onClose} dropdownKey={dropdownKey}>
-        {listOptions.map((opt) => (
-          <button
-            key={opt.type}
-            type="button"
-            onClick={() => {
-              if (opt.type === "bullet") {
-                editor.chain().focus().toggleBulletList().run();
-              } else {
-                editor.chain().focus().toggleOrderedList().run();
-              }
-              onClose();
-            }}
-            className="flex items-center gap-2 w-full px-4 py-1.5 text-sm text-left text-gray-700 hover:bg-gray-100"
-          >
-            <opt.icon className="w-4 h-4" />
-            {opt.label}
-          </button>
-        ))}
-      </DropdownMenu>
-    </>
-  );
-});
+    </Tooltip>
+    <DropdownMenu
+      isOpen={isOpen}
+      position={position}
+      className="min-w-[150px]"
+      onClose={onClose}
+    >
+      <button
+        type="button"
+        className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+        onMouseDown={(e) => {
+          e.preventDefault();
+          editor.chain().focus().toggleBulletList().run();
+          onClose();
+        }}
+      >
+        <List className="h-4 w-4" /> Bullet List
+      </button>
+      <button
+        type="button"
+        className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+        onMouseDown={(e) => {
+          e.preventDefault();
+          editor.chain().focus().toggleOrderedList().run();
+          onClose();
+        }}
+      >
+        <ListOrdered className="h-4 w-4" /> Numbered List
+      </button>
+    </DropdownMenu>
+  </div>
+);
 
-ListSelector.displayName = "ListSelector";
-
-const AlignSelector = memo(({
+const AlignSelector = ({
   editor,
   isOpen,
   position,
@@ -268,47 +534,983 @@ const AlignSelector = memo(({
     { align: "left", icon: AlignLeft, label: "Align Left" },
     { align: "center", icon: AlignCenter, label: "Align Center" },
     { align: "right", icon: AlignRight, label: "Align Right" },
-    { align: "justify", icon: AlignJustify, label: "Align Justify" },
+    { align: "justify", icon: AlignJustify, label: "Justify" },
   ];
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={onToggle}
-        className="p-1.5 hover:bg-gray-100 rounded shrink-0"
+    <div
+      className="relative dropdown-container shrink-0 px-1 border-r border-gray-200"
+      data-key={dropdownKey}
+    >
+      <Tooltip text="Alignment">
+        <button
+          type="button"
+          className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            isOpen ? onClose() : onToggle(e);
+          }}
+        >
+          <img
+            src="/editor-icons/Paragraph.svg"
+            alt="Alignment"
+            className="w-4 h-4"
+          />
+          <ChevronDown className="h-3 w-3 text-gray-700" />
+        </button>
+      </Tooltip>
+      <DropdownMenu
+        isOpen={isOpen}
+        position={position}
+        className="min-w-[150px]"
+        onClose={onClose}
       >
-        <AlignLeft className="w-4 h-4 text-gray-600" />
-      </button>
-      <DropdownMenu isOpen={isOpen} position={position} onClose={onClose} dropdownKey={dropdownKey}>
         {alignOptions.map((opt) => (
           <button
-            key={opt.align}
             type="button"
-            onClick={() => {
+            key={opt.align}
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+            onMouseDown={(e) => {
+              e.preventDefault();
               editor.chain().focus().setTextAlign(opt.align).run();
               onClose();
             }}
-            className="flex items-center gap-2 w-full px-4 py-1.5 text-sm text-left text-gray-700 hover:bg-gray-100"
           >
-            <opt.icon className="w-4 h-4" />
-            {opt.label}
+            <opt.icon className="h-4 w-4" /> {opt.label}
           </button>
         ))}
       </DropdownMenu>
-    </>
+    </div>
   );
-});
+};
 
-AlignSelector.displayName = "AlignSelector";
+const LinkButton = ({
+  editor,
+  isOpen,
+  position,
+  onToggle,
+  onClose,
+  linkState,
+  onLinkSubmit,
+  onLinkCancel,
+  dropdownKey,
+}) => (
+  <div className="relative dropdown-container shrink-0" data-key={dropdownKey}>
+    <Tooltip text="Insert Link">
+      <button
+        type="button"
+        className="p-1.5 hover:bg-gray-100 rounded"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const { from, to } = editor.state.selection;
+          const text = editor.state.doc.textBetween(from, to, "");
+          onToggle(null, text);
+        }}
+      >
+        <img src="/editor-icons/link.svg" alt="Link" className="w-4 h-4" />
+      </button>
+    </Tooltip>
+    <DropdownMenu
+      isOpen={isOpen}
+      position={position}
+      className="min-w-[250px] p-3"
+      onClose={onClose}
+    >
+      <input
+        type="text"
+        placeholder="Enter URL"
+        value={linkState.url}
+        onChange={(e) => linkState.setUrl(e.target.value)}
+        className="w-full px-2 py-1 border rounded text-sm mb-2"
+        autoFocus
+      />
+      <div className="flex gap-2 justify-end">
+        <button
+          type="button"
+          onClick={onLinkCancel}
+          className="px-3 py-1 text-sm hover:bg-gray-100 rounded"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onLinkSubmit}
+          className="px-3 py-1 text-sm bg-black text-white rounded hover:opacity-90"
+        >
+          Add Link
+        </button>
+      </div>
+    </DropdownMenu>
+  </div>
+);
 
-export { Tooltip, DropdownMenu, FontSelector, HeadingSelector, ListSelector, AlignSelector };
-export default {
-  Tooltip,
-  DropdownMenu,
-  useToolbarActiveState,
-  FontSelector,
-  HeadingSelector,
-  ListSelector,
-  AlignSelector,
+const AdvancedOptions = ({
+  editor,
+  isOpen,
+  position,
+  onToggle,
+  onClose,
+  dropdownKey,
+}) => {
+  const handleLineHeight = (height) => {
+    editor.chain().focus().setLineHeight(height).run();
+    onClose();
+  };
+  const lineHeights = ["1", "1.15", "1.5", "2", "2.5", "3"];
+
+  return (
+    <div
+      className="relative dropdown-container shrink-0"
+      data-key={dropdownKey}
+    >
+      <button
+        type="button"
+        className="text-sm text-gray-600 px-3 py-1.5 hover:bg-gray-200 rounded whitespace-nowrap"
+        style={{ backgroundColor: "#F8F8F8" }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          isOpen ? onClose() : onToggle(e, { alignRight: true, width: 300 });
+        }}
+      >
+        Advanced Options
+      </button>
+      <DropdownMenu
+        isOpen={isOpen}
+        position={position}
+        className="min-w-[300px] p-3"
+        onClose={onClose}
+      >
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xs text-gray-500 w-20">Script:</span>
+          <button
+            type="button"
+            onClick={() => {
+              editor.chain().focus().toggleSuperscript().run();
+              onClose();
+            }}
+            className={`flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm ${editor.isActive("superscript") ? "bg-gray-200" : ""}`}
+          >
+            <img
+              src="/editor-icons/advance/super.svg"
+              alt="Superscript"
+              className="w-4 h-4"
+            />{" "}
+            Superscript
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              editor.chain().focus().toggleSubscript().run();
+              onClose();
+            }}
+            className={`flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm ${editor.isActive("subscript") ? "bg-gray-200" : ""}`}
+          >
+            <img
+              src="/editor-icons/advance/sub.svg"
+              alt="Subscript"
+              className="w-4 h-4"
+            />{" "}
+            Subscript
+          </button>
+        </div>
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xs text-gray-500 w-20">Line Height:</span>
+          <div className="flex gap-1">
+            {lineHeights.map((h) => (
+              <button
+                type="button"
+                key={h}
+                className="px-2 py-1 text-xs hover:bg-gray-100 rounded"
+                onClick={() => handleLineHeight(h)}
+              >
+                {h}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 w-20">Indent:</span>
+          <button
+            type="button"
+            onClick={() => {
+              editor.isActive("listItem")
+                ? editor.chain().focus().sinkListItem("listItem").run()
+                : editor.chain().focus().indent().run();
+              onClose();
+            }}
+            className="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm"
+          >
+            <img
+              src="/editor-icons/advance/increase-indent.svg"
+              alt="Increase"
+              className="w-4 h-4"
+            />{" "}
+            Increase
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              editor.isActive("listItem")
+                ? editor.chain().focus().liftListItem("listItem").run()
+                : editor.chain().focus().outdent().run();
+              onClose();
+            }}
+            className="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm"
+          >
+            <img
+              src="/editor-icons/advance/decrease-indent.svg"
+              alt="Decrease"
+              className="w-4 h-4"
+            />{" "}
+            Decrease
+          </button>
+        </div>
+      </DropdownMenu>
+    </div>
+  );
+};
+
+const MobileToolbar = ({
+  editor,
+  currentFont,
+  onDropdownToggle,
+  dropdownState,
+  linkState,
+  onLinkSubmit,
+  onLinkCancel,
+  buttonBaseClass,
+  buttonActiveClass,
+  onImageInsert,
+  activeState,
+}) => {
+  const headingOptions = ["H1", "H2", "H3", "H4", "H5", "H6"];
+  const lineHeightOptions = ["1", "1.15", "1.5", "2", "2.5", "3"];
+
+  return (
+    <div
+      className="flex md:hidden items-center gap-1 px-4 bg-white overflow-x-auto scrollbar-hide whitespace-nowrap w-full"
+      style={{
+        height: "52px",
+        borderBottom: "1px solid #E5E7EB",
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+        WebkitOverflowScrolling: "touch",
+      }}
+    >
+      <div className="flex items-center gap-1 shrink-0 pr-2 border-r border-gray-200">
+        <span className="text-sm font-normal text-gray-700 w-[70px] truncate">
+          {currentFont}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-1 dropdown-container shrink-0 px-1 border-r border-gray-200">
+        <Tooltip text="Paragraph">
+          <button
+            onClick={() => editor.chain().focus().setParagraph().run()}
+            className={`p-1.5 hover:bg-gray-100 rounded ${editor.isActive("paragraph") ? "bg-gray-200" : ""}`}
+          >
+            <img src="/editor-icons/P.svg" alt="P" className="w-4 h-4" />
+          </button>
+        </Tooltip>
+        <div className="relative">
+          <button
+            type="button"
+            className="flex items-center hover:bg-gray-100 rounded px-1 py-1.5"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDropdownToggle("heading", e);
+            }}
+          >
+            <img src="/editor-icons/H.svg" alt="H" className="w-5 h-5" />
+            <ChevronDown className="h-3 w-3 text-gray-600 ml-0.5" />
+          </button>
+          <DropdownMenu
+            isOpen={dropdownState.heading.isOpen}
+            position={dropdownState.heading.position}
+            className="min-w-[80px]"
+          >
+            {headingOptions.map((h) => (
+              <button
+                key={h}
+                className="flex items-center px-4 py-2 hover:bg-gray-100 w-full text-left text-sm font-medium"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  if (h === "P") {
+                    editor.chain().focus().setParagraph().run();
+                  } else {
+                    const level = parseInt(h.replace("H", ""));
+                    editor.chain().focus().toggleHeading({ level }).run();
+                  }
+                  onDropdownToggle("heading", null);
+                }}
+              >
+                {h}
+              </button>
+            ))}
+          </DropdownMenu>
+        </div>
+      </div>
+
+      <FormatButtons
+        buttons={[
+          {
+            action: () => editor.chain().focus().toggleBold().run(),
+            isActive: activeState.bold,
+            title: "Bold",
+            src: "/editor-icons/B.svg",
+          },
+          {
+            action: () => editor.chain().focus().toggleItalic().run(),
+            isActive: activeState.italic,
+            title: "Italic",
+            src: "/editor-icons/italic.svg",
+          },
+          {
+            action: () => editor.chain().focus().toggleUnderline().run(),
+            isActive: activeState.underline,
+            title: "Underline",
+            src: "/editor-icons/underline.svg",
+          },
+          {
+            action: () => editor.chain().focus().toggleStrike().run(),
+            isActive: activeState.strike,
+            title: "Strikethrough",
+            src: "/editor-icons/strike.svg",
+          },
+        ]}
+        buttonBaseClass={buttonBaseClass}
+        buttonActiveClass={buttonActiveClass}
+      />
+
+      <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
+        <Tooltip text="Lists">
+          <button
+            className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onDropdownToggle("list", e);
+            }}
+          >
+            <img src="/editor-icons/list.svg" alt="Lists" className="w-4 h-4" />
+            <ChevronDown className="h-3 w-3 text-gray-700" />
+          </button>
+        </Tooltip>
+        <DropdownMenu
+          isOpen={dropdownState.list.isOpen}
+          position={dropdownState.list.position}
+          className="min-w-[150px]"
+        >
+          <button
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.chain().focus().toggleBulletList().run();
+              onDropdownToggle("list", null);
+            }}
+          >
+            <List className="h-4 w-4" /> Bullet List
+          </button>
+          <button
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.chain().focus().toggleOrderedList().run();
+              onDropdownToggle("list", null);
+            }}
+          >
+            <ListOrdered className="h-4 w-4" /> Numbered List
+          </button>
+        </DropdownMenu>
+      </div>
+
+      <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
+        <Tooltip text="Alignment">
+          <button
+            className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onDropdownToggle("align", e);
+            }}
+          >
+            <img
+              src="/editor-icons/Paragraph.svg"
+              alt="Alignment"
+              className="w-4 h-4"
+            />
+            <ChevronDown className="h-3 w-3 text-gray-700" />
+          </button>
+        </Tooltip>
+        <DropdownMenu
+          isOpen={dropdownState.align.isOpen}
+          position={dropdownState.align.position}
+          className="min-w-[150px]"
+        >
+          <button
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.chain().focus().setTextAlign("left").run();
+              onDropdownToggle("align", null);
+            }}
+          >
+            <AlignLeft className="h-4 w-4" /> Align Left
+          </button>
+          <button
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.chain().focus().setTextAlign("center").run();
+              onDropdownToggle("align", null);
+            }}
+          >
+            <AlignCenter className="h-4 w-4" /> Align Center
+          </button>
+          <button
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.chain().focus().setTextAlign("right").run();
+              onDropdownToggle("align", null);
+            }}
+          >
+            <AlignRight className="h-4 w-4" /> Align Right
+          </button>
+          <button
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.chain().focus().setTextAlign("justify").run();
+              onDropdownToggle("align", null);
+            }}
+          >
+            <AlignJustify className="h-4 w-4" /> Justify
+          </button>
+        </DropdownMenu>
+      </div>
+
+      <div className="flex items-center gap-0.5 px-1 border-r border-gray-200 shrink-0">
+        <Tooltip text="Insert Image">
+          <button
+            className="p-1.5 hover:bg-gray-100 rounded"
+            onClick={() => onImageInsert?.()}
+          >
+            <img
+              src="/editor-icons/image.svg"
+              alt="Image"
+              className="w-4 h-4"
+            />
+          </button>
+        </Tooltip>
+        <Tooltip text="Code Block">
+          <button
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            className={`${buttonBaseClass} ${buttonActiveClass(activeState.codeBlock)}`}
+          >
+            <img
+              src="/editor-icons/block.svg"
+              alt="Code Block"
+              className="w-4 h-4"
+            />
+          </button>
+        </Tooltip>
+        <Tooltip text="Quote">
+          <button
+            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            className={`${buttonBaseClass} ${buttonActiveClass(activeState.blockquote)}`}
+          >
+            <img src="/editor-icons/quote.svg" alt="Quote" className="w-4 h-4" />
+          </button>
+        </Tooltip>
+        <LinkButton
+          editor={editor}
+          isOpen={dropdownState.link.isOpen}
+          position={dropdownState.link.position}
+          onToggle={(e, text) => onDropdownToggle("link", e, text)}
+          onClose={() => onDropdownToggle("link", null)}
+          linkState={linkState}
+          onLinkSubmit={onLinkSubmit}
+          onLinkCancel={onLinkCancel}
+        />
+      </div>
+
+      <div className="flex items-center gap-0.5 px-1 border-r border-gray-200 shrink-0">
+        <Tooltip text="Superscript">
+          <button
+            onClick={() => editor.chain().focus().toggleSuperscript().run()}
+            className={`${buttonBaseClass} ${buttonActiveClass(activeState.superscript)}`}
+          >
+            <img
+              src="/editor-icons/advance/super.svg"
+              alt="Superscript"
+              className="w-4 h-4"
+            />
+          </button>
+        </Tooltip>
+        <Tooltip text="Subscript">
+          <button
+            onClick={() => editor.chain().focus().toggleSubscript().run()}
+            className={`${buttonBaseClass} ${buttonActiveClass(activeState.subscript)}`}
+          >
+            <img
+              src="/editor-icons/advance/sub.svg"
+              alt="Subscript"
+              className="w-4 h-4"
+            />
+          </button>
+        </Tooltip>
+      </div>
+
+      <div className="relative shrink-0 px-1 border-r border-gray-200">
+        <Tooltip text="Line Spacing">
+          <button
+            className="flex items-center gap-0.5 p-1.5 hover:bg-gray-100 rounded shrink-0"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onDropdownToggle("lineSpacing", e);
+            }}
+          >
+            <img
+              src="/editor-icons/advance/line-height.svg"
+              alt="Line Spacing"
+              className="w-4 h-4"
+            />
+            <ChevronDown className="h-3 w-3" />
+          </button>
+        </Tooltip>
+        <DropdownMenu
+          isOpen={dropdownState.lineSpacing.isOpen}
+          position={dropdownState.lineSpacing.position}
+          className="min-w-[100px]"
+        >
+          {lineHeightOptions.map((h) => (
+            <button
+              key={h}
+              className="block w-full px-3 py-1 text-left hover:bg-gray-100 text-sm"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                editor.chain().focus().setLineHeight(h).run();
+                onDropdownToggle("lineSpacing", null);
+              }}
+            >
+              {h}
+            </button>
+          ))}
+        </DropdownMenu>
+      </div>
+
+      <div className="flex items-center gap-0.5 px-1 shrink-0">
+        <Tooltip text="Increase Indent">
+          <button
+            onClick={() =>
+              editor.isActive("listItem")
+                ? editor.chain().focus().sinkListItem("listItem").run()
+                : editor.chain().focus().indent().run()
+            }
+            className={`${buttonBaseClass}`}
+          >
+            <img
+              src="/editor-icons/advance/increase-indent.svg"
+              alt="Increase Indent"
+              className="w-4 h-4"
+            />
+          </button>
+        </Tooltip>
+        <Tooltip text="Decrease Indent">
+          <button
+            onClick={() =>
+              editor.isActive("listItem")
+                ? editor.chain().focus().liftListItem("listItem").run()
+                : editor.chain().focus().outdent().run()
+            }
+            className={`${buttonBaseClass}`}
+          >
+            <img
+              src="/editor-icons/advance/decrease-indent.svg"
+              alt="Decrease Indent"
+              className="w-4 h-4"
+            />
+          </button>
+        </Tooltip>
+      </div>
+    </div>
+  );
+};
+
+const TabletToolbar = ({
+  editor,
+  onDropdownToggle,
+  dropdownState,
+  onImageInsert,
+  activeState,
+}) => {
+  const headings = ["P", "H1", "H2", "H3", "H4", "H5", "H6"];
+
+  const getHeadingLabel = () => {
+    for (let i = 1; i <= 6; i++) {
+      if (editor.isActive("heading", { level: i })) return `Heading ${i}`;
+    }
+    return "Normal text";
+  };
+
+  return (
+    <div
+      className="hidden md:flex xl:hidden items-center gap-1 md:gap-2 px-4 bg-white overflow-x-auto scrollbar-hide whitespace-nowrap w-full"
+      style={{
+        height: "52px",
+        borderBottom: "1px solid #E5E7EB",
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+        WebkitOverflowScrolling: "touch",
+      }}
+    >
+      <div className="flex items-center gap-0.5 shrink-0 pr-2 border-r border-gray-200">
+        <Tooltip text="Undo">
+          <button
+            onClick={() => editor.chain().focus().undo().run()}
+            disabled={!editor.can().chain().focus().undo().run()}
+            className="p-1.5 hover:bg-gray-100 rounded shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+              />
+            </svg>
+          </button>
+        </Tooltip>
+        <Tooltip text="Redo">
+          <button
+            onClick={() => editor.chain().focus().redo().run()}
+            disabled={!editor.can().chain().focus().redo().run()}
+            className="p-1.5 hover:bg-gray-100 rounded shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 10h-10a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6"
+              />
+            </svg>
+          </button>
+        </Tooltip>
+      </div>
+
+      <div className="relative dropdown-container shrink-0 pr-2 border-r border-gray-200">
+        <button
+          className="flex items-center hover:bg-gray-100 rounded px-2 py-1.5 text-sm"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            onDropdownToggle("heading", e);
+          }}
+        >
+          <span className="text-gray-700">{getHeadingLabel()}</span>
+          <ChevronDown className="h-3 w-3 text-gray-600 ml-1" />
+        </button>
+        <DropdownMenu
+          isOpen={dropdownState.heading.isOpen}
+          position={dropdownState.heading.position}
+          className="min-w-[140px]"
+        >
+          {headings.map((h) => (
+            <button
+              key={h}
+              className="flex items-center px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                if (h === "P") {
+                  editor.chain().focus().setParagraph().run();
+                } else {
+                  const level = parseInt(h.replace("H", ""));
+                  editor.chain().focus().toggleHeading({ level }).run();
+                }
+                onDropdownToggle("heading", null);
+              }}
+            >
+              {h === "P" ? "Normal text" : h}
+            </button>
+          ))}
+        </DropdownMenu>
+      </div>
+
+      <FormatButtons
+        buttons={[
+          {
+            action: () => editor.chain().focus().toggleBold().run(),
+            isActive: activeState.bold,
+            title: "Bold",
+            src: "/editor-icons/B.svg",
+          },
+          {
+            action: () => editor.chain().focus().toggleItalic().run(),
+            isActive: activeState.italic,
+            title: "Italic",
+            src: "/editor-icons/italic.svg",
+          },
+          {
+            action: () => editor.chain().focus().toggleUnderline().run(),
+            isActive: activeState.underline,
+            title: "Underline",
+            src: "/editor-icons/underline.svg",
+          },
+          {
+            action: () => editor.chain().focus().toggleStrike().run(),
+            isActive: activeState.strike,
+            title: "Strikethrough",
+            src: "/editor-icons/strike.svg",
+          },
+        ]}
+        buttonBaseClass="p-1.5 hover:bg-gray-100 rounded shrink-0"
+        buttonActiveClass={(isActive) => (isActive ? "bg-gray-200" : "")}
+      />
+
+      <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
+        <Tooltip text="Lists">
+          <button
+            className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onDropdownToggle("list", e);
+            }}
+          >
+            <img src="/editor-icons/list.svg" alt="Lists" className="w-4 h-4" />
+            <ChevronDown className="h-3 w-3 text-gray-700" />
+          </button>
+        </Tooltip>
+        <DropdownMenu
+          isOpen={dropdownState.list.isOpen}
+          position={dropdownState.list.position}
+          className="min-w-[150px]"
+        >
+          <button
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.chain().focus().toggleBulletList().run();
+              onDropdownToggle("list", null);
+            }}
+          >
+            <List className="h-4 w-4" /> Bullet List
+          </button>
+          <button
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.chain().focus().toggleOrderedList().run();
+              onDropdownToggle("list", null);
+            }}
+          >
+            <ListOrdered className="h-4 w-4" /> Numbered List
+          </button>
+        </DropdownMenu>
+      </div>
+
+      <div className="relative dropdown-container shrink-0 px-1 border-r border-gray-200">
+        <Tooltip text="Alignment">
+          <button
+            className="p-1.5 hover:bg-gray-100 rounded flex items-center gap-0.5"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onDropdownToggle("align", e);
+            }}
+          >
+            <img
+              src="/editor-icons/Paragraph.svg"
+              alt="Alignment"
+              className="w-4 h-4"
+            />
+            <ChevronDown className="h-3 w-3 text-gray-700" />
+          </button>
+        </Tooltip>
+        <DropdownMenu
+          isOpen={dropdownState.align.isOpen}
+          position={dropdownState.align.position}
+          className="min-w-[150px]"
+        >
+          <button
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.chain().focus().setTextAlign("left").run();
+              onDropdownToggle("align", null);
+            }}
+          >
+            <AlignLeft className="h-4 w-4" /> Align Left
+          </button>
+          <button
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.chain().focus().setTextAlign("center").run();
+              onDropdownToggle("align", null);
+            }}
+          >
+            <AlignCenter className="h-4 w-4" /> Align Center
+          </button>
+          <button
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.chain().focus().setTextAlign("right").run();
+              onDropdownToggle("align", null);
+            }}
+          >
+            <AlignRight className="h-4 w-4" /> Align Right
+          </button>
+          <button
+            className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 w-full text-left text-sm"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              editor.chain().focus().setTextAlign("justify").run();
+              onDropdownToggle("align", null);
+            }}
+          >
+            <AlignJustify className="h-4 w-4" /> Justify
+          </button>
+        </DropdownMenu>
+      </div>
+
+      <InsertButtons
+        buttons={[
+          {
+            action: () => onImageInsert?.(),
+            title: "Insert Image",
+            src: "/editor-icons/image.svg",
+          },
+          {
+            action: () => editor.chain().focus().toggleCodeBlock().run(),
+            isActive: activeState.codeBlock,
+            title: "Code Block",
+            src: "/editor-icons/block.svg",
+          },
+          {
+            action: () => editor.chain().focus().toggleBlockquote().run(),
+            isActive: activeState.blockquote,
+            title: "Quote",
+            src: "/editor-icons/quote.svg",
+          },
+        ]}
+        buttonBaseClass="p-1.5 hover:bg-gray-100 rounded shrink-0"
+        buttonActiveClass={(isActive) => (isActive ? "bg-gray-200" : "")}
+      />
+
+      <div className="relative dropdown-container shrink-0">
+        <button
+          className="text-sm text-gray-600 px-3 py-1.5 hover:bg-gray-200 rounded whitespace-nowrap"
+          style={{ backgroundColor: "#F8F8F8" }}
+          onClick={(e) => {
+            e.preventDefault();
+            onDropdownToggle("advanced", e, { alignRight: true, width: 300 });
+          }}
+        >
+          Advanced
+        </button>
+        <DropdownMenu
+          isOpen={dropdownState.advanced.isOpen}
+          position={dropdownState.advanced.position}
+          className="min-w-[300px] p-3"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs text-gray-500 w-20">Script:</span>
+            <button
+              onClick={() => {
+                editor.chain().focus().toggleSuperscript().run();
+                onDropdownToggle("advanced", null);
+              }}
+              className={`flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm ${editor.isActive("superscript") ? "bg-gray-200" : ""}`}
+            >
+              <img
+                src="/editor-icons/advance/super.svg"
+                alt="Superscript"
+                className="w-4 h-4"
+              />{" "}
+              Superscript
+            </button>
+            <button
+              onClick={() => {
+                editor.chain().focus().toggleSubscript().run();
+                onDropdownToggle("advanced", null);
+              }}
+              className={`flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm ${editor.isActive("subscript") ? "bg-gray-200" : ""}`}
+            >
+              <img
+                src="/editor-icons/advance/sub.svg"
+                alt="Subscript"
+                className="w-4 h-4"
+              />{" "}
+              Subscript
+            </button>
+          </div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs text-gray-500 w-20">Line Height:</span>
+            <div className="flex gap-1">
+              {["1", "1.15", "1.5", "2", "2.5", "3"].map((h) => (
+                <button
+                  key={h}
+                  className="px-2 py-1 text-xs hover:bg-gray-100 rounded"
+                  onClick={() => {
+                    editor.chain().focus().setLineHeight(h).run();
+                    onDropdownToggle("advanced", null);
+                  }}
+                >
+                  {h}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 w-20">Indent:</span>
+            <button
+              onClick={() => {
+                editor.isActive("listItem")
+                  ? editor.chain().focus().sinkListItem("listItem").run()
+                  : editor.chain().focus().indent().run();
+                onDropdownToggle("advanced", null);
+              }}
+              className="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm"
+            >
+              <img
+                src="/editor-icons/advance/increase-indent.svg"
+                alt="Increase"
+                className="w-4 h-4"
+              />{" "}
+              Increase
+            </button>
+            <button
+              onClick={() => {
+                editor.isActive("listItem")
+                  ? editor.chain().focus().liftListItem("listItem").run()
+                  : editor.chain().focus().outdent().run();
+                onDropdownToggle("advanced", null);
+              }}
+              className="flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-sm"
+            >
+              <img
+                src="/editor-icons/advance/decrease-indent.svg"
+                alt="Decrease"
+                className="w-4 h-4"
+              />{" "}
+              Decrease
+            </button>
+          </div>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
 };
