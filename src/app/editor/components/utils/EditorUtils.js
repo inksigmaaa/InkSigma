@@ -1,4 +1,4 @@
-const FONT_OPTIONS = [
+export const FONT_OPTIONS = [
   "Arial",
   "Arial Black",
   "Brush Script MT",
