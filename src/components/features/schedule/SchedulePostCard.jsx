@@ -14,6 +14,7 @@ import Image from "next/image"
 import { useRouter } from 'next/navigation'
 import { usePublication } from "@/contexts/PublicationContext"
 import { withPublicationPath } from "@/utils/dashboardUrl"
+import { useArticleStore } from "@/stores/articleStore"
 
 export default function SchedulePostCard({ 
   post, 
@@ -23,8 +24,10 @@ export default function SchedulePostCard({
 }) {
   const router = useRouter()
   const { currentPublication } = usePublication()
+  const prefetchArticle = useArticleStore((s) => s.prefetchArticle)
 
   const handleEdit = () => {
+    prefetchArticle(post.id, post).catch(() => {})
     router.push(
       withPublicationPath(
         `/editor?status=scheduled&id=${post.id}`,

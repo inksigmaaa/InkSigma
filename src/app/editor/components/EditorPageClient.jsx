@@ -27,6 +27,7 @@ import SaveStatusIndicator from "./SaveStatusIndicator";
 import EditorPageStyles from "./EditorPageStyles";
 import EditorStatsBar from "./EditorStatsBar";
 import EditorFooterActions from "./EditorFooterActions";
+import EditorContentSkeleton from "./EditorContentSkeleton";
 import {
   DEFAULT_DRAFT_TITLE,
   LEGACY_DRAFT_TITLE,
@@ -44,7 +45,8 @@ export default function EditorPageClient() {
     createArticle,
     updateArticle,
     uploadArticleImage,
-    getArticleById,
+    getArticleByIdUncached,
+    getCachedArticleById,
     loadUserArticles,
     createDraftFromPublished,
     refreshArticle,
@@ -165,6 +167,9 @@ export default function EditorPageClient() {
     text: "",
   });
   const editorContentRef = useRef(editorContent);
+  const applyingRemoteArticleRef = useRef(false);
+  const bodyEditedSinceLoadRef = useRef(false);
+  const lastAppliedRemoteContentRef = useRef("");
 
   const updateEditorContent = useCallback((data) => {
     editorContentRef.current = data;
@@ -172,6 +177,12 @@ export default function EditorPageClient() {
   }, []);
 
   const handleEditorUpdate = useCallback((data) => {
+    if (
+      !applyingRemoteArticleRef.current &&
+      data.html !== lastAppliedRemoteContentRef.current
+    ) {
+      bodyEditedSinceLoadRef.current = true;
+    }
     updateEditorContent(data);
   }, [updateEditorContent]);
   const [blogTitle, setBlogTitle] = useState("");
@@ -466,6 +477,7 @@ export default function EditorPageClient() {
     setBlogTitle(draft.title || "");
     setBlogDescription(draft.description || "");
     setSelectedCategories(Array.isArray(draft.categories) ? draft.categories : []);
+    lastAppliedRemoteContentRef.current = nextContent;
     setInitialContent(nextContent);
     updateEditorContent({
       html: nextContent,
@@ -480,59 +492,57 @@ export default function EditorPageClient() {
     }
   }, [updateEditorContent]);
 
-  // Load existing blog if editing.
-  // Guard: only load when the blogId comes from the initial URL, not when
-  // shadowIdRef gets promoted to state/URL after a manual save.
-  const loadExistingBlog = useCallback(async (id) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/api/blogs/${id}`, {
-        credentials: "include",
-      });
+  const applyArticleToEditor = useCallback(
+    (article, { resetDirtySnapshot = true, updateBody = true } = {}) => {
+      if (!article) return;
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Failed to load blog: ${response.status} ${errorText || response.statusText}`,
-        );
-      }
-
-      const blog = await response.json();
-
-      const normalizedTitle = (blog.title || "").trim().toLowerCase();
+      const normalizedTitle = (article.title || "").trim().toLowerCase();
       const displayTitle =
         normalizedTitle === DEFAULT_DRAFT_TITLE.toLowerCase() ||
         normalizedTitle === LEGACY_DRAFT_TITLE
           ? ""
-          : blog.title || "";
+          : article.title || "";
+      const contentHtml =
+        typeof article.content === "string" ? article.content : "";
+      const contentText = contentHtml
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&nbsp;/gi, " ")
+        .trim();
+
+      applyingRemoteArticleRef.current = true;
 
       setBlogTitle(displayTitle);
-      setBlogDescription(blog.description || "");
-      setSelectedCategories(blog.categories || []);
+      setBlogDescription(article.description || "");
+      setSelectedCategories(Array.isArray(article.categories) ? article.categories : []);
+      setExistingBlogStatus(article.status);
 
-      setInitialContent(blog.content || "");
+      if (updateBody) {
+        lastAppliedRemoteContentRef.current = contentHtml;
+        setInitialContent(contentHtml);
+        updateEditorContent({
+          html: contentHtml,
+          text: contentText,
+          charCount: contentText.length,
+          wordCount: contentText ? contentText.split(/\s+/).length : 0,
+        });
 
-      // Initialize editorContent state to prevent data loss if saving without editing body
-      updateEditorContent({
-        html: blog.content || "",
-        text: "",
-        charCount: (blog.content || "").length,
-        wordCount: 0,
-      });
+        if (editorInstanceRef.current) {
+          editorInstanceRef.current.commands.setContent(contentHtml || "");
+        }
+      }
 
-      setExistingBlogStatus(blog.status);
+      if (resetDirtySnapshot) {
+        resetSnapshot({
+          title: displayTitle,
+          description: article.description || "",
+          contentHtml,
+          categories: article.categories || [],
+          extraDirtySignal: article.image ? `url:${article.image}` : "none",
+        });
+      }
 
-      // Set the auto-save snapshot so change detection starts from the loaded state
-      resetSnapshot({
-        title: displayTitle,
-        description: blog.description || "",
-        contentHtml: blog.content || "",
-        categories: blog.categories || [],
-        extraDirtySignal: blog.image ? `url:${blog.image}` : "none",
-      });
-
-      if (blog.image) {
-        setThumbnailData({ url: blog.image, previewUrl: blog.image });
+      if (article.image) {
+        setThumbnailData({ url: article.image, previewUrl: article.image });
         setThumbnailRemoved(false);
         setThumbnailStatus("uploaded");
       } else {
@@ -541,8 +551,8 @@ export default function EditorPageClient() {
         setThumbnailStatus("idle");
       }
 
-      if (blog.scheduledAt) {
-        const scheduledDate = new Date(blog.scheduledAt);
+      if (article.scheduledAt) {
+        const scheduledDate = new Date(article.scheduledAt);
         const normalizedDate = new Date(scheduledDate);
         normalizedDate.setHours(0, 0, 0, 0);
         const formattedDate = `${String(normalizedDate.getDate()).padStart(2, "0")}-${String(
@@ -565,13 +575,57 @@ export default function EditorPageClient() {
         setDateError("");
         setTimeError("");
       }
+
+      window.setTimeout(() => {
+        applyingRemoteArticleRef.current = false;
+      }, 0);
+    },
+    [resetSnapshot, updateEditorContent],
+  );
+
+  // Load existing blog if editing.
+  // Guard: only load when the blogId comes from the initial URL, not when
+  // shadowIdRef gets promoted to state/URL after a manual save.
+  const loadExistingBlog = useCallback(async (id) => {
+    bodyEditedSinceLoadRef.current = false;
+
+    const cachedArticle = getCachedArticleById?.(id);
+    const hasCachedBody = typeof cachedArticle?.content === "string";
+
+    if (cachedArticle) {
+      applyArticleToEditor(cachedArticle, {
+        resetDirtySnapshot: true,
+        updateBody: hasCachedBody,
+      });
+    }
+
+    setIsLoading(!hasCachedBody);
+
+    const timingLabel = `[Editor] loadExistingBlog:${id}`;
+    if (process.env.NODE_ENV !== "production") {
+      console.time(timingLabel);
+    }
+
+    try {
+      const article = await getArticleByIdUncached(id);
+      if (bodyEditedSinceLoadRef.current && hasCachedBody) {
+        return;
+      }
+
+      applyArticleToEditor(article, {
+        resetDirtySnapshot: true,
+        updateBody: true,
+      });
     } catch (error) {
       console.error("Error loading blog:", error);
       // alert(`Failed to load blog: ${error.message}`)
     } finally {
+      if (process.env.NODE_ENV !== "production") {
+        console.timeEnd(timingLabel);
+      }
       setIsLoading(false);
     }
-  }, [resetSnapshot, updateEditorContent]);
+  }, [applyArticleToEditor, getArticleByIdUncached, getCachedArticleById]);
 
   useEffect(() => {
     if (blogId && blogId === initialBlogIdRef.current) {
@@ -1689,9 +1743,7 @@ export default function EditorPageClient() {
             style={{ minHeight: "400px", paddingBottom: "10px" }}
           >
             {isLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <span className="text-gray-500">Loading blog content...</span>
-              </div>
+              <EditorContentSkeleton />
             ) : (
               <TiptapEditor
                 key={editorRenderKey}
