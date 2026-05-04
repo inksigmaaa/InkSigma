@@ -5,6 +5,7 @@ import { usePublication } from "@/contexts/PublicationContext";
 import React from "react";
 import { NightTooltip } from "@/components/ui/tooltip";
 import { withPublicationPath } from "@/utils/dashboardUrl";
+import { useArticleStore } from "@/stores/articleStore";
 
 // Helper function to format relative time
 const getRelativeTime = (dateString) => {
@@ -82,6 +83,7 @@ export default function ArticleContainer({
 }) {
   const router = useRouter();
   const { currentPublication } = usePublication();
+  const prefetchArticle = useArticleStore((s) => s.prefetchArticle);
   const [longPressTimer, setLongPressTimer] = React.useState(null);
 
   const canPublish =
@@ -90,6 +92,16 @@ export default function ArticleContainer({
     currentPublication?.role === "editor";
 
   const handleEdit = () => {
+    prefetchArticle(id, {
+      id,
+      status,
+      title,
+      description,
+      categories,
+      createdAt,
+      publicationId,
+      image,
+    }).catch(() => {});
     const params = new URLSearchParams({ status, id: id.toString() });
     if (publicationId) {
       params.append("publicationId", publicationId.toString());
