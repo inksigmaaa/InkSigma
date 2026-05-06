@@ -1,9 +1,19 @@
 import { parseHost } from "@/utils/hostParser";
+import {
+  getLocalDashboardOrigin,
+  isLocalDashboardDomain,
+} from "@/utils/dashboardUrl";
 
 const RESERVED_SUBDOMAINS = new Set(["dashboard", "www", "api"]);
 
 const getRootDomain = () =>
   (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost").toLowerCase();
+
+const getRootDomainHostname = () =>
+  getRootDomain()
+    .replace(/^https?:\/\//, "")
+    .split("/")[0]
+    .split(":")[0];
 
 export const getDashboardOrigin = () => {
   // Same-origin mode: dashboard lives on the same domain (path-based routing)
@@ -12,11 +22,15 @@ export const getDashboardOrigin = () => {
     return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   }
 
+  if (isLocalDashboardDomain(getRootDomain())) {
+    return getLocalDashboardOrigin(getRootDomain());
+  }
+
   if (typeof window === "undefined") {
     return "http://dashboard.localhost:3000";
   }
 
-  const rootDomain = getRootDomain();
+  const rootDomain = getRootDomainHostname();
   const desiredHost =
     rootDomain === "localhost"
       ? "dashboard.localhost"

@@ -140,26 +140,8 @@ export default function CreatePublication() {
     setLoading(true);
 
     try {
-      // First, verify authentication with the backend
-      const API_URL = getApiBase();
-      console.log("Verifying authentication with backend...");
-
-      const authCheckResponse = await fetch(
-        `${API_URL}/api/publications/debug/auth-check`,
-        {
-          credentials: "include",
-        },
-      );
-
-      if (!authCheckResponse.ok) {
-        console.error("Authentication check failed:", authCheckResponse.status);
-        throw new Error("Authentication failed. Please log in again.");
-      }
-
-      const authCheckData = await authCheckResponse.json();
-      console.log("Authentication verified:", authCheckData);
-
-      // Create publication
+      // Create publication. The endpoint requires auth, so a 401 here is
+      // already the authoritative answer — no pre-flight check needed.
       const publication = await publicationService.createPublication({
         name: publicationName,
         subdomain: subdomain.toLowerCase(),
@@ -239,12 +221,6 @@ export default function CreatePublication() {
 
         switchPublication(publicationWithMeta);
 
-        // Clear any cached publication check to force AuthGuard to recheck
-        // This prevents the AuthGuard from redirecting back to create-publication
-        const cacheKey = `publication-check-${session.user.id}`;
-        sessionStorage.setItem(cacheKey, "true");
-        sessionStorage.removeItem("publication-check-cache");
-
         // If we were sent here from an invite (or other flow), return there after creating.
         const redirectTo = searchParams?.get("redirect");
         const safeRedirect =
@@ -269,10 +245,6 @@ export default function CreatePublication() {
           "Failed to update context, redirecting to dashboard:",
           contextError,
         );
-        // Clear cache and redirect to dashboard (myspace)
-        const cacheKey = `publication-check-${session.user.id}`;
-        sessionStorage.setItem(cacheKey, "true");
-        sessionStorage.removeItem("publication-check-cache");
         router.push("/");
       }
     } catch (error) {

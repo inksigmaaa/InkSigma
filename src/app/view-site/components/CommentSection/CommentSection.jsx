@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
+import { useProfile } from "@/hooks/useQueries";
 import { getImageUrl } from "@/utils/imageUrl";
 import { buildDashboardLoginUrlForViewSite } from "@/utils/publicSiteAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -72,6 +73,13 @@ export default function CommentSection({ blogId }) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [freshProfile, setFreshProfile] = useState(null);
   const { data: session, isPending: sessionPending } = useSession();
+  const sessionUserId = session?.user?.id;
+  const {
+    data: profileData,
+    refetch: refetchProfile,
+  } = useProfile({
+    enabled: !!sessionUserId,
+  });
   const currentUser = mergeUserData(session?.user || null, freshProfile);
 
   // Delete confirmation state
@@ -104,41 +112,17 @@ export default function CommentSection({ blogId }) {
   }, [fetchComments]);
 
   useEffect(() => {
-    const sessionUserId = session?.user?.id;
     if (!sessionUserId) {
       setFreshProfile(null);
       return;
     }
 
     let isActive = true;
-    const controller = new AbortController();
 
     const syncStoredProfile = () => {
       const storedProfile = readFreshUserData();
       if (storedProfile && isActive) {
         setFreshProfile(storedProfile);
-      }
-    };
-
-    const fetchFreshProfile = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/profile`, {
-          credentials: "include",
-          signal: controller.signal,
-        });
-
-        if (!response.ok) return;
-
-        const profile = await response.json();
-        if (isActive) {
-          setFreshProfile(profile);
-        }
-      } catch (fetchError) {
-        if (fetchError?.name === "AbortError") return;
-        console.error(
-          "[CommentSection] Failed to refresh current user profile:",
-          fetchError,
-        );
       }
     };
 
@@ -148,19 +132,23 @@ export default function CommentSection({ blogId }) {
       }
 
       syncStoredProfile();
-      fetchFreshProfile();
+      refetchProfile();
     };
 
     syncStoredProfile();
-    fetchFreshProfile();
     window.addEventListener("storage", handleStorageChange);
 
     return () => {
       isActive = false;
-      controller.abort();
       window.removeEventListener("storage", handleStorageChange);
     };
-  }, [session?.user?.id]);
+  }, [refetchProfile, sessionUserId]);
+
+  useEffect(() => {
+    if (profileData) {
+      setFreshProfile(profileData);
+    }
+  }, [profileData]);
 
   useEffect(() => {
     if (!currentUser) return;

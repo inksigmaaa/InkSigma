@@ -1,25 +1,60 @@
 // services/publicationService.js
 import { getApiBase } from "@/utils/apiBase";
+import {
+  buildGetJsonDedupeKey,
+  dedupeJsonRequest,
+} from "@/utils/jsonRequestDedupe";
+
 const API_URL = getApiBase();
+
+const readErrorMessage = async (response, fallbackMessage) => {
+  const contentType = response.headers.get("content-type");
+
+  if (contentType && contentType.includes("application/json")) {
+    const error = await response.json();
+    return error.error || error.message || fallbackMessage;
+  }
+
+  return `Server error (${response.status}): ${response.statusText}`;
+};
+
+const getJson = (url, fallbackMessage = "Request failed") => {
+  const options = {
+    credentials: "include",
+    cache: "no-store",
+  };
+  const requestKey = buildGetJsonDedupeKey(url, options);
+
+  return dedupeJsonRequest(requestKey, async () => {
+    const response = await fetch(url, options);
+
+    if (!response.ok) {
+      throw new Error(await readErrorMessage(response, fallbackMessage));
+    }
+
+    return response.json();
+  });
+};
 
 export const publicationService = {
   // Get user's publication
   async getUserPublication(userId) {
-    const response = await fetch(`${API_URL}/api/publications/user/${userId}`, {
-      credentials: "include",
-    });
+    return getJson(
+      `${API_URL}/api/publications/user/${userId}`,
+      "Failed to fetch publication",
+    );
+  },
 
-    if (!response.ok) {
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to fetch publication");
-      } else {
-        throw new Error(`Server error (${response.status}): ${response.statusText}`);
-      }
+  // Get publication by ID
+  async getPublication(publicationId) {
+    if (!publicationId) {
+      throw new Error("Publication ID is required");
     }
 
-    return response.json();
+    return getJson(
+      `${API_URL}/api/publications/${publicationId}`,
+      "Failed to fetch publication",
+    );
   },
 
   // Get publication details with stats (for members)
@@ -29,29 +64,10 @@ export const publicationService = {
     }
     
     try {
-      const url = `${API_URL}/api/publications/${publicationId}/details`;
-      
-      const response = await fetch(url, {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Publication details API error (${response.status}):`, errorText);
-        
-        // Try to parse as JSON, fallback to text
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { error: errorText || `HTTP ${response.status}` };
-        }
-        
-        throw new Error(errorData.error || `Failed to fetch publication details (${response.status})`);
-      }
-
-      const data = await response.json();
-      return data;
+      return getJson(
+        `${API_URL}/api/publications/${publicationId}/details`,
+        "Failed to fetch publication details",
+      );
     } catch (error) {
       console.error('Publication details service error:', error);
       throw error;

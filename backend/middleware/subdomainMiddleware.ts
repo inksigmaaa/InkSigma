@@ -145,11 +145,24 @@ const resolveTenantFromHost = async (host) => {
   };
 };
 
+// Routes that never need tenant context. Skipping the DB lookup here removes
+// per-request publication-resolver work from the auth and health hot paths
+// (better-auth's client polls /api/auth/get-session frequently).
+const TENANT_BYPASS_PREFIXES = ["/api/auth", "/health", "/ready"];
+
 /**
  * Middleware to handle tenant context
  * Reads subdomain from X-Subdomain header set by frontend
  */
 export const subdomainMiddleware = async (req, res, next) => {
+  if (
+    TENANT_BYPASS_PREFIXES.some(
+      (prefix) => req.path === prefix || req.path.startsWith(`${prefix}/`),
+    )
+  ) {
+    return next();
+  }
+
   try {
     const explicitSubdomain = normalizeHost(req.headers["x-subdomain"]);
     const explicitCustomDomain = normalizeHost(req.headers["x-custom-domain"]);

@@ -23,13 +23,13 @@ export default function PublishedPage() {
     createDraftFromPublished,
     unpublishArticle,
     loadPublicationArticles,
-    arePubArticlesLoaded,
   } = useArticles();
 
   const { currentPublication, getCurrentUserRole } = usePublication();
   const currentPublicationSubdomain = currentPublication?.subdomain;
   const { data: session } = useSession();
   const searchParams = useSearchParams();
+  const refreshParam = searchParams.get("refresh");
   const router = useRouter();
   const loadedRequestRef = useRef(null);
   const [pageError, setPageError] = useState(null);
@@ -49,14 +49,13 @@ export default function PublishedPage() {
 
   // Load appropriate articles - ALWAYS load publication articles to show all published blogs
   useEffect(() => {
-    const needsRefresh = searchParams.get("refresh") === "true";
+    const needsRefresh = refreshParam === "true";
 
     const requestKey = currentPublication?.id
-      ? `publication:${currentPublication.id}`
+      ? `publication:${currentPublication.id}:status:published`
       : null;
     const shouldLoad =
       needsRefresh ||
-      (!arePubArticlesLoaded && !isLoading) ||
       loadedRequestRef.current !== requestKey;
 
     if (!shouldLoad || !currentPublication?.id) return;
@@ -67,7 +66,14 @@ export default function PublishedPage() {
       try {
         setPageError(null);
         loadedRequestRef.current = requestKey;
-        await loadPublicationArticles(currentPublication.id);
+        await loadPublicationArticles(
+          currentPublication.id,
+          "published",
+          {},
+          {
+            force: needsRefresh,
+          },
+        );
       } catch (loadError) {
         if (!cancelled) {
           setPageError(loadError?.message || "Failed to load published articles");
@@ -81,8 +87,7 @@ export default function PublishedPage() {
       cancelled = true;
     };
   }, [
-    searchParams,
-    arePubArticlesLoaded,
+    refreshParam,
     isLoading,
     loadPublicationArticles,
     currentPublication?.id,
@@ -92,13 +97,13 @@ export default function PublishedPage() {
 
   // Clean up refresh param from URL if present
   useEffect(() => {
-    if (searchParams.get("refresh") === "true") {
+    if (refreshParam === "true") {
       router.replace(
         withPublicationPath("/published", currentPublicationSubdomain),
         { scroll: false },
       );
     }
-  }, [searchParams, router, currentPublicationSubdomain]);
+  }, [refreshParam, router, currentPublicationSubdomain]);
   const [selectedArticles, setSelectedArticles] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);

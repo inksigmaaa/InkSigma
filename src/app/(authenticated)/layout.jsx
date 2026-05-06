@@ -22,16 +22,6 @@ export default function AuthenticatedLayout({ children }) {
       </>
     );
 
-  if (isPreviewRoute || isEditorRoute) {
-    return (
-      <AuthProvider>
-        <PublicationProvider>
-          <ArticlesProvider>{content}</ArticlesProvider>
-        </PublicationProvider>
-      </AuthProvider>
-    );
-  }
-
   return (
     <AuthProvider>
       <PublicationProvider>

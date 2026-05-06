@@ -7,12 +7,23 @@ import { useSession } from "@/lib/auth-client";
 import { getApiBase } from "@/utils/apiBase";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useProfile } from "@/hooks/useQueries";
 
 export default function ProfileSettingsPage() {
   const router = useRouter();
   const { data: session, isPending, refetch } = useSession();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
   const API_URL = getApiBase(); // Get API URL dynamically based on current hostname
+  const profileHydratedRef = useRef(false);
+  const {
+    data: profileData,
+    isLoading: isProfileLoading,
+    isError: isProfileError,
+  } = useProfile({
+    enabled: !!session?.user && !isPending,
+  });
   const [showResetModal, setShowResetModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [initialProfile, setInitialProfile] = useState({
@@ -40,74 +51,44 @@ export default function ProfileSettingsPage() {
     setError("");
   }, [error]);
 
-  // Fetch profile data on mount
   useEffect(() => {
-    const fetchProfile = async () => {
-      console.log("[ProfileSettings] Fetching profile from:", API_URL);
-      console.log("[ProfileSettings] Session:", session);
-      console.log("[ProfileSettings] isPending:", isPending);
-
-      try {
-        const response = await fetch(`${API_URL}/api/profile`, {
-          credentials: "include",
-        });
-
-        console.log(
-          "[ProfileSettings] Profile response status:",
-          response.status,
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log("[ProfileSettings] Profile data received:", data);
-          setEmail(data.email || "");
-          setProfileName(data.profileName || "");
-          setUsername(data.username || "");
-          setBio(data.bio || "");
-          setInitialProfile({
-            profileName: data.profileName || "",
-            username: data.username || "",
-            bio: data.bio || "",
-          });
-          setImage(data.image || "");
-          setImagePreview(data.image || "");
-          setHasPasswordAccount(data.hasPasswordAccount || false);
-        } else if (response.status === 401) {
-          console.error(
-            "[ProfileSettings] Unauthorized - redirecting to login",
-          );
-          router.push("/login");
-        } else {
-          console.error(
-            "[ProfileSettings] Unexpected response status:",
-            response.status,
-          );
-        }
-      } catch (error) {
-        console.error("[ProfileSettings] Error fetching profile:", error);
-        setError("Failed to load profile. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // Wait for session to be determined before checking
     if (isPending) {
-      console.log("[ProfileSettings] Session is still loading, waiting...");
       return;
     }
 
     if (session?.user) {
-      console.log("[ProfileSettings] Session found, fetching profile");
-      fetchProfile();
-    } else {
-      console.error(
-        "[ProfileSettings] No session found - redirecting to login",
-      );
-      setIsLoading(false);
-      router.push("/login");
+      return;
     }
-  }, [session, isPending, router, API_URL]);
+
+    setIsLoading(false);
+    router.push("/login");
+  }, [session, isPending, router]);
+
+  useEffect(() => {
+    if (!profileData || profileHydratedRef.current) return;
+
+    profileHydratedRef.current = true;
+    setEmail(profileData.email || "");
+    setProfileName(profileData.profileName || "");
+    setUsername(profileData.username || "");
+    setBio(profileData.bio || "");
+    setInitialProfile({
+      profileName: profileData.profileName || "",
+      username: profileData.username || "",
+      bio: profileData.bio || "",
+    });
+    setImage(profileData.image || "");
+    setImagePreview(profileData.image || "");
+    setHasPasswordAccount(profileData.hasPasswordAccount || false);
+    setIsLoading(false);
+  }, [profileData]);
+
+  useEffect(() => {
+    if (!isProfileError) return;
+
+    setIsLoading(false);
+    setError("Failed to load profile. Please try again.");
+  }, [isProfileError]);
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
@@ -231,6 +212,7 @@ export default function ProfileSettingsPage() {
         });
         if (profileRes.ok) {
           const profileData = await profileRes.json();
+          queryClient.setQueryData(["profile"], profileData);
           // Store fresh data for other components to access
           localStorage.setItem("freshUserData", JSON.stringify(profileData));
         }
@@ -248,7 +230,7 @@ export default function ProfileSettingsPage() {
     }
   };
 
-  if (isPending || isLoading) {
+  if (isPending || isLoading || isProfileLoading) {
     return (
       <>
         <div className="min-h-screen bg-white flex justify-center items-center p-4 pt-[140px] md:pt-32 md:pl-64">

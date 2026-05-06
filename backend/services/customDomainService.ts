@@ -1,4 +1,5 @@
 import dns from "node:dns/promises";
+import logger from "../utils/logger.js";
 import {
   createConcurrencyLimiter,
   getEnvNumber,
@@ -17,6 +18,7 @@ import {
   addVercelProjectDomain,
   buildVercelDnsRecords,
   buildVercelVerificationRecords,
+  getVercelDomainConfig,
   getVercelProjectDomain,
   getVercelProjectDomainStatusMessage,
   isVercelDomainIntegrationConfigured,
@@ -32,6 +34,30 @@ export const CUSTOM_DOMAIN_STATUS = {
   FAILED: "failed",
   DETACHED: "detached",
 } as const;
+
+const CUSTOM_DOMAIN_SETUP_PLAN_PROVIDER_TIMEOUT_FLOOR_MS = 500;
+const CUSTOM_DOMAIN_SETUP_PLAN_PROVIDER_TIMEOUT_MS = getEnvNumber(
+  process.env.CUSTOM_DOMAIN_SETUP_PLAN_PROVIDER_TIMEOUT_MS,
+  2500,
+  CUSTOM_DOMAIN_SETUP_PLAN_PROVIDER_TIMEOUT_FLOOR_MS,
+);
+
+const getSetupPlanVercelConfig = () => {
+  const config = getVercelDomainConfig();
+  if (!config) return null;
+
+  // Clamp the resulting timeout, not just the env-var source: a misconfigured
+  // VERCEL_DOMAIN_TIMEOUT_MS below the floor must still respect it.
+  const clampedTimeoutMs = Math.max(
+    CUSTOM_DOMAIN_SETUP_PLAN_PROVIDER_TIMEOUT_FLOOR_MS,
+    Math.min(config.timeoutMs, CUSTOM_DOMAIN_SETUP_PLAN_PROVIDER_TIMEOUT_MS),
+  );
+
+  return {
+    ...config,
+    timeoutMs: clampedTimeoutMs,
+  };
+};
 
 type CustomDomainStatus =
   (typeof CUSTOM_DOMAIN_STATUS)[keyof typeof CUSTOM_DOMAIN_STATUS];
@@ -94,6 +120,7 @@ type CustomDomainSetupPlanWithProvider = Omit<
   }>;
   provider?: "vercel";
   providerConfigured?: boolean;
+  providerRecordsAvailable?: boolean;
 };
 
 const normalizeCustomDomainStatus = (
@@ -523,39 +550,76 @@ export const buildCustomDomainSetupPlanWithProvider = async (
   domain: string | null | undefined,
 ): Promise<CustomDomainSetupPlanWithProvider> => {
   const fallbackPlan = buildCustomDomainSetupPlan(domain);
+  const providerConfig = getSetupPlanVercelConfig();
 
-  if (!shouldUseVercelDomainProvider()) {
+  if (!shouldUseVercelDomainProvider() || !providerConfig) {
     return {
       ...fallbackPlan,
       providerConfigured: false,
+      providerRecordsAvailable: false,
     };
   }
 
   const [dnsPlan, projectDomain] = await Promise.all([
-    buildVercelDnsRecords(fallbackPlan.domain),
-    getVercelProjectDomain(fallbackPlan.domain).catch(() => null),
+    buildVercelDnsRecords(fallbackPlan.domain, {
+      config: providerConfig,
+    }).catch((error) => {
+      logger.warn(
+        {
+          err: error,
+          domain: fallbackPlan.domain,
+          timeoutMs: providerConfig.timeoutMs,
+          code: "custom_domain.setup_plan.dns_plan_fallback",
+        },
+        "Vercel DNS plan unavailable for setup-plan; using static fallback",
+      );
+      return null;
+    }),
+    getVercelProjectDomain(fallbackPlan.domain, {
+      config: providerConfig,
+    }).catch((error) => {
+      logger.warn(
+        {
+          err: error,
+          domain: fallbackPlan.domain,
+          timeoutMs: providerConfig.timeoutMs,
+          code: "custom_domain.setup_plan.project_domain_fallback",
+        },
+        "Vercel project-domain lookup failed for setup-plan",
+      );
+      return null;
+    }),
   ]);
   const verificationRecords = projectDomain
     ? buildVercelVerificationRecords(projectDomain)
     : [];
+  const fallbackWarnings = dnsPlan
+    ? fallbackPlan.warnings.filter(
+        (warning) =>
+          !warning.includes("No apex A record targets") &&
+          !warning.includes("No subdomain CNAME target"),
+      )
+    : fallbackPlan.warnings;
 
   return {
     ...fallbackPlan,
     provider: "vercel",
     providerConfigured: true,
+    providerRecordsAvailable: Boolean(dnsPlan),
     records:
-      dnsPlan.records.length > 0
+      dnsPlan?.records.length
         ? [...dnsPlan.records, ...verificationRecords]
         : [...fallbackPlan.records, ...verificationRecords],
     warnings: [
-      ...fallbackPlan.warnings.filter(
-        (warning) =>
-          !warning.includes("No apex A record targets") &&
-          !warning.includes("No subdomain CNAME target"),
-      ),
-      ...(dnsPlan.configuration.misconfigured
+      ...fallbackWarnings,
+      ...(dnsPlan?.configuration.misconfigured
         ? ["Vercel reports this domain is not configured correctly yet."]
         : []),
+      ...(dnsPlan
+        ? []
+        : [
+            "Hosting provider DNS recommendations could not be loaded quickly; showing default DNS records.",
+          ]),
     ],
   };
 };

@@ -7,9 +7,10 @@ import Verify from "@/components/features/verify/Verify";
 import { ChevronRight } from "lucide-react";
 import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
-import { getApiBase } from "@/utils/apiBase";
-import { getImageUrl } from "@/utils/imageUrl";
+import { getPublicationLogoUrl } from "@/utils/imageUrl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useSession } from "@/lib/auth-client";
+import { useProfile } from "@/hooks/useQueries";
 
 export default function DashboardPage() {
   const PROFILE_COMPLETION_CACHE_KEY = "dashboard-profile-complete";
@@ -21,14 +22,24 @@ export default function DashboardPage() {
     loadUserPublications,
     loading: publicationLoading,
   } = usePublication();
-  const API_URL = getApiBase();
-  const [profileCompletionState, setProfileCompletionState] = useState(() => {
+  const { data: session } = useSession();
+  const { data: profileData } = useProfile({
+    enabled: !!session?.user?.id,
+  });
+  const [cachedProfileCompletionState] = useState(() => {
     if (typeof window === "undefined") return "unknown";
     const cached = sessionStorage.getItem(PROFILE_COMPLETION_CACHE_KEY);
     if (cached === "true") return "complete";
     if (cached === "false") return "incomplete";
     return "unknown";
   });
+  const profileCompletionState = profileData
+    ? profileData.profileName?.trim() &&
+      profileData.username?.trim() &&
+      profileData.bio?.trim()
+      ? "complete"
+      : "incomplete"
+    : cachedProfileCompletionState;
 
   // Effect to handle potential context refresh issues
   useEffect(() => {
@@ -57,50 +68,26 @@ export default function DashboardPage() {
     getJoinedPublications,
   ]);
 
-  // Check profile completion immediately; use cache to avoid CTA flicker on repeated visits.
+  // Check profile completion from the shared profile query; use cache to avoid CTA flicker on repeated visits.
   useEffect(() => {
-    const controller = new AbortController();
+    if (!profileData) return;
 
-    const checkProfileCompletion = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/profile`, {
-          credentials: "include",
-          signal: controller.signal,
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const isComplete = !!(
-            data.profileName?.trim() &&
-            data.username?.trim() &&
-            data.bio?.trim()
-          );
-          const nextState = isComplete ? "complete" : "incomplete";
-          setProfileCompletionState(nextState);
-          sessionStorage.setItem(
-            PROFILE_COMPLETION_CACHE_KEY,
-            String(isComplete),
-          );
-        }
-      } catch (error) {
-        if (error.name !== "AbortError") {
-          console.error("Error checking profile completion:", error);
-        }
-      }
-    };
-
-    checkProfileCompletion();
-
-    return () => controller.abort();
-  }, [API_URL, PROFILE_COMPLETION_CACHE_KEY]);
+    const isComplete = !!(
+      profileData.profileName?.trim() &&
+      profileData.username?.trim() &&
+      profileData.bio?.trim()
+    );
+    const nextState = isComplete ? "complete" : "incomplete";
+    if (nextState !== cachedProfileCompletionState) {
+      sessionStorage.setItem(PROFILE_COMPLETION_CACHE_KEY, String(isComplete));
+    }
+  }, [PROFILE_COMPLETION_CACHE_KEY, cachedProfileCompletionState, profileData]);
 
   // Show content immediately - don't wait for publications to load
   // Publications will load in background and update the UI when ready
 
   const ownedPublications = getOwnedPublications();
   const joinedPublications = getJoinedPublications();
-  const getPublicationLogoSrc = (logoUrl) =>
-    getImageUrl(logoUrl) || "/icons/nib.svg";
 
   return (
     <AuthGuard>
@@ -157,7 +144,7 @@ export default function DashboardPage() {
                   <div className="flex gap-6 items-center flex-1 min-w-0 w-full">
                     <Avatar className="w-[66px] h-[66px] opacity-100 border-[0.92px] border-[#EAEAEA] bg-gray-100 flex items-center justify-center flex-shrink-0">
                       <AvatarImage
-                        src={getPublicationLogoSrc(ownedPublications[0]?.logoUrl)}
+                        src={getPublicationLogoUrl(ownedPublications[0]?.logoUrl)}
                         alt="publication logo"
                         className="w-full h-full object-cover"
                       />
@@ -273,7 +260,7 @@ export default function DashboardPage() {
                       <div className="flex gap-6 items-center flex-1 w-full">
                         <Avatar className="w-[66px] h-[66px] border-[0.92px] border-[#EAEAEA] bg-gray-100 flex items-center justify-center flex-shrink-0">
                           <AvatarImage
-                            src={getPublicationLogoSrc(joinedPub.logoUrl)}
+                            src={getPublicationLogoUrl(joinedPub.logoUrl)}
                             alt={`${joinedPub.name} logo`}
                             className="w-full h-full object-cover"
                           />

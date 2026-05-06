@@ -17,37 +17,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/Providers";
 import { headers } from "next/headers";
 
-const DASHBOARD_PATHS = [
-  "/home",
-  "/allArticle",
-  "/review",
-  "/author-review",
-  "/editor",
-  "/draft",
-  "/published",
-  "/unpublished",
-  "/trash",
-  "/schedule",
-  "/members",
-  "/my-blogs",
-  "/profile-settings",
-  "/domain",
-  "/dashboard",
-  "/create-publication",
-  "/settings",
-  "/invite",
-  "/comments",
-];
-
-const PUBLIC_ONLY_PATHS = [
-  "/login",
-  "/signup",
-  "/forgot-password",
-  "/reset-password",
-  "/verify-email",
-  "/auth-callback",
-];
-
 export const metadata = {
   title: "InkSigma - A platform for focussed and simple writing",
   description:
@@ -66,7 +35,6 @@ export const metadata = {
 export default async function RootLayout({ children }) {
   const h = await headers();
   const rawHost = h.get("x-forwarded-host") || h.get("host") || "";
-  const pathname = h.get("x-invoke-path") || "/";
 
   const hostname = rawHost.split(",")[0].trim().split(":")[0].toLowerCase();
   const cleanHost = hostname.replace(/^www\./, "");
@@ -81,21 +49,13 @@ export default async function RootLayout({ children }) {
     cleanHost !== `www.${rootDomain}` &&
     !isDashboardHost;
 
-  const isDashboardPath = DASHBOARD_PATHS.some((p) => pathname.startsWith(p));
-  const isPublicOnlyPath = PUBLIC_ONLY_PATHS.some((p) =>
-    pathname.startsWith(p),
-  );
-
-  const needsDashboard =
-    !isPublicOnlyPath && (isDashboardHost || isDashboardPath);
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${publicSans.variable} ${allison.variable} antialiased`}
         suppressHydrationWarning
       >
-        <Providers isDashboard={needsDashboard}>
+        <Providers>
           <ConditionalLayout
             isDashboardHost={isDashboardHost}
             isPublicationSubdomain={isPublicationSubdomain}

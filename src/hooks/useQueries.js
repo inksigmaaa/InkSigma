@@ -6,33 +6,37 @@ import { getApiBase } from '@/utils/apiBase';
 const API_URL = getApiBase();
 
 const fetchApi = async (url, options = {}) => {
+  const { signal, ...rest } = options;
   const response = await fetch(`${API_URL}${url}`, {
-    ...options,
+    ...rest,
+    credentials: rest.credentials || 'include',
+    cache: rest.cache || 'no-store',
+    signal,
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...rest.headers,
     },
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }));
     throw new Error(error.error || 'Request failed');
   }
-  
+
   return response.json();
 };
 
 export const useQueryHook = (key, url, options = {}) => {
   return useQuery({
     queryKey: key,
-    queryFn: () => fetchApi(url),
+    queryFn: ({ signal }) => fetchApi(url, { signal }),
     ...options,
   });
 };
 
 export const useMutationHook = (url, method = 'POST', options = {}) => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (data) => fetchApi(url, {
       method,
@@ -50,7 +54,7 @@ export const useMutationHook = (url, method = 'POST', options = {}) => {
 export const usePublications = (userId, options = {}) => {
   return useQuery({
     queryKey: ['publications', userId],
-    queryFn: () => fetchApi(`/api/publications/user/${userId}`),
+    queryFn: ({ signal }) => fetchApi(`/api/publications/user/${userId}`, { signal }),
     enabled: !!userId,
     ...options,
   });
@@ -59,7 +63,7 @@ export const usePublications = (userId, options = {}) => {
 export const usePublication = (publicationId, options = {}) => {
   return useQuery({
     queryKey: ['publication', publicationId],
-    queryFn: () => fetchApi(`/api/publications/${publicationId}`),
+    queryFn: ({ signal }) => fetchApi(`/api/publications/${publicationId}`, { signal }),
     enabled: !!publicationId,
     ...options,
   });
@@ -68,9 +72,9 @@ export const usePublication = (publicationId, options = {}) => {
 export const useBlogs = (params = {}, options = {}) => {
   return useQuery({
     queryKey: ['blogs', params],
-    queryFn: () => {
+    queryFn: ({ signal }) => {
       const queryString = new URLSearchParams(params).toString();
-      return fetchApi(`/api/blogs?${queryString}`);
+      return fetchApi(`/api/blogs?${queryString}`, { signal });
     },
     ...options,
   });
@@ -79,7 +83,7 @@ export const useBlogs = (params = {}, options = {}) => {
 export const useBlog = (blogId, options = {}) => {
   return useQuery({
     queryKey: ['blog', blogId],
-    queryFn: () => fetchApi(`/api/blogs/${blogId}`),
+    queryFn: ({ signal }) => fetchApi(`/api/blogs/${blogId}`, { signal }),
     enabled: !!blogId,
     ...options,
   });
@@ -88,9 +92,9 @@ export const useBlog = (blogId, options = {}) => {
 export const useBlogStats = (blogIds, options = {}) => {
   return useQuery({
     queryKey: ['blogStats', blogIds],
-    queryFn: () => {
+    queryFn: ({ signal }) => {
       const ids = Array.isArray(blogIds) ? blogIds.join(',') : blogIds;
-      return fetchApi(`/api/views/stats?blogIds=${ids}`);
+      return fetchApi(`/api/views/stats?blogIds=${ids}`, { signal });
     },
     enabled: !!blogIds && blogIds.length > 0,
     ...options,
@@ -100,7 +104,7 @@ export const useBlogStats = (blogIds, options = {}) => {
 export const useComments = (blogId, options = {}) => {
   return useQuery({
     queryKey: ['comments', blogId],
-    queryFn: () => fetchApi(`/api/comments/blog/${blogId}`),
+    queryFn: ({ signal }) => fetchApi(`/api/comments/blog/${blogId}`, { signal }),
     enabled: !!blogId,
     ...options,
   });
@@ -109,9 +113,9 @@ export const useComments = (blogId, options = {}) => {
 export const useCommentCounts = (blogIds, options = {}) => {
   return useQuery({
     queryKey: ['commentCounts', blogIds],
-    queryFn: () => {
+    queryFn: ({ signal }) => {
       const ids = Array.isArray(blogIds) ? blogIds.join(',') : blogIds;
-      return fetchApi(`/api/comments/counts?blogIds=${ids}`);
+      return fetchApi(`/api/comments/counts?blogIds=${ids}`, { signal });
     },
     enabled: !!blogIds && blogIds.length > 0,
     ...options,
@@ -121,7 +125,7 @@ export const useCommentCounts = (blogIds, options = {}) => {
 export const useNotifications = (userId, options = {}) => {
   return useQuery({
     queryKey: ['notifications', userId],
-    queryFn: () => fetchApi(`/api/notifications/${userId}`),
+    queryFn: ({ signal }) => fetchApi(`/api/notifications/${userId}`, { signal }),
     enabled: !!userId,
     ...options,
   });
@@ -130,7 +134,7 @@ export const useNotifications = (userId, options = {}) => {
 export const useMembers = (publicationId, options = {}) => {
   return useQuery({
     queryKey: ['members', publicationId],
-    queryFn: () => fetchApi(`/api/members/${publicationId}/members`),
+    queryFn: ({ signal }) => fetchApi(`/api/members/${publicationId}/members`, { signal }),
     enabled: !!publicationId,
     ...options,
   });
@@ -139,7 +143,7 @@ export const useMembers = (publicationId, options = {}) => {
 export const useProfile = (options = {}) => {
   return useQuery({
     queryKey: ['profile'],
-    queryFn: () => fetchApi('/api/profile'),
+    queryFn: ({ signal }) => fetchApi('/api/profile', { signal }),
     ...options,
   });
 };

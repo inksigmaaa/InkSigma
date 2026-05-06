@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useMemo, memo } from "react";
 import { usePublication } from "@/contexts/PublicationContext";
-import { getImageUrl } from "@/utils/imageUrl";
+import { getPublicationLogoUrl } from "@/utils/imageUrl";
 import { hasPermission } from "@/utils/permissions";
 import { getPublicationUrl } from "@/utils/publicationDomain";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -310,15 +310,19 @@ function Sidebar() {
           {/* PROFILE */}
           <div className="hidden items-center gap-2 pb-[10px] md:flex">
             <Avatar className="w-[34px] h-[34px] border-2 border-violet-500 flex-shrink-0 bg-gray-100">
-              {loading ? (
+              {loading && !currentPublication ? (
                 <AvatarFallback className="w-full h-full bg-gray-100 flex items-center justify-center">
                   <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
                 </AvatarFallback>
               ) : (
                 <>
                   <AvatarImage
-                    src={getImageUrl(currentPublication?.logoUrl) || "/icons/nib.svg"}
+                    src={getPublicationLogoUrl(currentPublication?.logoUrl)}
                     alt={currentPublication?.name || "Publication"}
+                    width={34}
+                    height={34}
+                    loading="eager"
+                    fetchPriority="high"
                     className="w-full h-full object-cover"
                   />
                   <AvatarFallback className="w-full h-full bg-gray-100 text-violet-600 font-bold text-sm">

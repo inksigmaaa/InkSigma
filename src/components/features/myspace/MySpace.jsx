@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
 import { ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getImageUrl } from "@/utils/imageUrl";
+import { getPublicationLogoUrl } from "@/utils/imageUrl";
 
 export default function MySpace() {
   const router = useRouter();
@@ -42,9 +42,6 @@ export default function MySpace() {
     }
   };
 
-  const getPublicationLogoSrc = (logoUrl) =>
-    getImageUrl(logoUrl) || "/icons/nib.svg";
-
   return (
     <main className="flex-1 bg-white px-4 sm:px-8 py-6 sm:py-10 mt-[120px] md:mt-[120px] pb-24 md:pb-0 md:ml-[165px]">
       <div className="max-w-[600px] mx-auto space-y-6 sm:space-y-8">
@@ -75,7 +72,7 @@ export default function MySpace() {
                     <div className="flex gap-4 items-center flex-1 w-full">
                       <Avatar className="w-14 h-14 bg-gray-100 flex items-center justify-center flex-shrink-0">
                         <AvatarImage
-                          src={getPublicationLogoSrc(publication.logoUrl)}
+                          src={getPublicationLogoUrl(publication.logoUrl)}
                           alt={`${publication.name} logo`}
                           className="w-full h-full object-cover"
                         />
@@ -124,7 +121,7 @@ export default function MySpace() {
                     <div className="flex gap-4 items-center flex-1 w-full">
                       <Avatar className="w-14 h-14 bg-gray-100 flex items-center justify-center flex-shrink-0">
                         <AvatarImage
-                          src={getPublicationLogoSrc(publication.logoUrl)}
+                          src={getPublicationLogoUrl(publication.logoUrl)}
                           alt={`${publication.name} logo`}
                           className="w-full h-full object-cover"
                         />
@@ -200,7 +197,7 @@ export default function MySpace() {
             <div className="flex items-center gap-3">
               <Avatar className="w-8 h-8 bg-violet-100 flex items-center justify-center">
                 <AvatarImage
-                  src={getPublicationLogoSrc(currentPublication.logoUrl)}
+                  src={getPublicationLogoUrl(currentPublication.logoUrl)}
                   alt={currentPublication.name}
                   className="w-full h-full object-cover"
                 />
