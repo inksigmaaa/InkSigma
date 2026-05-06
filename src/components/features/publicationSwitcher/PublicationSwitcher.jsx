@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getImageUrl } from "@/utils/imageUrl";
+import { getPublicationLogoUrl } from "@/utils/imageUrl";
 
 export default function PublicationSwitcher() {
   const router = useRouter();
@@ -12,8 +12,6 @@ export default function PublicationSwitcher() {
     usePublication();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const getPublicationLogoSrc = (logoUrl) =>
-    getImageUrl(logoUrl) || "/icons/nib.svg";
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -133,7 +131,7 @@ export default function PublicationSwitcher() {
       >
         <Avatar className="w-6 h-6 bg-violet-100">
           <AvatarImage
-            src={getPublicationLogoSrc(currentPublication.logoUrl)}
+            src={getPublicationLogoUrl(currentPublication.logoUrl)}
             alt={currentPublication.name}
             className="w-full h-full object-cover"
           />
@@ -179,7 +177,7 @@ export default function PublicationSwitcher() {
                 >
                   <Avatar className="w-8 h-8 bg-gray-100 flex-shrink-0">
                     <AvatarImage
-                      src={getPublicationLogoSrc(pub.logoUrl)}
+                      src={getPublicationLogoUrl(pub.logoUrl)}
                       alt={pub.name}
                       className="w-full h-full object-cover"
                     />

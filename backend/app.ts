@@ -14,8 +14,6 @@ import profileRoutes from "./routes/profileRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import publicationRoutes from "./routes/publicationRoutes.js";
-import publicationMemberRoutes from "./routes/publicationMemberRoutes.js";
-import publicationStatsRoutes from "./routes/publicationStatsRoutes.js";
 import memberRoutes from "./routes/memberRoutes.js";
 import resendVerificationRoutes from "./routes/resendVerificationRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
@@ -101,6 +99,7 @@ export const createApp = () => {
 
   // Production assumes exactly one trusted reverse proxy in front of Express.
   app.set("trust proxy", 1);
+  app.disable("etag");
   app.disable("x-powered-by");
 
   app.use(
@@ -141,11 +140,21 @@ export const createApp = () => {
   registerHealthRoutes(app);
   app.use(subdomainMiddleware);
   app.use(rateLimitMiddleware);
+  app.use("/api", (_req, res, next) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    next();
+  });
+
+  // Blog routes may carry large article bodies — mount a 5MB JSON parser
+  // scoped to /api/blogs. The global 1MB parser below is a no-op once a body
+  // is already parsed (express.json short-circuits on req._body), so /api/blogs
+  // gets the larger limit while every other route is constrained to 1MB.
+  app.use("/api/blogs", express.json({ limit: "5mb" }));
+
   app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ extended: true, limit: "1mb" }));
-
-  // Blog routes may carry large article bodies — allow up to 5MB for those.
-  app.use("/api/blogs", express.json({ limit: "5mb" }));
 
   // LEGACY: Serves locally-uploaded images that predate the Cloudinary migration.
   // Safe to remove once all DB rows have been migrated to Cloudinary URLs.
@@ -175,8 +184,6 @@ export const createApp = () => {
   app.use("/api/blogs", blogRoutes);
   app.use("/api/upload-image", uploadRoutes);
   app.use("/api/publications", publicationRoutes);
-  app.use("/api/publication-members", publicationMemberRoutes);
-  app.use("/api/publication-stats", publicationStatsRoutes);
   app.use("/api/members", memberRoutes);
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/comments", commentRoutes);

@@ -49,6 +49,7 @@ export default function EditorPageClient() {
     getCachedArticleById,
     loadUserArticles,
     createDraftFromPublished,
+    primeArticleFromBlog,
     refreshArticle,
   } = useArticles();
   const { currentPublication } = usePublication();
@@ -287,13 +288,7 @@ export default function EditorPageClient() {
     markNavigating();
     setShowPublishSuccess(false);
 
-    const targetPath = currentPublication?.subdomain
-      ? `/${currentPublication.subdomain}/published`
-      : "/published";
-
-    const baseUrl = window.location.origin;
-    const targetUrl = `${baseUrl}${targetPath}`;
-    window.location.replace(targetUrl);
+    router.replace(withPub("/published"));
   };
 
   // Handle View in Site - open blog in new tab ONLY
@@ -319,17 +314,7 @@ export default function EditorPageClient() {
 
     setShowPublishSuccess(false);
 
-    // Get the publication prefix (e.g., "/tennyson")
-    const pubPrefix = currentPublication?.subdomain
-      ? `/${currentPublication.subdomain}`
-      : "";
-
-    // Construct the home URL
-    const baseUrl = window.location.origin;
-    const homeUrl = `${baseUrl}${pubPrefix}/home`;
-
-    // Navigate to home
-    window.location.href = homeUrl;
+    router.replace(withPub("/home"));
   };
 
   // ── Auto-save via custom hook ───────────────────────────────────────────
@@ -802,6 +787,7 @@ export default function EditorPageClient() {
       }
 
       let thumbnailUploadFailed = false;
+      let persistedThumbnailUrl = null;
       const persistedBlogId = responseData?.id ?? effectiveId;
       let nextThumbnailSignal = thumbnailDirtySignal;
 
@@ -816,6 +802,7 @@ export default function EditorPageClient() {
               showErrorToast: !isAutoSave,
             },
           );
+          persistedThumbnailUrl = uploadedImageUrl || null;
           nextThumbnailSignal = uploadedImageUrl
             ? `url:${uploadedImageUrl}`
             : "none";
@@ -854,8 +841,15 @@ export default function EditorPageClient() {
         }
       }
 
+      if (responseData?.id && !isAutoSave) {
+        primeArticleFromBlog({
+          ...responseData,
+          ...(persistedThumbnailUrl ? { image: persistedThumbnailUrl } : {}),
+        });
+      }
+
       // Auto-save should stay best-effort and quiet. The list pages already refresh
-      // themselves, so avoid a second read that can surface transient 404s.
+      // themselves, so avoid a blocking read that can surface transient 404s.
       if (responseData?.id && !isAutoSave) {
         refreshArticle(responseData.id).catch((err) =>
           console.error("Failed to refresh article context:", err),
@@ -993,6 +987,12 @@ export default function EditorPageClient() {
       console.error("Publish failed:", error);
     }
   };
+
+  useEffect(() => {
+    if (!showPublishSuccess) return;
+    router.prefetch(withPub("/published"));
+    router.prefetch(withPub("/home"));
+  }, [router, showPublishSuccess, withPub]);
 
   // Handle Send for Review (for editors/authors in joined publications)
   const handleSendForReview = async () => {

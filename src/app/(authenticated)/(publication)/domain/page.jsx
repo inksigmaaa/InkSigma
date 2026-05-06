@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Copy } from "lucide-react";
 import { getApiBase } from "@/utils/apiBase";
+import { publicationService } from "@/services/publicationService";
 import {
   getSubdomainDomainLabel,
   getPublicationUrl,
@@ -266,25 +267,14 @@ export default function DomainPage() {
   const loadPublicationData = useCallback(async () => {
     try {
       setError("");
-      const apiBase = getApiBase();
-
       const targetPublicationId = currentPublication?.id;
       if (!targetPublicationId) {
         setLoading(false);
         return;
       }
 
-      const pubRes = await fetch(
-        `${apiBase}/api/publications/${targetPublicationId}`,
-        {
-          credentials: "include",
-        },
-      );
-
-      if (pubRes.ok) {
-        const pubData = await pubRes.json();
-        applyPublicationDomainState(pubData);
-      }
+      const pubData = await publicationService.getPublication(targetPublicationId);
+      applyPublicationDomainState(pubData);
     } catch (err) {
       console.error("Error loading publication:", err);
       setError("Failed to load domain settings.");

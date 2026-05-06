@@ -10,7 +10,7 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { useSession } from "@/lib/auth-client";
 import CategoryBadgeList from "@/components/CategoryBadgeList";
-import { getImageUrl } from "@/utils/imageUrl";
+import { getPublicationLogoUrl } from "@/utils/imageUrl";
 import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getPublicationUrl } from "@/utils/publicationDomain";
@@ -31,16 +31,25 @@ export default function HomePage() {
   } = useArticles();
   const [commentCounts, setCommentCounts] = useState({});
   const [viewStats, setViewStats] = useState({});
-  const publicationLogoSrc =
-    getImageUrl(currentPublication?.logoUrl) || "/icons/nib.svg";
+  const publicationLogoSrc = getPublicationLogoUrl(
+    currentPublication?.logoUrl,
+  );
 
   // Check if this is a refresh from editor
-  const shouldRefresh = searchParams.get("refresh") === "true";
+  const refreshParam = searchParams.get("refresh");
+  const shouldRefresh = refreshParam === "true";
 
   // Refresh articles when home page loads (especially after exiting editor)
   useEffect(() => {
     if (currentPublication?.id) {
-      loadPublicationArticles(currentPublication.id, "published");
+      loadPublicationArticles(
+        currentPublication.id,
+        "published",
+        {},
+        {
+          force: shouldRefresh,
+        },
+      );
     }
 
     // Remove refresh param from URL after handling

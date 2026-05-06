@@ -6,6 +6,7 @@ const CLOUDINARY_HOST_PATTERN = /^res\.cloudinary\.com\//i;
 const DATA_IMAGE_PATTERN = /^data:image\//i;
 const LEGACY_UPLOAD_PATH_PATTERN = /^\/?uploads\//i;
 const INVALID_IMAGE_VALUES = new Set(["", "null", "undefined"]);
+const DEFAULT_PUBLICATION_LOGO = "/icons/nib.svg";
 
 const stripWrappingQuotes = (value) => value.replace(/^['"]+|['"]+$/g, "");
 const getBackendOrigin = () =>
@@ -66,5 +67,19 @@ export const getCloudinaryThumbnail = (
   return normalizedUrl.replace(
     "/upload/",
     `/upload/w_${width},h_${height},c_${crop},f_auto,q_auto/`,
+  );
+};
+
+export const getPublicationLogoUrl = (logoUrl, { size = 68 } = {}) => {
+  const normalizedUrl = getImageUrl(logoUrl);
+  if (!normalizedUrl) return DEFAULT_PUBLICATION_LOGO;
+
+  if (!normalizedUrl.includes("res.cloudinary.com")) {
+    return normalizedUrl;
+  }
+
+  return normalizedUrl.replace(
+    "/upload/",
+    `/upload/w_${size},h_${size},c_fill,f_auto,q_auto/`,
   );
 };

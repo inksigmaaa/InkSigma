@@ -66,37 +66,6 @@ function AuthCallbackContent() {
     const checkPublicationAndRedirect = async () => {
       try {
         const apiBase = getApiBase()
-        const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
-        const fetchWithRetry = async (url, options = {}, maxAttempts = 3) => {
-          for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-            if (controller.signal.aborted) {
-              return null
-            }
-
-            try {
-              const response = await fetch(url, options)
-              if (response.ok) return response
-              if (response.status !== 401 || attempt === maxAttempts) {
-                return response
-              }
-            } catch (error) {
-              if (error?.name === "AbortError") {
-                throw error
-              }
-
-              if (attempt === maxAttempts) throw error
-            }
-
-            if (controller.signal.aborted) {
-              return null
-            }
-
-            await delay(250 * attempt)
-          }
-          return null
-        }
-
         const activeSession = await waitForServerSession({
           attempts: 5,
           delayMs: 250,
@@ -158,25 +127,11 @@ function AuthCallbackContent() {
           return
         }
 
-        const pubsRes = await fetchWithRetry(`${apiBase}/api/members/user/publications`, {
-          credentials: "include",
-          signal: controller.signal,
-        })
-
-        if (!pubsRes?.ok) {
-          router.replace("/")
-          return
-        }
-
-        const data = await pubsRes.json().catch(() => null)
-        const publications = Array.isArray(data) ? data : (data?.publications || [])
-        const hasAny = Array.isArray(publications) && publications.length > 0
-
         const dashboardHome =
           process.env.NEXT_PUBLIC_SAME_ORIGIN_DASHBOARD === "true"
             ? "/dashboard"
             : "/";
-        router.replace(hasAny ? dashboardHome : '/create-publication')
+        router.replace(dashboardHome)
       } catch (err) {
         if (err?.name === "AbortError") {
           return

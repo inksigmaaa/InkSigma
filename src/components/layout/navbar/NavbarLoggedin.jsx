@@ -10,6 +10,10 @@ import { Button } from "@/components/ui/button";
 import { formatTimeAgo } from "@/utils/timeFormatter";
 import { getApiBase } from "@/utils/apiBase";
 import { getPostLogoutPath } from "@/utils/auth";
+import {
+    buildGetJsonDedupeKey,
+    dedupeJsonRequest,
+} from "@/utils/jsonRequestDedupe";
 import { useExclusivePopup } from "@/hooks/useExclusivePopup";
 import { CalendarDays } from "lucide-react";
 import { toast } from "sonner";
@@ -48,6 +52,7 @@ export default function NavbarLoggedin() {
     const wrapperRef = useRef(null);
     const notificationRef = useRef(null);
     const notificationIntervalRef = useRef(null);
+    const hasLoadedNotificationsRef = useRef(false);
     const router = useRouter();
     const API_URL = getApiBase();
     const {
@@ -97,19 +102,28 @@ export default function NavbarLoggedin() {
     const fetchNotifications = useCallback(async () => {
         if (!user?.id) return;
 
-        const isInitialLoad = notifications.length === 0;
+        const isInitialLoad = !hasLoadedNotificationsRef.current;
         if (isInitialLoad) {
             setLoading(true);
         }
 
         try {
-            const response = await fetch(`${API_URL}/api/notifications/${user.id}`, {
+            const requestUrl = `${API_URL}/api/notifications/${user.id}?limit=20`;
+            const requestOptions = {
                 credentials: "include",
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
+                cache: "no-store",
+            };
+            const data = await dedupeJsonRequest(
+                buildGetJsonDedupeKey(requestUrl, requestOptions),
+                async () => {
+                    const response = await fetch(requestUrl, requestOptions);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                },
+            );
+            hasLoadedNotificationsRef.current = true;
             setNotifications(data.notifications || []);
         } catch (error) {
             console.error("Error fetching notifications:", error.message);
@@ -118,7 +132,7 @@ export default function NavbarLoggedin() {
                 setLoading(false);
             }
         }
-    }, [user?.id, notifications.length, API_URL]);
+    }, [user?.id, API_URL]);
 
     // Fetch notifications when user is available
     useEffect(() => {
@@ -201,6 +215,8 @@ export default function NavbarLoggedin() {
         try {
             await fetch(`${API_URL}/api/notifications/${notificationId}/read`, {
                 method: "PATCH",
+                credentials: "include",
+                cache: "no-store",
             });
             // Update local state
             setNotifications(prev =>

@@ -19,6 +19,7 @@ export const blogService = {
     try {
       const response = await fetch(`${API_URL}/api/blogs?${params}`, {
         credentials: "include",
+        cache: "no-store",
         ...options,
       });
 
@@ -53,6 +54,7 @@ export const blogService = {
     const response = await fetch(`${API_URL}/api/blogs`, {
       method: "GET",
       credentials: "include",
+      cache: "no-store",
       ...options,
     });
 
@@ -105,6 +107,7 @@ export const blogService = {
     try {
       const response = await fetch(url, {
         credentials: "include",
+        cache: "no-store",
         ...options,
       });
 

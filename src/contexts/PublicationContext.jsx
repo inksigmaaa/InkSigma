@@ -16,6 +16,7 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 
 const PublicationContext = createContext();
 const DASHBOARD_PUB_COOKIE = "inksigma_dashboard_pub";
+const PUBLICATIONS_CACHE_PREFIX = "inksigma:user-publications:";
 
 const DASHBOARD_HOST_PREFIX = "dashboard.";
 const PUBLIC_PATH_PREFIXES = [
@@ -98,6 +99,87 @@ const normalizePublicationRecord = (publicationRecord, currentUserId) => {
   };
 };
 
+const getPublicationsCacheKey = (userId) =>
+  userId ? `${PUBLICATIONS_CACHE_PREFIX}${userId}` : null;
+
+const readCachedPublications = (userId) => {
+  if (typeof window === "undefined") return [];
+
+  const cacheKey = getPublicationsCacheKey(userId);
+  if (!cacheKey) return [];
+
+  try {
+    const cachedValue = sessionStorage.getItem(cacheKey);
+    if (!cachedValue) return [];
+
+    const parsed = JSON.parse(cachedValue);
+    return Array.isArray(parsed?.publications) ? parsed.publications : [];
+  } catch {
+    sessionStorage.removeItem(cacheKey);
+    return [];
+  }
+};
+
+const writeCachedPublications = (userId, publications) => {
+  if (typeof window === "undefined") return;
+
+  const cacheKey = getPublicationsCacheKey(userId);
+  if (!cacheKey) return;
+
+  try {
+    sessionStorage.setItem(
+      cacheKey,
+      JSON.stringify({
+        publications,
+        cachedAt: Date.now(),
+      }),
+    );
+  } catch {
+    // Ignore storage failures; cache is only a latency optimization.
+  }
+};
+
+const getCachedPublicationIdFromLocation = (publicationsForLookup, pathname) => {
+  if (typeof window === "undefined") return null;
+
+  const params = new URLSearchParams(window.location.search);
+  const pub = params.get("pub");
+  if (pub) {
+    const parsed = Number.parseInt(pub, 10);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+
+  const publicationId = params.get("publicationId");
+  if (publicationId) {
+    const parsed = Number.parseInt(publicationId, 10);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+
+  const subdomain = params.get("subdomain");
+  if (subdomain) {
+    const match = publicationsForLookup.find(
+      (publicationRecord) => publicationRecord?.subdomain === subdomain,
+    );
+    if (match) return match.id;
+  }
+
+  if (
+    isDashboardHost() &&
+    pathname &&
+    !isPublicPath(pathname) &&
+    !isOldDashboardEndpointPath(pathname)
+  ) {
+    const segments = pathname.split("/").filter(Boolean);
+    const pubSubdomain = segments[0];
+    const match = publicationsForLookup.find(
+      (publicationRecord) => publicationRecord?.subdomain === pubSubdomain,
+    );
+    if (match) return match.id;
+  }
+
+  return null;
+};
+
 function PublicationProviderInner({ children }) {
   const { data: session, isPending } = useSession();
   const pathname = usePathname();
@@ -110,6 +192,8 @@ function PublicationProviderInner({ children }) {
   const [error, setError] = useState(null);
   const currentPubRef = useRef(null);
   const userPublicationsRef = useRef([]);
+  const publicationDetailsCacheRef = useRef(new Map());
+  const publicationDetailsRequestsRef = useRef(new Map());
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -278,6 +362,7 @@ function PublicationProviderInner({ children }) {
         ).map((publicationRecord) =>
           normalizePublicationRecord(publicationRecord, session?.user?.id),
         );
+        writeCachedPublications(session?.user?.id, publications);
 
         // Check if user was removed from current publication (for joined publications only)
         const currentPub = currentPubRef.current;
@@ -335,15 +420,12 @@ function PublicationProviderInner({ children }) {
             if (pubToSet) {
               setCurrentPublication(pubToSet);
 
-              // Try to load full details, but don't fail if it doesn't work
-              try {
-                await loadPublicationDetails(pubToSet.id);
-              } catch (detailsError) {
+              loadPublicationDetails(pubToSet.id).catch((detailsError) => {
                 console.warn(
                   "Failed to load publication details, continuing without them:",
                   detailsError,
                 );
-              }
+              });
             }
           } else {
             // If current publication exists, make sure it's still valid
@@ -367,14 +449,12 @@ function PublicationProviderInner({ children }) {
 
               if (pubToSet) {
                 setCurrentPublication(pubToSet);
-                try {
-                  await loadPublicationDetails(pubToSet.id);
-                } catch (detailsError) {
+                loadPublicationDetails(pubToSet.id).catch((detailsError) => {
                   console.warn(
                     "Failed to load publication details, continuing without them:",
                     detailsError,
                   );
-                }
+                });
               }
             } else {
               setCurrentPublication((prev) =>
@@ -422,7 +502,7 @@ function PublicationProviderInner({ children }) {
   }, [currentPublication?.subdomain]);
 
   // Load full publication details (with stats)
-  const loadPublicationDetails = async (publicationId) => {
+  const loadPublicationDetails = async (publicationId, options = {}) => {
     if (!publicationId) {
       return null;
     }
@@ -432,21 +512,44 @@ function PublicationProviderInner({ children }) {
       return null;
     }
 
-    try {
-      const details =
-        await publicationService.getPublicationDetails(publicationId);
-      setPublicationDetails(details);
+    const key = String(publicationId);
+    const cachedDetails = publicationDetailsCacheRef.current.get(key);
+    if (!options.force && cachedDetails) {
+      setPublicationDetails(cachedDetails);
       setCurrentPublication((prev) =>
-        prev?.id === publicationId ? { ...prev, ...details } : prev,
+        prev?.id === publicationId ? { ...prev, ...cachedDetails } : prev,
       );
-      return details;
-    } catch (error) {
-      console.error("Error loading publication details:", error);
-      // Don't throw the error, just log it and continue without details
-      // This allows the app to work even if publication details fail
-      setPublicationDetails(null);
-      return null;
+      return cachedDetails;
     }
+
+    const inFlightRequest = publicationDetailsRequestsRef.current.get(key);
+    if (inFlightRequest) {
+      return inFlightRequest;
+    }
+
+    const request = publicationService
+      .getPublicationDetails(publicationId)
+      .then((details) => {
+        publicationDetailsCacheRef.current.set(key, details);
+        setPublicationDetails(details);
+        setCurrentPublication((prev) =>
+          prev?.id === publicationId ? { ...prev, ...details } : prev,
+        );
+        return details;
+      })
+      .catch((error) => {
+        console.error("Error loading publication details:", error);
+        // Don't throw the error, just log it and continue without details
+        // This allows the app to work even if publication details fail
+        setPublicationDetails(null);
+        return null;
+      })
+      .finally(() => {
+        publicationDetailsRequestsRef.current.delete(key);
+      });
+
+    publicationDetailsRequestsRef.current.set(key, request);
+    return request;
   };
 
   // Switch to a different publication
@@ -556,6 +659,43 @@ function PublicationProviderInner({ children }) {
   const getJoinedPublications = () => {
     return userPublications.filter((pub) => !pub.isOwner);
   };
+
+  useEffect(() => {
+    if (!session?.user?.id || isPending) return;
+    if (userPublicationsRef.current.length > 0 || currentPubRef.current) return;
+
+    const cachedPublications = readCachedPublications(session.user.id).map(
+      (publicationRecord) =>
+        normalizePublicationRecord(publicationRecord, session.user.id),
+    );
+    if (cachedPublications.length === 0) return;
+
+    setUserPublications(cachedPublications);
+
+    const urlPubId = getCachedPublicationIdFromLocation(
+      cachedPublications,
+      pathname,
+    );
+    const cachedCurrentPublication =
+      (urlPubId &&
+        cachedPublications.find(
+          (publicationRecord) => publicationRecord.id === urlPubId,
+        )) ||
+      cachedPublications.find((publicationRecord) => publicationRecord.isOwner) ||
+      cachedPublications[0];
+
+    if (cachedCurrentPublication) {
+      setCurrentPublication(cachedCurrentPublication);
+      loadPublicationDetails(cachedCurrentPublication.id).catch((detailsError) => {
+        console.warn(
+          "Failed to load cached publication details, continuing without them:",
+          detailsError,
+        );
+      });
+    }
+
+    setLoading(false);
+  }, [session?.user?.id, isPending, pathname]);
 
   useEffect(() => {
     if (session?.user?.id && !isPending) {
