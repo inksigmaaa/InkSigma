@@ -51,8 +51,17 @@ export function isUnsyncedDraft(draft) {
   );
 }
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isTempDraftId(id) {
+  if (!id) return false;
+  const value = String(id);
+  return value.startsWith("temp_") || UUID_RE.test(value);
+}
+
 export async function getRecoverableDraft({ blogId, tempDraftId }) {
-  const draftId = blogId || tempDraftId;
+  const draftId = blogId || (isTempDraftId(tempDraftId) ? tempDraftId : null);
   if (!draftId) return null;
 
   const draft = await getDraft(String(draftId));

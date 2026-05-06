@@ -470,6 +470,30 @@ export const useArticleStore = create((set, get) => ({
     }));
   },
 
+  primeArticleFromBlog: (blog) => {
+    if (!blog?.id) return null;
+    const article = convertBlogToArticle(
+      blog,
+      typeof blog.content !== "undefined",
+    );
+
+    set((s) => ({
+      articles: upsertInList(s.articles, article.id, article),
+      publicationArticles: upsertInList(
+        s.publicationArticles,
+        article.id,
+        article,
+      ),
+      reviewArticles:
+        article.status === "review"
+          ? upsertInList(s.reviewArticles, article.id, article)
+          : removeFromList(s.reviewArticles, article.id),
+      editorArticleCache: upsertArticleCache(s.editorArticleCache, [article]),
+    }));
+
+    return article;
+  },
+
   getCachedArticleById: (id) => {
     if (id == null) return null;
     const state = get();
