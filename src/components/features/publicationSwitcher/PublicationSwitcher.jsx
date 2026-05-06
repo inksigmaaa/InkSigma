@@ -8,7 +8,7 @@ import { getPublicationLogoUrl } from "@/utils/imageUrl";
 
 export default function PublicationSwitcher() {
   const router = useRouter();
-  const { userPublications, currentPublication, switchPublication, loading } =
+  const { userPublications, currentPublication, switchPublication } =
     usePublication();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -69,6 +69,8 @@ export default function PublicationSwitcher() {
       "/my-blogs",
       "/profile-settings",
       "/domain",
+      "/settings",
+      "/comments",
       "/dashboard",
     ];
 
@@ -114,7 +116,7 @@ export default function PublicationSwitcher() {
     router.push("/");
   };
 
-  if (loading || !currentPublication) {
+  if (!currentPublication) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
         <div className="w-6 h-6 bg-gray-300 rounded-full animate-pulse"></div>

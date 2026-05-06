@@ -10,11 +10,8 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { toast } from "sonner";
 
-import { useSession } from "@/lib/auth-client";
-
 export default function TrashPage() {
   const { currentPublication } = usePublication();
-  const { data: session } = useSession();
   const {
     articles,
     loading,
@@ -31,7 +28,8 @@ export default function TrashPage() {
 
   // Load articles filtered by current publication when page mounts or publication changes
   useEffect(() => {
-    loadUserArticles(currentPublication?.id);
+    if (!currentPublication?.id) return;
+    loadUserArticles(currentPublication.id, false, "trash");
   }, [loadUserArticles, currentPublication?.id]);
 
   // Filter trash articles
@@ -40,11 +38,13 @@ export default function TrashPage() {
 
     // If we are in a publication context, only show articles for that publication
     if (currentPublication?.id) {
-      return isTrash && article.publicationId === currentPublication.id;
+      return (
+        isTrash &&
+        String(article.publicationId) === String(currentPublication.id)
+      );
     }
 
-    // If not in a publication context (e.g. dashboard), show all trash
-    return isTrash;
+    return false;
   });
 
   const handleSelectAll = (checked) => {

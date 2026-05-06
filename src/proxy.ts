@@ -34,6 +34,8 @@ const DASHBOARD_ENDPOINT_PREFIXES = [
   "/my-blogs",
   "/profile-settings",
   "/domain",
+  "/settings",
+  "/comments",
   // Legacy dashboard paths (we normalize these below)
   "/dashboard",
 ];

@@ -61,7 +61,12 @@ export default function HomePage() {
 
   // Get recent published articles (limit to 4)
   const recentArticles = publicationArticles
-    .filter((article) => article.status === "published")
+    .filter(
+      (article) =>
+        currentPublication?.id &&
+        String(article.publicationId) === String(currentPublication.id) &&
+        article.status === "published",
+    )
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 4)
     .map((article) => {

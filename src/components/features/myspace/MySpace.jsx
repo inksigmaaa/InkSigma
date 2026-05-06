@@ -9,6 +9,7 @@ import { getPublicationLogoUrl } from "@/utils/imageUrl";
 export default function MySpace() {
   const router = useRouter();
   const {
+    userPublications,
     currentPublication,
     loading,
     getOwnedPublications,
@@ -16,7 +17,7 @@ export default function MySpace() {
     switchPublication,
   } = usePublication();
 
-  if (loading) {
+  if (loading && userPublications.length === 0) {
     return (
       <main className="flex-1 bg-white px-4 sm:px-8 py-6 sm:py-10 mt-[120px] md:mt-[120px] pb-24 md:pb-0 md:ml-[165px]">
         <div className="max-w-[600px] mx-auto">

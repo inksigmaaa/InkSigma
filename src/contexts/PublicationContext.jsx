@@ -46,6 +46,8 @@ const DASHBOARD_ENDPOINT_PREFIXES = [
   "/my-blogs",
   "/profile-settings",
   "/domain",
+  "/settings",
+  "/comments",
   "/dashboard",
 ];
 
@@ -139,6 +141,16 @@ const writeCachedPublications = (userId, publications) => {
   }
 };
 
+const readDashboardPublicationCookie = () => {
+  if (typeof document === "undefined") return null;
+
+  const cookie = document.cookie
+    .split("; ")
+    .find((part) => part.startsWith(`${DASHBOARD_PUB_COOKIE}=`));
+
+  return cookie ? decodeURIComponent(cookie.split("=")[1] || "") : null;
+};
+
 const getCachedPublicationIdFromLocation = (publicationsForLookup, pathname) => {
   if (typeof window === "undefined") return null;
 
@@ -159,6 +171,14 @@ const getCachedPublicationIdFromLocation = (publicationsForLookup, pathname) => 
   if (subdomain) {
     const match = publicationsForLookup.find(
       (publicationRecord) => publicationRecord?.subdomain === subdomain,
+    );
+    if (match) return match.id;
+  }
+
+  const cookieSubdomain = readDashboardPublicationCookie();
+  if (cookieSubdomain && isDashboardHost()) {
+    const match = publicationsForLookup.find(
+      (publicationRecord) => publicationRecord?.subdomain === cookieSubdomain,
     );
     if (match) return match.id;
   }
@@ -223,13 +243,21 @@ function PublicationProviderInner({ children }) {
     })();
 
     return (
-      effectivePathname?.startsWith("/allArticle/") ||
+      effectivePathname?.startsWith("/home") ||
+      effectivePathname?.startsWith("/allArticle") ||
       effectivePathname?.startsWith("/review") ||
       effectivePathname?.startsWith("/author-review") ||
       effectivePathname?.startsWith("/editor") ||
+      effectivePathname?.startsWith("/draft") ||
       effectivePathname?.startsWith("/published") ||
       effectivePathname?.startsWith("/unpublished") ||
-      effectivePathname?.startsWith("/members")
+      effectivePathname?.startsWith("/trash") ||
+      effectivePathname?.startsWith("/schedule") ||
+      effectivePathname?.startsWith("/members") ||
+      effectivePathname?.startsWith("/my-blogs") ||
+      effectivePathname?.startsWith("/domain") ||
+      effectivePathname?.startsWith("/settings") ||
+      effectivePathname?.startsWith("/comments")
     );
   };
 
@@ -302,6 +330,19 @@ function PublicationProviderInner({ children }) {
           );
           return match ? match.id : null;
         }
+      }
+
+      const cookieSubdomain = readDashboardPublicationCookie();
+      if (
+        cookieSubdomain &&
+        isDashboardHost() &&
+        Array.isArray(publicationsForLookup) &&
+        publicationsForLookup.length > 0
+      ) {
+        const match = publicationsForLookup.find(
+          (pub) => pub?.subdomain === cookieSubdomain,
+        );
+        if (match) return match.id;
       }
     }
 

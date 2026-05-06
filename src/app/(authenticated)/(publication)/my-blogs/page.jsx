@@ -38,14 +38,21 @@ export default function MyBlogsPage() {
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [actionArticleId, setActionArticleId] = useState(null);
   const [isBulkAction, setIsBulkAction] = useState(false);
+  const currentPublicationId = currentPublication?.id;
 
   // Load articles filtered by current publication when page mounts or publication changes
   useEffect(() => {
-    loadUserArticles(currentPublication?.id);
-  }, [loadUserArticles, currentPublication?.id]);
+    if (!currentPublicationId) return;
+    loadUserArticles(currentPublicationId);
+  }, [loadUserArticles, currentPublicationId]);
 
   const myArticles = useMemo(() => {
-    let filtered = articles;
+    let filtered = currentPublicationId
+      ? articles.filter(
+          (article) =>
+            String(article.publicationId) === String(currentPublicationId),
+        )
+      : [];
 
     // Filter by selected categories
     if (selectedCategories.length > 0) {
@@ -105,7 +112,7 @@ export default function MyBlogsPage() {
         },
       };
     });
-  }, [articles, moveToDraft, selectedCategories]);
+  }, [articles, currentPublicationId, moveToDraft, selectedCategories]);
 
   const handleArticleSelect = (id, checked) => {
     if (checked) {
