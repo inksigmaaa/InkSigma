@@ -22,6 +22,12 @@ import {
 
 import { TiptapEditor } from "./TiptapEditor";
 import { useAutoSave } from "./hooks/useAutoSave";
+import {
+  clearRecoverableDraft,
+  getRecoverableDraft,
+  isUnsyncedDraft,
+  readPersistedDraftId,
+} from "./services/DraftRecoveryService";
 import { getApiBase } from "@/utils/apiBase";
 import SaveStatusIndicator from "./SaveStatusIndicator";
 import EditorPageStyles from "./EditorPageStyles";
@@ -36,6 +42,13 @@ import {
 import { getPublicationPageUrl } from "@/utils/publicationDomain";
 
 const API_URL = getApiBase();
+const LOCAL_DRAFT_PROMPT_STATUSES = new Set([
+  "published",
+  "scheduled",
+  "review",
+  "unpublished",
+  "trash",
+]);
 
 export default function EditorPageClient() {
   const router = useRouter();
@@ -196,6 +209,8 @@ export default function EditorPageClient() {
   const [existingBlogStatus, setExistingBlogStatus] = useState(null);
   const [showExitModal, setShowExitModal] = useState(false);
   const [showDraftConfirmModal, setShowDraftConfirmModal] = useState(false);
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [pendingRecoveryDraft, setPendingRecoveryDraft] = useState(null);
   const [exitDestination, setExitDestination] = useState(null); // 'published', 'drafts', 'home'
   const scheduleMinDate = new Date();
   scheduleMinDate.setHours(0, 0, 0, 0);
@@ -206,6 +221,9 @@ export default function EditorPageClient() {
   const saveInFlightRef = useRef(false);
   const editorInstanceRef = useRef(null); // Ref to TipTap editor for uncontrolled reads
   const shadowIdRef = useRef(null); // Server-created ID stored silently during auto-save (no re-render)
+  const localDraftWinsRef = useRef(false);
+  const newArticleRecoveryCheckedRef = useRef(false);
+  const publishCompletedRef = useRef(false);
   const thumbnailDataRef = useRef(thumbnailData); // Always-current thumbnail data for async callbacks
   thumbnailDataRef.current = thumbnailData;
   const syncExtraDirtySignalRef = useRef(null); // Filled after useAutoSave — avoids declaration-order issue
@@ -275,19 +293,12 @@ export default function EditorPageClient() {
     [uploadArticleImage],
   );
 
-  // Handle See Later - dismiss popup and check for unsaved changes first
+  // Handle See Later - after successful publish, go straight to publication posts.
   const handleSeeLater = async () => {
-    // Check for unsaved changes before redirecting
-    if (hasUnsavedChanges && currentBlogId) {
-      setShowPublishSuccess(false);
-      setExitDestination("published");
-      setShowExitModal(true);
-      return;
-    }
-
     markNavigating();
     setShowPublishSuccess(false);
-
+    setPendingRecoveryDraft(null);
+    setShowRecoveryModal(false);
     router.replace(withPub("/published"));
   };
 
@@ -477,6 +488,31 @@ export default function EditorPageClient() {
     }
   }, [updateEditorContent]);
 
+  const applyLocalDraftRecovery = useCallback((draft) => {
+    if (!draft) return;
+    restoreLocalDraft(draft);
+    bodyEditedSinceLoadRef.current = true;
+    localDraftWinsRef.current = true;
+    setIsLoading(false);
+  }, [restoreLocalDraft]);
+
+  const handleRestoreRecoveryDraft = useCallback(() => {
+    applyLocalDraftRecovery(pendingRecoveryDraft);
+    setPendingRecoveryDraft(null);
+    setShowRecoveryModal(false);
+    toast.success("Unsaved local changes restored");
+  }, [applyLocalDraftRecovery, pendingRecoveryDraft]);
+
+  const handleDiscardRecoveryDraft = useCallback(async () => {
+    const draftId = pendingRecoveryDraft?.postId;
+    if (draftId) {
+      await clearRecoverableDraft(draftId);
+    }
+    setPendingRecoveryDraft(null);
+    setShowRecoveryModal(false);
+    toast.success("Unsaved local changes discarded");
+  }, [pendingRecoveryDraft]);
+
   const applyArticleToEditor = useCallback(
     (article, { resetDirtySnapshot = true, updateBody = true } = {}) => {
       if (!article) return;
@@ -573,9 +609,14 @@ export default function EditorPageClient() {
   // shadowIdRef gets promoted to state/URL after a manual save.
   const loadExistingBlog = useCallback(async (id) => {
     bodyEditedSinceLoadRef.current = false;
+    localDraftWinsRef.current = false;
+    setPendingRecoveryDraft(null);
+    setShowRecoveryModal(false);
 
     const cachedArticle = getCachedArticleById?.(id);
     const hasCachedBody = typeof cachedArticle?.content === "string";
+    let localDraft = null;
+    let localDraftRecoveryHandled = false;
 
     if (cachedArticle) {
       applyArticleToEditor(cachedArticle, {
@@ -586,6 +627,39 @@ export default function EditorPageClient() {
 
     setIsLoading(!hasCachedBody);
 
+    try {
+      localDraft = await getRecoverableDraft({ blogId: id });
+    } catch (error) {
+      console.warn("[Editor] Failed to read local draft recovery:", error);
+    }
+
+    const handleLocalDraftRecovery = (status) => {
+      if (!localDraft || localDraftRecoveryHandled) {
+        return false;
+      }
+      if (!status) {
+        return false;
+      }
+
+      const shouldPrompt = LOCAL_DRAFT_PROMPT_STATUSES.has(status);
+      localDraftRecoveryHandled = true;
+
+      if (shouldPrompt) {
+        setPendingRecoveryDraft(localDraft);
+        setShowRecoveryModal(true);
+        return false;
+      }
+
+      applyLocalDraftRecovery(localDraft);
+      return true;
+    };
+
+    const knownStatus =
+      cachedArticle?.status || articleStatus || existingBlogStatus;
+    if (handleLocalDraftRecovery(knownStatus)) {
+      setIsLoading(false);
+    }
+
     const timingLabel = `[Editor] loadExistingBlog:${id}`;
     if (process.env.NODE_ENV !== "production") {
       console.time(timingLabel);
@@ -593,7 +667,14 @@ export default function EditorPageClient() {
 
     try {
       const article = await getArticleByIdUncached(id);
-      if (bodyEditedSinceLoadRef.current && hasCachedBody) {
+      if (handleLocalDraftRecovery(article?.status)) {
+        return;
+      }
+
+      if (
+        localDraftWinsRef.current ||
+        (bodyEditedSinceLoadRef.current && hasCachedBody)
+      ) {
         return;
       }
 
@@ -610,7 +691,14 @@ export default function EditorPageClient() {
       }
       setIsLoading(false);
     }
-  }, [applyArticleToEditor, getArticleByIdUncached, getCachedArticleById]);
+  }, [
+    applyArticleToEditor,
+    applyLocalDraftRecovery,
+    articleStatus,
+    existingBlogStatus,
+    getArticleByIdUncached,
+    getCachedArticleById,
+  ]);
 
   useEffect(() => {
     if (blogId && blogId === initialBlogIdRef.current) {
@@ -620,6 +708,40 @@ export default function EditorPageClient() {
       initialBlogIdRef.current = blogId;
     }
   }, [blogId, isMounted, getDexieId, loadExistingBlog]);
+
+  useEffect(() => {
+    if (
+      !isMounted ||
+      blogId ||
+      newArticleRecoveryCheckedRef.current ||
+      publishCompletedRef.current
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    newArticleRecoveryCheckedRef.current = true;
+
+    const recoverNewArticleDraft = async () => {
+      const tempDraftId = readPersistedDraftId(publicationId);
+      if (!tempDraftId) return;
+
+      try {
+        const draft = await getRecoverableDraft({ tempDraftId });
+        if (cancelled || !draft || !isUnsyncedDraft(draft)) return;
+
+        applyLocalDraftRecovery(draft);
+      } catch (error) {
+        console.warn("[Editor] Failed to recover new local draft:", error);
+      }
+    };
+
+    recoverNewArticleDraft();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyLocalDraftRecovery, blogId, isMounted, publicationId]);
 
   // Save blog to database (create new or update existing)
   const saveBlog = async (
@@ -979,6 +1101,10 @@ export default function EditorPageClient() {
       const result = await saveBlog("published");
       if (result) {
         // Clean up Dexie draft after successful publish
+        publishCompletedRef.current = true;
+        localDraftWinsRef.current = false;
+        setPendingRecoveryDraft(null);
+        setShowRecoveryModal(false);
         clearDraft();
         setPublishedBlogSlug(result.slug || "");
         setShowPublishSuccess(true);
@@ -1886,6 +2012,17 @@ export default function EditorPageClient() {
         title="Create a Draft?"
         message="A draft copy will be created with your current changes. The original article will remain published."
         confirmText="Create Draft"
+        confirmStyle="normal"
+      />
+
+      <ConfirmModal
+        isOpen={showRecoveryModal}
+        onClose={handleDiscardRecoveryDraft}
+        onConfirm={handleRestoreRecoveryDraft}
+        title="Unsaved local changes found"
+        message="A newer local draft is available from this browser. Restore it to continue from your latest unsaved work, or discard it to keep the server version."
+        cancelText="Discard"
+        confirmText="Restore"
         confirmStyle="normal"
       />
     </div>
