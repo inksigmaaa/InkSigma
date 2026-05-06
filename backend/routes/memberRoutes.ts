@@ -466,53 +466,48 @@ router.get("/user/publications", requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Get owned publications
-    const ownedPublications = await db
-      .select({
-        id: publication.id,
-        name: publication.name,
-        subdomain: publication.subdomain,
-        customDomain: publication.customDomain,
-        customDomainStatus: publication.customDomainStatus,
-        description: publication.description,
-        logoUrl: publication.logoUrl,
-        createdAt: publication.createdAt,
-      })
-      .from(publication)
-      .where(eq(publication.userId, userId));
+    const [ownedPublications, joinedPublications] = await Promise.all([
+      db
+        .select({
+          id: publication.id,
+          name: publication.name,
+          subdomain: publication.subdomain,
+          customDomain: publication.customDomain,
+          customDomainStatus: publication.customDomainStatus,
+          description: publication.description,
+          logoUrl: publication.logoUrl,
+          createdAt: publication.createdAt,
+        })
+        .from(publication)
+        .where(eq(publication.userId, userId)),
+      db
+        .select({
+          id: publication.id,
+          name: publication.name,
+          subdomain: publication.subdomain,
+          customDomain: publication.customDomain,
+          customDomainStatus: publication.customDomainStatus,
+          description: publication.description,
+          logoUrl: publication.logoUrl,
+          createdAt: publication.createdAt,
+          role: publicationMember.role,
+          joinedAt: publicationMember.joinedAt,
+          ownerId: publication.userId,
+        })
+        .from(publicationMember)
+        .innerJoin(
+          publication,
+          eq(publicationMember.publicationId, publication.id),
+        )
+        .where(eq(publicationMember.userId, userId)),
+    ]);
 
-    // Get the IDs of owned publications to exclude from joined list
-    const ownedPublicationIds = ownedPublications.map((pub) => pub.id);
-
-    // Add metadata for owned publications
     const ownedWithMeta = ownedPublications.map((pub) => ({
       ...pub,
       isOwner: true,
       role: "admin",
       joinedAt: pub.createdAt,
     }));
-
-    // Get joined publications (where user is a member but NOT the owner)
-    const joinedPublications = await db
-      .select({
-        id: publication.id,
-        name: publication.name,
-        subdomain: publication.subdomain,
-        customDomain: publication.customDomain,
-        customDomainStatus: publication.customDomainStatus,
-        description: publication.description,
-        logoUrl: publication.logoUrl,
-        createdAt: publication.createdAt,
-        role: publicationMember.role,
-        joinedAt: publicationMember.joinedAt,
-        ownerId: publication.userId,
-      })
-      .from(publicationMember)
-      .innerJoin(
-        publication,
-        eq(publicationMember.publicationId, publication.id),
-      )
-      .where(eq(publicationMember.userId, userId));
 
     // Filter out publications where user is the owner (they should only appear in owned list)
     const filteredJoinedPublications = joinedPublications.filter(

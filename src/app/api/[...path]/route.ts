@@ -44,6 +44,8 @@ const buildResponseHeaders = (upstreamHeaders: Headers) => {
   for (const [key, value] of upstreamHeaders.entries()) {
     const normalizedKey = key.toLowerCase();
     if (
+      normalizedKey === "etag" ||
+      normalizedKey === "last-modified" ||
       normalizedKey === "set-cookie" ||
       normalizedKey === "content-encoding" ||
       HOP_BY_HOP_HEADERS.has(normalizedKey)
@@ -68,6 +70,10 @@ const buildResponseHeaders = (upstreamHeaders: Headers) => {
       headers.append("set-cookie", cookieHeader);
     }
   }
+
+  headers.set("cache-control", "no-store, no-cache, must-revalidate, max-age=0");
+  headers.set("pragma", "no-cache");
+  headers.set("expires", "0");
 
   return headers;
 };
@@ -100,6 +106,10 @@ const proxyRequest = async (
       body: METHODS_WITHOUT_BODY.has(request.method) ? undefined : await request.arrayBuffer(),
       redirect: "manual",
       cache: "no-store",
+      // Forward client cancellation so the backend stops working when the
+      // browser disconnects. Without this the upstream fetch keeps running and
+      // burns DB / connection-pool capacity for canceled requests.
+      signal: request.signal,
     });
 
     const responseBody = await upstreamResponse.arrayBuffer();
@@ -110,6 +120,10 @@ const proxyRequest = async (
       headers: buildResponseHeaders(upstreamResponse.headers),
     });
   } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return new Response(null, { status: 499, statusText: "Client Closed Request" });
+    }
+
     return Response.json(
       {
         error: "Failed to reach backend service.",

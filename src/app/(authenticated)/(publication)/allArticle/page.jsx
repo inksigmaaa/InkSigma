@@ -36,6 +36,7 @@ export default function AllArticlePage() {
 
   const { currentPublication, getCurrentUserRole } = usePublication();
   const searchParams = useSearchParams();
+  const refreshParam = searchParams.get("refresh");
 
   // Refs to track loading state
   const hasLoadedRef = useRef(false);
@@ -56,7 +57,7 @@ export default function AllArticlePage() {
 
   // Load appropriate articles on mount or when context changes
   useEffect(() => {
-    const needsRefresh = searchParams.get("refresh") === "true";
+    const needsRefresh = refreshParam === "true";
 
     // Target context based on current state
     const targetContext =
@@ -73,17 +74,32 @@ export default function AllArticlePage() {
       loadedContextRef.current = targetContext;
 
       if (targetContext === "publication") {
-        loadPublicationArticles(currentPublication.id, null, {
-          draftScope: "publishedCopies",
-        });
+        loadPublicationArticles(
+          currentPublication.id,
+          null,
+          {
+            draftScope: "publishedCopies",
+          },
+          {
+            force: needsRefresh,
+          },
+        );
       } else {
-        loadUserArticles(null, false, null, {
-          draftScope: "publishedCopies",
-        });
+        loadUserArticles(
+          null,
+          false,
+          null,
+          {
+            draftScope: "publishedCopies",
+          },
+          {
+            force: needsRefresh,
+          },
+        );
       }
     }
   }, [
-    searchParams,
+    refreshParam,
     loadUserArticles,
     loadPublicationArticles,
     isAdmin,

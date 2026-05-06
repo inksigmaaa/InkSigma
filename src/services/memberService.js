@@ -1,5 +1,10 @@
 // services/memberService.js
 import { getApiBase } from "@/utils/apiBase";
+import {
+  buildGetJsonDedupeKey,
+  dedupeJsonRequest,
+} from "@/utils/jsonRequestDedupe";
+
 const API_URL = getApiBase();
 
 const getRequestBases = () => {
@@ -49,7 +54,7 @@ const readErrorMessage = async (response, fallbackMessage) => {
   return `Server error (${response.status}): ${response.statusText}`;
 };
 
-const requestJson = async (path, options = {}, fallbackMessage = "Request failed") => {
+const requestJsonRaw = async (path, options = {}, fallbackMessage = "Request failed") => {
   const bases = getRequestBases();
   let lastNetworkError = null;
 
@@ -57,6 +62,7 @@ const requestJson = async (path, options = {}, fallbackMessage = "Request failed
     try {
       const response = await fetch(`${base}${path}`, {
         credentials: "include",
+        cache: "no-store",
         ...options,
         headers: {
           ...(options.headers || {}),
@@ -95,6 +101,13 @@ const requestJson = async (path, options = {}, fallbackMessage = "Request failed
   }
 
   throw lastNetworkError || new Error(fallbackMessage);
+};
+
+const requestJson = (path, options = {}, fallbackMessage = "Request failed") => {
+  const requestKey = buildGetJsonDedupeKey(path, options);
+  return dedupeJsonRequest(requestKey, () =>
+    requestJsonRaw(path, options, fallbackMessage),
+  );
 };
 
 export const memberService = {
@@ -167,7 +180,7 @@ export const memberService = {
     }
 
     try {
-      return requestJson(
+      return await requestJson(
         `/api/members/user/publications`,
         {
           headers: {

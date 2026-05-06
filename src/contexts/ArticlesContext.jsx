@@ -7,41 +7,19 @@
  * This file keeps the existing <ArticlesProvider> + useArticles() API
  * so consumers don't need any changes.
  *
- * The provider still exists to auto-load user articles when session changes —
- * but it no longer holds React state (Zustand does).
+ * The provider is intentionally a no-op pass-through. Each page owns its
+ * own data fetch — having the provider also auto-fire loadUserArticles
+ * caused its in-flight request to be aborted by the page-level loader
+ * (different argument shape → different request key → abort path), which
+ * showed up in DevTools as "first request canceled, second request succeeds".
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
 import { useSession } from "@/lib/auth-client";
 import { usePublication } from "@/contexts/PublicationContext";
 import { useArticleStore } from "@/stores/articleStore";
 
 export function ArticlesProvider({ children }) {
-  const { data: session } = useSession();
-  const sessionUserId = session?.user?.id ?? null;
-
-  let currentPublication = null;
-  try {
-    const pubContext = usePublication();
-    currentPublication = pubContext?.currentPublication;
-  } catch {
-    // PublicationContext not available
-  }
-
-  const currentPubRef = useRef(currentPublication);
-  useEffect(() => {
-    currentPubRef.current = currentPublication;
-  }, [currentPublication]);
-
-  const loadUserArticles = useArticleStore((s) => s.loadUserArticles);
-
-  // Auto-load user articles when session changes
-  useEffect(() => {
-    if (sessionUserId) {
-      loadUserArticles({ user: { id: sessionUserId } }, currentPubRef.current?.id);
-    }
-  }, [sessionUserId, loadUserArticles]);
-
   return children;
 }
 
@@ -71,6 +49,7 @@ export function useArticles() {
       includeAllPublications = false,
       status = null,
       extraFilters = {},
+      options = {},
     ) => {
       if (!sessionUserId) {
         return Promise.resolve();
@@ -83,6 +62,7 @@ export function useArticles() {
         includeAllPublications,
         status,
         extraFilters,
+        options,
       );
     },
     [rawLoadUserArticles, sessionUserId, currentPublication?.id],
@@ -126,6 +106,7 @@ export function useArticles() {
     getCachedArticleById: store.getCachedArticleById,
     prefetchArticle: store.prefetchArticle,
     primeEditorArticle: store.primeEditorArticle,
+    primeArticleFromBlog: store.primeArticleFromBlog,
     refreshArticle: store.refreshArticle,
     updateArticle: store.updateArticle,
     moveToTrash: store.moveToTrash,

@@ -92,37 +92,6 @@ router.get("/check", requireAuth, async (req, res) => {
   }
 });
 
-// Test endpoint to verify authentication
-router.get("/test-auth", requireAuth, async (req, res) => {
-  try {
-    res.json({
-      authenticated: true,
-      userId: req.user?.id,
-      email: req.user?.email,
-      name: req.user?.name,
-    });
-  } catch (error) {
-    logger.error(error, "Error in test-auth:");
-    res.status(500).json({ error: "Test failed" });
-  }
-});
-
-// Diagnostic endpoint to check authentication
-router.get("/debug/auth-check", requireAuth, async (req, res) => {
-  try {
-    res.json({
-      authenticated: true,
-      userId: req.user?.id,
-      userEmail: req.user?.email,
-      userName: req.user?.name,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error(error, "Error in auth check:");
-    res.status(500).json({ error: "Failed to check authentication" });
-  }
-});
-
 // Check subdomain availability
 router.get(
   "/check-subdomain/:subdomain",

@@ -220,27 +220,36 @@ export const comment = pgTable(
   }),
 );
 
-export const publication = pgTable("publication", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  subdomain: text("subdomain").notNull().unique(),
-  customDomain: text("customDomain").unique(),
-  customDomainStatus: customDomainStatusEnum("customDomainStatus"),
-  customDomainVerificationToken: text("customDomainVerificationToken"),
-  customDomainVerificationError: text("customDomainVerificationError"),
-  customDomainVerifiedAt: timestamp("customDomainVerifiedAt"),
-  customDomainLastCheckedAt: timestamp("customDomainLastCheckedAt"),
-  description: text("description"),
-  image: text("image"),
-  logoUrl: text("logoUrl"),
-  faviconUrl: text("faviconUrl"),
-  metaOgImageUrl: text("metaOgImageUrl"),
-  userId: text("userId")
-    .notNull()
-    .references(() => user.id),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
-});
+export const publication = pgTable(
+  "publication",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    subdomain: text("subdomain").notNull().unique(),
+    customDomain: text("customDomain").unique(),
+    customDomainStatus: customDomainStatusEnum("customDomainStatus"),
+    customDomainVerificationToken: text("customDomainVerificationToken"),
+    customDomainVerificationError: text("customDomainVerificationError"),
+    customDomainVerifiedAt: timestamp("customDomainVerifiedAt"),
+    customDomainLastCheckedAt: timestamp("customDomainLastCheckedAt"),
+    description: text("description"),
+    image: text("image"),
+    logoUrl: text("logoUrl"),
+    faviconUrl: text("faviconUrl"),
+    metaOgImageUrl: text("metaOgImageUrl"),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    userCreatedIdx: index("idx_publication_user_created").on(
+      table.userId,
+      table.createdAt,
+    ),
+  }),
+);
 
 export const publicationHostname = pgTable(
   "publication_hostname",
