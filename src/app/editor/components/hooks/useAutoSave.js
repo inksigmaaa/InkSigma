@@ -7,13 +7,17 @@ import {
   deleteDraft as dexieDelete,
   remapDraftId,
 } from "../services/DexieService";
+import {
+  clearPersistedDraftId,
+  persistDraftId,
+  readPersistedDraftId,
+} from "../services/DraftRecoveryService";
 import { getApiBase } from "@/utils/apiBase";
 
 const API_URL = getApiBase();
 
 // Statuses that should never be auto-saved to the server
 const NON_DRAFT_STATUSES = ["published", "scheduled", "review", "unpublished"];
-const TEMP_DRAFT_KEY_PREFIX = "inksigma:editor:draft";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -158,46 +162,6 @@ export function useAutoSave({
     hasUnsavedChanges,
   ]);
 
-  const getTempDraftStorageKey = useCallback(() => {
-    if (typeof window === "undefined") return null;
-    const publicationKey = publicationId || "default";
-    return `${TEMP_DRAFT_KEY_PREFIX}:${window.location.pathname}:${publicationKey}`;
-  }, [publicationId]);
-
-  const readPersistedDraftId = useCallback(() => {
-    const storageKey = getTempDraftStorageKey();
-    if (!storageKey || typeof window === "undefined") return null;
-
-    try {
-      return window.sessionStorage.getItem(storageKey);
-    } catch (error) {
-      console.warn("[useAutoSave] Failed to read draft session key:", error);
-      return null;
-    }
-  }, [getTempDraftStorageKey]);
-
-  const persistDraftId = useCallback((draftId) => {
-    const storageKey = getTempDraftStorageKey();
-    if (!storageKey || !draftId || typeof window === "undefined") return;
-
-    try {
-      window.sessionStorage.setItem(storageKey, String(draftId));
-    } catch (error) {
-      console.warn("[useAutoSave] Failed to persist draft session key:", error);
-    }
-  }, [getTempDraftStorageKey]);
-
-  const clearPersistedDraftId = useCallback(() => {
-    const storageKey = getTempDraftStorageKey();
-    if (!storageKey || typeof window === "undefined") return;
-
-    try {
-      window.sessionStorage.removeItem(storageKey);
-    } catch (error) {
-      console.warn("[useAutoSave] Failed to clear draft session key:", error);
-    }
-  }, [getTempDraftStorageKey]);
-
   // ── Dexie postId resolver ──────────────────────────────────────────────────
   // For new posts we need a stable ID for Dexie before the server gives us one.
 
@@ -206,7 +170,7 @@ export function useAutoSave({
     if (shadowId) return String(shadowId);
     if (tempIdRef.current) return tempIdRef.current;
 
-    const persistedDraftId = readPersistedDraftId();
+    const persistedDraftId = readPersistedDraftId(publicationId);
     if (persistedDraftId) {
       tempIdRef.current = persistedDraftId;
       return persistedDraftId;
@@ -217,16 +181,16 @@ export function useAutoSave({
         typeof crypto !== "undefined" && crypto.randomUUID
           ? crypto.randomUUID()
           : `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-      persistDraftId(tempIdRef.current);
+      persistDraftId(tempIdRef.current, publicationId);
     }
     return tempIdRef.current;
-  }, [currentBlogId, shadowId, persistDraftId, readPersistedDraftId]);
+  }, [currentBlogId, shadowId, publicationId]);
 
   useEffect(() => {
     if (!currentBlogId) return;
-    clearPersistedDraftId();
+    clearPersistedDraftId(publicationId);
     tempIdRef.current = null;
-  }, [currentBlogId, clearPersistedDraftId]);
+  }, [currentBlogId, publicationId]);
 
   // ── 1. Keystroke-level Dexie save ──────────────────────────────────────────
   // Runs on every content change. Non-blocking, never causes re-render.
@@ -261,7 +225,7 @@ export function useAutoSave({
               remapDraftId(oldDexieId, newId);
             }
             tempIdRef.current = newId;
-            persistDraftId(newId);
+            persistDraftId(newId, latestRef.current.publicationId);
             onBlogIdCreated?.(result);
           }
           return {
@@ -278,7 +242,7 @@ export function useAutoSave({
       }
     }
     return false;
-  }, [saveFn, onBlogIdCreated, persistDraftId]);
+  }, [saveFn, onBlogIdCreated]);
 
   // ── 3. Debounced server sync ───────────────────────────────────────────────
 
@@ -491,7 +455,19 @@ export function useAutoSave({
           : `${API_URL}/api/blogs/auto-save`;
         const method = effectiveId ? "PUT" : "POST";
 
-        // Prefer a single unload write path to avoid duplicate draft saves.
+        // Existing drafts need PUT; sendBeacon cannot choose the HTTP method.
+        if (effectiveId) {
+          fetch(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(blogData),
+            keepalive: true,
+          }).catch(() => {});
+          return;
+        }
+
+        // New drafts can use the beacon POST path as a last-character safety net.
         const blob = new Blob([JSON.stringify(blogData)], {
           type: "application/json",
         });
@@ -618,8 +594,8 @@ export function useAutoSave({
       dexieDelete(tempIdRef.current);
     }
     tempIdRef.current = null;
-    clearPersistedDraftId();
-  }, [currentBlogId, shadowId, clearPersistedDraftId]);
+    clearPersistedDraftId(publicationId);
+  }, [currentBlogId, shadowId, publicationId]);
 
   return {
     hasUnsavedChanges,

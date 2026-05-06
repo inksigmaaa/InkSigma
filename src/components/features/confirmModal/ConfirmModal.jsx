@@ -15,6 +15,7 @@ export default function ConfirmModal({
   onConfirm,
   title,
   message,
+  cancelText = "Close",
   confirmText = "Confirm",
   confirmStyle = "danger",
 }) {
@@ -76,7 +77,7 @@ export default function ConfirmModal({
             onClick={handleClose}
             disabled={isProcessing}
           >
-            Close
+            {cancelText}
           </button>
           <button
             className="font-['Public_Sans'] font-medium text-sm h-10 rounded bg-black text-white hover:opacity-90 transition-opacity duration-200 whitespace-nowrap"
