@@ -106,7 +106,6 @@ export function useArticles() {
     getCachedArticleById: store.getCachedArticleById,
     prefetchArticle: store.prefetchArticle,
     primeEditorArticle: store.primeEditorArticle,
-    primeArticleFromBlog: store.primeArticleFromBlog,
     refreshArticle: store.refreshArticle,
     updateArticle: store.updateArticle,
     moveToTrash: store.moveToTrash,

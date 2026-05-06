@@ -310,7 +310,42 @@ export const useArticleStore = create((set, get) => ({
       ...(sameRequest ? {} : { articles: [] }),
     });
 
-    return requestPromise;
+    try {
+      const filters = includeAllPublications
+        ? {}
+        : publicationId
+          ? { publicationId }
+          : { publicationId: null };
+
+      if (status) filters.status = status;
+      Object.assign(filters, extraFilters);
+
+      const blogs = await blogService.getUserBlogs(
+        session.user.id,
+        filters,
+        { signal: controller.signal },
+      );
+
+      const converted = blogs.map(convertBlogToArticle);
+      set({
+        articles: converted,
+        editorArticleCache: upsertArticleCache(get().editorArticleCache, converted),
+        _articlesKey: requestKey,
+        _articlesLoaded: true,
+        ...(status ? {} : { areUserArticlesLoaded: true }),
+      });
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      set({ error: err.message });
+    } finally {
+      if (!controller.signal.aborted) {
+        set({
+          loading: false,
+          refreshing: false,
+          _abortController: null,
+        });
+      }
+    }
   },
 
   loadPublicationArticles: async (
@@ -346,14 +381,6 @@ export const useArticleStore = create((set, get) => ({
     const hasFreshExistingData =
       hasExistingData &&
       Date.now() - state._pubArticlesLoadedAt < PUBLICATION_ARTICLES_STALE_MS;
-
-    if (!force && hasFreshExistingData) {
-      return state.publicationArticles;
-    }
-
-    const prev = state._pubAbortController;
-    if (prev) prev.abort();
-    const controller = new AbortController();
 
     const requestPromise = (async () => {
       try {
@@ -441,30 +468,6 @@ export const useArticleStore = create((set, get) => ({
     set((s) => ({
       editorArticleCache: upsertArticleCache(s.editorArticleCache, [article]),
     }));
-  },
-
-  primeArticleFromBlog: (blog) => {
-    if (!blog?.id) return null;
-    const article = convertBlogToArticle(
-      blog,
-      typeof blog.content !== "undefined",
-    );
-
-    set((s) => ({
-      articles: upsertInList(s.articles, article.id, article),
-      publicationArticles: upsertInList(
-        s.publicationArticles,
-        article.id,
-        article,
-      ),
-      reviewArticles:
-        article.status === "review"
-          ? upsertInList(s.reviewArticles, article.id, article)
-          : removeFromList(s.reviewArticles, article.id),
-      editorArticleCache: upsertArticleCache(s.editorArticleCache, [article]),
-    }));
-
-    return article;
   },
 
   getCachedArticleById: (id) => {
