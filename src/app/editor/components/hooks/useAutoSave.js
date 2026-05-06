@@ -9,6 +9,7 @@ import {
 } from "../services/DexieService";
 import {
   clearPersistedDraftId,
+  isTempDraftId,
   persistDraftId,
   readPersistedDraftId,
 } from "../services/DraftRecoveryService";
@@ -171,9 +172,12 @@ export function useAutoSave({
     if (tempIdRef.current) return tempIdRef.current;
 
     const persistedDraftId = readPersistedDraftId(publicationId);
-    if (persistedDraftId) {
+    if (isTempDraftId(persistedDraftId)) {
       tempIdRef.current = persistedDraftId;
       return persistedDraftId;
+    }
+    if (persistedDraftId) {
+      clearPersistedDraftId(publicationId);
     }
 
     if (!tempIdRef.current) {
@@ -222,10 +226,10 @@ export function useAutoSave({
             const oldDexieId = tempIdRef.current;
             const newId = String(result.id);
             if (oldDexieId && oldDexieId !== newId) {
-              remapDraftId(oldDexieId, newId);
+              await remapDraftId(oldDexieId, newId);
             }
             tempIdRef.current = newId;
-            persistDraftId(newId, latestRef.current.publicationId);
+            clearPersistedDraftId(latestRef.current.publicationId);
             onBlogIdCreated?.(result);
           }
           return {
