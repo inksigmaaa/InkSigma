@@ -50,14 +50,19 @@ export default function AllArticlePage() {
     currentPublication?.isOwner;
 
   // Use publicationArticles for admins/editors, otherwise use user articles
-  const displayArticles =
-    isAdmin && currentPublication ? publicationArticles : articles;
+  const displayArticles = currentPublication
+    ? (isAdmin ? publicationArticles : articles).filter(
+        (article) =>
+          String(article.publicationId) === String(currentPublication.id),
+      )
+    : [];
   const isLoading =
     isAdmin && currentPublication ? pubArticlesLoading : loading;
 
   // Load appropriate articles on mount or when context changes
   useEffect(() => {
     const needsRefresh = refreshParam === "true";
+    if (!currentPublication?.id) return;
 
     // Target context based on current state
     const targetContext =
@@ -86,7 +91,7 @@ export default function AllArticlePage() {
         );
       } else {
         loadUserArticles(
-          null,
+          currentPublication.id,
           false,
           null,
           {

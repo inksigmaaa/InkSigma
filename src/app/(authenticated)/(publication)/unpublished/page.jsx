@@ -48,8 +48,12 @@ export default function Unpublished() {
     currentPublication?.isOwner;
 
   // Use publicationArticles for admins/editors, otherwise use user articles
-  const displayArticles =
-    isAdmin && currentPublication ? publicationArticles : articles;
+  const displayArticles = currentPublication
+    ? (isAdmin ? publicationArticles : articles).filter(
+        (article) =>
+          String(article.publicationId) === String(currentPublication.id),
+      )
+    : [];
   const isLoading =
     isAdmin && currentPublication ? pubArticlesLoading : loading;
 
@@ -58,13 +62,15 @@ export default function Unpublished() {
     let cancelled = false;
 
     const loadArticles = async () => {
+      if (!currentPublication?.id) return;
+
       try {
         setPageError(null);
 
         if (isAdmin && currentPublication?.id) {
-          await loadPublicationArticles(currentPublication.id);
+          await loadPublicationArticles(currentPublication.id, "unpublished");
         } else {
-          await loadUserArticles(currentPublication?.id);
+          await loadUserArticles(currentPublication.id, false, "unpublished");
         }
       } catch (loadError) {
         if (!cancelled) {

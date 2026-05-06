@@ -22,13 +22,11 @@ const BULK_PUBLISH_TOAST_TYPE = "info";
 export default function DraftPage() {
   const {
     articles,
-    loading,
     moveToTrashStatus,
     bulkMoveToTrashStatus,
     bulkPublish,
     publishArticle,
     loadUserArticles,
-    areUserArticlesLoaded,
   } = useArticles();
   const { currentPublication } = usePublication();
   const searchParams = useSearchParams();
@@ -44,19 +42,18 @@ export default function DraftPage() {
     const needsRefresh = searchParams.get("refresh") === "true";
 
     // Only load if session is available and we haven't loaded yet
-    if (
-      !hasLoadedRef.current &&
-      session?.user?.id &&
-      (needsRefresh || !areUserArticlesLoaded)
-    ) {
-      hasLoadedRef.current = true;
-      loadUserArticles(currentPublication?.id);
+    const publicationId = currentPublication?.id;
+    if (!session?.user?.id || !publicationId) return;
+
+    const requestKey = `publication:${publicationId}:draft`;
+    if (needsRefresh || hasLoadedRef.current !== requestKey) {
+      hasLoadedRef.current = requestKey;
+      loadUserArticles(publicationId, false, "draft", {}, { force: needsRefresh });
     }
   }, [
     searchParams,
     session?.user?.id,
     currentPublication?.id,
-    areUserArticlesLoaded,
     loadUserArticles,
   ]);
 
@@ -69,13 +66,13 @@ export default function DraftPage() {
 
   // Auto-refresh draft list on an interval (stay on draft page)
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (!session?.user?.id || !currentPublication?.id) return;
 
     const refreshDrafts = async () => {
       if (isPollingRef.current) return;
       isPollingRef.current = true;
       try {
-        await loadUserArticles(currentPublication?.id);
+        await loadUserArticles(currentPublication.id, false, "draft");
       } catch (error) {
         console.error("Auto-refresh failed:", error);
       } finally {
@@ -91,7 +88,6 @@ export default function DraftPage() {
     };
 
     startPolling();
-    refreshDrafts();
 
     const handleVisibility = () => {
       if (!document.hidden) {
@@ -125,11 +121,13 @@ export default function DraftPage() {
 
         // If we are in a publication context, only show articles for that publication
         if (currentPublication?.id) {
-          return isDraft && article.publicationId === currentPublication.id;
+          return (
+            isDraft &&
+            String(article.publicationId) === String(currentPublication.id)
+          );
         }
 
-        // If not in a publication context (e.g. dashboard), show all drafts
-        return isDraft;
+        return false;
       })
       .map((article) => {
         const hasRealTitle = !isMissingRealTitle(article.title);

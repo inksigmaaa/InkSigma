@@ -44,7 +44,13 @@ export default function PublishedPage() {
 
   // IMPORTANT: Always use publicationArticles to show ALL published articles
   // But filter actions based on ownership
-  const displayArticles = publicationArticles;
+  const displayArticles = currentPublication?.id
+    ? publicationArticles.filter(
+        (article) =>
+          String(article.publicationId) === String(currentPublication.id) &&
+          article.status === "published",
+      )
+    : [];
   const isLoading = pubArticlesLoading;
 
   // Load appropriate articles - ALWAYS load publication articles to show all published blogs

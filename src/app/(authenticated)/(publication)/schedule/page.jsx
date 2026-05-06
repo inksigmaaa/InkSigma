@@ -42,14 +42,23 @@ export default function SchedulePage() {
 
   // Determine user role and which articles to show
   const userRole = getCurrentUserRole();
+  const currentPublicationId = currentPublication?.id;
   const isAdmin =
     userRole === "admin" ||
     userRole === "editor" ||
     currentPublication?.isOwner;
 
   // Use publicationArticles for admins/editors, otherwise use user articles
-  const allArticles =
-    isAdmin && currentPublication ? publicationArticles : articles;
+  const allArticles = useMemo(
+    () =>
+      currentPublicationId
+        ? (isAdmin ? publicationArticles : articles).filter(
+            (article) =>
+              String(article.publicationId) === String(currentPublicationId),
+          )
+        : [],
+    [articles, currentPublicationId, isAdmin, publicationArticles],
+  );
   const isLoading =
     isAdmin && currentPublication ? pubArticlesLoading : loading;
 
@@ -67,6 +76,7 @@ export default function SchedulePage() {
   // Refresh articles when coming from editor with refresh param or when component mounts
   useEffect(() => {
     const needsRefresh = searchParams.get("refresh") === "true";
+    if (!currentPublication?.id) return;
 
     // Target context based on current state
     const targetContext =
@@ -82,9 +92,9 @@ export default function SchedulePage() {
       loadedRequestRef.current = requestKey;
 
       if (targetContext === "publication") {
-        loadPublicationArticlesRef.current(currentPublication.id);
+        loadPublicationArticlesRef.current(currentPublication.id, "scheduled");
       } else {
-        loadUserArticlesRef.current(null, true); // Load all publications for scheduled articles
+        loadUserArticlesRef.current(currentPublication.id, false, "scheduled");
       }
 
       // Clean up the URL if refresh param was present
@@ -172,9 +182,9 @@ export default function SchedulePage() {
       const targetContext =
         isAdmin && currentPublication?.id ? "publication" : "user";
       if (targetContext === "publication") {
-        loadPublicationArticlesRef.current(currentPublication.id);
+        loadPublicationArticlesRef.current(currentPublication.id, "scheduled");
       } else {
-        loadUserArticlesRef.current(null, true); // Load all publications for scheduled articles
+        loadUserArticlesRef.current(currentPublication.id, false, "scheduled");
       }
     }, timeUntilPublish + 2000);
 
@@ -183,14 +193,16 @@ export default function SchedulePage() {
 
   // Manual refresh function
   const handleRefresh = useCallback(async () => {
+    if (!currentPublication?.id) return;
+
     setIsRefreshing(true);
     try {
       const targetContext =
         isAdmin && currentPublication?.id ? "publication" : "user";
       if (targetContext === "publication") {
-        await loadPublicationArticlesRef.current(currentPublication.id);
+        await loadPublicationArticlesRef.current(currentPublication.id, "scheduled");
       } else {
-        await loadUserArticlesRef.current(null, true); // Load all publications for scheduled articles
+        await loadUserArticlesRef.current(currentPublication.id, false, "scheduled");
       }
     } catch (error) {
       console.error("Error refreshing articles:", error);
