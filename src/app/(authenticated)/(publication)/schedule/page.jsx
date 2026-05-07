@@ -11,6 +11,7 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
 import PageTransition from "@/components/PageTransition";
+import FullPageErrorState from "@/components/common/FullPageErrorState";
 import { toast } from "sonner";
 import { withPublicationPath } from "@/utils/dashboardUrl";
 
@@ -348,12 +349,28 @@ export default function SchedulePage() {
   }
 
   if (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[SchedulePage] load error:", error);
+    }
+    const handleRetry = () => {
+      if (currentPublication?.id) {
+        loadPublicationArticles(
+          currentPublication.id,
+          "scheduled",
+          {},
+          { force: true },
+        );
+      }
+    };
     return (
       <AuthGuard>
         <Verify />
-        <div className="flex justify-center items-center min-h-[400px]">
-          <div className="text-red-500">Error: {error}</div>
-        </div>
+        <FullPageErrorState
+          title="We couldn't load your scheduled articles"
+          description="Something went wrong while loading this page. Please try again in a moment."
+          onPrimaryAction={handleRetry}
+          className="min-h-[70vh]"
+        />
       </AuthGuard>
     );
   }

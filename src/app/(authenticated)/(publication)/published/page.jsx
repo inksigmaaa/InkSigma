@@ -7,6 +7,7 @@ import Verify from "@/components/features/verify/Verify";
 import PersonalArticles from "@/components/features/personalArticles/personalArticles";
 import ConfirmModal from "@/components/features/confirmModal/ConfirmModal";
 import PageTransition from "@/components/PageTransition";
+import FullPageErrorState from "@/components/common/FullPageErrorState";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { toast } from "sonner";
@@ -296,12 +297,25 @@ export default function PublishedPage() {
   }
 
   if (effectiveError) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[PublishedPage] load error:", effectiveError);
+    }
+    const handleRetry = () => {
+      setPageError(null);
+      loadedRequestRef.current = null;
+      if (currentPublication?.id) {
+        loadPublicationArticles(currentPublication.id, "published", {}, { force: true });
+      }
+    };
     return (
       <>
-                        <Verify />
-        <div className="flex justify-center items-center min-h-[400px] animate-fadeIn">
-          <div className="text-red-500">Error: {effectiveError}</div>
-        </div>
+        <Verify />
+        <FullPageErrorState
+          title="We couldn't load your published articles"
+          description="Something went wrong while loading this page. Please try again in a moment."
+          onPrimaryAction={handleRetry}
+          className="min-h-[70vh]"
+        />
       </>
     );
   }

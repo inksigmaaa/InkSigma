@@ -74,6 +74,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 export function useAutoSave({
   currentBlogId,
   shadowId, // server-created ID stored silently during auto-save (lives in a ref in the parent)
+  localArticleId, // per-mount UUID for brand-new articles; scopes recovery so two new-article tabs don't collide
   title,
   description,
   contentHtml,
@@ -87,6 +88,14 @@ export function useAutoSave({
   saveFn,
   onBlogIdCreated, // callback(newId) — called when first server save returns an ID
 }) {
+  // Recovery key prefers the server id when we have one, otherwise the local
+  // per-mount UUID. This guarantees the persisted/recovered draft id is always
+  // bound to the article the user is currently editing.
+  const articleKey = currentBlogId
+    ? String(currentBlogId)
+    : shadowId
+      ? String(shadowId)
+      : localArticleId || null;
   // ── State ──────────────────────────────────────────────────────────────────
   const [saveStatus, setSaveStatus] = useState("idle"); // 'idle' | 'saving' | 'saved' | 'failed'
   const [isAutoSaving, setIsAutoSaving] = useState(false);
@@ -116,6 +125,15 @@ export function useAutoSave({
 
   // Temp UUID for new posts that don't have a server ID yet
   const tempIdRef = useRef(null);
+
+  // Pre-create-on-first-keystroke (Hashnode-style). The first time we have
+  // any meaningful content for a brand-new article, fire one POST to create
+  // the server row and pin its id (via onBlogIdCreated → URL ?id=<n>).
+  // Until that promise resolves, manual saves and the debounced autosave
+  // wait — so they all PUT the same row instead of racing additional POSTs.
+  // Across refresh: once the URL has ?id=, no preflight is needed; if the
+  // URL has no ?id=, we generate a fresh preflight on first keystroke.
+  const preflightCreatePromiseRef = useRef(null);
 
   // Always-current values readable from event handlers without re-registering
   const latestRef = useRef({
@@ -171,13 +189,17 @@ export function useAutoSave({
     if (shadowId) return String(shadowId);
     if (tempIdRef.current) return tempIdRef.current;
 
-    const persistedDraftId = readPersistedDraftId(publicationId);
+    const persistedDraftId = readPersistedDraftId(
+      publicationId,
+      undefined,
+      articleKey,
+    );
     if (isTempDraftId(persistedDraftId)) {
       tempIdRef.current = persistedDraftId;
       return persistedDraftId;
     }
     if (persistedDraftId) {
-      clearPersistedDraftId(publicationId);
+      clearPersistedDraftId(publicationId, undefined, articleKey);
     }
 
     if (!tempIdRef.current) {
@@ -185,28 +207,16 @@ export function useAutoSave({
         typeof crypto !== "undefined" && crypto.randomUUID
           ? crypto.randomUUID()
           : `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-      persistDraftId(tempIdRef.current, publicationId);
+      persistDraftId(tempIdRef.current, publicationId, undefined, articleKey);
     }
     return tempIdRef.current;
-  }, [currentBlogId, shadowId, publicationId]);
+  }, [currentBlogId, shadowId, publicationId, articleKey]);
 
   useEffect(() => {
     if (!currentBlogId) return;
-    clearPersistedDraftId(publicationId);
+    clearPersistedDraftId(publicationId, undefined, articleKey);
     tempIdRef.current = null;
-  }, [currentBlogId, publicationId]);
-
-  // ── 1. Keystroke-level Dexie save ──────────────────────────────────────────
-  // Runs on every content change. Non-blocking, never causes re-render.
-
-  useEffect(() => {
-    // Skip if there's truly nothing to save
-    if (!title && !description && !normalizeContent(contentHtml)) return;
-
-    const id = getDexieId();
-    // Fire-and-forget — Dexie writes are fast (~1ms) and async
-    dexieSave(id, { title, description, content: contentHtml, categories });
-  }, [title, description, contentHtml, categories, getDexieId]);
+  }, [currentBlogId, publicationId, articleKey]);
 
   // ── Server save with retry (up to 3×, exponential backoff) ─────────────────
 
@@ -229,7 +239,18 @@ export function useAutoSave({
               await remapDraftId(oldDexieId, newId);
             }
             tempIdRef.current = newId;
-            clearPersistedDraftId(latestRef.current.publicationId);
+            // Clear both the local-scoped key and the freshly server-id-scoped
+            // key — the next read should naturally come back empty either way.
+            clearPersistedDraftId(
+              latestRef.current.publicationId,
+              undefined,
+              articleKey,
+            );
+            clearPersistedDraftId(
+              latestRef.current.publicationId,
+              undefined,
+              newId,
+            );
             onBlogIdCreated?.(result);
           }
           return {
@@ -246,7 +267,57 @@ export function useAutoSave({
       }
     }
     return false;
-  }, [saveFn, onBlogIdCreated]);
+  }, [saveFn, onBlogIdCreated, articleKey]);
+
+  // Pre-create the server row on first meaningful keystroke. Resolves once
+  // shadowIdRef/currentBlogId is populated. Idempotent — a second call
+  // while the first is in flight returns the same promise; a call after the
+  // row exists is a no-op. Reuses the existing autosave path (saveFn(true))
+  // so all the response handling (URL update, Dexie remap, persisted-id
+  // cleanup) runs through the same code path.
+  const ensureServerIdAvailable = useCallback(async () => {
+    const l = latestRef.current;
+    if (l.currentBlogId || l.shadowId) return;
+    if (
+      !hasDraftData({
+        title: l.title,
+        description: l.description,
+        contentHtml: l.contentHtml,
+        categories: l.categories,
+        hasAdditionalDraftData: l.hasAdditionalDraftData,
+      })
+    ) {
+      return;
+    }
+    if (preflightCreatePromiseRef.current) {
+      return preflightCreatePromiseRef.current;
+    }
+    const promise = (async () => {
+      try {
+        await serverSaveWithRetry();
+      } finally {
+        preflightCreatePromiseRef.current = null;
+      }
+    })();
+    preflightCreatePromiseRef.current = promise;
+    return promise;
+  }, [serverSaveWithRetry]);
+
+  // ── 1. Keystroke-level Dexie save ──────────────────────────────────────────
+  // Runs on every content change. Non-blocking, never causes re-render.
+  // Also fires the preflight (no-op if a row already exists or one is in
+  // flight) so the URL pins ?id=<n> before any debounced autosave or manual
+  // publish — closes the new-article duplicate-draft race.
+
+  useEffect(() => {
+    if (!title && !description && !normalizeContent(contentHtml)) return;
+
+    const id = getDexieId();
+    // Fire-and-forget — Dexie writes are fast (~1ms) and async
+    dexieSave(id, { title, description, content: contentHtml, categories });
+
+    void ensureServerIdAvailable();
+  }, [title, description, contentHtml, categories, getDexieId, ensureServerIdAvailable]);
 
   // ── 3. Debounced server sync ───────────────────────────────────────────────
 
@@ -585,21 +656,33 @@ export function useAutoSave({
     }));
   }, [extraDirtySignal]);
 
-  /** Clean up Dexie draft after publish or discard. */
-  const clearDraft = useCallback(() => {
+  /**
+   * Clean up Dexie draft after publish or discard. Returns a promise so the
+   * caller can await actual deletion completion before showing post-save UI
+   * — otherwise loadExistingBlog can re-run during the async gap, find the
+   * still-present Dexie row, and trigger an "unsynced changes" recovery
+   * modal on top of the publish-success modal.
+   */
+  const clearDraft = useCallback(async () => {
     const id = currentBlogId
       ? String(currentBlogId)
       : shadowId
         ? String(shadowId)
         : tempIdRef.current;
-    if (id) dexieDelete(id);
-    // Also clear temp ID entry if it exists
-    if (tempIdRef.current && currentBlogId) {
-      dexieDelete(tempIdRef.current);
-    }
+    const tempId = tempIdRef.current;
     tempIdRef.current = null;
-    clearPersistedDraftId(publicationId);
-  }, [currentBlogId, shadowId, publicationId]);
+    clearPersistedDraftId(publicationId, undefined, articleKey);
+    const deletions = [];
+    if (id) deletions.push(dexieDelete(id));
+    if (tempId && currentBlogId && tempId !== id) {
+      deletions.push(dexieDelete(tempId));
+    }
+    try {
+      await Promise.all(deletions);
+    } catch {
+      // Best-effort cleanup; never block the caller on a Dexie hiccup.
+    }
+  }, [currentBlogId, shadowId, publicationId, articleKey]);
 
   return {
     hasUnsavedChanges,
@@ -614,5 +697,6 @@ export function useAutoSave({
     syncExtraDirtySignal,
     clearDraft,
     getDexieId,
+    ensureServerIdAvailable,
   };
 }

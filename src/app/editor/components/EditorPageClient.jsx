@@ -23,10 +23,13 @@ import {
 import { TiptapEditor } from "./TiptapEditor";
 import { useAutoSave } from "./hooks/useAutoSave";
 import {
+  clearLocalArticleId,
   clearRecoverableDraft,
   getRecoverableDraft,
   isUnsyncedDraft,
+  readLocalArticleId,
   readPersistedDraftId,
+  writeLocalArticleId,
 } from "./services/DraftRecoveryService";
 import { getApiBase } from "@/utils/apiBase";
 import SaveStatusIndicator from "./SaveStatusIndicator";
@@ -219,8 +222,33 @@ export default function EditorPageClient() {
   const calendarRef = useRef(null);
   const handlingPopStateRef = useRef(false);
   const saveInFlightRef = useRef(false);
+  // Resolves when the currently-running save finishes. Manual saves (publish,
+  // save-to-draft) await this before firing their own request — otherwise an
+  // in-flight autosave POST and a parallel publish POST can both reach the
+  // server with no id and create two rows for the same article.
+  const saveInFlightPromiseRef = useRef(null);
   const editorInstanceRef = useRef(null); // Ref to TipTap editor for uncontrolled reads
   const shadowIdRef = useRef(null); // Server-created ID stored silently during auto-save (no re-render)
+  // Persistent per-tab UUID used to scope draft recovery for brand-new
+  // articles. Stored in sessionStorage (per-tab) so a refresh during editing
+  // re-mounts with the same id and can recover the in-progress Dexie draft.
+  // Cleared once the article gets a server id (URL takes over) or on publish.
+  // Two tabs writing new articles in the same publication get independent
+  // ids because sessionStorage is scoped per tab.
+  const localArticleIdRef = useRef(null);
+  if (!localArticleIdRef.current && !blogId && typeof window !== "undefined") {
+    const stored = readLocalArticleId(publicationId);
+    if (stored) {
+      localArticleIdRef.current = stored;
+    } else {
+      const generated =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `local_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      localArticleIdRef.current = generated;
+      writeLocalArticleId(publicationId, generated);
+    }
+  }
   const localDraftWinsRef = useRef(false);
   const newArticleRecoveryCheckedRef = useRef(false);
   const publishCompletedRef = useRef(false);
@@ -228,6 +256,12 @@ export default function EditorPageClient() {
   thumbnailDataRef.current = thumbnailData;
   const syncExtraDirtySignalRef = useRef(null); // Filled after useAutoSave — avoids declaration-order issue
   const initialBlogIdRef = useRef(blogId); // The blogId from the URL at mount time
+  // Tracks which blogId we've already loaded server-side. Prevents the
+  // load-effect from re-running loadExistingBlog when its useCallback
+  // identity changes (e.g. after a save updates existingBlogStatus or the
+  // URL ?status= param), which previously re-triggered the recovery modal
+  // post-publish and stacked it on top of the publish-success modal.
+  const lastLoadedBlogIdRef = useRef(null);
   const thumbnailDirtySignal = thumbnailRemoved
     ? "removed"
     : thumbnailData?.file
@@ -293,8 +327,14 @@ export default function EditorPageClient() {
     [uploadArticleImage],
   );
 
+  // Tracks an already-navigating publish-success action so the dialog's
+  // onOpenChange (fired when we set showPublishSuccess=false) doesn't run
+  // handleClosePublishModal and override the destination.
+  const publishSuccessNavigatingRef = useRef(false);
+
   // Handle See Later - after successful publish, go straight to publication posts.
   const handleSeeLater = async () => {
+    publishSuccessNavigatingRef.current = true;
     markNavigating();
     setShowPublishSuccess(false);
     setPendingRecoveryDraft(null);
@@ -321,10 +361,16 @@ export default function EditorPageClient() {
 
   // Handle Close Modal - redirect to home
   const handleClosePublishModal = () => {
+    // If See Later (or another action button) already started a navigation,
+    // skip — the dialog's onOpenChange fires when we hide it, and we don't
+    // want it to override the destination chosen by the user's button.
+    if (publishSuccessNavigatingRef.current) {
+      publishSuccessNavigatingRef.current = false;
+      setShowPublishSuccess(false);
+      return;
+    }
     markNavigating();
-
     setShowPublishSuccess(false);
-
     router.replace(withPub("/home"));
   };
 
@@ -346,6 +392,17 @@ export default function EditorPageClient() {
 
   const saveFnForHook = useCallback(
     async (isAutoSave) => {
+      // Belt-and-suspenders: even though useAutoSave gates on isDraftOrNew,
+      // refuse to send a status="draft" PUT for an article that is no longer
+      // a draft (e.g. just-published). Without this, a stale-closure or
+      // mid-render autosave can demote a published article back to draft.
+      if (
+        isAutoSave &&
+        existingBlogStatus &&
+        existingBlogStatus !== "draft"
+      ) {
+        return { skipped: true };
+      }
       return saveBlog("draft", null, true, isAutoSave);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -395,6 +452,9 @@ export default function EditorPageClient() {
       const newId = String(result.id);
       shadowIdRef.current = newId;
       replaceEditorUrlId(newId);
+      // Server id is now the source of truth (lives in the URL); the local
+      // recovery scope is no longer needed for this article.
+      clearLocalArticleId(publicationId);
 
       // If the user selected a thumbnail before the blog existed, upload it now.
       const pending = thumbnailDataRef.current;
@@ -411,7 +471,7 @@ export default function EditorPageClient() {
           });
       }
     }
-  }, [persistThumbnailForBlog, replaceEditorUrlId]);
+  }, [persistThumbnailForBlog, replaceEditorUrlId, publicationId]);
 
   // Promote shadowIdRef to state + URL (called on manual save / publish / exit)
   const flushShadowId = useCallback(() => {
@@ -435,9 +495,11 @@ export default function EditorPageClient() {
     syncExtraDirtySignal,
     clearDraft,
     getDexieId,
+    ensureServerIdAvailable,
   } = useAutoSave({
     currentBlogId,
     shadowId: shadowIdRef.current,
+    localArticleId: localArticleIdRef.current,
     title: blogTitle,
     description: blogDescription,
     contentHtml: editorContent.html,
@@ -641,6 +703,19 @@ export default function EditorPageClient() {
         return false;
       }
 
+      // After a successful publish (or other terminal save), the local Dexie
+      // row is stale by definition — its content was just synced. Don't ask
+      // the user to "restore" something that was already persisted; silently
+      // discard the orphan instead.
+      if (publishCompletedRef.current) {
+        localDraftRecoveryHandled = true;
+        const orphanId = localDraft.postId ?? localDraft.id;
+        if (orphanId) {
+          clearRecoverableDraft(orphanId).catch(() => {});
+        }
+        return false;
+      }
+
       const shouldPrompt = LOCAL_DRAFT_PROMPT_STATUSES.has(status);
       localDraftRecoveryHandled = true;
 
@@ -701,11 +776,17 @@ export default function EditorPageClient() {
   ]);
 
   useEffect(() => {
-    if (blogId && blogId === initialBlogIdRef.current) {
+    if (!blogId) return;
+    // Skip if we've already loaded for this id (loadExistingBlog identity
+    // can change purely due to status updates after our own saves).
+    if (lastLoadedBlogIdRef.current === blogId) return;
+    if (blogId === initialBlogIdRef.current) {
+      lastLoadedBlogIdRef.current = blogId;
       loadExistingBlog(blogId);
-    } else if (blogId && blogId !== initialBlogIdRef.current) {
-      // Shadow ID was just promoted — update the ref but don't reload
+    } else {
+      // Shadow ID was just promoted — update the refs but don't reload.
       initialBlogIdRef.current = blogId;
+      lastLoadedBlogIdRef.current = blogId;
     }
   }, [blogId, isMounted, getDexieId, loadExistingBlog]);
 
@@ -723,7 +804,14 @@ export default function EditorPageClient() {
     newArticleRecoveryCheckedRef.current = true;
 
     const recoverNewArticleDraft = async () => {
-      const tempDraftId = readPersistedDraftId(publicationId);
+      // Recovery is scoped to this mount's localArticleId. A fresh "New
+      // article" session never finds a previous article's stored draft id,
+      // which fixes the bug where Tiptap loaded stale content for new posts.
+      const tempDraftId = readPersistedDraftId(
+        publicationId,
+        undefined,
+        localArticleIdRef.current,
+      );
       if (!tempDraftId) return;
 
       try {
@@ -776,9 +864,20 @@ export default function EditorPageClient() {
           ? "scheduling"
           : "sending for review";
 
-    // For auto-saves, skip if a manual save is already in flight
+    // For auto-saves, skip if any save is already in flight.
     if (isAutoSave && (isSaving || saveInFlightRef.current)) {
       return { skipped: true };
+    }
+
+    // For manual saves (publish/save/schedule), wait for any in-flight save
+    // to finish first. This guarantees we observe the autosave's server id
+    // (via shadowIdRef) and update the same row instead of POSTing a new one.
+    if (!isAutoSave && saveInFlightPromiseRef.current) {
+      try {
+        await saveInFlightPromiseRef.current;
+      } catch {
+        // Previous save errored — proceed with this one anyway.
+      }
     }
 
     // Always validate required fields for submission statuses.
@@ -818,6 +917,10 @@ export default function EditorPageClient() {
     }
 
     saveInFlightRef.current = true;
+    let resolveInFlightSave;
+    saveInFlightPromiseRef.current = new Promise((resolve) => {
+      resolveInFlightSave = resolve;
+    });
 
     try {
       updateEditorContent(currentEditorContent);
@@ -954,6 +1057,39 @@ export default function EditorPageClient() {
         nextExtraDirtySignal: nextThumbnailSignal,
         savedSnapshot,
       });
+      // Keep local existingBlogStatus in sync with the persisted status.
+      // Without this, after publishing a brand-new draft the local state
+      // stays at "draft" (or null) and the autosave's `isDraftOrNew` check
+      // continues to return true — causing the next keystroke to fire a
+      // PUT with status="draft", which demotes the just-published article
+      // and surfaces it as a draft of the published post.
+      const persistedStatus = responseData?.status || status;
+      if (persistedStatus && persistedStatus !== existingBlogStatus) {
+        setExistingBlogStatus(persistedStatus);
+      }
+      // Also reflect the new status in the URL searchParams. The autosave
+      // path's earlier replaceEditorUrlId call may have left ?status=draft
+      // pinned in the URL; downstream code that reads searchParams would
+      // otherwise see a stale draft status after publish.
+      if (
+        persistedStatus &&
+        typeof window !== "undefined" &&
+        responseData?.id != null
+      ) {
+        try {
+          const urlAfterSave = new URL(window.location.href);
+          if (urlAfterSave.searchParams.get("status") !== persistedStatus) {
+            urlAfterSave.searchParams.set("status", persistedStatus);
+            window.history.replaceState(
+              window.history.state,
+              "",
+              `${urlAfterSave.pathname}${urlAfterSave.search}${urlAfterSave.hash}`,
+            );
+          }
+        } catch {
+          // Non-fatal — URL sync is best effort.
+        }
+      }
       if (!isAutoSave) {
         setSaveStatus(thumbnailUploadFailed ? "failed" : "saved");
         if (thumbnailUploadFailed) {
@@ -1000,6 +1136,8 @@ export default function EditorPageClient() {
       return false;
     } finally {
       saveInFlightRef.current = false;
+      saveInFlightPromiseRef.current = null;
+      resolveInFlightSave?.();
       if (!isAutoSave) {
         setIsSaving(false);
       }
@@ -1008,6 +1146,10 @@ export default function EditorPageClient() {
 
   // Handle Save to Draft (without redirect - just save and stay on page)
   const handleSave = async () => {
+    // Ensure the server row exists before sending the explicit save. If the
+    // editor's first-keystroke preflight is still in flight, await it so we
+    // PUT to the same row instead of racing a parallel POST.
+    await ensureServerIdAvailable?.();
     const result = await saveBlog(existingBlogStatus || "draft", null, true);
     if (result) {
       toast.success("Article updated successfully");
@@ -1068,6 +1210,7 @@ export default function EditorPageClient() {
   // Handle Revert from Trash to Draft
   const handleRevertFromTrash = async () => {
     try {
+      await ensureServerIdAvailable?.();
       const result = await saveBlog("draft", null, true);
       if (result) {
         router.replace(withPub("/draft"));
@@ -1098,14 +1241,23 @@ export default function EditorPageClient() {
     markPublishing();
 
     try {
+      // First-keystroke preflight may still be running; wait for it so the
+      // publish PUTs the just-created row instead of POSTing a duplicate.
+      await ensureServerIdAvailable?.();
       const result = await saveBlog("published");
       if (result) {
-        // Clean up Dexie draft after successful publish
+        // Clean up Dexie draft after successful publish. Set the publish
+        // sentinel BEFORE awaiting so any re-render between here and the
+        // success modal sees publishCompletedRef=true and skips recovery.
         publishCompletedRef.current = true;
         localDraftWinsRef.current = false;
         setPendingRecoveryDraft(null);
         setShowRecoveryModal(false);
-        clearDraft();
+        // Await Dexie deletion so the "unsynced changes" detector doesn't
+        // see a phantom row right after publish (which produced a recovery
+        // modal stacked on top of the publish-success modal).
+        await clearDraft();
+        clearLocalArticleId(publicationId);
         setPublishedBlogSlug(result.slug || "");
         setShowPublishSuccess(true);
       }
@@ -1122,6 +1274,7 @@ export default function EditorPageClient() {
 
   // Handle Send for Review (for editors/authors in joined publications)
   const handleSendForReview = async () => {
+    await ensureServerIdAvailable?.();
     const result = await saveBlog("review", null, true);
     if (result) {
       toast.success("Article submitted for review");
@@ -1172,6 +1325,7 @@ export default function EditorPageClient() {
 
   // Helper for consistent save-and-exit behavior
   const performSaveAndExit = async (targetPath, forceExit = false) => {
+    await ensureServerIdAvailable?.();
     const result = await saveBlog("draft", null, true);
 
     if (result || forceExit) {
@@ -1225,9 +1379,10 @@ export default function EditorPageClient() {
     setShowExitModal(true);
   };
 
-  const handleDiscard = () => {
+  const handleDiscard = async () => {
     markNavigating();
-    clearDraft();
+    await clearDraft();
+    clearLocalArticleId(publicationId);
     setShowExitModal(false);
 
     // Navigate based on destination
@@ -1251,6 +1406,7 @@ export default function EditorPageClient() {
     // If article is already published, keep it published. Otherwise default to draft.
     const statusToSave =
       existingBlogStatus === "published" ? "published" : "draft";
+    await ensureServerIdAvailable?.();
     const result = await saveBlog(statusToSave, null, true);
     if (!result) {
       // saveBlog already shows an error toast; keep user on editor so they can retry
@@ -1303,6 +1459,7 @@ export default function EditorPageClient() {
     }
 
     try {
+      await ensureServerIdAvailable?.();
       const result = await saveBlog("scheduled", scheduledDateTime, true);
       if (result) {
         setShowCalendar(false);
