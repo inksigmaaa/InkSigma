@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import Calendar10 from "@/components/calendar10";
 import EditorCategoryDropdown from "./EditorCategoryDropdown";
@@ -20,7 +21,14 @@ import {
   FileText,
 } from "lucide-react";
 
-import { TiptapEditor } from "./TiptapEditor";
+// Lazy-load the editor (Tiptap + ~12 extensions) so its large bundle is fetched
+// only on the editor route instead of eagerly. Client-only — the editor already
+// gates on mount via immediatelyRender:false. EditorContentSkeleton is the same
+// fallback used while the page itself is loading, so the UX is consistent.
+const TiptapEditor = dynamic(
+  () => import("./TiptapEditor").then((mod) => mod.TiptapEditor),
+  { ssr: false, loading: () => <EditorContentSkeleton /> },
+);
 import { useAutoSave } from "./hooks/useAutoSave";
 import {
   clearLocalArticleId,
