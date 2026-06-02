@@ -1,10 +1,12 @@
 import { headers } from "next/headers";
-import { permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
 import BlogDetailPageClient from "./BlogDetailPageClient";
 import {
+  buildBlogPostingJsonLd,
   buildPublicationMetadata,
   fetchBlogForMetadata,
+  serializeJsonLd,
 } from "@/utils/publicationSeo";
 import {
   normalizeSearchParamsRecord,
@@ -96,12 +98,33 @@ export default async function BlogDetailPage({ params, searchParams }) {
     permanentRedirect(getCanonicalBlogPath(invokePath, blog.canonicalSlug));
   }
 
+  // Return a real 404 for missing posts instead of a 200 "soft 404" (which
+  // search engines can index as thin content).
+  if (!blog?.publicationId) {
+    notFound();
+  }
+
+  const canonicalSlug = blog.canonicalSlug || blog.slug || requestedSlug;
+  const jsonLd = buildBlogPostingJsonLd({
+    publication,
+    blog,
+    pathname: `/blog/${canonicalSlug}`,
+  });
+
   return (
-    <BlogDetailPageClient
-      slug={requestedSlug}
-      initialHostContext={hostContext}
-      initialPublication={publication}
-      initialBlog={blog}
-    />
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
+        />
+      )}
+      <BlogDetailPageClient
+        slug={requestedSlug}
+        initialHostContext={hostContext}
+        initialPublication={publication}
+        initialBlog={blog}
+      />
+    </>
   );
 }
