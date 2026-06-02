@@ -8,7 +8,7 @@ import Image from "next/image";
 import Verify from "@/components/features/verify/Verify";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import PublishOptionsModal from "@/components/features/review/PublishOptionsModal";
-import CategoryFilter from "@/components/features/categoryFilter/CategoryFilter";
+import CategoryFilter from "@/components/features/categoryFilter";
 import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
