@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Clock } from "lucide-react";
 import Verify from "@/components/features/verify/Verify";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
-import CategoryFilter from "@/components/features/categoryFilter/CategoryFilter";
+import CategoryFilter from "@/components/features/categoryFilter";
 import ReviewArticles from "@/components/features/review/ReviewArticles";
 import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";

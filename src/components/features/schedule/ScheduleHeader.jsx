@@ -1,4 +1,4 @@
-import CategoryFilter from "../categoryFilter/CategoryFilter"
+import CategoryFilter from "../categoryFilter"
 
 export default function ScheduleHeader({ category, onCategoryChange, totalPosts = 0 }) {
   return (

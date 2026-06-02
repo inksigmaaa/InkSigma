@@ -1,4 +1,4 @@
-import CategoryFilter from "../categoryFilter/CategoryFilter"
+import CategoryFilter from "../categoryFilter"
 import { Trash2 } from "lucide-react"
 import { NightTooltip } from "@/components/ui/tooltip";
 

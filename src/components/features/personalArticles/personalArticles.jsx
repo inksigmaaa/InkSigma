@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import PersonalArticleContainer from "../personalArticleContainer/PersonalArticleContainer";
-import CategoryFilter from "../categoryFilter/CategoryFilter";
+import CategoryFilter from "../categoryFilter";
 import { Button } from "@/components/ui/button";
 import { NightTooltip } from "@/components/ui/tooltip";
 import styles from "../articles/Articles.module.css";

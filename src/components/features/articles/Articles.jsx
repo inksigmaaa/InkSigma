@@ -3,7 +3,7 @@
 import { useState } from "react";
 import ArticleContainer from "../articleContainer/ArticleContainer";
 import ConfirmModal from "../confirmModal/ConfirmModal";
-import CategoryFilter from "../categoryFilter/CategoryFilter";
+import CategoryFilter from "../categoryFilter";
 import { useArticles } from "@/contexts/ArticlesContext";
 import styles from "./Articles.module.css";
 import { toast } from "sonner";

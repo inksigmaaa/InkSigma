@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Clock } from "lucide-react";
-import CategoryFilter from "../categoryFilter/CategoryFilter";
+import CategoryFilter from "../categoryFilter";
 
 export default function ReviewArticles({ title = "Review" }) {
   const [selectedPosts, setSelectedPosts] = useState([]);
