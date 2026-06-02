@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import Verify from "@/components/features/verify/Verify";
 import BlogStatsComponent from "@/components/features/BlogStatsComponent/BlogStatsComponent";
@@ -93,29 +93,50 @@ export default function HomePage() {
       };
     });
 
-  // Fetch publication stats once and share them with child analytics widgets.
+  // Stable key of published blog ids — changes only when the SET of published
+  // posts changes, not on every unrelated store mutation (each of which yields
+  // a fresh `publicationArticles` array reference).
+  const publishedBlogIdsKey = useMemo(
+    () =>
+      publicationArticles
+        .filter((article) => article.status === "published")
+        .map((article) => article.id)
+        .sort()
+        .join(","),
+    [publicationArticles],
+  );
+
+  // Read live articles inside the stats effect without widening its deps, so
+  // blog ids keep their original type (the key above is only for change
+  // detection). The ref is synced in its own effect (declared first) so it is
+  // current before the stats effect below reads it.
+  const publicationArticlesRef = useRef(publicationArticles);
+  useEffect(() => {
+    publicationArticlesRef.current = publicationArticles;
+  });
+
+  // Fetch publication stats and share them with child analytics widgets.
   useEffect(() => {
     const fetchStats = async () => {
-      // Get published article IDs
-      const publishedArticles = publicationArticles.filter(
-        (article) => article.status === "published",
-      );
+      const blogIds = publicationArticlesRef.current
+        .filter((article) => article.status === "published")
+        .map((article) => article.id);
 
-      if (publishedArticles.length === 0) {
+      if (blogIds.length === 0) {
         return;
       }
 
       try {
-        const blogIds = publishedArticles.map((a) => a.id);
-
         const [commentResponse, viewResponse] = await Promise.all([
           fetch(`${API_URL}/api/comments/counts`, {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ blogIds }),
           }),
           fetch(`${API_URL}/api/views/stats`, {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ blogIds }),
           }),
@@ -146,7 +167,7 @@ export default function HomePage() {
     };
 
     fetchStats();
-  }, [publicationArticles]);
+  }, [publishedBlogIdsKey]);
 
   const handleStartWriting = () => {
     // Pass current publication ID to editor - navigate using router
