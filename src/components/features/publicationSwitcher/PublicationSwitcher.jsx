@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getPublicationLogoUrl } from "@/utils/imageUrl";
+import { useOutsideClick } from "@/hooks/useOutsideClick";
 
 export default function PublicationSwitcher() {
   const router = useRouter();
@@ -13,21 +14,7 @@ export default function PublicationSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen]);
+  useOutsideClick(dropdownRef, () => setIsOpen(false), isOpen);
 
   const handlePublicationSwitch = (publication) => {
     switchPublication(publication);
