@@ -147,6 +147,20 @@ export const createApp = () => {
     next();
   });
 
+  // Mount better-auth BEFORE the body parsers below. toNodeHandler reads the
+  // raw request stream itself, so a JSON/urlencoded parser running first would
+  // consume the body and break auth POSTs (sign-in/sign-up). It still sits after
+  // rateLimit (so the auth-login limits apply) and after the /api no-store
+  // headers (so auth responses are never cached).
+  logger.info({ step: "auth.mount", status: "start" }, "Mounting auth handler");
+  try {
+    const authHandler = toNodeHandler(auth);
+    app.use("/api/auth", authHandler);
+    logger.info({ step: "auth.mount", status: "done" }, "Mounted auth handler");
+  } catch (error) {
+    logger.error(error, "Failed to mount auth handler");
+  }
+
   // Blog routes may carry large article bodies — mount a 5MB JSON parser
   // scoped to /api/blogs. The global 1MB parser below is a no-op once a body
   // is already parsed (express.json short-circuits on req._body), so /api/blogs
@@ -170,14 +184,6 @@ export const createApp = () => {
       },
     }),
   );
-  logger.info({ step: "auth.mount", status: "start" }, "Mounting auth handler");
-  try {
-    const authHandler = toNodeHandler(auth);
-    app.use("/api/auth", authHandler);
-    logger.info({ step: "auth.mount", status: "done" }, "Mounted auth handler");
-  } catch (error) {
-    logger.error(error, "Failed to mount auth handler");
-  }
 
   app.use("/api/custom", authRoutes);
   app.use("/api/profile", profileRoutes);
