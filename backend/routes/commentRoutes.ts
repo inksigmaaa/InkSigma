@@ -17,7 +17,8 @@ const buildCommentSelect = () => ({
   blogId: comment.blogId,
   authorId: comment.authorId,
   guestName: comment.guestName,
-  guestEmail: comment.guestEmail,
+  // guestEmail intentionally omitted: it is guest PII and must not be exposed
+  // through the public comment read (GET /api/comments/blog/:blogId).
   parentId: comment.parentId,
   createdAt: comment.createdAt,
   updatedAt: comment.updatedAt,
@@ -234,7 +235,6 @@ router.post(
             blogId: comment.blogId,
             authorId: comment.authorId,
             guestName: comment.guestName,
-            guestEmail: comment.guestEmail,
             parentId: comment.parentId,
             createdAt: comment.createdAt,
             updatedAt: comment.updatedAt,
@@ -343,7 +343,6 @@ router.put(
           blogId: comment.blogId,
           authorId: comment.authorId,
           guestName: comment.guestName,
-          guestEmail: comment.guestEmail,
           parentId: comment.parentId,
           createdAt: comment.createdAt,
           updatedAt: comment.updatedAt,
@@ -436,6 +435,12 @@ router.post("/counts", async (req, res) => {
 
     if (!blogIds || !Array.isArray(blogIds)) {
       return res.status(400).json({ error: "blogIds array is required" });
+    }
+
+    if (blogIds.length > 200) {
+      return res
+        .status(400)
+        .json({ error: "Too many blogIds (max 200 per request)" });
     }
 
     const normalizedBlogIds = blogIds

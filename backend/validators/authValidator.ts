@@ -23,7 +23,16 @@ export const verifyEmailSchema = z.object({
 });
 
 export const setPasswordSchema = z.object({
-  body: z.object({
-    password: z.string().min(8),
-  }),
+  // confirmPassword must be part of the schema: the validate() middleware
+  // replaces req.body with the parsed result, so any field not declared here
+  // (Zod strips unknown keys) would be dropped before the handler reads it.
+  body: z
+    .object({
+      password: z.string().min(8),
+      confirmPassword: z.string().min(8),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: "Passwords do not match",
+      path: ["confirmPassword"],
+    }),
 });
