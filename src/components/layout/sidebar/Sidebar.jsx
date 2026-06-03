@@ -205,84 +205,9 @@ function Sidebar() {
     return getRoute(item.label);
   };
 
-  // MENU CONFIGURATION
-  // Define items with permission checks
-  const MENU_SECTIONS = [
-    {
-      title: "PUBLICATION",
-      items: [
-        { label: "Home", icon: "home.svg", check: () => true },
-        {
-          label: "Domain",
-          icon: "domain.svg",
-          check: (r) => hasPermission(r, "canAccessDomain"),
-        },
-        {
-          label: "Members",
-          icon: "Member.svg",
-          check: (r) => hasPermission(r, "canAccessMembers"),
-        },
-        {
-          label: "Settings",
-          icon: "settings.svg",
-          check: (r) => hasPermission(r, "canAccessSettings"),
-        },
-      ],
-    },
-    {
-      title: "ARTICLES",
-      items: [
-        {
-          label: "All Articles",
-          icon: "all_articles.svg",
-          check: (r) => hasPermission(r, "canAccessAllArticles"),
-        },
-        {
-          label: "Published",
-          icon: "Publish.svg",
-          check: (r) => hasPermission(r, "canAccessPublished"),
-        },
-        {
-          label: "Unpublished",
-          icon: "unpublished.svg",
-          check: (r) => hasPermission(r, "canAccessAllArticles"),
-        },
-        {
-          label: "Schedule",
-          icon: "Schedule.svg",
-          check: (r) => hasPermission(r, "canAccessScheduled"),
-        },
-        {
-          label: "Review",
-          icon: "Review.svg",
-          check: (r) => hasPermission(r, "canAccessReviewQueue"),
-          // Special handling: route depends on role
-          getRoute: (role) =>
-            role === "author" ? "/author-review" : "/review",
-        },
-      ],
-    },
-    {
-      title: "PERSONAL",
-      items: [
-        {
-          label: "My Blogs",
-          icon: "myblogs.svg",
-          check: (r) => hasPermission(r, "viewOwnArticles"),
-        },
-        {
-          label: "Draft",
-          icon: "draft.svg",
-          check: (r) => hasPermission(r, "canAccessDrafts"),
-        },
-        {
-          label: "Trash",
-          icon: "trash.svg",
-          check: (r) => hasPermission(r, "viewOwnArticles"),
-        },
-      ],
-    },
-  ];
+  // MENU_SECTIONS is defined once at module scope (top of file) — no need to
+  // rebuild this array on every render. The Review item carries a getRoute()
+  // override (author -> /author-review, else /review).
 
   // Check if the current route is active
   const isActive = (label) => {

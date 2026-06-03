@@ -6,6 +6,10 @@ import {
 import { getPublicationPageUrl } from "@/utils/publicationDomain";
 import { parseHost } from "@/utils/hostParser";
 
+// Crawler endpoint — cache at the CDN per host instead of recomputing on every
+// crawl. robots content rarely changes; serve fresh for 5 min, stale for an hour.
+const ROBOTS_CACHE_CONTROL = "public, s-maxage=300, stale-while-revalidate=3600";
+
 const buildRobotsText = ({ allow = ["/"], disallow = [], sitemap = "" }) => {
   const lines = ["User-agent: *"];
 
@@ -37,7 +41,7 @@ export async function GET() {
       {
         headers: {
           "Content-Type": "text/plain; charset=utf-8",
-          "Cache-Control": "no-store",
+          "Cache-Control": ROBOTS_CACHE_CONTROL,
         },
       },
     );
@@ -54,7 +58,7 @@ export async function GET() {
       {
         headers: {
           "Content-Type": "text/plain; charset=utf-8",
-          "Cache-Control": "no-store",
+          "Cache-Control": ROBOTS_CACHE_CONTROL,
         },
       },
     );
@@ -67,7 +71,7 @@ export async function GET() {
     {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-store",
+        "Cache-Control": ROBOTS_CACHE_CONTROL,
       },
     },
   );

@@ -15,6 +15,7 @@
  */
 
 import { useCallback } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useSession } from "@/lib/auth-client";
 import { usePublication } from "@/contexts/PublicationContext";
 import { useArticleStore } from "@/stores/articleStore";
@@ -29,7 +30,61 @@ export function ArticlesProvider({ children }) {
  * will only re-render when those specific Zustand slices change.
  */
 export function useArticles() {
-  const store = useArticleStore();
+  // Subscribe only to the slices this hook exposes. A bare `useArticleStore()`
+  // re-renders every consumer on ANY store change — including editorArticleCache
+  // writes from hover-prefetch and the internal `_*` refs set on every request —
+  // which was a major source of dashboard re-renders. Zustand action identities
+  // are stable, so listing them here adds no extra renders; useShallow re-renders
+  // only when one of the selected values actually changes.
+  const store = useArticleStore(
+    useShallow((s) => ({
+      articles: s.articles,
+      reviewArticles: s.reviewArticles,
+      publicationArticles: s.publicationArticles,
+      loading: s.loading,
+      refreshing: s.refreshing,
+      reviewLoading: s.reviewLoading,
+      reviewRefreshing: s.reviewRefreshing,
+      pubArticlesLoading: s.pubArticlesLoading,
+      pubArticlesRefreshing: s.pubArticlesRefreshing,
+      error: s.error,
+      reviewError: s.reviewError,
+      areUserArticlesLoaded: s.areUserArticlesLoaded,
+      arePubArticlesLoaded: s.arePubArticlesLoaded,
+      areReviewArticlesLoaded: s.areReviewArticlesLoaded,
+      loadUserArticles: s.loadUserArticles,
+      createArticle: s.createArticle,
+      loadReviewArticles: s.loadReviewArticles,
+      loadPublicationArticles: s.loadPublicationArticles,
+      getArticleById: s.getArticleById,
+      getArticleByIdUncached: s.getArticleByIdUncached,
+      getCachedArticleById: s.getCachedArticleById,
+      prefetchArticle: s.prefetchArticle,
+      primeEditorArticle: s.primeEditorArticle,
+      primeArticleFromBlog: s.primeArticleFromBlog,
+      refreshArticle: s.refreshArticle,
+      updateArticle: s.updateArticle,
+      moveToTrash: s.moveToTrash,
+      moveToDraft: s.moveToDraft,
+      moveToTrashStatus: s.moveToTrashStatus,
+      restoreFromTrash: s.restoreFromTrash,
+      deleteArticle: s.deleteArticle,
+      publishArticle: s.publishArticle,
+      unpublishArticle: s.unpublishArticle,
+      acceptReviewArticle: s.acceptReviewArticle,
+      rejectReviewArticle: s.rejectReviewArticle,
+      revertReviewToDraft: s.revertReviewToDraft,
+      bulkMoveToTrash: s.bulkMoveToTrash,
+      bulkMoveToTrashStatus: s.bulkMoveToTrashStatus,
+      bulkMoveToDraft: s.bulkMoveToDraft,
+      bulkRestore: s.bulkRestore,
+      bulkDelete: s.bulkDelete,
+      bulkPublish: s.bulkPublish,
+      uploadArticleImage: s.uploadArticleImage,
+      createDraftFromPublished: s.createDraftFromPublished,
+      addComment: s.addComment,
+    })),
+  );
   const { data: session } = useSession();
   const sessionUserId = session?.user?.id ?? null;
 
