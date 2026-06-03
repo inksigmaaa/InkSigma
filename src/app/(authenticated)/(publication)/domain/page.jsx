@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -231,7 +231,9 @@ export default function DomainPage() {
   const [customDomain, setCustomDomain] = useState("");
   const [subdomain, setSubdomain] = useState("Subdomain");
   const [publicationId, setPublicationId] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Block only when there is genuinely no publication yet; when the context
+  // already has it (the common case) we seed instantly below — no spinner.
+  const [loading, setLoading] = useState(!currentPublication?.id);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [savedCustomDomain, setSavedCustomDomain] = useState("");
@@ -264,28 +266,42 @@ export default function DomainPage() {
     setCustomDomainLastCheckedAt(pubData?.customDomainLastCheckedAt || null);
   }, []);
 
-  const loadPublicationData = useCallback(async () => {
-    try {
-      setError("");
-      const targetPublicationId = currentPublication?.id;
-      if (!targetPublicationId) {
-        setLoading(false);
-        return;
-      }
+  // Live ref to the current publication so the loader can seed from it without
+  // re-subscribing on every context update (which would clobber edits mid-form).
+  const currentPublicationRef = useRef(currentPublication);
+  useEffect(() => {
+    currentPublicationRef.current = currentPublication;
+  });
 
-      const pubData = await publicationService.getPublication(targetPublicationId);
+  const loadPublicationData = useCallback(async () => {
+    const pub = currentPublicationRef.current;
+    const targetPublicationId = pub?.id;
+    if (!targetPublicationId) {
+      setLoading(false);
+      return;
+    }
+
+    // Paint instantly from the publication already held in PublicationContext,
+    // then refresh in the background. Previously this blocked the whole page on
+    // every visit (a redundant round-trip the context had already made), which
+    // is what caused the loading screen / slow navigation.
+    setError("");
+    applyPublicationDomainState(pub);
+    setLoading(false);
+
+    try {
+      const pubData =
+        await publicationService.getPublication(targetPublicationId);
       applyPublicationDomainState(pubData);
     } catch (err) {
       console.error("Error loading publication:", err);
       setError("Failed to load domain settings.");
-    } finally {
-      setLoading(false);
     }
-  }, [applyPublicationDomainState, currentPublication?.id]);
+  }, [applyPublicationDomainState]);
 
   useEffect(() => {
     loadPublicationData();
-  }, [loadPublicationData]);
+  }, [loadPublicationData, currentPublication?.id]);
 
   const currentDomain = getSubdomainDomainLabel(subdomain);
   const normalizedCurrentDomain = normalizeCustomDomain(currentDomain);
