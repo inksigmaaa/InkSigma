@@ -14,6 +14,7 @@ import PageTransition from "@/components/PageTransition";
 import FullPageErrorState from "@/components/common/FullPageErrorState";
 import { toast } from "sonner";
 import { withPublicationPath } from "@/utils/dashboardUrl";
+import { useArticleSelection } from "@/hooks/useArticleSelection";
 
 export default function SchedulePage() {
   const {
@@ -34,7 +35,6 @@ export default function SchedulePage() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [selectedArticles, setSelectedArticles] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [actionArticleId, setActionArticleId] = useState(null);
@@ -213,26 +213,12 @@ export default function SchedulePage() {
     }
   }, [isAdmin, currentPublication?.id]);
 
-  const handleSelectAll = useCallback(
-    (checked) => {
-      if (checked) {
-        setSelectedArticles(scheduledArticleIds);
-      } else {
-        setSelectedArticles([]);
-      }
-    },
-    [scheduledArticleIds],
-  );
-
-  const handleArticleSelect = useCallback((id, checked) => {
-    if (checked) {
-      setSelectedArticles((prev) => [...prev, id]);
-    } else {
-      setSelectedArticles((prev) =>
-        prev.filter((articleId) => articleId !== id),
-      );
-    }
-  }, []);
+  const {
+    selectedArticles,
+    setSelectedArticles,
+    handleSelectAll,
+    handleArticleSelect,
+  } = useArticleSelection(scheduledArticleIds);
 
   const handleBulkDelete = useCallback(() => {
     setIsBulkAction(true);
