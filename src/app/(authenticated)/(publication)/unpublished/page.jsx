@@ -10,6 +10,7 @@ import { usePublication } from "@/contexts/PublicationContext";
 
 import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
+import { useArticleSelection } from "@/hooks/useArticleSelection";
 import {
   DEFAULT_DRAFT_TITLE,
   isArticlePublishable,
@@ -32,7 +33,6 @@ export default function Unpublished() {
 
   const { data: session } = useSession();
   const { currentPublication, getCurrentUserRole } = usePublication();
-  const [selectedArticles, setSelectedArticles] = useState([]);
   const [showRepublishModal, setShowRepublishModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [showTrashModal, setShowTrashModal] = useState(false);
@@ -136,19 +136,12 @@ export default function Unpublished() {
     onDelete: () => handleIndividualDelete(article.id),
   }));
 
-  const handleArticleSelect = (id, isSelected) => {
-    setSelectedArticles((prev) =>
-      isSelected ? [...prev, id] : prev.filter((articleId) => articleId !== id),
-    );
-  };
-
-  const handleSelectAll = (checked) => {
-    if (checked) {
-      setSelectedArticles(unpublishedArticles.map((article) => article.id));
-    } else {
-      setSelectedArticles([]);
-    }
-  };
+  const {
+    selectedArticles,
+    setSelectedArticles,
+    handleSelectAll,
+    handleArticleSelect,
+  } = useArticleSelection(unpublishedArticles.map((article) => article.id));
 
   const handleBulkRepublish = () => {
     if (selectedArticles.length === 0) return;

@@ -10,6 +10,7 @@ import FullPageErrorState from "@/components/common/FullPageErrorState";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { toast } from "sonner";
+import { useArticleSelection } from "@/hooks/useArticleSelection";
 
 export default function TrashPage() {
   const { currentPublication } = usePublication();
@@ -22,7 +23,6 @@ export default function TrashPage() {
     bulkMoveToTrash,
     loadUserArticles,
   } = useArticles();
-  const [selectedArticles, setSelectedArticles] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [deleteArticleId, setDeleteArticleId] = useState(null);
@@ -48,23 +48,12 @@ export default function TrashPage() {
     return false;
   });
 
-  const handleSelectAll = (checked) => {
-    if (checked) {
-      setSelectedArticles(trashArticles.map((a) => a.id));
-    } else {
-      setSelectedArticles([]);
-    }
-  };
-
-  const handleArticleSelect = (id, checked) => {
-    if (checked) {
-      setSelectedArticles((prev) => [...prev, id]);
-    } else {
-      setSelectedArticles((prev) =>
-        prev.filter((articleId) => articleId !== id),
-      );
-    }
-  };
+  const {
+    selectedArticles,
+    setSelectedArticles,
+    handleSelectAll,
+    handleArticleSelect,
+  } = useArticleSelection(trashArticles.map((a) => a.id));
 
   const handleBulkDelete = () => {
     if (selectedArticles.length > 0) {

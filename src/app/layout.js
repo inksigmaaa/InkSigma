@@ -17,7 +17,24 @@ import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/Providers";
 import { headers } from "next/headers";
 
+// Base origin for resolving relative metadata URLs (OG images, canonical
+// fallbacks). Blog/publication metadata already emits absolute URLs; this is
+// the safety net. Guarded so a malformed env can never break the build.
+const resolveMetadataBase = () => {
+  const candidate =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.NEXT_PUBLIC_ROOT_DOMAIN
+      ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`
+      : "https://inksigma.com");
+  try {
+    return new URL(candidate);
+  } catch {
+    return new URL("https://inksigma.com");
+  }
+};
+
 export const metadata = {
+  metadataBase: resolveMetadataBase(),
   title: "InkSigma - A platform for focussed and simple writing",
   description:
     "Designed for you to write passionately. Write and Grow together.",

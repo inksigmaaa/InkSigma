@@ -1,5 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { useOutsideClick } from "@/hooks/useOutsideClick"
 
 // Custom Select component with line-style arrow
 const SelectContext = React.createContext()
@@ -8,21 +9,7 @@ const Select = ({ children, value, onValueChange }) => {
   const [isOpen, setIsOpen] = React.useState(false)
   const selectRef = React.useRef(null)
 
-  React.useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (selectRef.current && !selectRef.current.contains(event.target)) {
-        setIsOpen(false)
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [isOpen])
+  useOutsideClick(selectRef, () => setIsOpen(false), isOpen)
 
   return (
     <SelectContext.Provider value={{ value, onValueChange, isOpen, setIsOpen }}>

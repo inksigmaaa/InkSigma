@@ -3,59 +3,10 @@ import ArticleDropdown from "../articleDropdown/ArticleDropdown.jsx";
 import { useRouter } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
 import React from "react";
-import { NightTooltip } from "@/components/ui/tooltip";
 import { withPublicationPath } from "@/utils/dashboardUrl";
 import { useArticleStore } from "@/stores/articleStore";
-
-// Helper function to format relative time
-const getRelativeTime = (dateString) => {
-  if (!dateString) return "";
-
-  try {
-    const now = new Date();
-    const postDate = new Date(dateString);
-
-    // Check if date is valid
-    if (isNaN(postDate.getTime())) {
-      return dateString; // Return original string if invalid
-    }
-
-    const diffInSeconds = Math.floor((now - postDate) / 1000);
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    const diffInHours = Math.floor(diffInMinutes / 60);
-
-    // Just now (less than 1 minute)
-    if (diffInMinutes < 1) {
-      return "Posted just now";
-    }
-
-    // Minutes ago (1-59 minutes)
-    if (diffInMinutes < 60) {
-      return `Posted ${diffInMinutes} min${diffInMinutes > 1 ? "s" : ""} ago`;
-    }
-
-    // Hours ago (1-23 hours)
-    if (diffInHours < 24) {
-      return `Posted ${diffInHours} hr${diffInHours > 1 ? "s" : ""} ago`;
-    }
-
-    // Show actual date after 24 hours
-    const options = { day: "numeric", month: "short", year: "numeric" };
-    return `Posted ${postDate.toLocaleDateString("en-US", options)}`;
-  } catch (error) {
-    return dateString; // Return original string if error occurs
-  }
-};
-
-function ActionTooltipButton({ label, children, ...props }) {
-  return (
-    <NightTooltip content={label}>
-      <button aria-label={label} {...props}>
-        {children}
-      </button>
-    </NightTooltip>
-  );
-}
+import { getRelativeTime } from "../articleCard/getRelativeTime";
+import { ActionTooltipButton } from "../articleCard/ActionTooltipButton";
 
 export default function ArticleContainer({
   id,
@@ -135,29 +86,38 @@ export default function ArticleContainer({
     }
   };
 
+  // `dotColor` mirrors each status's badge text color and drives the tablet
+  // status dot. Previously the dot read `config.color`, which did not exist on
+  // these entries, so the dot rendered with no color.
   const statusConfig = {
     published: {
       className: "bg-[#D5F2D4] text-[#267F24]",
+      dotColor: "#267F24",
       text: "Published",
     },
     draft: {
       className: "bg-[#FFEADB] text-[#A34200]",
+      dotColor: "#A34200",
       text: "Draft",
     },
     scheduled: {
       className: "bg-[#D6EEFB] text-[#0048B5]",
+      dotColor: "#0048B5",
       text: "Scheduled",
     },
     trash: {
       className: "bg-[#FFD6D6] text-[#A30000]",
+      dotColor: "#A30000",
       text: "Trash",
     },
     review: {
       className: "bg-[#E9D5FF] text-[#7C3AED]",
+      dotColor: "#7C3AED",
       text: "Under Review",
     },
     unpublished: {
       className: "bg-[#FEF3C7] text-[#D97706]",
+      dotColor: "#D97706",
       text: "Unpublished",
     },
   };
@@ -448,7 +408,7 @@ export default function ArticleContainer({
                   width: "6px",
                   height: "6px",
                   borderRadius: "50%",
-                  backgroundColor: titleColor || config.color,
+                  backgroundColor: titleColor || config.dotColor,
                   flexShrink: 0,
                 }}
               />

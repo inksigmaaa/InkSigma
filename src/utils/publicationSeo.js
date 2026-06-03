@@ -178,6 +178,56 @@ export const buildPublicationMetadata = ({
   };
 };
 
+/**
+ * Build a schema.org BlogPosting graph for a blog post. Rendered server-side as
+ * a <script type="application/ld+json"> so crawlers get rich-result signals
+ * (headline, author, dates, publisher) without executing JS. Undefined fields
+ * are dropped automatically by JSON.stringify.
+ */
+export const buildBlogPostingJsonLd = ({ publication, blog, pathname }) => {
+  if (!publication || !blog) return null;
+
+  const url = getPublicationPageUrl(publication, pathname) || undefined;
+  const image =
+    getAbsoluteAssetUrl(
+      blog.image || publication.metaOgImageUrl || publication.logoUrl,
+    ) || undefined;
+  const datePublished = blog.publishedAt || blog.createdAt || undefined;
+  const dateModified =
+    blog.updatedAt || blog.publishedAt || blog.createdAt || undefined;
+  const authorName = blog.author?.name || publication.name || undefined;
+  const publisherLogo =
+    getAbsoluteAssetUrl(publication.logoUrl || publication.faviconUrl) ||
+    undefined;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: blog.title,
+    description: blog.description || undefined,
+    url,
+    mainEntityOfPage: url ? { "@type": "WebPage", "@id": url } : undefined,
+    image: image ? [image] : undefined,
+    datePublished,
+    dateModified,
+    author: authorName ? { "@type": "Person", name: authorName } : undefined,
+    publisher: {
+      "@type": "Organization",
+      name: publication.name || "InkSigma",
+      ...(publisherLogo
+        ? { logo: { "@type": "ImageObject", url: publisherLogo } }
+        : {}),
+    },
+  };
+};
+
+/**
+ * Serialize a JSON-LD object for safe embedding in a <script> tag. Escaping `<`
+ * prevents a `</script>` sequence in author text from breaking out of the tag.
+ */
+export const serializeJsonLd = (jsonLd) =>
+  JSON.stringify(jsonLd).replace(/</g, "\\u003c");
+
 const escapeXml = (value) =>
   String(value)
     .replace(/&/g, "&amp;")

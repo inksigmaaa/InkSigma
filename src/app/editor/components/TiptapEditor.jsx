@@ -293,7 +293,11 @@ export const TiptapEditor = memo(function TiptapEditor({
     ],
     content: initialContent,
     immediatelyRender: false,
-    shouldRerenderOnTransaction: true,
+    // Don't re-render this large component on every keystroke/selection. The
+    // toolbar keeps its own equality-gated subscription (useToolbarActiveState
+    // via editor.on("transaction"/"selectionUpdate")), so active-state UI still
+    // updates without forcing a full editor re-render on each transaction.
+    shouldRerenderOnTransaction: false,
     onUpdate: ({ editor: ed }) => {
       const html = ed.getHTML();
       const text = ed.getText();

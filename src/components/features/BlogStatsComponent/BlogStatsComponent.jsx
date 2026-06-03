@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useArticles } from '@/contexts/ArticlesContext'
+import { useOutsideClick } from '@/hooks/useOutsideClick'
 import { usePublication } from '@/contexts/PublicationContext'
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Calendar } from "@/components/ui/calendar"
@@ -160,21 +161,7 @@ const BlogStatsComponent = ({ commentCounts = {}, viewStats = {} }) => {
   }
 
   // Close period menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (periodMenuRef.current && !periodMenuRef.current.contains(event.target)) {
-        setShowPeriodMenu(false)
-      }
-    }
-
-    if (showPeriodMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showPeriodMenu])
+  useOutsideClick(periodMenuRef, () => setShowPeriodMenu(false), showPeriodMenu)
 
   return (
     <div className="w-full">

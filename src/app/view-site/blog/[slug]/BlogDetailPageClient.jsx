@@ -31,6 +31,7 @@ import { fetchJsonWithRetry } from "@/lib/api/client";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { getApiBase } from "@/utils/apiBase";
 import { getImageUrl } from "@/utils/imageUrl";
+import { parse } from "node-html-parser";
 
 const API_URL = getApiBase();
 const BLOG_DETAIL_CACHE_TTL_MS = 60 * 1000;
@@ -86,17 +87,20 @@ const enrichBlogContent = (blogData) => {
   }
 
   const nextBlog = { ...blogData };
-  if (!nextBlog.content || typeof window === "undefined") {
+  if (!nextBlog.content) {
     return { blog: nextBlog, sections: [] };
   }
 
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(nextBlog.content, "text/html");
-  const images = doc.querySelectorAll("img");
+  // Parse with an isomorphic HTML parser (works during SSR and on the client),
+  // so the server-rendered HTML already carries absolutized image src, the
+  // first-image LCP hint, and heading ids — instead of only after hydration.
+  // The transform is idempotent: already-absolute src and existing ids are
+  // left untouched, so re-running it on the client is a no-op.
+  const root = parse(nextBlog.content);
 
-  images.forEach((img, index) => {
+  root.querySelectorAll("img").forEach((img, index) => {
     const src = img.getAttribute("src");
-    if (src && src.startsWith("/")) {
+    if (src && src.startsWith("/") && !src.startsWith("//")) {
       img.setAttribute("src", `${API_URL}${src}`);
     }
 
@@ -108,17 +112,16 @@ const enrichBlogContent = (blogData) => {
     }
   });
 
-  const headings = doc.querySelectorAll("h2");
-  const sections = Array.from(headings).map((heading, index) => {
-    const id = heading.id || `section-${index + 1}`;
-    heading.id = id;
+  const sections = root.querySelectorAll("h2").map((heading, index) => {
+    const id = heading.getAttribute("id") || `section-${index + 1}`;
+    heading.setAttribute("id", id);
     return {
       id,
-      title: heading.textContent,
+      title: heading.text,
     };
   });
 
-  nextBlog.content = doc.body.innerHTML;
+  nextBlog.content = root.toString();
   return { blog: nextBlog, sections };
 };
 
