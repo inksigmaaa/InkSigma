@@ -9,6 +9,7 @@ import PageTransition from "@/components/PageTransition";
 import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import { toast } from "sonner";
+import { useArticleSelection } from "@/hooks/useArticleSelection";
 import {
   DEFAULT_DRAFT_TITLE,
   isArticlePublishable,
@@ -28,7 +29,6 @@ export default function MyBlogsPage() {
     createDraftFromPublished,
   } = useArticles();
   const { currentPublication } = usePublication();
-  const [selectedArticles, setSelectedArticles] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -114,23 +114,12 @@ export default function MyBlogsPage() {
     });
   }, [articles, currentPublicationId, moveToDraft, selectedCategories]);
 
-  const handleArticleSelect = (id, checked) => {
-    if (checked) {
-      setSelectedArticles((prev) => [...prev, id]);
-    } else {
-      setSelectedArticles((prev) =>
-        prev.filter((articleId) => articleId !== id),
-      );
-    }
-  };
-
-  const handleSelectAll = (checked) => {
-    if (checked) {
-      setSelectedArticles(myArticles.map((article) => article.id));
-    } else {
-      setSelectedArticles([]);
-    }
-  };
+  const {
+    selectedArticles,
+    setSelectedArticles,
+    handleSelectAll,
+    handleArticleSelect,
+  } = useArticleSelection(myArticles.map((article) => article.id));
 
   const handleBulkUnpublish = () => {
     if (selectedArticles.length === 0) return;

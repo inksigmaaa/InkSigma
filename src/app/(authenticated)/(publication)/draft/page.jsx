@@ -11,6 +11,7 @@ import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
+import { useArticleSelection } from "@/hooks/useArticleSelection";
 import {
   DEFAULT_DRAFT_TITLE,
   isArticlePublishable,
@@ -108,7 +109,6 @@ export default function DraftPage() {
       window.removeEventListener("focus", handleFocus);
     };
   }, [session?.user?.id, currentPublication?.id, loadUserArticles]);
-  const [selectedArticles, setSelectedArticles] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [actionArticleId, setActionArticleId] = useState(null);
@@ -157,23 +157,12 @@ export default function DraftPage() {
       });
   }, [articles, currentPublication]);
 
-  const handleSelectAll = (checked) => {
-    if (checked) {
-      setSelectedArticles(draftArticles.map((a) => a.id));
-    } else {
-      setSelectedArticles([]);
-    }
-  };
-
-  const handleArticleSelect = (id, checked) => {
-    if (checked) {
-      setSelectedArticles((prev) => [...prev, id]);
-    } else {
-      setSelectedArticles((prev) =>
-        prev.filter((articleId) => articleId !== id),
-      );
-    }
-  };
+  const {
+    selectedArticles,
+    setSelectedArticles,
+    handleSelectAll,
+    handleArticleSelect,
+  } = useArticleSelection(draftArticles.map((a) => a.id));
 
   const handleBulkDelete = () => {
     if (selectedArticles.length > 0) {
