@@ -2,71 +2,10 @@ import ArticleDropdown from "../articleDropdown/ArticleDropdown.jsx";
 import { useRouter, usePathname } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
 import React from "react";
-import { NightTooltip } from "@/components/ui/tooltip";
 import { withPublicationPath } from "@/utils/dashboardUrl";
 import { useArticleStore } from "@/stores/articleStore";
-
-// Helper function to format relative time
-const getRelativeTime = (dateString, status) => {
-  if (!dateString) return "";
-
-  try {
-    const postDate = new Date(dateString);
-
-    // Check if date is valid
-    if (isNaN(postDate.getTime())) {
-      return dateString; // Return original string if invalid
-    }
-
-    // For review status, show full date format
-    if (status === "review") {
-      const options = {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      };
-      return `Sent on ${postDate.toLocaleDateString("en-US", options)}`;
-    }
-
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - postDate) / 1000);
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    const diffInDays = Math.floor(diffInHours / 24);
-
-    // Just now (less than 1 minute)
-    if (diffInMinutes < 1) {
-      return "Posted just now";
-    }
-
-    // Minutes ago (1-59 minutes)
-    if (diffInMinutes < 60) {
-      return `Posted ${diffInMinutes} min${diffInMinutes > 1 ? "s" : ""} ago`;
-    }
-
-    // Hours ago (1-23 hours)
-    if (diffInHours < 24) {
-      return `Posted ${diffInHours} hr${diffInHours > 1 ? "s" : ""} ago`;
-    }
-
-    // Show actual date after 24 hours
-    const options = { day: "numeric", month: "short", year: "numeric" };
-    return `Posted ${postDate.toLocaleDateString("en-US", options)}`;
-  } catch (error) {
-    return dateString; // Return original string if error occurs
-  }
-};
-
-function ActionTooltipButton({ label, children, ...props }) {
-  return (
-    <NightTooltip content={label}>
-      <button aria-label={label} {...props}>
-        {children}
-      </button>
-    </NightTooltip>
-  );
-}
+import { getRelativeTime } from "../articleCard/getRelativeTime";
+import { ActionTooltipButton } from "../articleCard/ActionTooltipButton";
 
 export default function PersonalArticleContainer({
   id,
