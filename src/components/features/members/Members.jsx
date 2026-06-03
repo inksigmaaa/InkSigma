@@ -338,7 +338,17 @@ export default function Members() {
   const topPosition = "top-[160px]";
   const mobileTopPosition = "max-md:top-[120px]";
 
-  if (loading || publicationLoading) {
+  // Only show the full-screen loader when there is genuinely nothing to render
+  // yet — either members data is loading for the first time, or the publication
+  // context has not resolved a publication. Crucially, do NOT blank the page for
+  // the context's background loading (its 30s poll / navigation) once we already
+  // have members to show; that `|| publicationLoading` coupling is what kept the
+  // page stuck on "Loading members..." even after the data had loaded.
+  const hasMembersData = members.length > 0 || pendingInvitations.length > 0;
+  if (
+    (loading && !hasMembersData) ||
+    (publicationLoading && !currentPublication)
+  ) {
     return (
       <div
         className={`absolute left-1/2 -translate-x-1/2 ${topPosition} ${mobileTopPosition} w-full max-w-[1034px] z-20 px-5`}
