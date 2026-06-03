@@ -6,6 +6,7 @@ import { useSession } from "@/lib/auth-client";
 import { memberService } from "@/services/memberService";
 import { usePublication } from "@/contexts/PublicationContext";
 import { hasPermission } from "@/utils/permissions";
+import { usePollingWhenVisible } from "@/hooks/usePollingWhenVisible";
 import { toast } from "sonner";
 import ConfirmModal from "../confirmModal/ConfirmModal";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -106,19 +107,12 @@ export default function Members() {
     }
   }, [publicationLoading, currentPublication]);
 
-  // Initial and periodic data loading
+  // Initial data load (periodic refresh is handled by usePollingWhenVisible
+  // below, so it pauses while the tab is hidden).
   useEffect(() => {
     if (currentPublication?.id && session?.user?.id) {
       loadData(isInitialLoad ? false : true);
       if (isInitialLoad) setIsInitialLoad(false);
-
-      const interval = setInterval(() => {
-        if (currentPublication?.id) {
-          loadData(true);
-        }
-      }, 30000);
-
-      return () => clearInterval(interval);
     }
   }, [currentPublication?.id, session?.user?.id]);
 
@@ -196,6 +190,12 @@ export default function Members() {
       }
     }
   };
+
+  // Periodic members refresh — paused while the tab is hidden, resumes + fetches
+  // immediately on return.
+  usePollingWhenVisible(() => loadData(true), 30000, {
+    enabled: Boolean(currentPublication?.id && session?.user?.id),
+  });
 
   const handleSendInvite = async () => {
     if (!email || !role) {
