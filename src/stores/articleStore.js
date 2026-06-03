@@ -254,6 +254,15 @@ export const useArticleStore = create((set, get) => ({
       return state.articles;
     }
 
+    // Mirror loadPublicationArticles: if the in-memory articles already hold
+    // data for this exact request (same publication + status), keep showing it
+    // and refresh in the background instead of clearing to [] and flashing a
+    // loader on every navigation.
+    const hasSeedData =
+      !includeAllPublications &&
+      hasPublicationArticlesForRequest(state.articles, publicationId, status);
+    const shouldRetainExistingData = hasExistingData || hasSeedData;
+
     const prev = state._abortController;
     if (prev) prev.abort();
     const controller = new AbortController();
@@ -305,10 +314,10 @@ export const useArticleStore = create((set, get) => ({
       _abortController: controller,
       _articlesInFlightKey: requestKey,
       _articlesPromise: requestPromise,
-      loading: !hasExistingData,
-      refreshing: hasExistingData,
+      loading: !shouldRetainExistingData,
+      refreshing: shouldRetainExistingData,
       error: null,
-      ...(sameRequest ? {} : { articles: [] }),
+      ...(shouldRetainExistingData ? {} : { articles: [] }),
     });
 
     return requestPromise;
