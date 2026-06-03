@@ -16,8 +16,12 @@ export default function ViewSiteHeader({
 
   const handleBack = () => {
     // Navigate directly to view-site instead of using router.back()
-    // which may go back to the editor
-    const pubId = searchParams.get("publicationId") || searchParams.get("pub");
+    // which may go back to the editor. Prefer the publicationId passed from the
+    // blog (the page URL may not carry it), falling back to the query string.
+    const pubId =
+      publicationId ||
+      searchParams.get("publicationId") ||
+      searchParams.get("pub");
     router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");
   };
 

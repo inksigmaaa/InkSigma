@@ -113,7 +113,7 @@ export default function LatestBlog({
           />
         </div>
 
-                  <Link href={getBlogPath(latestBlog.slug, pathname)} className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block">          {/* Background Image */}
+                  <Link href={getBlogPath(latestBlog.slug, pathname, publicationId)} className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block">          {/* Background Image */}
           <div className="absolute inset-0">
             <Image
               src={thumbnailUrl}
@@ -196,7 +196,7 @@ export default function LatestBlog({
             />
           </div>
 
-          <Link href={getBlogPath(latestBlog.slug, pathname)} className="absolute inset-0 rounded-md overflow-hidden cursor-pointer block">
+          <Link href={getBlogPath(latestBlog.slug, pathname, publicationId)} className="absolute inset-0 rounded-md overflow-hidden cursor-pointer block">
             <Image
               src={thumbnailUrl}
               alt={latestBlog.title}
