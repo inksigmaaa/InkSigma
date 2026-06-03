@@ -15,6 +15,7 @@ import {
     dedupeJsonRequest,
 } from "@/utils/jsonRequestDedupe";
 import { useExclusivePopup } from "@/hooks/useExclusivePopup";
+import { usePollingWhenVisible } from "@/hooks/usePollingWhenVisible";
 import { CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,7 +52,6 @@ export default function NavbarLoggedin() {
     const [lastScrollY, setLastScrollY] = useState(0);
     const wrapperRef = useRef(null);
     const notificationRef = useRef(null);
-    const notificationIntervalRef = useRef(null);
     const hasLoadedNotificationsRef = useRef(false);
     const router = useRouter();
     const API_URL = getApiBase();
@@ -141,20 +141,10 @@ export default function NavbarLoggedin() {
         }
     }, [user?.id, fetchNotifications]);
 
-    // Auto-refresh notifications every 30 seconds for real-time updates
-    useEffect(() => {
-        if (!user?.id) return;
-
-        notificationIntervalRef.current = setInterval(() => {
-            fetchNotifications();
-        }, 30000);
-
-        return () => {
-            if (notificationIntervalRef.current) {
-                clearInterval(notificationIntervalRef.current);
-            }
-        };
-    }, [user?.id, fetchNotifications]);
+    // Auto-refresh notifications every 30s, but only while the tab is visible —
+    // the navbar is mounted on every authenticated page, so an always-on poll
+    // here is the largest source of idle backend load.
+    usePollingWhenVisible(fetchNotifications, 30000, { enabled: !!user?.id });
 
     // Close dropdowns when clicking outside
     useEffect(() => {

@@ -10,6 +10,7 @@ import { useArticles } from "@/contexts/ArticlesContext";
 import { usePublication } from "@/contexts/PublicationContext";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { useSession } from "@/lib/auth-client";
+import { usePollingWhenVisible } from "@/hooks/usePollingWhenVisible";
 import { toast } from "sonner";
 import { useArticleSelection } from "@/hooks/useArticleSelection";
 import {
@@ -34,7 +35,6 @@ export default function DraftPage() {
   const router = useRouter();
   const pathname = usePathname();
   const hasLoadedRef = useRef(false);
-  const pollIntervalRef = useRef(null);
   const isPollingRef = useRef(false);
   const { data: session } = useSession();
 
@@ -65,50 +65,24 @@ export default function DraftPage() {
     }
   }, [searchParams, router, pathname]);
 
-  // Auto-refresh draft list on an interval (stay on draft page)
-  useEffect(() => {
-    if (!session?.user?.id || !currentPublication?.id) return;
+  // Auto-refresh the draft list while the tab is visible; paused when hidden,
+  // refreshes immediately on return. The isPollingRef guard prevents overlap.
+  const refreshDrafts = async () => {
+    if (isPollingRef.current || !currentPublication?.id) return;
+    isPollingRef.current = true;
+    try {
+      await loadUserArticles(currentPublication.id, false, "draft");
+    } catch (error) {
+      console.error("Auto-refresh failed:", error);
+    } finally {
+      isPollingRef.current = false;
+    }
+  };
 
-    const refreshDrafts = async () => {
-      if (isPollingRef.current) return;
-      isPollingRef.current = true;
-      try {
-        await loadUserArticles(currentPublication.id, false, "draft");
-      } catch (error) {
-        console.error("Auto-refresh failed:", error);
-      } finally {
-        isPollingRef.current = false;
-      }
-    };
+  usePollingWhenVisible(refreshDrafts, 20000, {
+    enabled: Boolean(session?.user?.id && currentPublication?.id),
+  });
 
-    const startPolling = () => {
-      if (pollIntervalRef.current) return;
-      pollIntervalRef.current = setInterval(async () => {
-        await refreshDrafts();
-      }, 20000);
-    };
-
-    startPolling();
-
-    const handleVisibility = () => {
-      if (!document.hidden) {
-        refreshDrafts();
-      }
-    };
-    const handleFocus = () => refreshDrafts();
-
-    document.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("focus", handleFocus);
-
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
-      }
-      document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("focus", handleFocus);
-    };
-  }, [session?.user?.id, currentPublication?.id, loadUserArticles]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [actionArticleId, setActionArticleId] = useState(null);
