@@ -14,6 +14,7 @@ export default function AllArticles({
   searchQuery = "",
   selectedCategory = "",
   blogs = [],
+  publicationId = null,
 }) {
   const pathname = usePathname();
 
@@ -127,7 +128,7 @@ export default function AllArticles({
                   </div>
 
                   <Link
-                    href={getBlogPath(article.slug, pathname)}
+                    href={getBlogPath(article.slug, pathname, publicationId)}
                     className="absolute inset-0 rounded-lg overflow-hidden cursor-pointer block"
                   >
                     {/* Background Image */}
