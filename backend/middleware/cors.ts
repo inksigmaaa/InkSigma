@@ -128,6 +128,15 @@ const isPlatformOrigin = (origin: string) => {
   }
 };
 
+// Is this origin one of our own app origins (explicit allowlist or a platform
+// domain / single-level subdomain)? Reused to validate user-supplied redirect
+// targets so reset/verify links can't be pointed at attacker-controlled domains.
+export const isTrustedAppOrigin = (origin: string | undefined): boolean => {
+  const normalized = normalizeOrigin(origin);
+  if (!normalized) return false;
+  return explicitAllowList.has(normalized) || isPlatformOrigin(normalized);
+};
+
 const isPublicCorsRequest = (req) => {
   if (req.method === "GET" || req.method === "HEAD") {
     return (

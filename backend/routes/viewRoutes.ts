@@ -138,7 +138,17 @@ router.post("/stats", async (req, res) => {
       return res.status(400).json({ error: "blogIds array is required" });
     }
 
-    const stats = await getBlogStats(blogIds.map((id) => parseInt(id)));
+    if (blogIds.length > 200) {
+      return res
+        .status(400)
+        .json({ error: "Too many blogIds (max 200 per request)" });
+    }
+
+    const normalizedBlogIds = blogIds
+      .map((id) => Number.parseInt(String(id), 10))
+      .filter((id) => Number.isFinite(id));
+
+    const stats = await getBlogStats(normalizedBlogIds);
 
     res.json(stats);
   } catch (error) {

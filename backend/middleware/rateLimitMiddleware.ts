@@ -27,6 +27,15 @@ const RESEND_VERIFICATION_MAX_REQUESTS = Number(
 const RESET_PASSWORD_MAX_REQUESTS = Number(
   process.env.AUTH_RESET_PASSWORD_RATE_LIMIT_MAX || 10,
 );
+// Cost/abuse-sensitive endpoints: paid third-party calls (Cloudinary uploads,
+// Groq transcription) and the email-existence check (enumeration surface).
+const UPLOAD_MAX_REQUESTS = Number(process.env.UPLOAD_RATE_LIMIT_MAX || 40);
+const TRANSCRIPTION_MAX_REQUESTS = Number(
+  process.env.TRANSCRIPTION_RATE_LIMIT_MAX || 15,
+);
+const CHECK_EMAIL_MAX_REQUESTS = Number(
+  process.env.CHECK_EMAIL_RATE_LIMIT_MAX || LOGIN_MAX_REQUESTS,
+);
 
 type RateLimitRule = {
   key: string;
@@ -90,9 +99,41 @@ const GLOBAL_RATE_LIMIT_RULE: RateLimitRule = {
   windowSeconds: WINDOW_SECONDS,
 };
 
+// Keyed by IP like the auth rules above. These sit in front of paid/abuse-prone
+// endpoints; if none match, the global rule still applies (never a regression).
+const COST_RATE_LIMIT_RULES: RateLimitRule[] = [
+  {
+    key: "upload-image",
+    maxRequests: UPLOAD_MAX_REQUESTS,
+    windowMs: WINDOW_MS,
+    windowSeconds: WINDOW_SECONDS,
+    match: (path) =>
+      path === "/api/upload-image" ||
+      path === "/api/upload-image/" ||
+      path === "/api/profile/image",
+  },
+  {
+    key: "transcription",
+    maxRequests: TRANSCRIPTION_MAX_REQUESTS,
+    windowMs: WINDOW_MS,
+    windowSeconds: WINDOW_SECONDS,
+    match: (path) =>
+      path === "/api/transcriptions" || path === "/api/transcriptions/",
+  },
+  {
+    key: "check-email",
+    maxRequests: CHECK_EMAIL_MAX_REQUESTS,
+    windowMs: AUTH_RATE_LIMIT_WINDOW_MS,
+    windowSeconds: AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    match: (path) => path === "/api/custom/check-email",
+  },
+];
+
 const getRateLimitRule = (path: string): RateLimitRule => {
   return (
-    AUTH_RATE_LIMIT_RULES.find((rule) => rule.match?.(path)) || GLOBAL_RATE_LIMIT_RULE
+    AUTH_RATE_LIMIT_RULES.find((rule) => rule.match?.(path)) ||
+    COST_RATE_LIMIT_RULES.find((rule) => rule.match?.(path)) ||
+    GLOBAL_RATE_LIMIT_RULE
   );
 };
 

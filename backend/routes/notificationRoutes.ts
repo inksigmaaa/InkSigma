@@ -38,7 +38,6 @@ router.get(
           relatedBlogId: notification.relatedBlogId,
           relatedPublicationId: notification.relatedPublicationId,
           relatedUserName: user.name,
-          relatedUserEmail: user.email,
           relatedUserImage: user.image,
           publicationLogoUrl: publication.logoUrl,
         })
@@ -106,8 +105,8 @@ router.get(
           isRead: notif.isRead,
           avatar: avatar,
           avatarUser: {
+            // email omitted: do not expose the actor's email to the recipient.
             name: notif.relatedUserName,
-            email: notif.relatedUserEmail,
             image: notif.relatedUserImage,
           },
           createdAt:

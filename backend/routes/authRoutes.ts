@@ -7,6 +7,7 @@ import { validate } from "../middleware/validate.js";
 import * as authValidator from "../validators/authValidator.js";
 import logger from "../utils/logger.js";
 import { redactEmail } from "../utils/redactPII.js";
+import { isTrustedAppOrigin } from "../middleware/cors.js";
 
 const router = express.Router();
 
@@ -19,6 +20,28 @@ function getFrontendUrl(): string {
     return `https://${sub}.${baseDomain}`;
   }
   return "http://localhost:3000";
+}
+
+// Only honor a client-supplied redirectTo when it points at one of our own app
+// origins; otherwise fall back to the resolved frontend URL. Without this an
+// attacker could send a password-reset/verify link (carrying a valid token) to
+// a domain they control via the `redirectTo` field.
+function resolveRedirectBase(
+  redirectTo: string | undefined,
+  fallbackPath: string,
+): string {
+  const fallback = `${getFrontendUrl()}${fallbackPath}`;
+  if (!redirectTo) return fallback;
+  let parsed: URL;
+  try {
+    parsed = new URL(redirectTo);
+  } catch {
+    return fallback;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return fallback;
+  }
+  return isTrustedAppOrigin(parsed.origin) ? redirectTo : fallback;
 }
 
 // Helper to get session from request
@@ -53,7 +76,8 @@ router.post(
       }
 
       const token = await authService.createResetToken(email);
-      const resetUrl = `${redirectTo || `${getFrontendUrl()}/reset-password`}?token=${token}&email=${encodeURIComponent(email)}`;
+      const resetBase = resolveRedirectBase(redirectTo, "/reset-password");
+      const resetUrl = `${resetBase}?token=${token}&email=${encodeURIComponent(email)}`;
 
       await emailService.sendPasswordReset({
         email,
@@ -155,7 +179,8 @@ router.post(
       }
 
       const token = await authService.createVerificationToken(email);
-      const verifyUrl = `${redirectTo || `${getFrontendUrl()}/verify-email`}?token=${token}&email=${encodeURIComponent(email)}`;
+      const verifyBase = resolveRedirectBase(redirectTo, "/verify-email");
+      const verifyUrl = `${verifyBase}?token=${token}&email=${encodeURIComponent(email)}`;
 
       await emailService.sendVerification({
         email,
