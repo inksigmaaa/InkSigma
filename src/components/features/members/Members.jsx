@@ -11,6 +11,11 @@ import ConfirmModal from "../confirmModal/ConfirmModal";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+// Cache the last members payload per publication so returning to this page
+// paints instantly while a fresh copy loads in the background, instead of
+// re-blocking on the network every visit.
+const membersCache = new Map();
+
 export default function Members() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -25,10 +30,14 @@ export default function Members() {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState(null);
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
-  const [members, setMembers] = useState([]);
-  const [pendingInvitations, setPendingInvitations] = useState([]);
-  const [userRole, setUserRole] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const initialCache = membersCache.get(currentPublication?.id) || null;
+  const [members, setMembers] = useState(initialCache?.members || []);
+  const [pendingInvitations, setPendingInvitations] = useState(
+    initialCache?.pendingInvitations || [],
+  );
+  const [userRole, setUserRole] = useState(initialCache?.userRole ?? null);
+  // Only block when there's no cached data to show yet.
+  const [loading, setLoading] = useState(!initialCache);
   const [refreshing, setRefreshing] = useState(false);
   const [sending, setSending] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -79,12 +88,14 @@ export default function Members() {
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
 
-  // Reset state when switching publications to prevent showing stale data
+  // On publication change, seed from cache if available (instant paint),
+  // otherwise clear so another publication's members are never shown.
   useEffect(() => {
-    // Clear old data when publication changes
-    setMembers([]);
-    setPendingInvitations([]);
-    setUserRole(null);
+    const cached = membersCache.get(currentPublication?.id) || null;
+    setMembers(cached?.members || []);
+    setPendingInvitations(cached?.pendingInvitations || []);
+    setUserRole(cached?.userRole ?? null);
+    if (cached) setLoading(false);
   }, [currentPublication?.id]);
 
   // Handle publication loading state independently of data fetching
@@ -165,6 +176,14 @@ export default function Members() {
       setUserRole((prev) =>
         prev === membersData.userRole ? prev : membersData.userRole,
       );
+
+      if (currentPublication?.id) {
+        membersCache.set(currentPublication.id, {
+          members: sortedMembers,
+          pendingInvitations: membersData.pendingInvitations,
+          userRole: membersData.userRole,
+        });
+      }
     } catch (error) {
       console.error("Error loading data:", error);
       if (!silent) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { getApiBase } from "@/utils/apiBase";
 import { getImageUrl } from "@/utils/imageUrl";
 import { usePublication } from "@/contexts/PublicationContext";
@@ -81,7 +81,10 @@ export default function SettingsPage() {
   const router = useRouter();
   const apiBase = getApiBase();
   const { currentPublication, refreshCurrentPublication } = usePublication();
-  const [loading, setLoading] = useState(true);
+  // Block only while there is genuinely no publication to show yet. When the
+  // context already has the current publication (the common intra-app case),
+  // we seed from it instantly below — no loading screen.
+  const [loading, setLoading] = useState(!currentPublication?.id);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(null);
 
@@ -102,55 +105,66 @@ export default function SettingsPage() {
     DEFAULT_PUBLICATION_IMAGE,
   );
 
+  // Keep a live ref to the current publication so the loader can seed from it
+  // without re-subscribing the effect on every context update (which would
+  // otherwise clobber in-progress edits during a background refresh/poll).
+  const currentPublicationRef = useRef(currentPublication);
+  useEffect(() => {
+    currentPublicationRef.current = currentPublication;
+  });
+
+  const applyPublicationData = useCallback((pubData) => {
+    if (!pubData) return;
+    setPublicationId(pubData.id);
+    setName(pubData.name || "");
+    setDescription(pubData.description || "");
+    setSubdomain(pubData.subdomain || "");
+    setOriginalSubdomain(pubData.subdomain || "");
+    const logoUrl = getImageUrl(pubData.logoUrl) || DEFAULT_PUBLICATION_IMAGE;
+    const faviconUrl =
+      getImageUrl(pubData.faviconUrl) || DEFAULT_PUBLICATION_IMAGE;
+    const metaOgUrl =
+      getImageUrl(pubData.metaOgImageUrl) || DEFAULT_PUBLICATION_IMAGE;
+    setLogo(logoUrl);
+    setLogoPreview(logoUrl);
+    setFavicon(faviconUrl);
+    setFaviconPreview(faviconUrl);
+    setMetaOg(metaOgUrl);
+    setMetaOgPreview(metaOgUrl);
+  }, []);
+
   const loadPublicationData = useCallback(async () => {
+    const pub = currentPublicationRef.current;
+    const targetPublicationId = pub?.id;
+    if (!targetPublicationId) {
+      setLoading(false);
+      return;
+    }
+
+    // Paint instantly from the publication already held in PublicationContext,
+    // then refresh from the network in the background. Previously every visit
+    // blocked behind this fetch — a redundant round-trip, since the context had
+    // already loaded this publication — which is what caused the loading screen
+    // and the slow navigation.
+    applyPublicationData(pub);
+    setLoading(false);
+
     try {
-      setLoading(true);
-
-      const targetPublicationId = currentPublication?.id;
-      if (!targetPublicationId) {
-        setLoading(false);
-        return;
-      }
-
       const pubRes = await fetch(
         `${apiBase}/api/publications/${targetPublicationId}`,
-        {
-          credentials: "include",
-        },
+        { credentials: "include" },
       );
-
       if (pubRes.ok) {
-        const pubData = await pubRes.json();
-        setPublicationId(pubData.id);
-        setName(pubData.name || "");
-        setDescription(pubData.description || "");
-        setSubdomain(pubData.subdomain || "");
-        setOriginalSubdomain(pubData.subdomain || "");
-        const logoUrl =
-          getImageUrl(pubData.logoUrl) || DEFAULT_PUBLICATION_IMAGE;
-        const faviconUrl =
-          getImageUrl(pubData.faviconUrl) || DEFAULT_PUBLICATION_IMAGE;
-        const metaOgUrl =
-          getImageUrl(pubData.metaOgImageUrl) || DEFAULT_PUBLICATION_IMAGE;
-
-        setLogo(logoUrl);
-        setLogoPreview(logoUrl);
-        setFavicon(faviconUrl);
-        setFaviconPreview(faviconUrl);
-        setMetaOg(metaOgUrl);
-        setMetaOgPreview(metaOgUrl);
+        applyPublicationData(await pubRes.json());
       }
     } catch (err) {
       console.error("Load error:", err);
-      // Don't show error to user, just log it
-    } finally {
-      setLoading(false);
     }
-  }, [apiBase, currentPublication?.id]);
+  }, [apiBase, applyPublicationData]);
 
   useEffect(() => {
     loadPublicationData();
-  }, [loadPublicationData]);
+  }, [loadPublicationData, currentPublication?.id]);
 
   const handleImageUpload = async (file, type) => {
     if (uploading) return;
