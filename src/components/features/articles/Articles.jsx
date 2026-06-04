@@ -300,12 +300,13 @@ export default function Articles(props) {
                 </p>
               </div>
             ) : (
-              categoryFilteredArticles.map((article) => {
+              categoryFilteredArticles.map((article, index) => {
                 // Create stats array with mock data for now
 
                 return (
                   <ArticleContainer
                     key={article.id}
+                    index={index}
                     id={article.id}
                     status={article.status}
                     title={article.title}
