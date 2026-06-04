@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { motion } from "motion/react";
 import ArticleDropdown from "../articleDropdown/ArticleDropdown.jsx";
 import { useRouter } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
@@ -7,6 +8,7 @@ import { withPublicationPath } from "@/utils/dashboardUrl";
 import { useArticleStore } from "@/stores/articleStore";
 import { getRelativeTime } from "../articleCard/getRelativeTime";
 import { ActionTooltipButton } from "../articleCard/ActionTooltipButton";
+import { EASE_INK, DURATION } from "@/lib/motion";
 
 export default function ArticleContainer({
   id,
@@ -31,11 +33,14 @@ export default function ArticleContainer({
   titleColor,
   canPublishDraft = true,
   canDelete = true, // Default to true for backward compatibility
+  index = 0, // position in the list — drives the staggered entrance
 }) {
   const router = useRouter();
   const { currentPublication } = usePublication();
   const prefetchArticle = useArticleStore((s) => s.prefetchArticle);
   const [longPressTimer, setLongPressTimer] = React.useState(null);
+  // Once the entrance lands we drop the stagger delay so hover in/out stays snappy.
+  const [hasEntered, setHasEntered] = useState(false);
 
   const canPublish =
     currentPublication?.isOwner ||
@@ -137,8 +142,20 @@ export default function ArticleContainer({
   };
 
   return (
-    <div
+    <motion.div
       className={`relative rounded-[8px] mb-4 cursor-pointer overflow-hidden hover:shadow-md transition-shadow duration-200 min-[768px]:bg-white max-[767px]:bg-[#FEFEFE] w-full max-[640px]:p-4 max-[640px]:pt-10 min-[641px]:p-6 min-[641px]:pt-10 border min-[641px]:border-[#EDEDED] ${isSelected ? "max-[640px]:border-[#202020]" : "max-[640px]:border-[#EDEDED]"}`}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      // Entrance: capped per-card delay (items past the 10th share the last beat
+      // so long lists never wait seconds). After it lands, switch to a fast,
+      // delay-free transition so hover-OUT doesn't drag the stagger delay back.
+      transition={
+        hasEntered
+          ? { duration: DURATION.fast, ease: EASE_INK }
+          : { duration: DURATION.base, ease: EASE_INK, delay: Math.min(index, 10) * 0.04 }
+      }
+      onAnimationComplete={() => setHasEntered(true)}
+      whileHover={{ y: -4, transition: { duration: DURATION.fast, ease: EASE_INK } }}
       onClick={handleCardClick}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -721,6 +738,6 @@ export default function ArticleContainer({
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -96,6 +96,10 @@ module.exports = {
     },
     plugins: [
         require('@tailwindcss/typography'),
+        // Powers the shadcn data-[state]:animate-in/out + fade/zoom/slide utilities
+        // already used across alert-dialog.jsx, dropdown-menu.jsx, etc. Without it
+        // those classes are no-ops and every modal/menu pops in with no transition.
+        require('tailwindcss-animate'),
         function ({ addUtilities }) {
             addUtilities({
                 '.scrollbar-hide': {

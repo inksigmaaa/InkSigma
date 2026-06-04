@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useMemo, memo } from "react";
+import { motion } from "motion/react";
 import { usePublication } from "@/contexts/PublicationContext";
+
+// Snappy-but-smooth spring for the shared active-pill slide between nav items.
+const PILL_SPRING = { type: "spring", stiffness: 420, damping: 36, mass: 0.8 };
+// Single shared layoutId — only one item is active at a time, so the pill
+// animates from the old item's box to the new one on every navigation.
+const ACTIVE_PILL = "sidebar-active-pill";
 import { getPublicationLogoUrl } from "@/utils/imageUrl";
 import { hasPermission } from "@/utils/permissions";
 import { getPublicationUrl } from "@/utils/publicationDomain";
@@ -92,11 +99,18 @@ const SidebarMenuItem = memo(function SidebarMenuItem({ label, icon, route, isAc
   return (
     <Link href={route}>
       <div
-        className={`flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 ${isHovered && !isActive ? "bg-[#F6F6F6]" : ""}`}
+        className={`relative flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 max-md:flex-shrink-0 transition-colors duration-200 ${isHovered && !isActive ? "bg-[#F6F6F6]" : ""}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+        {isActive && (
+          <motion.div
+            layoutId={ACTIVE_PILL}
+            transition={PILL_SPRING}
+            className="absolute inset-0 rounded-md bg-[#EFEFEF]"
+          />
+        )}
+        <div className="relative z-[1] flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
           <img
             src={
               label === "Settings" ? `/icons/${icon}` : `/images/icons/${icon}`
@@ -122,22 +136,31 @@ const MySpaceItem = memo(function MySpaceItem({ pathname }) {
 
   return (
     <div
-      className={`flex items-center gap-2 px-2 py-[5px] rounded-md cursor-pointer max-md:flex-col max-md:py-1 max-md:px-3 max-md:gap-1 ${isHovered ? "bg-[#F6F6F6]" : ""}`}
+      className={`relative flex items-center px-2 py-[5px] rounded-md cursor-pointer max-md:px-3 max-md:py-1 transition-colors duration-200 ${isHovered && !isActive ? "bg-[#F6F6F6]" : ""}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <img
-        src="/images/icons/myspace.svg"
-        alt=""
-        className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${isActive ? "brightness-0" : isHovered ? "brightness-50" : ""}`}
-      />
-      <Link href="/">
-        <p
-          className={`font-sans text-[14px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center font-['Public Sans'] tracking-[0%] font-normal ${isActive ? "font-bold text-black" : isHovered ? "text-[#2E2E2E]" : "text-[#B0B0B0]"}`}
-        >
-          My Space
-        </p>
-      </Link>
+      {isActive && (
+        <motion.div
+          layoutId={ACTIVE_PILL}
+          transition={PILL_SPRING}
+          className="absolute inset-0 rounded-md bg-[#EFEFEF]"
+        />
+      )}
+      <div className="relative z-[1] flex items-center gap-2 w-full max-md:flex-col max-md:gap-1">
+        <img
+          src="/images/icons/myspace.svg"
+          alt=""
+          className={`w-6 h-6 max-md:w-6 max-md:h-6 transition-all ${isActive ? "brightness-0" : isHovered ? "brightness-50" : ""}`}
+        />
+        <Link href="/">
+          <p
+            className={`font-sans text-[14px] leading-[150%] m-0 max-md:text-[11px] max-md:text-center font-['Public Sans'] tracking-[0%] font-normal ${isActive ? "font-bold text-black" : isHovered ? "text-[#2E2E2E]" : "text-[#B0B0B0]"}`}
+          >
+            My Space
+          </p>
+        </Link>
+      </div>
     </div>
   );
 });

@@ -1,3 +1,4 @@
+import { motion } from "motion/react";
 import ArticleDropdown from "../articleDropdown/ArticleDropdown.jsx";
 import { useRouter, usePathname } from "next/navigation";
 import { usePublication } from "@/contexts/PublicationContext";
@@ -6,6 +7,7 @@ import { withPublicationPath } from "@/utils/dashboardUrl";
 import { useArticleStore } from "@/stores/articleStore";
 import { getRelativeTime } from "../articleCard/getRelativeTime";
 import { ActionTooltipButton } from "../articleCard/ActionTooltipButton";
+import { EASE_INK, DURATION } from "@/lib/motion";
 
 export default function PersonalArticleContainer({
   id,
@@ -27,11 +29,14 @@ export default function PersonalArticleContainer({
   canPublishAction = true,
   canEdit = true, // Default to true for backward compatibility
   canDelete = true, // Default to true for backward compatibility
+  index = 0, // position in the list — drives the staggered entrance
 }) {
   const router = useRouter();
   const { currentPublication } = usePublication();
   const prefetchArticle = useArticleStore((s) => s.prefetchArticle);
   const [longPressTimer, setLongPressTimer] = React.useState(null);
+  // Once the entrance lands we drop the stagger delay so hover in/out stays snappy.
+  const [hasEntered, setHasEntered] = React.useState(false);
 
   // Explicitly ensure 'author' and 'editor' cannot publish, even if isOwner is somehow true (edge case)
   const canPublish =
@@ -116,11 +121,27 @@ export default function PersonalArticleContainer({
   };
 
   return (
-    <div
+    <motion.div
       className={`relative rounded-[8px] mb-4 ${status === "trash" ? "cursor-default" : "cursor-pointer hover:shadow-md"} transition-shadow duration-200 min-[768px]:bg-white max-[767px]:bg-[#FEFEFE] w-full max-[640px]:p-4 max-[640px]:pt-10 min-[641px]:p-6 min-[641px]:pt-10 border min-[641px]:border-[#EDEDED] ${isSelected ? "max-[640px]:border-[#202020]" : "max-[640px]:border-[#EDEDED]"}`}
       style={{
         overflow: "hidden",
       }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      // Entrance: capped per-card delay (long lists finish in ~0.4s). After it
+      // lands, switch to a fast, delay-free transition so hover-OUT doesn't drag
+      // the stagger delay back into place.
+      transition={
+        hasEntered
+          ? { duration: DURATION.fast, ease: EASE_INK }
+          : { duration: DURATION.base, ease: EASE_INK, delay: Math.min(index, 10) * 0.04 }
+      }
+      onAnimationComplete={() => setHasEntered(true)}
+      whileHover={
+        status === "trash"
+          ? undefined
+          : { y: -4, transition: { duration: DURATION.fast, ease: EASE_INK } }
+      }
       onClick={handleCardClick}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -710,6 +731,6 @@ export default function PersonalArticleContainer({
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

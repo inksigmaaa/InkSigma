@@ -238,12 +238,9 @@ export default function PersonalArticles({
               </div>
             ) : (
               filteredArticles.map((article, index) => (
-                <div
-                  key={article.id}
-                  className="animate-slideUp"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
+                <div key={article.id}>
                   <PersonalArticleContainer
+                    index={index}
                     id={article.id}
                     status={article.status}
                     title={article.title}

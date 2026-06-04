@@ -42,6 +42,28 @@ body {
   box-sizing: border-box;
 }
 
+/*
+ * Reduced-motion safety net.
+ * <MotionProvider reducedMotion="user"> already neutralises Motion-driven
+ * transforms; this covers the hand-rolled CSS keyframe utilities
+ * (animate-slideUp / fadeIn / slide-down) and smooth scroll so the whole
+ * app honours the OS "Reduce motion" preference, not just Motion components.
+ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Old contentEditable styles removed - using Tiptap ProseMirror styles instead */
 
 /* Mobile sidebar scrollbar */

@@ -27,7 +27,13 @@ export const Tooltip = ({ text, children, className = "" }) => {
         <TooltipTrigger asChild>
           <span className={`inline-flex ${className}`}>{children}</span>
         </TooltipTrigger>
-        <TooltipContent side="bottom" className="z-[10000]">
+        {/*
+          sideOffset clears the toolbar's bottom border. Toolbar buttons are
+          centered in a 52px bar, leaving only ~12px below them; with the
+          default offset (0) the tooltip rendered flush under each button and
+          bled across the bottom border. 14px drops it cleanly below the bar.
+        */}
+        <TooltipContent side="bottom" sideOffset={14} className="z-[10000]">
           {text}
         </TooltipContent>
       </ShadTooltip>
