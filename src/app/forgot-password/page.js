@@ -42,7 +42,6 @@ export default function ForgotPasswordPage() {
       })
 
       const data = await response.json()
-      console.log("Response:", response.status, data)
 
       if (response.ok && data.success) {
         setSuccess(true)
