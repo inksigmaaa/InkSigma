@@ -45,7 +45,7 @@ export async function GET() {
 
   const entries = [
     {
-      url: getPublicationPageUrl(publication, "/"),
+      url: getPublicationPageUrl(publication, "/blog"),
       lastModified: publication.updatedAt
         ? new Date(publication.updatedAt).toISOString()
         : undefined,

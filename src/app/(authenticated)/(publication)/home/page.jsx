@@ -13,7 +13,7 @@ import CategoryBadgeList from "@/components/CategoryBadgeList";
 import { getPublicationLogoUrl } from "@/utils/imageUrl";
 import { getThumbnailWithFallback } from "@/utils/fallbackThumbnail";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getPublicationUrl } from "@/utils/publicationDomain";
+import { getPublicationSiteHref } from "@/utils/publicationDomain";
 import { withPublicationPath } from "@/utils/dashboardUrl";
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
@@ -184,18 +184,7 @@ export default function HomePage() {
   };
 
   const handleVisitSite = () => {
-    const publicationUrl = getPublicationUrl(currentPublication);
-
-    if (publicationUrl) {
-      window.open(publicationUrl, "_blank");
-    } else if (currentPublication?.id) {
-      window.open(
-        `/view-site?publicationId=${currentPublication.id}`,
-        "_blank",
-      );
-    } else {
-      window.open("/view-site", "_blank");
-    }
+    window.open(getPublicationSiteHref(currentPublication), "_blank");
   };
 
   const handleEditPublication = () => {

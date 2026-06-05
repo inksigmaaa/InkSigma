@@ -2,15 +2,11 @@
 
 import { NightTooltip } from "@/components/ui/tooltip";
 import { usePublication } from "@/contexts/PublicationContext";
-import { getPublicationUrl } from "@/utils/publicationDomain";
+import { getPublicationSiteHref } from "@/utils/publicationDomain";
 
 export default function VisitSiteButton() {
   const { currentPublication } = usePublication();
-  const publicationSiteHref =
-    (currentPublication && getPublicationUrl(currentPublication)) ||
-    (currentPublication?.id
-      ? `/view-site?publicationId=${currentPublication.id}`
-      : "/view-site");
+  const publicationSiteHref = getPublicationSiteHref(currentPublication);
 
   return (
     <NightTooltip content="Visit site">

@@ -13,7 +13,7 @@ const PILL_SPRING = { type: "spring", stiffness: 420, damping: 36, mass: 0.8 };
 const ACTIVE_PILL = "sidebar-active-pill";
 import { getPublicationLogoUrl } from "@/utils/imageUrl";
 import { hasPermission } from "@/utils/permissions";
-import { getPublicationUrl } from "@/utils/publicationDomain";
+import { getPublicationSiteHref } from "@/utils/publicationDomain";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const MENU_SECTIONS = [
@@ -171,11 +171,7 @@ function Sidebar() {
   const pubPrefix = currentPublication?.subdomain
     ? `/${currentPublication.subdomain}`
     : "";
-  const publicationSiteHref =
-    (currentPublication && getPublicationUrl(currentPublication)) ||
-    (currentPublication?.id
-      ? `/view-site?publicationId=${currentPublication.id}`
-      : "/view-site");
+  const publicationSiteHref = getPublicationSiteHref(currentPublication);
 
   const effectivePathname = (() => {
     if (!pathname) return pathname;
