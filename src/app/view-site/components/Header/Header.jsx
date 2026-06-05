@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { redirectToDashboardEditor } from "@/utils/publicSiteAuth";
+import { getBlogIndexPath } from "@/utils/blogUrl";
 
 export default function ViewSiteHeader({
   userName,
@@ -22,7 +23,7 @@ export default function ViewSiteHeader({
       publicationId ||
       searchParams.get("publicationId") ||
       searchParams.get("pub");
-    router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");
+    router.push(getBlogIndexPath(undefined, pubId));
   };
 
   // Improved handleBack to be more robust

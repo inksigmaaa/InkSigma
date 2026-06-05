@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import { getBlogIndexPath } from "@/utils/blogUrl";
 
 export default function BackToHomeButton() {
   const router = useRouter();
@@ -12,7 +13,7 @@ export default function BackToHomeButton() {
     // Navigate directly to view-site instead of using router.back()
     // which may go back to the editor
     const pubId = searchParams.get("publicationId") || searchParams.get("pub");
-    router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");
+    router.push(getBlogIndexPath(undefined, pubId));
   };
 
   return (

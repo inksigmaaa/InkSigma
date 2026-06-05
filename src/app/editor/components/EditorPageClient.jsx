@@ -355,13 +355,13 @@ export default function EditorPageClient() {
     const blogUrl = currentPublication
       ? getPublicationPageUrl(
           currentPublication,
-          publishedBlogSlug ? `/blog/${publishedBlogSlug}` : "/",
+          publishedBlogSlug ? `/blog/${publishedBlogSlug}` : "/blog",
         )
       : publishedBlogSlug
         ? `/view-site/blog/${publishedBlogSlug}`
         : publicationId
-          ? `/view-site?publicationId=${publicationId}`
-          : "/view-site";
+          ? `/view-site/blog?publicationId=${publicationId}`
+          : "/blog";
 
     // Open blog in new tab
     window.open(blogUrl, "_blank");

@@ -116,16 +116,18 @@ export const getPublicationUrl = (publication) => {
     const currentHostname = normalizeValue(window.location.hostname);
     const localRuntime = isLocalLikeHost(currentHostname);
     const publicationSubdomain = normalizeValue(publication?.subdomain);
-    const customDomainLabel = normalizeValue(publication?.customDomain)
-      .split(".")
-      .filter(Boolean)[0];
-    const resolvedSubdomain = publicationSubdomain || customDomainLabel;
 
-    if (localRuntime && resolvedSubdomain) {
+    // In local dev a publication is always reachable at its subdomain on the dev
+    // root domain (e.g. tennyson.inksigma.local). Use ONLY the real subdomain —
+    // never the custom-domain label. Deriving the host from `customDomain` kept
+    // "view site" pointed at a custom-domain-shaped host even after the custom
+    // domain was reverted/detached (the label is not gated on
+    // hasActiveCustomDomain), so reverting to the subdomain had no effect here.
+    if (localRuntime && publicationSubdomain) {
       const protocol = window.location.protocol || "http:";
       const port = window.location.port || DEV_APP_PORT;
       const rootDomain = getEffectiveRootDomain() || getRootDomain() || "localhost";
-      return `${protocol}//${resolvedSubdomain}.${rootDomain}:${port}`;
+      return `${protocol}//${publicationSubdomain}.${rootDomain}:${port}`;
     }
   }
 
@@ -162,6 +164,20 @@ export const getPublicationPageUrl = (publication, pathname = "/") => {
   } catch {
     return baseUrl;
   }
+};
+
+// Canonical "view site" href: the public blog index (`/blog`) on the tenant's
+// subdomain or active custom domain (and the matching host in local dev).
+// Falls back to a relative `/blog` link — carrying publicationId so the
+// dashboard host can still resolve the tenant — when no absolute publication
+// URL can be derived (e.g. SSR, or a publication without a subdomain).
+export const getPublicationSiteHref = (publication) => {
+  const url = getPublicationPageUrl(publication, "/blog");
+  if (url) return url;
+
+  return publication?.id
+    ? `/blog?publicationId=${encodeURIComponent(publication.id)}`
+    : "/blog";
 };
 
 export const getSubdomainDomainLabel = (subdomain) =>

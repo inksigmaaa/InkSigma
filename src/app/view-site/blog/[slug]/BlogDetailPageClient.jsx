@@ -11,6 +11,7 @@ import ScrollToTop from "../../components/ScrollToTop/ScrollToTop";
 import MobileBottomNav from "../../components/MobileBottomNav/MobileBottomNav";
 import ClockIcon from "../../components/icons/ClockIcon";
 import FullPageErrorState from "@/components/common/FullPageErrorState";
+import { getBlogIndexPath } from "@/utils/blogUrl";
 
 // Lazy-loaded below-the-fold components — reduces initial JS bundle
 const TableOfContents = dynamic(
@@ -180,29 +181,16 @@ export default function BlogDetailPageClient({
 
   const handleBack = (e) => {
     e.preventDefault();
-    const fromPub = searchParams.get("from");
-    const isSubdomain =
-      typeof window !== "undefined" &&
-      !window.location.pathname.startsWith("/view-site");
-
-    if (fromPub) {
-      router.push(
-        isSubdomain
-          ? `/?from=${fromPub}`
-          : `/view-site?publicationId=${fromPub}`,
-      );
-      return;
-    }
-
+    // Return to the blog index. On a tenant host this is a clean `/blog`; on the
+    // dashboard host the publication is carried via the `publicationId` query
+    // param. Prefer the `from` publication (set when arriving from a specific
+    // publication), then fall back to the blog's own publication id.
     const pubId =
-      blog?.publication?.id || blog?.publicationId || blog?.publication_id;
-
-    if (isSubdomain) {
-      router.push("/");
-      return;
-    }
-
-    router.push(pubId ? `/view-site?publicationId=${pubId}` : "/view-site");
+      searchParams.get("from") ||
+      blog?.publication?.id ||
+      blog?.publicationId ||
+      blog?.publication_id;
+    router.push(getBlogIndexPath(undefined, pubId));
   };
 
   useEffect(() => {

@@ -658,6 +658,20 @@ function PublicationProviderInner({ children }) {
     return publicationWithMeta;
   };
 
+  // Merge authoritative fields (e.g. from a domain save/revert response) into
+  // the current publication immediately, so consumers like the "View Site"
+  // button reflect the change right away and never read stale custom-domain
+  // state while the background list refresh is in flight.
+  const updateCurrentPublication = useCallback((partial) => {
+    if (!partial?.id) return;
+    setCurrentPublication((prev) =>
+      prev && prev.id === partial.id ? { ...prev, ...partial } : prev,
+    );
+    setUserPublications((prev) =>
+      prev.map((pub) => (pub.id === partial.id ? { ...pub, ...partial } : pub)),
+    );
+  }, []);
+
   // Refresh current publication data
   const refreshCurrentPublication = async () => {
     if (!currentPublication) return;
@@ -844,6 +858,7 @@ function PublicationProviderInner({ children }) {
     switchToPublicationById,
     setCurrentPublicationFromInvite,
     refreshCurrentPublication,
+    updateCurrentPublication,
     getCurrentUserRole,
     isCurrentUserAdmin,
     getOwnedPublications,

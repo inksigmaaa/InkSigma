@@ -227,7 +227,8 @@ function DnsSetupRecords({
 }
 
 export default function DomainPage() {
-  const { currentPublication, refreshCurrentPublication } = usePublication();
+  const { currentPublication, refreshCurrentPublication, updateCurrentPublication } =
+    usePublication();
   const [customDomain, setCustomDomain] = useState("");
   const [subdomain, setSubdomain] = useState("Subdomain");
   const [publicationId, setPublicationId] = useState(null);
@@ -442,6 +443,7 @@ export default function DomainPage() {
       }
 
       const updated = await response.json();
+      updateCurrentPublication(updated);
       await refreshCurrentPublication();
       applyPublicationDomainState(updated);
       setCustomDomain("");
@@ -483,6 +485,7 @@ export default function DomainPage() {
       }
 
       const updated = await response.json();
+      updateCurrentPublication(updated);
       await refreshCurrentPublication();
       applyPublicationDomainState(updated);
       setCustomDomain("");
@@ -519,6 +522,7 @@ export default function DomainPage() {
       }
 
       const updated = await response.json();
+      updateCurrentPublication(updated);
       await refreshCurrentPublication();
       applyPublicationDomainState(updated);
       if (updated.customDomainStatus === "active") {
