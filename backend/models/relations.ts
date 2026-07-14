@@ -10,8 +10,10 @@ import {
     publicationMember, 
     invitation, 
     notification, 
-    blogView, 
-    blogShare 
+    blogView,
+    blogShare,
+    subscriber,
+    transaction
 } from "./schema.js";
 
 export const userRelations = relations(user, ({ many }) => ({
@@ -23,6 +25,7 @@ export const userRelations = relations(user, ({ many }) => ({
     publicationMembers: many(publicationMember),
     invitations: many(invitation),
     notifications: many(notification),
+    transactions: many(transaction),
 }));
 
 export const blogRelations = relations(blog, ({ one, many }) => ({
@@ -74,6 +77,7 @@ export const publicationRelations = relations(publication, ({ one, many }) => ({
     members: many(publicationMember),
     blogs: many(blog),
     invitations: many(invitation),
+    subscribers: many(subscriber),
 }));
 
 export const publicationHostnameRelations = relations(
@@ -158,5 +162,19 @@ export const blogShareRelations = relations(blogShare, ({ one }) => ({
     blog: one(blog, {
         fields: [blogShare.blogId],
         references: [blog.id],
+    }),
+}));
+
+export const subscriberRelations = relations(subscriber, ({ one }) => ({
+    publication: one(publication, {
+        fields: [subscriber.publicationId],
+        references: [publication.id],
+    }),
+}));
+
+export const transactionRelations = relations(transaction, ({ one }) => ({
+    user: one(user, {
+        fields: [transaction.userId],
+        references: [user.id],
     }),
 }));
