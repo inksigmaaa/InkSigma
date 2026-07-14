@@ -1,4 +1,5 @@
 import dns from "node:dns/promises";
+import { randomBytes } from "node:crypto";
 import logger from "../utils/logger.js";
 import {
   createConcurrencyLimiter,
@@ -34,6 +35,16 @@ export const CUSTOM_DOMAIN_STATUS = {
   FAILED: "failed",
   DETACHED: "detached",
 } as const;
+
+// Host prefix + value tag for the self-owned TXT ownership record we surface
+// (and later check) when the hosting provider does not supply its own
+// verification challenge. The record for `shop.test.com` looks like:
+//   name:  _inksigma-verify.shop
+//   value: inksigma-verify=<token>
+const CUSTOM_DOMAIN_VERIFICATION_TXT_PREFIX = "inksigma-verify";
+
+const generateCustomDomainVerificationToken = (): string =>
+  randomBytes(16).toString("hex");
 
 const CUSTOM_DOMAIN_SETUP_PLAN_PROVIDER_TIMEOUT_FLOOR_MS = 500;
 const CUSTOM_DOMAIN_SETUP_PLAN_PROVIDER_TIMEOUT_MS = getEnvNumber(
@@ -217,6 +228,86 @@ const resolveAaaaValues = async (hostname: string) => {
   }
 };
 
+const resolveTxtValues = async (hostname: string) => {
+  try {
+    // dns.resolveTxt returns string[][] — each record may be split into
+    // multiple character-strings that must be concatenated back together.
+    return (
+      await runDnsLookup(`resolveTxt:${hostname}`, () => dns.resolveTxt(hostname))
+    ).map((chunks) => chunks.join("").trim());
+  } catch {
+    return [];
+  }
+};
+
+// The self-owned ownership record's fully-qualified host and expected value for a
+// given custom domain, e.g. `_inksigma-verify.shop.test.com` /
+// `inksigma-verify=<token>`. Returns null when the domain is invalid.
+const getCustomDomainVerificationTxt = (
+  customDomain: string,
+  token: string,
+): { fqdn: string; relativeName: string; value: string } | null => {
+  const validation = validateCustomDomainInput(customDomain);
+  if (validation.valid === false) return null;
+
+  const fqdn = `_${CUSTOM_DOMAIN_VERIFICATION_TXT_PREFIX}.${validation.normalizedDomain}`;
+  // Strip the trailing apex zone so the "Name" shown to the user is what they
+  // enter at the registrar (relative to their DNS zone).
+  const relativeName =
+    fqdn.slice(0, -(validation.apexDomain.length + 1)) || fqdn;
+
+  return {
+    fqdn,
+    relativeName,
+    value: `${CUSTOM_DOMAIN_VERIFICATION_TXT_PREFIX}=${token}`,
+  };
+};
+
+const buildSelfOwnedVerificationRecords = (
+  customDomain: string,
+  token: string | null | undefined,
+) => {
+  if (!token) return [];
+  const txt = getCustomDomainVerificationTxt(customDomain, token);
+  if (!txt) return [];
+
+  return [
+    {
+      type: "TXT" as const,
+      name: txt.relativeName,
+      value: txt.value,
+      ttl: "Auto",
+      role: "required" as const,
+    },
+  ];
+};
+
+const inspectCustomDomainOwnership = async (
+  customDomain: string,
+  token: string,
+): Promise<CustomDomainDnsStatus> => {
+  const txt = getCustomDomainVerificationTxt(customDomain, token);
+  if (!txt) {
+    return {
+      ready: false,
+      status: "failed",
+      message: "Custom domain is not valid.",
+    };
+  }
+
+  const txtValues = await resolveTxtValues(txt.fqdn);
+  if (!txtValues.includes(txt.value)) {
+    return {
+      ready: false,
+      status: "pending",
+      message:
+        "Domain ownership is not verified yet. Add the required TXT record and wait for DNS to propagate.",
+    };
+  }
+
+  return { ready: true, status: "ready", message: null };
+};
+
 export const isCustomDomainActive = (
   publicationRecord: PublicationCustomDomainLike | null | undefined,
 ) => {
@@ -267,7 +358,10 @@ export const buildCustomDomainLifecycleFields = ({
         (shouldAutoActivateCustomDomain(normalizedNext)
           ? CUSTOM_DOMAIN_STATUS.ACTIVE
           : CUSTOM_DOMAIN_STATUS.PENDING_VERIFICATION),
-      customDomainVerificationToken: null,
+      customDomainVerificationToken: shouldAutoActivateCustomDomain(normalizedNext)
+        ? null
+        : currentPublication?.customDomainVerificationToken ||
+          generateCustomDomainVerificationToken(),
       customDomainVerificationError:
         currentPublication?.customDomainVerificationError || null,
       customDomainVerifiedAt: currentPublication?.customDomainVerifiedAt || null,
@@ -289,7 +383,7 @@ export const buildCustomDomainLifecycleFields = ({
   return {
     customDomain: normalizedNext,
     customDomainStatus: CUSTOM_DOMAIN_STATUS.PENDING_VERIFICATION,
-    customDomainVerificationToken: null,
+    customDomainVerificationToken: generateCustomDomainVerificationToken(),
     customDomainVerificationError: null,
     customDomainVerifiedAt: null,
     customDomainLastCheckedAt: null,
@@ -548,15 +642,21 @@ export const attachCustomDomainToHostingProvider = async (
 
 export const buildCustomDomainSetupPlanWithProvider = async (
   domain: string | null | undefined,
+  options: { verificationToken?: string | null } = {},
 ): Promise<CustomDomainSetupPlanWithProvider> => {
   const fallbackPlan = buildCustomDomainSetupPlan(domain);
   const providerConfig = getSetupPlanVercelConfig();
+  const selfOwnedVerificationRecords = buildSelfOwnedVerificationRecords(
+    fallbackPlan.domain,
+    options.verificationToken,
+  );
 
   if (!shouldUseVercelDomainProvider() || !providerConfig) {
     return {
       ...fallbackPlan,
       providerConfigured: false,
       providerRecordsAvailable: false,
+      records: [...fallbackPlan.records, ...selfOwnedVerificationRecords],
     };
   }
 
@@ -590,9 +690,14 @@ export const buildCustomDomainSetupPlanWithProvider = async (
       return null;
     }),
   ]);
-  const verificationRecords = projectDomain
+  const providerVerificationRecords = projectDomain
     ? buildVercelVerificationRecords(projectDomain)
     : [];
+  // Prefer the hosting provider's own ownership challenge; fall back to our
+  // self-owned TXT record so an ownership step is always shown.
+  const verificationRecords = providerVerificationRecords.length
+    ? providerVerificationRecords
+    : selfOwnedVerificationRecords;
   const fallbackWarnings = dnsPlan
     ? fallbackPlan.warnings.filter(
         (warning) =>
@@ -631,13 +736,21 @@ export const verifyCustomDomainLifecycle = async (
     reachabilityInspector?: (
       customDomain: string,
     ) => Promise<CustomDomainReachabilityStatus>;
+    ownershipInspector?: (
+      customDomain: string,
+      token: string,
+    ) => Promise<CustomDomainDnsStatus>;
   } = {},
 ): Promise<CustomDomainVerificationFields> => {
   const customDomain = normalizeCustomDomainValue(publicationRecord?.customDomain);
+  const verificationToken =
+    publicationRecord?.customDomainVerificationToken || null;
   const now = new Date();
   const dnsInspector = options.dnsInspector || inspectCustomDomainDnsStatus;
   const reachabilityInspector =
     options.reachabilityInspector || inspectCustomDomainReachability;
+  const ownershipInspector =
+    options.ownershipInspector || inspectCustomDomainOwnership;
 
   const verificationFailure = (
     status: CustomDomainStatus | null,
@@ -675,6 +788,30 @@ export const verifyCustomDomainLifecycle = async (
       CUSTOM_DOMAIN_STATUS.ACTIVE as CustomDomainStatus,
       now,
     );
+  }
+
+  // Ownership proof via the self-owned TXT record, checked before the hosting
+  // provider's routing/SSL status on every path. Enforced only when a token has
+  // been issued (domains saved before tokens existed keep their prior behavior)
+  // and skipped for already-active domains so a re-check never regresses a live
+  // domain if the user later removes the TXT record.
+  const alreadyActive =
+    normalizeCustomDomainStatus(publicationRecord?.customDomainStatus) ===
+    CUSTOM_DOMAIN_STATUS.ACTIVE;
+  if (verificationToken && !alreadyActive) {
+    const ownershipStatus = await ownershipInspector(
+      customDomain,
+      verificationToken,
+    );
+    if (!ownershipStatus.ready) {
+      return verificationFailure(
+        ownershipStatus.status === "failed"
+          ? (CUSTOM_DOMAIN_STATUS.FAILED as CustomDomainStatus)
+          : (CUSTOM_DOMAIN_STATUS.PENDING_VERIFICATION as CustomDomainStatus),
+        ownershipStatus.message || "Domain ownership is not verified yet.",
+        null,
+      );
+    }
   }
 
   if (shouldUseVercelDomainProvider()) {
@@ -739,6 +876,7 @@ export const verifyCustomDomainLifecycle = async (
 
 export {
   buildCustomDomainSetupPlan,
+  generateCustomDomainVerificationToken,
   normalizeCustomDomainValue,
   validateCustomDomainInput,
 };

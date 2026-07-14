@@ -10,6 +10,8 @@ const requiredTables = [
   "notification",
   "publication_hostname",
   "blog_slug_history",
+  "subscriber",
+  "transaction",
 ];
 
 const requiredIndexes = [

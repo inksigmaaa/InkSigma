@@ -12,6 +12,7 @@ import {
   index,
   unique,
   uniqueIndex,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 // Define blog status enum
@@ -72,6 +73,17 @@ export const customDomainStatusEnum = pgEnum("custom_domain_status", [
   "detached",
 ]);
 
+// v1 migration: subscriber tier (from PublicationSubscribers.SubsType 0=free/1=paid)
+export const subscriberTypeEnum = pgEnum("subscriber_type", ["free", "paid"]);
+
+// v1 migration: payment status (from Transactions.status 0/1/2/3)
+export const transactionStatusEnum = pgEnum("transaction_status", [
+  "failed",
+  "cancelled",
+  "completed",
+  "pending",
+]);
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name"),
@@ -80,6 +92,7 @@ export const user = pgTable("user", {
   image: text("image"),
   username: text("username"),
   bio: text("bio"),
+  legacyMetadata: jsonb("legacyMetadata"), // v1 Users.user_auth flags, AuthType, sourceUserId
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
@@ -148,6 +161,9 @@ export const blog = pgTable(
     scheduledAt: timestamp("scheduledAt"),
     publishedAt: timestamp("publishedAt"),
     readTime: integer("readTime"),
+    legacyViewCount: integer("legacyViewCount").notNull().default(0), // v1 PostAnalytics aggregate views
+    seoMetadata: jsonb("seoMetadata"), // v1 PostSEO.MetaData (meta_title, canonical, alt text)
+    migrationMeta: jsonb("migrationMeta"), // sourceSchema, sourcePostId, key, post_details, revisits
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   },
@@ -208,6 +224,7 @@ export const comment = pgTable(
     parentId: integer("parentId").references(() => comment.id, {
       onDelete: "cascade",
     }),
+    metadata: jsonb("metadata"), // v1 PostComments.analysis, flags, is_reply, original user JSON, provenance
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   },
@@ -237,6 +254,7 @@ export const publication = pgTable(
     logoUrl: text("logoUrl"),
     faviconUrl: text("faviconUrl"),
     metaOgImageUrl: text("metaOgImageUrl"),
+    legacyMetadata: jsonb("legacyMetadata"), // v1 Publication.config leftovers, domain_auth, seed, provenance
     userId: text("userId")
       .notNull()
       .references(() => user.id),
@@ -388,6 +406,59 @@ export const blogShare = pgTable(
   (table) => ({
     blogCreatedIdx: index("idx_blog_share_blog_created").on(
       table.blogId,
+      table.createdAt,
+    ),
+  }),
+);
+
+// v1 migration: newsletter list (from per-tenant PublicationSubscribers → publicationId)
+export const subscriber = pgTable(
+  "subscriber",
+  {
+    id: serial("id").primaryKey(),
+    publicationId: integer("publicationId")
+      .notNull()
+      .references(() => publication.id, { onDelete: "cascade" }),
+    name: text("name"), // v1 PublicationSubscribers.Subscriber
+    email: text("email").notNull(), // v1 SubsEmail
+    type: subscriberTypeEnum("type").notNull().default("free"), // v1 SubsType
+    unsubscribedAt: timestamp("unsubscribedAt"),
+    source: text("source").default("v1"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (table) => ({
+    publicationEmailUnique: uniqueIndex(
+      "subscriber_publication_email_unique",
+    ).on(table.publicationId, table.email),
+    publicationCreatedIdx: index("idx_subscriber_publication_created").on(
+      table.publicationId,
+      table.createdAt,
+    ),
+  }),
+);
+
+// v1 migration: payment records (from InternalSystem Transactions, user-scoped)
+export const transaction = pgTable(
+  "transaction",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("userId").references(() => user.id, { onDelete: "set null" }), // preserve financial history on user delete
+    externalId: text("externalId"), // v1 Transactions.transac_id
+    amount: integer("amount").notNull(), // v1 amount (raw integer; unit recorded in extraInfo)
+    currency: text("currency"),
+    purpose: text("purpose"),
+    status: transactionStatusEnum("status").notNull().default("pending"),
+    remarks: text("remarks"),
+    planCycle: jsonb("planCycle"), // v1 plan_cycle
+    extraInfo: jsonb("extraInfo"), // v1 extra_info
+    source: text("source").default("v1"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(), // v1 time
+    completedAt: timestamp("completedAt"), // v1 completion_time
+  },
+  (table) => ({
+    userCreatedIdx: index("idx_transaction_user_created").on(
+      table.userId,
       table.createdAt,
     ),
   }),

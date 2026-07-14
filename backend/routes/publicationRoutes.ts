@@ -26,6 +26,7 @@ import {
   attachCustomDomainToHostingProvider,
   buildCustomDomainLifecycleFields,
   buildCustomDomainSetupPlanWithProvider,
+  generateCustomDomainVerificationToken,
   verifyCustomDomainLifecycle,
   validateCustomDomainInput,
   normalizeCustomDomainValue,
@@ -246,7 +247,27 @@ router.get(
         return res.status(400).json({ error: "Domain is required" });
       }
 
-      const plan = await buildCustomDomainSetupPlanWithProvider(targetDomain);
+      // Lazily backfill an ownership token for domains saved before tokens
+      // existed, so the TXT verification record always shows without a re-save.
+      let verificationToken = currentPublication.customDomainVerificationToken;
+      if (currentPublication.customDomain && !verificationToken) {
+        verificationToken = generateCustomDomainVerificationToken();
+        try {
+          await db
+            .update(publication)
+            .set({ customDomainVerificationToken: verificationToken })
+            .where(eq(publication.id, publicationId));
+        } catch (persistError) {
+          logger.warn(
+            persistError,
+            "Failed to persist backfilled custom domain verification token",
+          );
+        }
+      }
+
+      const plan = await buildCustomDomainSetupPlanWithProvider(targetDomain, {
+        verificationToken,
+      });
       return res.json({
         publicationId,
         customDomain: currentPublication.customDomain,

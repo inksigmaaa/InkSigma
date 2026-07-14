@@ -36,6 +36,8 @@ const DOMAIN_STATUS_STYLES = {
   failed: "bg-red-50 text-red-700 border border-red-200",
 };
 
+const DEFAULT_DNS_TTL = "Auto";
+
 const getDnsRecordPriority = (record) => {
   const value = String(record?.value || "").toLowerCase();
   if (value.includes(".vercel-dns-") && !value.includes("cname.vercel-dns.com")) {
@@ -44,6 +46,9 @@ const getDnsRecordPriority = (record) => {
   if (value === "cname.vercel-dns.com") return 2;
   return 1;
 };
+
+// Ownership (TXT) is the first thing a user must add, then the routing records.
+const RECORD_TYPE_ORDER = { TXT: 0, A: 1, CNAME: 2 };
 
 const getDisplayDnsRecords = (records = []) => {
   const recordsByTarget = new Map();
@@ -56,8 +61,57 @@ const getDisplayDnsRecords = (records = []) => {
     }
   }
 
-  return Array.from(recordsByTarget.values());
+  return Array.from(recordsByTarget.values()).sort(
+    (a, b) =>
+      (RECORD_TYPE_ORDER[String(a?.type).toUpperCase()] ?? 99) -
+      (RECORD_TYPE_ORDER[String(b?.type).toUpperCase()] ?? 99),
+  );
 };
+
+// Plain-English explanation of what each record is for, derived from its type
+// and role (the backend does not send a per-record description).
+const getRecordPurpose = (record) => {
+  const type = String(record?.type || "").toUpperCase();
+  if (type === "TXT") return "proves you own this domain";
+  if (type === "A") return "points your domain to our servers";
+  if (type === "CNAME") {
+    return record?.role === "recommended"
+      ? "routes www to your site"
+      : "routes traffic to your site";
+  }
+  return "";
+};
+
+// A single read-only DNS field (label + copyable value), stacking on mobile and
+// laying out label-beside-input on larger screens.
+function RecordField({ label, value, mono = false, onCopy, copyAriaLabel }) {
+  return (
+    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+      <label className="shrink-0 text-[13px] leading-none text-[#696969] sm:w-16">
+        {label}
+      </label>
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <div
+          className={`min-w-0 flex-1 rounded-md border border-[#E4E4E4] bg-white px-3 py-2 text-[13px] text-[#202020] ${
+            mono ? "break-all font-mono" : ""
+          }`}
+        >
+          {value}
+        </div>
+        {onCopy && (
+          <button
+            type="button"
+            onClick={onCopy}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#E4E4E4] bg-white text-[#696969] transition hover:border-[#D4D4D4] hover:text-[#202020]"
+            aria-label={copyAriaLabel || `Copy ${label}`}
+          >
+            <Copy className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function DnsSetupRecords({
   setupPlan,
@@ -90,9 +144,9 @@ function DnsSetupRecords({
             {setupPlan?.domain || setupPlanRequestDomain}
           </div>
           <p className="text-[12px] leading-[18px] text-[#696969] max-md:text-[10px]">
-            {setupPlan?.domainType === "apex"
-              ? "Add these records for your root domain."
-              : "Add this CNAME record for your subdomain."}
+            Add {displayRecords.length > 1 ? "these records" : "this record"} at
+            your domain registrar, then click Verify. DNS changes can take a few
+            minutes to propagate.
           </p>
         </div>
         {canVerifySavedDomain && (
@@ -123,85 +177,53 @@ function DnsSetupRecords({
         <div className="flex flex-col gap-3">
           {displayRecords.map((record, index) => {
             const recordKey = `${record.type}-${record.name}-${record.value}-${index}`;
+            const recordTtl = record.ttl || DEFAULT_DNS_TTL;
+            const isRequired = record.role !== "recommended";
+            const purpose = getRecordPurpose(record);
 
             return (
               <div
                 key={recordKey}
-                className="rounded border border-[#EAEAEA] bg-[#FAFAFA] p-3"
+                className="overflow-hidden rounded-lg border border-[#EAEAEA] bg-white"
               >
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <span className="rounded-full bg-white px-2.5 py-1 text-[11px] text-[#696969] border border-[#EAEAEA]">
-                    {record.role === "required" ? "Required" : "Recommended"}
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EAEAEA] bg-[#FAFAFA] px-4 py-3">
+                  <h3 className="text-[14px] font-semibold text-[#202020]">
+                    Record {index + 1} of {displayRecords.length}: {record.type}
+                    {purpose && (
+                      <span className="font-normal text-[#696969]">
+                        {" "}
+                        ({purpose})
+                      </span>
+                    )}
+                  </h3>
+                  <span
+                    className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                      isRequired
+                        ? "border-[#EAEAEA] bg-white text-[#696969]"
+                        : "border-blue-100 bg-blue-50 text-blue-700"
+                    }`}
+                  >
+                    {isRequired ? "Required" : "Recommended"}
                   </span>
                 </div>
 
-                <div className="space-y-2 sm:hidden">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded border border-[#EAEAEA] bg-white px-3 py-2">
-                      <div className="text-[10px] font-semibold uppercase leading-none tracking-wide text-[#A4A4A4]">
-                        Type
-                      </div>
-                      <div className="mt-2 text-[14px] font-medium text-[#202020]">
-                        {record.type}
-                      </div>
-                    </div>
-                    <div className="rounded border border-[#EAEAEA] bg-white px-3 py-2">
-                      <div className="text-[10px] font-semibold uppercase leading-none tracking-wide text-[#A4A4A4]">
-                        Host
-                      </div>
-                      <div className="mt-2 break-all text-[14px] text-[#202020]">
-                        {record.name}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded border border-[#EAEAEA] bg-white px-3 py-2">
-                    <div className="text-[10px] font-semibold uppercase leading-none tracking-wide text-[#A4A4A4]">
-                      Value
-                    </div>
-                    <div className="mt-2 flex min-w-0 items-start justify-between gap-3">
-                      <span className="min-w-0 break-all text-[14px] leading-5 text-[#202020]">
-                        {record.value}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => onCopyValue(record.value)}
-                        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded border border-[#EAEAEA] bg-[#FAFAFA] px-2.5 text-[12px] font-medium text-[#696969] transition hover:border-[#D4D4D4] hover:bg-white"
-                        aria-label={`Copy DNS value for ${record.type} ${record.name}`}
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                        Copy
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="hidden overflow-hidden rounded border border-[#EAEAEA] bg-white sm:block">
-                  <div className="grid grid-cols-[92px_92px_minmax(0,1fr)] border-b border-[#EAEAEA] bg-[#FCFCFC] text-[10px] font-semibold uppercase leading-none tracking-wide text-[#A4A4A4]">
-                    <div className="px-3 py-2">Type</div>
-                    <div className="border-l border-[#EAEAEA] px-3 py-2">Host</div>
-                    <div className="border-l border-[#EAEAEA] px-3 py-2">Value</div>
-                  </div>
-                  <div className="grid grid-cols-[92px_92px_minmax(0,1fr)] items-stretch text-[13px] text-[#202020]">
-                    <div className="flex items-center px-3 py-3 font-medium">
-                      {record.type}
-                    </div>
-                    <div className="flex items-center border-l border-[#EAEAEA] px-3 py-3">
-                      {record.name}
-                    </div>
-                    <div className="flex min-w-0 items-center justify-between gap-2 border-l border-[#EAEAEA] px-3 py-2">
-                      <span className="min-w-0 break-all">{record.value}</span>
-                      <button
-                        type="button"
-                        onClick={() => onCopyValue(record.value)}
-                        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded border border-[#EAEAEA] bg-[#FAFAFA] px-2.5 text-[12px] font-medium text-[#696969] transition hover:border-[#D4D4D4] hover:bg-white"
-                        aria-label={`Copy DNS value for ${record.type} ${record.name}`}
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                        Copy
-                      </button>
-                    </div>
-                  </div>
+                <div className="space-y-3 p-4">
+                  <RecordField label="Type" value={record.type} />
+                  <RecordField
+                    label="Name"
+                    value={record.name}
+                    mono
+                    onCopy={() => onCopyValue(record.name)}
+                    copyAriaLabel={`Copy DNS name for ${record.type} record`}
+                  />
+                  <RecordField
+                    label="Value"
+                    value={record.value}
+                    mono
+                    onCopy={() => onCopyValue(record.value)}
+                    copyAriaLabel={`Copy DNS value for ${record.type} ${record.name}`}
+                  />
+                  <RecordField label="TTL" value={recordTtl} />
                 </div>
               </div>
             );
